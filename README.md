@@ -1,5 +1,5 @@
 # VkCV Framework
- A Vulkan framework for computer visualistics
+ A Vulkan framework for computer visualistics simplifying building applications
 
 ## Examples
 
