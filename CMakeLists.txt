@@ -28,7 +28,7 @@ if (vkcv_directories)
 	include_directories(${vkcv_directories})
 endif()
 
-add_library(vkcv SHARED ${vkcv_sources})
+add_library(vkcv STATIC ${vkcv_sources})
 
 if(MSVC)
   #enable multicore compilation on visual studio
