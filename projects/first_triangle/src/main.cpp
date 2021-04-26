@@ -8,9 +8,9 @@ int main(int argc, const char** argv) {
 			VK_MAKE_VERSION(0, 0, 1)
 	);
 
-	const vk::Instance instance = context.getInstance();
-	const vk::PhysicalDevice physicalDevice = context.getPhysicalDevice();
-	const vk::Device device = context.getDevice();
+	const vk::Instance& instance = context.getInstance();
+	const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
+	const vk::Device& device = context.getDevice();
 
 	std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
 
