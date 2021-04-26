@@ -1,6 +1,7 @@
 .project
 .cproject
 .idea/
+.editorconfig
 
 build/
 cmake-build-debug/
