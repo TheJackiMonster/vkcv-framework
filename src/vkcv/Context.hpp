@@ -16,6 +16,10 @@ namespace vkcv {
 		Context(const Context &other) = delete;
 		Context(Context &&other) = default;
 
+		vk::Instance getInstance();
+		vk::PhysicalDevice getPhysicalDevice();
+		vk::Device getDevice();
+
 		virtual ~Context();
 
 		Context& operator=(const Context &other) = delete;

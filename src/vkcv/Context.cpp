@@ -53,4 +53,15 @@ namespace vkcv {
 		return Context(instance, physicalDevice, device);
 	}
 
+	vk::Instance Context::getInstance() {
+		return m_instance;
+	}
+
+	vk::PhysicalDevice Context::getPhysicalDevice() {
+		return m_physicalDevice;
+	}
+
+	vk::Device Context::getDevice() {
+		return m_device;
+	}
 }
