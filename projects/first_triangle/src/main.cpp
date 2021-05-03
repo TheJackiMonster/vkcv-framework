@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <vkcv/Context.hpp>
 #include <vkcv/Window.hpp>
@@ -13,7 +12,9 @@ int main(int argc, const char** argv) {
 	);
 	vkcv::Context context = vkcv::Context::create(
             applicationName,
-			VK_MAKE_VERSION(0, 0, 1)
+		VK_MAKE_VERSION(0, 0, 1),
+		20,
+		{vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eTransfer}
 	);
 
 	const vk::Instance& instance = context.getInstance();
