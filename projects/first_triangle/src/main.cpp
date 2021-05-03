@@ -1,10 +1,18 @@
 
 #include <iostream>
 #include <vkcv/Context.hpp>
+#include <vkcv/Window.hpp>
 
 int main(int argc, const char** argv) {
+    const char* applicationName = "First Triangle";
+	vkcv::Window window = vkcv::Window::create(
+            applicationName,
+        800,
+        600,
+		false
+	);
 	vkcv::Context context = vkcv::Context::create(
-			"First Triangle",
+            applicationName,
 			VK_MAKE_VERSION(0, 0, 1)
 	);
 
@@ -23,5 +31,8 @@ int main(int argc, const char** argv) {
 		default: std::cout << "Unknown GPU vendor?! Either you're on an exotic system or your driver is broken..." << std::endl;
 	}
 
+	while (window.isWindowOpen()) {
+		window.pollEvents();
+	}
 	return 0;
 }
