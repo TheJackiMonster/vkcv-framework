@@ -1,5 +1,4 @@
-#ifndef VKCV_COREMANAGER_HPP
-#define VKCV_COREMANAGER_HPP
+#pragma once
 
 #include <GLFW/glfw3.h>
 #include <stdexcept>
@@ -15,5 +14,3 @@ namespace vkcv {
      */
     void terminateGLFW();
 }
-
-#endif //VKCV_COREMANAGER_HPP

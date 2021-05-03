@@ -4,6 +4,11 @@ project(vkcv)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if (CMAKE_BUILD_TYPE)
+	string(TOLOWER "${CMAKE_BUILD_TYPE}" _vkcv_build_type)
+	set(vkcv_build_${_vkcv_build_type} 1)
+endif()
+
 message("-- Language: [ C++ " ${CMAKE_CXX_STANDARD} " ]")
 
 set(vkcv_config ${PROJECT_SOURCE_DIR}/config)
@@ -14,6 +19,10 @@ set(vkcv_lib lib)
 set(vkcv_source ${PROJECT_SOURCE_DIR}/src)
 
 set(vkcv_flags ${CMAKE_CXX_FLAGS})
+
+if (vkcv_build_debug)
+	set(vkcv_flags ${vkcv_flags} " -Wextra -Wall -pedantic")
+endif()
 
 include(${vkcv_config}/Sources.cmake)
 include(${vkcv_config}/Libraries.cmake)
