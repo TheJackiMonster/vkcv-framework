@@ -1,15 +1,10 @@
 #include "Context.hpp"
 
 
-std::vector<const char*> validationLayers = {
-	"VK_LAYER_KHRONOS_validation"
-};
-
-
 namespace vkcv {
 
 	Context::Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device)
-	: m_instance(instance), m_physicalDevice(physicalDevice), m_device(device)
+		: m_instance(instance), m_physicalDevice(physicalDevice), m_device(device)
 	{}
 
 	Context::~Context() {
@@ -19,48 +14,63 @@ namespace vkcv {
 
 	Context Context::create(const char* applicationName, uint32_t applicationVersion, uint32_t queueCount, std::vector<vk::QueueFlagBits> queueFlags, std::vector<const char*> instanceExtensions, std::vector<const char*> deviceExtensions) {
 		glfwInit();
-		
+
 		// check for layer support
 		uint32_t layerCount = 0;
 		vk::enumerateInstanceLayerProperties(&layerCount, nullptr);
 		std::vector<vk::LayerProperties> layerProperties(layerCount);
 		vk::enumerateInstanceLayerProperties(&layerCount, layerProperties.data());
 		std::vector<const char*> supportedLayers;
-		for (auto& elem : layerProperties)
+		for (auto& elem : layerProperties) {
 			supportedLayers.push_back(elem.layerName);
+		}
 
-		// if in debug mode, check if validation layers are supported. Enable them if supported
-		if (enableValidationLayers && !Context::checkSupport(supportedLayers, validationLayers))
+// if in debug mode, check if validation layers are supported. Enable them if supported
+#if _DEBUG
+		std::vector<const char*> validationLayers = {
+		"VK_LAYER_KHRONOS_validation"
+		};
+		if (!Context::checkSupport(supportedLayers, validationLayers)) {
 			throw std::runtime_error("Validation layers requested but not available!");
-		
+		}
+#endif
+
+
 		// check for extension support
 		std::vector<vk::ExtensionProperties> instanceExtensionProperties = vk::enumerateInstanceExtensionProperties();
 		std::vector<const char*> supportedExtensions;
-		for (auto& elem : instanceExtensionProperties)
+		for (auto& elem : instanceExtensionProperties) {
 			supportedExtensions.push_back(elem.extensionName);
-		if (!checkSupport(supportedExtensions, instanceExtensions))
+		}
+		if (!checkSupport(supportedExtensions, instanceExtensions)) {
 			throw std::runtime_error("The requested instance extensions are not supported!");
+		}
 
 		// for GLFW: get all required extensions
 		std::vector<const char*> requiredExtensions = Context::getRequiredExtensions();
 		instanceExtensions.insert(instanceExtensions.end(), requiredExtensions.begin(), requiredExtensions.end());
 
-		const vk::ApplicationInfo applicationInfo (
-				applicationName,
-				applicationVersion,
-				"vkCV",
-				VK_MAKE_VERSION(0, 0, 1),
-				VK_HEADER_VERSION_COMPLETE
+		const vk::ApplicationInfo applicationInfo(
+			applicationName,
+			applicationVersion,
+			"vkCV",
+			VK_MAKE_VERSION(0, 0, 1),
+			VK_HEADER_VERSION_COMPLETE
 		);
 
-		const vk::InstanceCreateInfo instanceCreateInfo(
+		vk::InstanceCreateInfo instanceCreateInfo(
 			vk::InstanceCreateFlags(),
 			&applicationInfo,
-			(enableValidationLayers) ? static_cast<uint32_t>(validationLayers.size()) : 0,
-			(enableValidationLayers) ? validationLayers.data() : nullptr,
+			0,
+			nullptr,
 			static_cast<uint32_t>(instanceExtensions.size()),
 			instanceExtensions.data()
 		);
+
+#if _DEBUG
+		instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+		instanceCreateInfo.ppEnabledLayerNames = validationLayers.data();
+#endif
 
 		vk::Instance instance = vk::createInstance(instanceCreateInfo);
 
@@ -70,28 +80,36 @@ namespace vkcv {
 		// check for physical device extension support
 		std::vector<vk::ExtensionProperties> deviceExtensionProperties = physicalDevice.enumerateDeviceExtensionProperties();
 		supportedExtensions.clear();
-		for (auto& elem : deviceExtensionProperties)
+		for (auto& elem : deviceExtensionProperties) {
 			supportedExtensions.push_back(elem.extensionName);
-		if (!checkSupport(supportedExtensions, deviceExtensions))
+		}
+		if (!checkSupport(supportedExtensions, deviceExtensions)) {
 			throw std::runtime_error("The requested device extensions are not supported by the physical device!");
+		}
 
 		// create required queues
 		std::vector<vk::DeviceQueueCreateInfo> qCreateInfos = getQueueCreateInfos(physicalDevice, queueCount, queueFlags);
 
-		const vk::DeviceCreateInfo deviceCreateInfo (
-				vk::DeviceCreateFlags(),
-				qCreateInfos.size(),
-				qCreateInfos.data(),
-				(enableValidationLayers) ? static_cast<uint32_t>(validationLayers.size()) : 0,
-				(enableValidationLayers) ? validationLayers.data() : nullptr,
-				deviceExtensions.size(),
-				deviceExtensions.data(),
-				nullptr		// Should our device use some features??? If yes: TODO
+		vk::DeviceCreateInfo deviceCreateInfo(
+			vk::DeviceCreateFlags(),
+			qCreateInfos.size(),
+			qCreateInfos.data(),
+			0,
+			nullptr,
+			deviceExtensions.size(),
+			deviceExtensions.data(),
+			nullptr		// Should our device use some features??? If yes: TODO
 		);
-		
+
+#if _DEBUG
+		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
+#endif
+
+
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
 		// TODO: implement device.getQueue() to access the queues, if needed
-		
+
 		return Context(instance, physicalDevice, device);
 	}
 
@@ -115,13 +133,12 @@ namespace vkcv {
 	/// <seealso cref="Context.deviceScore">
 	vk::PhysicalDevice Context::pickPhysicalDevice(vk::Instance& instance) {
 		vk::PhysicalDevice phyDevice;
-		uint32_t deviceCount = 0;
-		instance.enumeratePhysicalDevices(&deviceCount, nullptr);
-		if (deviceCount == 0) {
+		std::vector<vk::PhysicalDevice> devices = instance.enumeratePhysicalDevices();
+
+		if (devices.size() == 0) {
 			throw std::runtime_error("failed to find GPUs with Vulkan support!");
 		}
-		std::vector<vk::PhysicalDevice> devices(deviceCount);
-		instance.enumeratePhysicalDevices(&deviceCount, devices.data());
+
 		int max_score = -1;
 		for (const auto& device : devices) {
 			int score = deviceScore(device);
@@ -131,7 +148,7 @@ namespace vkcv {
 			}
 		}
 
-		if (&phyDevice == nullptr) {
+		if (max_score == -1) {
 			throw std::runtime_error("failed to find a suitable GPU!");
 		}
 
@@ -165,15 +182,10 @@ namespace vkcv {
 		score *= vram;
 
 		if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
-			// nice!
 			score *= 2;
 		}
-		else if (properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu) {
-			// not perfect but ok
-		}
-		else {
-			// not so nice
-			score *= -1;
+		else if (properties.deviceType != vk::PhysicalDeviceType::eIntegratedGpu) {
+			score = -1;
 		}
 
 		return score;
@@ -206,31 +218,17 @@ namespace vkcv {
 
 		uint32_t create = queueCount;
 		for (int i = 0; i < qFamilyCandidates.size() && create > 0; i++) {
-			const int availableQueues = qFamilyCandidates[i].queueCount;
-			if (create >= availableQueues) {
-				float* qPriorities = new float[availableQueues];
-				std::fill_n(qPriorities, availableQueues, 1.f);		// all queues have the same priorities
-				vk::DeviceQueueCreateInfo qCreateInfo(
-					vk::DeviceQueueCreateFlags(),
-					i,
-					qFamilyCandidates[i].queueCount,
-					qPriorities
-				);
-				queueCreateInfos.push_back(qCreateInfo);
-				create -= qFamilyCandidates[i].queueCount;
-			}
-			else {
-				float* qPriorities = new float[create];
-				std::fill_n(qPriorities, create, 1.f);				// all queues have the same priorities
-				vk::DeviceQueueCreateInfo qCreateInfo(
-					vk::DeviceQueueCreateFlags(),
-					i,
-					create,
-					qPriorities
-				);
-				queueCreateInfos.push_back(qCreateInfo);
-				create -= create;
-			}
+			const int maxCreatableQueues = std::min(create, qFamilyCandidates[i].queueCount);
+			float* qPriorities = new float[maxCreatableQueues];		// TO CHECK: this seems to solve validation layer errors but the array pointer will not be deleted
+			std::fill_n(qPriorities, maxCreatableQueues, 1.f);		// all queues have the same priorities
+			vk::DeviceQueueCreateInfo qCreateInfo(
+				vk::DeviceQueueCreateFlags(),
+				i,
+				maxCreatableQueues,
+				qPriorities
+			);
+			queueCreateInfos.push_back(qCreateInfo);
+			create -= maxCreatableQueues;
 		}
 
 		return queueCreateInfos;
@@ -267,9 +265,9 @@ namespace vkcv {
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-		if (enableValidationLayers) {
-			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-		}
+#if _DEBUG
+	extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
 
 		return extensions;
 	}

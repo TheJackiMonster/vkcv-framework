@@ -3,11 +3,6 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif
 
 namespace vkcv {
 
@@ -41,7 +36,7 @@ namespace vkcv {
 		static Context create(const char* applicationName, uint32_t applicationVersion, uint32_t queueCount = 1, const std::vector<vk::QueueFlagBits> queueFlags = {}, std::vector<const char*> instanceExtensions = {}, std::vector<const char*> deviceExtensions = {});
 		static bool checkSupport(std::vector<const char*> &supported, std::vector<const char*> &check);
 		static std::vector<const char*> getRequiredExtensions();
-		static vk::PhysicalDevice Context::pickPhysicalDevice(vk::Instance& instance);
+		static vk::PhysicalDevice pickPhysicalDevice(vk::Instance& instance);
 		static int deviceScore(const vk::PhysicalDevice &physicalDevice);
 		static std::vector<vk::DeviceQueueCreateInfo> getQueueCreateInfos(vk::PhysicalDevice& physicalDevice, uint32_t queueCount, std::vector<vk::QueueFlagBits> &queueFlags);
 	};
