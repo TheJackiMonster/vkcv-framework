@@ -1,8 +1,6 @@
 #include "Context.hpp"
 #include "CoreManager.hpp"
 
-#include <iostream>
-
 namespace vkcv {
 
 	Context::Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device)
@@ -147,7 +145,7 @@ namespace vkcv {
 		vk::PhysicalDevice phyDevice;
 		std::vector<vk::PhysicalDevice> devices = instance.enumeratePhysicalDevices();
 
-		if (devices.size() == 0) {
+		if (devices.empty()) {
 			throw std::runtime_error("failed to find GPUs with Vulkan support!");
 		}
 
@@ -174,7 +172,7 @@ namespace vkcv {
 	/// <param name="physicalDevice"> The physical device. </param>
 	/// <returns></returns>
 	int Context::deviceScore(const vk::PhysicalDevice& physicalDevice) {
-		int score = 0;
+		uint32_t score = 0;
 		vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
 		std::vector<vk::QueueFamilyProperties> qFamilyProperties = physicalDevice.getQueueFamilyProperties();
 
@@ -229,7 +227,7 @@ namespace vkcv {
 		}
 
 		uint32_t create = queueCount;
-		for (int i = 0; i < qFamilyCandidates.size() && create > 0; i++) {
+		for (uint32_t i = 0; i < qFamilyCandidates.size() && create > 0; i++) {
 			const int maxCreatableQueues = std::min(create, qFamilyCandidates[i].queueCount);		
 			vk::DeviceQueueCreateInfo qCreateInfo(
 				vk::DeviceQueueCreateFlags(),
