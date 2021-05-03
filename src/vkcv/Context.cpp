@@ -1,6 +1,8 @@
 #include "Context.hpp"
 #include "CoreManager.hpp"
 
+#include <iostream>
+
 namespace vkcv {
 
 	Context::Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device)

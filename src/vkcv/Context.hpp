@@ -1,8 +1,5 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
-#include <GLFW/glfw3.h>
-#include <iostream>
-
 
 namespace vkcv {
 
@@ -33,7 +30,7 @@ namespace vkcv {
 		Context& operator=(const Context &other) = delete;
 		Context& operator=(Context &&other) = default;
 
-		static Context create(const char* applicationName, uint32_t applicationVersion, uint32_t queueCount = 1, const std::vector<vk::QueueFlagBits> queueFlags = {}, std::vector<const char*> instanceExtensions = {}, std::vector<const char*> deviceExtensions = {});
+		static Context create(const char* applicationName, uint32_t applicationVersion, uint32_t queueCount = 1, std::vector<vk::QueueFlagBits> queueFlags = {}, std::vector<const char*> instanceExtensions = {}, std::vector<const char*> deviceExtensions = {});
 		static bool checkSupport(std::vector<const char*> &supported, std::vector<const char*> &check);
 		static std::vector<const char*> getRequiredExtensions();
 		static vk::PhysicalDevice pickPhysicalDevice(vk::Instance& instance);
