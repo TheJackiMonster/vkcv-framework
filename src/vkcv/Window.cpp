@@ -14,8 +14,8 @@ namespace vkcv {
 
     Window Window::create(const char *windowTitle, int width, int height, bool resizable) {
         vkcv::initGLFW();
-        width = width <= 0 ? 1 : width;
-        height = height <= 0 ? 1 : height;
+        width = std::max(width, 1);
+        height = std::max(height, 1);
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
