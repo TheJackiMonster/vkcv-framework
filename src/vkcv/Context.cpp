@@ -17,11 +17,12 @@ namespace vkcv {
 		vkcv::initGLFW();
 
 		// check for layer support
-		uint32_t layerCount = 0;
-		vk::enumerateInstanceLayerProperties(&layerCount, nullptr);
-		std::vector<vk::LayerProperties> layerProperties(layerCount);
-		vk::enumerateInstanceLayerProperties(&layerCount, layerProperties.data());
+		
+		const std::vector<vk::LayerProperties>& layerProperties = vk::enumerateInstanceLayerProperties();
+		
 		std::vector<const char*> supportedLayers;
+		supportedLayers.reserve(layerProperties.size());
+		
 		for (auto& elem : layerProperties) {
 			supportedLayers.push_back(elem.layerName);
 		}
@@ -29,20 +30,24 @@ namespace vkcv {
 // if in debug mode, check if validation layers are supported. Enable them if supported
 #if _DEBUG
 		std::vector<const char*> validationLayers = {
-		"VK_LAYER_KHRONOS_validation"
+			"VK_LAYER_KHRONOS_validation"
 		};
+		
 		if (!Context::checkSupport(supportedLayers, validationLayers)) {
 			throw std::runtime_error("Validation layers requested but not available!");
 		}
 #endif
-
-
+		
 		// check for extension support
 		std::vector<vk::ExtensionProperties> instanceExtensionProperties = vk::enumerateInstanceExtensionProperties();
+		
 		std::vector<const char*> supportedExtensions;
+		supportedExtensions.reserve(instanceExtensionProperties.size());
+		
 		for (auto& elem : instanceExtensionProperties) {
 			supportedExtensions.push_back(elem.extensionName);
 		}
+		
 		if (!checkSupport(supportedExtensions, instanceExtensions)) {
 			throw std::runtime_error("The requested instance extensions are not supported!");
 		}
