@@ -28,7 +28,7 @@ namespace vkcv {
 		}
 
 // if in debug mode, check if validation layers are supported. Enable them if supported
-#if _DEBUG
+#ifndef NDEBUG
 		std::vector<const char*> validationLayers = {
 			"VK_LAYER_KHRONOS_validation"
 		};
@@ -73,7 +73,7 @@ namespace vkcv {
 			instanceExtensions.data()
 		);
 
-#if _DEBUG
+#ifndef NDEBUG
 		instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		instanceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
@@ -111,7 +111,7 @@ namespace vkcv {
 			nullptr		// Should our device use some features??? If yes: TODO
 		);
 
-#if _DEBUG
+#ifndef NDEBUG
 		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
@@ -273,7 +273,7 @@ namespace vkcv {
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-#if _DEBUG
+#ifndef NDEBUG
 	extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
