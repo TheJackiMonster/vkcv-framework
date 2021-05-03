@@ -1,4 +1,3 @@
-#define GLFW_INCLUDE_VULKAN
 
 #include "CoreManager.hpp"
 
