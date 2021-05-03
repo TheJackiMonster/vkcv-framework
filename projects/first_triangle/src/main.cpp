@@ -5,16 +5,16 @@
 #include <vkcv/CoreManager.hpp>
 
 int main(int argc, const char** argv) {
-
+    const char* applicationName = "First Triangle";
     vkcv::initGLFW();
 	vkcv::Window window = vkcv::Window::create(
-		"first triangle",
+            applicationName,
         800,
         600,
 		false
 	);
 	vkcv::Context context = vkcv::Context::create(
-			"First Triangle",
+            applicationName,
 			VK_MAKE_VERSION(0, 0, 1)
 	);
 
