@@ -87,8 +87,12 @@ namespace vkcv {
 			throw std::runtime_error("The requested device extensions are not supported by the physical device!");
 		}
 
+		//vector to define the queue priorities
+		std::vector<float> qPriorities;
+		qPriorities.resize(queueCount, 1.f); // all queues have the same priorities
+
 		// create required queues
-		std::vector<vk::DeviceQueueCreateInfo> qCreateInfos = getQueueCreateInfos(physicalDevice, queueCount, queueFlags);
+		std::vector<vk::DeviceQueueCreateInfo> qCreateInfos = getQueueCreateInfos(physicalDevice, queueCount, qPriorities,queueFlags);
 
 		vk::DeviceCreateInfo deviceCreateInfo(
 			vk::DeviceCreateFlags(),
@@ -200,7 +204,7 @@ namespace vkcv {
 	/// <param name="queueCount">The amount of queues to be created</param>
 	/// <param name="queueFlags">The abilities which have to be supported by any created queue</param>
 	/// <returns></returns>
-	std::vector<vk::DeviceQueueCreateInfo> Context::getQueueCreateInfos(vk::PhysicalDevice& physicalDevice, uint32_t queueCount, std::vector<vk::QueueFlagBits>& queueFlags) {
+	std::vector<vk::DeviceQueueCreateInfo> Context::getQueueCreateInfos(vk::PhysicalDevice& physicalDevice, uint32_t queueCount,std::vector<float> &qPriorities, std::vector<vk::QueueFlagBits>& queueFlags) {
 		std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
 		std::vector<vk::QueueFamilyProperties> qFamilyProperties = physicalDevice.getQueueFamilyProperties();
 		std::vector<vk::QueueFamilyProperties> qFamilyCandidates;
@@ -218,14 +222,12 @@ namespace vkcv {
 
 		uint32_t create = queueCount;
 		for (int i = 0; i < qFamilyCandidates.size() && create > 0; i++) {
-			const int maxCreatableQueues = std::min(create, qFamilyCandidates[i].queueCount);
-			float* qPriorities = new float[maxCreatableQueues];		// TO CHECK: this seems to solve validation layer errors but the array pointer will not be deleted
-			std::fill_n(qPriorities, maxCreatableQueues, 1.f);		// all queues have the same priorities
+			const int maxCreatableQueues = std::min(create, qFamilyCandidates[i].queueCount);		
 			vk::DeviceQueueCreateInfo qCreateInfo(
 				vk::DeviceQueueCreateFlags(),
 				i,
 				maxCreatableQueues,
-				qPriorities
+				qPriorities.data()
 			);
 			queueCreateInfos.push_back(qCreateInfo);
 			create -= maxCreatableQueues;

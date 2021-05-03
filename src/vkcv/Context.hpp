@@ -38,7 +38,7 @@ namespace vkcv {
 		static std::vector<const char*> getRequiredExtensions();
 		static vk::PhysicalDevice pickPhysicalDevice(vk::Instance& instance);
 		static int deviceScore(const vk::PhysicalDevice &physicalDevice);
-		static std::vector<vk::DeviceQueueCreateInfo> getQueueCreateInfos(vk::PhysicalDevice& physicalDevice, uint32_t queueCount, std::vector<vk::QueueFlagBits> &queueFlags);
+		static std::vector<vk::DeviceQueueCreateInfo> getQueueCreateInfos(vk::PhysicalDevice& physicalDevice, uint32_t queueCount, std::vector<float>& qPriorities, std::vector<vk::QueueFlagBits> &queueFlags);
 	};
 
 }
