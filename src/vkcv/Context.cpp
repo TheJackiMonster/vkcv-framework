@@ -1,5 +1,5 @@
 #include "Context.hpp"
-
+#include "CoreManager.hpp"
 
 namespace vkcv {
 
@@ -10,10 +10,11 @@ namespace vkcv {
 	Context::~Context() {
 		m_device.destroy();
 		m_instance.destroy();
+		vkcv::terminateGLFW();
 	}
 
 	Context Context::create(const char* applicationName, uint32_t applicationVersion, uint32_t queueCount, std::vector<vk::QueueFlagBits> queueFlags, std::vector<const char*> instanceExtensions, std::vector<const char*> deviceExtensions) {
-		glfwInit();
+		vkcv::initGLFW();
 
 		// check for layer support
 		uint32_t layerCount = 0;
