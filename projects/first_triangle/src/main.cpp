@@ -2,11 +2,9 @@
 #include <iostream>
 #include <vkcv/Context.hpp>
 #include <vkcv/Window.hpp>
-#include <vkcv/CoreManager.hpp>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
-    vkcv::initGLFW();
 	vkcv::Window window = vkcv::Window::create(
             applicationName,
         800,
@@ -36,6 +34,5 @@ int main(int argc, const char** argv) {
 	while (window.isWindowOpen()) {
 		window.pollEvents();
 	}
-    vkcv::terminateGLFW();
 	return 0;
 }
