@@ -135,12 +135,6 @@ namespace vkcv {
 		return m_device;
 	}
 
-	/// <summary>
-	/// All existing physical devices will be evaluated by 
-	/// </summary>
-	/// <param name="instance">The instance.</param>
-	/// <returns>The optimal physical device.</returns>
-	/// <seealso cref="Context.deviceScore">
 	vk::PhysicalDevice Context::pickPhysicalDevice(vk::Instance& instance) {
 		vk::PhysicalDevice phyDevice;
 		std::vector<vk::PhysicalDevice> devices = instance.enumeratePhysicalDevices();
@@ -165,12 +159,6 @@ namespace vkcv {
 		return phyDevice;
 	}
 
-	/// <summary>
-	/// The physical device is evaluated by three categories: discrete GPU vs. integrated GPU, amount of queues and
-	/// its abilities, and VRAM.
-	/// </summary>
-	/// <param name="physicalDevice"> The physical device. </param>
-	/// <returns></returns>
 	int Context::deviceScore(const vk::PhysicalDevice& physicalDevice) {
 		uint32_t score = 0;
 		vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
@@ -201,15 +189,6 @@ namespace vkcv {
 		return score;
 	}
 
-	/// <summary>
-	/// Creates a candidate list of queues that all meet the desired flags and then creates the maximum possible number
-	/// of queues. If the number of desired queues is not sufficient, the remaining queues are created from the next
-	/// candidate from the list.
-	/// </summary>
-	/// <param name="physicalDevice">The physical device</param>
-	/// <param name="queueCount">The amount of queues to be created</param>
-	/// <param name="queueFlags">The abilities which have to be supported by any created queue</param>
-	/// <returns></returns>
 	std::vector<vk::DeviceQueueCreateInfo> Context::getQueueCreateInfos(vk::PhysicalDevice& physicalDevice, uint32_t queueCount,std::vector<float> &qPriorities, std::vector<vk::QueueFlagBits>& queueFlags) {
 		std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
 		std::vector<vk::QueueFamilyProperties> qFamilyProperties = physicalDevice.getQueueFamilyProperties();
@@ -242,13 +221,6 @@ namespace vkcv {
 		return queueCreateInfos;
 	}
 
-	/// <summary>
-	/// With the help of the reference <paramref name="supported"> all elements in <paramref name="check"/> checked,
-	/// if they are supported by the physical device.
-	/// </summary>
-	/// <param name="supported">The reference that can be used to check <paramref name="check"/></param>
-	/// <param name="check">The elements to be checked</param>
-	/// <returns>True, if all elements in <param name="check"> are supported</returns>
 	bool Context::checkSupport(std::vector<const char*>& supported, std::vector<const char*>& check) {
 		for (auto checkElem : check) {
 			bool found = false;
@@ -264,10 +236,6 @@ namespace vkcv {
 		return true;
 	}
 
-	/// <summary>
-	/// Gets all extensions required, i.e. GLFW and advanced debug extensions.
-	/// </summary>
-	/// <returns>The required extensions</returns>
 	std::vector<const char*> Context::getRequiredExtensions() {
 		uint32_t glfwExtensionCount = 0;
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
