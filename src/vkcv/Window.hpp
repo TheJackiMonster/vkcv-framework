@@ -12,17 +12,21 @@ namespace vkcv {
 
     class Window final {
     private:
-        explicit Window(GLFWwindow *window);
-
         GLFWwindow *m_window;
+
+        /**
+         *
+         * @param GLFWwindow of the class
+         */
+        explicit Window(GLFWwindow *window);
 
     public:
         /**
          * creates a GLFWwindow with the parameters in the function
-         * @param windowTitle
-         * @param width
-         * @param height
-         * @param resizable
+         * @param[in] windowTitle of the window
+         * @param[in] width of the window (optional)
+         * @param[in] height of the window (optional)
+         * @param[in] resizable resize ability of the window (optional)
          * @return Window class
          */
         static Window create(const char *windowTitle, int width = -1, int height = -1, bool resizable = false);
@@ -61,10 +65,25 @@ namespace vkcv {
         [[nodiscard]]
         int getHeight() const;
 
+        /**
+         * Copy-operator of #Window is deleted!
+         *
+         * @param other Other instance of #Window
+         * @return Reference to itself
+         */
         Window &operator=(const Window &other) = delete;
 
+        /**
+         * Move-operator of #Window uses default behavior!
+         *
+         * @param other Other instance of #Window
+         * @return Reference to itself
+         */
         Window &operator=(Window &&other) = default;
 
+        /**
+         * Destructor of #Window, terminates GLFW
+         */
         virtual ~Window();
 
     };
