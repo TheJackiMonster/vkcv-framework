@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Sebastian Gaida
+ * @file src/vkcv/CoreManager.hpp
+ * @brief Handling of global states regarding dependencies
+ */
 
 #include <GLFW/glfw3.h>
 #include <stdexcept>

@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Sebastian Gaida
+ * @file src/vkcv/Window.hpp
+ * @brief Window class to handle a basic rendering surface and input
+ */
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>

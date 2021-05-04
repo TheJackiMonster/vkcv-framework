@@ -1,3 +1,9 @@
+/**
+ * @authors Tobias Frisch, Vanessa Karolek, Katharina Krämer, Sebastian Gaida
+ * @file src/vkcv/Context.cpp
+ * @brief Context class to handle instance, physical-device and device
+ */
+
 #include "Context.hpp"
 #include "CoreManager.hpp"
 
