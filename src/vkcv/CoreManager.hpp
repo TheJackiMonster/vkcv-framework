@@ -6,11 +6,12 @@
 namespace vkcv {
 
     /**
-     * initialize GLFW if not initialized
+     * initializes glfw once and increases the counter
      */
     void initGLFW();
+
     /**
-     * terminate GLFW
+     * terminates glfw once, if it was initialized or decreases the counter
      */
     void terminateGLFW();
 }
