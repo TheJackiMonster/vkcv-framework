@@ -1,3 +1,9 @@
+/**
+ * @authors Sebastian Gaida
+ * @file src/vkcv/Window.cpp
+ * @brief Window class to handle a basic rendering surface and input
+ */
+
 #include "Window.hpp"
 #include "CoreManager.hpp"
 
