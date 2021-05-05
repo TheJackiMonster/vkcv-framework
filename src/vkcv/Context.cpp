@@ -172,7 +172,7 @@ namespace vkcv {
 	/// <param name="physicalDevice"> The physical device. </param>
 	/// <returns></returns>
 	int Context::deviceScore(const vk::PhysicalDevice& physicalDevice) {
-		uint32_t score = 0;
+		int score = 0;
 		vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
 		std::vector<vk::QueueFamilyProperties> qFamilyProperties = physicalDevice.getQueueFamilyProperties();
 
@@ -183,7 +183,7 @@ namespace vkcv {
 				+ (static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eGraphics) != 0)
 				+ (static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eTransfer) != 0)
 				+ (static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eSparseBinding) != 0);
-			score += qCount * bitCount;
+			score += static_cast<int>(qCount * bitCount);
 		}
 
 		// compute the VRAM of the physical device
