@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vkcv/Context.hpp>
 #include <vkcv/Window.hpp>
+#include <vkcv/SwapChain.hpp>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
@@ -14,12 +15,16 @@ int main(int argc, const char** argv) {
             applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		20,
-		{vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eTransfer}
+		{vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eTransfer},
+		{},
+		{"VK_KHR_swapchain"}
 	);
 
+	GLFWwindow *glWindow = window.getWindow();
 	const vk::Instance& instance = context.getInstance();
 	const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
 	const vk::Device& device = context.getDevice();
+    const vkcv::SwapChain& swapChain = vkcv::SwapChain::create(glWindow, instance, physicalDevice, device);
 
 	std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
 
