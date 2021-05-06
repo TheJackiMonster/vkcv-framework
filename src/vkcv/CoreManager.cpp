@@ -1,3 +1,8 @@
+/**
+ * @authors Sebastian Gaida
+ * @file src/vkcv/CoreManager.cpp
+ * @brief Handling of global states regarding dependencies
+ */
 
 #include "CoreManager.hpp"
 

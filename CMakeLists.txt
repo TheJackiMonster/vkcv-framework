@@ -57,3 +57,5 @@ target_include_directories(vkcv SYSTEM BEFORE PRIVATE ${vkcv_includes})
 target_link_libraries(vkcv ${vkcv_libraries})
 
 add_subdirectory(projects)
+
+include(${vkcv_config}/ext/Doxygen.cmake)
