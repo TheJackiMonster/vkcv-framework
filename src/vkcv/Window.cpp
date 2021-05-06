@@ -7,10 +7,11 @@
 #include "Window.hpp"
 #include "CoreManager.hpp"
 
+
 namespace vkcv {
 
-    Window::Window(GLFWwindow *window)
-            : m_window(window) {
+    Window::Window(GLFWwindow *window, const vkcv::SwapChain *swapChain)
+            : m_window(window), m_swapChain(swapChain){
     }
 
     Window::~Window() {
@@ -27,7 +28,12 @@ namespace vkcv {
         glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
         GLFWwindow *window;
         window = glfwCreateWindow(width, height, windowTitle, nullptr, nullptr);
-        return Window(window);
+
+       const vkcv::SwapChain swapChain = vkcv::SwapChain::create(
+                window,
+                &context);
+
+        return Window(window, &swapChain);
     }
 
     bool Window::isWindowOpen() const {
@@ -40,17 +46,5 @@ namespace vkcv {
 
     GLFWwindow *Window::getWindow() const {
         return m_window;
-    }
-
-    int Window::getWidth() const {
-        int width;
-        glfwGetWindowSize(m_window, &width, nullptr);
-        return width;
-    }
-
-    int Window::getHeight() const {
-        int height;
-        glfwGetWindowSize(m_window, nullptr, &height);
-        return height;
     }
 }

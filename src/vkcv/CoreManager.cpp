@@ -28,4 +28,16 @@ namespace vkcv {
         }
         glfwCounter--;
     }
+
+    int getWidth(GLFWwindow *window)  {
+        int width;
+        glfwGetWindowSize(window, &width, nullptr);
+        return width;
+    }
+
+    int getHeight(GLFWwindow *window)  {
+        int height;
+        glfwGetWindowSize(window, nullptr, &height);
+        return height;
+    }
 }

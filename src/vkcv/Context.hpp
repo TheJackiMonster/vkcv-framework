@@ -144,6 +144,8 @@ namespace vkcv {
 		 * @return 
 		*/
 		static std::vector<vk::DeviceQueueCreateInfo> getQueueCreateInfos(vk::PhysicalDevice& physicalDevice, uint32_t queueCount, std::vector<float>& qPriorities, std::vector<vk::QueueFlagBits> &queueFlags);
+
+        static uint32_t findGraphicsQueueFamilyIndex(uint32_t queueCount, std::vector<vk::DeviceQueueCreateInfo> &createInfos);
 	};
 
 }

@@ -6,6 +6,7 @@
 
 #include "Context.hpp"
 #include "CoreManager.hpp"
+#include <iostream>
 
 namespace vkcv {
 
@@ -124,7 +125,12 @@ namespace vkcv {
 
 
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
-		// TODO: implement device.getQueue() to access the queues, if needed
+		// TODO: implement device.getQueue() to access the queues, if neede
+		//std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
+        //uint32_t graphicsQueueFamilyIndex = vkcv::findGraphicsQueueFamilyIndex( queueFamilyProperties );
+       // for(uint32_t i = 0; true; i++){
+       //     vk::Queue graphicsQueue = device.getQueue( graphicsQueueFamilyIndex, i );
+       // }
 
 		return Context(instance, physicalDevice, device);
 	}
@@ -253,4 +259,11 @@ namespace vkcv {
 
 		return extensions;
 	}
+
+    uint32_t Context::findGraphicsQueueFamilyIndex(uint32_t queueCount, std::vector<vk::DeviceQueueCreateInfo> &createInfos){
+        for(auto createInfo: createInfos){
+            std::cout << createInfo.queueCount << std::endl;
+        }
+	    return 0;
+    }
 }

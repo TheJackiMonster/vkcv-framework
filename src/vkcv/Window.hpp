@@ -7,18 +7,20 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include "SwapChain.hpp"
 
 namespace vkcv {
-
     class Window final {
     private:
         GLFWwindow *m_window;
+
+        const vkcv::SwapChain* m_swapChain;
 
         /**
          *
          * @param GLFWwindow of the class
          */
-        explicit Window(GLFWwindow *window);
+        Window(GLFWwindow *window, const vkcv::SwapChain *swapChain);
 
     public:
         /**
@@ -29,8 +31,7 @@ namespace vkcv {
          * @param[in] resizable resize ability of the window (optional)
          * @return Window class
          */
-        static Window create(const char *windowTitle, int width = -1, int height = -1, bool resizable = false);
-
+        static Window create(const vkcv::Context& context, const char *windowTitle, int width = -1, int height = -1, bool resizable = false);
         /**
          * checks if the window is still open, or the close event was called
          * This function should be changed/removed later on
@@ -50,20 +51,6 @@ namespace vkcv {
          */
         [[nodiscard]]
         GLFWwindow *getWindow() const;
-
-        /**
-         * gets the current window width
-         * @return int with window width
-         */
-        [[nodiscard]]
-        int getWidth() const;
-
-        /**
-         * gets the current window height
-         * @return int with window height
-         */
-        [[nodiscard]]
-        int getHeight() const;
 
         /**
          * Copy-operator of #Window is deleted!

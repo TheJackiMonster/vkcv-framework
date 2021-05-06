@@ -5,12 +5,6 @@
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
-	vkcv::Window window = vkcv::Window::create(
-            applicationName,
-        800,
-        600,
-		false
-	);
 	vkcv::Context context = vkcv::Context::create(
             applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
@@ -20,11 +14,17 @@ int main(int argc, const char** argv) {
 		{"VK_KHR_swapchain"}
 	);
 
-	GLFWwindow *glWindow = window.getWindow();
-	const vk::Instance& instance = context.getInstance();
-	const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
-	const vk::Device& device = context.getDevice();
-    const vkcv::SwapChain& swapChain = vkcv::SwapChain::create(glWindow, instance, physicalDevice, device);
+    const vk::Instance& instance = context.getInstance();
+    const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
+    const vk::Device& device = context.getDevice();
+
+    vkcv::Window window = vkcv::Window::create(
+            context,
+            applicationName,
+            800,
+            600,
+            false
+    );
 
 	std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
 
