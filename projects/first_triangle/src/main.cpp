@@ -8,7 +8,7 @@ int main(int argc, const char** argv) {
 	vkcv::Context context = vkcv::Context::create(
             applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
-		2,
+		20,
 		{vk::QueueFlagBits::eTransfer},
 		{},
 		{"VK_KHR_swapchain"}

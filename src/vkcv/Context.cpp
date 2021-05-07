@@ -272,7 +272,7 @@ namespace vkcv {
 
     int Context::findQueueFamilyIndex(vk::QueueFlagBits flag, std::vector<vk::DeviceQueueCreateInfo> &createInfos, vk::PhysicalDevice &device){
         std::vector<vk::QueueFamilyProperties> queueFamilyProperties = device.getQueueFamilyProperties();
-        for (auto i = createInfos.rbegin(); i != createInfos.rend(); ++i ) {
+        for (auto i = createInfos.begin(); i != createInfos.end(); ++i ) {
             auto createInfo = *i;
             int index = createInfo.queueFamilyIndex;
             if(static_cast<uint32_t>(queueFamilyProperties[index].queueFlags & flag) != 0){
