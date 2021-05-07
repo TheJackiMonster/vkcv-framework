@@ -8,8 +8,8 @@ int main(int argc, const char** argv) {
 	vkcv::Context context = vkcv::Context::create(
             applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
-		20,
-		{vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eTransfer},
+		2,
+		{vk::QueueFlagBits::eTransfer},
 		{},
 		{"VK_KHR_swapchain"}
 	);

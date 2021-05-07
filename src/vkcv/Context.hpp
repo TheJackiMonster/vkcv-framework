@@ -14,6 +14,9 @@ namespace vkcv {
 		vk::Instance m_instance;
 		vk::PhysicalDevice m_physicalDevice;
 		vk::Device m_device;
+		vk::Queue m_graphicsqueue;
+		vk::Queue m_computequeue;
+		vk::Queue m_transferqueue;
 
 		/**
 		 * Constructor of #Context requires an @p instance, a @p physicalDevice and a @p device.
@@ -22,7 +25,7 @@ namespace vkcv {
 		 * @param physicalDevice Vulkan-PhysicalDevice
 		 * @param device Vulkan-Device
 		 */
-		Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device);
+		Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device, vk::Queue graphicsqueue, vk::Queue computequeue, vk::Queue transferqueue);
 
 	public:
 		/**
@@ -145,7 +148,15 @@ namespace vkcv {
 		*/
 		static std::vector<vk::DeviceQueueCreateInfo> getQueueCreateInfos(vk::PhysicalDevice& physicalDevice, uint32_t queueCount, std::vector<float>& qPriorities, std::vector<vk::QueueFlagBits> &queueFlags);
 
-        static uint32_t findGraphicsQueueFamilyIndex(uint32_t queueCount, std::vector<vk::DeviceQueueCreateInfo> &createInfos);
+		/**
+		 * @brief finds an queue family index that fits with the given queue flags to create a queue handle
+		 * @param flag The given flag that specifies as which queue type the accessed queue should be treated
+		 * @param createInfos The createInfos of the created queues depending on the logical device
+		 * @param device The physical with which the queue families can be accessed
+		 * @return a fitting queue family index
+		 */
+        static int findQueueFamilyIndex(vk::QueueFlagBits flag, std::vector<vk::DeviceQueueCreateInfo> &createInfos, vk::PhysicalDevice &device);
+
 	};
 
 }

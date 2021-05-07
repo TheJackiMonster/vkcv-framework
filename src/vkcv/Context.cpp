@@ -10,8 +10,8 @@
 
 namespace vkcv {
 
-	Context::Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device)
-		: m_instance(instance), m_physicalDevice(physicalDevice), m_device(device)
+	Context::Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device, vk::Queue graphicsqueue, vk::Queue computequeue, vk::Queue transferqueue)
+		: m_instance(instance), m_physicalDevice(physicalDevice), m_device(device), m_graphicsqueue(graphicsqueue), m_transferqueue(transferqueue), m_computequeue(computequeue)
 	{}
 
 	Context::~Context() {
@@ -125,14 +125,24 @@ namespace vkcv {
 
 
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
-		// TODO: implement device.getQueue() to access the queues, if neede
-		//std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
-        //uint32_t graphicsQueueFamilyIndex = vkcv::findGraphicsQueueFamilyIndex( queueFamilyProperties );
-       // for(uint32_t i = 0; true; i++){
-       //     vk::Queue graphicsQueue = device.getQueue( graphicsQueueFamilyIndex, i );
-       // }
+		uint32_t graphicsQueueFamilyIndex = findQueueFamilyIndex({vk::QueueFlagBits::eGraphics}, qCreateInfos, physicalDevice);
+		if(graphicsQueueFamilyIndex == -1){
+            throw std::runtime_error("It is not possible to access another queue as a graphics queue.");
+		}
+        uint32_t computeQueueFamilyIndex = findQueueFamilyIndex({vk::QueueFlagBits::eCompute}, qCreateInfos, physicalDevice);
+        if(computeQueueFamilyIndex == -1){
+            throw std::runtime_error("It is not possible to access another queue as a compute queue.");
+        }
+        uint32_t transferQueueFamilyIndex = findQueueFamilyIndex({vk::QueueFlagBits::eTransfer}, qCreateInfos, physicalDevice);
+        if(transferQueueFamilyIndex == -1){
+            throw std::runtime_error("It is not possible to access another queue as a transfer queue.");
+        }
+		vk::Queue graphicsQueue = device.getQueue( graphicsQueueFamilyIndex, 0 );
+		vk::Queue computeQueue = device.getQueue(computeQueueFamilyIndex,1);
+		vk::Queue transferQueue = device.getQueue(transferQueueFamilyIndex, 2);
 
-		return Context(instance, physicalDevice, device);
+
+		return Context(instance, physicalDevice, device, graphicsQueue, transferQueue, computeQueue);
 	}
 
 	const vk::Instance& Context::getInstance() const {
@@ -260,10 +270,16 @@ namespace vkcv {
 		return extensions;
 	}
 
-    uint32_t Context::findGraphicsQueueFamilyIndex(uint32_t queueCount, std::vector<vk::DeviceQueueCreateInfo> &createInfos){
-        for(auto createInfo: createInfos){
-            std::cout << createInfo.queueCount << std::endl;
+    int Context::findQueueFamilyIndex(vk::QueueFlagBits flag, std::vector<vk::DeviceQueueCreateInfo> &createInfos, vk::PhysicalDevice &device){
+        std::vector<vk::QueueFamilyProperties> queueFamilyProperties = device.getQueueFamilyProperties();
+        for (auto i = createInfos.rbegin(); i != createInfos.rend(); ++i ) {
+            auto createInfo = *i;
+            int index = createInfo.queueFamilyIndex;
+            if(static_cast<uint32_t>(queueFamilyProperties[index].queueFlags & flag) != 0){
+                std::cout << "Queue count: " << index << std::endl;
+                return index;
+            }
         }
-	    return 0;
+        return -1;
     }
 }
