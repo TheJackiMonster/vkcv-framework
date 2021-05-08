@@ -32,6 +32,10 @@ int main(int argc, const char** argv) {
 		default: std::cout << "Unknown GPU vendor?! Either you're on an exotic system or your driver is broken..." << std::endl;
 	}
 
+	vkcv::ShaderProgram shaderProgram = vkcv::ShaderProgram::create(context);
+	shaderProgram.addShader(VK_SHADER_STAGE_VERTEX_BIT, "../../../../../shaders/vert.spv");
+	shaderProgram.addShader(VK_SHADER_STAGE_FRAGMENT_BIT, "../../../../../shaders/frag.spv");
+
 	while (window.isWindowOpen()) {
 		window.pollEvents();
 	}
