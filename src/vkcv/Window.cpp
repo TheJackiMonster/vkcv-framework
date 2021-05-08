@@ -4,7 +4,7 @@
  * @brief Window class to handle a basic rendering surface and input
  */
 
-#include "Window.hpp"
+#include "vkcv/Window.hpp"
 #include "CoreManager.hpp"
 
 namespace vkcv {
