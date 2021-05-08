@@ -65,7 +65,7 @@ endif()
 target_include_directories(vkcv SYSTEM BEFORE PRIVATE ${vkcv_includes})
 
 # add the own include directory for public headers
-target_include_directories(vkcv AFTER PUBLIC ${vkcv_include})
+target_include_directories(vkcv BEFORE PUBLIC ${vkcv_include})
 
 # link the framework using all required libraries
 target_link_libraries(vkcv ${vkcv_libraries})
