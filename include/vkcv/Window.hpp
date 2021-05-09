@@ -8,9 +8,6 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#define NOMINMAX
-#include <algorithm>
-
 namespace vkcv {
 
     class Window final {

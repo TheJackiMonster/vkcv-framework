@@ -1,5 +1,5 @@
 #include <iostream>
-#include <vkcv/Core.hpp>
+#include <vkcv/Context.hpp>
 #include <vkcv/Window.hpp>
 
 int main(int argc, const char** argv) {
@@ -10,14 +10,13 @@ int main(int argc, const char** argv) {
         600,
 		false
 	);
-	vkcv::Core core = vkcv::Core::create(
+	vkcv::Context context = vkcv::Context::create(
             applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		20,
 		{vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eTransfer}
 	);
 
-	const auto &context = core.getContext();
 	const vk::Instance& instance = context.getInstance();
 	const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
 	const vk::Device& device = context.getDevice();
@@ -33,30 +32,7 @@ int main(int argc, const char** argv) {
 		default: std::cout << "Unknown GPU vendor?! Either you're on an exotic system or your driver is broken..." << std::endl;
 	}
 
-	/*
-	 * BufferHandle triangleVertices = core.createBuffer(vertices);
-	 * BufferHandle triangleIndices = core.createBuffer(indices);
-	 *
-	 * // triangle Model creation goes here
-	 *
-	 *
-	 * // attachment creation goes here
-	 * PassHandle trianglePass = core.CreatePass(presentationPass);
-	 *
-	 * // shader creation goes here
-	 * // material creation goes here
-	 *
-	 * PipelineHandle trianglePipeline = core.CreatePipeline(trianglePipeline);
-	 */
-
-	while (window.isWindowOpen())
-	{
-        // core.beginFrame(); or something like that
-	    // core.execute(trianglePass, trianglePipeline, triangleModel);
-	    // core.endFrame(); or something like that
-
-	    // TBD: synchronization
-
+	while (window.isWindowOpen()) {
 		window.pollEvents();
 	}
 	return 0;
