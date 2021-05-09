@@ -4,7 +4,7 @@
  * @brief Context class to handle instance, physical-device and device
  */
 
-#include "Context.hpp"
+#include "vkcv/Context.hpp"
 #include "CoreManager.hpp"
 
 namespace vkcv {
