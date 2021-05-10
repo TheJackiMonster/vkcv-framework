@@ -1,13 +1,14 @@
 #pragma once
 /**
- * @authors Simeon Hermann
+ * @authors Simeon Hermann, Leonie Franken
  * @file src/vkcv/ShaderProgram.hpp
  * @brief ShaderProgram class to handle and prepare the shader stages for a graphics pipeline
  */
 
 #define GLFW_INCLUDE_VULKAN
 #include <vector>
-#include <map>
+#include <fstream>
+#include <iostream>
 #include <vulkan/vulkan.hpp>
 #include "Context.hpp"
 
@@ -17,7 +18,7 @@ namespace vkcv {
 	private:
 
 		vkcv::Context& m_context;
-		std::vector<VkPipelineShaderStageCreateInfo> m_shaderStagesList;
+		std::vector<vk::PipelineShaderStageCreateInfo> m_shaderStagesList;
 		/**
 		* Constructor of ShaderProgram requires a context for the logical device. 
 		* @param context of the app
@@ -39,7 +40,7 @@ namespace vkcv {
 		* @param[in] a vector of chars as a buffer for the code 
 		* @return shader module 
 		*/
-		VkShaderModule createShaderModule(const std::vector<char>& shaderCode);
+		vk::ShaderModule createShaderModule(const std::vector<char>& shaderCode);
 
 		/**
 		* Creates a shader stage (info struct) for the to be added shader. 
@@ -48,7 +49,7 @@ namespace vkcv {
 		* @param[in] flag that signals the respective shaderStage 
 		* @return pipeline shader stage info struct 
 		*/ 
-		VkPipelineShaderStageCreateInfo createShaderStage(VkShaderModule& shaderModule, VkShaderStageFlagBits shaderStage);
+		vk::PipelineShaderStageCreateInfo createShaderStage(vk::ShaderModule& shaderModule, vk::ShaderStageFlagBits shaderStage);
 
 
 	public:
@@ -72,28 +73,28 @@ namespace vkcv {
 		* @param[in] flag that signals the respective shaderStage (e.g. VK_SHADER_STAGE_VERTEX_BIT)
 		* @param[in] relative path to the shader code (e.g. "../../../../../shaders/vert.spv")
 		*/
-		void addShader(VkShaderStageFlagBits shaderStage, const std::string& filepath);
+		void addShader(vk::ShaderStageFlagBits shaderStage, const std::string& filepath);
 
 		/**
 		* Tests if the shader program contains a certain shader stage.
 		* @param[in] flag that signals the respective shader stage (e.g. VK_SHADER_STAGE_VERTEX_BIT)
 		* @return boolean that is true if the shader program contains the shader stage
 		*/
-		bool containsShaderStage(VkShaderStageFlagBits shaderStage);
+		bool containsShaderStage(vk::ShaderStageFlagBits shaderStage);
 
 		/**
 		* Deletes the given shader stage in the shader program.
 		* @param[in] flag that signals the respective shader stage (e.g. VK_SHADER_STAGE_VERTEX_BIT)
 		* @return boolean that is false if the shader stage was not found in the shader program
 		*/
-		bool deleteShaderStage(VkShaderStageFlagBits shaderStage);
+		bool deleteShaderStage(vk::ShaderStageFlagBits shaderStage);
 
 		/**
 		* Returns a list with all the shader stages in the shader program.
 		* Needed for the transfer to the pipeline.
 		* @return vector list with all shader stage info structs
 		*/
-		std::vector<VkPipelineShaderStageCreateInfo> getShaderStages();
+		std::vector<vk::PipelineShaderStageCreateInfo> getShaderStages();
 
 		/**
 		* Returns the number of shader stages in the shader program.

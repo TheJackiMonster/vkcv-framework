@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vkcv/Context.hpp>
 #include <vkcv/Window.hpp>
+#include <vkcv/ShaderProgram.hpp>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
@@ -33,8 +34,8 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::ShaderProgram shaderProgram = vkcv::ShaderProgram::create(context);
-	shaderProgram.addShader(VK_SHADER_STAGE_VERTEX_BIT, "../../../../../shaders/vert.spv");
-	shaderProgram.addShader(VK_SHADER_STAGE_FRAGMENT_BIT, "../../../../../shaders/frag.spv");
+	shaderProgram.addShader(vk::ShaderStageFlagBits::eVertex , "../../../../../shaders/vert.spv");
+	shaderProgram.addShader(vk::ShaderStageFlagBits::eFragment, "../../../../../shaders/frag.spv");
 
 	while (window.isWindowOpen()) {
 		window.pollEvents();

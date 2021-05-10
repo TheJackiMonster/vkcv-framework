@@ -1,14 +1,10 @@
 /**
- * @authors Simeon Hermann
+ * @authors Simeon Hermann, Leonie Franken
  * @file src/vkcv/ShaderProgram.cpp
  * @brief ShaderProgram class to handle and prepare the shader stages for a graphics pipeline
  */
 
 #include "ShaderProgram.hpp"
-#include <fstream>
-#include <iostream>
-
-
 
 std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
@@ -33,22 +29,17 @@ namespace vkcv {
 		return buffer;
 	}
 
-	VkShaderModule ShaderProgram::createShaderModule(const std::vector<char>& shaderCode) {
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = shaderCode.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderCode.data());
-
-		VkShaderModule shaderModule;
-		if (vkCreateShaderModule(m_context.getDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+	vk::ShaderModule ShaderProgram::createShaderModule(const std::vector<char>& shaderCode) {
+		vk::ShaderModuleCreateInfo createInfo({}, shaderCode.size(), reinterpret_cast<const uint32_t*>(shaderCode.data()));
+		vk::ShaderModule shaderModule;
+		if ((m_context.getDevice().createShaderModule(&createInfo, nullptr, &shaderModule)) != vk::Result::eSuccess) {
 			throw std::runtime_error("Failed to create shader module!");
 		}
 		return shaderModule;
 	}
 
-	VkPipelineShaderStageCreateInfo ShaderProgram::createShaderStage(VkShaderModule& shaderModule, VkShaderStageFlagBits shaderStage) {
-		VkPipelineShaderStageCreateInfo shaderStageInfo{};
-		shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vk::PipelineShaderStageCreateInfo ShaderProgram::createShaderStage(vk::ShaderModule& shaderModule, vk::ShaderStageFlagBits shaderStage) {
+		vk::PipelineShaderStageCreateInfo shaderStageInfo({}, shaderStage, shaderModule, "main", {});
 		shaderStageInfo.stage = shaderStage;
 		shaderStageInfo.module = shaderModule;
 		shaderStageInfo.pName = "main";
@@ -62,20 +53,20 @@ namespace vkcv {
 		return ShaderProgram(context);
 	}
 
-	void ShaderProgram::addShader(VkShaderStageFlagBits shaderStage, const std::string& filepath) {
+	void ShaderProgram::addShader(vk::ShaderStageFlagBits shaderStage, const std::string& filepath) {
 		if (containsShaderStage(shaderStage)) {
 			throw std::runtime_error("Shader program already contains this particular shader stage.");
 		}
 		else {
 			auto shaderCode = readFile(filepath);
-			VkShaderModule shaderModule = createShaderModule(shaderCode);
-			VkPipelineShaderStageCreateInfo shaderInfo = createShaderStage(shaderModule, shaderStage);
+			vk::ShaderModule shaderModule = createShaderModule(shaderCode);
+			vk::PipelineShaderStageCreateInfo shaderInfo = createShaderStage(shaderModule, shaderStage);
 			m_shaderStagesList.push_back(shaderInfo);
-			vkDestroyShaderModule(m_context.getDevice(), shaderModule, nullptr);
+			m_context.getDevice().destroyShaderModule(shaderModule, nullptr);
 		}
 	}
 
-	bool ShaderProgram::containsShaderStage(VkShaderStageFlagBits shaderStage) {
+	bool ShaderProgram::containsShaderStage(vk::ShaderStageFlagBits shaderStage) {
 		for (int i = 0; i < m_shaderStagesList.size(); i++) {
 			if (m_shaderStagesList[i].stage == shaderStage) {
 				return true;
@@ -84,7 +75,7 @@ namespace vkcv {
 		return false;
 	}
 
-	bool ShaderProgram::deleteShaderStage(VkShaderStageFlagBits shaderStage) {
+	bool ShaderProgram::deleteShaderStage(vk::ShaderStageFlagBits shaderStage) {
 		for (int i = 0; i < m_shaderStagesList.size() - 1; i++) {
 			if (m_shaderStagesList[i].stage == shaderStage) {
 				m_shaderStagesList.erase(m_shaderStagesList.begin() + i);
@@ -94,7 +85,7 @@ namespace vkcv {
 		return false;
 	}
 
-	std::vector<VkPipelineShaderStageCreateInfo> ShaderProgram::getShaderStages() {
+	std::vector<vk::PipelineShaderStageCreateInfo> ShaderProgram::getShaderStages() {
 		return m_shaderStagesList;
 	}
 
