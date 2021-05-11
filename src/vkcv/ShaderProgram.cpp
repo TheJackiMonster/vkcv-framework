@@ -13,9 +13,11 @@ std::vector<const char*> validationLayers = {
 
 namespace vkcv {
 
-	ShaderProgram::ShaderProgram(vkcv::Context& context)
-		: m_context(context) 
-	{}
+	ShaderProgram::ShaderProgram(){
+	    ShaderStages m_shaderStages{};
+	    m_shaderStages.shaderCode = std::vector<std::vector<char>> ();
+	    m_shaderStages.shaderStageFlag = std::vector<vk::ShaderStageFlagBits> ();
+	}
 
 	std::vector<char> ShaderProgram::readFile(const std::string& filepath) {
 		std::ifstream file(filepath, std::ios::ate | std::ios::binary);
@@ -49,20 +51,24 @@ namespace vkcv {
 	ShaderProgram::~ShaderProgram() {
 	}
 
-	ShaderProgram ShaderProgram::create(vkcv::Context& context) {
-		return ShaderProgram(context);
+	ShaderProgram ShaderProgram::create() {
+		return ShaderProgram();
 	}
 
+	//TODO: Enum übergeben statt ShaderStageFlagBits
 	void ShaderProgram::addShader(vk::ShaderStageFlagBits shaderStage, const std::string& filepath) {
 		if (containsShaderStage(shaderStage)) {
 			throw std::runtime_error("Shader program already contains this particular shader stage.");
 		}
 		else {
 			auto shaderCode = readFile(filepath);
-			vk::ShaderModule shaderModule = createShaderModule(shaderCode);
-			vk::PipelineShaderStageCreateInfo shaderInfo = createShaderStage(shaderModule, shaderStage);
-			m_shaderStagesList.push_back(shaderInfo);
-			m_context.getDevice().destroyShaderModule(shaderModule, nullptr);
+			//vk::ShaderModule shaderModule = createShaderModule(shaderCode);
+			//vk::PipelineShaderStageCreateInfo shaderInfo = createShaderStage(shaderModule, shaderStage);
+			//m_shaderStagesList.push_back(shaderInfo);
+			//m_context.getDevice().destroyShaderModule(shaderModule, nullptr);
+			m_shaderStages.shaderCode.push_back(shaderCode);
+			m_shaderStages.shaderStageFlag.push_back(shaderStage);
+
 		}
 	}
 
