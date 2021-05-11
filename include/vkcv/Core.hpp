@@ -6,8 +6,9 @@
 
 #include <vulkan/vulkan.hpp>
 #include "vkcv/Context.hpp"
+#include "vkcv/SwapChain.hpp"
+#include "vkcv/Window.hpp"
 #include "vkcv/Handles.hpp"
-#include <GLFW/glfw3.h>
 
 namespace vkcv
 {
@@ -25,11 +26,14 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        explicit Core(Context &&context) noexcept;
+        Core(Context &&context, const Window &window, SwapChain &swapChain) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
 
         Context m_Context;
+        SwapChain& m_swapchain;
+        const Window& m_window;
+
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
@@ -85,7 +89,8 @@ namespace vkcv
              * @param[in] deviceExtensions (optional) Requested device extensions
              * @return New instance of #Context
              */
-        static Core create(const char *applicationName,
+        static Core create(const Window &window,
+                           const char *applicationName,
                            uint32_t applicationVersion,
                            uint32_t queueCount,
                            std::vector<vk::QueueFlagBits> queueFlags    = {},
@@ -98,30 +103,4 @@ namespace vkcv
         PipelineHandle createPipeline(const Pipeline &pipeline);
 
     };
-
-    /**
-     * initializes glfw once and increases the counter
-     */
-    void initGLFW();
-
-    /**
-     * terminates glfw once, if it was initialized or decreases the counter
-     */
-    void terminateGLFW();
-
-    /**
-     * gets the window width
-     * @param window glfwWindow
-     * @return int with window width
-     */
-    [[nodiscard]]
-    int getWidth(GLFWwindow *window);
-
-    /**
-     * gets the window height
-     * @param window glfwWindow
-     * @return int with window height
-     */
-    [[nodiscard]]
-    int getHeight(GLFWwindow *window);
 }

@@ -3,9 +3,9 @@
 
 namespace vkcv {
 
-    SwapChain::SwapChain(vk::SurfaceKHR surface, const vkcv::Core* core, vk::SwapchainKHR swapchain)
-        : m_surface(surface), m_core(core), m_swapchain(swapchain)
-        {}
+    SwapChain::SwapChain(vk::SurfaceKHR surface, const vkcv::Context &context, vk::SwapchainKHR swapchain)
+        : m_surface(surface), m_context(context), m_swapchain(swapchain)
+    {}
 
     vk::SwapchainKHR SwapChain::getSwapchain() {
         return m_swapchain;
@@ -22,7 +22,7 @@ namespace vkcv {
         vk::Bool32 surfaceSupport = false;
         // ToDo: hierfuer brauchen wir jetzt den queuefamiliy Index -> siehe ToDo in Context.cpp
         // frage: nimmt die Swapchain automatisch den 0'ten Index (Graphics Queue Family)?
-        if (physicalDevice.getSurfaceSupportKHR(0, surface, &surfaceSupport) != vk::Result::eSuccess && surfaceSupport != true) {
+        if (physicalDevice.getSurfaceSupportKHR(0, vk::SurfaceKHR(surface), &surfaceSupport) != vk::Result::eSuccess && surfaceSupport != true) {
             throw std::runtime_error("surface is not supported by the device!");
         }
 
@@ -30,15 +30,15 @@ namespace vkcv {
     }
 
 
-    vk::Extent2D chooseSwapExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, GLFWwindow* window){
+    vk::Extent2D chooseSwapExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, const Window &window){
         vk::SurfaceCapabilitiesKHR surfaceCapabilities;
         if(physicalDevice.getSurfaceCapabilitiesKHR(surface,&surfaceCapabilities) != vk::Result::eSuccess){
             throw std::runtime_error("cannot get surface capabilities. There is an issue with the surface.");
         }
 
         VkExtent2D extent2D = {
-                static_cast<uint32_t>(vkcv::getWidth(window)),
-                static_cast<uint32_t>(vkcv::getHeight(window))
+                static_cast<uint32_t>(window.getWidth()),
+                static_cast<uint32_t>(window.getHeight())
         };
         extent2D.width = std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, extent2D.width));
         extent2D.height = std::max(surfaceCapabilities.minImageExtent.height, std::min(surfaceCapabilities.maxImageExtent.height, extent2D.height));
@@ -99,13 +99,12 @@ namespace vkcv {
         return imageCount;
     }
 
-    SwapChain SwapChain::create(GLFWwindow* window, const vkcv::Core* core) {
+    SwapChain SwapChain::create(const Window &window, const Context &context) {
+        const vk::Instance& instance = context.getInstance();
+        const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
+        const vk::Device& device = context.getDevice();
 
-        const vk::Instance& instance = core->getContext().getInstance();
-        const vk::PhysicalDevice& physicalDevice = core->getContext().getPhysicalDevice();
-        const vk::Device& device = core->getContext().getDevice();
-
-        vk::SurfaceKHR surface = createSurface(window,instance,physicalDevice);
+        vk::SurfaceKHR surface = createSurface(window.getWindow(),instance,physicalDevice);
 
         vk::Extent2D extent2D = chooseSwapExtent(physicalDevice, surface, window);
         vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(physicalDevice, surface);
@@ -133,14 +132,13 @@ namespace vkcv {
 
         vk::SwapchainKHR swapchain = device.createSwapchainKHR(swapchainCreateInfo);
 
-        return SwapChain(surface, core, swapchain);
-
+        return SwapChain(surface, context, swapchain);
     }
 
 
     SwapChain::~SwapChain() {
-        m_core->getContext().getDevice().destroySwapchainKHR( m_swapchain );
-        m_core->getContext().getInstance().destroySurfaceKHR( m_surface );
+        m_context.getDevice().destroySwapchainKHR( m_swapchain );
+        m_context.getInstance().destroySurfaceKHR( m_surface );
     }
 
 }

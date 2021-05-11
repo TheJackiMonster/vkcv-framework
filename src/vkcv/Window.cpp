@@ -11,20 +11,23 @@ namespace vkcv {
 
     static uint32_t s_WindowCount = 0;
 
-    Window::Window(GLFWwindow *window, const vkcv::SwapChain *swapChain)
-            : m_window(window), m_swapChain(swapChain) {
+    Window::Window(GLFWwindow *window)
+            : m_window(window) {
     }
 
     Window::~Window() {
         glfwDestroyWindow(m_window);
         s_WindowCount--;
 
-        terminateGLFW();
+        if(s_WindowCount == 0) {
+            glfwTerminate();
+        }
     }
 
-    Window Window::create(const vkcv::Core& core, const char *windowTitle, int width, int height, bool resizable) {
-        initGLFW();
-
+    Window Window::create( const char *windowTitle, int width, int height, bool resizable) {
+        if(s_WindowCount == 0) {
+            glfwInit();
+        }
         s_WindowCount++;
 
         width = std::max(width, 1);
@@ -35,11 +38,7 @@ namespace vkcv {
         GLFWwindow *window;
         window = glfwCreateWindow(width, height, windowTitle, nullptr, nullptr);
 
-       const vkcv::SwapChain swapChain = vkcv::SwapChain::create(
-                window,
-                &core);
-
-        return Window(window, &swapChain);
+        return Window(window);
     }
 
     bool Window::isWindowOpen() const {
@@ -48,6 +47,18 @@ namespace vkcv {
 
     void Window::pollEvents() {
         glfwPollEvents();
+    }
+
+    int Window::getWidth() const {
+        int width;
+        glfwGetWindowSize(m_window, &width, nullptr);
+        return width;
+    }
+
+    int Window::getHeight() const {
+        int height;
+        glfwGetWindowSize(m_window, nullptr, &height);
+        return height;
     }
 
     GLFWwindow *Window::getWindow() const {

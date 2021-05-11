@@ -1,7 +1,7 @@
 #pragma once
 #include "vulkan/vulkan.hpp"
-#include "Core.hpp"
-#include <GLFW/glfw3.h>
+#include "Context.hpp"
+#include "vkcv/Window.hpp"
 #include <iostream>
 
 
@@ -13,10 +13,10 @@ namespace vkcv {
     private:
 
         vk::SurfaceKHR m_surface;
-        const vkcv::Core* m_core;
+        const vkcv::Context& m_context;
 		vk::SwapchainKHR m_swapchain;
 		
-        SwapChain(vk::SurfaceKHR surface, const vkcv::Core* core, vk::SwapchainKHR swapchain);
+        SwapChain(vk::SurfaceKHR surface, const vkcv::Context &context, vk::SwapchainKHR swapchain);
 
     public:
         // bin mir grade unsicher wegen der Mehrfachinstanziierung der Klasse
@@ -31,7 +31,7 @@ namespace vkcv {
         [[nodiscard]]
         vk::SwapchainKHR getSwapchain();
 
-        static SwapChain create(GLFWwindow *window, const vkcv::Core* core);
+        static SwapChain create(const Window &window, const Context &context);
        
         virtual ~SwapChain();
     };

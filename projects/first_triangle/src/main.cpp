@@ -1,11 +1,18 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
-#include <vkcv/Window.hpp>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
-    
+
+    vkcv::Window window = vkcv::Window::create(
+            applicationName,
+            800,
+            600,
+            false
+    );
+
 	vkcv::Core core = vkcv::Core::create(
+            window,
             applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		20,
@@ -18,15 +25,6 @@ int main(int argc, const char** argv) {
 	const vk::Instance& instance = context.getInstance();
 	const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
 	const vk::Device& device = context.getDevice();
-	
-    vkcv::Window window = vkcv::Window::create(
-            core,
-            applicationName,
-            800,
-            600,
-            false
-    );
-
 
 	std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
 

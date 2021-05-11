@@ -178,14 +178,14 @@ namespace vkcv
         return -1;
     }
 
-    Core Core::create(const char *applicationName,
+    Core Core::create(const Window &window,
+                      const char *applicationName,
                       uint32_t applicationVersion,
                       uint32_t queueCount,
                       std::vector<vk::QueueFlagBits> queueFlags,
                       std::vector<const char *> instanceExtensions,
                       std::vector<const char *> deviceExtensions)
     {
-        vkcv::initGLFW();
         // check for layer support
 
         const std::vector<vk::LayerProperties>& layerProperties = vk::enumerateInstanceLayerProperties();
@@ -307,7 +307,8 @@ namespace vkcv
 
         Context context(instance, physicalDevice, device);
 
-        return Core(std::move(context));
+        SwapChain swapChain = SwapChain::create(window, context);
+        return Core(std::move(context) , window, swapChain);
     }
 
     const Context &Core::getContext() const
@@ -315,40 +316,9 @@ namespace vkcv
         return m_Context;
     }
 
-    Core::Core(Context &&context) noexcept :
-            m_Context(std::move(context))
+    Core::Core(Context &&context, const Window &window , SwapChain &swapChain) noexcept :
+            m_Context(std::move(context)),
+            m_window(window),
+            m_swapchain(swapChain)
     {}
-
-    int glfwCounter = 0;
-
-    void initGLFW() {
-
-        if (glfwCounter == 0) {
-            int glfwSuccess = glfwInit();
-
-            if (glfwSuccess == GLFW_FALSE) {
-                throw std::runtime_error("Could not initialize GLFW");
-            }
-        }
-        glfwCounter++;
-    }
-
-    void terminateGLFW() {
-        if (glfwCounter == 1) {
-            glfwTerminate();
-        }
-        glfwCounter--;
-    }
-
-    int getWidth(GLFWwindow *window)  {
-        int width;
-        glfwGetWindowSize(window, &width, nullptr);
-        return width;
-    }
-
-    int getHeight(GLFWwindow *window)  {
-        int height;
-        glfwGetWindowSize(window, nullptr, &height);
-        return height;
-    }
 }
