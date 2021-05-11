@@ -14,8 +14,9 @@ namespace vkcv {
 
         vk::SurfaceKHR m_surface;
         const vkcv::Core* m_core;
-
-        SwapChain(vk::SurfaceKHR surface, const vkcv::Core* core);
+		vk::SwapchainKHR m_swapchain;
+		
+        SwapChain(vk::SurfaceKHR surface, const vkcv::Core* core, vk::SwapchainKHR swapchain);
 
     public:
         // bin mir grade unsicher wegen der Mehrfachinstanziierung der Klasse
@@ -23,8 +24,15 @@ namespace vkcv {
         SwapChain(const SwapChain &other) = delete;
         SwapChain(SwapChain &&other) = default;
 
-        static SwapChain create(GLFWwindow *window, const vkcv::Core* core);
+        /**
+         * @return The swapchain linked with the #SwapChain class
+         * @note The reference to our Swapchain variable is needed for the recreation step
+         */
+        [[nodiscard]]
+        vk::SwapchainKHR getSwapchain();
 
+        static SwapChain create(GLFWwindow *window, const vkcv::Core* core);
+       
         virtual ~SwapChain();
     };
 

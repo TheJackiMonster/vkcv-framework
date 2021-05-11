@@ -3,23 +3,32 @@
 
 namespace vkcv {
 
-    SwapChain::SwapChain(vk::SurfaceKHR surface, const vkcv::Core* core)
-        : m_surface(surface), m_core(core)
+    SwapChain::SwapChain(vk::SurfaceKHR surface, const vkcv::Core* core, vk::SwapchainKHR swapchain)
+        : m_surface(surface), m_core(core), m_swapchain(swapchain)
         {}
+
+    vk::SwapchainKHR SwapChain::getSwapchain() {
+        return m_swapchain;
+    }
 
     vk::SurfaceKHR createSurface(GLFWwindow *window, const vk::Instance &instance, const vk::PhysicalDevice& physicalDevice) {
         //create surface
         VkSurfaceKHR surface;
         // 0 means VK_SUCCESS
         //std::cout << "FAIL:     " << glfwCreateWindowSurface(VkInstance(instance), window, nullptr, &newSurface) << std::endl;
-        if(glfwCreateWindowSurface(VkInstance(instance), window, nullptr, &surface) != VK_SUCCESS) {
+        if (glfwCreateWindowSurface(VkInstance(instance), window, nullptr, &surface) != VK_SUCCESS) {
             throw std::runtime_error("failed to create a window surface!");
         }
         vk::Bool32 surfaceSupport = false;
         // ToDo: hierfuer brauchen wir jetzt den queuefamiliy Index -> siehe ToDo in Context.cpp
-        //if(physicalDevice.getSurfaceSupportKHR())
+        // frage: nimmt die Swapchain automatisch den 0'ten Index (Graphics Queue Family)?
+        if (physicalDevice.getSurfaceSupportKHR(0, surface, &surfaceSupport) != vk::Result::eSuccess && surfaceSupport != true) {
+            throw std::runtime_error("surface is not supported by the device!");
+        }
+
         return vk::SurfaceKHR(surface);
     }
+
 
     vk::Extent2D chooseSwapExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, GLFWwindow* window){
         vk::SurfaceCapabilitiesKHR surfaceCapabilities;
@@ -75,7 +84,22 @@ namespace vkcv {
         return vk::PresentModeKHR::eFifo;
     }
 
-    SwapChain SwapChain::create(GLFWwindow* window, const vkcv::Core* core){
+    uint32_t chooseImageCount(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
+        vk::SurfaceCapabilitiesKHR surfaceCapabilities;
+        if(physicalDevice.getSurfaceCapabilitiesKHR(surface, &surfaceCapabilities) != vk::Result::eSuccess){
+            throw std::runtime_error("cannot get surface capabilities. There is an issue with the surface.");
+        }
+
+        uint32_t imageCount = surfaceCapabilities.minImageCount + 1;    // minImageCount should always be at least 2; set to 3 for triple buffering
+        // check if requested image count is supported
+        if (surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceCapabilities.maxImageCount) {
+            imageCount = surfaceCapabilities.maxImageCount;
+        }
+
+        return imageCount;
+    }
+
+    SwapChain SwapChain::create(GLFWwindow* window, const vkcv::Core* core) {
 
         const vk::Instance& instance = core->getContext().getInstance();
         const vk::PhysicalDevice& physicalDevice = core->getContext().getPhysicalDevice();
@@ -86,56 +110,37 @@ namespace vkcv {
         vk::Extent2D extent2D = chooseSwapExtent(physicalDevice, surface, window);
         vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(physicalDevice, surface);
         vk::PresentModeKHR presentMode = choosePresentMode(physicalDevice, surface);
+        uint32_t imageCount = chooseImageCount(physicalDevice, surface);
 
+        vk::SwapchainCreateInfoKHR swapchainCreateInfo(
+                vk::SwapchainCreateFlagsKHR(),  //flags
+                surface,    // surface
+                imageCount,  // minImageCount TODO: how many do we need for our application?? "must be less than or equal to the value returned in maxImageCount" -> 3 for Triple Buffering, else 2 for Double Buffering (should be the standard)
+                surfaceFormat.format,   // imageFormat
+                surfaceFormat.colorSpace,   // imageColorSpace
+                extent2D,   // imageExtent
+                1,  // imageArrayLayers TODO: should we only allow non-stereoscopic applications? yes -> 1, no -> ? "must be greater than 0, less or equal to maxImageArrayLayers"
+                vk::ImageUsageFlagBits::eColorAttachment,  // imageUsage TODO: what attachments? only color? depth?
+                vk::SharingMode::eExclusive,    // imageSharingMode TODO: which sharing mode? "VK_SHARING_MODE_EXCLUSIV access exclusive to a single queue family, better performance", "VK_SHARING_MODE_CONCURRENT access from multiple queues"
+                0,  // queueFamilyIndexCount, the number of queue families having access to the image(s) of the swapchain when imageSharingMode is VK_SHARING_MODE_CONCURRENT
+                nullptr,    // pQueueFamilyIndices, the pointer to an array of queue family indices having access to the images(s) of the swapchain when imageSharingMode is VK_SHARING_MODE_CONCURRENT
+                vk::SurfaceTransformFlagBitsKHR::eIdentity, // preTransform, transformations applied onto the image before display
+                vk::CompositeAlphaFlagBitsKHR::eOpaque, // compositeAlpha, TODO: how to handle transparent pixels? do we need transparency? If no -> opaque
+                presentMode,    // presentMode
+                true,   // clipped
+                nullptr // oldSwapchain
+        );
 
-//        vk::SwapchainCreateInfoKHR swapchainCreateInfo(
-//                vk::SwapchainCreateFlagBitsKHR()
-//                VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,  // VkStructureType                sType
-//                nullptr,                                      // const void                    *pNext
-//                0,                                            // VkSwapchainCreateFlagsKHR      flags
-//                surface,                   // VkSurfaceKHR                   surface
-//                desired_number_of_images,                     // uint32_t                       minImageCount
-//                desired_format.format,                        // VkFormat                       imageFormat
-//                desired_format.colorSpace,                    // VkColorSpaceKHR                imageColorSpace
-//                desired_extent,                               // VkExtent2D                     imageExtent
-//                1,                                            // uint32_t                       imageArrayLayers
-//                desired_usage,                                // VkImageUsageFlags              imageUsage
-//                VK_SHARING_MODE_EXCLUSIVE,                    // VkSharingMode                  imageSharingMode
-//                0,                                            // uint32_t                       queueFamilyIndexCount
-//                nullptr,                                      // const uint32_t                *pQueueFamilyIndices
-//                desired_transform,                            // VkSurfaceTransformFlagBitsKHR  preTransform
-//                VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,            // VkCompositeAlphaFlagBitsKHR    compositeAlpha
-//                desired_present_mode,                         // VkPresentModeKHR               presentMode
-//                VK_TRUE,                                      // VkBool32                       clipped
-//                old_swap_chain                                // VkSwapchainKHR                 oldSwapchain
-//        );
+        vk::SwapchainKHR swapchain = device.createSwapchainKHR(swapchainCreateInfo);
 
-//        vk::SwapchainCreateInfoKHR swapchainCreateInfo(
-//                vk::SwapchainCreateFlagsKHR(),  //flags
-//                surface, // surface
-//                surfaceCapabilities.minImageCount, // minImageCount TODO: how many do we need for our application?? "must be less than or equal to the value returned in maxImageCount"
-//                vk::Format::eB8G8R8A8Unorm,         // imageFormat  TODO: what image format should be used?
-//                vk::ColorSpaceKHR::eSrgbNonlinear, // imageColorSpace   TODO: which color space should be used?
-//                vk::Extent2D(width, height), // imageExtent
-//                1, // imageArrayLayers TODO: should we only allow non-stereoscopic applications? yes -> 1, no -> ? "must be greater than 0, less or equal to maxImageArrayLayers"
-//                vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment, // imageUsage   TODO: what attachments? only color? depth?
-//                vk::SharingMode::eExclusive, // imageSharingMode TODO: which sharing mode? "VK_SHARING_MODE_EXCLUSIV access exclusive to a single queue family, better performance", "VK_SHARING_MODE_CONCURRENT access from multiple queues"
-//                0, // queueFamilyIndexCount, the number of queue families having access to the image(s) of the swapchain when imageSharingMode is VK_SHARING_MODE_CONCURRENT
-//                nullptr, // pQueueFamilyIndices, the pointer to an array of queue family indices having access to the images(s) of the swapchain when imageSharingMode is VK_SHARING_MODE_CONCURRENT
-//                vk::SurfaceTransformFlagBitsKHR::eIdentity, // preTransform, transformations applied onto the image before display
-//                vk::CompositeAlphaFlagBitsKHR::eOpaque, // compositeAlpha, TODO: how to handle transparent pixels? do we need transparency? If no -> opaque
-//                vk::PresentModeKHR::eFifo, // presentMode
-//                true, // clipped
-//                nullptr // oldSwapchain
-//        );
-
-        return SwapChain(surface, core);
+        return SwapChain(surface, core, swapchain);
 
     }
 
+
     SwapChain::~SwapChain() {
-//      m_context->getDevice().destroySwapchainKHR( m_swapChain );
-      m_core->getContext().getInstance().destroySurfaceKHR( m_surface );
+        m_core->getContext().getDevice().destroySwapchainKHR( m_swapchain );
+        m_core->getContext().getInstance().destroySurfaceKHR( m_surface );
     }
 
 }
