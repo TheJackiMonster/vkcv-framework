@@ -9,6 +9,9 @@
 #include <GLFW/glfw3.h>
 #include "SwapChain.hpp"
 
+#define NOMINMAX
+#include <algorithm>
+
 namespace vkcv {
     class Window final {
     private:

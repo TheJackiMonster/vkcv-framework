@@ -4,23 +4,31 @@
  * @brief Window class to handle a basic rendering surface and input
  */
 
-#include "Window.hpp"
-#include "CoreManager.hpp"
+#include "vkcv/Window.hpp"
 
 
 namespace vkcv {
 
+    static uint32_t s_WindowCount = 0;
+
     Window::Window(GLFWwindow *window, const vkcv::SwapChain *swapChain)
-            : m_window(window), m_swapChain(swapChain){
+            : m_window(window), m_swapChain(swapChain) {
     }
 
     Window::~Window() {
         glfwDestroyWindow(m_window);
-        vkcv::terminateGLFW();
+        s_WindowCount--;
+
+        if(s_WindowCount == 0)
+            glfwTerminate();
     }
 
-    Window Window::create(const vkcv::Context& context ,const char *windowTitle, int width, int height, bool resizable) {
-        vkcv::initGLFW();
+    Window Window::create(const char *windowTitle, int width, int height, bool resizable) {
+        if(s_WindowCount == 0)
+            glfwInit();
+
+        s_WindowCount++;
+
         width = std::max(width, 1);
         height = std::max(height, 1);
 

@@ -1,5 +1,4 @@
-#include "SwapChain.hpp"
-#include "CoreManager.hpp"
+#include "/vkcv/SwapChain.hpp"
 
 namespace vkcv {
 
