@@ -7,6 +7,7 @@
 #include <vulkan/vulkan.hpp>
 #include "vkcv/Context.hpp"
 #include "vkcv/Handles.hpp"
+#include <GLFW/glfw3.h>
 
 namespace vkcv
 {
@@ -97,4 +98,30 @@ namespace vkcv
         PipelineHandle createPipeline(const Pipeline &pipeline);
 
     };
+
+    /**
+     * initializes glfw once and increases the counter
+     */
+    void initGLFW();
+
+    /**
+     * terminates glfw once, if it was initialized or decreases the counter
+     */
+    void terminateGLFW();
+
+    /**
+     * gets the window width
+     * @param window glfwWindow
+     * @return int with window width
+     */
+    [[nodiscard]]
+    int getWidth(GLFWwindow *window);
+
+    /**
+     * gets the window height
+     * @param window glfwWindow
+     * @return int with window height
+     */
+    [[nodiscard]]
+    int getHeight(GLFWwindow *window);
 }

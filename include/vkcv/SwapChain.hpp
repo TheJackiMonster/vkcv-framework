@@ -1,6 +1,6 @@
 #pragma once
 #include "vulkan/vulkan.hpp"
-#include "Context.hpp"
+#include "Core.hpp"
 #include <GLFW/glfw3.h>
 #include <iostream>
 
@@ -13,15 +13,9 @@ namespace vkcv {
     private:
 
         vk::SurfaceKHR m_surface;
-        const vkcv::Context* m_context;
+        const vkcv::Core* m_core;
 
-        SwapChain(vk::SurfaceKHR surface, const vkcv::Context* context);
-
-        static vk::SurfaceFormatKHR chooseSwapSurfaceFormat(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
-
-        static vk::PresentModeKHR choosePresentMode(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
-
-        static vk::Extent2D chooseSwapExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, GLFWwindow* window );
+        SwapChain(vk::SurfaceKHR surface, const vkcv::Core* core);
 
     public:
         // bin mir grade unsicher wegen der Mehrfachinstanziierung der Klasse
@@ -29,8 +23,7 @@ namespace vkcv {
         SwapChain(const SwapChain &other) = delete;
         SwapChain(SwapChain &&other) = default;
 
-        static SwapChain create(GLFWwindow *window, const vkcv::Context* Context);
-        static vk::SurfaceKHR createSurface(GLFWwindow *window, const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice);
+        static SwapChain create(GLFWwindow *window, const vkcv::Core* core);
 
         virtual ~SwapChain();
     };

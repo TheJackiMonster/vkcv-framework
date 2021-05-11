@@ -20,7 +20,7 @@ int main(int argc, const char** argv) {
 	const vk::Device& device = context.getDevice();
 	
     vkcv::Window window = vkcv::Window::create(
-            context,
+            core,
             applicationName,
             800,
             600,

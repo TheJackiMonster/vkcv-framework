@@ -1,16 +1,85 @@
-#include "/vkcv/SwapChain.hpp"
+
+#include <vkcv/SwapChain.hpp>
 
 namespace vkcv {
 
-    SwapChain::SwapChain(vk::SurfaceKHR surface, const vkcv::Context* context)
-        : m_surface(surface), m_context(context)
+    SwapChain::SwapChain(vk::SurfaceKHR surface, const vkcv::Core* core)
+        : m_surface(surface), m_core(core)
         {}
 
-    SwapChain SwapChain::create(GLFWwindow* window, const vkcv::Context* context){
+    vk::SurfaceKHR createSurface(GLFWwindow *window, const vk::Instance &instance, const vk::PhysicalDevice& physicalDevice) {
+        //create surface
+        VkSurfaceKHR surface;
+        // 0 means VK_SUCCESS
+        //std::cout << "FAIL:     " << glfwCreateWindowSurface(VkInstance(instance), window, nullptr, &newSurface) << std::endl;
+        if(glfwCreateWindowSurface(VkInstance(instance), window, nullptr, &surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create a window surface!");
+        }
+        vk::Bool32 surfaceSupport = false;
+        // ToDo: hierfuer brauchen wir jetzt den queuefamiliy Index -> siehe ToDo in Context.cpp
+        //if(physicalDevice.getSurfaceSupportKHR())
+        return vk::SurfaceKHR(surface);
+    }
 
-        const vk::Instance& instance = context->getInstance();
-        const vk::PhysicalDevice& physicalDevice = context->getPhysicalDevice();
-        const vk::Device& device = context->getDevice();
+    vk::Extent2D chooseSwapExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, GLFWwindow* window){
+        vk::SurfaceCapabilitiesKHR surfaceCapabilities;
+        if(physicalDevice.getSurfaceCapabilitiesKHR(surface,&surfaceCapabilities) != vk::Result::eSuccess){
+            throw std::runtime_error("cannot get surface capabilities. There is an issue with the surface.");
+        }
+
+        VkExtent2D extent2D = {
+                static_cast<uint32_t>(vkcv::getWidth(window)),
+                static_cast<uint32_t>(vkcv::getHeight(window))
+        };
+        extent2D.width = std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, extent2D.width));
+        extent2D.height = std::max(surfaceCapabilities.minImageExtent.height, std::min(surfaceCapabilities.maxImageExtent.height, extent2D.height));
+
+        if (extent2D.width > surfaceCapabilities.maxImageExtent.width ||
+            extent2D.width < surfaceCapabilities.minImageExtent.width ||
+            extent2D.height > surfaceCapabilities.maxImageExtent.height ||
+            extent2D.height < surfaceCapabilities.minImageExtent.height) {
+            std::printf("Surface size not matching. Resizing to allowed value.");
+        }
+        return extent2D;
+    }
+
+    vk::SurfaceFormatKHR chooseSwapSurfaceFormat(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
+        uint32_t formatCount;
+        physicalDevice.getSurfaceFormatsKHR(surface, &formatCount, nullptr);
+        std::vector<vk::SurfaceFormatKHR> availableFormats(formatCount);
+        if (physicalDevice.getSurfaceFormatsKHR(surface, &formatCount, &availableFormats[0]) != vk::Result::eSuccess) {
+            throw std::runtime_error("Failed to get surface formats");
+        }
+
+        for (const auto& availableFormat : availableFormats) {
+            if (availableFormat.format == vk::Format::eB8G8R8A8Unorm  && availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
+                return availableFormat;
+            }
+        }
+        return availableFormats[0];
+    }
+
+    vk::PresentModeKHR choosePresentMode(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
+        uint32_t modeCount;
+        physicalDevice.getSurfacePresentModesKHR( surface, &modeCount, nullptr );
+        std::vector<vk::PresentModeKHR> availablePresentModes(modeCount);
+        if (physicalDevice.getSurfacePresentModesKHR(surface, &modeCount, &availablePresentModes[0]) != vk::Result::eSuccess) {
+            throw std::runtime_error("Failed to get presentation modes");
+        }
+
+        for (const auto& availablePresentMode : availablePresentModes) {
+            if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
+                return availablePresentMode;
+            }
+        }
+        return vk::PresentModeKHR::eFifo;
+    }
+
+    SwapChain SwapChain::create(GLFWwindow* window, const vkcv::Core* core){
+
+        const vk::Instance& instance = core->getContext().getInstance();
+        const vk::PhysicalDevice& physicalDevice = core->getContext().getPhysicalDevice();
+        const vk::Device& device = core->getContext().getDevice();
 
         vk::SurfaceKHR surface = createSurface(window,instance,physicalDevice);
 
@@ -60,81 +129,13 @@ namespace vkcv {
 //                nullptr // oldSwapchain
 //        );
 
-        return SwapChain(surface, context);
+        return SwapChain(surface, core);
 
-    }
-
-    vk::SurfaceKHR SwapChain::createSurface(GLFWwindow *window, const vk::Instance &instance, const vk::PhysicalDevice& physicalDevice) {
-         //create surface
-         VkSurfaceKHR surface;
-         // 0 means VK_SUCCESS
-         //std::cout << "FAIL:     " << glfwCreateWindowSurface(VkInstance(instance), window, nullptr, &newSurface) << std::endl;
-         if(glfwCreateWindowSurface(VkInstance(instance), window, nullptr, &surface) != VK_SUCCESS) {
-             throw std::runtime_error("failed to create a window surface!");
-         }
-         vk::Bool32 surfaceSupport = false;
-         // ToDo: hierfuer brauchen wir jetzt den queuefamiliy Index -> siehe ToDo in Context.cpp
-         //if(physicalDevice.getSurfaceSupportKHR())
-        return vk::SurfaceKHR(surface);
-    }
-
-    vk::Extent2D SwapChain::chooseSwapExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, GLFWwindow* window){
-        vk::SurfaceCapabilitiesKHR surfaceCapabilities;
-        if(physicalDevice.getSurfaceCapabilitiesKHR(surface,&surfaceCapabilities) != vk::Result::eSuccess){
-            throw std::runtime_error("cannot get surface capabilities. There is an issue with the surface.");
-        }
-
-        VkExtent2D extent2D = {
-                static_cast<uint32_t>(vkcv::getWidth(window)),
-                static_cast<uint32_t>(vkcv::getHeight(window))
-        };
-        extent2D.width = std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, extent2D.width));
-        extent2D.height = std::max(surfaceCapabilities.minImageExtent.height, std::min(surfaceCapabilities.maxImageExtent.height, extent2D.height));
-
-        if (extent2D.width > surfaceCapabilities.maxImageExtent.width ||
-            extent2D.width < surfaceCapabilities.minImageExtent.width ||
-            extent2D.height > surfaceCapabilities.maxImageExtent.height ||
-            extent2D.height < surfaceCapabilities.minImageExtent.height) {
-            std::printf("Surface size not matching. Resizing to allowed value.");
-        }
-        return extent2D;
-    }
-
-    vk::SurfaceFormatKHR SwapChain::chooseSwapSurfaceFormat(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
-        uint32_t formatCount;
-        physicalDevice.getSurfaceFormatsKHR(surface, &formatCount, nullptr);
-        std::vector<vk::SurfaceFormatKHR> availableFormats(formatCount);
-        if (physicalDevice.getSurfaceFormatsKHR(surface, &formatCount, &availableFormats[0]) != vk::Result::eSuccess) {
-            throw std::runtime_error("Failed to get surface formats");
-        }
-
-        for (const auto& availableFormat : availableFormats) {
-            if (availableFormat.format == vk::Format::eB8G8R8A8Unorm  && availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
-                return availableFormat;
-            }
-        }
-        return availableFormats[0];
-    }
-
-    vk::PresentModeKHR SwapChain::choosePresentMode(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
-        uint32_t modeCount;
-        physicalDevice.getSurfacePresentModesKHR( surface, &modeCount, nullptr );
-        std::vector<vk::PresentModeKHR> availablePresentModes(modeCount);
-        if (physicalDevice.getSurfacePresentModesKHR(surface, &modeCount, &availablePresentModes[0]) != vk::Result::eSuccess) {
-            throw std::runtime_error("Failed to get presentation modes");
-        }
-
-        for (const auto& availablePresentMode : availablePresentModes) {
-            if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
-                return availablePresentMode;
-            }
-        }
-        return vk::PresentModeKHR::eFifo;
     }
 
     SwapChain::~SwapChain() {
 //      m_context->getDevice().destroySwapchainKHR( m_swapChain );
-      m_context->getInstance().destroySurfaceKHR( m_surface );
+      m_core->getContext().getInstance().destroySurfaceKHR( m_surface );
     }
 
 }

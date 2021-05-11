@@ -19,13 +19,11 @@ namespace vkcv {
         glfwDestroyWindow(m_window);
         s_WindowCount--;
 
-        if(s_WindowCount == 0)
-            glfwTerminate();
+        terminateGLFW();
     }
 
-    Window Window::create(const char *windowTitle, int width, int height, bool resizable) {
-        if(s_WindowCount == 0)
-            glfwInit();
+    Window Window::create(const vkcv::Core& core, const char *windowTitle, int width, int height, bool resizable) {
+        initGLFW();
 
         s_WindowCount++;
 
@@ -39,7 +37,7 @@ namespace vkcv {
 
        const vkcv::SwapChain swapChain = vkcv::SwapChain::create(
                 window,
-                &context);
+                &core);
 
         return Window(window, &swapChain);
     }

@@ -34,7 +34,7 @@ namespace vkcv {
          * @param[in] resizable resize ability of the window (optional)
          * @return Window class
          */
-        static Window create(const vkcv::Context& context, const char *windowTitle, int width = -1, int height = -1, bool resizable = false);
+        static Window create(const vkcv::Core& core, const char *windowTitle, int width = -1, int height = -1, bool resizable = false);
         /**
          * checks if the window is still open, or the close event was called
          * This function should be changed/removed later on
