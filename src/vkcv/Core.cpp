@@ -262,64 +262,12 @@ namespace vkcv
         return Core(std::move(context));
     }
 
-    const Core::Context &Core::getContext() const
+    const Context &Core::getContext() const
     {
         return m_Context;
     }
 
-    Core::Core(Core::Context &&context) noexcept :
+    Core::Core(Context &&context) noexcept :
             m_Context(std::move(context))
     {}
-
-    Core::Context::Context(vk::Instance instance,
-                           vk::PhysicalDevice physicalDevice,
-                           vk::Device device) noexcept :
-    m_Instance{instance},
-    m_PhysicalDevice{physicalDevice},
-    m_Device{device}
-    {}
-
-    Core::Context::~Context() noexcept
-    {
-        m_Device.destroy();
-        m_Instance.destroy();
-    }
-
-    const vk::Instance &Core::Context::getInstance() const
-    {
-        return m_Instance;
-    }
-
-    const vk::PhysicalDevice &Core::Context::getPhysicalDevice() const
-    {
-        return m_PhysicalDevice;
-    }
-
-    const vk::Device &Core::Context::getDevice() const
-    {
-        return m_Device;
-    }
-
-    Core::Context::Context(Core::Context &&other) noexcept:
-    m_Instance(other.m_Instance),
-    m_PhysicalDevice(other.m_PhysicalDevice),
-    m_Device(other.m_Device)
-    {
-        other.m_Instance        = nullptr;
-        other.m_PhysicalDevice  = nullptr;
-        other.m_Device          = nullptr;
-    }
-
-    Core::Context &Core::Context::operator=(Core::Context &&other) noexcept
-    {
-        m_Instance          = other.m_Instance;
-        m_PhysicalDevice    = other.m_PhysicalDevice;
-        m_Device            = other.m_Device;
-
-        other.m_Instance        = nullptr;
-        other.m_PhysicalDevice  = nullptr;
-        other.m_Device          = nullptr;
-
-        return *this;
-    }
 }

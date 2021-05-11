@@ -5,6 +5,7 @@
  */
 
 #include <vulkan/vulkan.hpp>
+#include "vkcv/Context.hpp"
 #include "vkcv/Handles.hpp"
 
 namespace vkcv
@@ -17,37 +18,6 @@ namespace vkcv
     class Core final
     {
     private:
-        class Context
-        {
-        public:
-            /**
-             * Constructor of #Context requires an @p instance, a @p physicalDevice and a @p device.
-             *
-             * @param instance Vulkan-Instance
-             * @param physicalDevice Vulkan-PhysicalDevice
-             * @param device Vulkan-Device
-             */
-            Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device) noexcept;
-            // explicit destruction of default constructor
-            Context() = delete;
-            // is never called directly
-            ~Context() noexcept;
-
-            Context(const Context &other) = delete; // copy-ctor
-            Context(Context &&other) noexcept; // move-ctor
-
-            Context & operator=(const Context &other) = delete; // copy assignment
-            Context & operator=(Context &&other) noexcept; // move assignment
-
-            const vk::Instance &getInstance() const;
-            const vk::PhysicalDevice &getPhysicalDevice() const;
-            const vk::Device &getDevice() const;
-
-        private:
-            vk::Instance        m_Instance;
-            vk::PhysicalDevice  m_PhysicalDevice;
-            vk::Device          m_Device;
-        } m_Context;
 
         /**
          * Constructor of #Core requires an @p context.
@@ -58,6 +28,7 @@ namespace vkcv
         // explicit destruction of default constructor
         Core() = delete;
 
+        Context m_Context;
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
