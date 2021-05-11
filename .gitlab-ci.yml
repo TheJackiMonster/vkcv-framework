@@ -1,0 +1,27 @@
+build_ubuntu_gcc:
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  stage: build
+  tags: 
+    - ubuntu-gcc
+  script:
+    - mkdir debug
+    - cd debug
+    - cmake -DCMAKE_BUILD_TYPE=Debug ..
+    - cmake --build .
+
+build_win10_msvc:
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  stage: build
+  tags: 
+    - win10-msvc
+  script:
+    - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
+    - .\Launch-VsDevShell.ps1
+    - cd $CI_PROJECT_DIR
+    - mkdir debug
+    - cd debug
+   # - cmake -DCMAKE_BUILD_TYPE=Debug .. # Debug Modus derzeit deaktiviert, da das Buildlog die maximale Größe von Gitlab überschreitet, wegen Warnings in Vulkan.hpp
+    - cmake ..
+    - cmake --build .

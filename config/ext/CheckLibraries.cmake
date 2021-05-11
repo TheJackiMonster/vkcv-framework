@@ -1,6 +1,8 @@
 
+# cleanup of dependency libraries
 list(REMOVE_DUPLICATES vkcv_libraries)
 
+# fixing paths of libraries to work on most Linux distros
 foreach (a_lib IN LISTS vkcv_libraries)
     if (NOT EXISTS "${a_lib}")
         string(REGEX MATCH ^/usr/lib/x86_64-linux-gnu/.*$ vkcv_usr_lib_u_match ${a_lib})
