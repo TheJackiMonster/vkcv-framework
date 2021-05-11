@@ -5,9 +5,10 @@
  */
 
 #include "vkcv/Window.hpp"
-#include "CoreManager.hpp"
 
 namespace vkcv {
+
+    static uint32_t s_WindowCount = 0;
 
     Window::Window(GLFWwindow *window)
             : m_window(window) {
@@ -15,11 +16,18 @@ namespace vkcv {
 
     Window::~Window() {
         glfwDestroyWindow(m_window);
-        vkcv::terminateGLFW();
+        s_WindowCount--;
+
+        if(s_WindowCount == 0)
+            glfwTerminate();
     }
 
     Window Window::create(const char *windowTitle, int width, int height, bool resizable) {
-        vkcv::initGLFW();
+        if(s_WindowCount == 0)
+            glfwInit();
+
+        s_WindowCount++;
+
         width = std::max(width, 1);
         height = std::max(height, 1);
 
@@ -28,6 +36,8 @@ namespace vkcv {
         GLFWwindow *window;
         window = glfwCreateWindow(width, height, windowTitle, nullptr, nullptr);
         return Window(window);
+
+
     }
 
     bool Window::isWindowOpen() const {
