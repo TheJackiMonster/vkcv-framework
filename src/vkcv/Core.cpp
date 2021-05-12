@@ -8,6 +8,51 @@
 
 namespace vkcv
 {
+    static vk::ImageLayout getVkLayoutFromAttachLayout(AttachmentLayout layout)
+    {
+        switch(layout)
+        {
+            case AttachmentLayout::GENERAL:
+                return vk::ImageLayout::eGeneral;
+            case AttachmentLayout::COLOR_ATTACHMENT:
+                return vk::ImageLayout::eColorAttachmentOptimal;
+            case AttachmentLayout::SHADER_READ_ONLY:
+                return vk::ImageLayout::eShaderReadOnlyOptimal;
+            case AttachmentLayout::DEPTH_STENCIL_ATTACHMENT:
+                return vk::ImageLayout::eDepthStencilAttachmentOptimal;
+            case AttachmentLayout::DEPTH_STENCIL_READ_ONLY:
+                return vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+            case AttachmentLayout::PRESENTATION:
+                return vk::ImageLayout::ePresentSrcKHR;
+            default:
+                return vk::ImageLayout::eUndefined;
+        }
+    }
+
+    static vk::AttachmentStoreOp getVkStoreOpFromAttachOp(AttachmentOperation op)
+    {
+        switch(op)
+        {
+            case AttachmentOperation::STORE:
+                return vk::AttachmentStoreOp::eStore;
+            default:
+                return vk::AttachmentStoreOp::eDontCare;
+        }
+    }
+
+    static vk::AttachmentLoadOp getVKLoadOpFromAttachOp(AttachmentOperation op)
+    {
+        switch(op)
+        {
+            case AttachmentOperation::LOAD:
+                return vk::AttachmentLoadOp::eLoad;
+            case AttachmentOperation::CLEAR:
+                return vk::AttachmentLoadOp::eClear;
+            default:
+                return vk::AttachmentLoadOp::eDontCare;
+        }
+    }
+
     /**
      * @brief The physical device is evaluated by three categories:
      * discrete GPU vs. integrated GPU, amount of queues and its abilities, and VRAM.physicalDevice.
@@ -268,6 +313,85 @@ namespace vkcv
     }
 
     Core::Core(Context &&context) noexcept :
-            m_Context(std::move(context))
+            m_Context(std::move(context)),
+            m_NextPassId(0),
+            m_Renderpasses{}
     {}
+
+    Core::~Core() noexcept
+    {
+        for(const auto &pass : m_Renderpasses)
+            m_Context.m_Device.destroy(pass);
+        m_Renderpasses.clear();
+        m_NextPassId = 0;
+    }
+
+    bool Core::createRenderpass(const Renderpass &pass, RenderpassHandle &handle)
+    {
+        // description of all {color, input, depth/stencil} attachments of the render pass
+        std::vector<vk::AttachmentDescription> attachmentDescriptions{};
+
+        // individual references to color attachments (of a subpass)
+        std::vector<vk::AttachmentReference> colorAttachmentReferences{};
+        // individual reference to depth attachment (of a subpass)
+        vk::AttachmentReference depthAttachmentReference{};
+
+        for(uint32_t i = 0; i < pass.attachments.size(); i++)
+        {
+            // TODO: Renderpass struct should hold proper format information
+            vk::Format format;
+
+            if(pass.attachments[i].layout_in_pass == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT)
+            {
+                format = vk::Format::eD16Unorm; // depth attachments;
+
+                depthAttachmentReference.attachment = i;
+                depthAttachmentReference.layout = getVkLayoutFromAttachLayout(pass.attachments[i].layout_in_pass);
+            }
+            else
+            {
+                format = vk::Format::eB8G8R8A8Srgb; // color attachments, compatible with swapchain
+                vk::AttachmentReference attachmentRef(i, getVkLayoutFromAttachLayout(pass.attachments[i].layout_in_pass));
+                colorAttachmentReferences.push_back(attachmentRef);
+            }
+
+            vk::AttachmentDescription attachmentDesc({},
+                                                     format,
+                                                     vk::SampleCountFlagBits::e1,
+                                                     getVKLoadOpFromAttachOp(pass.attachments[i].load_operation),
+                                                     getVkStoreOpFromAttachOp(pass.attachments[i].load_operation),
+                                                     vk::AttachmentLoadOp::eDontCare,
+                                                     vk::AttachmentStoreOp::eDontCare,
+                                                     getVkLayoutFromAttachLayout(pass.attachments[i].layout_initial),
+                                                     getVkLayoutFromAttachLayout(pass.attachments[i].layout_final));
+            attachmentDescriptions.push_back(attachmentDesc);
+        }
+
+        vk::SubpassDescription subpassDescription({},
+                                           vk::PipelineBindPoint::eGraphics,
+                                           0,
+                                           {},
+                                           static_cast<uint32_t>(colorAttachmentReferences.size()),
+                                           colorAttachmentReferences.data(),
+                                           {},
+                                           &depthAttachmentReference,
+                                           0,
+                                           {});
+
+        vk::RenderPassCreateInfo passInfo({},
+                                          static_cast<uint32_t>(attachmentDescriptions.size()),
+                                          attachmentDescriptions.data(),
+                                          1,
+                                          &subpassDescription,
+                                          0,
+                                          {});
+
+        vk::RenderPass vkObject{nullptr};
+        if(m_Context.m_Device.createRenderPass(&passInfo, nullptr, &vkObject) != vk::Result::eSuccess)
+            return false;
+
+        m_Renderpasses.push_back(vkObject);
+        handle.id = m_NextPassId++;
+        return true;
+    }
 }

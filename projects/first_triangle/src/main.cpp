@@ -33,6 +33,38 @@ int main(int argc, const char** argv) {
 		default: std::cout << "Unknown GPU vendor?! Either you're on an exotic system or your driver is broken..." << std::endl;
 	}
 
+    // an example attachment for passes that output to the window
+	vkcv::AttachmentDescription present_color_attachment(vkcv::AttachmentLayout::UNDEFINED,
+                                                    vkcv::AttachmentLayout::COLOR_ATTACHMENT,
+                                                    vkcv::AttachmentLayout::PRESENTATION,
+                                                    vkcv::AttachmentOperation::STORE,
+                                                    vkcv::AttachmentOperation::CLEAR);
+    // an example attachment for passes that output to a depth buffer
+	vkcv::AttachmentDescription present_depth_attachment(vkcv::AttachmentLayout::UNDEFINED,
+                                                    vkcv::AttachmentLayout::DEPTH_STENCIL_ATTACHMENT,
+                                                    vkcv::AttachmentLayout::DEPTH_STENCIL_READ_ONLY,
+                                                    vkcv::AttachmentOperation::STORE,
+                                                    vkcv::AttachmentOperation::CLEAR);
+
+	// this pass will output to the window, and produce a depth buffer
+	vkcv::Renderpass test_pass{};
+	test_pass.attachments.push_back(present_color_attachment);
+	test_pass.attachments.push_back(present_depth_attachment);
+
+	std::vector<vkcv::RenderpassHandle> test_handles{};
+    // render pass creation test
+    for(uint32_t i = 0; i < 1000; i++)
+    {
+        vkcv::RenderpassHandle tmp_handle{};
+        if(!core.createRenderpass(test_pass, tmp_handle))
+        {
+            std::cout << "Oops. Something went wrong in the renderpass creation. Exiting." << std::endl;
+            return EXIT_FAILURE;
+        }
+        test_handles.push_back(tmp_handle);
+    }
+    std::cout << "Wow. You just made 1000 render passes. (That are all identical, though...)" << std::endl;
+
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
 	 * BufferHandle triangleIndices = core.createBuffer(indices);

@@ -7,6 +7,9 @@ set(vkcv_sources
 		${vkcv_include}/vkcv/Core.hpp
 		${vkcv_source}/vkcv/Core.cpp
 
+		${vkcv_include}/vkcv/Renderpass.hpp
+		${vkcv_source}/vkcv/Renderpass.cpp
+
 		${vkcv_include}/vkcv/Handles.hpp
 		${vkcv_source}/vkcv/Handles.cpp
 

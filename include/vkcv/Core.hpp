@@ -6,6 +6,7 @@
 
 #include <vulkan/vulkan.hpp>
 #include "vkcv/Context.hpp"
+#include "vkcv/Renderpass.hpp"
 #include "vkcv/Handles.hpp"
 
 namespace vkcv
@@ -29,11 +30,15 @@ namespace vkcv
         Core() = delete;
 
         Context m_Context;
+
+        uint64_t m_NextPassId;
+        std::vector<vk::RenderPass> m_Renderpasses;
+
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
          */
-        ~Core() noexcept = default;
+        ~Core() noexcept;
 
         /**
          * Copy-constructor of #Core is deleted!
@@ -93,7 +98,11 @@ namespace vkcv
 
         // TODO:
         BufferHandle createBuffer(const Buffer &buf);
-        PassHandle createRenderPass(const Renderpass &pass) ;
+
+        [[nodiscard]]
+        bool createRenderpass(const Renderpass &pass, RenderpassHandle &handle);
+
+        // TODO:
         PipelineHandle createPipeline(const Pipeline &pipeline);
 
     };
