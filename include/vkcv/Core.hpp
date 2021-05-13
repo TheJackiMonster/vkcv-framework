@@ -99,10 +99,19 @@ namespace vkcv
                            std::vector<const char*> instanceExtensions  = {},
                            std::vector<const char*> deviceExtensions    = {});
 
+        /**
+         * Creates a basic vulkan graphics pipeline using @p pipeline from the pipeline class and returns it using the @p handle.
+         * Fixed Functions for pipeline are set with standard values.
+         *
+         * @param pipeline a pipeline object from the pipeline class
+         * @param handle a handle to return the created vulkan handle
+         * @return True if Pipeline creation was successfull, False if not
+         */
+        bool createPipeline(const Pipeline &pipeline, PipelineHandle &handle);
+
         // TODO:
         BufferHandle createBuffer(const Buffer &buf);
         PassHandle createRenderPass(const Renderpass &pass) ;
-        bool createPipeline(const Pipeline &pipeline, PipelineHandle &handle);
 
     };
 }

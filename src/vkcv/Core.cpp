@@ -281,29 +281,49 @@ namespace vkcv
         // vertex shader stage
         vk::ShaderModuleCreateInfo vertexModuleInfo({},pipeline.m_vertexCode.size(), pipeline.m_vertexCode.data());
         vk::ShaderModule vertexModule{};
-        if(m_Context.m_Device.createShaderModule(&vertexModuleInfo, nullptr, &vertexModule) != vk::Result::eSuccess){
+        if(m_Context.m_Device.createShaderModule(&vertexModuleInfo, nullptr, &vertexModule) != vk::Result::eSuccess)
             return false;
-        };
-        vk::PipelineShaderStageCreateInfo pipelineVertexShaderStageInfo({}, vk::ShaderStageFlagBits::eVertex,vertexModule, "main",
-                                                                        nullptr);
+
+        vk::PipelineShaderStageCreateInfo pipelineVertexShaderStageInfo(
+                {},
+                vk::ShaderStageFlagBits::eVertex,
+                vertexModule,
+                "main",
+                nullptr
+                );
 
         // fragment shader stage
         vk::ShaderModuleCreateInfo fragmentModuleInfo({},pipeline.m_fragCode.size(), pipeline.m_fragCode.data());
         vk::ShaderModule fragmentModule{};
-        if(m_Context.m_Device.createShaderModule(&fragmentModuleInfo, nullptr, &fragmentModule) != vk::Result::eSuccess){
+        if(m_Context.m_Device.createShaderModule(&fragmentModuleInfo, nullptr, &fragmentModule) != vk::Result::eSuccess)
             return false;
-        };
-        vk::PipelineShaderStageCreateInfo pipelineFragmentShaderStageInfo({}, vk::ShaderStageFlagBits::eFragment,fragmentModule, "main",
-                                                                        nullptr);
+
+        vk::PipelineShaderStageCreateInfo pipelineFragmentShaderStageInfo(
+                {},
+                vk::ShaderStageFlagBits::eFragment,
+                fragmentModule,
+                "main",
+                nullptr
+                );
 
         // vertex input state
         vk::VertexInputBindingDescription vertexInputBindingDescription(0,12,vk::VertexInputRate::eVertex);
         vk::VertexInputAttributeDescription vertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, 0);
 
-        vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo({}, 1, &vertexInputBindingDescription, 1, &vertexInputAttributeDescription);
+        vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
+                {},
+                1,
+                &vertexInputBindingDescription,
+                1,
+                &vertexInputAttributeDescription
+                );
 
         // input assembly state
-        vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo({}, vk::PrimitiveTopology::eTriangleList, false);
+        vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
+                {},
+                vk::PrimitiveTopology::eTriangleList,
+                false
+                );
 
         // viewport state
         vk::Viewport viewport(0.f, 0.f, static_cast<float>(pipeline.m_width), static_cast<float>(pipeline.m_height), 0.f, 1.f);
@@ -369,9 +389,8 @@ namespace vkcv
                 {}
                 );
         vk::PipelineLayout vkPipelineLayout{};
-        if(m_Context.m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess){
+        if(m_Context.m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
             return false;
-        }
 
         // graphics pipeline create
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = {pipelineVertexShaderStageInfo, pipelineFragmentShaderStageInfo};
@@ -396,9 +415,8 @@ namespace vkcv
                 );
 
         vk::Pipeline vkPipeline{};
-        if(m_Context.m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess){
+        if(m_Context.m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess)
             return false;
-        }
 
         m_Pipelines.push_back(vkPipeline);
         m_PipelineLayouts.push_back(vkPipelineLayout);
