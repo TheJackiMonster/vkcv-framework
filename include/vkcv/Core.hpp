@@ -7,13 +7,13 @@
 #include <vulkan/vulkan.hpp>
 #include "vkcv/Context.hpp"
 #include "vkcv/Handles.hpp"
+#include "vkcv/Pipeline.hpp"
 
 namespace vkcv
 {
     // TODO:
     class Buffer;
     class Renderpass;
-    class Pipeline;
 
     class Core final
     {
@@ -29,6 +29,14 @@ namespace vkcv
         Core() = delete;
 
         Context m_Context;
+
+        uint64_t m_NextPipelineId;
+        std::vector<vk::Pipeline> m_Pipelines;
+        std::vector<vk::PipelineLayout> m_PipelineLayouts;
+
+        uint64_t m_NextRenderpassId;
+        std::vector<vk::RenderPass> m_Renderpasses;
+
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
@@ -94,7 +102,7 @@ namespace vkcv
         // TODO:
         BufferHandle createBuffer(const Buffer &buf);
         PassHandle createRenderPass(const Renderpass &pass) ;
-        PipelineHandle createPipeline(const Pipeline &pipeline);
+        bool createPipeline(const Pipeline &pipeline, PipelineHandle &handle);
 
     };
 }
