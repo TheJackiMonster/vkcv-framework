@@ -34,13 +34,6 @@ int main(int argc, const char** argv) {
 		default: std::cout << "Unknown GPU vendor?! Either you're on an exotic system or your driver is broken..." << std::endl;
 	}
 
-<<<<<<< HEAD
-	vkcv::ShaderProgram shaderProgram = vkcv::ShaderProgram::create(context);
-	shaderProgram.addShader(vk::ShaderStageFlagBits::eVertex , "../../../../../shaders/vert.spv");
-	shaderProgram.addShader(vk::ShaderStageFlagBits::eFragment, "../../../../../shaders/frag.spv");
-
-	while (window.isWindowOpen()) {
-=======
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
 	 * BufferHandle triangleIndices = core.createBuffer(indices);
@@ -65,7 +58,6 @@ int main(int argc, const char** argv) {
 
 	    // TBD: synchronization
 
->>>>>>> 74ff8e7041d7958006a434cf4d3a7fee0a3fa724
 		window.pollEvents();
 	}
 	return 0;

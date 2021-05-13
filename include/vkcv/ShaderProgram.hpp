@@ -10,14 +10,17 @@
 #include <fstream>
 #include <iostream>
 #include <vulkan/vulkan.hpp>
-#include "Context.hpp"
 
 namespace vkcv {
 
 	class ShaderProgram final {
     public:
 
-        enum ShaderStage {VERTEX, FRAGMENT, COMPUTE};
+        enum class ShaderStage {
+            VERTEX,
+            FRAGMENT,
+            COMPUTE
+        };
 
 
         /**
@@ -39,28 +42,35 @@ namespace vkcv {
         * @param[in] flag that signals the respective shaderStage (e.g. VK_SHADER_STAGE_VERTEX_BIT)
         * @param[in] relative path to the shader code (e.g. "../../../../../shaders/vert.spv")
         */
-        void addShader(vk::ShaderStageFlagBits shaderStage, const std::string& filepath);
+        void addShader(ShaderProgram::ShaderStage shaderStage, const std::string& filepath);
 
         /**
         * Tests if the shader program contains a certain shader stage.
         * @param[in] flag that signals the respective shader stage (e.g. VK_SHADER_STAGE_VERTEX_BIT)
         * @return boolean that is true if the shader program contains the shader stage
         */
-        bool containsShaderStage(vk::ShaderStageFlagBits shaderStage);
+        bool containsShaderStage(ShaderProgram::ShaderStage shaderStage);
 
         /**
         * Deletes the given shader stage in the shader program.
         * @param[in] flag that signals the respective shader stage (e.g. VK_SHADER_STAGE_VERTEX_BIT)
         * @return boolean that is false if the shader stage was not found in the shader program
         */
-        bool deleteShaderStage(vk::ShaderStageFlagBits shaderStage);
+        bool deleteShaderStage(ShaderProgram::ShaderStage shaderStage);
 
         /**
         * Returns a list with all the shader stages in the shader program.
         * Needed for the transfer to the pipeline.
         * @return vector list with all shader stage info structs
         */
-        std::vector<vk::PipelineShaderStageCreateInfo> getShaderStages();
+        std::vector<vk::ShaderStageFlagBits> getShaderStages();
+
+        /**
+        * Returns a list with all the shader code in the shader program.
+        * Needed for the transfer to the pipeline.
+        * @return vector list with all shader code char vecs
+        */
+        std::vector<std::vector<char>> getShaderCode();
 
         /**
         * Returns the number of shader stages in the shader program.
@@ -78,16 +88,13 @@ namespace vkcv {
             std::vector<vk::ShaderStageFlagBits> shaderStageFlag;
 	    };
 
-		vkcv::Context& m_context;
-		std::vector<vk::PipelineShaderStageCreateInfo> m_shaderStagesList;
-
 		ShaderStages m_shaderStages;
 
 		/**
 		* Constructor of ShaderProgram requires a context for the logical device. 
 		* @param context of the app
 		*/
-		ShaderProgram(vkcv::Context& context);
+		ShaderProgram();
 		
 		/**
 		* Reads the file of a given shader code. 
@@ -97,6 +104,13 @@ namespace vkcv {
 		*/
 		std::vector<char> readFile(const std::string& filepath);
 
+        /**
+		* Converts ShaderStage Enum into vk::ShaderStageFlagBits
+		* @param[in] ShaderStage enum
+		* @return vk::ShaderStageFlagBits
+		*/
+        vk::ShaderStageFlagBits convertToShaderStageFlagBits(ShaderProgram::ShaderStage shaderStage);
+
 		/**
 		* Creates a shader module that encapsulates the read shader code. 
 		* Only used within the class. 
@@ -104,7 +118,7 @@ namespace vkcv {
 		* @param[in] a vector of chars as a buffer for the code 
 		* @return shader module 
 		*/
-		vk::ShaderModule createShaderModule(const std::vector<char>& shaderCode);
+		//vk::ShaderModule createShaderModule(const std::vector<char>& shaderCode); -> Core
 
 		/**
 		* Creates a shader stage (info struct) for the to be added shader. 
@@ -113,11 +127,7 @@ namespace vkcv {
 		* @param[in] flag that signals the respective shaderStage 
 		* @return pipeline shader stage info struct 
 		*/ 
-		vk::PipelineShaderStageCreateInfo createShaderStage(vk::ShaderModule& shaderModule, vk::ShaderStageFlagBits shaderStage);
-
-
-
-
+		//vk::PipelineShaderStageCreateInfo createShaderStage(vk::ShaderModule& shaderModule, vk::ShaderStageFlagBits shaderStage); -> Core
 
 	};
 }
