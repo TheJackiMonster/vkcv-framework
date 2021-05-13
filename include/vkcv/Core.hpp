@@ -26,19 +26,20 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, const Window &window, SwapChain &swapChain) noexcept;
+        Core(Context &&context, const Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
 
         Context m_Context;
-        SwapChain& m_swapchain;
+        SwapChain m_swapchain;
+        std::vector<vk::ImageView> m_swapchainImageViews;
         const Window& m_window;
 
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
          */
-        ~Core() noexcept = default;
+        ~Core();
 
         /**
          * Copy-constructor of #Core is deleted!

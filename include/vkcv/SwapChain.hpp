@@ -15,13 +15,14 @@ namespace vkcv {
         vk::SurfaceKHR m_surface;
         const vkcv::Context& m_context;
 		vk::SwapchainKHR m_swapchain;
+		vk::SurfaceFormatKHR m_format;
 		
-        SwapChain(vk::SurfaceKHR surface, const vkcv::Context &context, vk::SwapchainKHR swapchain);
+        SwapChain(vk::SurfaceKHR surface, const vkcv::Context &context, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format);
 
     public:
         // bin mir grade unsicher wegen der Mehrfachinstanziierung der Klasse
         // es muessen ja oefter mal neue erstellt werden, aber diese existieren ja nicht gleichzeitig, oder?
-        SwapChain(const SwapChain &other) = delete;
+        SwapChain(const SwapChain &other) = default;
         SwapChain(SwapChain &&other) = default;
 
         /**
@@ -31,8 +32,13 @@ namespace vkcv {
         [[nodiscard]]
         vk::SwapchainKHR getSwapchain();
 
+        [[nodiscard]]
+        vk::SurfaceKHR getSurface();
+
+        [[nodiscard]]
+        vk::SurfaceFormatKHR getSurfaceFormat();
+
         static SwapChain create(const Window &window, const Context &context);
-       
         virtual ~SwapChain();
     };
 

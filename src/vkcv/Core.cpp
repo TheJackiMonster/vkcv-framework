@@ -308,7 +308,36 @@ namespace vkcv
         Context context(instance, physicalDevice, device);
 
         SwapChain swapChain = SwapChain::create(window, context);
-        return Core(std::move(context) , window, swapChain);
+
+
+        std::vector<vk::Image> swapChainImages = device.getSwapchainImagesKHR(swapChain.getSwapchain());
+        std::vector<vk::ImageView> imageViews;
+        imageViews.reserve( swapChainImages.size() );
+        //here can be swizzled with vk::ComponentSwizzle if needed
+        // ToDo: we need the format from the surface object
+        vk::ComponentMapping componentMapping(
+                vk::ComponentSwizzle::eR,
+                vk::ComponentSwizzle::eG,
+                vk::ComponentSwizzle::eB,
+                vk::ComponentSwizzle::eA );
+
+        vk::ImageSubresourceRange subResourceRange( vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 );
+
+        for ( auto image : swapChainImages )
+        {
+            vk::ImageViewCreateInfo imageViewCreateInfo(
+                    vk::ImageViewCreateFlags(),
+                    image,
+                    vk::ImageViewType::e2D,
+                    swapChain.getSurfaceFormat().format,
+                    componentMapping,
+                    subResourceRange
+            );
+
+            imageViews.push_back( device.createImageView( imageViewCreateInfo ) );
+        }
+
+        return Core(std::move(context) , window, swapChain, imageViews);
     }
 
     const Context &Core::getContext() const
@@ -316,9 +345,21 @@ namespace vkcv
         return m_Context;
     }
 
-    Core::Core(Context &&context, const Window &window , SwapChain &swapChain) noexcept :
+    Core::Core(Context &&context, const Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews) noexcept :
             m_Context(std::move(context)),
             m_window(window),
-            m_swapchain(swapChain)
+            m_swapchain(swapChain),
+            m_swapchainImageViews(imageViews)
     {}
+
+    Core::~Core() {
+        std::cout<< " Core " << std::endl;
+
+        for( auto image: m_swapchainImageViews ){
+            m_Context.getDevice().destroyImageView(image);
+        }
+
+        m_Context.getDevice().destroySwapchainKHR(m_swapchain.getSwapchain());
+        m_Context.getInstance().destroySurfaceKHR( m_swapchain.getSurface() );
+    }
 }

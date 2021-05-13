@@ -3,12 +3,20 @@
 
 namespace vkcv {
 
-    SwapChain::SwapChain(vk::SurfaceKHR surface, const vkcv::Context &context, vk::SwapchainKHR swapchain)
-        : m_surface(surface), m_context(context), m_swapchain(swapchain)
+    SwapChain::SwapChain(vk::SurfaceKHR surface, const vkcv::Context &context, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format )
+        : m_surface(surface), m_context(context), m_swapchain(swapchain), m_format( format)
     {}
 
     vk::SwapchainKHR SwapChain::getSwapchain() {
         return m_swapchain;
+    }
+
+    vk::SurfaceKHR SwapChain::getSurface() {
+        return m_surface;
+    }
+
+    vk::SurfaceFormatKHR SwapChain::getSurfaceFormat(){
+        return m_format;
     }
 
     vk::SurfaceKHR createSurface(GLFWwindow *window, const vk::Instance &instance, const vk::PhysicalDevice& physicalDevice) {
@@ -132,13 +140,14 @@ namespace vkcv {
 
         vk::SwapchainKHR swapchain = device.createSwapchainKHR(swapchainCreateInfo);
 
-        return SwapChain(surface, context, swapchain);
+        return SwapChain(surface, context, swapchain, surfaceFormat);
     }
 
 
     SwapChain::~SwapChain() {
-        m_context.getDevice().destroySwapchainKHR( m_swapchain );
-        m_context.getInstance().destroySurfaceKHR( m_surface );
+        std::cout<< " Swap " << std::endl;
+//        m_context.getDevice().destroySwapchainKHR( m_swapchain );
+//        m_context.getInstance().destroySurfaceKHR( m_surface );
     }
 
 }
