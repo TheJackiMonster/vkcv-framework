@@ -32,7 +32,7 @@ if (vkcv_build_debug)
 	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		set(vkcv_flags ${vkcv_flags} " -Wextra -Wall -pedantic")
 	else()
-		set(vkcv_flags ${vkcv_flags} " -Wall")
+		set(vkcv_flags ${vkcv_flags} " -W4")
 	endif()
 endif()
 
