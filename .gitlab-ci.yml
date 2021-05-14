@@ -22,6 +22,5 @@ build_win10_msvc:
     - cd $CI_PROJECT_DIR
     - mkdir debug
     - cd debug
-   # - cmake -DCMAKE_BUILD_TYPE=Debug .. # Debug Modus derzeit deaktiviert, da das Buildlog die maximale Größe von Gitlab überschreitet, wegen Warnings in Vulkan.hpp
-    - cmake ..
+    - cmake -DCMAKE_BUILD_TYPE=Debug ..
     - cmake --build .
