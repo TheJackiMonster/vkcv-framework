@@ -4,24 +4,17 @@
 #include "vkcv/Window.hpp"
 #include <iostream>
 
-
-// glfw is not initialized in this class because ist must be sure that there exists a context first
-// glfw is already initialized by the context or the window class
-
 namespace vkcv {
     class SwapChain final {
     private:
 
         vk::SurfaceKHR m_surface;
-        const vkcv::Context& m_context;
 		vk::SwapchainKHR m_swapchain;
 		vk::SurfaceFormatKHR m_format;
 		
-        SwapChain(vk::SurfaceKHR surface, const vkcv::Context &context, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format);
+        SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format);
 
     public:
-        // bin mir grade unsicher wegen der Mehrfachinstanziierung der Klasse
-        // es muessen ja oefter mal neue erstellt werden, aber diese existieren ja nicht gleichzeitig, oder?
         SwapChain(const SwapChain &other) = default;
         SwapChain(SwapChain &&other) = default;
 

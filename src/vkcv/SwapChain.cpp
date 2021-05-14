@@ -3,8 +3,8 @@
 
 namespace vkcv {
 
-    SwapChain::SwapChain(vk::SurfaceKHR surface, const vkcv::Context &context, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format )
-        : m_surface(surface), m_context(context), m_swapchain(swapchain), m_format( format)
+    SwapChain::SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format )
+        : m_surface(surface), m_swapchain(swapchain), m_format( format)
     {}
 
     vk::SwapchainKHR SwapChain::getSwapchain() {
@@ -22,21 +22,16 @@ namespace vkcv {
     vk::SurfaceKHR createSurface(GLFWwindow *window, const vk::Instance &instance, const vk::PhysicalDevice& physicalDevice) {
         //create surface
         VkSurfaceKHR surface;
-        // 0 means VK_SUCCESS
-        //std::cout << "FAIL:     " << glfwCreateWindowSurface(VkInstance(instance), window, nullptr, &newSurface) << std::endl;
         if (glfwCreateWindowSurface(VkInstance(instance), window, nullptr, &surface) != VK_SUCCESS) {
             throw std::runtime_error("failed to create a window surface!");
         }
         vk::Bool32 surfaceSupport = false;
-        // ToDo: hierfuer brauchen wir jetzt den queuefamiliy Index -> siehe ToDo in Context.cpp
-        // frage: nimmt die Swapchain automatisch den 0'ten Index (Graphics Queue Family)?
         if (physicalDevice.getSurfaceSupportKHR(0, vk::SurfaceKHR(surface), &surfaceSupport) != vk::Result::eSuccess && surfaceSupport != true) {
             throw std::runtime_error("surface is not supported by the device!");
         }
 
         return vk::SurfaceKHR(surface);
     }
-
 
     vk::Extent2D chooseSwapExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, const Window &window){
         vk::SurfaceCapabilitiesKHR surfaceCapabilities;
@@ -89,6 +84,7 @@ namespace vkcv {
                 return availablePresentMode;
             }
         }
+        // The FIFO present mode is guaranteed by the spec to be supported
         return vk::PresentModeKHR::eFifo;
     }
 
@@ -140,14 +136,12 @@ namespace vkcv {
 
         vk::SwapchainKHR swapchain = device.createSwapchainKHR(swapchainCreateInfo);
 
-        return SwapChain(surface, context, swapchain, surfaceFormat);
+        return SwapChain(surface, swapchain, surfaceFormat);
     }
 
 
     SwapChain::~SwapChain() {
-        std::cout<< " Swap " << std::endl;
-//        m_context.getDevice().destroySwapchainKHR( m_swapchain );
-//        m_context.getInstance().destroySurfaceKHR( m_surface );
+        // needs to be destroyed by creator
     }
 
 }

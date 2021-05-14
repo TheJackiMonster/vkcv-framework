@@ -301,20 +301,18 @@ namespace vkcv
         if(transferQueueFamilyIndex == -1){
             throw std::runtime_error("It is not possible to access another queue as a transfer queue.");
         }
-        vk::Queue graphicsQueue = device.getQueue( graphicsQueueFamilyIndex, 0 );
-        vk::Queue computeQueue = device.getQueue(computeQueueFamilyIndex,1);
-        vk::Queue transferQueue = device.getQueue(transferQueueFamilyIndex,2);
+        vk::Queue graphicsQueue = device.getQueue(graphicsQueueFamilyIndex, 0);
+        vk::Queue computeQueue = device.getQueue(computeQueueFamilyIndex, 1);
+        vk::Queue transferQueue = device.getQueue(transferQueueFamilyIndex, 2);
 
         Context context(instance, physicalDevice, device);
 
         SwapChain swapChain = SwapChain::create(window, context);
 
-
         std::vector<vk::Image> swapChainImages = device.getSwapchainImagesKHR(swapChain.getSwapchain());
         std::vector<vk::ImageView> imageViews;
         imageViews.reserve( swapChainImages.size() );
         //here can be swizzled with vk::ComponentSwizzle if needed
-        // ToDo: we need the format from the surface object
         vk::ComponentMapping componentMapping(
                 vk::ComponentSwizzle::eR,
                 vk::ComponentSwizzle::eG,
@@ -353,8 +351,6 @@ namespace vkcv
     {}
 
     Core::~Core() {
-        std::cout<< " Core " << std::endl;
-
         for( auto image: m_swapchainImageViews ){
             m_Context.getDevice().destroyImageView(image);
         }
