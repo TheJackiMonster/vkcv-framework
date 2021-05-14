@@ -94,30 +94,27 @@ namespace vkcv
     {
         std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
         std::vector<vk::QueueFamilyProperties> qFamilyProperties = physicalDevice.getQueueFamilyProperties();
-        std::vector<vk::QueueFamilyProperties> qFamilyCandidates;
 
         // search for queue families which support the desired queue flag bits
-        for (auto& qFamily : qFamilyProperties) {
+        uint32_t create = queueCount;
+        for (int i = 0; i < qFamilyProperties.size(); i++) {
             bool supported = true;
             for (auto qFlag : queueFlags) {
-                supported = supported && (static_cast<uint32_t>(qFlag & qFamily.queueFlags) != 0);
+                supported = supported && (static_cast<uint32_t>(qFlag & qFamilyProperties[i].queueFlags) != 0);
             }
-            if (supported) {
-                qFamilyCandidates.push_back(qFamily);
+            // if queue family supports all desired queue flag bits, create as many queues available for the actual queue family
+            // search for another queue family, if more queues should be created
+            if (supported && create > 0) {
+                const uint32_t maxCreatableQueues = std::min(create, qFamilyProperties[i].queueCount);
+                vk::DeviceQueueCreateInfo qCreateInfo(
+                        vk::DeviceQueueCreateFlags(),
+                        i,
+                        maxCreatableQueues,
+                        qPriorities.data()
+                );
+                queueCreateInfos.push_back(qCreateInfo);
+                create -= maxCreatableQueues;
             }
-        }
-
-        uint32_t create = queueCount;
-        for (uint32_t i = 0; i < qFamilyCandidates.size() && create > 0; i++) {
-            const uint32_t maxCreatableQueues = std::min(create, qFamilyCandidates[i].queueCount);
-            vk::DeviceQueueCreateInfo qCreateInfo(
-                    vk::DeviceQueueCreateFlags(),
-                    i,
-                    maxCreatableQueues,
-                    qPriorities.data()
-            );
-            queueCreateInfos.push_back(qCreateInfo);
-            create -= maxCreatableQueues;
         }
 
         return queueCreateInfos;
