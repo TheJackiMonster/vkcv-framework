@@ -1,3 +1,7 @@
+stages:
+  - build
+  - deploy
+
 build_ubuntu_gcc:
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
