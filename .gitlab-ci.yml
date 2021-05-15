@@ -9,6 +9,12 @@ build_ubuntu_gcc:
     - cd debug
     - cmake -DCMAKE_BUILD_TYPE=Debug ..
     - cmake --build .
+  artifacts:
+    name: "Documentation - $CI_PIPELINE_ID"
+    paths:
+      - docs/html
+      - docs/latex
+    expire_in: never
 
 build_win10_msvc:
   variables:
@@ -24,3 +30,4 @@ build_win10_msvc:
     - cd debug
     - cmake -DCMAKE_BUILD_TYPE=Debug ..
     - cmake --build .
+  
