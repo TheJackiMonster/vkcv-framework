@@ -98,10 +98,10 @@ namespace vkcv {
 
 		/**
 		 * @brief searches memory type index for buffer allocation, inspired by vulkan tutorial and "https://github.com/KhronosGroup/Vulkan-Hpp/blob/master/samples/utils/utils.hpp"
-		 * @param memoryProperties 
+		 * @param physicalMemoryProperties Memory Properties of physical device 
 		 * @param typeBits 
-		 * @param requirementsMask 
-		 * @return memory type for Buffer
+		 * @param requirements Property flags that are required
+		 * @return memory type index for Buffer
 		*/
 		uint32_t searchMemoryType(vk::PhysicalDeviceMemoryProperties const& physicalMemoryProperties, uint32_t typeBits, vk::MemoryPropertyFlags requirements) {
 			uint32_t memoryTypeIndex = uint32_t(0);
@@ -119,8 +119,7 @@ namespace vkcv {
 		};
 
 		/**
-		 * * Constructor of #Buffer requires a @p device, a @p physicalDevice, a @p buffer type and a @p size.
-		 *
+		 * * Constructor of #Buffer requires a @p device, a @p physicalDevice, a @p buffer type and a @p size.		 *
 		 * @param device Vulkan-Device
 		 * @param physicalDevice Vulkan-PhysicalDevice
 		 * @param type Enum type of possible vkcv::BufferType
