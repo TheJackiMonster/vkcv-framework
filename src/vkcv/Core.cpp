@@ -132,7 +132,7 @@ namespace vkcv
             int index = minElem - prios.begin();
             std::cout << "index: "<< index << std::endl;
             newFlags.push_back(queueFlags[index]);
-            prios[index] = INT_MAX;
+            prios[index] = std::numeric_limits<int>::max();
         }
 
         std::cout << "Sorted queue flags:" << std::endl;
