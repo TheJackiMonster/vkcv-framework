@@ -12,8 +12,8 @@ build_ubuntu_gcc:
   artifacts:
     name: "Documentation - $CI_PIPELINE_ID"
     paths:
-      - docs/html
-      - docs/latex
+      - doc/html
+      - doc/latex
     expire_in: never
 
 build_win10_msvc:
