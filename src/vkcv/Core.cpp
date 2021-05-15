@@ -224,7 +224,7 @@ namespace vkcv
             std::cout << "For Queue Family #" << i << " create " << create << " queues" << std::endl;
             if (create > 0) {
                 vk::DeviceQueueCreateInfo qCreateInfo(
-                        vk::DeviceQueueCreateFlagBits(),
+                        vk::DeviceQueueCreateFlags(),
                         i,
                         create,
                         qPriorities.data()
