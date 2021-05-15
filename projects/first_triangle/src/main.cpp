@@ -15,8 +15,7 @@ int main(int argc, const char** argv) {
             window,
             applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
-		20,
-		{vk::QueueFlagBits::eTransfer},
+            {vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
 		{},
 		{"VK_KHR_swapchain"}
 	);

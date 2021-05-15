@@ -82,24 +82,43 @@ namespace vkcv
      * of queues. If the number of desired queues is not sufficient, the remaining queues are created from the next
      * candidate from the list.
      * @param physicalDevice The physical device
-     * @param queueCount The amount of queues to be created
      * @param qPriorities
      * @param queueFlags The abilities which have to be supported by any created queue
      * @return
     */
     std::vector<vk::DeviceQueueCreateInfo> getQueueCreateInfos(vk::PhysicalDevice& physicalDevice,
-                                                               uint32_t queueCount,
                                                                std::vector<float> &qPriorities,
                                                                std::vector<vk::QueueFlagBits>& queueFlags)
     {
         std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
         std::vector<vk::QueueFamilyProperties> qFamilyProperties = physicalDevice.getQueueFamilyProperties();
 
+        //check priorities of flags
+        std::vector<int> prios;
+        for(auto flag: queueFlags){
+            int prioCount = 0;
+            for (int i = 0; i < qFamilyProperties.size(); i++) {
+                prioCount += (static_cast<uint32_t>(flag & qFamilyProperties[i].queueFlags) != 0) * qFamilyProperties[i].queueCount;
+            }
+            prios.push_back(prioCount);
+            std::cout<< "prio Count: " << prioCount << std::endl;
+        }
+        //resort flags with heighest priority before allocating the queues
+        std::vector<vk::QueueFlagBits> newFlags;
+        for(int i = 0; i < prios.size(); i++){
+            auto minElem = std::min_element(prios.begin(), prios.end());
+            int index = minElem - prios.begin();
+            std::cout << "index: "<< index << std::endl;
+            newFlags.push_back(queueFlags[index]);
+            prios[index] = INT_MAX;
+        }
+
+
         // search for queue families which support the desired queue flag bits
-        uint32_t create = queueCount;
+        uint32_t create = newFlags.size();
         for (int i = 0; i < qFamilyProperties.size(); i++) {
             bool supported = true;
-            for (auto qFlag : queueFlags) {
+            for (auto qFlag : newFlags) {
                 supported = supported && (static_cast<uint32_t>(qFlag & qFamilyProperties[i].queueFlags) != 0);
             }
             // if queue family supports all desired queue flag bits, create as many queues available for the actual queue family
@@ -178,7 +197,6 @@ namespace vkcv
     Core Core::create(const Window &window,
                       const char *applicationName,
                       uint32_t applicationVersion,
-                      uint32_t queueCount,
                       std::vector<vk::QueueFlagBits> queueFlags,
                       std::vector<const char *> instanceExtensions,
                       std::vector<const char *> deviceExtensions)
@@ -262,10 +280,10 @@ namespace vkcv
 
         //vector to define the queue priorities
         std::vector<float> qPriorities;
-        qPriorities.resize(queueCount, 1.f); // all queues have the same priorities
+        qPriorities.resize(queueFlags.size(), 1.f); // all queues have the same priorities
 
         // create required queues
-        std::vector<vk::DeviceQueueCreateInfo> qCreateInfos = getQueueCreateInfos(physicalDevice, queueCount, qPriorities,queueFlags);
+        std::vector<vk::DeviceQueueCreateInfo> qCreateInfos = getQueueCreateInfos(physicalDevice, qPriorities,queueFlags);
 
         vk::DeviceCreateInfo deviceCreateInfo(
                 vk::DeviceCreateFlags(),

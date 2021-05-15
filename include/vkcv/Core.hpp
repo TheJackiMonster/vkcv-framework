@@ -84,7 +84,6 @@ namespace vkcv
              *
              * @param[in] applicationName Name of the application
              * @param[in] applicationVersion Version of the application
-             * @param[in] queueCount (optional) Amount of queues which is requested
              * @param[in] queueFlags (optional) Requested flags of queues
              * @param[in] instanceExtensions (optional) Requested instance extensions
              * @param[in] deviceExtensions (optional) Requested device extensions
@@ -93,7 +92,6 @@ namespace vkcv
         static Core create(const Window &window,
                            const char *applicationName,
                            uint32_t applicationVersion,
-                           uint32_t queueCount,
                            std::vector<vk::QueueFlagBits> queueFlags    = {},
                            std::vector<const char*> instanceExtensions  = {},
                            std::vector<const char*> deviceExtensions    = {});
