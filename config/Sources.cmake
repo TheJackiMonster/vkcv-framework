@@ -12,4 +12,7 @@ set(vkcv_sources
 
 		${vkcv_include}/vkcv/Window.hpp
 		${vkcv_source}/vkcv/Window.cpp
+		
+		${vkcv_include}/vkcv/SwapChain.hpp
+		${vkcv_source}/vkcv/SwapChain.cpp
 )

@@ -6,6 +6,8 @@
 
 #include <vulkan/vulkan.hpp>
 #include "vkcv/Context.hpp"
+#include "vkcv/SwapChain.hpp"
+#include "vkcv/Window.hpp"
 #include "vkcv/Handles.hpp"
 
 namespace vkcv
@@ -24,16 +26,20 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        explicit Core(Context &&context) noexcept;
+        Core(Context &&context, const Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
 
         Context m_Context;
+        SwapChain m_swapchain;
+        std::vector<vk::ImageView> m_swapchainImageViews;
+        const Window& m_window;
+
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
          */
-        ~Core() noexcept = default;
+        ~Core();
 
         /**
          * Copy-constructor of #Core is deleted!
@@ -78,15 +84,14 @@ namespace vkcv
              *
              * @param[in] applicationName Name of the application
              * @param[in] applicationVersion Version of the application
-             * @param[in] queueCount (optional) Amount of queues which is requested
              * @param[in] queueFlags (optional) Requested flags of queues
              * @param[in] instanceExtensions (optional) Requested instance extensions
              * @param[in] deviceExtensions (optional) Requested device extensions
              * @return New instance of #Context
              */
-        static Core create(const char *applicationName,
+        static Core create(const Window &window,
+                           const char *applicationName,
                            uint32_t applicationVersion,
-                           uint32_t queueCount,
                            std::vector<vk::QueueFlagBits> queueFlags    = {},
                            std::vector<const char*> instanceExtensions  = {},
                            std::vector<const char*> deviceExtensions    = {});
