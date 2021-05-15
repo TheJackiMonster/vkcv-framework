@@ -78,17 +78,26 @@ namespace vkcv
 
 
     /**
-     * @brief Creates a candidate list of queues that all meet the desired flags and then creates the maximum possible number
-     * of queues. If the number of desired queues is not sufficient, the remaining queues are created from the next
-     * candidate from the list.
-     * @param physicalDevice The physical device
-     * @param qPriorities
-     * @param queueFlags The abilities which have to be supported by any created queue
-     * @return
-    */
-    void queueCreateInfosQueueHandles(vk::PhysicalDevice& physicalDevice,
-                                                           std::vector<float> &qPriorities,
-                                                           std::vector<vk::QueueFlagBits>& queueFlags,
+     * Given the @p physicalDevice and the @p queuePriorities, the @p queueCreateInfos are computed. First, the requested
+     * queues are sorted by priority depending on the availability of queues in the queue families of the given
+     * @p physicalDevice. Then check, if all requested queues are creatable. If so, the @p queueCreateInfos will be computed.
+     * Furthermore, lists of index pairs (queueFamilyIndex, queueIndex) for later referencing of the separate queues will
+     * be computed.
+     * @param[in] physicalDevice The physical device
+     * @param[in] queuePriorities The queue priorities used for the computation of @p queueCreateInfos
+     * @param[in] queueFlags The queue flags requesting the queues
+     * @param[in,out] queueCreateInfos The queue create info structures to be created
+     * @param[in,out] queuePairsGraphics The list of index pairs (queueFamilyIndex, queueIndex) of queues of type
+     *      vk::QueueFlagBits::eGraphics
+     * @param[in,out] queuePairsCompute The list of index pairs (queueFamilyIndex, queueIndex) of queues of type
+     *      vk::QueueFlagBits::eCompute
+     * @param[in,out] queuePairsTransfer The list of index pairs (queueFamilyIndex, queueIndex) of queues of type
+     *      vk::QueueFlagBits::eTransfer
+     * @throws std::runtime_error If the requested queues from @p queueFlags are not creatable due to insufficient availability.
+     */
+    void queueCreateInfosQueueHandles(vk::PhysicalDevice &physicalDevice,
+                                                           std::vector<float> &queuePriorities,
+                                                           std::vector<vk::QueueFlagBits> &queueFlags,
                                                            std::vector<vk::DeviceQueueCreateInfo> &queueCreateInfos,
                                                            std::vector<std::pair<int, int>> &queuePairsGraphics,
                                                            std::vector<std::pair<int, int>> &queuePairsCompute,
@@ -227,7 +236,7 @@ namespace vkcv
                         vk::DeviceQueueCreateFlags(),
                         i,
                         create,
-                        qPriorities.data()
+                        queuePriorities.data()
                 );
                 queueCreateInfos.push_back(qCreateInfo);
             }
