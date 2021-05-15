@@ -34,26 +34,24 @@ namespace vkcv {
 		// explicit destruction of default constructor
 		Buffer<T>() = delete;
 		// is never called directly
-		~Buffer<T>() {
+		~Buffer<T>() noexcept {
 			m_Device.freeMemory(m_BufferMemory);
 			m_Device.destroyBuffer(m_Buffer);
-		} //noexcept; //gibt Fehlermeldung
+		}
 
 		Buffer<T>(const Buffer<T>& other) = delete; // copy-ctor
-		Buffer<T>(Buffer<T>&& other) {
+		Buffer<T>(Buffer<T>&& other) noexcept {
 			other.m_Buffer = nullptr;
 			other.m_BufferMemory = nullptr;
 			other.m_Device = nullptr;
-			other.m_MemoryRequirement = nullptr;
-			other.m_Type = vkcv::VERTEX;
+			//other.m_MemoryRequirement = nullptr; // WIP alternative to nullptr has to be found
+			other.m_Type = vkcv::VERTEX; //set to 0
 			other.m_Size = 0;
 			other.m_DataP = nullptr;
-
-			return *this;
-		} //noexcept; // move-ctor
+		} // move-ctor
 
 		Buffer<T>& operator=(const Buffer<T>& other) = delete; // copy assignment
-		Buffer<T>& operator=(Buffer<T>&& other) {
+		Buffer<T>& operator=(Buffer<T>&& other) noexcept {
 			m_Buffer = other.m_Buffer;
 			m_BufferMemory = other.m_BufferMemory;
 			m_Device = other.m_Device;
@@ -65,17 +63,17 @@ namespace vkcv {
 			other.m_Buffer = nullptr;
 			other.m_BufferMemory = nullptr;
 			other.m_Device = nullptr;
-			other.m_MemoryRequirement = nullptr;
-			other.m_Type = vkcv::VERTEX;
+			//other.m_MemoryRequirement = nullptr; // WIP alternative to nullptr has to be found
+			other.m_Type = vkcv::VERTEX; //set to 0
 			other.m_Size = 0;
 			other.m_DataP = nullptr;
 
-		}//noexcept; // move assignment
+		}// move assignment
 
 		BufferType getType() { return m_Type; };
 		size_t getSize() { return m_Size; };
 
-		//i'm not sure what the input argument has to be, WORK IN PROGRESS
+		//i'm not sure what type the input argument has to be, WORK IN PROGRESS
 		//TODO
 		void fill(void* data) {
 			m_DataP = static_cast<uint8_t*>(m_Device.mapMemory(m_BufferMemory, 0, m_MemoryRequirement.size));
