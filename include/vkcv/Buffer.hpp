@@ -40,7 +40,15 @@ namespace vkcv {
 		}
 
 		Buffer<T>(const Buffer<T>& other) = delete; // copy-ctor
-		Buffer<T>(Buffer<T>&& other) noexcept {
+		Buffer<T>(Buffer<T>&& other) noexcept :
+		        m_Buffer(other.m_Buffer),
+				m_BufferMemory(other.m_BufferMemory),
+				m_Device(other.m_Device),
+				m_MemoryRequirement(other.m_MemoryRequirement),
+		        m_Type(other.m_Type),
+		        m_Size(other.m_Size),
+		        m_DataP(other.m_DataP)
+		{
 			other.m_Buffer = nullptr;
 			other.m_BufferMemory = nullptr;
 			other.m_Device = nullptr;
@@ -72,19 +80,23 @@ namespace vkcv {
 
 		BufferType getType() { return m_Type; };
 		size_t getSize() { return m_Size; };
-
-		//i'm not sure what type the input argument has to be, WORK IN PROGRESS
-		//TODO
-		void fill(void* data) {
+		
+		// TODO: we will probably need staging-buffer here later (possible add in BufferManager later?)
+		void fill(T* data, size_t count) {
+			// TODO: check if mapped already
 			m_DataP = static_cast<uint8_t*>(m_Device.mapMemory(m_BufferMemory, 0, m_MemoryRequirement.size));
-			memcpy(m_DataP, data, sizeof(data));
+			memcpy(m_DataP, data, sizeof(T) * count);
 			m_Device.unmapMemory(m_BufferMemory);
 		};
+		
 		void map() {
 			m_DataP = static_cast<uint8_t*>(m_Device.mapMemory(m_BufferMemory, 0, m_MemoryRequirement.size));
+			// TODO: make sure to unmap before deallocation
 		};
+		
 		void unmap() {
 			m_Device.unmapMemory(m_BufferMemory);
+			// TODO: mark m_DataP as invalid?
 		};
 
 	private:
@@ -94,7 +106,7 @@ namespace vkcv {
 		vk::MemoryRequirements m_MemoryRequirement;
 		BufferType m_Type;
 		size_t m_Size=0;
-		static uint8_t* m_DataP;
+		uint8_t* m_DataP;
 
 		/**
 		 * @brief searches memory type index for buffer allocation, inspired by vulkan tutorial and "https://github.com/KhronosGroup/Vulkan-Hpp/blob/master/samples/utils/utils.hpp"
@@ -129,7 +141,7 @@ namespace vkcv {
 			m_Type = type;
 			m_Size = size;
 			m_Device = device;
-
+			m_DataP = nullptr;
 
 			switch (m_Type) {
 				case VERTEX: {
