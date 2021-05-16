@@ -1,6 +1,6 @@
 /**
- * @authors Sebastian Gaida
- * @file src/vkcv/CoreManager.cpp
+ * @authors Artur Wasmut
+ * @file src/vkcv/Core.cpp
  * @brief Handling of global states regarding dependencies
  */
 
@@ -146,14 +146,46 @@ namespace vkcv
         return true;
     }
 
-    Core Core::create(const char *applicationName,
+
+    std::vector<const char*> getRequiredExtensions() {
+        uint32_t glfwExtensionCount = 0;
+        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+#ifndef NDEBUG
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
+
+        return extensions;
+    }
+
+    /**
+     * @brief finds an queue family index that fits with the given queue flags to create a queue handle
+     * @param flag The given flag that specifies as which queue type the accessed queue should be treated
+     * @param createInfos The createInfos of the created queues depending on the logical device
+     * @param device The physical with which the queue families can be accessed
+     * @return a fitting queue family index
+     */
+    int findQueueFamilyIndex(vk::QueueFlagBits flag, std::vector<vk::DeviceQueueCreateInfo> &createInfos, vk::PhysicalDevice &device){
+        std::vector<vk::QueueFamilyProperties> queueFamilyProperties = device.getQueueFamilyProperties();
+        for (auto i = createInfos.begin(); i != createInfos.end(); ++i ) {
+            auto createInfo = *i;
+            int index = createInfo.queueFamilyIndex;
+            if(static_cast<uint32_t>(queueFamilyProperties[index].queueFlags & flag) != 0){
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    Core Core::create(const Window &window,
+                      const char *applicationName,
                       uint32_t applicationVersion,
                       uint32_t queueCount,
                       std::vector<vk::QueueFlagBits> queueFlags,
                       std::vector<const char *> instanceExtensions,
                       std::vector<const char *> deviceExtensions)
     {
-
         // check for layer support
 
         const std::vector<vk::LayerProperties>& layerProperties = vk::enumerateInstanceLayerProperties();
@@ -190,9 +222,9 @@ namespace vkcv
             throw std::runtime_error("The requested instance extensions are not supported!");
         }
 
-#ifndef NDEBUG
-        instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-#endif
+        // for GLFW: get all required extensions
+        std::vector<const char*> requiredExtensions = getRequiredExtensions();
+        instanceExtensions.insert(instanceExtensions.end(), requiredExtensions.begin(), requiredExtensions.end());
 
         const vk::ApplicationInfo applicationInfo(
                 applicationName,
@@ -256,10 +288,56 @@ namespace vkcv
 
 
         vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
-        // TODO: implement device.getQueue() to access the queues, if needed
+
+        uint32_t graphicsQueueFamilyIndex = findQueueFamilyIndex({vk::QueueFlagBits::eGraphics}, qCreateInfos, physicalDevice);
+        if(graphicsQueueFamilyIndex == -1){
+            throw std::runtime_error("It is not possible to access another queue as a graphics queue.");
+        }
+        uint32_t computeQueueFamilyIndex = findQueueFamilyIndex({vk::QueueFlagBits::eCompute}, qCreateInfos, physicalDevice);
+        if(computeQueueFamilyIndex == -1){
+            throw std::runtime_error("It is not possible to access another queue as a compute queue.");
+        }
+        uint32_t transferQueueFamilyIndex = findQueueFamilyIndex({vk::QueueFlagBits::eTransfer}, qCreateInfos, physicalDevice);
+        if(transferQueueFamilyIndex == -1){
+            throw std::runtime_error("It is not possible to access another queue as a transfer queue.");
+        }
+        vk::Queue graphicsQueue = device.getQueue( graphicsQueueFamilyIndex, 0 );
+        vk::Queue computeQueue = device.getQueue(computeQueueFamilyIndex,1);
+        vk::Queue transferQueue = device.getQueue(transferQueueFamilyIndex,2);
+
         Context context(instance, physicalDevice, device);
 
-        return Core(std::move(context));
+        SwapChain swapChain = SwapChain::create(window, context);
+
+
+        std::vector<vk::Image> swapChainImages = device.getSwapchainImagesKHR(swapChain.getSwapchain());
+        std::vector<vk::ImageView> imageViews;
+        imageViews.reserve( swapChainImages.size() );
+        //here can be swizzled with vk::ComponentSwizzle if needed
+        // ToDo: we need the format from the surface object
+        vk::ComponentMapping componentMapping(
+                vk::ComponentSwizzle::eR,
+                vk::ComponentSwizzle::eG,
+                vk::ComponentSwizzle::eB,
+                vk::ComponentSwizzle::eA );
+
+        vk::ImageSubresourceRange subResourceRange( vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 );
+
+        for ( auto image : swapChainImages )
+        {
+            vk::ImageViewCreateInfo imageViewCreateInfo(
+                    vk::ImageViewCreateFlags(),
+                    image,
+                    vk::ImageViewType::e2D,
+                    swapChain.getSurfaceFormat().format,
+                    componentMapping,
+                    subResourceRange
+            );
+
+            imageViews.push_back( device.createImageView( imageViewCreateInfo ) );
+        }
+
+        return Core(std::move(context) , window, swapChain, imageViews);
     }
 
     const Context &Core::getContext() const
@@ -267,7 +345,21 @@ namespace vkcv
         return m_Context;
     }
 
-    Core::Core(Context &&context) noexcept :
-            m_Context(std::move(context))
+    Core::Core(Context &&context, const Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews) noexcept :
+            m_Context(std::move(context)),
+            m_window(window),
+            m_swapchain(swapChain),
+            m_swapchainImageViews(imageViews)
     {}
+
+    Core::~Core() {
+        std::cout<< " Core " << std::endl;
+
+        for( auto image: m_swapchainImageViews ){
+            m_Context.getDevice().destroyImageView(image);
+        }
+
+        m_Context.getDevice().destroySwapchainKHR(m_swapchain.getSwapchain());
+        m_Context.getInstance().destroySurfaceKHR( m_swapchain.getSurface() );
+    }
 }
