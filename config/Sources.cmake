@@ -30,4 +30,7 @@ set(vkcv_sources
 
 		${vkcv_source}/vkcv/PipelineManager.hpp
 		${vkcv_source}/vkcv/PipelineManager.cpp
+        
+        ${vkcv_include}/vkcv/CommandResources.hpp
+        ${vkcv_source}/vkcv/CommandResources.cpp
 )
