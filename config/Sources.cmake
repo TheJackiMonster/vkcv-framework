@@ -42,4 +42,7 @@ set(vkcv_sources
         
         ${vkcv_source}/vkcv/Surface.hpp
         ${vkcv_source}/vkcv/Surface.cpp
+        
+        ${vkcv_source}/vkcv/ImageLayoutTransitions.hpp
+        ${vkcv_source}/vkcv/ImageLayoutTransitions.cpp
 )

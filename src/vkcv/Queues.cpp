@@ -62,7 +62,6 @@ namespace vkcv {
 		int priorityIndex = 0;
 
 		for (const auto index : familyIndexSet) {
-			outQueuePriorities->push_back(1.f);
 			const vk::DeviceQueueCreateInfo graphicsCreateInfo(flags, index, 1, &outQueuePriorities->at(priorityIndex));
 			createInfos.push_back(graphicsCreateInfo);
 			priorityIndex++;

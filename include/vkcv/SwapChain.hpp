@@ -12,6 +12,8 @@ namespace vkcv {
         vk::SwapchainKHR m_swapchain;
         vk::SurfaceFormatKHR m_format;
 
+		uint32_t m_ImageCount;
+
         /**
          * Constructor of a SwapChain object
          * glfw is not initialized in this class because ist must be sure that there exists a context first
@@ -20,7 +22,7 @@ namespace vkcv {
          * @param swapchain to show images in the window
          * @param format
          */
-        SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format);
+        SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format, uint32_t imageCount);
 
     public:
         SwapChain(const SwapChain &other) = default;
@@ -58,6 +60,11 @@ namespace vkcv {
          * Destructor of SwapChain
          */
         virtual ~SwapChain();
+
+		/**
+		 * @return number of images in swapchain
+		*/
+		uint32_t getImageCount();
     };
 
 }

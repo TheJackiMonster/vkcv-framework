@@ -2,8 +2,8 @@
 
 namespace vkcv {
 
-    SwapChain::SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format )
-        : m_surface(surface), m_swapchain(swapchain), m_format( format)
+    SwapChain::SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format, uint32_t imageCount)
+        : m_surface(surface), m_swapchain(swapchain), m_format( format), m_ImageCount(imageCount)
     {}
 
     vk::SwapchainKHR SwapChain::getSwapchain() {
@@ -157,7 +157,7 @@ namespace vkcv {
 
         vk::SwapchainKHR swapchain = device.createSwapchainKHR(swapchainCreateInfo);
 
-        return SwapChain(surface, swapchain, surfaceFormat);
+        return SwapChain(surface, swapchain, surfaceFormat, imageCount);
     }
 
 
@@ -165,4 +165,7 @@ namespace vkcv {
         // needs to be destroyed by creator
     }
 
+	uint32_t SwapChain::getImageCount() {
+		return m_ImageCount;
+	}
 }

@@ -51,6 +51,7 @@ namespace vkcv
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
 		VulkanQueues m_Queues;
+		uint32_t m_FrameIndex;
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.

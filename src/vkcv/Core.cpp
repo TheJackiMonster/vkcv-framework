@@ -8,6 +8,7 @@
 #include "PassManager.hpp"
 #include "PipelineManager.hpp"
 #include "Surface.hpp"
+#include "ImageLayoutTransitions.hpp"
 
 namespace vkcv
 {
@@ -278,10 +279,12 @@ namespace vkcv
 			m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
 			m_CommandResources(commandResources),
 			m_SyncResources(syncResources),
-			m_Queues(queues)
+			m_Queues(queues),
+			m_FrameIndex(0)
 	{}
 
 	Core::~Core() noexcept {
+		m_Context.getDevice().waitIdle();
 		for (auto image : m_swapchainImageViews) {
 			m_Context.m_Device.destroyImageView(image);
 		}
@@ -306,6 +309,7 @@ namespace vkcv
     }
 
 	void Core::beginFrame() {
+		m_Context.getDevice().waitIdle();	// FIMXE: this is a sin against graphics programming, but its getting late - Alex
 		const vk::CommandBufferUsageFlags beginFlags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 		const vk::CommandBufferBeginInfo beginInfos(beginFlags);
 		m_CommandResources.commandBuffer.begin(beginInfos);
@@ -316,8 +320,33 @@ namespace vkcv
 	}
 
 	void Core::endFrame() {
-		m_CommandResources.commandBuffer.end();
-		//m_Context.
-	}
 
+		uint32_t swapchainImageIndex;
+		m_Context.getDevice().acquireNextImageKHR(m_swapchain.getSwapchain(), 0, nullptr, 
+			m_SyncResources.swapchainImageAcquired, &swapchainImageIndex, {});
+		const uint64_t timeoutPeriodNs = 1000;	// TODO: think if is adequate
+		m_Context.getDevice().waitForFences(m_SyncResources.swapchainImageAcquired, true, timeoutPeriodNs);
+		m_Context.getDevice().resetFences(m_SyncResources.swapchainImageAcquired);
+
+		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
+		const vk::Image presentImage = swapchainImages[swapchainImageIndex];
+
+		transitionImageLayoutImmediate(
+			m_CommandResources.commandBuffer, 
+			presentImage, 
+			vk::ImageLayout::eUndefined, 
+			vk::ImageLayout::ePresentSrcKHR);
+
+		m_CommandResources.commandBuffer.end();
+		
+		const vk::SubmitInfo submitInfo(0, nullptr, 0, 1, &(m_CommandResources.commandBuffer), 1, &m_SyncResources.renderFinished);
+		m_Queues.graphicsQueue.submit(submitInfo);
+
+		vk::Result presentResult;
+		vk::PresentInfoKHR presentInfo(1, &m_SyncResources.renderFinished, 1, &m_swapchain.getSwapchain(), &swapchainImageIndex, &presentResult);
+		m_Queues.presentQueue.presentKHR(presentInfo);
+		if (presentResult != vk::Result::eSuccess) {
+			std::cout << "Error: swapchain present failed" << std::endl;
+		}
+	}
 }
