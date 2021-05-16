@@ -507,7 +507,7 @@ namespace vkcv
 
     PipelineHandle Core::createGraphicsPipeline(const PipelineConfig &config)
     {
-        const vk::RenderPass &pass = m_PassManager->getVkPass(config.m_passHandle);
+        const vk::RenderPass &pass = m_PassManager->getVkPass(config.m_PassHandle);
         return m_PipelineManager->createPipeline(config, pass);
     }
 
