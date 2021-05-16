@@ -419,7 +419,7 @@ namespace vkcv
 		m_Context.getInstance().destroySurfaceKHR(m_swapchain.getSurface());
 	}
 
-	bool Core::createPipeline(const Pipeline& pipeline, PipelineHandle& handle) {
+	bool Core::createGraphicsPipeline(const Pipeline& pipeline, PipelineHandle& handle) {
 
 		// vertex shader stage
 		vk::ShaderModuleCreateInfo vertexModuleInfo({}, pipeline.m_vertexCode.size(), pipeline.m_vertexCode.data());

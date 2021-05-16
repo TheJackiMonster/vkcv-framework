@@ -117,7 +117,7 @@ namespace vkcv
          * @param handle a handle to return the created vulkan handle
          * @return True if Pipeline creation was successfull, False if not
          */
-        bool createPipeline(const Pipeline &pipeline, PipelineHandle &handle);
+        bool createGraphicsPipeline(const Pipeline &pipeline, PipelineHandle &handle);
 
         // TODO:
         BufferHandle createBuffer(const Buffer &buf);
