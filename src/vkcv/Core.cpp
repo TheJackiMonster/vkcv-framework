@@ -349,17 +349,170 @@ namespace vkcv
             m_Context(std::move(context)),
             m_window(window),
             m_swapchain(swapChain),
-            m_swapchainImageViews(imageViews)
+            m_swapchainImageViews(imageViews),
+			m_NextPipelineId(0),
+			m_Pipelines{},
+			m_PipelineLayouts{},
+			m_NextRenderpassId(0),
+			m_Renderpasses{}
     {}
 
-    Core::~Core() {
-        std::cout<< " Core " << std::endl;
+	Core::~Core() {
+		std::cout << " Core " << std::endl;
 
-        for( auto image: m_swapchainImageViews ){
-            m_Context.getDevice().destroyImageView(image);
-        }
+		for (auto image : m_swapchainImageViews) {
+			m_Context.getDevice().destroyImageView(image);
+		}
 
-        m_Context.getDevice().destroySwapchainKHR(m_swapchain.getSwapchain());
-        m_Context.getInstance().destroySurfaceKHR( m_swapchain.getSurface() );
+		m_Context.getDevice().destroySwapchainKHR(m_swapchain.getSwapchain());
+		m_Context.getInstance().destroySurfaceKHR(m_swapchain.getSurface());
+	}
+
+    bool Core::createPipeline(const Pipeline &pipeline, PipelineHandle &handle) {
+
+        // vertex shader stage
+        vk::ShaderModuleCreateInfo vertexModuleInfo({},pipeline.m_vertexCode.size(), pipeline.m_vertexCode.data());
+        vk::ShaderModule vertexModule{};
+        if(m_Context.m_Device.createShaderModule(&vertexModuleInfo, nullptr, &vertexModule) != vk::Result::eSuccess)
+            return false;
+
+        vk::PipelineShaderStageCreateInfo pipelineVertexShaderStageInfo(
+                {},
+                vk::ShaderStageFlagBits::eVertex,
+                vertexModule,
+                "main",
+                nullptr
+                );
+
+        // fragment shader stage
+        vk::ShaderModuleCreateInfo fragmentModuleInfo({},pipeline.m_fragCode.size(), pipeline.m_fragCode.data());
+        vk::ShaderModule fragmentModule{};
+        if(m_Context.m_Device.createShaderModule(&fragmentModuleInfo, nullptr, &fragmentModule) != vk::Result::eSuccess)
+            return false;
+
+        vk::PipelineShaderStageCreateInfo pipelineFragmentShaderStageInfo(
+                {},
+                vk::ShaderStageFlagBits::eFragment,
+                fragmentModule,
+                "main",
+                nullptr
+                );
+
+        // vertex input state
+        vk::VertexInputBindingDescription vertexInputBindingDescription(0,12,vk::VertexInputRate::eVertex);
+        vk::VertexInputAttributeDescription vertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, 0);
+
+        vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
+                {},
+                1,
+                &vertexInputBindingDescription,
+                1,
+                &vertexInputAttributeDescription
+                );
+
+        // input assembly state
+        vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
+                {},
+                vk::PrimitiveTopology::eTriangleList,
+                false
+                );
+
+        // viewport state
+        vk::Viewport viewport(0.f, 0.f, static_cast<float>(pipeline.m_width), static_cast<float>(pipeline.m_height), 0.f, 1.f);
+        vk::Rect2D scissor({0,0},{pipeline.m_width, pipeline.m_height});
+        vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
+
+        // rasterization state
+        vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
+                {},
+                false,
+                false,
+                vk::PolygonMode::eFill,
+                vk::CullModeFlagBits::eNone,
+                vk::FrontFace::eCounterClockwise,
+                false,
+                0.f,
+                0.f,
+                0.f,
+                1.f
+                );
+
+        // multisample state
+        vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
+                {},
+                vk::SampleCountFlagBits::e1,
+                false,
+                0.f,
+                nullptr,
+                false,
+                false
+                );
+
+        // color blend state
+        vk::ColorComponentFlags colorWriteMask(VK_COLOR_COMPONENT_R_BIT |
+                                               VK_COLOR_COMPONENT_G_BIT |
+                                               VK_COLOR_COMPONENT_B_BIT |
+                                               VK_COLOR_COMPONENT_A_BIT);
+        vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
+                false,
+                vk::BlendFactor::eOne,
+                vk::BlendFactor::eOne,
+                vk::BlendOp::eAdd,
+                vk::BlendFactor::eOne,
+                vk::BlendFactor::eOne,
+                vk::BlendOp::eAdd,
+                colorWriteMask
+                );
+        vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
+                {},
+                false,
+                vk::LogicOp::eClear,
+                0,
+                &colorBlendAttachmentState,
+                {1.f,1.f,1.f,1.f}
+                );
+
+        // pipeline layout
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
+                {},
+                0,
+                {},
+                0,
+                {}
+                );
+        vk::PipelineLayout vkPipelineLayout{};
+        if(m_Context.m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
+            return false;
+
+        // graphics pipeline create
+        std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = {pipelineVertexShaderStageInfo, pipelineFragmentShaderStageInfo};
+        vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
+                {},
+                static_cast<uint32_t>(shaderStages.size()),
+                shaderStages.data(),
+                &pipelineVertexInputStateCreateInfo,
+                &pipelineInputAssemblyStateCreateInfo,
+                nullptr,
+                &pipelineViewportStateCreateInfo,
+                &pipelineRasterizationStateCreateInfo,
+                &pipelineMultisampleStateCreateInfo,
+                nullptr,
+                &pipelineColorBlendStateCreateInfo,
+                nullptr,
+                vkPipelineLayout,
+                m_Renderpasses[pipeline.m_passHandle.id],
+                0,
+                {},
+                0
+                );
+
+        vk::Pipeline vkPipeline{};
+        if(m_Context.m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess)
+            return false;
+
+        m_Pipelines.push_back(vkPipeline);
+        m_PipelineLayouts.push_back(vkPipelineLayout);
+        handle.id = m_NextPipelineId++;
+        return true;
     }
 }

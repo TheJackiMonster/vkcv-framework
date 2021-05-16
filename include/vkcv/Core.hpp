@@ -9,13 +9,13 @@
 #include "vkcv/SwapChain.hpp"
 #include "vkcv/Window.hpp"
 #include "vkcv/Handles.hpp"
+#include "vkcv/Pipeline.hpp"
 
 namespace vkcv
 {
     // TODO:
     class Buffer;
     class Renderpass;
-    class Pipeline;
 
     class Core final
     {
@@ -34,6 +34,13 @@ namespace vkcv
         SwapChain m_swapchain;
         std::vector<vk::ImageView> m_swapchainImageViews;
         const Window& m_window;
+
+        uint64_t m_NextPipelineId;
+        std::vector<vk::Pipeline> m_Pipelines;
+        std::vector<vk::PipelineLayout> m_PipelineLayouts;
+
+        uint64_t m_NextRenderpassId;
+        std::vector<vk::RenderPass> m_Renderpasses;
 
     public:
         /**
@@ -98,10 +105,19 @@ namespace vkcv
                            std::vector<const char*> instanceExtensions  = {},
                            std::vector<const char*> deviceExtensions    = {});
 
+        /**
+         * Creates a basic vulkan graphics pipeline using @p pipeline from the pipeline class and returns it using the @p handle.
+         * Fixed Functions for pipeline are set with standard values.
+         *
+         * @param pipeline a pipeline object from the pipeline class
+         * @param handle a handle to return the created vulkan handle
+         * @return True if Pipeline creation was successfull, False if not
+         */
+        bool createPipeline(const Pipeline &pipeline, PipelineHandle &handle);
+
         // TODO:
         BufferHandle createBuffer(const Buffer &buf);
         PassHandle createRenderPass(const Renderpass &pass) ;
-        PipelineHandle createPipeline(const Pipeline &pipeline);
 
     };
 }
