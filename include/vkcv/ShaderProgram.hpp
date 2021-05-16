@@ -49,7 +49,7 @@ namespace vkcv {
         * @param[in] flag that signals the respective shader stage (e.g. VK_SHADER_STAGE_VERTEX_BIT)
         * @return boolean that is true if the shader program contains the shader stage
         */
-        bool containsShaderStage(ShaderProgram::ShaderStage shaderStage);
+        bool containsShaderStage(ShaderProgram::ShaderStage shaderStage) const;
 
         /**
         * Deletes the given shader stage in the shader program.
@@ -63,21 +63,21 @@ namespace vkcv {
         * Needed for the transfer to the pipeline.
         * @return vector list with all shader stage info structs
         */
-        std::vector<vk::ShaderStageFlagBits> getShaderStages();
+        std::vector<vk::ShaderStageFlagBits> getShaderStages() const;
 
         /**
         * Returns a list with all the shader code in the shader program.
         * Needed for the transfer to the pipeline.
         * @return vector list with all shader code char vecs
         */
-        std::vector<std::vector<char>> getShaderCode();
+        std::vector<std::vector<char>> getShaderCode() const;
 
         /**
         * Returns the number of shader stages in the shader program.
         * Needed for the transfer to the pipeline.
         * @return integer with the number of stages
         */
-        int getShaderStagesCount();
+        int getShaderStagesCount() const;
 
 
 
@@ -109,7 +109,7 @@ namespace vkcv {
 		* @param[in] ShaderStage enum
 		* @return vk::ShaderStageFlagBits
 		*/
-        vk::ShaderStageFlagBits convertToShaderStageFlagBits(ShaderProgram::ShaderStage shaderStage);
+        vk::ShaderStageFlagBits convertToShaderStageFlagBits(ShaderProgram::ShaderStage shaderStage) const;
 
 		/**
 		* Creates a shader module that encapsulates the read shader code. 

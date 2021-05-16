@@ -421,8 +421,31 @@ namespace vkcv
 
 	bool Core::createGraphicsPipeline(const Pipeline& pipeline, PipelineHandle& handle) {
 
+		// TODO: this search could be avoided if ShaderProgram could be queried for a specific stage
+		const auto shaderStageFlags = pipeline.m_shaderProgram.getShaderStages();
+		const auto shaderCode = pipeline.m_shaderProgram.getShaderCode();
+		std::vector<char> vertexCode;
+		std::vector<char> fragCode;
+		assert(shaderStageFlags.size() == shaderCode.size());
+		for (int i = 0; i < shaderStageFlags.size(); i++) {
+			switch (shaderStageFlags[i]) {
+				case vk::ShaderStageFlagBits::eVertex: vertexCode = shaderCode[i]; break;
+				case vk::ShaderStageFlagBits::eFragment: fragCode = shaderCode[i]; break;
+				default: std::cout << "Core::createGraphicsPipeline encountered unknown shader stage" << std::endl; return false;
+			}
+		}
+
+		const bool foundVertexCode = vertexCode.size() > 0;
+		const bool foundFragCode = fragCode.size() > 0;
+		const bool foundRequiredShaderCode = foundVertexCode && foundFragCode;
+		if (!foundRequiredShaderCode) {
+			std::cout << "Core::createGraphicsPipeline requires vertex and fragment shader code" << std::endl; 
+			return false;
+		}
+
 		// vertex shader stage
-		vk::ShaderModuleCreateInfo vertexModuleInfo({}, pipeline.m_vertexCode.size(), pipeline.m_vertexCode.data());
+		// TODO: store shader code as uint32_t in ShaderProgram to avoid pointer cast
+		vk::ShaderModuleCreateInfo vertexModuleInfo({}, vertexCode.size(), reinterpret_cast<uint32_t*>(vertexCode.data()));
 		vk::ShaderModule vertexModule{};
 		if (m_Context.m_Device.createShaderModule(&vertexModuleInfo, nullptr, &vertexModule) != vk::Result::eSuccess)
 			return false;
@@ -436,7 +459,7 @@ namespace vkcv
 		);
 
 		// fragment shader stage
-		vk::ShaderModuleCreateInfo fragmentModuleInfo({}, pipeline.m_fragCode.size(), pipeline.m_fragCode.data());
+		vk::ShaderModuleCreateInfo fragmentModuleInfo({}, fragCode.size(), reinterpret_cast<uint32_t*>(fragCode.data()));
 		vk::ShaderModule fragmentModule{};
 		if (m_Context.m_Device.createShaderModule(&fragmentModuleInfo, nullptr, &fragmentModule) != vk::Result::eSuccess)
 			return false;

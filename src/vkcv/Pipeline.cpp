@@ -8,6 +8,6 @@
 
 namespace vkcv {
 
-    Pipeline::Pipeline(const std::vector<uint32_t> &vertexCode, const std::vector<uint32_t> &fragCode, uint32_t height, uint32_t width, RenderpassHandle &passHandle):
-        m_vertexCode(vertexCode), m_fragCode(fragCode), m_height(height), m_width(width), m_passHandle(passHandle) {}
+    Pipeline::Pipeline(const ShaderProgram& shaderProgram, uint32_t width, uint32_t height, RenderpassHandle &passHandle):
+		m_shaderProgram(shaderProgram), m_height(height), m_width(width), m_passHandle(passHandle) {}
 }

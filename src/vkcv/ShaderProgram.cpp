@@ -31,7 +31,7 @@ namespace vkcv {
 		return buffer;
 	}
 
-    vk::ShaderStageFlagBits ShaderProgram::convertToShaderStageFlagBits(ShaderProgram::ShaderStage shaderStage){
+    vk::ShaderStageFlagBits ShaderProgram::convertToShaderStageFlagBits(ShaderProgram::ShaderStage shaderStage) const{
         switch (shaderStage) {
             case ShaderStage::VERTEX:
                 return vk::ShaderStageFlagBits::eVertex;
@@ -83,7 +83,7 @@ namespace vkcv {
 		}
 	}
 
-	bool ShaderProgram::containsShaderStage(ShaderProgram::ShaderStage shaderStage) {
+	bool ShaderProgram::containsShaderStage(ShaderProgram::ShaderStage shaderStage) const{
         vk::ShaderStageFlagBits convertedShaderStage = convertToShaderStageFlagBits(shaderStage);
 		for (int i = 0; i < m_shaderStages.shaderStageFlag.size(); i++) {
 			if (m_shaderStages.shaderStageFlag[i] == convertedShaderStage) {
@@ -105,15 +105,15 @@ namespace vkcv {
 		return false;
 	}
 
-	std::vector<vk::ShaderStageFlagBits> ShaderProgram::getShaderStages() {
+	std::vector<vk::ShaderStageFlagBits> ShaderProgram::getShaderStages() const{
 		return m_shaderStages.shaderStageFlag;
 	}
 
-    std::vector<std::vector<char>> ShaderProgram::getShaderCode() {
+    std::vector<std::vector<char>> ShaderProgram::getShaderCode() const {
 	    return m_shaderStages.shaderCode;
 	}
 
-	int ShaderProgram::getShaderStagesCount() {
+	int ShaderProgram::getShaderStagesCount() const {
 		return m_shaderStages.shaderStageFlag.size();
 	}
 }
