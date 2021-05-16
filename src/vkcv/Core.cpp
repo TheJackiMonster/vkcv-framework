@@ -7,6 +7,7 @@
 #include "vkcv/Core.hpp"
 #include "PassManager.hpp"
 #include "PipelineManager.hpp"
+#include "Surface.hpp"
 
 namespace vkcv
 {
@@ -79,173 +80,6 @@ namespace vkcv
         return phyDevice;
     }
 
-
-    /**
-     * Given the @p physicalDevice and the @p queuePriorities, the @p queueCreateInfos are computed. First, the requested
-     * queues are sorted by priority depending on the availability of queues in the queue families of the given
-     * @p physicalDevice. Then check, if all requested queues are creatable. If so, the @p queueCreateInfos will be computed.
-     * Furthermore, lists of index pairs (queueFamilyIndex, queueIndex) for later referencing of the separate queues will
-     * be computed.
-     * @param[in] physicalDevice The physical device
-     * @param[in] queuePriorities The queue priorities used for the computation of @p queueCreateInfos
-     * @param[in] queueFlags The queue flags requesting the queues
-     * @param[in,out] queueCreateInfos The queue create info structures to be created
-     * @param[in,out] queuePairsGraphics The list of index pairs (queueFamilyIndex, queueIndex) of queues of type
-     *      vk::QueueFlagBits::eGraphics
-     * @param[in,out] queuePairsCompute The list of index pairs (queueFamilyIndex, queueIndex) of queues of type
-     *      vk::QueueFlagBits::eCompute
-     * @param[in,out] queuePairsTransfer The list of index pairs (queueFamilyIndex, queueIndex) of queues of type
-     *      vk::QueueFlagBits::eTransfer
-     * @throws std::runtime_error If the requested queues from @p queueFlags are not creatable due to insufficient availability.
-     */
-    void queueCreateInfosQueueHandles(vk::PhysicalDevice &physicalDevice,
-                                                           std::vector<float> &queuePriorities,
-                                                           std::vector<vk::QueueFlagBits> &queueFlags,
-                                                           std::vector<vk::DeviceQueueCreateInfo> &queueCreateInfos,
-                                                           std::vector<std::pair<int, int>> &queuePairsGraphics,
-                                                           std::vector<std::pair<int, int>> &queuePairsCompute,
-                                                           std::vector<std::pair<int, int>> &queuePairsTransfer)
-    {
-        queueCreateInfos = {};
-        queuePairsGraphics = {};
-        queuePairsCompute = {};
-        queuePairsTransfer = {};
-        std::vector<vk::QueueFamilyProperties> qFamilyProperties = physicalDevice.getQueueFamilyProperties();
-
-        // DEBUG
-        std::cout << "Input queue flags:" << std::endl;
-        for (auto qFlag : queueFlags) {
-            std::cout << "\t" << to_string(qFlag) << std::endl;
-        }
-
-        //check priorities of flags -> the lower prioCount the higher the priority
-        std::vector<int> prios;
-        for(auto flag: queueFlags){
-            int prioCount = 0;
-            for (int i = 0; i < qFamilyProperties.size(); i++) {
-                prioCount += (static_cast<uint32_t>(flag & qFamilyProperties[i].queueFlags) != 0) * qFamilyProperties[i].queueCount;
-            }
-            prios.push_back(prioCount);
-            std::cout<< "prio Count: " << prioCount << std::endl;
-        }
-        //resort flags with heighest priority before allocating the queues
-        std::vector<vk::QueueFlagBits> newFlags;
-        for(int i = 0; i < prios.size(); i++){
-            auto minElem = std::min_element(prios.begin(), prios.end());
-            int index = minElem - prios.begin();
-            std::cout << "index: "<< index << std::endl;
-            newFlags.push_back(queueFlags[index]);
-            prios[index] = std::numeric_limits<int>::max();
-        }
-
-        std::cout << "Sorted queue flags:" << std::endl;
-        for (auto qFlag : newFlags) {
-            std::cout << "\t" << to_string(qFlag) << std::endl;
-        }
-
-        // create requested queues and check if more requested queues are supported
-        // herefore: create vector that updates available queues in each queue family
-        // structure: [qFamily_0, ..., qFamily_n] where
-        // - qFamily_i = [GraphicsCount, ComputeCount, TransferCount], 0 <= i <= n
-        std::vector<std::vector<int>> queueFamilyStatus, initialQueueFamilyStatus;
-
-        for (auto qFamily : qFamilyProperties) {
-            int graphicsCount = int(static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eGraphics) != 0) * qFamily.queueCount;
-            int computeCount = int(static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eCompute) != 0) * qFamily.queueCount;;
-            int transferCount = int(static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eTransfer) != 0) * qFamily.queueCount;;
-            queueFamilyStatus.push_back({graphicsCount, computeCount, transferCount});
-        }
-
-        initialQueueFamilyStatus = queueFamilyStatus;
-
-        // check if every queue with the specified queue flag can be created
-        // this automatically checks for queue flag support!
-        for (auto qFlag : newFlags) {
-            bool found;
-            switch (qFlag) {
-                case vk::QueueFlagBits::eGraphics:
-                    found = false;
-                    for (int i = 0; i < queueFamilyStatus.size() && !found; i++) {
-                        if (queueFamilyStatus[i][0] > 0) {
-                            queuePairsGraphics.push_back(std::pair(i, initialQueueFamilyStatus[i][0] - queueFamilyStatus[i][0]));
-                            queueFamilyStatus[i][0]--;
-                            queueFamilyStatus[i][1]--;
-                            queueFamilyStatus[i][2]--;
-                            std::cout << "Graphics queue available at queue family #" << i << std::endl;
-                            found = true;
-                        }
-                    }
-                    if (!found) {
-                        throw std::runtime_error("Too many graphics queues were requested than being available!");
-                    }
-                    break;
-                case vk::QueueFlagBits::eCompute:
-                    found = false;
-                    for (int i = 0; i < queueFamilyStatus.size() && !found; i++) {
-                        if (queueFamilyStatus[i][1] > 0) {
-                            queuePairsCompute.push_back(std::pair(i, initialQueueFamilyStatus[i][1] - queueFamilyStatus[i][1]));
-                            queueFamilyStatus[i][0]--;
-                            queueFamilyStatus[i][1]--;
-                            queueFamilyStatus[i][2]--;
-                            std::cout << "Compute queue available at queue family #" << i << std::endl;
-                            found = true;
-                        }
-                    }
-                    if (!found) {
-                        throw std::runtime_error("Too many compute queues were requested than being available!");
-                    }
-                    break;
-                case vk::QueueFlagBits::eTransfer:
-                    found = false;
-                    for (int i = 0; i < queueFamilyStatus.size() && !found; i++) {
-                        if (queueFamilyStatus[i][2] > 0) {
-                            queuePairsTransfer.push_back(std::pair(i, initialQueueFamilyStatus[i][2] - queueFamilyStatus[i][2]));
-                            queueFamilyStatus[i][0]--;
-                            queueFamilyStatus[i][1]--;
-                            queueFamilyStatus[i][2]--;
-                            std::cout << "Transfer queue available at queue family #" << i << std::endl;
-                            found = true;
-                        }
-                    }
-                    if (!found) {
-                        throw std::runtime_error("Too many transfer queues were requested than being available!");
-                    }
-                    break;
-                default:
-                    throw std::runtime_error("Invalid input for queue flag bits. Valid inputs are 'vk::QueueFlagBits::eGraphics', 'vk::QueueFlagBits::eCompute' and 'vk::QueueFlagBits::eTransfer'.");
-            }
-        }
-
-        std::cout << "Initial queue status:" << std::endl;
-        int x = 0;
-        for (std::vector<int> e : initialQueueFamilyStatus) {
-            std::cout << "#" << x << ":\t[" << e[0] << ", " << e[1] << ", " << e[2] << "]" << std::endl;
-            x++;
-        }
-
-        std::cout << "Actual queue status:" << std::endl;
-        x = 0;
-        for (std::vector<int> e : queueFamilyStatus) {
-            std::cout << "#" << x << ":\t[" << e[0] << ", " << e[1] << ", " << e[2] << "]" << std::endl;
-            x++;
-        }
-
-        // create all requested queues
-        for (int i = 0; i < qFamilyProperties.size(); i++) {
-            uint32_t create = std::abs(initialQueueFamilyStatus[i][0] - queueFamilyStatus[i][0]);
-            std::cout << "For Queue Family #" << i << " create " << create << " queues" << std::endl;
-            if (create > 0) {
-                vk::DeviceQueueCreateInfo qCreateInfo(
-                        vk::DeviceQueueCreateFlags(),
-                        i,
-                        create,
-                        queuePriorities.data()
-                );
-                queueCreateInfos.push_back(qCreateInfo);
-            }
-        }
-    }
-
     /**
      * @brief With the help of the reference "supported" all elements in "check" checked,
      * if they are supported by the physical device.
@@ -280,22 +114,6 @@ namespace vkcv
 #endif
 
         return extensions;
-    }
-
-    /**
-     * Computes the queue handles from @p queuePairs
-     * @param queuePairs The queuePairs that were created separately for each queue type (e.g., vk::QueueFlagBits::eGraphics)
-     * @param device The device
-     * @return An array of queue handles based on the @p queuePairs
-     */
-    std::vector<vk::Queue> getQueueHandles(const std::vector<std::pair<int, int>> queuePairs, const vk::Device device) {
-        std::vector<vk::Queue> queueHandles;
-        for (auto q : queuePairs) {
-            int queueFamilyIndex = q.first; // the queueIndex of the queue family
-            int queueIndex = q.second;   // the queueIndex within a queue family
-            queueHandles.push_back(device.getQueue(queueFamilyIndex, queueIndex));
-        }
-        return queueHandles;
     }
 
     Core Core::create(const Window &window,
@@ -382,47 +200,34 @@ namespace vkcv
             throw std::runtime_error("The requested device extensions are not supported by the physical device!");
         }
 
-        //vector to define the queue priorities
-        std::vector<float> qPriorities;
-        qPriorities.resize(queueFlags.size(), 1.f); // all queues have the same priorities
+		const vk::SurfaceKHR surface = createSurface(window.getWindow(), instance, physicalDevice);
+		const QueueFamilyIndices queueFamilyIndices = getQueueFamilyIndices(physicalDevice, surface);
+		const std::vector<vk::DeviceQueueCreateInfo> qCreateInfos = createDeviceQueueCreateInfo(queueFamilyIndices);
 
-        // create required queues
-        std::vector<vk::DeviceQueueCreateInfo> qCreateInfos;
-        std::vector<std::pair<int, int>> queuePairsGraphics, queuePairsCompute, queuePairsTransfer;
-        queueCreateInfosQueueHandles(physicalDevice, qPriorities, queueFlags, qCreateInfos, queuePairsGraphics, queuePairsCompute, queuePairsTransfer);
+		vk::DeviceCreateInfo deviceCreateInfo(
+			vk::DeviceCreateFlags(),
+			qCreateInfos.size(),
+			qCreateInfos.data(),
+			0,
+			nullptr,
+			deviceExtensions.size(),
+			deviceExtensions.data(),
+			nullptr		// Should our device use some features??? If yes: TODO
+		);
 
-        vk::DeviceCreateInfo deviceCreateInfo(
-                vk::DeviceCreateFlags(),
-                qCreateInfos.size(),
-                qCreateInfos.data(),
-                0,
-                nullptr,
-                deviceExtensions.size(),
-                deviceExtensions.data(),
-                nullptr		// Should our device use some features??? If yes: TODO
-        );
+
 
 #ifndef NDEBUG
         deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
 
-
         vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
-
-        // maybe it can be useful to store these lists as member variable of Core
-        std::vector<vk::Queue> graphicsQueues = getQueueHandles(queuePairsGraphics, device);
-        std::vector<vk::Queue> computeQueues = getQueueHandles(queuePairsCompute, device);
-        std::vector<vk::Queue> transferQueues = getQueueHandles(queuePairsTransfer, device);
-
-        // examples for accessing queues
-        vk::Queue graphicsQueue = graphicsQueues[0];
-        vk::Queue computeQueue = computeQueues[0];
-        vk::Queue transferQueue = transferQueues[0];
-
         Context context(instance, physicalDevice, device);
 
-        SwapChain swapChain = SwapChain::create(window, context);
+		const VulkanQueues queues = getDeviceQueues(device, queueFamilyIndices);
+
+        SwapChain swapChain = SwapChain::create(window, context, surface);
 
         std::vector<vk::Image> swapChainImages = device.getSwapchainImagesKHR(swapChain.getSwapchain());
         std::vector<vk::ImageView> imageViews;
@@ -450,11 +255,11 @@ namespace vkcv
             imageViews.push_back( device.createImageView( imageViewCreateInfo ) );
         }
 
-		const int graphicQueueFamilyIndex = queuePairsGraphics[0].first;
+		const int graphicQueueFamilyIndex = queueFamilyIndices.graphicsIndex;
 		const auto defaultCommandResources = createDefaultCommandResources(context.getDevice(), graphicQueueFamilyIndex);
 		const auto defaultSyncResources = createDefaultSyncResources(context.getDevice());
 
-        return Core(std::move(context) , window, swapChain, imageViews, defaultCommandResources, defaultSyncResources);
+        return Core(std::move(context) , window, swapChain, imageViews, defaultCommandResources, defaultSyncResources, queues);
     }
 
     const Context &Core::getContext() const
@@ -463,7 +268,7 @@ namespace vkcv
     }
 
 	Core::Core(Context &&context, const Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
-		const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
+		const CommandResources& commandResources, const SyncResources& syncResources, const VulkanQueues& queues) noexcept :
 			m_Context(std::move(context)),
 			m_window(window),
 			m_swapchain(swapChain),
@@ -474,12 +279,11 @@ namespace vkcv
 			m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
 			m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
 			m_CommandResources(commandResources),
-			m_SyncResources(syncResources)
+			m_SyncResources(syncResources),
+			m_Queues(queues)
 	{}
 
 	Core::~Core() noexcept {
-		std::cout << " Core " << std::endl;
-
 		for(const auto &layout : m_PipelineLayouts)
         {
 		    m_Context.m_Device.destroy(layout);
@@ -516,5 +320,20 @@ namespace vkcv
     {
         return m_PassManager->createPass(config);
     }
+
+	void Core::beginFrame() {
+		const vk::CommandBufferUsageFlags beginFlags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+		const vk::CommandBufferBeginInfo beginInfos(beginFlags);
+		m_CommandResources.commandBuffer.begin(beginInfos);
+	}
+
+	void Core::renderTriangle() {
+
+	}
+
+	void Core::endFrame() {
+		m_CommandResources.commandBuffer.end();
+		//m_Context.
+	}
 
 }

@@ -52,7 +52,7 @@ namespace vkcv {
          * @param context of the application
          * @return returns an object of swapChain
          */
-        static SwapChain create(const Window &window, const Context &context);
+        static SwapChain create(const Window &window, const Context &context, const vk::SurfaceKHR surface);
 
         /**
          * Destructor of SwapChain

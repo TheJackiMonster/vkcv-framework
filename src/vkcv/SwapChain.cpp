@@ -1,4 +1,3 @@
-
 #include <vkcv/SwapChain.hpp>
 
 namespace vkcv {
@@ -25,27 +24,6 @@ namespace vkcv {
      */
     vk::SurfaceFormatKHR SwapChain::getSurfaceFormat(){
         return m_format;
-    }
-
-    /**
-     * creates surface and checks availability
-     * @param window current window for the surface
-     * @param instance Vulkan-Instance
-     * @param physicalDevice Vulkan-PhysicalDevice
-     * @return created surface
-     */
-    vk::SurfaceKHR createSurface(GLFWwindow *window, const vk::Instance &instance, const vk::PhysicalDevice& physicalDevice) {
-        //create surface
-        VkSurfaceKHR surface;
-        if (glfwCreateWindowSurface(VkInstance(instance), window, nullptr, &surface) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create a window surface!");
-        }
-        vk::Bool32 surfaceSupport = false;
-        if (physicalDevice.getSurfaceSupportKHR(0, vk::SurfaceKHR(surface), &surfaceSupport) != vk::Result::eSuccess && surfaceSupport != true) {
-            throw std::runtime_error("surface is not supported by the device!");
-        }
-
-        return vk::SurfaceKHR(surface);
     }
 
     /**
@@ -148,12 +126,10 @@ namespace vkcv {
      * @param context that keeps instance, physicalDevice and a device.
      * @return swapchain
      */
-    SwapChain SwapChain::create(const Window &window, const Context &context) {
+    SwapChain SwapChain::create(const Window &window, const Context &context, const vk::SurfaceKHR surface) {
         const vk::Instance& instance = context.getInstance();
         const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
         const vk::Device& device = context.getDevice();
-
-        vk::SurfaceKHR surface = createSurface(window.getWindow(),instance,physicalDevice);
 
         vk::Extent2D extent2D = chooseSwapExtent(physicalDevice, surface, window);
         vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(physicalDevice, surface);

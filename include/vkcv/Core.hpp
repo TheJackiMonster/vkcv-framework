@@ -15,6 +15,7 @@
 #include "vkcv/PipelineConfig.hpp"
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
+#include "vkcv/Queues.hpp"
 
 namespace vkcv
 {
@@ -35,7 +36,7 @@ namespace vkcv
          * @param context encapsulates various Vulkan objects
          */
         Core(Context &&context, const Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
-			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
+			const CommandResources& commandResources, const SyncResources& syncResources, const VulkanQueues &queues) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
 
@@ -53,6 +54,7 @@ namespace vkcv
         std::unique_ptr<PipelineManager> m_PipelineManager;
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
+		VulkanQueues m_Queues;
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
@@ -139,5 +141,19 @@ namespace vkcv
         // TODO:
         BufferHandle createBuffer(const Buffer &buf);
 
+		/**
+		 * @brief start recording command buffers and increment frame index
+		*/
+		void beginFrame();
+
+		/**
+		 * @brief render a beautiful triangle
+		*/
+		void renderTriangle();
+
+		/**
+		 * @brief end recording and present image
+		*/
+		void endFrame();
     };
 }

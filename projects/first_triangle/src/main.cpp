@@ -87,11 +87,9 @@ int main(int argc, const char** argv) {
 
 	while (window.isWindowOpen())
 	{
-        // core.beginFrame(); or something like that
+		core.beginFrame();
 	    // core.execute(trianglePass, trianglePipeline, triangleModel);
-	    // core.endFrame(); or something like that
-
-	    // TBD: synchronization
+	    core.endFrame();
 
 		window.pollEvents();
 	}
