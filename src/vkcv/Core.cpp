@@ -559,8 +559,8 @@ namespace vkcv
 			}
 		}
 
-		const bool foundVertexCode = vertexCode.size() > 0;
-		const bool foundFragCode = fragCode.size() > 0;
+		const bool foundVertexCode = vertexCode.empty();
+		const bool foundFragCode = fragCode.empty();
 		const bool foundRequiredShaderCode = foundVertexCode && foundFragCode;
 		if (!foundRequiredShaderCode) {
 			std::cout << "Core::createGraphicsPipeline requires vertex and fragment shader code" << std::endl; 
@@ -586,7 +586,10 @@ namespace vkcv
 		vk::ShaderModuleCreateInfo fragmentModuleInfo({}, fragCode.size(), reinterpret_cast<uint32_t*>(fragCode.data()));
 		vk::ShaderModule fragmentModule{};
 		if (m_Context.m_Device.createShaderModule(&fragmentModuleInfo, nullptr, &fragmentModule) != vk::Result::eSuccess)
+        {
+		    m_Context.m_Device.destroy(vertexModule);
 			return false;
+        }
 
 		vk::PipelineShaderStageCreateInfo pipelineFragmentShaderStageInfo(
 			{},
@@ -680,7 +683,11 @@ namespace vkcv
 		);
 		vk::PipelineLayout vkPipelineLayout{};
 		if (m_Context.m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
+        {
+		    m_Context.m_Device.destroy(vertexModule);
+		    m_Context.m_Device.destroy(fragmentModule);
 			return false;
+        }
 
 		// graphics pipeline create
 		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = { pipelineVertexShaderStageInfo, pipelineFragmentShaderStageInfo };
@@ -706,7 +713,11 @@ namespace vkcv
 
 		vk::Pipeline vkPipeline{};
 		if (m_Context.m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess)
+        {
+            m_Context.m_Device.destroy(vertexModule);
+            m_Context.m_Device.destroy(fragmentModule);
 			return false;
+        }
 
 		m_Context.m_Device.destroy(vertexModule);
 		m_Context.m_Device.destroy(fragmentModule);
@@ -714,6 +725,7 @@ namespace vkcv
 		m_Pipelines.push_back(vkPipeline);
 		m_PipelineLayouts.push_back(vkPipelineLayout);
 		handle.id = m_NextPipelineId++;
+
 		return true;
 	}
 
