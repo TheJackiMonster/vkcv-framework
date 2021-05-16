@@ -8,6 +8,51 @@
 
 namespace vkcv
 {
+    static vk::ImageLayout getVkLayoutFromAttachLayout(AttachmentLayout layout)
+    {
+        switch(layout)
+        {
+            case AttachmentLayout::GENERAL:
+                return vk::ImageLayout::eGeneral;
+            case AttachmentLayout::COLOR_ATTACHMENT:
+                return vk::ImageLayout::eColorAttachmentOptimal;
+            case AttachmentLayout::SHADER_READ_ONLY:
+                return vk::ImageLayout::eShaderReadOnlyOptimal;
+            case AttachmentLayout::DEPTH_STENCIL_ATTACHMENT:
+                return vk::ImageLayout::eDepthStencilAttachmentOptimal;
+            case AttachmentLayout::DEPTH_STENCIL_READ_ONLY:
+                return vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+            case AttachmentLayout::PRESENTATION:
+                return vk::ImageLayout::ePresentSrcKHR;
+            default:
+                return vk::ImageLayout::eUndefined;
+        }
+    }
+
+    static vk::AttachmentStoreOp getVkStoreOpFromAttachOp(AttachmentOperation op)
+    {
+        switch(op)
+        {
+            case AttachmentOperation::STORE:
+                return vk::AttachmentStoreOp::eStore;
+            default:
+                return vk::AttachmentStoreOp::eDontCare;
+        }
+    }
+
+    static vk::AttachmentLoadOp getVKLoadOpFromAttachOp(AttachmentOperation op)
+    {
+        switch(op)
+        {
+            case AttachmentOperation::LOAD:
+                return vk::AttachmentLoadOp::eLoad;
+            case AttachmentOperation::CLEAR:
+                return vk::AttachmentLoadOp::eClear;
+            default:
+                return vk::AttachmentLoadOp::eDontCare;
+        }
+    }
+
     /**
      * @brief The physical device is evaluated by three categories:
      * discrete GPU vs. integrated GPU, amount of queues and its abilities, and VRAM.physicalDevice.
@@ -354,6 +399,7 @@ namespace vkcv
 			m_Pipelines{},
 			m_PipelineLayouts{},
 			m_NextRenderpassId(0),
+			m_NextPassId(0),
 			m_Renderpasses{}
     {}
 
@@ -363,156 +409,230 @@ namespace vkcv
 		for (auto image : m_swapchainImageViews) {
 			m_Context.getDevice().destroyImageView(image);
 		}
+		for (const auto& pass : m_Renderpasses)
+			m_Context.m_Device.destroy(pass);
+
+		m_Renderpasses.clear();
+		m_NextPassId = 0;
 
 		m_Context.getDevice().destroySwapchainKHR(m_swapchain.getSwapchain());
 		m_Context.getInstance().destroySurfaceKHR(m_swapchain.getSurface());
 	}
 
-    bool Core::createPipeline(const Pipeline &pipeline, PipelineHandle &handle) {
+	bool Core::createPipeline(const Pipeline& pipeline, PipelineHandle& handle) {
 
-        // vertex shader stage
-        vk::ShaderModuleCreateInfo vertexModuleInfo({},pipeline.m_vertexCode.size(), pipeline.m_vertexCode.data());
-        vk::ShaderModule vertexModule{};
-        if(m_Context.m_Device.createShaderModule(&vertexModuleInfo, nullptr, &vertexModule) != vk::Result::eSuccess)
+		// vertex shader stage
+		vk::ShaderModuleCreateInfo vertexModuleInfo({}, pipeline.m_vertexCode.size(), pipeline.m_vertexCode.data());
+		vk::ShaderModule vertexModule{};
+		if (m_Context.m_Device.createShaderModule(&vertexModuleInfo, nullptr, &vertexModule) != vk::Result::eSuccess)
+			return false;
+
+		vk::PipelineShaderStageCreateInfo pipelineVertexShaderStageInfo(
+			{},
+			vk::ShaderStageFlagBits::eVertex,
+			vertexModule,
+			"main",
+			nullptr
+		);
+
+		// fragment shader stage
+		vk::ShaderModuleCreateInfo fragmentModuleInfo({}, pipeline.m_fragCode.size(), pipeline.m_fragCode.data());
+		vk::ShaderModule fragmentModule{};
+		if (m_Context.m_Device.createShaderModule(&fragmentModuleInfo, nullptr, &fragmentModule) != vk::Result::eSuccess)
+			return false;
+
+		vk::PipelineShaderStageCreateInfo pipelineFragmentShaderStageInfo(
+			{},
+			vk::ShaderStageFlagBits::eFragment,
+			fragmentModule,
+			"main",
+			nullptr
+		);
+
+		// vertex input state
+		vk::VertexInputBindingDescription vertexInputBindingDescription(0, 12, vk::VertexInputRate::eVertex);
+		vk::VertexInputAttributeDescription vertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, 0);
+
+		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
+			{},
+			1,
+			&vertexInputBindingDescription,
+			1,
+			&vertexInputAttributeDescription
+		);
+
+		// input assembly state
+		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
+			{},
+			vk::PrimitiveTopology::eTriangleList,
+			false
+		);
+
+		// viewport state
+		vk::Viewport viewport(0.f, 0.f, static_cast<float>(pipeline.m_width), static_cast<float>(pipeline.m_height), 0.f, 1.f);
+		vk::Rect2D scissor({ 0,0 }, { pipeline.m_width, pipeline.m_height });
+		vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
+
+		// rasterization state
+		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
+			{},
+			false,
+			false,
+			vk::PolygonMode::eFill,
+			vk::CullModeFlagBits::eNone,
+			vk::FrontFace::eCounterClockwise,
+			false,
+			0.f,
+			0.f,
+			0.f,
+			1.f
+		);
+
+		// multisample state
+		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
+			{},
+			vk::SampleCountFlagBits::e1,
+			false,
+			0.f,
+			nullptr,
+			false,
+			false
+		);
+
+		// color blend state
+		vk::ColorComponentFlags colorWriteMask(VK_COLOR_COMPONENT_R_BIT |
+			VK_COLOR_COMPONENT_G_BIT |
+			VK_COLOR_COMPONENT_B_BIT |
+			VK_COLOR_COMPONENT_A_BIT);
+		vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
+			false,
+			vk::BlendFactor::eOne,
+			vk::BlendFactor::eOne,
+			vk::BlendOp::eAdd,
+			vk::BlendFactor::eOne,
+			vk::BlendFactor::eOne,
+			vk::BlendOp::eAdd,
+			colorWriteMask
+		);
+		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
+			{},
+			false,
+			vk::LogicOp::eClear,
+			0,
+			&colorBlendAttachmentState,
+			{ 1.f,1.f,1.f,1.f }
+		);
+
+		// pipeline layout
+		vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
+			{},
+			0,
+			{},
+			0,
+			{}
+		);
+		vk::PipelineLayout vkPipelineLayout{};
+		if (m_Context.m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
+			return false;
+
+		// graphics pipeline create
+		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = { pipelineVertexShaderStageInfo, pipelineFragmentShaderStageInfo };
+		vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
+			{},
+			static_cast<uint32_t>(shaderStages.size()),
+			shaderStages.data(),
+			&pipelineVertexInputStateCreateInfo,
+			&pipelineInputAssemblyStateCreateInfo,
+			nullptr,
+			&pipelineViewportStateCreateInfo,
+			&pipelineRasterizationStateCreateInfo,
+			&pipelineMultisampleStateCreateInfo,
+			nullptr,
+			&pipelineColorBlendStateCreateInfo,
+			nullptr,
+			vkPipelineLayout,
+			m_Renderpasses[pipeline.m_passHandle.id],
+			0,
+			{},
+			0
+		);
+
+		vk::Pipeline vkPipeline{};
+		if (m_Context.m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess)
+			return false;
+
+		m_Pipelines.push_back(vkPipeline);
+		m_PipelineLayouts.push_back(vkPipelineLayout);
+		handle.id = m_NextPipelineId++;
+	}
+
+    bool Core::createRenderpass(const Renderpass &pass, RenderpassHandle &handle)
+    {
+        // description of all {color, input, depth/stencil} attachments of the render pass
+        std::vector<vk::AttachmentDescription> attachmentDescriptions{};
+
+        // individual references to color attachments (of a subpass)
+        std::vector<vk::AttachmentReference> colorAttachmentReferences{};
+        // individual reference to depth attachment (of a subpass)
+        vk::AttachmentReference depthAttachmentReference{};
+
+        for(uint32_t i = 0; i < pass.attachments.size(); i++)
+        {
+            // TODO: Renderpass struct should hold proper format information
+            vk::Format format;
+
+            if(pass.attachments[i].layout_in_pass == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT)
+            {
+                format = vk::Format::eD16Unorm; // depth attachments;
+
+                depthAttachmentReference.attachment = i;
+                depthAttachmentReference.layout = getVkLayoutFromAttachLayout(pass.attachments[i].layout_in_pass);
+            }
+            else
+            {
+                format = vk::Format::eB8G8R8A8Srgb; // color attachments, compatible with swapchain
+                vk::AttachmentReference attachmentRef(i, getVkLayoutFromAttachLayout(pass.attachments[i].layout_in_pass));
+                colorAttachmentReferences.push_back(attachmentRef);
+            }
+
+            vk::AttachmentDescription attachmentDesc({},
+                                                     format,
+                                                     vk::SampleCountFlagBits::e1,
+                                                     getVKLoadOpFromAttachOp(pass.attachments[i].load_operation),
+                                                     getVkStoreOpFromAttachOp(pass.attachments[i].load_operation),
+                                                     vk::AttachmentLoadOp::eDontCare,
+                                                     vk::AttachmentStoreOp::eDontCare,
+                                                     getVkLayoutFromAttachLayout(pass.attachments[i].layout_initial),
+                                                     getVkLayoutFromAttachLayout(pass.attachments[i].layout_final));
+            attachmentDescriptions.push_back(attachmentDesc);
+        }
+
+        vk::SubpassDescription subpassDescription({},
+                                           vk::PipelineBindPoint::eGraphics,
+                                           0,
+                                           {},
+                                           static_cast<uint32_t>(colorAttachmentReferences.size()),
+                                           colorAttachmentReferences.data(),
+                                           {},
+                                           &depthAttachmentReference,
+                                           0,
+                                           {});
+
+        vk::RenderPassCreateInfo passInfo({},
+                                          static_cast<uint32_t>(attachmentDescriptions.size()),
+                                          attachmentDescriptions.data(),
+                                          1,
+                                          &subpassDescription,
+                                          0,
+                                          {});
+
+        vk::RenderPass vkObject{nullptr};
+        if(m_Context.m_Device.createRenderPass(&passInfo, nullptr, &vkObject) != vk::Result::eSuccess)
             return false;
 
-        vk::PipelineShaderStageCreateInfo pipelineVertexShaderStageInfo(
-                {},
-                vk::ShaderStageFlagBits::eVertex,
-                vertexModule,
-                "main",
-                nullptr
-                );
+        m_Renderpasses.push_back(vkObject);
+        handle.id = m_NextPassId++;
 
-        // fragment shader stage
-        vk::ShaderModuleCreateInfo fragmentModuleInfo({},pipeline.m_fragCode.size(), pipeline.m_fragCode.data());
-        vk::ShaderModule fragmentModule{};
-        if(m_Context.m_Device.createShaderModule(&fragmentModuleInfo, nullptr, &fragmentModule) != vk::Result::eSuccess)
-            return false;
-
-        vk::PipelineShaderStageCreateInfo pipelineFragmentShaderStageInfo(
-                {},
-                vk::ShaderStageFlagBits::eFragment,
-                fragmentModule,
-                "main",
-                nullptr
-                );
-
-        // vertex input state
-        vk::VertexInputBindingDescription vertexInputBindingDescription(0,12,vk::VertexInputRate::eVertex);
-        vk::VertexInputAttributeDescription vertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, 0);
-
-        vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
-                {},
-                1,
-                &vertexInputBindingDescription,
-                1,
-                &vertexInputAttributeDescription
-                );
-
-        // input assembly state
-        vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
-                {},
-                vk::PrimitiveTopology::eTriangleList,
-                false
-                );
-
-        // viewport state
-        vk::Viewport viewport(0.f, 0.f, static_cast<float>(pipeline.m_width), static_cast<float>(pipeline.m_height), 0.f, 1.f);
-        vk::Rect2D scissor({0,0},{pipeline.m_width, pipeline.m_height});
-        vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
-
-        // rasterization state
-        vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
-                {},
-                false,
-                false,
-                vk::PolygonMode::eFill,
-                vk::CullModeFlagBits::eNone,
-                vk::FrontFace::eCounterClockwise,
-                false,
-                0.f,
-                0.f,
-                0.f,
-                1.f
-                );
-
-        // multisample state
-        vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
-                {},
-                vk::SampleCountFlagBits::e1,
-                false,
-                0.f,
-                nullptr,
-                false,
-                false
-                );
-
-        // color blend state
-        vk::ColorComponentFlags colorWriteMask(VK_COLOR_COMPONENT_R_BIT |
-                                               VK_COLOR_COMPONENT_G_BIT |
-                                               VK_COLOR_COMPONENT_B_BIT |
-                                               VK_COLOR_COMPONENT_A_BIT);
-        vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
-                false,
-                vk::BlendFactor::eOne,
-                vk::BlendFactor::eOne,
-                vk::BlendOp::eAdd,
-                vk::BlendFactor::eOne,
-                vk::BlendFactor::eOne,
-                vk::BlendOp::eAdd,
-                colorWriteMask
-                );
-        vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
-                {},
-                false,
-                vk::LogicOp::eClear,
-                0,
-                &colorBlendAttachmentState,
-                {1.f,1.f,1.f,1.f}
-                );
-
-        // pipeline layout
-        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
-                {},
-                0,
-                {},
-                0,
-                {}
-                );
-        vk::PipelineLayout vkPipelineLayout{};
-        if(m_Context.m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
-            return false;
-
-        // graphics pipeline create
-        std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = {pipelineVertexShaderStageInfo, pipelineFragmentShaderStageInfo};
-        vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
-                {},
-                static_cast<uint32_t>(shaderStages.size()),
-                shaderStages.data(),
-                &pipelineVertexInputStateCreateInfo,
-                &pipelineInputAssemblyStateCreateInfo,
-                nullptr,
-                &pipelineViewportStateCreateInfo,
-                &pipelineRasterizationStateCreateInfo,
-                &pipelineMultisampleStateCreateInfo,
-                nullptr,
-                &pipelineColorBlendStateCreateInfo,
-                nullptr,
-                vkPipelineLayout,
-                m_Renderpasses[pipeline.m_passHandle.id],
-                0,
-                {},
-                0
-                );
-
-        vk::Pipeline vkPipeline{};
-        if(m_Context.m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess)
-            return false;
-
-        m_Pipelines.push_back(vkPipeline);
-        m_PipelineLayouts.push_back(vkPipelineLayout);
-        handle.id = m_NextPipelineId++;
         return true;
     }
 }

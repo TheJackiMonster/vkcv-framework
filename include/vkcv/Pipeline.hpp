@@ -31,13 +31,13 @@ namespace vkcv {
          * @param width width of the application window
          * @param passHandle handle for Render Pass
          */
-        Pipeline(const std::vector<uint32_t> &vertexCode, const std::vector<uint32_t> &fragCode, uint32_t height, uint32_t width, PassHandle &passHandle);
+        Pipeline(const std::vector<uint32_t> &vertexCode, const std::vector<uint32_t> &fragCode, uint32_t height, uint32_t width, RenderpassHandle &passHandle);
 
         std::vector<uint32_t> m_vertexCode;
         std::vector<uint32_t> m_fragCode;
         uint32_t m_height;
         uint32_t m_width;
-        PassHandle m_passHandle;
+        RenderpassHandle m_passHandle;
     };
 
 }

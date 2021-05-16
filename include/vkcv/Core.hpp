@@ -8,6 +8,7 @@
 #include "vkcv/Context.hpp"
 #include "vkcv/SwapChain.hpp"
 #include "vkcv/Window.hpp"
+#include "vkcv/Renderpass.hpp"
 #include "vkcv/Handles.hpp"
 #include "vkcv/Pipeline.hpp"
 
@@ -31,6 +32,7 @@ namespace vkcv
         Core() = delete;
 
         Context m_Context;
+
         SwapChain m_swapchain;
         std::vector<vk::ImageView> m_swapchainImageViews;
         const Window& m_window;
@@ -40,13 +42,15 @@ namespace vkcv
         std::vector<vk::PipelineLayout> m_PipelineLayouts;
 
         uint64_t m_NextRenderpassId;
+
+        uint64_t m_NextPassId;
         std::vector<vk::RenderPass> m_Renderpasses;
 
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
          */
-        ~Core();
+        ~Core() noexcept;
 
         /**
          * Copy-constructor of #Core is deleted!
@@ -117,7 +121,11 @@ namespace vkcv
 
         // TODO:
         BufferHandle createBuffer(const Buffer &buf);
-        PassHandle createRenderPass(const Renderpass &pass) ;
 
+        [[nodiscard]]
+        bool createRenderpass(const Renderpass &pass, RenderpassHandle &handle);
+
+        // TODO:
+        PipelineHandle createPipeline(const Pipeline &pipeline);
     };
 }
