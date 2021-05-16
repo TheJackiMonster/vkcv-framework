@@ -338,7 +338,7 @@ namespace vkcv
 	void Core::renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
 		const int width, const int height) {
 		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
-		const std::array<float, 4> clearColor = { 1.f, 1.f, 0.f, 1.f };
+		const std::array<float, 4> clearColor = { 0.f, 0.f, 0.f, 1.f };
 		const vk::ClearValue clearValues(clearColor);
 		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
 		const vk::ImageView imageView = m_swapchainImageViews[m_currentSwapchainImageIndex];
@@ -347,6 +347,10 @@ namespace vkcv
 		const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, 1, &clearValues);
 		const vk::SubpassContents subpassContents = {};
 		m_CommandResources.commandBuffer.beginRenderPass(beginInfo, subpassContents, {});
+
+		const vk::Pipeline pipeline = m_PipelineManager->getVkPipeline(pipelineHandle);
+		m_CommandResources.commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
+		m_CommandResources.commandBuffer.draw(3, 1, 0, 0, {});
 		m_CommandResources.commandBuffer.endRenderPass();
 	}
 

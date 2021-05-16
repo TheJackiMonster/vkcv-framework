@@ -71,11 +71,11 @@ namespace vkcv
         vk::VertexInputAttributeDescription vertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, 0);
 
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
-                {},
-                1,
-                &vertexInputBindingDescription,
-                1,
-                &vertexInputAttributeDescription
+                {},			// no vertex input until vertex buffer is implemented
+                0,			// 1,
+                nullptr,	// &vertexInputBindingDescription,
+                0,			// 1,
+                nullptr		// &vertexInputAttributeDescription
         );
 
         // input assembly state
