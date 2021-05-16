@@ -36,7 +36,6 @@ namespace vkcv
 
     Context::~Context() noexcept
     {
-        std::cout<< " Context " << std::endl;
         m_Device.destroy();
         m_Instance.destroy();
     }
