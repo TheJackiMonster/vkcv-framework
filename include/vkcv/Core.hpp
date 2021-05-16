@@ -40,6 +40,9 @@ namespace vkcv
         // explicit destruction of default constructor
         Core() = delete;
 
+		uint32_t acquireSwapchainImage();
+		void destroyTemporaryFramebuffers();
+
         Context m_Context;
 
         SwapChain m_swapchain;
@@ -51,7 +54,8 @@ namespace vkcv
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
 		VulkanQueues m_Queues;
-		uint32_t m_FrameIndex;
+		uint32_t m_currentSwapchainImageIndex;
+		std::vector<vk::Framebuffer> m_TemporaryFramebuffers;
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
@@ -146,11 +150,14 @@ namespace vkcv
 		/**
 		 * @brief render a beautiful triangle
 		*/
-		void renderTriangle();
+		void renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle,
+			const int width, const int height);
 
 		/**
 		 * @brief end recording and present image
 		*/
 		void endFrame();
+
+		vk::Format getSwapchainImageFormat();
     };
 }

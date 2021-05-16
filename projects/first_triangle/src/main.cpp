@@ -46,7 +46,8 @@ int main(int argc, const char** argv) {
 		vkcv::AttachmentLayout::COLOR_ATTACHMENT,
 		vkcv::AttachmentLayout::PRESENTATION,
 		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR);
+		vkcv::AttachmentOperation::CLEAR,
+		core.getSwapchainImageFormat());
 
 	vkcv::PassConfig trianglePassDefinition({present_color_attachment});
 	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
@@ -88,7 +89,7 @@ int main(int argc, const char** argv) {
 	while (window.isWindowOpen())
 	{
 		core.beginFrame();
-	    // core.execute(trianglePass, trianglePipeline, triangleModel);
+	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight);
 	    core.endFrame();
 
 		window.pollEvents();

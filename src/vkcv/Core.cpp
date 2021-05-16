@@ -9,6 +9,7 @@
 #include "PipelineManager.hpp"
 #include "Surface.hpp"
 #include "ImageLayoutTransitions.hpp"
+#include "Framebuffer.hpp"
 
 namespace vkcv
 {
@@ -279,8 +280,7 @@ namespace vkcv
 			m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
 			m_CommandResources(commandResources),
 			m_SyncResources(syncResources),
-			m_Queues(queues),
-			m_FrameIndex(0)
+			m_Queues(queues)
 	{}
 
 	Core::~Core() noexcept {
@@ -291,6 +291,7 @@ namespace vkcv
 
 		destroyCommandResources(m_Context.getDevice(), m_CommandResources);
 		destroySyncResources(m_Context.getDevice(), m_SyncResources);
+		destroyTemporaryFramebuffers();
 
 		m_Context.m_Device.destroySwapchainKHR(m_swapchain.getSwapchain());
 		m_Context.m_Instance.destroySurfaceKHR(m_swapchain.getSurface());
@@ -308,34 +309,50 @@ namespace vkcv
         return m_PassManager->createPass(config);
     }
 
+	uint32_t Core::acquireSwapchainImage() {
+		uint32_t index;
+		m_Context.getDevice().acquireNextImageKHR(m_swapchain.getSwapchain(), 0, nullptr,
+			m_SyncResources.swapchainImageAcquired, &index, {});
+		const uint64_t timeoutPeriodNs = 1000;	// TODO: think if is adequate
+		m_Context.getDevice().waitForFences(m_SyncResources.swapchainImageAcquired, true, timeoutPeriodNs);
+		m_Context.getDevice().resetFences(m_SyncResources.swapchainImageAcquired);
+		return index;
+	}
+
+	void Core::destroyTemporaryFramebuffers() {
+		for (const vk::Framebuffer f : m_TemporaryFramebuffers) {
+			m_Context.getDevice().destroyFramebuffer(f);
+		}
+		m_TemporaryFramebuffers.clear();
+	}
+
 	void Core::beginFrame() {
+		m_currentSwapchainImageIndex = acquireSwapchainImage();
 		m_Context.getDevice().waitIdle();	// FIMXE: this is a sin against graphics programming, but its getting late - Alex
+		destroyTemporaryFramebuffers();
 		const vk::CommandBufferUsageFlags beginFlags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 		const vk::CommandBufferBeginInfo beginInfos(beginFlags);
 		m_CommandResources.commandBuffer.begin(beginInfos);
 	}
 
-	void Core::renderTriangle() {
-
+	void Core::renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
+		const int width, const int height) {
+		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
+		const std::array<float, 4> clearColor = { 1.f, 1.f, 0.f, 1.f };
+		const vk::ClearValue clearValues(clearColor);
+		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+		const vk::ImageView imageView = m_swapchainImageViews[m_currentSwapchainImageIndex];
+		const vk::Framebuffer framebuffer = createFramebuffer(m_Context.getDevice(), renderpass, width, height, imageView);
+		m_TemporaryFramebuffers.push_back(framebuffer);
+		const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, 1, &clearValues);
+		const vk::SubpassContents subpassContents = {};
+		m_CommandResources.commandBuffer.beginRenderPass(beginInfo, subpassContents, {});
+		m_CommandResources.commandBuffer.endRenderPass();
 	}
 
 	void Core::endFrame() {
-
-		uint32_t swapchainImageIndex;
-		m_Context.getDevice().acquireNextImageKHR(m_swapchain.getSwapchain(), 0, nullptr, 
-			m_SyncResources.swapchainImageAcquired, &swapchainImageIndex, {});
-		const uint64_t timeoutPeriodNs = 1000;	// TODO: think if is adequate
-		m_Context.getDevice().waitForFences(m_SyncResources.swapchainImageAcquired, true, timeoutPeriodNs);
-		m_Context.getDevice().resetFences(m_SyncResources.swapchainImageAcquired);
-
 		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
-		const vk::Image presentImage = swapchainImages[swapchainImageIndex];
-
-		transitionImageLayoutImmediate(
-			m_CommandResources.commandBuffer, 
-			presentImage, 
-			vk::ImageLayout::eUndefined, 
-			vk::ImageLayout::ePresentSrcKHR);
+		const vk::Image presentImage = swapchainImages[m_currentSwapchainImageIndex];
 
 		m_CommandResources.commandBuffer.end();
 		
@@ -344,10 +361,15 @@ namespace vkcv
 
 		vk::Result presentResult;
 		const vk::SwapchainKHR& swapchain = m_swapchain.getSwapchain();
-		const vk::PresentInfoKHR presentInfo(1, &m_SyncResources.renderFinished, 1, &swapchain, &swapchainImageIndex, &presentResult);
+		const vk::PresentInfoKHR presentInfo(1, &m_SyncResources.renderFinished, 1, &swapchain, 
+			&m_currentSwapchainImageIndex, &presentResult);
 		m_Queues.presentQueue.presentKHR(presentInfo);
 		if (presentResult != vk::Result::eSuccess) {
 			std::cout << "Error: swapchain present failed" << std::endl;
 		}
+	}
+
+	vk::Format Core::getSwapchainImageFormat() {
+		return m_swapchain.getImageFormat();
 	}
 }

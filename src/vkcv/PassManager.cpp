@@ -76,19 +76,16 @@ namespace vkcv
         for (uint32_t i = 0; i < config.attachments.size(); i++)
         {
             // TODO: Renderpass struct should hold proper format information
-            vk::Format format;
+            vk::Format format = config.attachments[i].format;
 
             if (config.attachments[i].layout_in_pass == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT)
             {
-                format = vk::Format::eD16Unorm; // depth attachments;
-
                 depthAttachmentReference.attachment = i;
                 depthAttachmentReference.layout = getVkLayoutFromAttachLayout(config.attachments[i].layout_in_pass);
                 pDepthAttachment = &depthAttachmentReference;
             }
             else
             {
-                format = vk::Format::eB8G8R8A8Srgb; // color attachments, compatible with swapchain
                 vk::AttachmentReference attachmentRef(i, getVkLayoutFromAttachLayout(config.attachments[i].layout_in_pass));
                 colorAttachmentReferences.push_back(attachmentRef);
             }
@@ -97,7 +94,7 @@ namespace vkcv
                                                      format,
                                                      vk::SampleCountFlagBits::e1,
                                                      getVKLoadOpFromAttachOp(config.attachments[i].load_operation),
-                                                     getVkStoreOpFromAttachOp(config.attachments[i].load_operation),
+                                                     getVkStoreOpFromAttachOp(config.attachments[i].store_operation),
                                                      vk::AttachmentLoadOp::eDontCare,
                                                      vk::AttachmentStoreOp::eDontCare,
                                                      getVkLayoutFromAttachLayout(config.attachments[i].layout_initial),

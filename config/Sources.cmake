@@ -45,4 +45,7 @@ set(vkcv_sources
         
         ${vkcv_source}/vkcv/ImageLayoutTransitions.hpp
         ${vkcv_source}/vkcv/ImageLayoutTransitions.cpp
+        
+        ${vkcv_source}/vkcv/Framebuffer.hpp
+        ${vkcv_source}/vkcv/Framebuffer.cpp
 )
