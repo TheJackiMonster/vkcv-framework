@@ -324,8 +324,17 @@ namespace vkcv
 		uint32_t swapchainImageIndex;
 		m_Context.getDevice().acquireNextImageKHR(m_swapchain.getSwapchain(), 0, nullptr, 
 			m_SyncResources.swapchainImageAcquired, &swapchainImageIndex, {});
-		const uint64_t timeoutPeriodNs = 1000;	// TODO: think if is adequate
-		m_Context.getDevice().waitForFences(m_SyncResources.swapchainImageAcquired, true, timeoutPeriodNs);
+		const uint64_t timeoutPeriodNs = 100000;	// TODO: think if is adequate
+		
+		
+		const auto& result = m_Context.getDevice().waitForFences(m_SyncResources.swapchainImageAcquired, true, timeoutPeriodNs);
+		
+		if (result == vk::Result::eTimeout) {
+			std::cerr << "Drop frame!" << std::endl;
+			m_CommandResources.commandBuffer.end();
+			return; // TODO: image gets dropped... ooops
+		}
+		
 		m_Context.getDevice().resetFences(m_SyncResources.swapchainImageAcquired);
 
 		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
