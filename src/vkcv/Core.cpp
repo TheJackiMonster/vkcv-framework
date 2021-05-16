@@ -314,8 +314,13 @@ namespace vkcv
 		m_Context.getDevice().acquireNextImageKHR(m_swapchain.getSwapchain(), 0, nullptr,
 			m_SyncResources.swapchainImageAcquired, &index, {});
 		const uint64_t timeoutPeriodNs = 1000;	// TODO: think if is adequate
-		m_Context.getDevice().waitForFences(m_SyncResources.swapchainImageAcquired, true, timeoutPeriodNs);
+		const auto& result = m_Context.getDevice().waitForFences(m_SyncResources.swapchainImageAcquired, true, timeoutPeriodNs);
 		m_Context.getDevice().resetFences(m_SyncResources.swapchainImageAcquired);
+		
+		if (result == vk::Result::eTimeout) {
+			index = std::numeric_limits<uint32_t>::max();
+		}
+		
 		return index;
 	}
 
@@ -328,6 +333,12 @@ namespace vkcv
 
 	void Core::beginFrame() {
 		m_currentSwapchainImageIndex = acquireSwapchainImage();
+		
+		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
+			std::cerr << "Drop frame!" << std::endl;
+ 			return;
+		}
+		
 		m_Context.getDevice().waitIdle();	// FIMXE: this is a sin against graphics programming, but its getting late - Alex
 		destroyTemporaryFramebuffers();
 		const vk::CommandBufferUsageFlags beginFlags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
@@ -337,6 +348,10 @@ namespace vkcv
 
 	void Core::renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
 		const int width, const int height) {
+		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
+			return;
+		}
+  
 		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
 		const std::array<float, 4> clearColor = { 1.f, 1.f, 0.f, 1.f };
 		const vk::ClearValue clearValues(clearColor);
@@ -351,6 +366,10 @@ namespace vkcv
 	}
 
 	void Core::endFrame() {
+		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
+			return;
+		}
+  
 		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
 		const vk::Image presentImage = swapchainImages[m_currentSwapchainImageIndex];
 
