@@ -5,6 +5,10 @@ project(first_triangle)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+make_directory(${CMAKE_CURRENT_BINARY_DIR}/shaders)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders/vert.spv DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/shaders/vert.spv)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders/frag.spv DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/shaders/frag.spv)
+
 # adding source files to the project
 add_executable(first_triangle src/main.cpp)
 
