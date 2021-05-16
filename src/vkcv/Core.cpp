@@ -343,7 +343,8 @@ namespace vkcv
 		m_Queues.graphicsQueue.submit(submitInfo);
 
 		vk::Result presentResult;
-		vk::PresentInfoKHR presentInfo(1, &m_SyncResources.renderFinished, 1, &m_swapchain.getSwapchain(), &swapchainImageIndex, &presentResult);
+		const vk::SwapchainKHR swapchain = m_swapchain.getSwapchain();
+		const vk::PresentInfoKHR presentInfo(1, &m_SyncResources.renderFinished, 1, &swapchain, &swapchainImageIndex, &presentResult);
 		m_Queues.presentQueue.presentKHR(presentInfo);
 		if (presentResult != vk::Result::eSuccess) {
 			std::cout << "Error: swapchain present failed" << std::endl;
