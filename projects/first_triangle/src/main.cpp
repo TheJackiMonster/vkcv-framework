@@ -48,11 +48,10 @@ int main(int argc, const char** argv) {
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR);
 
-	vkcv::Renderpass trianglePassDefinition;
-	trianglePassDefinition.attachments.push_back(present_color_attachment);
-	vkcv::RenderpassHandle trianglePass;
+	vkcv::PassConfig trianglePassDefinition({present_color_attachment});
+	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
 
-	if (!core.createRenderpass(trianglePassDefinition, trianglePass))
+	if (trianglePass.id == 0)
 	{
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
@@ -63,7 +62,7 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.addShader(vkcv::ShaderProgram::ShaderStage::FRAGMENT, "shaders/frag.spv");
 
 	const vkcv::Pipeline trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
-	vkcv::PipelineHandle trianglePipeline;
+	vkcv::PipelineHandle trianglePipeline{};
 	if (!core.createGraphicsPipeline(trianglePipelineDefinition, trianglePipeline)) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;

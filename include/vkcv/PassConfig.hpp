@@ -46,9 +46,10 @@ namespace vkcv
         AttachmentOperation load_operation;
     };
 
-    struct Renderpass
+    struct PassConfig
     {
-        Renderpass() noexcept = default;
+        PassConfig() = delete;
+        explicit PassConfig(std::vector<AttachmentDescription> attachments) noexcept;
         std::vector<AttachmentDescription> attachments{};
     };
 }

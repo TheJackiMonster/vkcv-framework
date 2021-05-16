@@ -7,8 +7,11 @@ set(vkcv_sources
 		${vkcv_include}/vkcv/Core.hpp
 		${vkcv_source}/vkcv/Core.cpp
 
-		${vkcv_include}/vkcv/Renderpass.hpp
-		${vkcv_source}/vkcv/Renderpass.cpp
+		${vkcv_include}/vkcv/PassConfig.hpp
+		${vkcv_source}/vkcv/PassConfig.cpp
+
+		${vkcv_source}/vkcv/PassManager.hpp
+		${vkcv_source}/vkcv/PassManager.cpp
 
 		${vkcv_include}/vkcv/Handles.hpp
 		${vkcv_source}/vkcv/Handles.cpp

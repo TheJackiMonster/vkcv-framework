@@ -5,53 +5,10 @@
  */
 
 #include "vkcv/Core.hpp"
+#include "PassManager.hpp"
 
 namespace vkcv
 {
-    static vk::ImageLayout getVkLayoutFromAttachLayout(AttachmentLayout layout)
-    {
-        switch(layout)
-        {
-            case AttachmentLayout::GENERAL:
-                return vk::ImageLayout::eGeneral;
-            case AttachmentLayout::COLOR_ATTACHMENT:
-                return vk::ImageLayout::eColorAttachmentOptimal;
-            case AttachmentLayout::SHADER_READ_ONLY:
-                return vk::ImageLayout::eShaderReadOnlyOptimal;
-            case AttachmentLayout::DEPTH_STENCIL_ATTACHMENT:
-                return vk::ImageLayout::eDepthStencilAttachmentOptimal;
-            case AttachmentLayout::DEPTH_STENCIL_READ_ONLY:
-                return vk::ImageLayout::eDepthStencilReadOnlyOptimal;
-            case AttachmentLayout::PRESENTATION:
-                return vk::ImageLayout::ePresentSrcKHR;
-            default:
-                return vk::ImageLayout::eUndefined;
-        }
-    }
-
-    static vk::AttachmentStoreOp getVkStoreOpFromAttachOp(AttachmentOperation op)
-    {
-        switch(op)
-        {
-            case AttachmentOperation::STORE:
-                return vk::AttachmentStoreOp::eStore;
-            default:
-                return vk::AttachmentStoreOp::eDontCare;
-        }
-    }
-
-    static vk::AttachmentLoadOp getVKLoadOpFromAttachOp(AttachmentOperation op)
-    {
-        switch(op)
-        {
-            case AttachmentOperation::LOAD:
-                return vk::AttachmentLoadOp::eLoad;
-            case AttachmentOperation::CLEAR:
-                return vk::AttachmentLoadOp::eClear;
-            default:
-                return vk::AttachmentLoadOp::eDontCare;
-        }
-    }
 
     /**
      * @brief The physical device is evaluated by three categories:
@@ -508,12 +465,10 @@ namespace vkcv
 			m_NextPipelineId(0),
 			m_Pipelines{},
 			m_PipelineLayouts{},
-			m_NextRenderpassId(0),
-			m_NextPassId(0),
-			m_Renderpasses{}
+			m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)}
     {}
 
-	Core::~Core() {
+	Core::~Core() noexcept {
 		std::cout << " Core " << std::endl;
 
 		for(const auto &layout : m_PipelineLayouts)
@@ -531,19 +486,14 @@ namespace vkcv
 		m_NextPipelineId = 0;
 
 		for (auto image : m_swapchainImageViews) {
-			m_Context.getDevice().destroyImageView(image);
+			m_Context.m_Device.destroyImageView(image);
 		}
-		for (const auto& pass : m_Renderpasses)
-			m_Context.m_Device.destroy(pass);
 
-		m_Renderpasses.clear();
-		m_NextPassId = 0;
-
-		m_Context.getDevice().destroySwapchainKHR(m_swapchain.getSwapchain());
-		m_Context.getInstance().destroySurfaceKHR(m_swapchain.getSurface());
+		m_Context.m_Device.destroySwapchainKHR(m_swapchain.getSwapchain());
+		m_Context.m_Instance.destroySurfaceKHR(m_swapchain.getSurface());
 	}
 
-	bool Core::createGraphicsPipeline(const Pipeline& pipeline, PipelineHandle& handle) {
+	bool Core::createGraphicsPipeline(const Pipeline &pipeline, PipelineHandle &handle) {
 		
 		// TODO: this search could be avoided if ShaderProgram could be queried for a specific stage
 		const auto shaderStageFlags = pipeline.m_shaderProgram.getShaderStages();
@@ -559,8 +509,8 @@ namespace vkcv
 			}
 		}
 
-		const bool foundVertexCode = vertexCode.empty();
-		const bool foundFragCode = fragCode.empty();
+		const bool foundVertexCode = !vertexCode.empty();
+		const bool foundFragCode = !fragCode.empty();
 		const bool foundRequiredShaderCode = foundVertexCode && foundFragCode;
 		if (!foundRequiredShaderCode) {
 			std::cout << "Core::createGraphicsPipeline requires vertex and fragment shader code" << std::endl; 
@@ -705,7 +655,7 @@ namespace vkcv
 			&pipelineColorBlendStateCreateInfo,
 			nullptr,
 			vkPipelineLayout,
-			m_Renderpasses[pipeline.m_passHandle.id],
+			m_PassManager->getVkPass(pipeline.m_passHandle),
 			0,
 			{},
 			0
@@ -729,74 +679,8 @@ namespace vkcv
 		return true;
 	}
 
-    bool Core::createRenderpass(const Renderpass &pass, RenderpassHandle &handle)
+    PassHandle Core::createPass(const PassConfig &config)
     {
-        // description of all {color, input, depth/stencil} attachments of the render pass
-        std::vector<vk::AttachmentDescription> attachmentDescriptions{};
-
-        // individual references to color attachments (of a subpass)
-        std::vector<vk::AttachmentReference> colorAttachmentReferences{};
-        // individual reference to depth attachment (of a subpass)
-        vk::AttachmentReference depthAttachmentReference{};
-		vk::AttachmentReference *pDepthAttachment = nullptr;	//stays nullptr if no depth attachment used
-
-		for (uint32_t i = 0; i < pass.attachments.size(); i++)
-		{
-			// TODO: Renderpass struct should hold proper format information
-			vk::Format format;
-
-			if (pass.attachments[i].layout_in_pass == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT)
-			{
-				format = vk::Format::eD16Unorm; // depth attachments;
-
-				depthAttachmentReference.attachment = i;
-				depthAttachmentReference.layout = getVkLayoutFromAttachLayout(pass.attachments[i].layout_in_pass);
-				pDepthAttachment = &depthAttachmentReference;
-			}
-			else
-			{
-				format = vk::Format::eB8G8R8A8Srgb; // color attachments, compatible with swapchain
-				vk::AttachmentReference attachmentRef(i, getVkLayoutFromAttachLayout(pass.attachments[i].layout_in_pass));
-				colorAttachmentReferences.push_back(attachmentRef);
-			}
-
-			vk::AttachmentDescription attachmentDesc({},
-				format,
-				vk::SampleCountFlagBits::e1,
-				getVKLoadOpFromAttachOp(pass.attachments[i].load_operation),
-				getVkStoreOpFromAttachOp(pass.attachments[i].load_operation),
-				vk::AttachmentLoadOp::eDontCare,
-				vk::AttachmentStoreOp::eDontCare,
-				getVkLayoutFromAttachLayout(pass.attachments[i].layout_initial),
-				getVkLayoutFromAttachLayout(pass.attachments[i].layout_final));
-			attachmentDescriptions.push_back(attachmentDesc);
-		}
-        vk::SubpassDescription subpassDescription({},
-			vk::PipelineBindPoint::eGraphics,
-			0,
-			{},
-			static_cast<uint32_t>(colorAttachmentReferences.size()),
-			colorAttachmentReferences.data(),
-			{},
-			pDepthAttachment,
-			0,
-			{});
-
-        vk::RenderPassCreateInfo passInfo({},
-                                          static_cast<uint32_t>(attachmentDescriptions.size()),
-                                          attachmentDescriptions.data(),
-                                          1,
-                                          &subpassDescription,
-                                          0,
-                                          {});
-
-        vk::RenderPass vkObject{nullptr};
-        if(m_Context.m_Device.createRenderPass(&passInfo, nullptr, &vkObject) != vk::Result::eSuccess)
-            return false;
-
-        m_Renderpasses.push_back(vkObject);
-        handle.id = m_NextPassId++;
-
-        return true;
+        return m_PassManager->createPass(config);
     }
 }

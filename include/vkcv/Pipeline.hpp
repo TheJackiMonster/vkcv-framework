@@ -31,12 +31,12 @@ namespace vkcv {
          * @param width width of the application window
          * @param passHandle handle for Render Pass
          */
-        Pipeline(const ShaderProgram& shaderProgram, uint32_t width, uint32_t height, RenderpassHandle &passHandle);
+        Pipeline(const ShaderProgram& shaderProgram, uint32_t width, uint32_t height, PassHandle &passHandle);
 
 		ShaderProgram m_shaderProgram;
         uint32_t m_height;
         uint32_t m_width;
-        RenderpassHandle m_passHandle;
+        PassHandle m_passHandle;
     };
 
 }

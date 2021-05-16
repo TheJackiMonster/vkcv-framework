@@ -1,4 +1,6 @@
-#include "vkcv/Renderpass.hpp"
+#include "vkcv/PassConfig.hpp"
+
+#include <utility>
 
 namespace vkcv
 {
@@ -13,4 +15,8 @@ namespace vkcv
     store_operation{store_op},
     load_operation{load_op}
     {};
+
+    PassConfig::PassConfig(std::vector<AttachmentDescription> attachments) noexcept :
+    attachments{std::move(attachments)}
+    {}
 }

@@ -4,11 +4,13 @@
  * @brief Handling of global states regarding dependencies
  */
 
+#include <memory>
+
 #include <vulkan/vulkan.hpp>
 #include "vkcv/Context.hpp"
 #include "vkcv/SwapChain.hpp"
 #include "vkcv/Window.hpp"
-#include "vkcv/Renderpass.hpp"
+#include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
 #include "vkcv/Pipeline.hpp"
 
@@ -16,7 +18,9 @@ namespace vkcv
 {
     // TODO:
     class Buffer;
-    class Renderpass;
+
+    // forward declarations
+    class PassManager;
 
     class Core final
     {
@@ -41,11 +45,7 @@ namespace vkcv
         std::vector<vk::Pipeline> m_Pipelines;
         std::vector<vk::PipelineLayout> m_PipelineLayouts;
 
-        uint64_t m_NextRenderpassId;
-
-        uint64_t m_NextPassId;
-        std::vector<vk::RenderPass> m_Renderpasses;
-
+        std::unique_ptr<PassManager> m_PassManager;
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
@@ -121,6 +121,6 @@ namespace vkcv
         BufferHandle createBuffer(const Buffer &buf);
 
         [[nodiscard]]
-        bool createRenderpass(const Renderpass &pass, RenderpassHandle &handle);
+        PassHandle createPass(const PassConfig &config);
     };
 }

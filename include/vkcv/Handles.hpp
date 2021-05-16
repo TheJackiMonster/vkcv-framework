@@ -11,6 +11,6 @@ namespace vkcv
 {
     // Handle returned for any buffer created with the core/context objects
     struct BufferHandle     {uint64_t id;};
-    struct RenderpassHandle {uint64_t id;};
+    struct PassHandle       {uint64_t id;};
     struct PipelineHandle   {uint64_t id;};
 }
