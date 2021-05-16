@@ -40,36 +40,22 @@ int main(int argc, const char** argv) {
 	}
 
     // an example attachment for passes that output to the window
-	vkcv::AttachmentDescription present_color_attachment(vkcv::AttachmentLayout::UNDEFINED,
-                                                    vkcv::AttachmentLayout::COLOR_ATTACHMENT,
-                                                    vkcv::AttachmentLayout::PRESENTATION,
-                                                    vkcv::AttachmentOperation::STORE,
-                                                    vkcv::AttachmentOperation::CLEAR);
-    // an example attachment for passes that output to a depth buffer
-	vkcv::AttachmentDescription present_depth_attachment(vkcv::AttachmentLayout::UNDEFINED,
-                                                    vkcv::AttachmentLayout::DEPTH_STENCIL_ATTACHMENT,
-                                                    vkcv::AttachmentLayout::DEPTH_STENCIL_READ_ONLY,
-                                                    vkcv::AttachmentOperation::STORE,
-                                                    vkcv::AttachmentOperation::CLEAR);
+	const vkcv::AttachmentDescription present_color_attachment(
+		vkcv::AttachmentLayout::UNDEFINED,
+		vkcv::AttachmentLayout::COLOR_ATTACHMENT,
+		vkcv::AttachmentLayout::PRESENTATION,
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::CLEAR);
 
-	// this pass will output to the window, and produce a depth buffer
-	vkcv::Renderpass test_pass{};
-	test_pass.attachments.push_back(present_color_attachment);
-	test_pass.attachments.push_back(present_depth_attachment);
+	vkcv::Renderpass trianglePassDefinition;
+	trianglePassDefinition.attachments.push_back(present_color_attachment);
+	vkcv::RenderpassHandle trianglePass;
 
-	std::vector<vkcv::RenderpassHandle> test_handles{};
-    // render pass creation test
-    for(uint32_t i = 0; i < 1000; i++)
-    {
-        vkcv::RenderpassHandle tmp_handle{};
-        if(!core.createRenderpass(test_pass, tmp_handle))
-        {
-            std::cout << "Oops. Something went wrong in the renderpass creation. Exiting." << std::endl;
-            return EXIT_FAILURE;
-        }
-        test_handles.push_back(tmp_handle);
-    }
-    std::cout << "Wow. You just made 1000 render passes. (That are all identical, though...)" << std::endl;
+	if (!core.createRenderpass(trianglePassDefinition, trianglePass))
+	{
+		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
+		return EXIT_FAILURE;
+	}
 
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
