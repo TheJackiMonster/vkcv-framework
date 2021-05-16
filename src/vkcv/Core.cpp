@@ -575,6 +575,7 @@ namespace vkcv
         std::vector<vk::AttachmentReference> colorAttachmentReferences{};
         // individual reference to depth attachment (of a subpass)
         vk::AttachmentReference depthAttachmentReference{};
+		vk::AttachmentReference *pDepthAttachment = nullptr;	//stays nullptr if no depth attachment used
 
         for(uint32_t i = 0; i < pass.attachments.size(); i++)
         {
@@ -587,6 +588,7 @@ namespace vkcv
 
                 depthAttachmentReference.attachment = i;
                 depthAttachmentReference.layout = getVkLayoutFromAttachLayout(pass.attachments[i].layout_in_pass);
+				pDepthAttachment = &depthAttachmentReference;
             }
             else
             {
@@ -608,15 +610,15 @@ namespace vkcv
         }
 
         vk::SubpassDescription subpassDescription({},
-                                           vk::PipelineBindPoint::eGraphics,
-                                           0,
-                                           {},
-                                           static_cast<uint32_t>(colorAttachmentReferences.size()),
-                                           colorAttachmentReferences.data(),
-                                           {},
-                                           &depthAttachmentReference,
-                                           0,
-                                           {});
+			vk::PipelineBindPoint::eGraphics,
+			0,
+			{},
+			static_cast<uint32_t>(colorAttachmentReferences.size()),
+			colorAttachmentReferences.data(),
+			{},
+			pDepthAttachment,
+			0,
+			{});
 
         vk::RenderPassCreateInfo passInfo({},
                                           static_cast<uint32_t>(attachmentDescriptions.size()),
