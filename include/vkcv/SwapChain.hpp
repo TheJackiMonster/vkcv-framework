@@ -33,7 +33,7 @@ namespace vkcv {
          * @note The reference to our Swapchain variable is needed for the recreation step
          */
         [[nodiscard]]
-        vk::SwapchainKHR getSwapchain();
+        const vk::SwapchainKHR& getSwapchain() const;
 
         /**
          * gets the current surface object

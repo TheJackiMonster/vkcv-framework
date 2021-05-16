@@ -6,7 +6,7 @@ namespace vkcv {
         : m_surface(surface), m_swapchain(swapchain), m_format( format), m_ImageCount(imageCount)
     {}
 
-    vk::SwapchainKHR SwapChain::getSwapchain() {
+    const vk::SwapchainKHR& SwapChain::getSwapchain() const {
         return m_swapchain;
     }
 
