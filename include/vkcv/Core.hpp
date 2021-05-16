@@ -124,8 +124,5 @@ namespace vkcv
 
         [[nodiscard]]
         bool createRenderpass(const Renderpass &pass, RenderpassHandle &handle);
-
-        // TODO:
-        PipelineHandle createPipeline(const Pipeline &pipeline);
     };
 }
