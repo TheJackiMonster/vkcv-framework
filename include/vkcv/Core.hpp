@@ -46,10 +46,6 @@ namespace vkcv
         std::vector<vk::ImageView> m_swapchainImageViews;
         const Window& m_window;
 
-        uint64_t m_NextPipelineId;
-        std::vector<vk::Pipeline> m_Pipelines;
-        std::vector<vk::PipelineLayout> m_PipelineLayouts;
-
         std::unique_ptr<PassManager> m_PassManager;
         std::unique_ptr<PipelineManager> m_PipelineManager;
 		CommandResources m_CommandResources;

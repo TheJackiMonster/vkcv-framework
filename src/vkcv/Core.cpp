@@ -273,9 +273,6 @@ namespace vkcv
 			m_window(window),
 			m_swapchain(swapChain),
 			m_swapchainImageViews(imageViews),
-			m_NextPipelineId(0),
-			m_Pipelines{},
-			m_PipelineLayouts{},
 			m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
 			m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
 			m_CommandResources(commandResources),
@@ -284,20 +281,6 @@ namespace vkcv
 	{}
 
 	Core::~Core() noexcept {
-		for(const auto &layout : m_PipelineLayouts)
-        {
-		    m_Context.m_Device.destroy(layout);
-        }
-
-		for(const auto &pipeline : m_Pipelines)
-        {
-		    m_Context.m_Device.destroy(pipeline);
-        }
-
-		m_PipelineLayouts.clear();
-		m_Pipelines.clear();
-		m_NextPipelineId = 0;
-
 		for (auto image : m_swapchainImageViews) {
 			m_Context.m_Device.destroyImageView(image);
 		}
