@@ -202,7 +202,8 @@ namespace vkcv
 
 		const vk::SurfaceKHR surface = createSurface(window.getWindow(), instance, physicalDevice);
 		const QueueFamilyIndices queueFamilyIndices = getQueueFamilyIndices(physicalDevice, surface);
-		const std::vector<vk::DeviceQueueCreateInfo> qCreateInfos = createDeviceQueueCreateInfo(queueFamilyIndices);
+		std::vector<float> queuePriorities;
+		const std::vector<vk::DeviceQueueCreateInfo> qCreateInfos = createDeviceQueueCreateInfo(queueFamilyIndices, &queuePriorities);
 
 		vk::DeviceCreateInfo deviceCreateInfo(
 			vk::DeviceCreateFlags(),

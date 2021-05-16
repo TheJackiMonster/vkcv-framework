@@ -21,6 +21,7 @@ namespace vkcv {
 	QueueFamilyIndices getQueueFamilyIndices(const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR surface);
 
 	// TODO: try to use specialised queues
-	std::vector<vk::DeviceQueueCreateInfo> createDeviceQueueCreateInfo(const QueueFamilyIndices& indices);
+	std::vector<vk::DeviceQueueCreateInfo> createDeviceQueueCreateInfo(const QueueFamilyIndices& indices, 
+		std::vector<float> *outQueuePriorities);
 
 }

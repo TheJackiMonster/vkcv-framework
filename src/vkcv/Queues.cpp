@@ -45,7 +45,8 @@ namespace vkcv {
 		return indices;
 	}
 
-	std::vector<vk::DeviceQueueCreateInfo> createDeviceQueueCreateInfo(const QueueFamilyIndices& indices) {
+	std::vector<vk::DeviceQueueCreateInfo> createDeviceQueueCreateInfo(const QueueFamilyIndices& indices,
+		std::vector<float>* outQueuePriorities) {
 
 		// use set to avoid duplicate queues
 		std::unordered_set<int> familyIndexSet;
@@ -55,12 +56,16 @@ namespace vkcv {
 		familyIndexSet.insert(indices.presentIndex);
 
 		const vk::DeviceQueueCreateFlagBits flags = {};
-		const float priority = 1.f;
 		std::vector<vk::DeviceQueueCreateInfo> createInfos;
 
+		outQueuePriorities->resize(familyIndexSet.size(), 1.f);
+		int priorityIndex = 0;
+
 		for (const auto index : familyIndexSet) {
-			const vk::DeviceQueueCreateInfo graphicsCreateInfo(flags, index, 1, &priority);
+			outQueuePriorities->push_back(1.f);
+			const vk::DeviceQueueCreateInfo graphicsCreateInfo(flags, index, 1, &outQueuePriorities->at(priorityIndex));
 			createInfos.push_back(graphicsCreateInfo);
+			priorityIndex++;
 		}
 		return createInfos;
 	}
