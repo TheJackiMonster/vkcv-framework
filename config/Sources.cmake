@@ -33,4 +33,7 @@ set(vkcv_sources
         
         ${vkcv_include}/vkcv/CommandResources.hpp
         ${vkcv_source}/vkcv/CommandResources.cpp
+        
+        ${vkcv_include}/vkcv/SyncResources.hpp
+        ${vkcv_source}/vkcv/SyncResources.cpp
 )

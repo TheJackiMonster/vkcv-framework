@@ -452,8 +452,9 @@ namespace vkcv
 
 		const int graphicQueueFamilyIndex = queuePairsGraphics[0].first;
 		const auto defaultCommandResources = createDefaultCommandResources(context.getDevice(), graphicQueueFamilyIndex);
+		const auto defaultSyncResources = createDefaultSyncResources(context.getDevice());
 
-        return Core(std::move(context) , window, swapChain, imageViews, defaultCommandResources);
+        return Core(std::move(context) , window, swapChain, imageViews, defaultCommandResources, defaultSyncResources);
     }
 
     const Context &Core::getContext() const
@@ -462,7 +463,7 @@ namespace vkcv
     }
 
 	Core::Core(Context &&context, const Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
-		const CommandResources& commandResources) noexcept :
+		const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
 			m_Context(std::move(context)),
 			m_window(window),
 			m_swapchain(swapChain),
@@ -472,7 +473,8 @@ namespace vkcv
 			m_PipelineLayouts{},
 			m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
 			m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
-			m_CommandResources(commandResources)
+			m_CommandResources(commandResources),
+			m_SyncResources(syncResources)
 	{}
 
 	Core::~Core() noexcept {
@@ -496,7 +498,8 @@ namespace vkcv
 			m_Context.m_Device.destroyImageView(image);
 		}
 
-		destroyCommandResources(m_Context.m_Device, m_CommandResources);
+		destroyCommandResources(m_Context.getDevice(), m_CommandResources);
+		destroySyncResources(m_Context.getDevice(), m_SyncResources);
 
 		m_Context.m_Device.destroySwapchainKHR(m_swapchain.getSwapchain());
 		m_Context.m_Instance.destroySurfaceKHR(m_swapchain.getSurface());
