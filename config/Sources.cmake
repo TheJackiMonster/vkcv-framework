@@ -25,6 +25,9 @@ set(vkcv_sources
 		${vkcv_include}/vkcv/ShaderProgram.hpp
 		${vkcv_source}/vkcv/ShaderProgram.cpp
 
-		${vkcv_include}/vkcv/Pipeline.hpp
-		${vkcv_source}/vkcv/Pipeline.cpp
+		${vkcv_include}/vkcv/PipelineConfig.hpp
+		${vkcv_source}/vkcv/PipelineConfig.cpp
+
+		${vkcv_source}/vkcv/PipelineManager.hpp
+		${vkcv_source}/vkcv/PipelineManager.cpp
 )

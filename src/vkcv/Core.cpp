@@ -6,6 +6,7 @@
 
 #include "vkcv/Core.hpp"
 #include "PassManager.hpp"
+#include "PipelineManager.hpp"
 
 namespace vkcv
 {
@@ -465,7 +466,8 @@ namespace vkcv
 			m_NextPipelineId(0),
 			m_Pipelines{},
 			m_PipelineLayouts{},
-			m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)}
+			m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
+			m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)}
     {}
 
 	Core::~Core() noexcept {
@@ -493,194 +495,16 @@ namespace vkcv
 		m_Context.m_Instance.destroySurfaceKHR(m_swapchain.getSurface());
 	}
 
-	bool Core::createGraphicsPipeline(const Pipeline &pipeline, PipelineHandle &handle) {
-		
-		// TODO: this search could be avoided if ShaderProgram could be queried for a specific stage
-		const auto shaderStageFlags = pipeline.m_shaderProgram.getShaderStages();
-		const auto shaderCode = pipeline.m_shaderProgram.getShaderCode();
-		std::vector<char> vertexCode;
-		std::vector<char> fragCode;
-		assert(shaderStageFlags.size() == shaderCode.size());
-		for (int i = 0; i < shaderStageFlags.size(); i++) {
-			switch (shaderStageFlags[i]) {
-				case vk::ShaderStageFlagBits::eVertex: vertexCode = shaderCode[i]; break;
-				case vk::ShaderStageFlagBits::eFragment: fragCode = shaderCode[i]; break;
-				default: std::cout << "Core::createGraphicsPipeline encountered unknown shader stage" << std::endl; return false;
-			}
-		}
+    PipelineHandle Core::createGraphicsPipeline(const PipelineConfig &config)
+    {
+        const vk::RenderPass &pass = m_PassManager->getVkPass(config.m_passHandle);
+        return m_PipelineManager->createPipeline(config, pass);
+    }
 
-		const bool foundVertexCode = !vertexCode.empty();
-		const bool foundFragCode = !fragCode.empty();
-		const bool foundRequiredShaderCode = foundVertexCode && foundFragCode;
-		if (!foundRequiredShaderCode) {
-			std::cout << "Core::createGraphicsPipeline requires vertex and fragment shader code" << std::endl; 
-			return false;
-		}
-
-		// vertex shader stage
-		// TODO: store shader code as uint32_t in ShaderProgram to avoid pointer cast
-		vk::ShaderModuleCreateInfo vertexModuleInfo({}, vertexCode.size(), reinterpret_cast<uint32_t*>(vertexCode.data()));
-		vk::ShaderModule vertexModule{};
-		if (m_Context.m_Device.createShaderModule(&vertexModuleInfo, nullptr, &vertexModule) != vk::Result::eSuccess)
-			return false;
-
-		vk::PipelineShaderStageCreateInfo pipelineVertexShaderStageInfo(
-			{},
-			vk::ShaderStageFlagBits::eVertex,
-			vertexModule,
-			"main",
-			nullptr
-		);
-
-		// fragment shader stage
-		vk::ShaderModuleCreateInfo fragmentModuleInfo({}, fragCode.size(), reinterpret_cast<uint32_t*>(fragCode.data()));
-		vk::ShaderModule fragmentModule{};
-		if (m_Context.m_Device.createShaderModule(&fragmentModuleInfo, nullptr, &fragmentModule) != vk::Result::eSuccess)
-        {
-		    m_Context.m_Device.destroy(vertexModule);
-			return false;
-        }
-
-		vk::PipelineShaderStageCreateInfo pipelineFragmentShaderStageInfo(
-			{},
-			vk::ShaderStageFlagBits::eFragment,
-			fragmentModule,
-			"main",
-			nullptr
-		);
-
-		// vertex input state
-		vk::VertexInputBindingDescription vertexInputBindingDescription(0, 12, vk::VertexInputRate::eVertex);
-		vk::VertexInputAttributeDescription vertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, 0);
-
-		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
-			{},
-			1,
-			&vertexInputBindingDescription,
-			1,
-			&vertexInputAttributeDescription
-		);
-
-		// input assembly state
-		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
-			{},
-			vk::PrimitiveTopology::eTriangleList,
-			false
-		);
-
-		// viewport state
-		vk::Viewport viewport(0.f, 0.f, static_cast<float>(pipeline.m_width), static_cast<float>(pipeline.m_height), 0.f, 1.f);
-		vk::Rect2D scissor({ 0,0 }, { pipeline.m_width, pipeline.m_height });
-		vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
-
-		// rasterization state
-		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
-			{},
-			false,
-			false,
-			vk::PolygonMode::eFill,
-			vk::CullModeFlagBits::eNone,
-			vk::FrontFace::eCounterClockwise,
-			false,
-			0.f,
-			0.f,
-			0.f,
-			1.f
-		);
-
-		// multisample state
-		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
-			{},
-			vk::SampleCountFlagBits::e1,
-			false,
-			0.f,
-			nullptr,
-			false,
-			false
-		);
-
-		// color blend state
-		vk::ColorComponentFlags colorWriteMask(VK_COLOR_COMPONENT_R_BIT |
-			VK_COLOR_COMPONENT_G_BIT |
-			VK_COLOR_COMPONENT_B_BIT |
-			VK_COLOR_COMPONENT_A_BIT);
-		vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
-			false,
-			vk::BlendFactor::eOne,
-			vk::BlendFactor::eOne,
-			vk::BlendOp::eAdd,
-			vk::BlendFactor::eOne,
-			vk::BlendFactor::eOne,
-			vk::BlendOp::eAdd,
-			colorWriteMask
-		);
-		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
-			{},
-			false,
-			vk::LogicOp::eClear,
-			1,	//TODO: hardcoded to one
-			&colorBlendAttachmentState,
-			{ 1.f,1.f,1.f,1.f }
-		);
-
-		// pipeline layout
-		vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
-			{},
-			0,
-			{},
-			0,
-			{}
-		);
-		vk::PipelineLayout vkPipelineLayout{};
-		if (m_Context.m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
-        {
-		    m_Context.m_Device.destroy(vertexModule);
-		    m_Context.m_Device.destroy(fragmentModule);
-			return false;
-        }
-
-		// graphics pipeline create
-		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = { pipelineVertexShaderStageInfo, pipelineFragmentShaderStageInfo };
-		vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
-			{},
-			static_cast<uint32_t>(shaderStages.size()),
-			shaderStages.data(),
-			&pipelineVertexInputStateCreateInfo,
-			&pipelineInputAssemblyStateCreateInfo,
-			nullptr,
-			&pipelineViewportStateCreateInfo,
-			&pipelineRasterizationStateCreateInfo,
-			&pipelineMultisampleStateCreateInfo,
-			nullptr,
-			&pipelineColorBlendStateCreateInfo,
-			nullptr,
-			vkPipelineLayout,
-			m_PassManager->getVkPass(pipeline.m_passHandle),
-			0,
-			{},
-			0
-		);
-
-		vk::Pipeline vkPipeline{};
-		if (m_Context.m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess)
-        {
-            m_Context.m_Device.destroy(vertexModule);
-            m_Context.m_Device.destroy(fragmentModule);
-			return false;
-        }
-
-		m_Context.m_Device.destroy(vertexModule);
-		m_Context.m_Device.destroy(fragmentModule);
-
-		m_Pipelines.push_back(vkPipeline);
-		m_PipelineLayouts.push_back(vkPipelineLayout);
-		handle.id = m_NextPipelineId++;
-
-		return true;
-	}
 
     PassHandle Core::createPass(const PassConfig &config)
     {
         return m_PassManager->createPass(config);
     }
+
 }

@@ -4,8 +4,8 @@
  * @brief Pipeline class to handle shader stages
  */
 
-#ifndef VKCV_PIPELINE_HPP
-#define VKCV_PIPELINE_HPP
+#ifndef VKCV_PIPELINECONFIG_HPP
+#define VKCV_PIPELINECONFIG_HPP
 
 #include <vector>
 #include <cstdint>
@@ -14,13 +14,13 @@
 
 namespace vkcv {
 
-    class Pipeline {
+    class PipelineConfig {
 
     public:
         /**
          *  Default constructer is deleted!
          */
-        Pipeline() = delete;
+        PipelineConfig() = delete;
 
         /**
          *  Constructor for the pipeline. Creates a pipeline using @p vertexCode, @p fragmentCode as well as the
@@ -31,7 +31,7 @@ namespace vkcv {
          * @param width width of the application window
          * @param passHandle handle for Render Pass
          */
-        Pipeline(const ShaderProgram& shaderProgram, uint32_t width, uint32_t height, PassHandle &passHandle);
+        PipelineConfig(const ShaderProgram& shaderProgram, uint32_t width, uint32_t height, PassHandle &passHandle);
 
 		ShaderProgram m_shaderProgram;
         uint32_t m_height;
@@ -40,4 +40,4 @@ namespace vkcv {
     };
 
 }
-#endif //VKCV_PIPELINE_HPP
+#endif //VKCV_PIPELINECONFIG_HPP

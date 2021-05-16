@@ -12,7 +12,7 @@
 #include "vkcv/Window.hpp"
 #include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
-#include "vkcv/Pipeline.hpp"
+#include "vkcv/PipelineConfig.hpp"
 
 namespace vkcv
 {
@@ -21,6 +21,7 @@ namespace vkcv
 
     // forward declarations
     class PassManager;
+    class PipelineManager;
 
     class Core final
     {
@@ -46,6 +47,7 @@ namespace vkcv
         std::vector<vk::PipelineLayout> m_PipelineLayouts;
 
         std::unique_ptr<PassManager> m_PassManager;
+        std::unique_ptr<PipelineManager> m_PipelineManager;
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
@@ -108,19 +110,29 @@ namespace vkcv
                            std::vector<const char*> deviceExtensions    = {});
 
         /**
-         * Creates a basic vulkan graphics pipeline using @p pipeline from the pipeline class and returns it using the @p handle.
+         * Creates a basic vulkan graphics pipeline using @p config from the pipeline config class and returns it using the @p handle.
          * Fixed Functions for pipeline are set with standard values.
          *
-         * @param pipeline a pipeline object from the pipeline class
+         * @param config a pipeline config object from the pipeline config class
          * @param handle a handle to return the created vulkan handle
-         * @return True if Pipeline creation was successfull, False if not
+         * @return True if pipeline creation was successful, False if not
          */
-        bool createGraphicsPipeline(const Pipeline &pipeline, PipelineHandle &handle);
+        [[nodiscard]]
+        PipelineHandle createGraphicsPipeline(const PipelineConfig &config);
+
+        /**
+         * Creates a basic vulkan render pass using @p config from the render pass config class and returns it using the @p handle.
+         * Fixed Functions for pipeline are set with standard values.
+         *
+         * @param config a render pass config object from the render pass config class
+         * @param handle a handle to return the created vulkan handle
+         * @return True if render pass creation was successful, False if not
+         */
+        [[nodiscard]]
+        PassHandle createPass(const PassConfig &config);
 
         // TODO:
         BufferHandle createBuffer(const Buffer &buf);
 
-        [[nodiscard]]
-        PassHandle createPass(const PassConfig &config);
     };
 }

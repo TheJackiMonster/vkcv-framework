@@ -61,9 +61,10 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.addShader(vkcv::ShaderProgram::ShaderStage::VERTEX, "shaders/vert.spv");
 	triangleShaderProgram.addShader(vkcv::ShaderProgram::ShaderStage::FRAGMENT, "shaders/frag.spv");
 
-	const vkcv::Pipeline trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
-	vkcv::PipelineHandle trianglePipeline{};
-	if (!core.createGraphicsPipeline(trianglePipelineDefinition, trianglePipeline)) {
+	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
+	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
+	if (trianglePipeline.id == 0)
+	{
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}

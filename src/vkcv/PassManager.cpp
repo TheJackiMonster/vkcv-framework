@@ -56,9 +56,8 @@ namespace vkcv
     PassManager::~PassManager() noexcept
     {
         for(const auto &pass : m_RenderPasses)
-        {
             m_Device.destroy(pass);
-        }
+
         m_RenderPasses.clear();
         m_NextPassId = 1;
     }
