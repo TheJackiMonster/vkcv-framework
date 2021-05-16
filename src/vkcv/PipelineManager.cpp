@@ -25,32 +25,16 @@ namespace vkcv
 
     PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, const vk::RenderPass &pass)
     {
-
-        // TODO: this search could be avoided if ShaderProgram could be queried for a specific stage
-        const auto shaderStageFlags = config.m_shaderProgram.getShaderStages();
-        const auto shaderCode = config.m_shaderProgram.getShaderCode();
-        std::vector<char> vertexCode;
-        std::vector<char> fragCode;
-        assert(shaderStageFlags.size() == shaderCode.size());
-        for (int i = 0; i < shaderStageFlags.size(); i++) {
-            switch (shaderStageFlags[i]) {
-                case vk::ShaderStageFlagBits::eVertex: vertexCode = shaderCode[i]; break;
-                case vk::ShaderStageFlagBits::eFragment: fragCode = shaderCode[i]; break;
-                default: std::cout << "Core::createGraphicsPipeline encountered unknown shader stage" << std::endl;
-                return PipelineHandle{0};
-            }
-        }
-
-        const bool foundVertexCode = !vertexCode.empty();
-        const bool foundFragCode = !fragCode.empty();
-        const bool foundRequiredShaderCode = foundVertexCode && foundFragCode;
-        if (!foundRequiredShaderCode) {
+        const bool existsVertexShader = config.m_ShaderProgram.existsShader(ShaderStage::VERTEX);
+        const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
+        if (!(existsVertexShader && existsFragmentShader))
+        {
             std::cout << "Core::createGraphicsPipeline requires vertex and fragment shader code" << std::endl;
             return PipelineHandle{0};
         }
 
         // vertex shader stage
-        // TODO: store shader code as uint32_t in ShaderProgram to avoid pointer cast
+        std::vector<char> vertexCode = config.m_ShaderProgram.getShader(ShaderStage::VERTEX).shaderCode;
         vk::ShaderModuleCreateInfo vertexModuleInfo({}, vertexCode.size(), reinterpret_cast<uint32_t*>(vertexCode.data()));
         vk::ShaderModule vertexModule{};
         if (m_Device.createShaderModule(&vertexModuleInfo, nullptr, &vertexModule) != vk::Result::eSuccess)
@@ -65,6 +49,7 @@ namespace vkcv
         );
 
         // fragment shader stage
+        std::vector<char> fragCode = config.m_ShaderProgram.getShader(ShaderStage::FRAGMENT).shaderCode;
         vk::ShaderModuleCreateInfo fragmentModuleInfo({}, fragCode.size(), reinterpret_cast<uint32_t*>(fragCode.data()));
         vk::ShaderModule fragmentModule{};
         if (m_Device.createShaderModule(&fragmentModuleInfo, nullptr, &fragmentModule) != vk::Result::eSuccess)
@@ -101,8 +86,8 @@ namespace vkcv
         );
 
         // viewport state
-        vk::Viewport viewport(0.f, 0.f, static_cast<float>(config.m_width), static_cast<float>(config.m_height), 0.f, 1.f);
-        vk::Rect2D scissor({ 0,0 }, { config.m_width, config.m_height });
+        vk::Viewport viewport(0.f, 0.f, static_cast<float>(config.m_Width), static_cast<float>(config.m_Height), 0.f, 1.f);
+        vk::Rect2D scissor({ 0,0 }, { config.m_Width, config.m_Height });
         vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
 
         // rasterization state
@@ -211,11 +196,11 @@ namespace vkcv
 
     vk::Pipeline PipelineManager::getVkPipeline(const PipelineHandle &handle) const
     {
-        return m_Pipelines[handle.id -1];
+        return m_Pipelines.at(handle.id -1);
     }
 
     vk::PipelineLayout PipelineManager::getVkPipelineLayout(const PipelineHandle &handle) const
     {
-        return m_PipelineLayouts[handle.id - 1];
+        return m_PipelineLayouts.at(handle.id - 1);
     }
 }

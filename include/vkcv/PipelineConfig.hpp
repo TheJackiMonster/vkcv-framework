@@ -33,10 +33,10 @@ namespace vkcv {
          */
         PipelineConfig(const ShaderProgram& shaderProgram, uint32_t width, uint32_t height, PassHandle &passHandle);
 
-		ShaderProgram m_shaderProgram;
-        uint32_t m_height;
-        uint32_t m_width;
-        PassHandle m_passHandle;
+		ShaderProgram m_ShaderProgram;
+        uint32_t m_Height;
+        uint32_t m_Width;
+        PassHandle m_PassHandle;
     };
 
 }
