@@ -714,6 +714,7 @@ namespace vkcv
 		m_Pipelines.push_back(vkPipeline);
 		m_PipelineLayouts.push_back(vkPipelineLayout);
 		handle.id = m_NextPipelineId++;
+		return true;
 	}
 
     bool Core::createRenderpass(const Renderpass &pass, RenderpassHandle &handle)
