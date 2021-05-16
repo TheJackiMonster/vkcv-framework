@@ -12,4 +12,7 @@ set(vkcv_sources
 
 		${vkcv_include}/vkcv/Window.hpp
 		${vkcv_source}/vkcv/Window.cpp
+
+		${vkcv_include}/asset_loader/asset_loader.hpp
+		${vkcv_source}/asset_loader/main.cpp
 )
