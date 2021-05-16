@@ -6,11 +6,13 @@
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
 
+	const int windowWidth = 800;
+	const int windowHeight = 600;
     vkcv::Window window = vkcv::Window::create(
-            applicationName,
-            800,
-            600,
-            false
+		applicationName,
+		windowWidth,
+		windowHeight,
+		false
     );
 
 	vkcv::Core core = vkcv::Core::create(
@@ -53,6 +55,17 @@ int main(int argc, const char** argv) {
 	if (!core.createRenderpass(trianglePassDefinition, trianglePass))
 	{
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	vkcv::ShaderProgram triangleShaderProgram = vkcv::ShaderProgram::create();
+	triangleShaderProgram.addShader(vkcv::ShaderProgram::ShaderStage::VERTEX, "shaders/vert.spv");
+	triangleShaderProgram.addShader(vkcv::ShaderProgram::ShaderStage::FRAGMENT, "shaders/frag.spv");
+
+	const vkcv::Pipeline trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
+	vkcv::PipelineHandle trianglePipeline;
+	if (!core.createGraphicsPipeline(trianglePipelineDefinition, trianglePipeline)) {
+		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 

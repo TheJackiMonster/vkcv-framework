@@ -530,7 +530,7 @@ namespace vkcv
 	}
 
 	bool Core::createGraphicsPipeline(const Pipeline& pipeline, PipelineHandle& handle) {
-
+		
 		// TODO: this search could be avoided if ShaderProgram could be queried for a specific stage
 		const auto shaderStageFlags = pipeline.m_shaderProgram.getShaderStages();
 		const auto shaderCode = pipeline.m_shaderProgram.getShaderCode();
@@ -651,7 +651,7 @@ namespace vkcv
 			{},
 			false,
 			vk::LogicOp::eClear,
-			0,
+			1,	//TODO: hardcoded to one
 			&colorBlendAttachmentState,
 			{ 1.f,1.f,1.f,1.f }
 		);
