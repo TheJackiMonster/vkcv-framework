@@ -450,7 +450,10 @@ namespace vkcv
             imageViews.push_back( device.createImageView( imageViewCreateInfo ) );
         }
 
-        return Core(std::move(context) , window, swapChain, imageViews);
+		const int graphicQueueFamilyIndex = queuePairsGraphics[0].first;
+		const auto defaultCommandResources = createDefaultCommandResources(context.getDevice(), graphicQueueFamilyIndex);
+
+        return Core(std::move(context) , window, swapChain, imageViews, defaultCommandResources);
     }
 
     const Context &Core::getContext() const
@@ -458,17 +461,19 @@ namespace vkcv
         return m_Context;
     }
 
-    Core::Core(Context &&context, const Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews) noexcept :
-            m_Context(std::move(context)),
-            m_window(window),
-            m_swapchain(swapChain),
-            m_swapchainImageViews(imageViews),
+	Core::Core(Context &&context, const Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
+		const CommandResources& commandResources) noexcept :
+			m_Context(std::move(context)),
+			m_window(window),
+			m_swapchain(swapChain),
+			m_swapchainImageViews(imageViews),
 			m_NextPipelineId(0),
 			m_Pipelines{},
 			m_PipelineLayouts{},
 			m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
-			m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)}
-    {}
+			m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
+			m_CommandResources(commandResources)
+	{}
 
 	Core::~Core() noexcept {
 		std::cout << " Core " << std::endl;
@@ -490,6 +495,8 @@ namespace vkcv
 		for (auto image : m_swapchainImageViews) {
 			m_Context.m_Device.destroyImageView(image);
 		}
+
+		destroyCommandResources(m_Context.m_Device, m_CommandResources);
 
 		m_Context.m_Device.destroySwapchainKHR(m_swapchain.getSwapchain());
 		m_Context.m_Instance.destroySurfaceKHR(m_swapchain.getSurface());

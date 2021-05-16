@@ -13,6 +13,7 @@
 #include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
 #include "vkcv/PipelineConfig.hpp"
+#include "CommandResources.hpp"
 
 namespace vkcv
 {
@@ -32,7 +33,8 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, const Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews) noexcept;
+        Core(Context &&context, const Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
+			const CommandResources& commandResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
 
@@ -48,6 +50,7 @@ namespace vkcv
 
         std::unique_ptr<PassManager> m_PassManager;
         std::unique_ptr<PipelineManager> m_PipelineManager;
+		CommandResources m_CommandResources;
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
