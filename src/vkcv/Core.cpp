@@ -516,6 +516,20 @@ namespace vkcv
 	Core::~Core() {
 		std::cout << " Core " << std::endl;
 
+		for(const auto &layout : m_PipelineLayouts)
+        {
+		    m_Context.m_Device.destroy(layout);
+        }
+
+		for(const auto &pipeline : m_Pipelines)
+        {
+		    m_Context.m_Device.destroy(pipeline);
+        }
+
+		m_PipelineLayouts.clear();
+		m_Pipelines.clear();
+		m_NextPipelineId = 0;
+
 		for (auto image : m_swapchainImageViews) {
 			m_Context.getDevice().destroyImageView(image);
 		}
@@ -693,6 +707,9 @@ namespace vkcv
 		vk::Pipeline vkPipeline{};
 		if (m_Context.m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess)
 			return false;
+
+		m_Context.m_Device.destroy(vertexModule);
+		m_Context.m_Device.destroy(fragmentModule);
 
 		m_Pipelines.push_back(vkPipeline);
 		m_PipelineLayouts.push_back(vkPipelineLayout);
