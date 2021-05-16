@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
+#include <vkcv/Window.hpp>
+#include <vkcv/ShaderProgram.hpp>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
