@@ -7,11 +7,11 @@
 #include <vulkan/vulkan.hpp>
 #include "vkcv/Context.hpp"
 #include "vkcv/Handles.hpp"
+#include "vkcv/Buffer.hpp"
 
 namespace vkcv
 {
     // TODO:
-    class Buffer;
     class Renderpass;
     class Pipeline;
 
@@ -92,7 +92,16 @@ namespace vkcv
                            std::vector<const char*> deviceExtensions    = {});
 
         // TODO:
-        BufferHandle createBuffer(const Buffer &buf);
+        /**
+            * Creates a #Buffer with data-type T and @p bufferType 
+            * @param bufferType Type of Buffer created
+            * @param size Amount of Data of type T
+            * return Buffer-Object
+            */
+        template<typename T>
+        Buffer<T> createBuffer(vkcv::BufferType bufferType,size_t size) {
+            return Buffer<T>(m_Context.getDevice(),m_Context.getPhysicalDevice, bufferType,size);
+        };
         PassHandle createRenderPass(const Renderpass &pass) ;
         PipelineHandle createPipeline(const Pipeline &pipeline);
 
