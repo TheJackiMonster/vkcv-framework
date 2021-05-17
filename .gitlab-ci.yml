@@ -34,8 +34,11 @@ build_win10_msvc:
     - cd debug
     - cmake -DCMAKE_BUILD_TYPE=Debug ..
     - cmake --build .
-  
-deploy_doc_web:
+
+deploy_doc_develop:
+  only:
+    refs:
+      - develop
   stage: deploy
   needs: ["build_ubuntu_gcc"]
   dependencies: 
@@ -45,5 +48,22 @@ deploy_doc_web:
   variables:
     GIT_STRATEGY: none
   script:
-    - echo $CI_COMMIT_BRANCH
-    - ls
+    - mv /doc/html /html
+    - chown 33:33 /html -R
+
+deploy_doc_branch:
+  except:
+    refs:
+      - develop
+  stage: deploy
+  needs: ["build_ubuntu_gcc"]
+  dependencies: 
+    - build_ubuntu_gcc
+  tags: 
+    - webserver
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - mv /doc/html /html/branch/$CI_COMMIT_BRANCH
+    - chown 33:33 /html/branch/$CI_COMMIT_BRANCH -R
+
