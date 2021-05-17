@@ -46,6 +46,4 @@ deploy_doc_web:
     GIT_STRATEGY: none
   script:
     - echo $CI_COMMIT_BRANCH
-    - pwd
-    - cd /html
     - ls
