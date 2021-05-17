@@ -49,6 +49,7 @@ deploy_doc_develop:
     GIT_STRATEGY: none
   script:
     - mv doc/html /var/www//html
+    - echo "Check it out at https://vkcv.de/
 
 deploy_doc_branch:
   except:
@@ -64,3 +65,4 @@ deploy_doc_branch:
     GIT_STRATEGY: none
   script:
     - mv doc/html /var/www/html/branch/$CI_COMMIT_BRANCH
+    - echo "Check it out at https://vkcv.de/branch/$CI_COMMIT_BRANCH"
