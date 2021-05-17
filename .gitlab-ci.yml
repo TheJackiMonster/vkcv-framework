@@ -47,9 +47,10 @@ deploy_doc_develop:
     - webserver
   variables:
     GIT_STRATEGY: none
+  pre-script:
+    - usermod -a -G www-data gitlab-runner
   script:
-    - sudo mv doc/html /html
-    - chown 33:33 /html -R
+    - mv doc/html /html
 
 deploy_doc_branch:
   except:
@@ -63,7 +64,8 @@ deploy_doc_branch:
     - webserver
   variables:
     GIT_STRATEGY: none
+  pre-script:
+    - usermod -a -G www-data gitlab-runner
   script:
-    - sudo mv doc/html /html/branch/$CI_COMMIT_BRANCH
-    - chown 33:33 /html/branch/$CI_COMMIT_BRANCH -R
+    - mv doc/html /html/branch/$CI_COMMIT_BRANCH
 
