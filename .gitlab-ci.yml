@@ -48,8 +48,8 @@ deploy_doc_develop:
   variables:
     GIT_STRATEGY: none
   script:
-    - mv doc/html /var/www//html
-    - echo "Check it out at https://vkcv.de/"
+    - rsync -avh doc/html /var/www/html/develop --delete
+    - echo "Check it out at https://vkcv.de/develop"
 
 deploy_doc_branch:
   except:
@@ -64,5 +64,5 @@ deploy_doc_branch:
   variables:
     GIT_STRATEGY: none
   script:
-    - mv doc/html /var/www/html/branch/$CI_COMMIT_BRANCH
+    - rsync -avh  doc/html /var/www/html/branch/$CI_COMMIT_BRANCH --delete
     - echo "Check it out at https://vkcv.de/branch/$CI_COMMIT_BRANCH"
