@@ -49,7 +49,7 @@ deploy_doc_develop:
     GIT_STRATEGY: none
   script:
     - mv doc/html /var/www//html
-    - echo "Check it out at https://vkcv.de/
+    - echo "Check it out at https://vkcv.de/"
 
 deploy_doc_branch:
   except:
