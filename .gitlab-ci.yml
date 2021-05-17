@@ -3,11 +3,11 @@ stages:
   - deploy
 
 build_ubuntu_gcc:
-  variables:
-    GIT_SUBMODULE_STRATEGY: recursive
   stage: build
   tags: 
     - ubuntu-gcc
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
   script:
     - mkdir debug
     - cd debug
@@ -21,11 +21,11 @@ build_ubuntu_gcc:
     expire_in: never
 
 build_win10_msvc:
-  variables:
-    GIT_SUBMODULE_STRATEGY: recursive
   stage: build
   tags: 
     - win10-msvc
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
   script:
     - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
     - .\Launch-VsDevShell.ps1
@@ -35,3 +35,17 @@ build_win10_msvc:
     - cmake -DCMAKE_BUILD_TYPE=Debug ..
     - cmake --build .
   
+  deploy_doc_web:
+    stage: deploy
+    needs: ["build_ubuntu_gcc"]
+    dependencies: 
+      - build_ubuntu_gcc
+    tags: 
+      - webserver
+    variables:
+      GIT_STRATEGY: none
+    script:
+      - echo $CI_COMMIT_BRANCH
+      - pwd
+      - cd /html
+      - ls
