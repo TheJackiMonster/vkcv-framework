@@ -47,7 +47,7 @@ deploy_doc_develop:
     - webserver
   variables:
     GIT_STRATEGY: none
-  pre-script:
+  before_script:
     - usermod -a -G www-data gitlab-runner
   script:
     - mv doc/html /html
@@ -64,7 +64,7 @@ deploy_doc_branch:
     - webserver
   variables:
     GIT_STRATEGY: none
-  pre-script:
+  before_script:
     - usermod -a -G www-data gitlab-runner
   script:
     - mv doc/html /html/branch/$CI_COMMIT_BRANCH
