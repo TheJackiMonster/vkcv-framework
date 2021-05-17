@@ -48,7 +48,7 @@ deploy_doc_develop:
   variables:
     GIT_STRATEGY: none
   script:
-    - mv doc/html /html
+    - sudo mv doc/html /html
     - chown 33:33 /html -R
 
 deploy_doc_branch:
@@ -64,6 +64,6 @@ deploy_doc_branch:
   variables:
     GIT_STRATEGY: none
   script:
-    - mv doc/html /html/branch/$CI_COMMIT_BRANCH
+    - sudo mv doc/html /html/branch/$CI_COMMIT_BRANCH
     - chown 33:33 /html/branch/$CI_COMMIT_BRANCH -R
 
