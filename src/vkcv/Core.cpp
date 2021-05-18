@@ -5,9 +5,15 @@
  */
 
 #include "vkcv/Core.hpp"
+#include "PassManager.hpp"
+#include "PipelineManager.hpp"
+#include "Surface.hpp"
+#include "ImageLayoutTransitions.hpp"
+#include "Framebuffer.hpp"
 
 namespace vkcv
 {
+
     /**
      * @brief The physical device is evaluated by three categories:
      * discrete GPU vs. integrated GPU, amount of queues and its abilities, and VRAM.physicalDevice.
@@ -247,22 +253,6 @@ namespace vkcv
         return extensions;
     }
 
-    /**
-     * Computes the queue handles from @p queuePairs
-     * @param queuePairs The queuePairs that were created separately for each queue type (e.g., vk::QueueFlagBits::eGraphics)
-     * @param device The device
-     * @return An array of queue handles based on the @p queuePairs
-     */
-    std::vector<vk::Queue> getQueueHandles(const std::vector<std::pair<int, int>> queuePairs, const vk::Device device) {
-        std::vector<vk::Queue> queueHandles;
-        for (auto q : queuePairs) {
-            int queueFamilyIndex = q.first; // the queueIndex of the queue family
-            int queueIndex = q.second;   // the queueIndex within a queue family
-            queueHandles.push_back(device.getQueue(queueFamilyIndex, queueIndex));
-        }
-        return queueHandles;
-    }
-
     Core Core::create(const Window &window,
                       const char *applicationName,
                       uint32_t applicationVersion,
@@ -347,47 +337,35 @@ namespace vkcv
             throw std::runtime_error("The requested device extensions are not supported by the physical device!");
         }
 
-        //vector to define the queue priorities
-        std::vector<float> qPriorities;
-        qPriorities.resize(queueFlags.size(), 1.f); // all queues have the same priorities
+		const vk::SurfaceKHR surface = createSurface(window.getWindow(), instance, physicalDevice);
+		const QueueFamilyIndices queueFamilyIndices = getQueueFamilyIndices(physicalDevice, surface);
+		std::vector<float> queuePriorities;
+		const std::vector<vk::DeviceQueueCreateInfo> qCreateInfos = createDeviceQueueCreateInfo(queueFamilyIndices, &queuePriorities);
 
-        // create required queues
-        std::vector<vk::DeviceQueueCreateInfo> qCreateInfos;
-        std::vector<std::pair<int, int>> queuePairsGraphics, queuePairsCompute, queuePairsTransfer;
-        queueCreateInfosQueueHandles(physicalDevice, qPriorities, queueFlags, qCreateInfos, queuePairsGraphics, queuePairsCompute, queuePairsTransfer);
+		vk::DeviceCreateInfo deviceCreateInfo(
+			vk::DeviceCreateFlags(),
+			qCreateInfos.size(),
+			qCreateInfos.data(),
+			0,
+			nullptr,
+			deviceExtensions.size(),
+			deviceExtensions.data(),
+			nullptr		// Should our device use some features??? If yes: TODO
+		);
 
-        vk::DeviceCreateInfo deviceCreateInfo(
-                vk::DeviceCreateFlags(),
-                qCreateInfos.size(),
-                qCreateInfos.data(),
-                0,
-                nullptr,
-                deviceExtensions.size(),
-                deviceExtensions.data(),
-                nullptr		// Should our device use some features??? If yes: TODO
-        );
+
 
 #ifndef NDEBUG
         deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
 
-
         vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
-
-        // maybe it can be useful to store these lists as member variable of Core
-        std::vector<vk::Queue> graphicsQueues = getQueueHandles(queuePairsGraphics, device);
-        std::vector<vk::Queue> computeQueues = getQueueHandles(queuePairsCompute, device);
-        std::vector<vk::Queue> transferQueues = getQueueHandles(queuePairsTransfer, device);
-
-        // examples for accessing queues
-        vk::Queue graphicsQueue = graphicsQueues[0];
-        vk::Queue computeQueue = computeQueues[0];
-        vk::Queue transferQueue = transferQueues[0];
-
         Context context(instance, physicalDevice, device);
 
-        SwapChain swapChain = SwapChain::create(window, context);
+		const VulkanQueues queues = getDeviceQueues(device, queueFamilyIndices);
+
+        SwapChain swapChain = SwapChain::create(window, context, surface);
 
         std::vector<vk::Image> swapChainImages = device.getSwapchainImagesKHR(swapChain.getSwapchain());
         std::vector<vk::ImageView> imageViews;
@@ -415,7 +393,11 @@ namespace vkcv
             imageViews.push_back( device.createImageView( imageViewCreateInfo ) );
         }
 
-        return Core(std::move(context) , window, swapChain, imageViews);
+		const int graphicQueueFamilyIndex = queueFamilyIndices.graphicsIndex;
+		const auto defaultCommandResources = createDefaultCommandResources(context.getDevice(), graphicQueueFamilyIndex);
+		const auto defaultSyncResources = createDefaultSyncResources(context.getDevice());
+
+        return Core(std::move(context) , window, swapChain, imageViews, defaultCommandResources, defaultSyncResources, queues);
     }
 
     const Context &Core::getContext() const
@@ -423,19 +405,129 @@ namespace vkcv
         return m_Context;
     }
 
-    Core::Core(Context &&context, const Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews) noexcept :
-            m_Context(std::move(context)),
-            m_window(window),
-            m_swapchain(swapChain),
-            m_swapchainImageViews(imageViews)
-    {}
+	Core::Core(Context &&context, const Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
+		const CommandResources& commandResources, const SyncResources& syncResources, const VulkanQueues& queues) noexcept :
+			m_Context(std::move(context)),
+			m_window(window),
+			m_swapchain(swapChain),
+			m_swapchainImageViews(imageViews),
+			m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
+			m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
+			m_CommandResources(commandResources),
+			m_SyncResources(syncResources),
+			m_Queues(queues)
+	{}
 
-    Core::~Core() {
-        for( auto image: m_swapchainImageViews ){
-            m_Context.getDevice().destroyImageView(image);
-        }
+	Core::~Core() noexcept {
+		m_Context.getDevice().waitIdle();
+		for (auto image : m_swapchainImageViews) {
+			m_Context.m_Device.destroyImageView(image);
+		}
 
-        m_Context.getDevice().destroySwapchainKHR(m_swapchain.getSwapchain());
-        m_Context.getInstance().destroySurfaceKHR( m_swapchain.getSurface() );
+		destroyCommandResources(m_Context.getDevice(), m_CommandResources);
+		destroySyncResources(m_Context.getDevice(), m_SyncResources);
+		destroyTemporaryFramebuffers();
+
+		m_Context.m_Device.destroySwapchainKHR(m_swapchain.getSwapchain());
+		m_Context.m_Instance.destroySurfaceKHR(m_swapchain.getSurface());
+	}
+
+    PipelineHandle Core::createGraphicsPipeline(const PipelineConfig &config)
+    {
+        const vk::RenderPass &pass = m_PassManager->getVkPass(config.m_PassHandle);
+        return m_PipelineManager->createPipeline(config, pass);
     }
+
+
+    PassHandle Core::createPass(const PassConfig &config)
+    {
+        return m_PassManager->createPass(config);
+    }
+
+	uint32_t Core::acquireSwapchainImage() {
+		uint32_t index;
+		m_Context.getDevice().acquireNextImageKHR(m_swapchain.getSwapchain(), 0, nullptr,
+			m_SyncResources.swapchainImageAcquired, &index, {});
+		const uint64_t timeoutPeriodNs = 1000;	// TODO: think if is adequate
+		const auto& result = m_Context.getDevice().waitForFences(m_SyncResources.swapchainImageAcquired, true, timeoutPeriodNs);
+		m_Context.getDevice().resetFences(m_SyncResources.swapchainImageAcquired);
+		
+		if (result == vk::Result::eTimeout) {
+			index = std::numeric_limits<uint32_t>::max();
+		}
+		
+		return index;
+	}
+
+	void Core::destroyTemporaryFramebuffers() {
+		for (const vk::Framebuffer f : m_TemporaryFramebuffers) {
+			m_Context.getDevice().destroyFramebuffer(f);
+		}
+		m_TemporaryFramebuffers.clear();
+	}
+
+	void Core::beginFrame() {
+		m_currentSwapchainImageIndex = acquireSwapchainImage();
+		
+		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
+			std::cerr << "Drop frame!" << std::endl;
+ 			return;
+		}
+		
+		m_Context.getDevice().waitIdle();	// FIMXE: this is a sin against graphics programming, but its getting late - Alex
+		destroyTemporaryFramebuffers();
+		const vk::CommandBufferUsageFlags beginFlags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+		const vk::CommandBufferBeginInfo beginInfos(beginFlags);
+		m_CommandResources.commandBuffer.begin(beginInfos);
+	}
+
+	void Core::renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
+		const int width, const int height) {
+		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
+			return;
+		}
+  
+		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
+		const std::array<float, 4> clearColor = { 0.f, 0.f, 0.f, 1.f };
+		const vk::ClearValue clearValues(clearColor);
+		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+		const vk::ImageView imageView = m_swapchainImageViews[m_currentSwapchainImageIndex];
+		const vk::Framebuffer framebuffer = createFramebuffer(m_Context.getDevice(), renderpass, width, height, imageView);
+		m_TemporaryFramebuffers.push_back(framebuffer);
+		const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, 1, &clearValues);
+		const vk::SubpassContents subpassContents = {};
+		m_CommandResources.commandBuffer.beginRenderPass(beginInfo, subpassContents, {});
+
+		const vk::Pipeline pipeline = m_PipelineManager->getVkPipeline(pipelineHandle);
+		m_CommandResources.commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
+		m_CommandResources.commandBuffer.draw(3, 1, 0, 0, {});
+		m_CommandResources.commandBuffer.endRenderPass();
+	}
+
+	void Core::endFrame() {
+		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
+			return;
+		}
+  
+		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
+		const vk::Image presentImage = swapchainImages[m_currentSwapchainImageIndex];
+
+		m_CommandResources.commandBuffer.end();
+		
+		const vk::SubmitInfo submitInfo(0, nullptr, 0, 1, &(m_CommandResources.commandBuffer), 1, &m_SyncResources.renderFinished);
+		m_Queues.graphicsQueue.submit(submitInfo);
+
+		vk::Result presentResult;
+		const vk::SwapchainKHR& swapchain = m_swapchain.getSwapchain();
+		const vk::PresentInfoKHR presentInfo(1, &m_SyncResources.renderFinished, 1, &swapchain, 
+			&m_currentSwapchainImageIndex, &presentResult);
+		m_Queues.presentQueue.presentKHR(presentInfo);
+		if (presentResult != vk::Result::eSuccess) {
+			std::cout << "Error: swapchain present failed" << std::endl;
+		}
+	}
+
+	vk::Format Core::getSwapchainImageFormat() {
+		return m_swapchain.getImageFormat();
+	}
 }

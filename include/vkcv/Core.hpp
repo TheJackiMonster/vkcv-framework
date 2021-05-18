@@ -4,18 +4,27 @@
  * @brief Handling of global states regarding dependencies
  */
 
+#include <memory>
+
 #include <vulkan/vulkan.hpp>
 #include "vkcv/Context.hpp"
 #include "vkcv/SwapChain.hpp"
 #include "vkcv/Window.hpp"
+#include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
+#include "vkcv/PipelineConfig.hpp"
+#include "CommandResources.hpp"
+#include "SyncResources.hpp"
+#include "vkcv/Queues.hpp"
 
 namespace vkcv
 {
     // TODO:
     class Buffer;
-    class Renderpass;
-    class Pipeline;
+
+    // forward declarations
+    class PassManager;
+    class PipelineManager;
 
     class Core final
     {
@@ -26,20 +35,32 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, const Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews) noexcept;
+        Core(Context &&context, const Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
+			const CommandResources& commandResources, const SyncResources& syncResources, const VulkanQueues &queues) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
 
+		uint32_t acquireSwapchainImage();
+		void destroyTemporaryFramebuffers();
+
         Context m_Context;
+
         SwapChain m_swapchain;
         std::vector<vk::ImageView> m_swapchainImageViews;
         const Window& m_window;
 
+        std::unique_ptr<PassManager> m_PassManager;
+        std::unique_ptr<PipelineManager> m_PipelineManager;
+		CommandResources m_CommandResources;
+		SyncResources m_SyncResources;
+		VulkanQueues m_Queues;
+		uint32_t m_currentSwapchainImageIndex;
+		std::vector<vk::Framebuffer> m_TemporaryFramebuffers;
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
          */
-        ~Core();
+        ~Core() noexcept;
 
         /**
          * Copy-constructor of #Core is deleted!
@@ -96,10 +117,47 @@ namespace vkcv
                            std::vector<const char*> instanceExtensions  = {},
                            std::vector<const char*> deviceExtensions    = {});
 
+        /**
+         * Creates a basic vulkan graphics pipeline using @p config from the pipeline config class and returns it using the @p handle.
+         * Fixed Functions for pipeline are set with standard values.
+         *
+         * @param config a pipeline config object from the pipeline config class
+         * @param handle a handle to return the created vulkan handle
+         * @return True if pipeline creation was successful, False if not
+         */
+        [[nodiscard]]
+        PipelineHandle createGraphicsPipeline(const PipelineConfig &config);
+
+        /**
+         * Creates a basic vulkan render pass using @p config from the render pass config class and returns it using the @p handle.
+         * Fixed Functions for pipeline are set with standard values.
+         *
+         * @param config a render pass config object from the render pass config class
+         * @param handle a handle to return the created vulkan handle
+         * @return True if render pass creation was successful, False if not
+         */
+        [[nodiscard]]
+        PassHandle createPass(const PassConfig &config);
+
         // TODO:
         BufferHandle createBuffer(const Buffer &buf);
-        PassHandle createRenderPass(const Renderpass &pass) ;
-        PipelineHandle createPipeline(const Pipeline &pipeline);
 
+		/**
+		 * @brief start recording command buffers and increment frame index
+		*/
+		void beginFrame();
+
+		/**
+		 * @brief render a beautiful triangle
+		*/
+		void renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle,
+			const int width, const int height);
+
+		/**
+		 * @brief end recording and present image
+		*/
+		void endFrame();
+
+		vk::Format getSwapchainImageFormat();
     };
 }
