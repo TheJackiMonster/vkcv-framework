@@ -4,12 +4,14 @@
  * @file src/vkcv/Window.hpp
  * @brief Window class to handle a basic rendering surface and input
  */
-#include <GLFW/glfw3.h>
 
 #define NOMINMAX
 #include <algorithm>
 
+struct GLFWwindow;
+
 namespace vkcv {
+	
     class Window final {
     private:
         GLFWwindow *m_window;
@@ -88,4 +90,5 @@ namespace vkcv {
          */
         virtual ~Window();
     };
+    
 }

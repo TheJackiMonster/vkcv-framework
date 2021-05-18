@@ -14,6 +14,10 @@ endif()
 message("-- Language: [ C++ " ${CMAKE_CXX_STANDARD} " ]")
 message("-- Compiler: [ " ${CMAKE_CXX_COMPILER_ID} " " ${CMAKE_CXX_COMPILER_VERSION} " ]")
 
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0.0"))
+	message(FATAL_ERROR "Upgrade your compiler! GCC 9.0+ is required!")
+endif()
+
 # setting up different paths
 set(vkcv_config ${PROJECT_SOURCE_DIR}/config)
 set(vkcv_config_ext ${vkcv_config}/ext)

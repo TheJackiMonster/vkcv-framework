@@ -4,6 +4,8 @@
  * @brief Handling of global states regarding dependencies
  */
 
+#include <GLFW/glfw3.h>
+
 #include "vkcv/Core.hpp"
 #include "PassManager.hpp"
 #include "PipelineManager.hpp"
