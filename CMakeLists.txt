@@ -46,10 +46,11 @@ include(${vkcv_config}/Sources.cmake)
 # configure everything to use the required dependencies
 include(${vkcv_config}/Libraries.cmake)
 
+message("-- Libraries: [ ${vkcv_libraries} ]")
+message("-- Flags: [ ${vkcv_flags} ]")
+
 # set the compiler flags for the framework
 set(CMAKE_CXX_FLAGS ${vkcv_flags})
-
-message("-- Flags: [ ${CMAKE_CXX_FLAGS} ]")
 
 # set the compile definitions aka preprocessor variables
 add_compile_definitions(${vkcv_definitions})
