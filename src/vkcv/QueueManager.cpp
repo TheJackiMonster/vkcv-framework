@@ -4,6 +4,8 @@
 
 #include "vkcv/QueueManager.hpp"
 
+#include "vkcv/QueueManager.hpp"
+
 namespace vkcv {
 
     /**
