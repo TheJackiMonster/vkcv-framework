@@ -2,7 +2,6 @@
 #include "vulkan/vulkan.hpp"
 #include "Context.hpp"
 #include "vkcv/Window.hpp"
-#include <iostream>
 
 namespace vkcv {
     class SwapChain final {

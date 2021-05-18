@@ -109,12 +109,6 @@ namespace vkcv
         queuePairsTransfer = {};
         std::vector<vk::QueueFamilyProperties> qFamilyProperties = physicalDevice.getQueueFamilyProperties();
 
-        // DEBUG
-        std::cout << "Input queue flags:" << std::endl;
-        for (auto qFlag : queueFlags) {
-            std::cout << "\t" << to_string(qFlag) << std::endl;
-        }
-
         //check priorities of flags -> the lower prioCount the higher the priority
         std::vector<int> prios;
         for(auto flag: queueFlags){
@@ -123,21 +117,14 @@ namespace vkcv
                 prioCount += (static_cast<uint32_t>(flag & qFamilyProperties[i].queueFlags) != 0) * qFamilyProperties[i].queueCount;
             }
             prios.push_back(prioCount);
-            std::cout<< "prio Count: " << prioCount << std::endl;
         }
         //resort flags with heighest priority before allocating the queues
         std::vector<vk::QueueFlagBits> newFlags;
         for(int i = 0; i < prios.size(); i++){
             auto minElem = std::min_element(prios.begin(), prios.end());
             int index = minElem - prios.begin();
-            std::cout << "index: "<< index << std::endl;
             newFlags.push_back(queueFlags[index]);
             prios[index] = std::numeric_limits<int>::max();
-        }
-
-        std::cout << "Sorted queue flags:" << std::endl;
-        for (auto qFlag : newFlags) {
-            std::cout << "\t" << to_string(qFlag) << std::endl;
         }
 
         // create requested queues and check if more requested queues are supported
@@ -154,7 +141,6 @@ namespace vkcv
         }
 
         initialQueueFamilyStatus = queueFamilyStatus;
-
         // check if every queue with the specified queue flag can be created
         // this automatically checks for queue flag support!
         for (auto qFlag : newFlags) {
@@ -168,7 +154,6 @@ namespace vkcv
                             queueFamilyStatus[i][0]--;
                             queueFamilyStatus[i][1]--;
                             queueFamilyStatus[i][2]--;
-                            std::cout << "Graphics queue available at queue family #" << i << std::endl;
                             found = true;
                         }
                     }
@@ -184,7 +169,6 @@ namespace vkcv
                             queueFamilyStatus[i][0]--;
                             queueFamilyStatus[i][1]--;
                             queueFamilyStatus[i][2]--;
-                            std::cout << "Compute queue available at queue family #" << i << std::endl;
                             found = true;
                         }
                     }
@@ -200,7 +184,6 @@ namespace vkcv
                             queueFamilyStatus[i][0]--;
                             queueFamilyStatus[i][1]--;
                             queueFamilyStatus[i][2]--;
-                            std::cout << "Transfer queue available at queue family #" << i << std::endl;
                             found = true;
                         }
                     }
@@ -213,24 +196,9 @@ namespace vkcv
             }
         }
 
-        std::cout << "Initial queue status:" << std::endl;
-        int x = 0;
-        for (std::vector<int> e : initialQueueFamilyStatus) {
-            std::cout << "#" << x << ":\t[" << e[0] << ", " << e[1] << ", " << e[2] << "]" << std::endl;
-            x++;
-        }
-
-        std::cout << "Actual queue status:" << std::endl;
-        x = 0;
-        for (std::vector<int> e : queueFamilyStatus) {
-            std::cout << "#" << x << ":\t[" << e[0] << ", " << e[1] << ", " << e[2] << "]" << std::endl;
-            x++;
-        }
-
         // create all requested queues
         for (int i = 0; i < qFamilyProperties.size(); i++) {
             uint32_t create = std::abs(initialQueueFamilyStatus[i][0] - queueFamilyStatus[i][0]);
-            std::cout << "For Queue Family #" << i << " create " << create << " queues" << std::endl;
             if (create > 0) {
                 vk::DeviceQueueCreateInfo qCreateInfo(
                         vk::DeviceQueueCreateFlags(),
