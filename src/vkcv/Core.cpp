@@ -141,8 +141,8 @@ namespace vkcv
 
         for (auto qFamily : qFamilyProperties) {
             int graphicsCount = int(static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eGraphics) != 0) * qFamily.queueCount;
-            int computeCount = int(static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eCompute) != 0) * qFamily.queueCount;;
-            int transferCount = int(static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eTransfer) != 0) * qFamily.queueCount;;
+            int computeCount = int(static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eCompute) != 0) * qFamily.queueCount;
+            int transferCount = int(static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eTransfer) != 0) * qFamily.queueCount;
             queueFamilyStatus.push_back({graphicsCount, computeCount, transferCount});
         }
 
@@ -528,6 +528,6 @@ namespace vkcv
 	}
 
 	vk::Format Core::getSwapchainImageFormat() {
-		return m_swapchain.getImageFormat();
+		return m_swapchain.getSurfaceFormat().format;
 	}
 }
