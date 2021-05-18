@@ -1,4 +1,3 @@
-#include <iostream>
 #include "vkcv/Context.hpp"
 
 namespace vkcv

@@ -2,7 +2,6 @@
 #include "vulkan/vulkan.hpp"
 #include "Context.hpp"
 #include "vkcv/Window.hpp"
-#include <iostream>
 
 namespace vkcv {
     class SwapChain final {
@@ -13,7 +12,6 @@ namespace vkcv {
         vk::SurfaceFormatKHR m_format;
 
 		uint32_t m_ImageCount;
-		vk::Format m_ImageFormat;
 
         /**
          * Constructor of a SwapChain object
@@ -66,8 +64,6 @@ namespace vkcv {
 		 * @return number of images in swapchain
 		*/
 		uint32_t getImageCount();
-
-		vk::Format getImageFormat();
     };
 
 }

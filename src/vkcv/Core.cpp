@@ -205,9 +205,13 @@ namespace vkcv
         }
 
 		const vk::SurfaceKHR surface = createSurface(window.getWindow(), instance, physicalDevice);
-		const QueueFamilyIndices queueFamilyIndices = getQueueFamilyIndices(physicalDevice, surface);
-		std::vector<float> queuePriorities;
-		const std::vector<vk::DeviceQueueCreateInfo> qCreateInfos = createDeviceQueueCreateInfo(queueFamilyIndices, &queuePriorities);
+		std::vector<vk::DeviceQueueCreateInfo> qCreateInfos;
+
+        // create required queues
+        std::vector<float> qPriorities;
+        qPriorities.resize(queueFlags.size(), 1.f);
+        std::vector<std::pair<int, int>> queuePairsGraphics, queuePairsCompute, queuePairsTransfer;
+        QueueManager::queueCreateInfosQueueHandles(physicalDevice, qPriorities, queueFlags, qCreateInfos, queuePairsGraphics, queuePairsCompute, queuePairsTransfer);
 
 		vk::DeviceCreateInfo deviceCreateInfo(
 			vk::DeviceCreateFlags(),
@@ -220,17 +224,21 @@ namespace vkcv
 			nullptr		// Should our device use some features??? If yes: TODO
 		);
 
-
-
 #ifndef NDEBUG
         deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
 
-        vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
-        Context context(instance, physicalDevice, device);
+        // Ablauf
+        // qCreateInfos erstellen --> braucht das Device
+        // device erstellen
+        // jetzt koennen wir mit dem device die queues erstellen
 
-		const VulkanQueues queues = getDeviceQueues(device, queueFamilyIndices);
+        vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
+
+        QueueManager queueManager = QueueManager::create(device, queuePairsGraphics, queuePairsCompute, queuePairsTransfer);
+
+        Context context (instance, physicalDevice, device);
 
         SwapChain swapChain = SwapChain::create(window, context, surface);
 
@@ -257,14 +265,14 @@ namespace vkcv
                     subResourceRange
             );
 
-            imageViews.push_back( device.createImageView( imageViewCreateInfo ) );
+            imageViews.push_back( device.createImageView( imageViewCreateInfo ));
         }
 
-		const int graphicQueueFamilyIndex = queueFamilyIndices.graphicsIndex;
+		const int graphicQueueFamilyIndex = queuePairsGraphics[0].first;
 		const auto defaultCommandResources = createDefaultCommandResources(context.getDevice(), graphicQueueFamilyIndex);
 		const auto defaultSyncResources = createDefaultSyncResources(context.getDevice());
 
-        return Core(std::move(context) , window, swapChain, imageViews, defaultCommandResources, defaultSyncResources, queues);
+        return Core(std::move(context) , window, swapChain, imageViews, defaultCommandResources, defaultSyncResources, queueManager);
     }
 
     const Context &Core::getContext() const
@@ -273,16 +281,16 @@ namespace vkcv
     }
 
 	Core::Core(Context &&context, const Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
-		const CommandResources& commandResources, const SyncResources& syncResources, const VulkanQueues& queues) noexcept :
-			m_Context(std::move(context)),
-			m_window(window),
-			m_swapchain(swapChain),
-			m_swapchainImageViews(imageViews),
-			m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
-			m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
-			m_CommandResources(commandResources),
-			m_SyncResources(syncResources),
-			m_Queues(queues)
+		const CommandResources& commandResources, const SyncResources& syncResources, const QueueManager& queueManager) noexcept :
+            m_Context(std::move(context)),
+            m_window(window),
+            m_swapchain(swapChain),
+            m_swapchainImageViews(imageViews),
+            m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
+            m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
+            m_CommandResources(commandResources),
+            m_SyncResources(syncResources),
+            m_QueueManager(queueManager)
 	{}
 
 	Core::~Core() noexcept {
@@ -391,19 +399,19 @@ namespace vkcv
 		m_CommandResources.commandBuffer.end();
 		
 		const vk::SubmitInfo submitInfo(0, nullptr, 0, 1, &(m_CommandResources.commandBuffer), 1, &m_SyncResources.renderFinished);
-		m_Queues.graphicsQueue.submit(submitInfo);
+		m_QueueManager.getGraphicsQueues()[0].submit(submitInfo);
 
 		vk::Result presentResult;
 		const vk::SwapchainKHR& swapchain = m_swapchain.getSwapchain();
 		const vk::PresentInfoKHR presentInfo(1, &m_SyncResources.renderFinished, 1, &swapchain, 
 			&m_currentSwapchainImageIndex, &presentResult);
-		m_Queues.presentQueue.presentKHR(presentInfo);
+        m_QueueManager.getPresentQueue().presentKHR(presentInfo);
 		if (presentResult != vk::Result::eSuccess) {
 			std::cout << "Error: swapchain present failed" << std::endl;
 		}
 	}
 
 	vk::Format Core::getSwapchainImageFormat() {
-		return m_swapchain.getImageFormat();
+		return m_swapchain.getSurfaceFormat().format;
 	}
 }

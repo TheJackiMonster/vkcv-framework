@@ -3,7 +3,7 @@
 namespace vkcv {
 
     SwapChain::SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format, uint32_t imageCount)
-        : m_surface(surface), m_swapchain(swapchain), m_format( format), m_ImageCount(imageCount), m_ImageFormat(format.format)
+        : m_surface(surface), m_swapchain(swapchain), m_format( format), m_ImageCount(imageCount)
     {}
 
     const vk::SwapchainKHR& SwapChain::getSwapchain() const {
@@ -167,9 +167,5 @@ namespace vkcv {
 
 	uint32_t SwapChain::getImageCount() {
 		return m_ImageCount;
-	}
-
-	vk::Format SwapChain::getImageFormat() {
-		return m_ImageFormat;
 	}
 }
