@@ -12,6 +12,7 @@ if (CMAKE_BUILD_TYPE)
 endif()
 
 message("-- Language: [ C++ " ${CMAKE_CXX_STANDARD} " ]")
+message("-- Compiler: [ " ${CMAKE_CXX_COMPILER_ID} " " ${CMAKE_CXX_COMPILER_VERSION} " ]")
 
 # setting up different paths
 set(vkcv_config ${PROJECT_SOURCE_DIR}/config)
@@ -35,6 +36,9 @@ if (vkcv_build_debug)
 		set(vkcv_flags ${vkcv_flags} " -W4")
 	endif()
 endif()
+
+# add modules as targets
+add_subdirectory(modules)
 
 # add source files for compilation
 include(${vkcv_config}/Sources.cmake)
