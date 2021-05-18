@@ -15,7 +15,6 @@
 #include "vkcv/PipelineConfig.hpp"
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
-#include "vkcv/QueueManager.hpp"
 
 namespace vkcv
 {
@@ -36,7 +35,7 @@ namespace vkcv
          * @param context encapsulates various Vulkan objects
          */
         Core(Context &&context, const Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
-			const CommandResources& commandResources, const SyncResources& syncResources, const QueueManager &queues) noexcept;
+			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
 
@@ -53,7 +52,6 @@ namespace vkcv
         std::unique_ptr<PipelineManager> m_PipelineManager;
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
-		QueueManager m_QueueManager;
 		uint32_t m_currentSwapchainImageIndex;
 		std::vector<vk::Framebuffer> m_TemporaryFramebuffers;
     public:
