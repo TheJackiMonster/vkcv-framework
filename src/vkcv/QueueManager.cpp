@@ -1,5 +1,8 @@
-#include "vkcv/QueueManager.hpp"
+
 #include <unordered_set>
+#include <limits>
+
+#include "vkcv/QueueManager.hpp"
 
 namespace vkcv {
 
