@@ -1,7 +1,7 @@
 #include "ImageLayoutTransitions.hpp"
 
 namespace vkcv {
-	void transitionImageLayoutImmediate(const vk::CommandBuffer cmdBuffer, const VkImage image,
+	void transitionImageLayoutImmediate(const vk::CommandBuffer cmdBuffer, const vk::Image image,
 		const vk::ImageLayout oldLayout, const vk::ImageLayout newLayout) {
 
 		// TODO: proper src and dst masks
