@@ -311,19 +311,31 @@ namespace vkcv
         return m_PassManager->createPass(config);
     }
 
-	uint32_t Core::acquireSwapchainImage() {
-		uint32_t index;
-		m_Context.getDevice().acquireNextImageKHR(m_swapchain.getSwapchain(), 0, nullptr,
-			m_SyncResources.swapchainImageAcquired, &index, {});
-		const uint64_t timeoutPeriodNs = 1000;	// TODO: think if is adequate
-		const auto& result = m_Context.getDevice().waitForFences(m_SyncResources.swapchainImageAcquired, true, timeoutPeriodNs);
-		m_Context.getDevice().resetFences(m_SyncResources.swapchainImageAcquired);
+	Result Core::acquireSwapchainImage() {
+    	uint32_t imageIndex;
+    	
+		const auto& acquireResult = m_Context.getDevice().acquireNextImageKHR(
+				m_swapchain.getSwapchain(), std::numeric_limits<uint64_t>::max(), nullptr,
+				m_SyncResources.swapchainImageAcquired, &imageIndex, {}
+		);
 		
-		if (result == vk::Result::eTimeout) {
-			index = std::numeric_limits<uint32_t>::max();
+		if (acquireResult != vk::Result::eSuccess) {
+			return Result::ERROR;
 		}
 		
-		return index;
+		const auto& result = m_Context.getDevice().waitForFences(
+				m_SyncResources.swapchainImageAcquired, true,
+				std::numeric_limits<uint64_t>::max()
+		);
+		
+		m_Context.getDevice().resetFences(m_SyncResources.swapchainImageAcquired);
+		
+		if (result != vk::Result::eSuccess) {
+			return Result::ERROR;
+		}
+		
+		m_currentSwapchainImageIndex = imageIndex;
+		return Result::SUCCESS;
 	}
 
 	void Core::destroyTemporaryFramebuffers() {
@@ -334,12 +346,9 @@ namespace vkcv
 	}
 
 	void Core::beginFrame() {
-		m_currentSwapchainImageIndex = acquireSwapchainImage();
-		
-		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
-			std::cerr << "Drop frame!" << std::endl;
- 			return;
-		}
+    	if (acquireSwapchainImage() != Result::SUCCESS) {
+    		return;
+    	}
 		
 		m_Context.getDevice().waitIdle();	// FIMXE: this is a sin against graphics programming, but its getting late - Alex
 		destroyTemporaryFramebuffers();

@@ -16,6 +16,7 @@
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "vkcv/Queues.hpp"
+#include "Result.hpp"
 
 namespace vkcv
 {
@@ -40,7 +41,7 @@ namespace vkcv
         // explicit destruction of default constructor
         Core() = delete;
 
-		uint32_t acquireSwapchainImage();
+		Result acquireSwapchainImage();
 		void destroyTemporaryFramebuffers();
 
         Context m_Context;
