@@ -4,18 +4,16 @@
  * @file src/vkcv/Window.hpp
  * @brief Window class to handle a basic rendering surface and input
  */
-
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #define NOMINMAX
 #include <algorithm>
 
 namespace vkcv {
-
     class Window final {
     private:
         GLFWwindow *m_window;
+
 
         /**
          *
@@ -32,8 +30,7 @@ namespace vkcv {
          * @param[in] resizable resize ability of the window (optional)
          * @return Window class
          */
-        static Window create(const char *windowTitle, int width = -1, int height = -1, bool resizable = false);
-
+        static Window create( const char *windowTitle, int width = -1, int height = -1, bool resizable = false);
         /**
          * checks if the window is still open, or the close event was called
          * This function should be changed/removed later on
@@ -55,20 +52,6 @@ namespace vkcv {
         GLFWwindow *getWindow() const;
 
         /**
-         * gets the current window width
-         * @return int with window width
-         */
-        [[nodiscard]]
-        int getWidth() const;
-
-        /**
-         * gets the current window height
-         * @return int with window height
-         */
-        [[nodiscard]]
-        int getHeight() const;
-
-        /**
          * Copy-operator of #Window is deleted!
          *
          * @param other Other instance of #Window
@@ -85,9 +68,24 @@ namespace vkcv {
         Window &operator=(Window &&other) = default;
 
         /**
+         * gets the window width
+         * @param window glfwWindow
+         * @return int with window width
+         */
+        [[nodiscard]]
+        int getWidth() const;
+
+        /**
+         * gets the window height
+         * @param window glfwWindow
+         * @return int with window height
+         */
+        [[nodiscard]]
+        int getHeight() const;
+
+        /**
          * Destructor of #Window, terminates GLFW
          */
         virtual ~Window();
-
     };
 }
