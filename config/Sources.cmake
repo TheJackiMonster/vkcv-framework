@@ -37,8 +37,8 @@ set(vkcv_sources
         ${vkcv_include}/vkcv/SyncResources.hpp
         ${vkcv_source}/vkcv/SyncResources.cpp
         
-        ${vkcv_include}/vkcv/Queues.hpp
-        ${vkcv_source}/vkcv/Queues.cpp
+        ${vkcv_include}/vkcv/QueueManager.hpp
+        ${vkcv_source}/vkcv/QueueManager.cpp
         
         ${vkcv_source}/vkcv/Surface.hpp
         ${vkcv_source}/vkcv/Surface.cpp
