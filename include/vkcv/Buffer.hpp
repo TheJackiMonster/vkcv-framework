@@ -14,13 +14,10 @@ namespace vkcv {
 	//Enum of buffertypes
 	enum BufferType { VERTEX, UNIFORM, STORAGE };
 
-	//(temporary?) struct example for T
-	//TODO
-	struct vertex_t {
-		//glm::vec3 pos;
-		//glm::vec3 color;
-		float x, y, z;
-	};
+	//Functions outsourced to Buffer.cpp file:
+	void outsourcedDestructor(vk::Device device, vk::DeviceMemory bufferMemory, vk::Buffer buffer);
+	vk::Buffer outsourcedCreateBuffer(vk::Device device, BufferType type, size_t size);
+	vk::DeviceMemory outsourcedAllocateMemory(vk::Device device, vk::PhysicalDevice physicalDevice, vk::MemoryRequirements memoryRequirements);
 
 	template<typename T>
 	class Buffer {
@@ -35,8 +32,7 @@ namespace vkcv {
 		Buffer<T>() = delete;
 		// is never called directly
 		~Buffer<T>() noexcept {
-			m_Device.freeMemory(m_BufferMemory);
-			m_Device.destroyBuffer(m_Buffer);
+			outsourcedDestructor(m_Device, m_BufferMemory, m_Buffer);
 		}
 
 		Buffer<T>(const Buffer<T>& other) = delete; // copy-ctor
@@ -77,7 +73,13 @@ namespace vkcv {
 		BufferType getType() { return m_Type; };
 		size_t getSize() { return m_Size; };
 		
-		// TODO: we will probably need staging-buffer here later (possible add in BufferManager later?)
+		/**
+		 * Maps this buffers Memory, fills this buffer with @p data of type T and count @p count
+		 * unmaps afterwards.
+		 * @p data Pointer to data
+		 * @p count Amount of data of type T
+		 */
+		 // TODO: we will probably need staging-buffer here later (possible add in BufferManager later?)
 		void fill(T* data, size_t count) {
 			const vk::MemoryRequirements requirements = m_Device.getBufferMemoryRequirements(m_Buffer);
 			
@@ -111,15 +113,8 @@ namespace vkcv {
 		static Buffer<T> create(vk::Device device, vk::PhysicalDevice physicalDevice, BufferType type, size_t size) {
 			vk::Buffer buffer = nullptr;
 			
-			switch (type) {
-				case VERTEX: {
-					//create vertex buffer
-					buffer = device.createBuffer(vk::BufferCreateInfo(vk::BufferCreateFlags(), sizeof(T) * size, vk::BufferUsageFlagBits::eVertexBuffer));
-				}
-				default: {
-					// TODO: maybe an issue
-				}
-			}
+
+			buffer = outsourcedCreateBuffer(device, type, sizeof(T) * size);
 			
 			if (!buffer) {
 				//TODO: potential issue
@@ -128,11 +123,7 @@ namespace vkcv {
 			//get requirements for allocation
 			const vk::MemoryRequirements requirements = device.getBufferMemoryRequirements(buffer);
 			
-			//find Memory Type
-			uint32_t memoryType = searchMemoryType(physicalDevice.getMemoryProperties(), requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-			
-			//allocate memory for buffer
-			vk::DeviceMemory memory = device.allocateMemory(vk::MemoryAllocateInfo(requirements.size, memoryType));
+			vk::DeviceMemory memory= outsourcedAllocateMemory(device, physicalDevice, requirements);
 			
 			if (!memory) {
 				//TODO: other potential issue
@@ -167,31 +158,6 @@ namespace vkcv {
 				m_Type(type),
 				m_Size(size),
 				m_DataP(nullptr)
-		{}
-		
-		/**
-		 * @brief searches memory type index for buffer allocation, inspired by vulkan tutorial and "https://github.com/KhronosGroup/Vulkan-Hpp/blob/master/samples/utils/utils.hpp"
-		 * @param physicalMemoryProperties Memory Properties of physical device
-		 * @param typeBits
-		 * @param requirements Property flags that are required
-		 * @return memory type index for Buffer
-		*/
-		static uint32_t searchMemoryType(vk::PhysicalDeviceMemoryProperties const& physicalMemoryProperties, uint32_t typeBits, vk::MemoryPropertyFlags requirements) {
-			uint32_t memoryTypeIndex = uint32_t(0);
-			
-			for (uint32_t i = 0; i < physicalMemoryProperties.memoryTypeCount; i++)
-			{
-				if ((typeBits & 1) &&
-					((physicalMemoryProperties.memoryTypes[i].propertyFlags & requirements) == requirements))
-				{
-					memoryTypeIndex = i;
-					break;
-				}
-				typeBits >>= 1;
-			}
-			
-			return memoryTypeIndex;
-		}
-	
+		{}	
 	};
 }
