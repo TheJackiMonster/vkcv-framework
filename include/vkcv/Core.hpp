@@ -12,6 +12,7 @@
 #include "vkcv/Window.hpp"
 #include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
+#include "vkcv/Buffer.hpp"
 #include "vkcv/PipelineConfig.hpp"
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
@@ -19,9 +20,6 @@
 
 namespace vkcv
 {
-    // TODO:
-    class Buffer;
-
     // forward declarations
     class PassManager;
     class PipelineManager;
@@ -138,8 +136,16 @@ namespace vkcv
         [[nodiscard]]
         PassHandle createPass(const PassConfig &config);
 
-        // TODO:
-        BufferHandle createBuffer(const Buffer &buf);
+        /**
+            * Creates a #Buffer with data-type T and @p bufferType 
+            * @param bufferType Type of Buffer created
+            * @param size Amount of Data of type T
+            * return Buffer-Object
+            */
+        template<typename T>
+        Buffer<T> createBuffer(vkcv::BufferType bufferType,size_t size) {
+        	return Buffer<T>::create(m_Context.getDevice(), m_Context.getPhysicalDevice(), bufferType, size);
+        }
 
 		/**
 		 * @brief start recording command buffers and increment frame index
