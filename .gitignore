@@ -1,3 +1,5 @@
+
+# IDE specific files
 .project
 .cproject
 .vs/
@@ -5,6 +7,12 @@
 .idea/
 .editorconfig
 
+# build directories
 build/
 cmake-build-debug/
 cmake-build-release/
+
+# VS build files and binaries
+*.exe
+*.ilk
+*.pdb

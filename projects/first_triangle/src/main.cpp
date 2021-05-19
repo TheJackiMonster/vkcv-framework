@@ -1,20 +1,27 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
 #include <vkcv/Window.hpp>
+#include <vkcv/ShaderProgram.hpp>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
-	vkcv::Window window = vkcv::Window::create(
-            applicationName,
-        800,
-        600,
+
+	const int windowWidth = 800;
+	const int windowHeight = 600;
+    vkcv::Window window = vkcv::Window::create(
+		applicationName,
+		windowWidth,
+		windowHeight,
 		false
-	);
+    );
+
 	vkcv::Core core = vkcv::Core::create(
+            window,
             applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
-		20,
-		{vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eTransfer}
+            {vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
+		{},
+		{"VK_KHR_swapchain"}
 	);
 
 	const auto &context = core.getContext();
@@ -44,6 +51,36 @@ int main(int argc, const char** argv) {
 		default: std::cout << "Unknown GPU vendor?! Either you're on an exotic system or your driver is broken..." << std::endl;
 	}
 
+    // an example attachment for passes that output to the window
+	const vkcv::AttachmentDescription present_color_attachment(
+		vkcv::AttachmentLayout::UNDEFINED,
+		vkcv::AttachmentLayout::COLOR_ATTACHMENT,
+		vkcv::AttachmentLayout::PRESENTATION,
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::CLEAR,
+		core.getSwapchainImageFormat());
+
+	vkcv::PassConfig trianglePassDefinition({present_color_attachment});
+	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
+
+	if (trianglePass.id == 0)
+	{
+		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	vkcv::ShaderProgram triangleShaderProgram{};
+	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
+	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
+
+	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
+	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
+	if (trianglePipeline.id == 0)
+	{
+		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
+		return EXIT_FAILURE;
+	}
+
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
 	 * BufferHandle triangleIndices = core.createBuffer(indices);
@@ -62,11 +99,9 @@ int main(int argc, const char** argv) {
 
 	while (window.isWindowOpen())
 	{
-        // core.beginFrame(); or something like that
-	    // core.execute(trianglePass, trianglePipeline, triangleModel);
-	    // core.endFrame(); or something like that
-
-	    // TBD: synchronization
+		core.beginFrame();
+	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight);
+	    core.endFrame();
 
 		window.pollEvents();
 	}
