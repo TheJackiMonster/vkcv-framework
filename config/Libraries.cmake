@@ -2,7 +2,7 @@
 set(vkcv_config_lib ${vkcv_config}/lib)
 set(vkcv_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_lib})
 
-if(NOT MSVC)
+if(NOT WIN32)
 	set(vkcv_libraries  stdc++fs)
 	
 	# optimization for loading times
