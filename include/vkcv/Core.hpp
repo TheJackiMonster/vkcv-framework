@@ -100,7 +100,7 @@ namespace vkcv
             */
         template<typename T>
         Buffer<T> createBuffer(vkcv::BufferType bufferType,size_t size) {
-            return Buffer<T>(m_Context.getDevice(),m_Context.getPhysicalDevice, bufferType,size);
+            return Buffer<T>(m_Context.getDevice(),m_Context.getPhysicalDevice(), bufferType,size);
         };
         PassHandle createRenderPass(const Renderpass &pass) ;
         PipelineHandle createPipeline(const Pipeline &pipeline);
