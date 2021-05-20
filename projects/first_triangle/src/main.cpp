@@ -2,6 +2,7 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/Window.hpp>
 #include <vkcv/ShaderProgram.hpp>
+#include <vkcv/camera/Camera.hpp>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
