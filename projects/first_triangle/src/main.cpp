@@ -102,8 +102,6 @@ int main(int argc, const char** argv) {
 		core.beginFrame();
 	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight);
 	    core.endFrame();
-
-		window.pollEvents();
 	}
 	return 0;
 }

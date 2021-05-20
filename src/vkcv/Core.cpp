@@ -154,7 +154,7 @@ namespace vkcv
     	if (acquireSwapchainImage() != Result::SUCCESS) {
     		return;
     	}
-		
+		m_window.pollEvents();
 		m_Context.getDevice().waitIdle();	// FIMXE: this is a sin against graphics programming, but its getting late - Alex
 		destroyTemporaryFramebuffers();
 		const vk::CommandBufferUsageFlags beginFlags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
