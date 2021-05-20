@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 namespace vkcv {
 
     template<typename... T>
