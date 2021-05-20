@@ -16,7 +16,7 @@
 namespace vkcv
 {
 
-    Core Core::create(const Window &window,
+    Core Core::create(Window &window,
                       const char *applicationName,
                       uint32_t applicationVersion,
                       std::vector<vk::QueueFlagBits> queueFlags,
@@ -70,6 +70,10 @@ namespace vkcv
 		const auto defaultCommandResources = createDefaultCommandResources(context.getDevice(), graphicQueueFamilyIndex);
 		const auto defaultSyncResources = createDefaultSyncResources(context.getDevice());
 
+        window.e_resize.add([&](int width, int height){
+            recreateSwapchain(width,height);
+        });
+
         return Core(std::move(context) , window, swapChain, imageViews, defaultCommandResources, defaultSyncResources);
     }
 
@@ -78,7 +82,7 @@ namespace vkcv
         return m_Context;
     }
 
-	Core::Core(Context &&context, const Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
+	Core::Core(Context &&context, Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews,
 		const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
             m_Context(std::move(context)),
             m_window(window),
@@ -213,4 +217,9 @@ namespace vkcv
 	vk::Format Core::getSwapchainImageFormat() {
 		return m_swapchain.getSurfaceFormat().format;
 	}
+
+    void Core::recreateSwapchain(int width, int height) {
+        /* boilerplate for #34 */
+        std::cout << "Resized to : " << width << " , " << height << std::endl;
+    }
 }
