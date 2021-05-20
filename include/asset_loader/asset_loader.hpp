@@ -9,6 +9,15 @@
 #include <vector>
 #include <cstdint>
 
+/* These macros define limits of the following structs. Implementations can
+ * test against these limits when performing sanity checks. The main constraint
+ * expressed is that of the data type: Material indices are identified by a
+ * uint8_t in the VertexGroup struct, so there can't be more than UINT8_MAX
+ * materials in the mesh. Should these limits be too narrow, the data type has
+ * to be changed, but the current ones should be generous enough for most use
+ * cases. */
+#define MAX_MATERIALS_PER_MESH UINT8_MAX
+#define MAX_VERTICES_PER_VERTEX_GROUP UINT32_MAX
 
 /* LOADING MESHES
  * The description of meshes is a hierarchy of structures with the Mesh at the
@@ -55,7 +64,7 @@ typedef struct {
 typedef struct {
 	enum PrimitiveMode mode;	// draw as points, lines or triangle?
 	size_t numIndices, numVertices;
-	uint32_t *indices;		// array of indices for indexed rendering
+	uint32_t *indexBuffer;		// array of indices for indexed rendering
 	struct {
 		void *data;		// the binary data of the buffer
 		size_t byteLength;	// the length of the entire buffer in bytes
@@ -66,8 +75,7 @@ typedef struct {
 	uint8_t materialIndex;		// index to one of the meshes materials
 } VertexGroup;
 
-/* TODO This is just an initial draft of how a mesh loaded from a glTF file may
- * be presented to other modules of the vkcv framework. */
+/* This struct represents a single mesh loaded from a glTF file. */
 typedef struct {
 	std::string name;
 	std::vector<VertexGroup> vertexGroups;
