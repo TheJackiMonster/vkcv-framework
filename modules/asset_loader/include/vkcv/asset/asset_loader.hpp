@@ -52,6 +52,7 @@ typedef struct {
 	// TODO not yet needed for the first (unlit) triangle
 } Material;
 
+/* This struct describes one vertex attribute of a vertex buffer. */
 typedef struct {
 	PrimitiveType type;		// POSITION, NORMAL, ...
 	uint32_t offset;		// offset in bytes
@@ -61,10 +62,25 @@ typedef struct {
 	uint8_t  componentCount;	// eg. 3 for vec3
 } VertexAttribute;
 
+/* This struct represents one (possibly the only) part of a mesh. There is
+ * always one vertexBuffer and zero or one indexBuffer (indexed rendering is
+ * common but not always used). If there is no indexBuffer, this is indicated
+ * by indexBuffer.data being NULL.
+ * Each vertex buffer can have one or more vertex attributes.
+ * Note that the indexBuffer and vertexBuffer might be pointing to the same
+ * block of memory.
+ * 
+ * TODO For now, the caller of loadMesh() has to free this memory when they are
+ * done, but since this is not generally good practice in C++, this behaviour
+ * will likely be changed later. */
 typedef struct {
 	enum PrimitiveMode mode;	// draw as points, lines or triangle?
 	size_t numIndices, numVertices;
-	uint32_t *indexBuffer;		// array of indices for indexed rendering
+	struct {
+		void *data;		// binary data of the index buffer
+		size_t byteLength;	// length of the index buffer
+		uint32_t byteOffset;	// offset into the buffer in bytes
+	} indexBuffer;
 	struct {
 		void *data;		// the binary data of the buffer
 		size_t byteLength;	// the length of the entire buffer in bytes
@@ -75,7 +91,8 @@ typedef struct {
 	uint8_t materialIndex;		// index to one of the meshes materials
 } VertexGroup;
 
-/* This struct represents a single mesh loaded from a glTF file. */
+/* This struct represents a single mesh loaded from a glTF file. It consists of
+ * at least one VertexVroup and any number of Materials. */
 typedef struct {
 	std::string name;
 	std::vector<VertexGroup> vertexGroups;

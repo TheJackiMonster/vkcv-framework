@@ -6,7 +6,7 @@ int main(int argc, const char** argv) {
 	
 	int result = vkcv::asset::loadMesh("test.gltf", mesh);
 	
-	if (result == 0) {
+	if (result == 1) {
 		std::cout << "Mesh loading successful!" << std::endl;
 	} else {
 		std::cout << "Mesh loading failed: " << result << std::endl;
