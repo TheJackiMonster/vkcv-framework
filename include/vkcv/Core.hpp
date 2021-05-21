@@ -33,7 +33,7 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, const Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
+        Core(Context &&context, Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews,
 			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
@@ -53,6 +53,14 @@ namespace vkcv
 		SyncResources m_SyncResources;
 		uint32_t m_currentSwapchainImageIndex;
 		std::vector<vk::Framebuffer> m_TemporaryFramebuffers;
+
+        /**
+         * recreates the swapchain
+         * @param[in] width new window width
+         * @param[in] height new window hight
+         */
+        static void recreateSwapchain(int width, int height);
+
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
@@ -107,7 +115,7 @@ namespace vkcv
              * @param[in] deviceExtensions (optional) Requested device extensions
              * @return New instance of #Context
              */
-        static Core create(const Window &window,
+        static Core create(Window &window,
                            const char *applicationName,
                            uint32_t applicationVersion,
                            std::vector<vk::QueueFlagBits> queueFlags    = {},
