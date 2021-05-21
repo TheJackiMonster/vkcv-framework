@@ -1,7 +1,7 @@
 #pragma once
 /**
  * @authors Trevor Hollmann
- * @file include/asset_loader/asset_loader.h
+ * @file include/vkcv/asset/asset_loader.h
  * @brief Interface of the asset loader module for the vkcv framework.
  */
 
@@ -41,7 +41,7 @@
  * These values can directly be given to vulkan when describing the content of
  * vertex buffers. */
 
-namespace asset {
+namespace vkcv::asset {
 
 
 /* With these enums, 0 is reserved to signal uninitialized or invalid data. */

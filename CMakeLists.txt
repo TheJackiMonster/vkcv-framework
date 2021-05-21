@@ -36,11 +36,14 @@ if (vkcv_build_debug)
 	endif()
 endif()
 
-# add source files for compilation
-include(${vkcv_config}/Sources.cmake)
-
 # configure everything to use the required dependencies
 include(${vkcv_config}/Libraries.cmake)
+
+# add modules as targets
+add_subdirectory(modules)
+
+# add source files for compilation
+include(${vkcv_config}/Sources.cmake)
 
 # set the compiler flags for the framework
 set(CMAKE_CXX_FLAGS ${vkcv_flags})

@@ -1,3 +1,9 @@
 [submodule "lib/glfw"]
 	path = lib/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "modules/asset_loader/lib/fx-gltf"]
+	path = modules/asset_loader/lib/fx-gltf
+	url = https://github.com/jessey-git/fx-gltf.git
+[submodule "modules/asset_loader/lib/json"]
+	path = modules/asset_loader/lib/json
+	url = https://github.com/nlohmann/json.git
