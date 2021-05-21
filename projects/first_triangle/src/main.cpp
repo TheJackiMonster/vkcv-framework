@@ -28,6 +28,17 @@ int main(int argc, const char** argv) {
 	const vk::Instance& instance = context.getInstance();
 	const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
 	const vk::Device& device = context.getDevice();
+	
+	struct vec3 {
+		float x, y, z;
+	};
+	
+	auto buffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, 3);
+	
+	vec3* m = buffer.map();
+	m[0] = { 0, 0, 0 };
+	m[0] = { 0, 0, 0 };
+	m[0] = { 0, 0, 0 };
 
 	std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
 

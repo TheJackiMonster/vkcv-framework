@@ -12,17 +12,14 @@
 #include "vkcv/Window.hpp"
 #include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
+#include "vkcv/Buffer.hpp"
 #include "vkcv/PipelineConfig.hpp"
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "Result.hpp"
-#include "vkcv/QueueManager.hpp"
 
 namespace vkcv
 {
-    // TODO:
-    class Buffer;
-
     // forward declarations
     class PassManager;
     class PipelineManager;
@@ -37,7 +34,7 @@ namespace vkcv
          * @param context encapsulates various Vulkan objects
          */
         Core(Context &&context, const Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
-			const CommandResources& commandResources, const SyncResources& syncResources, const QueueManager &queues) noexcept;
+			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
 
@@ -54,7 +51,6 @@ namespace vkcv
         std::unique_ptr<PipelineManager> m_PipelineManager;
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
-		QueueManager m_QueueManager;
 		uint32_t m_currentSwapchainImageIndex;
 		std::vector<vk::Framebuffer> m_TemporaryFramebuffers;
     public:
@@ -140,8 +136,16 @@ namespace vkcv
         [[nodiscard]]
         PassHandle createPass(const PassConfig &config);
 
-        // TODO:
-        BufferHandle createBuffer(const Buffer &buf);
+        /**
+            * Creates a #Buffer with data-type T and @p bufferType 
+            * @param bufferType Type of Buffer created
+            * @param size Amount of Data of type T
+            * return Buffer-Object
+            */
+        template<typename T>
+        Buffer<T> createBuffer(vkcv::BufferType bufferType,size_t size) {
+        	return Buffer<T>::create(m_Context.getDevice(), m_Context.getPhysicalDevice(), bufferType, size);
+        }
 
 		/**
 		 * @brief start recording command buffers and increment frame index

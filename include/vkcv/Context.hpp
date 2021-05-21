@@ -2,6 +2,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "QueueManager.hpp"
+
 namespace vkcv
 {
     class Context
@@ -21,10 +23,21 @@ namespace vkcv
 
         [[nodiscard]]
         const vk::Instance &getInstance() const;
+        
         [[nodiscard]]
         const vk::PhysicalDevice &getPhysicalDevice() const;
+        
         [[nodiscard]]
         const vk::Device &getDevice() const;
+        
+        [[nodiscard]]
+        const QueueManager& getQueueManager() const;
+        
+        static Context create(const char *applicationName,
+							  uint32_t applicationVersion,
+							  std::vector<vk::QueueFlagBits> queueFlags,
+							  std::vector<const char *> instanceExtensions,
+							  std::vector<const char *> deviceExtensions);
 
     private:
         /**
@@ -34,9 +47,11 @@ namespace vkcv
          * @param physicalDevice Vulkan-PhysicalDevice
          * @param device Vulkan-Device
          */
-        Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device) noexcept;
+        Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device, QueueManager&& queueManager) noexcept;
+        
         vk::Instance        m_Instance;
         vk::PhysicalDevice  m_PhysicalDevice;
         vk::Device          m_Device;
+		QueueManager		m_QueueManager;
     };
 }
