@@ -4,7 +4,7 @@
 int main(int argc, const char** argv) {
 	vkcv::asset::Mesh mesh;
 	
-	int result = vkcv::asset::loadMesh("test.gltf", mesh);
+	int result = vkcv::asset::loadMesh("resources/cube/cube.gltf", mesh);
 	
 	if (result == 1) {
 		std::cout << "Mesh loading successful!" << std::endl;
