@@ -4,6 +4,7 @@
 #include <vkcv/ShaderProgram.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/Camera.hpp>
+#include <vkcv/camera/TrackballCamera.hpp>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
@@ -17,24 +18,66 @@ int main(int argc, const char** argv) {
 		false
     );
 
+    // TODO: this code will be put in a camera controller class
+    vkcv::Camera camera;
+    std::shared_ptr<vkcv::TrackballCamera> trackball;
+    camera.setPerspective( glm::radians(60.0f), windowWidth / (float)windowHeight, 0.1f, 10.f);
+    glm::vec3 up(0.0f, 1.0f, 0.0f);
+    glm::vec3 position(1.0f, 0.0f, 0.0f);
+    glm::vec3 front(0.0f, 0.0f, -1.0f);
+    glm::vec3 center = position + front;
+    camera.lookAt(position, center, up);
+    const float radius = 10.0f;
+    const float cameraSpeed = 0.05f;
+    float roll = 0.0;
+    float pitch = 0.0;
+    float yaw = 0.0;
+    // TODO: need scrolling event callback to set yoffset
+    float yoffset = 10;
+
+    // scroll callback
+    float fov = camera.getFov();
+    fov -= yoffset;
+    if (fov < 1.0f)
+        fov = 1.0f;
+    if (fov > 45.0f)
+        fov = 45.0f;
+    camera.setFov(fov);
+
+    //TODO? should the standard camera support rotation?
+
     // showing basic usage lambda events of window
     window.e_mouseMove.add([&](double x, double y){
         std::cout << "movement: " << x << " , " << y << std::endl;
     });
 
+    // TODO: need event for press mouse button
+
     window.e_key.add([&](int key, int scancode, int action, int mods){
         switch (key) {
             case GLFW_KEY_W:
                 std::cout << "Move forward" << std::endl;
-                break;
-            case GLFW_KEY_A:
-                std::cout << "Move left" << std::endl;
+                position += cameraSpeed * front;
+                center = position + front;
+                camera.lookAt(position, center, up);
                 break;
             case GLFW_KEY_S:
+                std::cout << "Move left" << std::endl;
+                position -= cameraSpeed * front;
+                center = position + front;
+                camera.lookAt(position, center, up);
+                break;
+            case GLFW_KEY_A:
                 std::cout << "Move backward" << std::endl;
+                position -= glm::normalize(glm::cross(front, up)) * cameraSpeed;
+                center = position + front;
+                camera.lookAt(position, center, up);
                 break;
             case GLFW_KEY_D:
                 std::cout << "Move right" << std::endl;
+                position += glm::normalize(glm::cross(front, up)) * cameraSpeed;
+                center = position + front;
+                camera.lookAt(position, center, up);
                 break;
             default:
                 std::cout << "this key is not supported yet: " << std::endl;

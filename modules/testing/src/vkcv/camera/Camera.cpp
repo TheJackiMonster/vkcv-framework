@@ -1,4 +1,5 @@
 #include "vkcv/camera/Camera.hpp"
+#include <iostream>
 
 namespace vkcv {
 
@@ -8,6 +9,7 @@ namespace vkcv {
 
     void Camera::lookAt(glm::vec3 position, glm::vec3 center, glm::vec3 up){
         m_view = glm::lookAt(position, center, up);
+        m_position = position;
     }
 
     void Camera::getView(glm::vec3 &x, glm::vec3 &y, glm::vec3 &z, glm::vec3 &pos){
@@ -64,6 +66,14 @@ namespace vkcv {
         m_near = near;
         m_far = far;
         setPerspective(m_fov, m_ratio, m_near, m_far);
+    }
+
+    void Camera::setPerspective(float fov, float ratio, float near, float far){
+        m_fov = fov;
+        m_ratio = ratio;
+        m_near = near;
+        m_far = far;
+        m_projection = glm::perspective( m_fov, ratio, m_near, m_far);
     }
 
 }

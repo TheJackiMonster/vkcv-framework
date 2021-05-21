@@ -7,6 +7,8 @@ namespace vkcv {
     class TrackballCamera : public vkcv::Camera {
     public:
 
+        TrackballCamera( int width, int height, glm::mat4 projection);
+
         TrackballCamera(int width, int height);
 
         ~TrackballCamera();

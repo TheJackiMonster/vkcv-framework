@@ -27,7 +27,7 @@ namespace vkcv {
 
         ~Camera();
 
-        virtual void update(GLFWwindow* window);
+        virtual void update(GLFWwindow* window) {};
 
         void setPerspective(float fov, float ratio, float near, float far);
 
