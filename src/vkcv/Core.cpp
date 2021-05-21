@@ -9,6 +9,7 @@
 #include "vkcv/Core.hpp"
 #include "PassManager.hpp"
 #include "PipelineManager.hpp"
+#include "DescriptorManager.hpp"
 #include "Surface.hpp"
 #include "ImageLayoutTransitions.hpp"
 #include "Framebuffer.hpp"
@@ -213,4 +214,12 @@ namespace vkcv
 	vk::Format Core::getSwapchainImageFormat() {
 		return m_swapchain.getSurfaceFormat().format;
 	}
+
+    ResourcesHandle Core::createResourceDescription(const std::vector<SetDescription> &setDescriptions)
+    {
+        // TODO:
+        //  call DescriptorManager's createResourceDescription
+        //  let it do the actual work! No vulkan stuff here.
+        return ResourcesHandle{0};
+    }
 }

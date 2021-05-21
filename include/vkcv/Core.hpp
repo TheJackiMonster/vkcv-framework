@@ -17,12 +17,14 @@
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "Result.hpp"
+#include "vkcv/ResourcesConfig.hpp"
 
 namespace vkcv
 {
     // forward declarations
     class PassManager;
     class PipelineManager;
+    class DescriptorManager;
 
     class Core final
     {
@@ -146,6 +148,12 @@ namespace vkcv
         Buffer<T> createBuffer(vkcv::BufferType bufferType,size_t size) {
         	return Buffer<T>::create(m_Context.getDevice(), m_Context.getPhysicalDevice(), bufferType, size);
         }
+
+        /** TODO:
+         *   @param setDescriptions
+         *   @return
+         */
+        ResourcesHandle createResourceDescription(const std::vector<SetDescription> &setDescriptions);
 
 		/**
 		 * @brief start recording command buffers and increment frame index
