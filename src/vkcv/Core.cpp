@@ -198,7 +198,7 @@ namespace vkcv
 		const auto& queueManager = m_Context.getQueueManager();
 		
 		const vk::SubmitInfo submitInfo(0, nullptr, 0, 1, &(m_CommandResources.commandBuffer), 1, &m_SyncResources.renderFinished);
-		queueManager.getGraphicsQueues()[0].handle.submit(submitInfo);
+		queueManager.getGraphicsQueues()[0].handle.submit({submitInfo}, nullptr);
 
 		vk::Result presentResult;
 		const vk::SwapchainKHR& swapchain = m_swapchain.getSwapchain();
