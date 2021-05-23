@@ -17,7 +17,7 @@
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "Result.hpp"
-#include "vkcv/ResourcesConfig.hpp"
+#include "vkcv/DescriptorConfig.hpp"
 
 namespace vkcv
 {
@@ -153,7 +153,7 @@ namespace vkcv
          *   @param setDescriptions
          *   @return
          */
-        ResourcesHandle createResourceDescription(const std::vector<SetDescription> &setDescriptions);
+        ResourcesHandle createResourceDescription(const std::vector<DescriptorSet> &descriptorSets);
 
 		/**
 		 * @brief start recording command buffers and increment frame index

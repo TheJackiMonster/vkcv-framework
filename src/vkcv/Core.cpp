@@ -215,11 +215,12 @@ namespace vkcv
 		return m_swapchain.getSurfaceFormat().format;
 	}
 
-    ResourcesHandle Core::createResourceDescription(const std::vector<SetDescription> &setDescriptions)
+    ResourcesHandle Core::createResourceDescription(const std::vector<DescriptorSet> &descriptorSets)
     {
         // TODO:
         //  call DescriptorManager's createResourceDescription
         //  let it do the actual work! No vulkan stuff here.
-        return ResourcesHandle{0};
+		DescriptorManager descriptorManager = DescriptorManager(m_Context.getDevice());
+        return descriptorManager.createResourceDescription(descriptorSets);
     }
 }

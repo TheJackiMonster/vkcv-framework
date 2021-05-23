@@ -2,6 +2,7 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/Window.hpp>
 #include <vkcv/ShaderProgram.hpp>
+#include <vkcv/DescriptorConfig.hpp>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
@@ -80,6 +81,31 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
+
+//---------CREATION OF RESOURCES/DESCRIPTORS------------------
+	//just an example
+	//creates 3 descriptor sets with one descriptor each
+	std::vector<vkcv::DescriptorSet> sets;
+	vkcv::DescriptorType typeA = vkcv::DescriptorType::UNIFORM_BUFFER;
+	vkcv::DescriptorType typeB = vkcv::DescriptorType::IMAGE;
+	vkcv::DescriptorType typeC = vkcv::DescriptorType::SAMPLER;
+	std::vector<vkcv::DescriptorType> types = { typeA, typeB, typeC };
+	for (int i = 0; i < types.size(); i++)
+	{
+		vkcv::DescriptorBinding bind{};
+		bind.bindingID = i;
+		bind.descriptorType = types[i];
+		bind.descriptorCount = 1;
+		bind.shaderStage = vkcv::ShaderStage::VERTEX;
+
+		vkcv::DescriptorSet set{};
+		std::vector<vkcv::DescriptorBinding> bindings = { bind };
+		set.bindings = bindings;
+		set.setCount = 1;
+
+		sets.push_back(set);
+	}
+	core.createResourceDescription(sets);
 
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);

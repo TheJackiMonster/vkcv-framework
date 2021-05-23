@@ -55,6 +55,6 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/DescriptorManager.hpp
 		${vkcv_source}/vkcv/DescriptorManager.cpp
 
-		${vkcv_include}/vkcv/ResourcesConfig.hpp
-		${vkcv_source}/vkcv/ResourcesConfig.cpp
+		${vkcv_include}/vkcv/DescriptorConfig.hpp
+		${vkcv_source}/vkcv/DescriptorConfig.cpp
 )
