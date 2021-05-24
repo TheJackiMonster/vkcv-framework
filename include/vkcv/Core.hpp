@@ -23,6 +23,7 @@ namespace vkcv
     // forward declarations
     class PassManager;
     class PipelineManager;
+    class BufferManager;
 
     class Core final
     {
@@ -49,6 +50,7 @@ namespace vkcv
 
         std::unique_ptr<PassManager> m_PassManager;
         std::unique_ptr<PipelineManager> m_PipelineManager;
+        std::unique_ptr<BufferManager> m_BufferManager;
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
 		uint32_t m_currentSwapchainImageIndex;
@@ -138,13 +140,13 @@ namespace vkcv
 
         /**
             * Creates a #Buffer with data-type T and @p bufferType 
-            * @param bufferType Type of Buffer created
-            * @param size Amount of Data of type T
+            * @param type Type of Buffer created
+            * @param count Count of elements of type T
             * return Buffer-Object
             */
         template<typename T>
-        Buffer<T> createBuffer(vkcv::BufferType bufferType,size_t size) {
-        	return Buffer<T>::create(m_Context.getDevice(), m_Context.getPhysicalDevice(), bufferType, size);
+        Buffer<T> createBuffer(vkcv::BufferType type, size_t count) {
+        	return Buffer<T>::create(m_BufferManager.get(), type, count);
         }
 
 		/**

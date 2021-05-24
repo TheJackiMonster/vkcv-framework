@@ -37,8 +37,9 @@ int main(int argc, const char** argv) {
 	
 	vec3* m = buffer.map();
 	m[0] = { 0, 0, 0 };
-	m[0] = { 0, 0, 0 };
-	m[0] = { 0, 0, 0 };
+	m[1] = { 0, 0, 0 };
+	m[2] = { 0, 0, 0 };
+	buffer.unmap();
 
 	std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
 

@@ -9,6 +9,7 @@
 #include "vkcv/Core.hpp"
 #include "PassManager.hpp"
 #include "PipelineManager.hpp"
+#include "vkcv/BufferManager.hpp"
 #include "Surface.hpp"
 #include "ImageLayoutTransitions.hpp"
 #include "Framebuffer.hpp"
@@ -86,6 +87,7 @@ namespace vkcv
             m_swapchainImageViews(imageViews),
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
             m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
+			m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager(m_Context.m_Device, m_Context.m_PhysicalDevice))},
             m_CommandResources(commandResources),
             m_SyncResources(syncResources)
 	{}
