@@ -59,4 +59,10 @@ namespace vkcv {
 	    else
 	        return true;
     }
+
+    void ShaderProgram::reflectShader(ShaderStage shaderStage) const
+    {
+        auto shaderCode = m_Shaders.at(shaderStage).shaderCode;
+        //TODO
+    }
 }

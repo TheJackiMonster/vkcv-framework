@@ -10,6 +10,7 @@
 #include <iostream>
 #include <filesystem>
 #include <vulkan/vulkan.hpp>
+#include <spirv_glsl.hpp>
 
 namespace vkcv {
 
@@ -52,6 +53,8 @@ namespace vkcv {
         const Shader &getShader(ShaderStage shaderStage) const;
 
         bool existsShader(ShaderStage shaderStage) const;
+
+        void reflectShader(ShaderStage shaderStage) const;
 
 	private:
         std::unordered_map<ShaderStage, Shader> m_Shaders;
