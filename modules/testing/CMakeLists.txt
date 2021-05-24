@@ -13,7 +13,9 @@ set(vkcv_testing_sources
 		${vkcv_testing_source}/vkcv/testing/Test.cpp
 		${vkcv_testing_include}/vkcv/camera/Camera.hpp
 		${vkcv_testing_source}/vkcv/camera/Camera.cpp
-		src/vkcv/camera/TrackballCamera.cpp)
+		${vkcv_testing_include}/vkcv/camera/TrackballCamera.hpp
+		${vkcv_testing_source}/vkcv/camera/TrackballCamera.cpp
+		)
 
 # adding source files to the project
 add_library(vkcv_testing STATIC ${vkcv_testing_sources})

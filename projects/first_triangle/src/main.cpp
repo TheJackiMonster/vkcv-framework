@@ -6,6 +6,7 @@
 #include <vkcv/camera/Camera.hpp>
 #include <vkcv/camera/TrackballCamera.hpp>
 
+
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
 
@@ -32,28 +33,67 @@ int main(int argc, const char** argv) {
     float roll = 0.0;
     float pitch = 0.0;
     float yaw = 0.0;
-    // TODO: need scrolling event callback to set yoffset
-    float yoffset = 10;
-
-    // scroll callback
-    float fov = camera.getFov();
-    fov -= yoffset;
-    if (fov < 1.0f)
-        fov = 1.0f;
-    if (fov > 45.0f)
-        fov = 45.0f;
-    camera.setFov(fov);
 
     //TODO? should the standard camera support rotation?
 
+    bool firstMouse = true;
+    double lastX, lastY;
+
     // showing basic usage lambda events of window
-    window.e_mouseMove.add([&](double x, double y){
+    window.e_mouseMove.add([&](double x, double y) {
         std::cout << "movement: " << x << " , " << y << std::endl;
+
+        if (firstMouse) {
+            lastX = x;
+            lastY = y;
+            firstMouse = false;
+        }
+
+        float xoffset = x - lastX;
+        float yoffset = lastY - y;
+        lastX = x;
+        lastY = y;
+
+        float sensitivity = 0.1f;
+        xoffset *= sensitivity;
+        yoffset *= sensitivity;
+
+        yaw += xoffset;
+        pitch += yoffset;
+
+        if (pitch > 89.0f) {
+            pitch = 89.0f;
+        }
+        if (pitch < -89.0f) {
+            pitch = -89.0f;
+        }
+
+        glm::vec3 direction;
+        direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        direction.y = sin(glm::radians(pitch));
+        direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+
+        front = glm::normalize(direction);
+        center = position + front;
+        camera.lookAt(position, center, up);
+
+        std::cout << "New center: " << center.x << ", " << center.y << ", " << center.z << std::endl;
     });
 
-    // TODO: need event for press mouse button
+    window.e_mouseScroll.add([&](double xoffset, double yoffset) {
+        float fov = camera.getFov();
+        fov -= (float)yoffset;
+        if (fov < 1.0f) {
+            fov = 1.0f;
+        }
+        if (fov > 45.0f) {
+            fov = 45.0f;
+        }
+        camera.setFov(fov);
+        std::cout << "New FOV: " << fov << std::endl;
+    });
 
-    window.e_key.add([&](int key, int scancode, int action, int mods){
+    window.e_key.add([&](int key, int scancode, int action, int mods) {
         switch (key) {
             case GLFW_KEY_W:
                 std::cout << "Move forward" << std::endl;

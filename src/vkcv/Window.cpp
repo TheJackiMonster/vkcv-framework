@@ -51,6 +51,8 @@ namespace vkcv {
         glfwSetWindowSizeCallback(m_window, Window::onResize);
 
         glfwSetKeyCallback(m_window, Window::onKeyEvent);
+
+        glfwSetScrollCallback(m_window, Window::onMouseScrollEvent);
     }
 
     void Window::pollEvents() {
@@ -63,6 +65,14 @@ namespace vkcv {
 
         if (window != nullptr) {
             window->e_mouseMove(x, y);
+        }
+    }
+
+    void Window::onMouseScrollEvent(GLFWwindow *callbackWindow, double xoffset, double yoffset) {
+        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+
+        if (window != nullptr) {
+            window->e_mouseScroll(xoffset, yoffset);
         }
     }
 

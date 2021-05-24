@@ -32,6 +32,8 @@ namespace vkcv {
          */
         static void onMouseMoveEvent(GLFWwindow *window, double x, double y);
 
+        static void onMouseScrollEvent(GLFWwindow *callbackWindow, double xoffset, double yoffset);
+
         /**
          * resize callback for the resize option of the window
          * @param[in] window The window that was resized.
@@ -82,6 +84,7 @@ namespace vkcv {
          * basic events of the window
          */
         event< double, double > e_mouseMove;
+        event< double, double > e_mouseScroll;
         event< int, int > e_resize;
         event< int, int, int, int > e_key;
 
