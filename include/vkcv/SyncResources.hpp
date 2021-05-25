@@ -8,6 +8,7 @@ namespace vkcv {
 		vk::Fence presentFinished;
 	};
 
-	SyncResources createDefaultSyncResources(const vk::Device& device);
-	void destroySyncResources(const vk::Device& device, const SyncResources& resources);
+	SyncResources createDefaultSyncResources(const vk::Device &device);
+	void destroySyncResources(const vk::Device &device, const SyncResources &resources);
+	vk::Fence createFence(const vk::Device &device);
 }

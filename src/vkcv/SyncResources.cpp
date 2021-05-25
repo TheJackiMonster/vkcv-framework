@@ -8,10 +8,8 @@ namespace vkcv {
 		const vk::SemaphoreCreateInfo semaphoreInfo(semaphoreFlags);
 		resources.renderFinished = device.createSemaphore(semaphoreInfo, nullptr, {});
 
-		const vk::FenceCreateFlags fenceFlags = vk::FenceCreateFlagBits();
-		vk::FenceCreateInfo fenceInfo(fenceFlags);
-		resources.presentFinished = device.createFence(fenceInfo, nullptr, {});
-		resources.swapchainImageAcquired = device.createFence(fenceInfo, nullptr, {});
+		resources.presentFinished			= createFence(device);
+		resources.swapchainImageAcquired	= createFence(device);
 
 		return resources;
 	}
@@ -20,5 +18,11 @@ namespace vkcv {
 		device.destroySemaphore(resources.renderFinished);
 		device.destroyFence(resources.presentFinished);
 		device.destroyFence(resources.swapchainImageAcquired);
+	}
+
+	vk::Fence createFence(const vk::Device& device) {
+		const vk::FenceCreateFlags fenceFlags = vk::FenceCreateFlagBits();
+		vk::FenceCreateInfo fenceInfo(fenceFlags);
+		return device.createFence(fenceInfo, nullptr, {});
 	}
 }

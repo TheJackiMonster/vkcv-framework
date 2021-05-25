@@ -24,6 +24,13 @@ namespace vkcv
     class PassManager;
     class PipelineManager;
 
+	enum class QueueType { Compute, Transfer, Graphics, Present };
+	struct SubmitInfo {
+		QueueType queueType;
+		std::vector<vk::Semaphore> waitSemaphores;
+		std::vector<vk::Semaphore> signalSemaphores;
+	};
+
     class Core final
     {
     private:
@@ -172,5 +179,10 @@ namespace vkcv
 		void endFrame();
 
 		vk::Format getSwapchainImageFormat();
+
+		void submitCommands(
+			const SubmitInfo &submitInfo,
+			const std::function<void(vk::CommandBuffer cmdBuffer)> recording, 
+			const std::function<void()> finishCallback);
     };
 }
