@@ -125,22 +125,14 @@ namespace vkcv
     	uint32_t imageIndex;
     	
 		const auto& acquireResult = m_Context.getDevice().acquireNextImageKHR(
-				m_swapchain.getSwapchain(), std::numeric_limits<uint64_t>::max(), nullptr,
-				m_SyncResources.swapchainImageAcquired, &imageIndex, {}
+			m_swapchain.getSwapchain(), 
+			std::numeric_limits<uint64_t>::max(), 
+			m_SyncResources.swapchainImageAcquired,
+			nullptr, 
+			&imageIndex, {}
 		);
 		
 		if (acquireResult != vk::Result::eSuccess) {
-			return Result::ERROR;
-		}
-		
-		const auto& result = m_Context.getDevice().waitForFences(
-				m_SyncResources.swapchainImageAcquired, true,
-				std::numeric_limits<uint64_t>::max()
-		);
-		
-		m_Context.getDevice().resetFences(m_SyncResources.swapchainImageAcquired);
-		
-		if (result != vk::Result::eSuccess) {
 			return Result::ERROR;
 		}
 		
@@ -205,11 +197,17 @@ namespace vkcv
 		const vk::Image presentImage = swapchainImages[m_currentSwapchainImageIndex];
 		
 		const auto& queueManager = m_Context.getQueueManager();
+		std::array<vk::Semaphore, 2> waitSemaphores{ 
+			m_SyncResources.renderFinished, 
+			m_SyncResources.swapchainImageAcquired };
 
 		vk::Result presentResult;
 		const vk::SwapchainKHR& swapchain = m_swapchain.getSwapchain();
-		const vk::PresentInfoKHR presentInfo(1, &m_SyncResources.renderFinished, 1, &swapchain, 
-			&m_currentSwapchainImageIndex, &presentResult);
+		const vk::PresentInfoKHR presentInfo(
+			waitSemaphores,
+			swapchain,
+			m_currentSwapchainImageIndex, 
+			presentResult);
         queueManager.getPresentQueue().handle.presentKHR(presentInfo);
 		if (presentResult != vk::Result::eSuccess) {
 			std::cout << "Error: swapchain present failed" << std::endl;

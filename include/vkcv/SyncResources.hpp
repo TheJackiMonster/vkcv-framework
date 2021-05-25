@@ -4,7 +4,7 @@
 namespace vkcv {
 	struct SyncResources {
 		vk::Semaphore	renderFinished;
-		vk::Fence		swapchainImageAcquired;
+		vk::Semaphore	swapchainImageAcquired;
 		vk::Fence		presentFinished;
 	};
 
