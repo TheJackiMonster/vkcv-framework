@@ -1,4 +1,6 @@
 #include "vkcv/CommandResources.hpp"
+#include <iostream>
+
 
 namespace vkcv {
 
@@ -44,5 +46,41 @@ namespace vkcv {
 
 	vk::CommandPool chooseCmdPool(const Queue& queue, const CommandResources& cmdResources) {
 		return cmdResources.cmdPoolPerQueueFamily[queue.familyIndex];
+	}
+
+	Queue getQueueForSubmit(const QueueType type, const QueueManager& queueManager) {
+		if (type == QueueType::Graphics) {
+			return queueManager.getGraphicsQueues().front();
+		}
+		else if (type == QueueType::Compute) {
+			return queueManager.getComputeQueues().front();
+		}
+		else if (type == QueueType::Transfer) {
+			return queueManager.getTransferQueues().front();
+		}
+		else if (type == QueueType::Present) {
+			return queueManager.getPresentQueue();
+		}
+		else {
+			std::cerr << "getQueueForSubmit error: unknown queue type" << std::endl;
+			return queueManager.getGraphicsQueues().front();	// graphics is the most general queue
+		}
+	}
+
+	void beginCommandBuffer(const vk::CommandBuffer cmdBuffer, const vk::CommandBufferUsageFlags flags) {
+		const vk::CommandBufferBeginInfo beginInfo(flags);
+		cmdBuffer.begin(beginInfo);
+	}
+
+	void submitCommandBufferToQueue(
+		const vk::Queue						queue,
+		const vk::CommandBuffer				cmdBuffer,
+		const vk::Fence						fence,
+		const std::vector<vk::Semaphore>&	waitSemaphores,
+		const std::vector<vk::Semaphore>&	signalSemaphores) {
+
+		const std::vector<vk::PipelineStageFlags> waitDstStageMasks(waitSemaphores.size(), vk::PipelineStageFlagBits::eAllCommands);
+		const vk::SubmitInfo queueSubmitInfo(waitSemaphores, waitDstStageMasks, cmdBuffer, signalSemaphores);
+		queue.submit(queueSubmitInfo, fence);
 	}
 }

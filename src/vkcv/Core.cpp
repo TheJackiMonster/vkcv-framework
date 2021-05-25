@@ -69,7 +69,7 @@ namespace vkcv
 		const int						graphicQueueFamilyIndex	= queueManager.getGraphicsQueues()[0].familyIndex;
 		const std::unordered_set<int>	queueFamilySet			= generateQueueFamilyIndexSet(queueManager);
 		const auto						commandResources		= createCommandResources(context.getDevice(), queueFamilySet);
-		const auto						defaultSyncResources	= createDefaultSyncResources(context.getDevice());
+		const auto						defaultSyncResources	= createSyncResources(context.getDevice());
 
         window.e_resize.add([&](int width, int height){
             recreateSwapchain(width,height);
@@ -230,42 +230,23 @@ namespace vkcv
 		const std::function<void(vk::CommandBuffer cmdBuffer)> recording,
 		const std::function<void()> finishCallback) {
 
-		vkcv::Queue queue;
-		if (submitInfo.queueType == QueueType::Graphics) {
-			queue = m_Context.getQueueManager().getGraphicsQueues().front();
-		}
-		else if (submitInfo.queueType == QueueType::Compute) {
-			queue = m_Context.getQueueManager().getComputeQueues().front();
-		}
-		else if (submitInfo.queueType == QueueType::Transfer) {
-			queue = m_Context.getQueueManager().getTransferQueues().front();
-		}
-		else if (submitInfo.queueType == QueueType::Present) {
-			queue = m_Context.getQueueManager().getPresentQueue();
-		}
-		else {
-			std::cerr << "Unknown queue type" << std::endl;
-			return;
-		}
+		const vk::Device& device = m_Context.getDevice();
 
-		const vk::CommandPool cmdPool = chooseCmdPool(queue, m_CommandResources);
-		const vk::CommandBuffer cmdBuffer = allocateCommandBuffer(m_Context.getDevice(), cmdPool);
-		const vk::CommandBufferBeginInfo beginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-		cmdBuffer.begin(beginInfo);
+		const vkcv::Queue		queue		= getQueueForSubmit(submitInfo.queueType, m_Context.getQueueManager());
+		const vk::CommandPool	cmdPool		= chooseCmdPool(queue, m_CommandResources);
+		const vk::CommandBuffer	cmdBuffer	= allocateCommandBuffer(device, cmdPool);
+
+		beginCommandBuffer(cmdBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 		recording(cmdBuffer);
 		cmdBuffer.end();
-		const std::vector<vk::PipelineStageFlags> waitDstStageMasks(submitInfo.waitSemaphores.size(), vk::PipelineStageFlagBits::eAllCommands);
-		vk::SubmitInfo queueSubmitInfo(submitInfo.waitSemaphores, waitDstStageMasks, cmdBuffer, submitInfo.signalSemaphores);
+
+		const vk::Fence waitFence = createFence(device);
+		submitCommandBufferToQueue(queue.handle, cmdBuffer, waitFence, submitInfo.waitSemaphores, submitInfo.signalSemaphores);
+		waitForFence(device, waitFence);
+		device.destroyFence(waitFence);
 		if (finishCallback) {
-			vk::Fence waitFence = createFence(m_Context.getDevice());
-			queue.handle.submit(queueSubmitInfo, waitFence);
-			const auto result = m_Context.getDevice().waitForFences(waitFence, true, UINT64_MAX);
-			assert(result == vk::Result::eSuccess);
-			m_Context.getDevice().destroyFence(waitFence);
 			finishCallback();
 		}
-		else {
-			queue.handle.submit(queueSubmitInfo);
-		}
+		device.freeCommandBuffers(cmdPool, cmdBuffer);
 	}
 }

@@ -1,7 +1,7 @@
 #include "vkcv/SyncResources.hpp"
 
 namespace vkcv {
-	SyncResources createDefaultSyncResources(const vk::Device& device) {
+	SyncResources createSyncResources(const vk::Device& device) {
 		SyncResources resources;
 
 		const vk::SemaphoreCreateFlags semaphoreFlags = vk::SemaphoreCreateFlagBits();
@@ -24,5 +24,10 @@ namespace vkcv {
 		const vk::FenceCreateFlags fenceFlags = vk::FenceCreateFlagBits();
 		vk::FenceCreateInfo fenceInfo(fenceFlags);
 		return device.createFence(fenceInfo, nullptr, {});
+	}
+
+	void waitForFence(const vk::Device& device, const vk::Fence fence) {
+		const auto result = device.waitForFences(fence, true, UINT64_MAX);
+		assert(result == vk::Result::eSuccess);
 	}
 }

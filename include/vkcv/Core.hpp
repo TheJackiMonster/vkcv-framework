@@ -24,7 +24,6 @@ namespace vkcv
     class PassManager;
     class PipelineManager;
 
-	enum class QueueType { Compute, Transfer, Graphics, Present };
 	struct SubmitInfo {
 		QueueType queueType;
 		std::vector<vk::Semaphore> waitSemaphores;
