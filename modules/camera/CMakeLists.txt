@@ -13,6 +13,8 @@ set(vkcv_camera_sources
 		${vkcv_camera_source}/vkcv/camera/Camera.cpp
 		${vkcv_camera_include}/vkcv/camera/TrackballCamera.hpp
 		${vkcv_camera_source}/vkcv/camera/TrackballCamera.cpp
+		${vkcv_camera_include}/vkcv/camera/CameraManager.hpp
+		${vkcv_camera_source}/vkcv/camera/CameraManager.cpp
 )
 
 # adding source files to the project

@@ -3,8 +3,7 @@
 #include <vkcv/Window.hpp>
 #include <vkcv/ShaderProgram.hpp>
 #include <GLFW/glfw3.h>
-#include <vkcv/camera/Camera.hpp>
-#include <vkcv/camera/TrackballCamera.hpp>
+#include <vkcv/camera/CameraManager.hpp>
 
 
 int main(int argc, const char** argv) {
@@ -19,110 +18,7 @@ int main(int argc, const char** argv) {
 		false
     );
 
-    // TODO: this code will be put in a camera controller class
-    vkcv::Camera camera;
-    std::shared_ptr<vkcv::TrackballCamera> trackball;
-    camera.setPerspective( glm::radians(60.0f), windowWidth / (float)windowHeight, 0.1f, 10.f);
-    glm::vec3 up(0.0f, 1.0f, 0.0f);
-    glm::vec3 position(0.0f, 0.0f, 0.0f);
-    glm::vec3 front(0.0f, 0.0f, -1.0f);
-    glm::vec3 center = position + front;
-    camera.lookAt(position, center, up);
-    const float radius = 10.0f;
-    const float cameraSpeed = 0.05f;
-    float roll = 0.0;
-    float pitch = 0.0;
-    float yaw = 0.0;
-
-    //TODO? should the standard camera support rotation?
-
-    bool firstMouse = true;
-    double lastX, lastY;
-
-    // showing basic usage lambda events of window
-    window.e_mouseMove.add([&](double x, double y) {
-        //std::cout << "movement: " << x << " , " << y << std::endl;
-
-        if (firstMouse) {
-            lastX = x;
-            lastY = y;
-            firstMouse = false;
-        }
-
-        float xoffset = x - lastX;
-        float yoffset = lastY - y;
-        lastX = x;
-        lastY = y;
-
-        float sensitivity = 0.1f;
-        xoffset *= sensitivity;
-        yoffset *= sensitivity;
-
-        yaw += xoffset;
-        pitch += yoffset;
-
-        if (pitch > 89.0f) {
-            pitch = 89.0f;
-        }
-        if (pitch < -89.0f) {
-            pitch = -89.0f;
-        }
-
-        glm::vec3 direction;
-        direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-        direction.y = sin(glm::radians(pitch));
-        direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-
-        front = glm::normalize(direction);
-        center = position + front;
-        camera.lookAt(position, center, up);
-
-		//std::cout << "New center: " << center.x << ", " << center.y << ", " << center.z << std::endl;
-    });
-
-    window.e_mouseScroll.add([&](double xoffset, double yoffset) {
-        float fov = camera.getFov();
-        fov -= (float)yoffset;
-        if (fov < 1.0f) {
-            fov = 1.0f;
-        }
-        if (fov > 45.0f) {
-            fov = 45.0f;
-        }
-        camera.setFov(fov);
-		//std::cout << "New FOV: " << fov << std::endl;
-    });
-
-    window.e_key.add([&](int key, int scancode, int action, int mods) {
-        switch (key) {
-            case GLFW_KEY_W:
-				//std::cout << "Move forward" << std::endl;
-                position += cameraSpeed * front;
-                center = position + front;
-                camera.lookAt(position, center, up);
-                break;
-            case GLFW_KEY_S:
-				//std::cout << "Move left" << std::endl;
-                position -= cameraSpeed * front;
-                center = position + front;
-                camera.lookAt(position, center, up);
-                break;
-            case GLFW_KEY_A:
-				//std::cout << "Move backward" << std::endl;
-                position -= glm::normalize(glm::cross(front, up)) * cameraSpeed;
-                center = position + front;
-                camera.lookAt(position, center, up);
-                break;
-            case GLFW_KEY_D:
-				//std::cout << "Move right" << std::endl;
-                position += glm::normalize(glm::cross(front, up)) * cameraSpeed;
-                center = position + front;
-                camera.lookAt(position, center, up);
-                break;
-            default:
-				break;//std::cout << "this key is not supported yet: " << std::endl;
-        }
-    });
+    vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
 
     window.initEvents();
 
@@ -212,7 +108,7 @@ int main(int argc, const char** argv) {
 	{
 		core.beginFrame();
 
-		const glm::mat4 mvp = camera.getProjection() * camera.getView();
+		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
 	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp);
 	    core.endFrame();
