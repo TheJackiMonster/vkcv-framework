@@ -46,6 +46,8 @@ namespace vkcv {
         glfwSetWindowUserPointer(m_window, this);
 
         // combine Callbacks with Events
+        glfwSetMouseButtonCallback(m_window, Window::onMouseButtonEvent);
+
         glfwSetCursorPosCallback(m_window, Window::onMouseMoveEvent);
 
         glfwSetWindowSizeCallback(m_window, Window::onResize);
@@ -57,6 +59,15 @@ namespace vkcv {
 
     void Window::pollEvents() {
         glfwPollEvents();
+    }
+
+    void Window::onMouseButtonEvent(GLFWwindow *callbackWindow, int button, int action, int mods) {
+
+        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+
+        if (window != nullptr) {
+            window->e_mouseButton(button, action, mods);
+        }
     }
 
     void Window::onMouseMoveEvent(GLFWwindow *callbackWindow, double x, double y) {

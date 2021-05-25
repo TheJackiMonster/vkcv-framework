@@ -8,7 +8,6 @@ namespace vkcv{
     m_window(window), m_width(width), m_height(height)
     {
 
-        glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         m_camera.setPerspective( glm::radians(60.0f), m_width / m_height, 0.1f, 10.f);
         m_up = glm::vec3(0.0f, 1.0f, 0.0f);
         m_position = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -26,7 +25,6 @@ namespace vkcv{
     CameraManager::CameraManager(Window &window, float width, float height, glm::vec3 up, glm::vec3 position, glm::vec3 front):
     m_window(window), m_width(width), m_height(height), m_up(up), m_position(position), m_front(front)
     {
-        glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         m_camera.setPerspective( glm::radians(60.0f), m_width / m_height, 0.1f, 10.f);
         m_up = glm::vec3(0.0f, 1.0f, 0.0f);
         m_position = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -45,20 +43,29 @@ namespace vkcv{
         m_keyHandle = m_window.e_key.add( [&](int key, int scancode, int action, int mods) { this->keyCallback(key, scancode, action, mods); });
         m_mouseMoveHandle = m_window.e_mouseMove.add( [&]( double offsetX, double offsetY) {this->mouseMoveCallback( offsetX, offsetY);} );
         m_mouseScrollHandle =  m_window.e_mouseScroll.add([&](double offsetX, double offsetY) {this->scrollCallback( offsetX, offsetY);} );
+        m_mouseButtonHandle = m_window.e_mouseButton.add([&] (int button, int action, int mods) {this->mouseButtonCallback( button,  action,  mods);});
+    }
 
+    void CameraManager::mouseButtonCallback(int button, int action, int mods){
+        if(button == GLFW_MOUSE_BUTTON_2 && m_roationActive == false && action == GLFW_PRESS){
+            glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            m_roationActive = true;
+        }else if(button == GLFW_MOUSE_BUTTON_2 && m_roationActive == true && action == GLFW_RELEASE){
+            glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            m_roationActive = false;
+        }
     }
 
     void CameraManager::mouseMoveCallback(double x, double y){
-        if (m_firstMouse) {
-            m_lastX = x;
-            m_lastY = y;
-            m_firstMouse = false;
-        }
 
         float xoffset = x - m_lastX;
         float yoffset = m_lastY - y;
         m_lastX = x;
         m_lastY = y;
+
+        if(!m_roationActive){
+            return;
+        }
 
         float sensitivity = 0.1f;
         xoffset *= sensitivity;
