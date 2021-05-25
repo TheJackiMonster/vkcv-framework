@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkcv/camera/Camera.hpp"
+#include "Camera.hpp"
 
 namespace vkcv {
 
@@ -12,8 +12,6 @@ namespace vkcv {
         TrackballCamera(int width, int height);
 
         ~TrackballCamera();
-
-        void update( GLFWwindow* window);
 
         float getSensitivity() const;
 

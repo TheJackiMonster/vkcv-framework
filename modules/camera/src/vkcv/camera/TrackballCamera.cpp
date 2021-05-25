@@ -59,8 +59,8 @@ namespace vkcv{
     {
     }
 
-
-    void TrackballCamera::update( GLFWwindow* window) {
+	// TODO: Can be done as events... (mouseMove, mouseDown, mouseUp)
+    /*void TrackballCamera::update( GLFWwindow* window) {
 
         double x, y;
 
@@ -94,7 +94,7 @@ namespace vkcv{
 
         m_view = glm::lookAt( m_position, m_center, m_up);
 
-    }
+    }*/
 
     float TrackballCamera::getSensitivity() const {
         return m_sensitivity;

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
@@ -9,8 +8,6 @@ namespace vkcv {
 
     class Camera {
     protected:
-        GLFWwindow *m_window;
-
         glm::mat4 m_view, m_projection;
 
         int m_width, m_height;
@@ -26,8 +23,6 @@ namespace vkcv {
 
         ~Camera();
 
-        virtual void update(GLFWwindow *window) {};
-
         void setPerspective(float fov, float ratio, float near, float far);
 
         const glm::mat4 &getView();
@@ -38,7 +33,7 @@ namespace vkcv {
 
         void lookAt(glm::vec3 position, glm::vec3 center, glm::vec3 up);
 
-        const glm::mat4 &Camera::getProjection();
+        const glm::mat4& getProjection();
 
         void setProjection(const glm::mat4 projection);
 
