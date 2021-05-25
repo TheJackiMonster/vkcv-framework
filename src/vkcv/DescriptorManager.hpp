@@ -11,10 +11,13 @@ namespace vkcv
 	    explicit DescriptorManager(vk::Device device) noexcept;
 	    ~DescriptorManager() = default;
 
-
-	    // TODO: Interface
-	    //  user wishes to create descriptor sets {X,Y,Z} each with different descriptions {A,B,C}
-	    //  returns a resource
+		/**
+		* Creates all vk::DescriptorSets and allocates them from the pool. 
+		* DescriptorSets are put inside a ResourceDescription struct. 
+		* Structs are then put into m_ResourceDescriptions.
+		* @param[in] vector of filled vkcv::DescriptorSet structs
+		* @return index into that objects a resource handle
+		*/
         ResourcesHandle createResourceDescription(const std::vector<DescriptorSet> & p_descriptorSets);
 
 	private:
@@ -22,24 +25,35 @@ namespace vkcv
         vk::DescriptorPool m_Pool;
 		uint64_t m_NextDescriptorSetID;
 
-        // TODO: container for all resources requested by the user
+		/**
+		* Container for all resources requested by the user in one call of createResourceDescription.
+		* Includes descriptor sets and the respective descriptor set layouts.
+		*/
         struct ResourceDescription
         {
             std::vector<vk::DescriptorSet> descriptorSets;
             std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
         };
 
-        std::vector<ResourceDescription> m_Resources;
+		/**
+		* Contains all the resource descriptions that were requested by the user in calls of createResourceDescription.
+		*/
+        std::vector<ResourceDescription> m_ResourceDescriptions;
+
+		/**
+		* Contains all the allowed vkcv::DescriptorTypes that were also pre-defined in the DescriptorConfig class.
+		* Allowed types are defined in the constructor of DescriptorManager.
+		*/
 		std::vector<DescriptorType> m_DescriptorTypes;
 		
 		/**
-		* converts the flags of the descriptor types from VulkanCV (vkcv) to Vulkan (vk)
+		* Converts the flags of the descriptor types from VulkanCV (vkcv) to Vulkan (vk).
 		* @param[in] vkcv flag of the DescriptorType (see DescriptorConfig.hpp)
 		* @return vk flag of the DescriptorType
 		*/
 		vk::DescriptorType convertDescriptorTypeFlag(DescriptorType type);
 		/**
-		* converts the flags of the shader stages from VulkanCV (vkcv) to Vulkan (vk)
+		* Converts the flags of the shader stages from VulkanCV (vkcv) to Vulkan (vk).
 		* @param[in] vkcv flag of the ShaderStage (see ShaderProgram.hpp)
 		* @return vk flag of the ShaderStage
 		*/

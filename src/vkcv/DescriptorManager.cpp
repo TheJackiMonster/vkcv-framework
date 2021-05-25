@@ -4,7 +4,6 @@
 
 namespace vkcv
 {
-
     DescriptorManager::DescriptorManager(vk::Device device) noexcept:
         m_Device{ device }, m_NextDescriptorSetID{ 1 }
     {
@@ -24,11 +23,6 @@ namespace vkcv
 
     ResourcesHandle DescriptorManager::createResourceDescription(const std::vector<DescriptorSet> &p_descriptorSets) 
     {
-        // TODO: create all vk::DescriptorSets and allocate them from the pool
-        // put them into a ResourceDescription struct
-        // push that struct into m_Resources;
-        // return the index into that object as ResourcesHandle;
-
         ResourceDescription resource{};
 
         for (int i = 0; i < p_descriptorSets.size(); i++) {
@@ -58,11 +52,11 @@ namespace vkcv
             resource.descriptorSetLayouts.insert(resource.descriptorSetLayouts.begin(), allocLayouts.begin(), allocLayouts.end());
             resource.descriptorSets.insert(resource.descriptorSets.end(), allocSets.begin(), allocSets.end());
         }
-        m_Resources.push_back(resource);
+        m_ResourceDescriptions.push_back(resource);
         return ResourcesHandle{m_NextDescriptorSetID++};
     }
 
-    vk::DescriptorType vkcv::DescriptorManager::convertDescriptorTypeFlag(DescriptorType type) {
+    vk::DescriptorType DescriptorManager::convertDescriptorTypeFlag(DescriptorType type) {
         switch (type)
         {
         case vkcv::DescriptorType::UNIFORM_BUFFER:
@@ -74,7 +68,7 @@ namespace vkcv
         }
     }
 
-    vk::ShaderStageFlagBits vkcv::DescriptorManager::convertShaderStageFlag(ShaderStage stage) {
+    vk::ShaderStageFlagBits DescriptorManager::convertShaderStageFlag(ShaderStage stage) {
         switch (stage) 
         {
         case vkcv::ShaderStage::VERTEX:

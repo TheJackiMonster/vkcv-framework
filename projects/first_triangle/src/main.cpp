@@ -20,7 +20,7 @@ int main(int argc, const char** argv) {
             window,
             applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
-            {vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
+            {vk::QueueFlagBits::eGraphics},
 		{},
 		{"VK_KHR_swapchain"}
 	);
@@ -90,22 +90,18 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorType typeB = vkcv::DescriptorType::IMAGE;
 	vkcv::DescriptorType typeC = vkcv::DescriptorType::SAMPLER;
 	std::vector<vkcv::DescriptorType> types = { typeA, typeB, typeC };
-	for (int i = 0; i < types.size(); i++)
+	for (uint32_t i = 0; i < types.size(); i++)
 	{
-		vkcv::DescriptorBinding bind{};
-		bind.bindingID = i;
-		bind.descriptorType = types[i];
-		bind.descriptorCount = 1;
-		bind.shaderStage = vkcv::ShaderStage::VERTEX;
+		vkcv::DescriptorBinding bind(i, types[i], static_cast<uint32_t>(1), vkcv::ShaderStage::VERTEX);
 
-		vkcv::DescriptorSet set{};
 		std::vector<vkcv::DescriptorBinding> bindings = { bind };
-		set.bindings = bindings;
-		set.setCount = 1;
+		vkcv::DescriptorSet set(bindings, static_cast<uint32_t>(1));
 
 		sets.push_back(set);
 	}
 	core.createResourceDescription(sets);
+
+//------------END CREATION OF RESOURCES/DESCRIPTORS------------------
 
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
