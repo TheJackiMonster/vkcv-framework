@@ -14,7 +14,7 @@ namespace vkcv{
         m_cameraSpeed = 0.05f;
         m_roll = 0.0;
         m_pitch = 0.0;
-        m_yaw = 0.0;
+        m_yaw = 90.0;
         m_lastX = width/2.0;
         m_lastY = height/2.0;
         bindCamera();
@@ -48,7 +48,7 @@ namespace vkcv{
             return;
         }
 
-        float sensitivity = 0.1f;
+        float sensitivity = 0.05f;
         xoffset *= sensitivity;
         yoffset *= sensitivity;
 
@@ -85,6 +85,9 @@ namespace vkcv{
     }
 
     void CameraManager::keyCallback(int key, int scancode, int action, int mods) {
+
+        std::cout << m_camera.getFront().x << " " << m_camera.getFront().y << " " <<m_camera.getFront().z << std::endl;
+
         switch (key) {
             case GLFW_KEY_W:
                 //std::cout << "Move forward" << std::endl;

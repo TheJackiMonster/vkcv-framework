@@ -76,7 +76,7 @@ namespace vkcv {
     }
 
     glm::vec3 Camera::getFront(){
-        return glm::vec3( m_view[2]);
+        return glm::vec3( m_view[2].x,m_view[2].y,-m_view[2].z);
     }
 
     void Camera::setFront( glm::vec3 front ){
