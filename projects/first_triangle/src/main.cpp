@@ -16,30 +16,6 @@ int main(int argc, const char** argv) {
 		false
     );
 
-    // showing basic usage lambda events of window
-    window.e_mouseMove.add([&](double x, double y){
-        std::cout << "movement: " << x << " , " << y << std::endl;
-    });
-
-    window.e_key.add([&](int key, int scancode, int action, int mods){
-        switch (key) {
-            case GLFW_KEY_W:
-                std::cout << "Move forward" << std::endl;
-                break;
-            case GLFW_KEY_A:
-                std::cout << "Move left" << std::endl;
-                break;
-            case GLFW_KEY_S:
-                std::cout << "Move backward" << std::endl;
-                break;
-            case GLFW_KEY_D:
-                std::cout << "Move right" << std::endl;
-                break;
-            default:
-                std::cout << "this key is not supported yet: " << std::endl;
-        }
-    });
-
     window.initEvents();
 
 	vkcv::Core core = vkcv::Core::create(
