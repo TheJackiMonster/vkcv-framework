@@ -9,8 +9,17 @@
 namespace vkcv {
 	
 	BufferManager::BufferManager() noexcept :
-		m_core(nullptr), m_buffers()
-	{}
+		m_core(nullptr), m_buffers(), m_stagingBuffer(UINT64_MAX)
+	{
+	}
+	
+	void BufferManager::init() {
+		if (!m_core) {
+			return;
+		}
+		
+		m_stagingBuffer = createBuffer(BufferType::STAGING, 1024 * 1024, BufferMemoryType::HOST_VISIBLE);
+	}
 	
 	BufferManager::~BufferManager() noexcept {
 		for (size_t id = 0; id < m_buffers.size(); id++) {
@@ -48,18 +57,25 @@ namespace vkcv {
 		vk::BufferUsageFlags usageFlags;
 		
 		switch (type) {
-			case VERTEX:
+			case BufferType::VERTEX:
 				usageFlags = vk::BufferUsageFlagBits::eVertexBuffer;
 				break;
-			case UNIFORM:
+			case BufferType::UNIFORM:
 				usageFlags = vk::BufferUsageFlagBits::eUniformBuffer;
 				break;
-			case STORAGE:
+			case BufferType::STORAGE:
 				usageFlags = vk::BufferUsageFlagBits::eStorageBuffer;
+				break;
+			case BufferType::STAGING:
+				usageFlags = vk::BufferUsageFlagBits::eTransferSrc;
 				break;
 			default:
 				// TODO: maybe an issue
 				break;
+		}
+		
+		if (memoryType == BufferMemoryType::DEVICE_LOCAL) {
+			usageFlags |= vk::BufferUsageFlagBits::eTransferDst;
 		}
 		
 		const vk::Device& device = m_core->getContext().getDevice();
@@ -72,13 +88,15 @@ namespace vkcv {
 		const vk::PhysicalDevice& physicalDevice = m_core->getContext().getPhysicalDevice();
 		
 		vk::MemoryPropertyFlags memoryTypeFlags;
+		bool mappable = false;
 		
 		switch (memoryType) {
-			case DEVICE_LOCAL:
+			case BufferMemoryType::DEVICE_LOCAL:
 				memoryTypeFlags = vk::MemoryPropertyFlagBits::eDeviceLocal;
 				break;
-			case HOST_VISIBLE:
+			case BufferMemoryType::HOST_VISIBLE:
 				memoryTypeFlags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+				mappable = true;
 				break;
 			default:
 				// TODO: maybe an issue
@@ -91,14 +109,80 @@ namespace vkcv {
 				memoryTypeFlags
 		);
 		
-		vk::DeviceMemory memory = device.allocateMemory(vk::MemoryAllocateInfo(requirements.size, memoryType));
+		vk::DeviceMemory memory = device.allocateMemory(vk::MemoryAllocateInfo(requirements.size, memoryTypeIndex));
+		
+		device.bindBufferMemory(buffer, memory, 0);
 		
 		const uint64_t id = m_buffers.size();
-		m_buffers.push_back({ buffer, memory, nullptr });
+		m_buffers.push_back({ buffer, memory, size, nullptr, mappable });
 		return id;
 	}
 	
+	struct StagingStepInfo {
+		void* data;
+		size_t size;
+		size_t offset;
+		
+		vk::Buffer buffer;
+		vk::Buffer stagingBuffer;
+		vk::DeviceMemory stagingMemory;
+		
+		size_t stagingLimit;
+		size_t stagingPosition;
+	};
+	
+	/**
+	 * Copies data from CPU to a staging buffer and submits the commands to copy
+	 * each part one after another into the actual target buffer.
+	 *
+	 * The function can be used fully asynchronously!
+	 * Just be careful to not use the staging buffer in parallel!
+	 *
+	 * @param core Core instance
+	 * @param info Staging-info structure
+	 */
+	void copyFromStagingBuffer(Core* core, StagingStepInfo& info) {
+		const size_t remaining = info.size - info.stagingPosition;
+		const size_t mapped_size = std::min(remaining, info.stagingLimit);
+		
+		const vk::Device& device = core->getContext().getDevice();
+		
+		void* mapped = device.mapMemory(info.stagingMemory, 0, mapped_size);
+		memcpy(mapped, reinterpret_cast<char*>(info.data) + info.stagingPosition, mapped_size);
+		device.unmapMemory(info.stagingMemory);
+		
+		SubmitInfo submitInfo;
+		submitInfo.queueType = QueueType::Transfer;
+		
+		core->submitCommands(
+				submitInfo,
+				[&info, &mapped_size](const vk::CommandBuffer& commandBuffer) {
+					const vk::BufferCopy region (
+							0,
+							info.offset + info.stagingPosition,
+							mapped_size
+					);
+					
+					commandBuffer.copyBuffer(info.stagingBuffer, info.buffer, 1, &region);
+				},
+				[&core, &info, &mapped_size, &remaining]() {
+					if (mapped_size < remaining) {
+						info.stagingPosition += mapped_size;
+						
+						copyFromStagingBuffer(
+								core,
+								info
+						);
+					}
+				}
+		);
+	}
+	
 	void BufferManager::fillBuffer(uint64_t id, void *data, size_t size, size_t offset) {
+		if (size == 0) {
+			size = SIZE_MAX;
+		}
+		
 		if (id >= m_buffers.size()) {
 			return;
 		}
@@ -111,19 +195,42 @@ namespace vkcv {
 		
 		const vk::Device& device = m_core->getContext().getDevice();
 		
-		const vk::MemoryRequirements requirements = device.getBufferMemoryRequirements(buffer.m_handle);
-		
-		if (offset > requirements.size) {
+		if (offset > buffer.m_size) {
 			return;
 		}
 		
-		const size_t mapped_size = std::min(size, requirements.size - offset);
-		void* mapped = device.mapMemory(buffer.m_memory, offset, mapped_size);
-		memcpy(mapped, data, mapped_size);
-		device.unmapMemory(buffer.m_memory);
+		const size_t max_size = std::min(size, buffer.m_size - offset);
+		
+		if (buffer.m_mappable) {
+			void* mapped = device.mapMemory(buffer.m_memory, offset, max_size);
+			memcpy(mapped, data, max_size);
+			device.unmapMemory(buffer.m_memory);
+		} else {
+			auto& stagingBuffer = m_buffers[m_stagingBuffer];
+			
+			StagingStepInfo info;
+			info.data = data;
+			info.size = std::min(size, max_size - offset);
+			info.offset = offset;
+			
+			info.buffer = buffer.m_handle;
+			info.stagingBuffer = stagingBuffer.m_handle;
+			info.stagingMemory = stagingBuffer.m_memory;
+			
+			const vk::MemoryRequirements stagingRequirements = device.getBufferMemoryRequirements(stagingBuffer.m_handle);
+			
+			info.stagingLimit = stagingRequirements.size;
+			info.stagingPosition = 0;
+			
+			copyFromStagingBuffer(m_core, info);
+		}
 	}
 	
 	void* BufferManager::mapBuffer(uint64_t id, size_t offset, size_t size) {
+		if (size == 0) {
+			size = SIZE_MAX;
+		}
+		
 		if (id >= m_buffers.size()) {
 			return nullptr;
 		}
@@ -136,14 +243,12 @@ namespace vkcv {
 		
 		const vk::Device& device = m_core->getContext().getDevice();
 		
-		const vk::MemoryRequirements requirements = device.getBufferMemoryRequirements(buffer.m_handle);
-		
-		if (offset > requirements.size) {
+		if (offset > buffer.m_size) {
 			return nullptr;
 		}
 		
-		const size_t mapped_size = std::min(size, requirements.size - offset);
-		buffer.m_mapped = device.mapMemory(buffer.m_memory, offset, mapped_size);
+		const size_t max_size = std::min(size, buffer.m_size - offset);
+		buffer.m_mapped = device.mapMemory(buffer.m_memory, offset, max_size);
 		return buffer.m_mapped;
 	}
 	

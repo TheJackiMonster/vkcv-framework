@@ -97,6 +97,7 @@ namespace vkcv
             m_SyncResources(syncResources)
 	{
     	m_BufferManager->m_core = this;
+    	m_BufferManager->init();
 	}
 
 	Core::~Core() noexcept {

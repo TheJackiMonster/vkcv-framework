@@ -5,13 +5,14 @@
 
 namespace vkcv
 {
-	enum BufferType {
+	enum class BufferType {
 		VERTEX,
 		UNIFORM,
-		STORAGE
+		STORAGE,
+		STAGING
 	};
 	
-	enum BufferMemoryType {
+	enum class BufferMemoryType {
 		DEVICE_LOCAL,
 		HOST_VISIBLE
 	};
@@ -27,13 +28,18 @@ namespace vkcv
 		{
 			vk::Buffer m_handle;
 			vk::DeviceMemory m_memory;
+			size_t m_size;
 			void* m_mapped = nullptr;
+			bool m_mappable;
 		};
 		
 		Core* m_core;
 		std::vector<Buffer> m_buffers;
+		uint64_t m_stagingBuffer;
 		
 		BufferManager() noexcept;
+		
+		void init();
 		
 	public:
 		~BufferManager() noexcept;

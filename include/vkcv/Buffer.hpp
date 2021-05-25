@@ -26,11 +26,11 @@ namespace vkcv {
 			return m_count * sizeof(T);
 		}
 		
-		void fill(T* data, size_t count = SIZE_MAX, size_t offset = 0) {
+		void fill(T* data, size_t count = 0, size_t offset = 0) {
 			 m_manager->fillBuffer(m_handle_id, data, count * sizeof(T), offset * sizeof(T));
 		}
 		
-		T* map(size_t offset = 0, size_t count = SIZE_MAX) {
+		T* map(size_t offset = 0, size_t count = 0) {
 			return reinterpret_cast<T*>(m_manager->mapBuffer(m_handle_id, offset * sizeof(T), count * sizeof(T)));
 		}
 
