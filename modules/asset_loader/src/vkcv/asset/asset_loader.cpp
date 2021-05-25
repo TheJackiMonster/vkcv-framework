@@ -25,6 +25,21 @@ namespace vkcv::asset {
             default: return 10; // TODO add cases for matrices (or maybe change the type in the struct itself)
         }
     }
+
+    /**
+     * This function unrolls nested exceptions via recursion and prints them
+     * @param e error code
+     * @param path path to file that is responsible for error
+     */
+    void print_what (const std::exception& e, const std::string &path) {
+        fprintf(stderr, "ERROR loading file %s: %s\n", path.c_str(), e.what());
+        try {
+            std::rethrow_if_nested(e);
+        } catch (const std::exception& nested) {
+            std::cerr << "nested: ";
+            print_what(nested, path);
+        }
+    }
 	
 	int loadMesh(const std::string &path, Mesh &mesh) {
 		// load the gltf file using the library, return 0 if there is an
@@ -40,16 +55,18 @@ namespace vkcv::asset {
         std::vector<Material> materials = {};
 
         try {
-            if (path.rfind(".glb") != std::string::npos){
+            if (path.rfind(".glb", (path.length()-4)) != std::string::npos){
                 object = fx::gltf::LoadFromBinary(path);
             } else {
                 object = fx::gltf::LoadFromText(path);
             }
         }
-        catch (std::system_error){ // catch exception of invalid file path
+        catch (const std::system_error &err){ // catch exception of invalid file path
+            print_what(err, path);
             return 0;
         }
-        catch (...){
+        catch (const std::exception &e){
+            print_what(e, path);
             return 0;
         }
 
@@ -89,6 +106,7 @@ namespace vkcv::asset {
             } else {
                 return 0;
             }
+
             // Offset
             vertexAttributes.back().offset = object.bufferViews[accessor.bufferView].byteOffset;
             // Length
@@ -98,8 +116,11 @@ namespace vkcv::asset {
             // Component Type
             vertexAttributes.back().componentType = static_cast<uint16_t>(accessor.componentType);
             // Component Count
-            vertexAttributes.back().componentCount = convertTypeToInt(accessor.type); // Conversion doesn't work, don't know why
-            std::cout << "Should be a number: " << vertexAttributes.back().componentCount << std::endl;
+            if (convertTypeToInt(accessor.type) != 10){
+                vertexAttributes.back().componentCount = convertTypeToInt(accessor.type);
+            } else {
+                return 0;
+            }
         }
 
         // Fill the output argument 'mesh' with the data from the loaded
@@ -123,10 +144,21 @@ namespace vkcv::asset {
         fx::gltf::Accessor  & indexAccessor = object.accessors[objectPrimitive.indices];
         fx::gltf::BufferView  & indexBufferView = object.bufferViews[indexAccessor.bufferView];
         fx::gltf::Buffer  & indexBuffer = object.buffers[indexBufferView.buffer];
+        void* indexBufferData = &indexBuffer.data;
 
         // vertexBuffer
         fx::gltf::BufferView& vertexBufferView = object.bufferViews[posAccessor.bufferView];
         fx::gltf::Buffer& vertexBuffer = object.buffers[vertexBufferView.buffer];
+        void* vertexBufferData;
+
+        // check whether only one buffer is used
+        if (indexBufferView.buffer == vertexBufferView.buffer){
+            std::cout << "It's just one Buffer, let's be efficient!" << std::endl;
+            vertexBufferData = indexBufferData;
+        } else {
+            std::cout << "No luck, different Buffers :(" << std::endl;
+            vertexBufferData = &vertexBuffer.data;
+        }
 
         // fill vertex groups vector
         vertexGroups.push_back(VertexGroup{});
@@ -135,12 +167,12 @@ namespace vkcv::asset {
                 object.accessors[objectPrimitive.indices].count, // num indices
                 posAccessor.count, // num vertices
                 { //index buffer
-                        &indexBuffer.data[static_cast<uint64_t>(indexBufferView.byteOffset) + indexAccessor.byteOffset],
+                        indexBufferData,
                         indexBufferView.byteLength,
                         indexBufferView.byteOffset
                 },
                 { //vertex buffer
-                        &vertexBuffer.data[static_cast<uint64_t>(vertexBufferView.byteOffset) + posAccessor.byteOffset],
+                        vertexBufferData,
                         vertexBufferView.byteLength,
                         vertexAttributes
                 },

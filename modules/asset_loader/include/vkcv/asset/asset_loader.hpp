@@ -43,9 +43,9 @@
 
 namespace vkcv::asset {
 
-
+// enum matches modes in fx-gltf, the library returns a standard mode (TRIANGLES) if no mode is given in the file
+enum PrimitiveMode { POINTS=0, LINES, LINELOOP, LINESTRIP, TRIANGLES, TRIANGLESTRIP, TRIANGLEFAN };
 /* With these enums, 0 is reserved to signal uninitialized or invalid data. */
-enum PrimitiveMode { POINTS=1, LINES, TRIANGLES };
 enum PrimitiveType { POSITION=1, NORMAL, TEXCOORD_0 };
 
 typedef struct {
