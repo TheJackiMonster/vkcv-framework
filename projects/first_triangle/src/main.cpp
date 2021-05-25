@@ -120,7 +120,7 @@ int main(int argc, const char** argv) {
                 camera.lookAt(position, center, up);
                 break;
             default:
-				__nop;//std::cout << "this key is not supported yet: " << std::endl;
+				break;//std::cout << "this key is not supported yet: " << std::endl;
         }
     });
 
