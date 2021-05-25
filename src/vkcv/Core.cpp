@@ -173,7 +173,7 @@ namespace vkcv
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
-		submitCommands(submitInfo, [renderpass, renderArea, imageView, framebuffer, pipeline](const vk::CommandBuffer cmdBuffer) {
+		submitCommands(submitInfo, [renderpass, renderArea, imageView, framebuffer, pipeline](const vk::CommandBuffer& cmdBuffer) {
 
 			const std::array<float, 4> clearColor = { 0.f, 0.f, 0.f, 1.f };
 			const vk::ClearValue clearValues(clearColor);
@@ -222,12 +222,9 @@ namespace vkcv
         /* boilerplate for #34 */
         std::cout << "Resized to : " << width << " , " << height << std::endl;
     }
-
-	void Core::submitCommands(
-		const SubmitInfo& submitInfo,
-		const std::function<void(vk::CommandBuffer cmdBuffer)> recording,
-		const std::function<void()> finishCallback) {
-
+	
+	void Core::submitCommands(const SubmitInfo &submitInfo, const RecordCommandFunction& record, const FinishCommandFunction& finish)
+	{
 		const vk::Device& device = m_Context.getDevice();
 
 		const vkcv::Queue		queue		= getQueueForSubmit(submitInfo.queueType, m_Context.getQueueManager());
@@ -235,16 +232,18 @@ namespace vkcv
 		const vk::CommandBuffer	cmdBuffer	= allocateCommandBuffer(device, cmdPool);
 
 		beginCommandBuffer(cmdBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-		recording(cmdBuffer);
+		record(cmdBuffer);
 		cmdBuffer.end();
 
 		const vk::Fence waitFence = createFence(device);
 		submitCommandBufferToQueue(queue.handle, cmdBuffer, waitFence, submitInfo.waitSemaphores, submitInfo.signalSemaphores);
 		waitForFence(device, waitFence);
 		device.destroyFence(waitFence);
-		if (finishCallback) {
-			finishCallback();
-		}
+		
 		device.freeCommandBuffers(cmdPool, cmdBuffer);
+		
+		if (finish) {
+			finish();
+		}
 	}
 }
