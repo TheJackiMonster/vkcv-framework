@@ -167,7 +167,8 @@ namespace vkcv
 	}
 
 	void Core::renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
-		const int width, const int height) {
+		const int width, const int height, const size_t pushConstantSize, const void *pushConstantData) {
+
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
 		}
@@ -184,7 +185,9 @@ namespace vkcv
 		m_CommandResources.commandBuffer.beginRenderPass(beginInfo, subpassContents, {});
 
 		const vk::Pipeline pipeline = m_PipelineManager->getVkPipeline(pipelineHandle);
+		const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
 		m_CommandResources.commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
+		m_CommandResources.commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
 		m_CommandResources.commandBuffer.draw(3, 1, 0, 0, {});
 		m_CommandResources.commandBuffer.endRenderPass();
 	}

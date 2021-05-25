@@ -24,7 +24,7 @@ int main(int argc, const char** argv) {
     std::shared_ptr<vkcv::TrackballCamera> trackball;
     camera.setPerspective( glm::radians(60.0f), windowWidth / (float)windowHeight, 0.1f, 10.f);
     glm::vec3 up(0.0f, 1.0f, 0.0f);
-    glm::vec3 position(1.0f, 0.0f, 0.0f);
+    glm::vec3 position(0.0f, 0.0f, 0.0f);
     glm::vec3 front(0.0f, 0.0f, -1.0f);
     glm::vec3 center = position + front;
     camera.lookAt(position, center, up);
@@ -41,7 +41,7 @@ int main(int argc, const char** argv) {
 
     // showing basic usage lambda events of window
     window.e_mouseMove.add([&](double x, double y) {
-        std::cout << "movement: " << x << " , " << y << std::endl;
+        //std::cout << "movement: " << x << " , " << y << std::endl;
 
         if (firstMouse) {
             lastX = x;
@@ -77,7 +77,7 @@ int main(int argc, const char** argv) {
         center = position + front;
         camera.lookAt(position, center, up);
 
-        std::cout << "New center: " << center.x << ", " << center.y << ", " << center.z << std::endl;
+		//std::cout << "New center: " << center.x << ", " << center.y << ", " << center.z << std::endl;
     });
 
     window.e_mouseScroll.add([&](double xoffset, double yoffset) {
@@ -90,37 +90,37 @@ int main(int argc, const char** argv) {
             fov = 45.0f;
         }
         camera.setFov(fov);
-        std::cout << "New FOV: " << fov << std::endl;
+		//std::cout << "New FOV: " << fov << std::endl;
     });
 
     window.e_key.add([&](int key, int scancode, int action, int mods) {
         switch (key) {
             case GLFW_KEY_W:
-                std::cout << "Move forward" << std::endl;
+				//std::cout << "Move forward" << std::endl;
                 position += cameraSpeed * front;
                 center = position + front;
                 camera.lookAt(position, center, up);
                 break;
             case GLFW_KEY_S:
-                std::cout << "Move left" << std::endl;
+				//std::cout << "Move left" << std::endl;
                 position -= cameraSpeed * front;
                 center = position + front;
                 camera.lookAt(position, center, up);
                 break;
             case GLFW_KEY_A:
-                std::cout << "Move backward" << std::endl;
+				//std::cout << "Move backward" << std::endl;
                 position -= glm::normalize(glm::cross(front, up)) * cameraSpeed;
                 center = position + front;
                 camera.lookAt(position, center, up);
                 break;
             case GLFW_KEY_D:
-                std::cout << "Move right" << std::endl;
+				//std::cout << "Move right" << std::endl;
                 position += glm::normalize(glm::cross(front, up)) * cameraSpeed;
                 center = position + front;
                 camera.lookAt(position, center, up);
                 break;
             default:
-                std::cout << "this key is not supported yet: " << std::endl;
+				__nop;//std::cout << "this key is not supported yet: " << std::endl;
         }
     });
 
@@ -211,7 +211,10 @@ int main(int argc, const char** argv) {
 	while (window.isWindowOpen())
 	{
 		core.beginFrame();
-	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight);
+
+		const glm::mat4 mvp = camera.getProjection() * camera.getView();
+
+	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp);
 	    core.endFrame();
 	}
 	return 0;
