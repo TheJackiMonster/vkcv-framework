@@ -9,7 +9,6 @@ namespace vkcv {
 
     void Camera::lookAt(glm::vec3 position, glm::vec3 center, glm::vec3 up){
         m_view = glm::lookAt(position, center, up);
-        m_position = position;
     }
 
     void Camera::getView(glm::vec3 &x, glm::vec3 &y, glm::vec3 &z, glm::vec3 &pos){
@@ -74,6 +73,35 @@ namespace vkcv {
         m_near = near;
         m_far = far;
         m_projection = glm::perspective( m_fov, ratio, m_near, m_far);
+    }
+
+    glm::vec3 Camera::getFront(){
+        return glm::vec3( m_view[2]);
+    }
+
+    void Camera::setFront( glm::vec3 front ){
+        m_view[2] = glm::vec4(front, m_view[2][3]);
+    }
+
+    glm::vec3 Camera::getPosition(){
+        glm::vec3 pos = glm::vec3( glm::column(m_view, 3));
+        glm::mat3 mat_inv = glm::inverse( glm::mat3(m_view));
+        return pos = -mat_inv * pos;
+    }
+
+    void Camera::setPosition( glm::vec3 position ){
+        // Syntax: Mat[column][row]
+        // project new position into camera coordinates
+        m_view[3] = glm::vec4(0.0f,0.0f,0.0f,1.0f); // loescht Position_cam aus Viewmatrix
+        glm::mat4 translation = glm::mat4(1.0f);  // erzeugt Einheitsmatrix
+        translation[3] = glm::vec4(-position, 1.0f);
+        m_view = m_view * translation;  // Viewmatrix = View * Translation
+    }
+
+    void Camera::movePosition( glm::vec3 translation ){
+        glm::vec3 pos = getPosition();
+        pos += translation;
+        setPosition(pos);
     }
 
 }

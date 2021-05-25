@@ -21,8 +21,6 @@ namespace vkcv {
 		float m_fov;
 		float m_ratio;
 
-		glm::vec3 m_position;
-		glm::vec3 m_direction;
 		glm::vec3 m_up;
 
     public:
@@ -55,6 +53,16 @@ namespace vkcv {
         float getRatio();
 
         void setNearFar(float near, float far);
+
+        glm::vec3 getFront();
+
+        void setFront( glm::vec3 front );
+
+        glm::vec3 getPosition();
+
+        void setPosition( glm::vec3 position );
+
+        void movePosition( glm::vec3 translation );
 
     };
 

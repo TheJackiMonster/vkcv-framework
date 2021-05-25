@@ -4,7 +4,7 @@ namespace vkcv{
 
     TrackballCamera::TrackballCamera( int width, int height, glm::mat4 projection)
     {
-        m_position = glm::vec3(0.0f, 0.0f, 5.0);
+        setPosition( glm::vec3(0.0f, 0.0f, 5.0) );
         m_center = glm::vec3( 0.0f, 0.0f, 0.0f);
         m_up = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -17,7 +17,7 @@ namespace vkcv{
         m_phi = 0.f;
         m_radius = 1.5;
 
-        m_view = glm::lookAt( m_center + m_position, m_center, m_up);
+        m_view = glm::lookAt( m_center + getPosition(), m_center, m_up);
 
         m_oldX = width/2.f;
         m_oldY = height/2.f;
@@ -28,7 +28,7 @@ namespace vkcv{
 
     TrackballCamera::TrackballCamera(int width, int height)
     {
-        m_position = glm::vec3(0.0f, 0.0f, 5.0);
+        setPosition(    glm::vec3(0.0f, 0.0f, 5.0));
         m_center = glm::vec3( 0.0f, 0.0f, 0.0f);
         m_up = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -41,7 +41,7 @@ namespace vkcv{
         m_phi = 0.f;
         m_radius = 1.5;
 
-        m_view = glm::lookAt( m_center + m_position, m_center, m_up);
+        m_view = glm::lookAt( m_center + getPosition(), m_center, m_up);
 
         m_oldX = width/2.f;
         m_oldY = height/2.f;
