@@ -53,4 +53,6 @@ set(vkcv_sources
         
         ${vkcv_source}/vkcv/Framebuffer.hpp
         ${vkcv_source}/vkcv/Framebuffer.cpp
+
+		${vkcv_include}/vkcv/Event.hpp
 )

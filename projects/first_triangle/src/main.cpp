@@ -2,6 +2,7 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/Window.hpp>
 #include <vkcv/ShaderProgram.hpp>
+#include <GLFW/glfw3.h>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
@@ -14,6 +15,8 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		false
     );
+
+    window.initEvents();
 
 	vkcv::Core core = vkcv::Core::create(
             window,
@@ -103,8 +106,6 @@ int main(int argc, const char** argv) {
 		core.beginFrame();
 	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight);
 	    core.endFrame();
-
-		window.pollEvents();
 	}
 	return 0;
 }

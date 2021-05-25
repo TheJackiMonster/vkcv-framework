@@ -25,6 +25,15 @@ namespace vkcv
     class PipelineManager;
     class BufferManager;
 
+	struct SubmitInfo {
+		QueueType queueType;
+		std::vector<vk::Semaphore> waitSemaphores;
+		std::vector<vk::Semaphore> signalSemaphores;
+	};
+	
+	typedef std::function<void(const vk::CommandBuffer& cmdBuffer)> RecordCommandFunction;
+	typedef std::function<void(void)> FinishCommandFunction;
+
     class Core final
     {
     private:
@@ -34,7 +43,7 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, const Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
+        Core(Context &&context, Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews,
 			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
@@ -55,6 +64,14 @@ namespace vkcv
 		SyncResources m_SyncResources;
 		uint32_t m_currentSwapchainImageIndex;
 		std::vector<vk::Framebuffer> m_TemporaryFramebuffers;
+
+        /**
+         * recreates the swapchain
+         * @param[in] width new window width
+         * @param[in] height new window hight
+         */
+        static void recreateSwapchain(int width, int height);
+
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
@@ -109,7 +126,7 @@ namespace vkcv
              * @param[in] deviceExtensions (optional) Requested device extensions
              * @return New instance of #Context
              */
-        static Core create(const Window &window,
+        static Core create(Window &window,
                            const char *applicationName,
                            uint32_t applicationVersion,
                            std::vector<vk::QueueFlagBits> queueFlags    = {},
@@ -167,5 +184,16 @@ namespace vkcv
 		void endFrame();
 
 		vk::Format getSwapchainImageFormat();
+
+		/**
+		 * Submit a command buffer to any queue of selected type. The recording can be customized by a
+		 * custom record-command-function. If the command submission has finished, an optional finish-function
+		 * will be called.
+		 *
+		 * @param submitInfo Submit information
+		 * @param record Record-command-function
+		 * @param finish Finish-command-function or nullptr
+		 */
+		void submitCommands(const SubmitInfo &submitInfo, const RecordCommandFunction& record, const FinishCommandFunction& finish);
     };
 }
