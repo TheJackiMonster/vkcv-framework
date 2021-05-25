@@ -38,21 +38,23 @@ namespace vkcv {
 			m_manager->unmapBuffer(m_handle_id);
 		}
 		
-		static Buffer<T> create(BufferManager* manager, BufferType type, size_t count) {
-			return Buffer<T>(manager, manager->createBuffer(type, count * sizeof(T)), type, count);
+		static Buffer<T> create(BufferManager* manager, BufferType type, size_t count, BufferMemoryType memoryType) {
+			return Buffer<T>(manager, manager->createBuffer(type, count * sizeof(T), memoryType), type, count, memoryType);
 		}
 
 	private:
-		BufferManager* m_manager;
-		uint64_t m_handle_id;
-		BufferType m_type;
-		size_t m_count;
+		BufferManager* const m_manager;
+		const uint64_t m_handle_id;
+		const BufferType m_type;
+		const size_t m_count;
+		const BufferMemoryType m_memoryType;
 		
-		Buffer<T>(BufferManager* manager, uint64_t id, BufferType type, size_t count) :
+		Buffer<T>(BufferManager* manager, uint64_t id, BufferType type, size_t count, BufferMemoryType memoryType) :
 				m_manager(manager),
 				m_handle_id(id),
 				m_type(type),
-				m_count(count)
+				m_count(count),
+				m_memoryType(memoryType)
 		{}
 		
 	};

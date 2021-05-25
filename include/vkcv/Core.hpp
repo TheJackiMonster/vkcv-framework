@@ -142,11 +142,12 @@ namespace vkcv
             * Creates a #Buffer with data-type T and @p bufferType 
             * @param type Type of Buffer created
             * @param count Count of elements of type T
+            * @param memoryType Type of Buffers memory
             * return Buffer-Object
             */
         template<typename T>
-        Buffer<T> createBuffer(vkcv::BufferType type, size_t count) {
-        	return Buffer<T>::create(m_BufferManager.get(), type, count);
+        Buffer<T> createBuffer(vkcv::BufferType type, size_t count, BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL) {
+        	return Buffer<T>::create(m_BufferManager.get(), type, count, memoryType);
         }
 
 		/**

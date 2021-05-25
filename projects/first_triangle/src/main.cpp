@@ -33,7 +33,7 @@ int main(int argc, const char** argv) {
 		float x, y, z;
 	};
 	
-	auto buffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, 3);
+	auto buffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, 3, vkcv::BufferMemoryType::HOST_VISIBLE);
 	
 	vec3* m = buffer.map();
 	m[0] = { 0, 0, 0 };

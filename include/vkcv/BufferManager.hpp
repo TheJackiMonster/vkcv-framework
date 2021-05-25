@@ -5,7 +5,18 @@
 
 namespace vkcv
 {
-	enum BufferType { VERTEX, UNIFORM, STORAGE };
+	enum BufferType {
+		VERTEX,
+		UNIFORM,
+		STORAGE
+	};
+	
+	enum BufferMemoryType {
+		DEVICE_LOCAL,
+		HOST_VISIBLE
+	};
+	
+	class Core;
 	
 	class BufferManager
 	{
@@ -19,15 +30,12 @@ namespace vkcv
 			void* m_mapped = nullptr;
 		};
 		
-		vk::PhysicalDevice m_physicalDevice;
-		vk::Device m_device;
-		
+		Core* m_core;
 		std::vector<Buffer> m_buffers;
 		
-		BufferManager(vk::Device device, vk::PhysicalDevice physicalDevice) noexcept;
+		BufferManager() noexcept;
 		
 	public:
-		BufferManager() = delete;
 		~BufferManager() noexcept;
 		
 		BufferManager(BufferManager&& other) = delete;
@@ -42,9 +50,10 @@ namespace vkcv
 		 *
 		 * @param type Type of buffer
 		 * @param size Size of buffer in bytes
+		 * @param memoryType Type of buffers memory
 		 * @return New buffer handle id
 		 */
-		uint64_t createBuffer(BufferType type, size_t size);
+		uint64_t createBuffer(BufferType type, size_t size, BufferMemoryType memoryType);
 		
 		/**
 		 * Fills a buffer represented by a given buffer

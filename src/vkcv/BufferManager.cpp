@@ -4,11 +4,12 @@
  */
 
 #include "vkcv/BufferManager.hpp"
+#include "vkcv/Core.hpp"
 
 namespace vkcv {
 	
-	BufferManager::BufferManager(vk::Device device, vk::PhysicalDevice physicalDevice) noexcept :
-		m_device(device), m_physicalDevice(physicalDevice)
+	BufferManager::BufferManager() noexcept :
+		m_core(nullptr), m_buffers()
 	{}
 	
 	BufferManager::~BufferManager() noexcept {
@@ -42,7 +43,7 @@ namespace vkcv {
 		return memoryTypeIndex;
 	}
 	
-	uint64_t BufferManager::createBuffer(BufferType type, size_t size) {
+	uint64_t BufferManager::createBuffer(BufferType type, size_t size, BufferMemoryType memoryType) {
 		vk::BufferCreateFlags createFlags;
 		vk::BufferUsageFlags usageFlags;
 		
@@ -61,19 +62,36 @@ namespace vkcv {
 				break;
 		}
 		
-		vk::Buffer buffer = m_device.createBuffer(
+		const vk::Device& device = m_core->getContext().getDevice();
+		
+		vk::Buffer buffer = device.createBuffer(
 				vk::BufferCreateInfo(createFlags, size, usageFlags)
 		);
 		
-		const vk::MemoryRequirements requirements = m_device.getBufferMemoryRequirements(buffer);
+		const vk::MemoryRequirements requirements = device.getBufferMemoryRequirements(buffer);
+		const vk::PhysicalDevice& physicalDevice = m_core->getContext().getPhysicalDevice();
 		
-		const uint32_t memoryType = searchMemoryType(
-				m_physicalDevice.getMemoryProperties(),
+		vk::MemoryPropertyFlags memoryTypeFlags;
+		
+		switch (memoryType) {
+			case DEVICE_LOCAL:
+				memoryTypeFlags = vk::MemoryPropertyFlagBits::eDeviceLocal;
+				break;
+			case HOST_VISIBLE:
+				memoryTypeFlags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+				break;
+			default:
+				// TODO: maybe an issue
+				break;
+		}
+		
+		const uint32_t memoryTypeIndex = searchMemoryType(
+				physicalDevice.getMemoryProperties(),
 				requirements.memoryTypeBits,
-				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+				memoryTypeFlags
 		);
 		
-		vk::DeviceMemory memory = m_device.allocateMemory(vk::MemoryAllocateInfo(requirements.size, memoryType));
+		vk::DeviceMemory memory = device.allocateMemory(vk::MemoryAllocateInfo(requirements.size, memoryType));
 		
 		const uint64_t id = m_buffers.size();
 		m_buffers.push_back({ buffer, memory, nullptr });
@@ -91,16 +109,18 @@ namespace vkcv {
 			return;
 		}
 		
-		const vk::MemoryRequirements requirements = m_device.getBufferMemoryRequirements(buffer.m_handle);
+		const vk::Device& device = m_core->getContext().getDevice();
+		
+		const vk::MemoryRequirements requirements = device.getBufferMemoryRequirements(buffer.m_handle);
 		
 		if (offset > requirements.size) {
 			return;
 		}
 		
 		const size_t mapped_size = std::min(size, requirements.size - offset);
-		void* mapped = m_device.mapMemory(buffer.m_memory, offset, mapped_size);
+		void* mapped = device.mapMemory(buffer.m_memory, offset, mapped_size);
 		memcpy(mapped, data, mapped_size);
-		m_device.unmapMemory(buffer.m_memory);
+		device.unmapMemory(buffer.m_memory);
 	}
 	
 	void* BufferManager::mapBuffer(uint64_t id, size_t offset, size_t size) {
@@ -114,14 +134,16 @@ namespace vkcv {
 			return nullptr;
 		}
 		
-		const vk::MemoryRequirements requirements = m_device.getBufferMemoryRequirements(buffer.m_handle);
+		const vk::Device& device = m_core->getContext().getDevice();
+		
+		const vk::MemoryRequirements requirements = device.getBufferMemoryRequirements(buffer.m_handle);
 		
 		if (offset > requirements.size) {
 			return nullptr;
 		}
 		
 		const size_t mapped_size = std::min(size, requirements.size - offset);
-		buffer.m_mapped = m_device.mapMemory(buffer.m_memory, offset, mapped_size);
+		buffer.m_mapped = device.mapMemory(buffer.m_memory, offset, mapped_size);
 		return buffer.m_mapped;
 	}
 	
@@ -136,7 +158,9 @@ namespace vkcv {
 			return;
 		}
 		
-		m_device.unmapMemory(buffer.m_memory);
+		const vk::Device& device = m_core->getContext().getDevice();
+		
+		device.unmapMemory(buffer.m_memory);
 		buffer.m_mapped = nullptr;
 	}
 	
@@ -147,12 +171,14 @@ namespace vkcv {
 		
 		auto& buffer = m_buffers[id];
 		
+		const vk::Device& device = m_core->getContext().getDevice();
+		
 		if (buffer.m_memory) {
-			m_device.freeMemory(buffer.m_memory);
+			device.freeMemory(buffer.m_memory);
 		}
 		
 		if (buffer.m_handle) {
-			m_device.destroyBuffer(buffer.m_handle);
+			device.destroyBuffer(buffer.m_handle);
 		}
 	}
 
