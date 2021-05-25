@@ -8,15 +8,22 @@ namespace vkcv {
 
     class Camera {
     protected:
-        glm::mat4 m_view, m_projection;
+		glm::mat4 m_view;
+		glm::mat4 m_projection;
 
-        int m_width, m_height;
+		int m_width;
+		int m_height;
 
-        float m_oldX, m_oldY,
-                m_near, m_far,
-                m_fov, m_ratio;
+		float m_oldX;
+		float m_oldY;
+		float m_near;
+		float m_far;
+		float m_fov;
+		float m_ratio;
 
-        glm::vec3 m_position, m_direction, m_up;
+		glm::vec3 m_position;
+		glm::vec3 m_direction;
+		glm::vec3 m_up;
 
     public:
         Camera();
