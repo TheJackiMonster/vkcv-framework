@@ -59,11 +59,11 @@ namespace vkcv
     vk::DescriptorType DescriptorManager::convertDescriptorTypeFlag(DescriptorType type) {
         switch (type)
         {
-        case vkcv::DescriptorType::UNIFORM_BUFFER:
+        case DescriptorType::UNIFORM_BUFFER:
             return vk::DescriptorType::eUniformBuffer;
-        case vkcv::DescriptorType::SAMPLER:
+        case DescriptorType::SAMPLER:
             return vk::DescriptorType::eSampler;
-        case vkcv::DescriptorType::IMAGE:
+        case DescriptorType::IMAGE:
             return vk::DescriptorType::eSampledImage;
         }
     }
@@ -71,17 +71,17 @@ namespace vkcv
     vk::ShaderStageFlagBits DescriptorManager::convertShaderStageFlag(ShaderStage stage) {
         switch (stage) 
         {
-        case vkcv::ShaderStage::VERTEX:
+        case ShaderStage::VERTEX:
             return vk::ShaderStageFlagBits::eVertex;
-        case vkcv::ShaderStage::FRAGMENT:
+        case ShaderStage::FRAGMENT:
             return vk::ShaderStageFlagBits::eFragment;
-        case vkcv::ShaderStage::TESS_CONTROL:
+        case ShaderStage::TESS_CONTROL:
             return vk::ShaderStageFlagBits::eTessellationControl;
-        case vkcv::ShaderStage::TESS_EVAL:
+        case ShaderStage::TESS_EVAL:
             return vk::ShaderStageFlagBits::eTessellationControl;
-        case vkcv::ShaderStage::GEOMETRY:
+        case ShaderStage::GEOMETRY:
             return vk::ShaderStageFlagBits::eGeometry;
-        case vkcv::ShaderStage::COMPUTE:
+        case ShaderStage::COMPUTE:
             return vk::ShaderStageFlagBits::eCompute;
         }
     }
