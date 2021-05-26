@@ -57,6 +57,6 @@ namespace vkcv
 		* @param[in] vkcv flag of the ShaderStage (see ShaderProgram.hpp)
 		* @return vk flag of the ShaderStage
 		*/
-		vk::ShaderStageFlagBits DescriptorManager::convertShaderStageFlag(ShaderStage stage);
+		vk::ShaderStageFlagBits convertShaderStageFlag(ShaderStage stage);
 	};
 }
