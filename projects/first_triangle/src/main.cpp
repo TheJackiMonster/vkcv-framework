@@ -2,6 +2,7 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/Window.hpp>
 #include <vkcv/ShaderProgram.hpp>
+#include <GLFW/glfw3.h>
 #include <vkcv/DescriptorConfig.hpp>
 
 int main(int argc, const char** argv) {
@@ -16,11 +17,13 @@ int main(int argc, const char** argv) {
 		false
     );
 
+    window.initEvents();
+
 	vkcv::Core core = vkcv::Core::create(
             window,
             applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
-            {vk::QueueFlagBits::eGraphics},
+            {vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
 		{},
 		{"VK_KHR_swapchain"}
 	);
@@ -34,12 +37,22 @@ int main(int argc, const char** argv) {
 		float x, y, z;
 	};
 	
-	auto buffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, 3);
+	const size_t n = 5027;
 	
-	vec3* m = buffer.map();
+	auto buffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, n, vkcv::BufferMemoryType::DEVICE_LOCAL);
+	vec3 vec_data [n];
+	
+	for (size_t i = 0; i < n; i++) {
+		vec_data[i] = { 42, static_cast<float>(i), 7 };
+	}
+	
+	buffer.fill(vec_data);
+	
+	/*vec3* m = buffer.map();
 	m[0] = { 0, 0, 0 };
-	m[0] = { 0, 0, 0 };
-	m[0] = { 0, 0, 0 };
+	m[1] = { 0, 0, 0 };
+	m[2] = { 0, 0, 0 };
+	buffer.unmap();*/
 
 	std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
 
@@ -124,8 +137,6 @@ int main(int argc, const char** argv) {
 		core.beginFrame();
 	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight);
 	    core.endFrame();
-
-		window.pollEvents();
 	}
 	return 0;
 }

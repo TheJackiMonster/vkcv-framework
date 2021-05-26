@@ -7,6 +7,7 @@
 
 #define NOMINMAX
 #include <algorithm>
+#include "Event.hpp"
 
 struct GLFWwindow;
 
@@ -22,6 +23,32 @@ namespace vkcv {
          * @param GLFWwindow of the class
          */
         explicit Window(GLFWwindow *window);
+
+        /**
+         * mouse callback for moving the mouse on the screen
+         * @param[in] window The window that received the event.
+         * @param[in] xpos The new cursor x-coordinate, relative to the left edge of the content area.
+         * @param[in] ypos The new cursor y-coordinate, relative to the top edge of the content area.
+         */
+        static void onMouseMoveEvent(GLFWwindow *window, double x, double y);
+
+        /**
+         * resize callback for the resize option of the window
+         * @param[in] window The window that was resized.
+         * @param[in] width The new width, in screen coordinates, of the window.
+         * @param[in] height The new height, in screen coordinates, of the window.
+         */
+        static void onResize(GLFWwindow *callbackWindow, int width, int height);
+
+        /**
+         * key callback for the pressed key
+         * @param[in] window The window that received the event.
+         * @param[in] key The [keyboard key](@ref keys) that was pressed or released.
+         * @param[in] scancode The system-specific scancode of the key.
+         * @param[in] action `GLFW_PRESS`, `GLFW_RELEASE` or `GLFW_REPEAT`.
+         * @param[in] mods Bit field describing which [modifier keys](@ref mods) were held down.
+         */
+        static void onKeyEvent(GLFWwindow *callbackWindow, int key, int scancode, int action, int mods);
 
     public:
         /**
@@ -42,9 +69,21 @@ namespace vkcv {
         bool isWindowOpen() const;
 
         /**
+         * binds windowEvents to lambda events
+         */
+        void initEvents();
+
+        /**
          * polls all events on the GLFWwindow
          */
         static void pollEvents();
+
+        /**
+         * basic events of the window
+         */
+        event< double, double > e_mouseMove;
+        event< int, int > e_resize;
+        event< int, int, int, int > e_key;
 
         /**
          * returns the current window
