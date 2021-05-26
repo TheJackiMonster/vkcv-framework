@@ -9,6 +9,7 @@ namespace vkcv
     enum class DescriptorType
     {
         UNIFORM_BUFFER,
+        STORAGE_BUFFER,
         SAMPLER,
         IMAGE
     };    
@@ -23,15 +24,12 @@ namespace vkcv
     struct DescriptorBinding
     {
         DescriptorBinding() = delete;
-
         DescriptorBinding(
-            uint32_t p_bindingID,
-            DescriptorType p_descriptorType,
-            uint32_t p_descriptorCount,
-            ShaderStage p_shaderStage
+            DescriptorType descriptorType,
+            uint32_t descriptorCount,
+            ShaderStage shaderStage
         ) noexcept;
 
-        uint32_t bindingID;
         DescriptorType descriptorType;
         uint32_t descriptorCount;
         ShaderStage shaderStage;
@@ -45,12 +43,8 @@ namespace vkcv
     struct DescriptorSet
     {
         DescriptorSet() = delete;
-
-        DescriptorSet(
-            std::vector<DescriptorBinding> p_bindings,
-            uint32_t p_setCount) noexcept;
+        explicit DescriptorSet(std::vector<DescriptorBinding> bindings) noexcept;
 
         std::vector<DescriptorBinding> bindings;
-        uint32_t setCount;
     };
 }

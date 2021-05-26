@@ -61,7 +61,9 @@ namespace vkcv
 
         std::unique_ptr<PassManager> m_PassManager;
         std::unique_ptr<PipelineManager> m_PipelineManager;
+        std::unique_ptr<DescriptorManager> m_DescriptorManager;
         std::unique_ptr<BufferManager> m_BufferManager;
+
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
 		uint32_t m_currentSwapchainImageIndex;
@@ -173,6 +175,7 @@ namespace vkcv
          *   @param setDescriptions
          *   @return
          */
+        [[nodiscard]]
         ResourcesHandle createResourceDescription(const std::vector<DescriptorSet> &descriptorSets);
 
 		/**

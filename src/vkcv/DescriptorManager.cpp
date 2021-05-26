@@ -1,88 +1,124 @@
 #include "DescriptorManager.hpp"
-#include <vkcv/ShaderProgram.hpp>
-
 
 namespace vkcv
 {
+    DescriptorManager::ResourceDescription::ResourceDescription(std::vector<vk::DescriptorSet> sets,
+                                                                std::vector<vk::DescriptorSetLayout> layouts) noexcept :
+    descriptorSets{std::move(sets)},
+    descriptorSetLayouts{std::move(layouts)}
+    {}
     DescriptorManager::DescriptorManager(vk::Device device) noexcept:
-        m_Device{ device }, m_NextDescriptorSetID{ 1 }
+        m_Device{ device }, m_NextResourceDescriptionID{ 1 }
     {
-        m_DescriptorTypes = { DescriptorType::UNIFORM_BUFFER, DescriptorType::SAMPLER, DescriptorType::IMAGE };
-        uint32_t sizesPerType = 1000;
-        uint32_t maxSetsPerPool = 1000;
+        /**
+         * Allocate a set size for the initial pool, namely 1000 units of each descriptor type below.
+         */
+        const std::vector<vk::DescriptorPoolSize> poolSizes = {vk::DescriptorPoolSize(vk::DescriptorType::eSampler, 1000),
+                                                    vk::DescriptorPoolSize(vk::DescriptorType::eSampledImage, 1000),
+                                                    vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
+                                                    vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000)};
 
-        std::vector<vk::DescriptorPoolSize> descriptorPoolSizes;
-        for (int i = 0; i < m_DescriptorTypes.size(); i++) {
-            vk::DescriptorType type = convertDescriptorTypeFlag(m_DescriptorTypes[i]);
-            vk::DescriptorPoolSize poolSize(type, sizesPerType);
-            descriptorPoolSizes.push_back(poolSize);
-        }
-        vk::DescriptorPoolCreateInfo poolInfo({}, maxSetsPerPool, descriptorPoolSizes);
-        m_Pool = m_Device.createDescriptorPool(poolInfo, nullptr);
+        vk::DescriptorPoolCreateInfo poolInfo({},
+                                              1000,
+                                              static_cast<uint32_t>(poolSizes.size()),
+                                              poolSizes.data());
+
+        if(m_Device.createDescriptorPool(&poolInfo, nullptr, &m_Pool) != vk::Result::eSuccess)
+        {
+            std::cout << "FAILED TO ALLOCATED DESCRIPTOR POOL." << std::endl;
+            m_Pool = nullptr;
+        };
     }
 
-    ResourcesHandle DescriptorManager::createResourceDescription(const std::vector<DescriptorSet> &p_descriptorSets) 
+    DescriptorManager::~DescriptorManager() noexcept
     {
-        ResourceDescription resource{};
+        for(const auto &resource : m_ResourceDescriptions)
+        {
+            for(const auto &layout : resource.descriptorSetLayouts)
+                m_Device.destroyDescriptorSetLayout(layout);
+        }
+        m_Device.destroy(m_Pool);
+    }
 
-        for (int i = 0; i < p_descriptorSets.size(); i++) {
-            DescriptorSet set = p_descriptorSets[i];
-            std::vector<vk::DescriptorSetLayoutBinding> setBindings;
-            for (int j = 0; j < set.bindings.size(); j++) {
-                //creates each binding of the set
-                DescriptorBinding binding = set.bindings[j];
-                vk::DescriptorType type = convertDescriptorTypeFlag(binding.descriptorType);
-                vk::ShaderStageFlagBits stage = convertShaderStageFlag(binding.shaderStage);
-                vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding(binding.bindingID, type, binding.descriptorCount, stage);
+    ResourcesHandle DescriptorManager::createResourceDescription(const std::vector<DescriptorSet> &descriptorSets)
+    {
+        std::vector<vk::DescriptorSet> vk_sets;
+        std::vector<vk::DescriptorSetLayout> vk_setLayouts;
+
+        for (const auto &set : descriptorSets) {
+            std::vector<vk::DescriptorSetLayoutBinding> setBindings = {};
+
+            //create each set's binding
+            for (uint32_t j = 0; j < set.bindings.size(); j++) {
+                vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding(
+                        j,
+                        convertDescriptorTypeFlag(set.bindings[j].descriptorType),
+                        set.bindings[j].descriptorCount,
+                        convertShaderStageFlag(set.bindings[j].shaderStage));
                 setBindings.push_back(descriptorSetLayoutBinding);
             }
-            //creates the descriptor set layouts
-            vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutInfo({}, setBindings);
-            vk::DescriptorSetLayout allocLayout = m_Device.createDescriptorSetLayout(descriptorSetLayoutInfo, nullptr);
-            std::vector<vk::DescriptorSetLayout> allocLayouts(set.setCount, allocLayout);
-            //binds the layout to the pool
-            vk::DescriptorSetAllocateInfo allocInfo(m_Pool, allocLayout);
 
-            //creates and allocates the set(s) based on the layout
-            vk::DescriptorSet allocSet;
-            std::vector<vk::DescriptorSet> allocSets(set.setCount, allocSet);
-            m_Device.allocateDescriptorSets(&allocInfo, allocSets.data());
-
-            //inserts the descriptor sets and layouts into the resources (also considers copies of the same sets)
-            resource.descriptorSetLayouts.insert(resource.descriptorSetLayouts.begin(), allocLayouts.begin(), allocLayouts.end());
-            resource.descriptorSets.insert(resource.descriptorSets.end(), allocSets.begin(), allocSets.end());
+            //create the descriptor set's layout from the bindings gathered above
+            vk::DescriptorSetLayoutCreateInfo layoutInfo({}, setBindings);
+            vk::DescriptorSetLayout layout = nullptr;
+            if(m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &layout) != vk::Result::eSuccess)
+            {
+                std::cout << "FAILED TO CREATE DESCRIPTOR SET LAYOUT" << std::endl;
+                return ResourcesHandle{0};
+            };
+            vk_setLayouts.push_back(layout);
         }
-        m_ResourceDescriptions.push_back(resource);
-        return ResourcesHandle{m_NextDescriptorSetID++};
+        //create and allocate the set(s) based on the layouts that have been gathered above
+        vk_sets.resize(vk_setLayouts.size());
+        vk::DescriptorSetAllocateInfo allocInfo(m_Pool, vk_sets.size(), vk_setLayouts.data());
+        auto result = m_Device.allocateDescriptorSets(&allocInfo, vk_sets.data());
+        if(result != vk::Result::eSuccess)
+        {
+            std::cout << "FAILED TO ALLOCATE DESCRIPTOR SET" << std::endl;
+            std::cout << vk::to_string(result) << std::endl;
+            for(const auto &layout : vk_setLayouts)
+                m_Device.destroy(layout);
+
+            return ResourcesHandle{0};
+        };
+
+        m_ResourceDescriptions.emplace_back(vk_sets, vk_setLayouts);
+        return ResourcesHandle{m_NextResourceDescriptionID++};
     }
 
     vk::DescriptorType DescriptorManager::convertDescriptorTypeFlag(DescriptorType type) {
         switch (type)
         {
-        case DescriptorType::UNIFORM_BUFFER:
-            return vk::DescriptorType::eUniformBuffer;
-        case DescriptorType::SAMPLER:
-            return vk::DescriptorType::eSampler;
-        case DescriptorType::IMAGE:
-            return vk::DescriptorType::eSampledImage;
+            case DescriptorType::UNIFORM_BUFFER:
+                return vk::DescriptorType::eUniformBuffer;
+            case DescriptorType::STORAGE_BUFFER:
+                return vk::DescriptorType::eStorageBuffer;
+            case DescriptorType::SAMPLER:
+                return vk::DescriptorType::eSampler;
+            case DescriptorType::IMAGE:
+                return vk::DescriptorType::eSampledImage;
+            default:
+                return vk::DescriptorType::eUniformBuffer;
         }
     }
 
     vk::ShaderStageFlagBits DescriptorManager::convertShaderStageFlag(ShaderStage stage) {
         switch (stage) 
         {
-        case ShaderStage::VERTEX:
-            return vk::ShaderStageFlagBits::eVertex;
-        case ShaderStage::FRAGMENT:
-            return vk::ShaderStageFlagBits::eFragment;
-        case ShaderStage::TESS_CONTROL:
-            return vk::ShaderStageFlagBits::eTessellationControl;
-        case ShaderStage::TESS_EVAL:
-            return vk::ShaderStageFlagBits::eTessellationControl;
-        case ShaderStage::GEOMETRY:
-            return vk::ShaderStageFlagBits::eGeometry;
-        case ShaderStage::COMPUTE:
-            return vk::ShaderStageFlagBits::eCompute;
+            case ShaderStage::VERTEX:
+                return vk::ShaderStageFlagBits::eVertex;
+            case ShaderStage::FRAGMENT:
+                return vk::ShaderStageFlagBits::eFragment;
+            case ShaderStage::TESS_CONTROL:
+                return vk::ShaderStageFlagBits::eTessellationControl;
+            case ShaderStage::TESS_EVAL:
+                return vk::ShaderStageFlagBits::eTessellationEvaluation;
+            case ShaderStage::GEOMETRY:
+                return vk::ShaderStageFlagBits::eGeometry;
+            case ShaderStage::COMPUTE:
+                return vk::ShaderStageFlagBits::eCompute;
+            default:
+                return vk::ShaderStageFlagBits::eAll;
         }
     }
 

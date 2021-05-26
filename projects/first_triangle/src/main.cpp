@@ -95,26 +95,23 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-//---------CREATION OF RESOURCES/DESCRIPTORS------------------
 	//just an example
-	//creates 3 descriptor sets with one descriptor each
+	//creates 20 descriptor sets, each containing bindings for 50 uniform buffers, images, and samplers
 	std::vector<vkcv::DescriptorSet> sets;
-	vkcv::DescriptorType typeA = vkcv::DescriptorType::UNIFORM_BUFFER;
-	vkcv::DescriptorType typeB = vkcv::DescriptorType::IMAGE;
-	vkcv::DescriptorType typeC = vkcv::DescriptorType::SAMPLER;
-	std::vector<vkcv::DescriptorType> types = { typeA, typeB, typeC };
-	for (uint32_t i = 0; i < types.size(); i++)
-	{
-		vkcv::DescriptorBinding bind(i, types[i], static_cast<uint32_t>(1), vkcv::ShaderStage::VERTEX);
 
-		std::vector<vkcv::DescriptorBinding> bindings = { bind };
-		vkcv::DescriptorSet set(bindings, static_cast<uint32_t>(1));
+	for (uint32_t i = 0; i < 20; i++)
+	{
+		vkcv::DescriptorBinding uniformBufBinding(vkcv::DescriptorType::UNIFORM_BUFFER, 50, vkcv::ShaderStage::VERTEX);
+        vkcv::DescriptorBinding storageBufBinding(vkcv::DescriptorType::STORAGE_BUFFER, 50, vkcv::ShaderStage::VERTEX);
+        vkcv::DescriptorBinding imageBinding(vkcv::DescriptorType::IMAGE, 50, vkcv::ShaderStage::VERTEX);
+        vkcv::DescriptorBinding samplerBinding(vkcv::DescriptorType::SAMPLER, 50, vkcv::ShaderStage::VERTEX);
+
+        vkcv::DescriptorSet set({uniformBufBinding, storageBufBinding, imageBinding, samplerBinding});
 
 		sets.push_back(set);
+        auto resourceHandle = core.createResourceDescription(sets);
+        std::cout << "Resource " << resourceHandle.id << " created." << std::endl;
 	}
-	core.createResourceDescription(sets);
-
-//------------END CREATION OF RESOURCES/DESCRIPTORS------------------
 
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);

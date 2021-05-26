@@ -93,6 +93,7 @@ namespace vkcv
             m_swapchainImageViews(imageViews),
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
             m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
+            m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
 			m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
             m_CommandResources(commandResources),
             m_SyncResources(syncResources)
@@ -253,13 +254,8 @@ namespace vkcv
 		}
 	}
 
-
     ResourcesHandle Core::createResourceDescription(const std::vector<DescriptorSet> &descriptorSets)
     {
-        // TODO:
-        //  call DescriptorManager's createResourceDescription
-        //  let it do the actual work! No vulkan stuff here.
-		DescriptorManager descriptorManager = DescriptorManager(m_Context.getDevice());
-        return descriptorManager.createResourceDescription(descriptorSets);
+        return m_DescriptorManager->createResourceDescription(descriptorSets);
     }
 }

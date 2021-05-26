@@ -1,25 +1,20 @@
 #include "vkcv/DescriptorConfig.hpp"
 
+#include <utility>
+
 namespace vkcv {
 
     DescriptorBinding::DescriptorBinding(
-        uint32_t p_bindingID,
-        DescriptorType p_descriptorType,
-        uint32_t p_descriptorCount,
-        ShaderStage p_shaderStage
+        DescriptorType descriptorType,
+        uint32_t descriptorCount,
+        ShaderStage shaderStage
     ) noexcept :
-        bindingID{ p_bindingID },
-        descriptorType{ p_descriptorType },
-        descriptorCount{ p_descriptorCount },
-        shaderStage{ p_shaderStage }
+        descriptorType{descriptorType},
+        descriptorCount{descriptorCount},
+        shaderStage{shaderStage}
     {};
 
-    DescriptorSet::DescriptorSet(
-        std::vector<DescriptorBinding> p_bindings,
-        uint32_t p_setCount
-    ) noexcept :
-        bindings{ p_bindings },
-        setCount{ p_setCount }
+    DescriptorSet::DescriptorSet(std::vector<DescriptorBinding> bindings) noexcept :
+        bindings{std::move(bindings)}
     {};
-
 }
