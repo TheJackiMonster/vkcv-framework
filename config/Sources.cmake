@@ -55,4 +55,10 @@ set(vkcv_sources
         ${vkcv_source}/vkcv/Framebuffer.cpp
 
 		${vkcv_include}/vkcv/Event.hpp
+
+		${vkcv_source}/vkcv/DescriptorManager.hpp
+		${vkcv_source}/vkcv/DescriptorManager.cpp
+
+		${vkcv_include}/vkcv/DescriptorConfig.hpp
+		${vkcv_source}/vkcv/DescriptorConfig.cpp
 )

@@ -17,12 +17,14 @@
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "Result.hpp"
+#include "vkcv/DescriptorConfig.hpp"
 
 namespace vkcv
 {
     // forward declarations
     class PassManager;
     class PipelineManager;
+    class DescriptorManager;
     class BufferManager;
 
 	struct SubmitInfo {
@@ -59,7 +61,9 @@ namespace vkcv
 
         std::unique_ptr<PassManager> m_PassManager;
         std::unique_ptr<PipelineManager> m_PipelineManager;
+        std::unique_ptr<DescriptorManager> m_DescriptorManager;
         std::unique_ptr<BufferManager> m_BufferManager;
+
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
 		uint32_t m_currentSwapchainImageIndex;
@@ -166,6 +170,13 @@ namespace vkcv
         Buffer<T> createBuffer(vkcv::BufferType type, size_t count, BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL) {
         	return Buffer<T>::create(m_BufferManager.get(), type, count, memoryType);
         }
+
+        /** TODO:
+         *   @param setDescriptions
+         *   @return
+         */
+        [[nodiscard]]
+        ResourcesHandle createResourceDescription(const std::vector<DescriptorSet> &descriptorSets);
 
 		/**
 		 * @brief start recording command buffers and increment frame index
