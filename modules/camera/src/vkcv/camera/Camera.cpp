@@ -90,12 +90,10 @@ namespace vkcv {
     }
 
     void Camera::setPosition( glm::vec3 position ){
-        // Syntax: Mat[column][row]
-        // project new position into camera coordinates
-        m_view[3] = glm::vec4(0.0f,0.0f,0.0f,1.0f); // loescht Position_cam aus Viewmatrix
-        glm::mat4 translation = glm::mat4(1.0f);  // erzeugt Einheitsmatrix
+        m_view[3] = glm::vec4(0.0f,0.0f,0.0f,1.0f);
+        glm::mat4 translation = glm::mat4(1.0f);
         translation[3] = glm::vec4(-position, 1.0f);
-        m_view = m_view * translation;  // Viewmatrix = View * Translation
+        m_view = m_view * translation;
     }
 
     void Camera::movePosition( glm::vec3 translation ){

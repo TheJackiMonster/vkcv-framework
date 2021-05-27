@@ -14,7 +14,7 @@ namespace vkcv{
         m_cameraSpeed = 0.05f;
         m_roll = 0.0;
         m_pitch = 0.0;
-        m_yaw = 90.0;
+        m_yaw = 180.0;
         m_lastX = width/2.0;
         m_lastY = height/2.0;
         bindCamera();
@@ -63,12 +63,13 @@ namespace vkcv{
         }
 
         glm::vec3 direction;
-        direction.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        direction.x = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
         direction.y = sin(glm::radians(m_pitch));
-        direction.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        direction.z = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
 
-        m_camera.setFront( glm::normalize(direction) );
-        m_camera.lookAt(m_camera.getPosition(), m_camera.getPosition() + m_camera.getFront(), m_up);
+        glm::vec3 front = glm::normalize(direction);
+
+        m_camera.lookAt(m_camera.getPosition(), m_camera.getPosition() + front, m_up);
     }
 
     void CameraManager::scrollCallback(double offsetX, double offsetY) {
@@ -85,29 +86,24 @@ namespace vkcv{
     }
 
     void CameraManager::keyCallback(int key, int scancode, int action, int mods) {
-
-        std::cout << m_camera.getFront().x << " " << m_camera.getFront().y << " " <<m_camera.getFront().z << std::endl;
+        glm::vec3 newPos;
 
         switch (key) {
             case GLFW_KEY_W:
-                //std::cout << "Move forward" << std::endl;
-                m_camera.movePosition(m_cameraSpeed * m_camera.getFront());
-                m_camera.lookAt(m_camera.getPosition(), m_camera.getPosition() + m_camera.getFront(), m_up);
+                newPos = m_camera.getPosition() + m_cameraSpeed * m_camera.getFront();
+                m_camera.lookAt(newPos, newPos + m_camera.getFront(), m_up);
                 break;
             case GLFW_KEY_S:
-                //std::cout << "Move left" << std::endl;
-                m_camera.movePosition(-m_cameraSpeed * m_camera.getFront());
-                m_camera.lookAt(m_camera.getPosition(), m_camera.getPosition() + m_camera.getFront(), m_up);
+                newPos = m_camera.getPosition() -m_cameraSpeed * m_camera.getFront();
+                m_camera.lookAt(newPos, newPos + m_camera.getFront(), m_up);
                 break;
             case GLFW_KEY_A:
-                //std::cout << "Move backward" << std::endl;
-                m_camera.movePosition(-glm::normalize(glm::cross(m_camera.getFront(), m_up)) * m_cameraSpeed);
-                m_camera.lookAt(m_camera.getPosition(), m_camera.getPosition() + m_camera.getFront(), m_up);
+                newPos = m_camera.getPosition() -glm::normalize(glm::cross(m_camera.getFront(), m_up)) * m_cameraSpeed;
+                m_camera.lookAt(newPos, newPos + m_camera.getFront(), m_up);
                 break;
             case GLFW_KEY_D:
-                //std::cout << "Move right" << std::endl;
-                m_camera.movePosition(glm::normalize(glm::cross(m_camera.getFront(), m_up)) * m_cameraSpeed);
-                m_camera.lookAt(m_camera.getPosition(), m_camera.getPosition() + m_camera.getFront(), m_up);
+                newPos = m_camera.getPosition() + glm::normalize(glm::cross(m_camera.getFront(), m_up)) * m_cameraSpeed;
+                m_camera.lookAt(newPos, newPos + m_camera.getFront(), m_up);
                 break;
             case GLFW_KEY_ESCAPE:
                 glfwSetWindowShouldClose(m_window.getWindow(), 1);
