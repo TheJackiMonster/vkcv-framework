@@ -1,6 +1,8 @@
 
 #include "vkcv/asset/asset_loader.hpp"
 #include <iostream>
+#include <string.h>	// memcpy(3)
+#include <stdlib.h>	// calloc(3)
 #include <fx/gltf.h>
 
 namespace vkcv::asset {
@@ -141,15 +143,19 @@ namespace vkcv::asset {
 		// proven to work
 
         // indexBuffer
-        fx::gltf::Accessor  & indexAccessor = object.accessors[objectPrimitive.indices];
-        fx::gltf::BufferView  & indexBufferView = object.bufferViews[indexAccessor.bufferView];
-        fx::gltf::Buffer  & indexBuffer = object.buffers[indexBufferView.buffer];
-        void* indexBufferData = &indexBuffer.data;
+        const fx::gltf::Accessor &indexAccessor = object.accessors[objectPrimitive.indices];
+        const fx::gltf::BufferView &indexBufferView = object.bufferViews[indexAccessor.bufferView];
+        const fx::gltf::Buffer &indexBuffer = object.buffers[indexBufferView.buffer];
+        void *indexBufferData = calloc(1, indexBuffer.byteLength);
+	if (memcpy(indexBufferData, indexBuffer.data.data(), indexBuffer.byteLength) == NULL) {
+		fprintf(stderr, "ERROR copying buffer data.\n");
+		return 0;
+	}
 
         // vertexBuffer
         fx::gltf::BufferView& vertexBufferView = object.bufferViews[posAccessor.bufferView];
         fx::gltf::Buffer& vertexBuffer = object.buffers[vertexBufferView.buffer];
-        void* vertexBufferData;
+        void *vertexBufferData;
 
         // check whether only one buffer is used
         if (indexBufferView.buffer == vertexBufferView.buffer){
@@ -157,11 +163,16 @@ namespace vkcv::asset {
             vertexBufferData = indexBufferData;
         } else {
             std::cout << "No luck, different Buffers :(" << std::endl;
-            vertexBufferData = &vertexBuffer.data;
+	    vertexBufferData = calloc(1, vertexBuffer.byteLength);
+	    if (memcpy(vertexBufferData, vertexBuffer.data.data(), vertexBuffer.byteLength) == NULL) {
+		    fprintf(stderr, "ERROR copying buffer data.\n");
+		    return 0;
+	    }
         }
 
         // fill vertex groups vector
-        vertexGroups.push_back(VertexGroup{});
+	const size_t numVertexGroups = 1;	// TODO get value from fx-gltf
+	vertexGroups.resize(numVertexGroups);
         vertexGroups.back() = {
                 static_cast<PrimitiveMode>(objectPrimitive.mode), // mode
                 object.accessors[objectPrimitive.indices].count, // num indices
