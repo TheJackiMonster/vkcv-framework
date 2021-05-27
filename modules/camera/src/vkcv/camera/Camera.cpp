@@ -3,12 +3,24 @@
 
 namespace vkcv {
 
-    Camera::Camera() = default;
+    Camera::Camera(){
+        m_up = glm::vec3(0.0f, -1.0f, 0.0f);
+        m_position = glm::vec3(0.0f, 0.0f, 0.0f);
+        m_cameraSpeed = 0.05f;
+        // front
+        m_roll = 0.0;
+        m_pitch = 0.0;
+        m_yaw = 180.0;
+    }
 
     Camera::~Camera() = default;
 
     void Camera::lookAt(glm::vec3 position, glm::vec3 center, glm::vec3 up){
         m_view = glm::lookAt(position, center, up);
+    }
+
+    glm::mat4 Camera::updateView(){
+        return m_view = glm::lookAt(m_position, m_position + getFront() , m_up);
     }
 
     void Camera::getView(glm::vec3 &x, glm::vec3 &y, glm::vec3 &z, glm::vec3 &pos){
@@ -28,11 +40,8 @@ namespace vkcv {
 
 
     const glm::mat4& Camera::getView() {
+        updateView();
         return m_view;
-    }
-
-    void Camera::setView( const glm::mat4 view ) {
-        m_view = view;
     }
 
     const glm::mat4& Camera::getProjection() {
@@ -76,7 +85,11 @@ namespace vkcv {
     }
 
     glm::vec3 Camera::getFront(){
-        return glm::vec3( m_view[2].x,m_view[2].y,-m_view[2].z);
+        glm::vec3 direction;
+        direction.x = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        direction.y = sin(glm::radians(m_pitch));
+        direction.z = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        return glm::normalize(direction);
     }
 
     glm::vec3 Camera::getPosition(){
@@ -90,5 +103,54 @@ namespace vkcv {
         glm::mat4 translation = glm::mat4(1.0f);
         translation[3] = glm::vec4(-position, 1.0f);
         m_view = m_view * translation;
+    }
+
+    void Camera::setUp(const glm::vec3 &up) {
+        m_up = up;
+    }
+
+    float Camera::getPitch() const {
+        return m_pitch;
+    }
+
+    void Camera::setPitch(float pitch) {
+        if (pitch > 89.0f) {
+            pitch = 89.0f;
+        }
+        if (pitch < -89.0f) {
+            pitch = -89.0f;
+        }
+        m_pitch = pitch;
+    }
+
+    float Camera::getYaw() const {
+        return m_yaw;
+    }
+
+    void Camera::setYaw(float yaw) {
+        m_yaw = yaw;
+    }
+
+    void Camera::panView(double xOffset, double yOffset) {
+        m_yaw += xOffset;
+        m_pitch += yOffset;
+    }
+
+    void Camera::moveForward(){
+        m_position +=  m_cameraSpeed * getFront();
+
+    }
+
+    void Camera::moveBackward(){
+        m_position -= m_cameraSpeed * getFront();
+    }
+
+    void Camera::moveLeft(){
+
+        m_position -= glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed;
+    }
+
+    void Camera::moveRight(){
+        m_position += glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed;
     }
 }

@@ -14,17 +14,12 @@ namespace vkcv{
         std::function<void(double, double)> m_mouseScrollHandle;
         std::function<void(int, int, int)> m_mouseButtonHandle;
 
+        int i;
         Window &m_window;
         Camera m_camera;
         float m_width;
         float m_height;
 //        std::shared_ptr<vkcv::TrackballCamera> m_trackball;
-        glm::vec3 m_up;
-        float m_radius;
-        float m_cameraSpeed;
-        float m_roll;
-        float m_pitch;
-        float m_yaw;
 
         bool m_roationActive = false;
         double m_lastX ;
@@ -37,7 +32,7 @@ namespace vkcv{
         void mouseButtonCallback(int button, int action, int mods);
 
     public:
-        CameraManager(Window &window, float width, float height, glm::vec3 up = glm::vec3(0.0f,1.0f,0.0f), glm::vec3 position = glm::vec3(0.0f,0.0f,0.0f) , glm::vec3 front = glm::vec3(0.0f,0.0f,-1.0f));
+        CameraManager(Window &window, float width, float height, glm::vec3 up = glm::vec3(0.0f,-1.0f,0.0f), glm::vec3 position = glm::vec3(0.0f,0.0f,0.0f));
 
         Camera getCamera();
     };

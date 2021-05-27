@@ -3,18 +3,12 @@
 
 namespace vkcv{
 
-    CameraManager::CameraManager(Window &window, float width, float height, glm::vec3 up, glm::vec3 position, glm::vec3 front):
-    m_window(window), m_width(width), m_height(height), m_up(up)
+    CameraManager::CameraManager(Window &window, float width, float height, glm::vec3 up, glm::vec3 position):
+    m_window(window), m_width(width), m_height(height)
     {
-        // initialize viewMatrix
-        m_camera.lookAt(position, position + front, m_up);
+        m_camera.setUp(up);
+        m_camera.setPosition(position);
         m_camera.setPerspective( glm::radians(60.0f), m_width / m_height, 0.1f, 10.f);
-        m_up = glm::vec3(0.0f, 1.0f, 0.0f);
-        m_radius = 10.0f;
-        m_cameraSpeed = 0.05f;
-        m_roll = 0.0;
-        m_pitch = 0.0;
-        m_yaw = 180.0;
         m_lastX = width/2.0;
         m_lastY = height/2.0;
         bindCamera();
@@ -52,24 +46,7 @@ namespace vkcv{
         xoffset *= sensitivity;
         yoffset *= sensitivity;
 
-        m_yaw += xoffset;
-        m_pitch += yoffset;
-
-        if (m_pitch > 89.0f) {
-            m_pitch = 89.0f;
-        }
-        if (m_pitch < -89.0f) {
-            m_pitch = -89.0f;
-        }
-
-        glm::vec3 direction;
-        direction.x = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-        direction.y = sin(glm::radians(m_pitch));
-        direction.z = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-
-        glm::vec3 front = glm::normalize(direction);
-
-        m_camera.lookAt(m_camera.getPosition(), m_camera.getPosition() + front, m_up);
+        m_camera.panView( xoffset , yoffset );
     }
 
     void CameraManager::scrollCallback(double offsetX, double offsetY) {
@@ -86,24 +63,19 @@ namespace vkcv{
     }
 
     void CameraManager::keyCallback(int key, int scancode, int action, int mods) {
-        glm::vec3 newPos;
 
         switch (key) {
             case GLFW_KEY_W:
-                newPos = m_camera.getPosition() + m_cameraSpeed * m_camera.getFront();
-                m_camera.lookAt(newPos, newPos + m_camera.getFront(), m_up);
+                m_camera.moveForward();
                 break;
             case GLFW_KEY_S:
-                newPos = m_camera.getPosition() -m_cameraSpeed * m_camera.getFront();
-                m_camera.lookAt(newPos, newPos + m_camera.getFront(), m_up);
+                m_camera.moveBackward();
                 break;
             case GLFW_KEY_A:
-                newPos = m_camera.getPosition() -glm::normalize(glm::cross(m_camera.getFront(), m_up)) * m_cameraSpeed;
-                m_camera.lookAt(newPos, newPos + m_camera.getFront(), m_up);
+                m_camera.moveLeft();
                 break;
             case GLFW_KEY_D:
-                newPos = m_camera.getPosition() + glm::normalize(glm::cross(m_camera.getFront(), m_up)) * m_cameraSpeed;
-                m_camera.lookAt(newPos, newPos + m_camera.getFront(), m_up);
+                m_camera.moveRight();
                 break;
             case GLFW_KEY_ESCAPE:
                 glfwSetWindowShouldClose(m_window.getWindow(), 1);
