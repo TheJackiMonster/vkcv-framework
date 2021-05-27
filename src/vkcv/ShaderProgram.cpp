@@ -62,7 +62,25 @@ namespace vkcv {
 
     void ShaderProgram::reflectShader(ShaderStage shaderStage) const
     {
-        auto shaderCode = m_Shaders.at(shaderStage).shaderCode;
-        //TODO
+        auto shaderCodeChar = m_Shaders.at(shaderStage).shaderCode;
+        std::vector<uint32_t> shaderCode; //convert from char to uint 32. Is this the best way? Prob not.
+
+        for (uint32_t i = 0; i < shaderCodeChar.size(); i++) {
+            shaderCode.push_back((uint32_t) shaderCodeChar[i]);
+        }
+
+        //spirv_cross::Compiler comp(move(shaderCode));
+
+        /*
+        spirv_cross::ShaderResources resources = comp.get_shader_resources();
+
+        //testprint
+        for (auto &u : resources.uniform_buffers)
+        {
+            uint32_t set = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+            uint32_t binding = comp.get_decoration(u.id, spv::DecorationBinding);
+            std::cout << 'Found UBO ' << &u << ' at set = ' << set << ', binding = ' << binding << std::endl;
+        }
+         */
     }
 }

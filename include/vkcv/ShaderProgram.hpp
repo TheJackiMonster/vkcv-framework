@@ -10,7 +10,7 @@
 #include <iostream>
 #include <filesystem>
 #include <vulkan/vulkan.hpp>
-#include <spirv_glsl.hpp>
+#include <spirv_cross.hpp>
 
 namespace vkcv {
 

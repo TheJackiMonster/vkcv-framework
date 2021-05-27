@@ -72,6 +72,8 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram triangleShaderProgram{};
 	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
 	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
+	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
+    triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
