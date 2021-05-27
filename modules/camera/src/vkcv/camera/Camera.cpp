@@ -79,10 +79,6 @@ namespace vkcv {
         return glm::vec3( m_view[2].x,m_view[2].y,-m_view[2].z);
     }
 
-    void Camera::setFront( glm::vec3 front ){
-        m_view[2] = glm::vec4(front, m_view[2][3]);
-    }
-
     glm::vec3 Camera::getPosition(){
         glm::vec3 pos = glm::vec3( glm::column(m_view, 3));
         glm::mat3 mat_inv = glm::inverse( glm::mat3(m_view));
@@ -95,11 +91,4 @@ namespace vkcv {
         translation[3] = glm::vec4(-position, 1.0f);
         m_view = m_view * translation;
     }
-
-    void Camera::movePosition( glm::vec3 translation ){
-        glm::vec3 pos = getPosition();
-        pos += translation;
-        setPosition(pos);
-    }
-
 }

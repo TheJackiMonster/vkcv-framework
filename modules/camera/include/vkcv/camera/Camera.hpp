@@ -56,13 +56,10 @@ namespace vkcv {
 
         glm::vec3 getFront();
 
-        void setFront( glm::vec3 front );
-
         glm::vec3 getPosition();
 
         void setPosition( glm::vec3 position );
 
-        void movePosition( glm::vec3 translation );
 
     };
 
