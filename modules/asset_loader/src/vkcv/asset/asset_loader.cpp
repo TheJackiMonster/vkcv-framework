@@ -146,58 +146,60 @@ namespace vkcv::asset {
         const fx::gltf::Accessor &indexAccessor = object.accessors[objectPrimitive.indices];
         const fx::gltf::BufferView &indexBufferView = object.bufferViews[indexAccessor.bufferView];
         const fx::gltf::Buffer &indexBuffer = object.buffers[indexBufferView.buffer];
-        void *indexBufferData = calloc(1, indexBuffer.byteLength);
-	if (memcpy(indexBufferData, indexBuffer.data.data(), indexBuffer.byteLength) == NULL) {
-		fprintf(stderr, "ERROR copying buffer data.\n");
-		return 0;
+	std::vector<uint8_t> indexBufferData;
+	indexBufferData.resize(indexBufferView.byteLength);
+	{
+		const size_t off = indexBufferView.byteOffset;
+		const void *const ptr = ((char*)indexBuffer.data.data()) + off;
+		if (!memcpy(indexBufferData.data(), ptr, indexBufferView.byteLength)) {
+			std::cerr << "ERROR copying index buffer data.\n";
+			return 0;
+		}
 	}
 
         // vertexBuffer
         fx::gltf::BufferView& vertexBufferView = object.bufferViews[posAccessor.bufferView];
         fx::gltf::Buffer& vertexBuffer = object.buffers[vertexBufferView.buffer];
-        void *vertexBufferData;
+	std::vector<uint8_t> vertexBufferData;
+	vertexBufferData.resize(vertexBufferView.byteLength);
+	{
+		const size_t off = vertexBufferView.byteOffset;
+		const void *const ptr = ((char*)vertexBuffer.data.data()) + off;
+		if (!memcpy(vertexBufferData.data(), ptr, vertexBufferView.byteLength)) {
+			fprintf(stderr, "ERROR copying vertex buffer data.\n");
+			return 0;
+		}
+	}
 
-        // check whether only one buffer is used
-        if (indexBufferView.buffer == vertexBufferView.buffer){
-            std::cout << "It's just one Buffer, let's be efficient!" << std::endl;
-            vertexBufferData = indexBufferData;
-        } else {
-            std::cout << "No luck, different Buffers :(" << std::endl;
-	    vertexBufferData = calloc(1, vertexBuffer.byteLength);
-	    if (memcpy(vertexBufferData, vertexBuffer.data.data(), vertexBuffer.byteLength) == NULL) {
-		    fprintf(stderr, "ERROR copying buffer data.\n");
-		    return 0;
-	    }
-        }
+	IndexType indexType;
+	switch(indexAccessor.componentType) {
+	case fx::gltf::Accessor::ComponentType::UnsignedByte:
+		indexType = UINT8; break;
+	case fx::gltf::Accessor::ComponentType::UnsignedShort:
+		indexType = UINT16; break;
+	case fx::gltf::Accessor::ComponentType::UnsignedInt:
+		indexType = UINT32; break;
+	default:
+		std::cerr << "ERROR: Index type not supported: " <<
+			static_cast<uint16_t>(indexAccessor.componentType) <<
+			std::endl;
+		return 0;
+	}
 
-        // fill vertex groups vector
-	const size_t numVertexGroups = 1;	// TODO get value from fx-gltf
+	const size_t numVertexGroups = objectMesh.primitives.size();
 	vertexGroups.resize(numVertexGroups);
-        vertexGroups.back() = {
-                static_cast<PrimitiveMode>(objectPrimitive.mode), // mode
-                object.accessors[objectPrimitive.indices].count, // num indices
-                posAccessor.count, // num vertices
-                { //index buffer
-                        indexBufferData,
-                        indexBufferView.byteLength,
-                        indexBufferView.byteOffset
-                },
-                { //vertex buffer
-                        vertexBufferData,
-                        vertexBufferView.byteLength,
-                        vertexAttributes
-                },
+	vertexGroups[0] = {
+		static_cast<PrimitiveMode>(objectPrimitive.mode),// mode
+		object.accessors[objectPrimitive.indices].count, // numIndices
+		posAccessor.count,				 // numVertices
+		{ indexType, indexBufferData },
+		{ vertexBufferData, vertexAttributes },
                 {posAccessor.min[0], posAccessor.min[1], posAccessor.min[2]}, // bounding box min
                 {posAccessor.max[0], posAccessor.max[1], posAccessor.max[2]}, // bounding box max
                 static_cast<uint8_t>(objectPrimitive.material) // material index
         };
 
-        // fill mesh struct
-        mesh = {
-                object.meshes[0].name,
-                vertexGroups,
-                materials
-        };
+        mesh = { object.meshes[0].name, vertexGroups, materials };
 
 		// Finally return 1 to signal that all is fine
 		return 1;

@@ -30,11 +30,10 @@ int main(int argc, const char** argv) {
 		const auto &vg = mesh.vertexGroups[i];
 		printf("primitive mode: %d (%s)\n", vg.mode,
 				primitive_modes[vg.mode]);
-		printf("index buffer: %lu bytes for %lu indices (offset into "
-				"%p is %u)\n", vg.indexBuffer.byteLength,
-				vg.numIndices, vg.indexBuffer.data,
-				vg.indexBuffer.byteOffset);
-		buf = (char*)vg.indexBuffer.data + vg.indexBuffer.byteOffset;
+		printf("index buffer: %lu bytes for %lu indices (%p)\n",
+				vg.indexBuffer.data.size(), vg.numIndices,
+				vg.indexBuffer.data.data());
+		buf = (char*)vg.indexBuffer.data.data();
 		uint16_t *indices = (uint16_t*)buf;
 		printf("\tindices: ");
 		for (size_t j = 0; j < vg.numIndices; j++) {
@@ -43,9 +42,9 @@ int main(int argc, const char** argv) {
 		printf("\n");
 		printf("vertex buffer: %lu bytes for %lu vertices with %lu "
 				"attributes (starting at %p)\n",
-				vg.vertexBuffer.byteLength, vg.numVertices,
+				vg.vertexBuffer.data.size(), vg.numVertices,
 				vg.vertexBuffer.attributes.size(),
-				vg.vertexBuffer.data);
+				vg.vertexBuffer.data.data());
 	}
 	
 	return 0;

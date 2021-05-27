@@ -47,6 +47,8 @@ namespace vkcv::asset {
 enum PrimitiveMode { POINTS=0, LINES, LINELOOP, LINESTRIP, TRIANGLES, TRIANGLESTRIP, TRIANGLEFAN };
 /* With these enums, 0 is reserved to signal uninitialized or invalid data. */
 enum PrimitiveType { POSITION=1, NORMAL, TEXCOORD_0 };
+/* The indices in the index buffer can be of different bit width. */
+enum IndexType { UINT32=0, UINT16=1, UINT8=2 };
 
 typedef struct {
 	// TODO not yet needed for the first (unlit) triangle
@@ -64,26 +66,18 @@ typedef struct {
 
 /* This struct represents one (possibly the only) part of a mesh. There is
  * always one vertexBuffer and zero or one indexBuffer (indexed rendering is
- * common but not always used). If there is no indexBuffer, this is indicated
- * by indexBuffer.data being NULL.
- * Each vertex buffer can have one or more vertex attributes.
- * Note that the indexBuffer and vertexBuffer might be pointing to the same
- * block of memory.
- * 
- * TODO For now, the caller of loadMesh() has to free this memory when they are
- * done, but since this is not generally good practice in C++, this behaviour
- * will likely be changed later. */
+ * common but not always used). If there is no index buffer, this is indicated
+ * by indexBuffer.data being empty. Each vertex buffer can have one or more
+ * vertex attributes. */
 typedef struct {
 	enum PrimitiveMode mode;	// draw as points, lines or triangle?
 	size_t numIndices, numVertices;
 	struct {
-		void *data;		// binary data of the index buffer
-		size_t byteLength;	// length of the index buffer
-		uint32_t byteOffset;	// offset into the buffer in bytes
+		enum IndexType type;	// data type of the indices
+		std::vector<uint8_t> data; // binary data of the index buffer
 	} indexBuffer;
 	struct {
-		void *data;		// the binary data of the buffer
-		size_t byteLength;	// the length of the entire buffer in bytes
+		std::vector<uint8_t> data; // binary data of the vertex buffer
 		std::vector<VertexAttribute> attributes;
 	} vertexBuffer;
 	struct { float x, y, z; } min;	// bounding box lower left
