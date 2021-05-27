@@ -25,6 +25,7 @@ int main(int argc, const char** argv) {
 			mesh.name.c_str(), path, mesh.vertexGroups.size(),
 			mesh.materials.size());
 	for (size_t i = 0; i < mesh.vertexGroups.size(); i++) {
+		char *buf;
 		printf("--- vertex group %lu ---\n", i);
 		const auto &vg = mesh.vertexGroups[i];
 		printf("primitive mode: %d (%s)\n", vg.mode,
@@ -33,7 +34,8 @@ int main(int argc, const char** argv) {
 				"%p is %u)\n", vg.indexBuffer.byteLength,
 				vg.numIndices, vg.indexBuffer.data,
 				vg.indexBuffer.byteOffset);
-		uint16_t *indices = (uint16_t*)vg.indexBuffer.data;
+		buf = (char*)vg.indexBuffer.data + vg.indexBuffer.byteOffset;
+		uint16_t *indices = (uint16_t*)buf;
 		printf("\tindices: ");
 		for (size_t j = 0; j < vg.numIndices; j++) {
 			printf("%u ", indices[j]);
