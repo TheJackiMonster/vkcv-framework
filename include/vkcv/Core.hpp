@@ -187,7 +187,7 @@ namespace vkcv
 		 * @brief render a beautiful triangle
 		*/
 		void renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle,
-			const int width, const int height);
+			const int width, const int height, const size_t pushConstantSize, const void* pushConstantData);
 
 		/**
 		 * @brief end recording and present image

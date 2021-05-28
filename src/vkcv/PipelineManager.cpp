@@ -160,14 +160,14 @@ namespace vkcv
                 { 1.f,1.f,1.f,1.f }
         );
 
+		const size_t matrixPushConstantSize = 4 * 4 * sizeof(float);
+		const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, matrixPushConstantSize);
+
         // pipeline layout
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
-                {},
-                0,
-                {},
-                0,
-                {}
-        );
+			{},
+			{},
+			(pushConstantRange));
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
         {
