@@ -11,6 +11,9 @@ namespace vkcv::asset {
 * @param type
 * @return unsigned integer representation
 */
+// TODO Return proper error code (we need to define those as macros or enums,
+// will discuss during the next core meeting if that should happen on the scope
+// of the vkcv framework or just this module)
 uint8_t convertTypeToInt(const fx::gltf::Accessor::Type type) {
 	switch (type) {
 	case fx::gltf::Accessor::Type::None :
@@ -63,11 +66,15 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		return 0;
 	}
 
-	// XXX Temporary restriction: Only one mesh per glTF file
+	// TODO Temporary restriction: Only one mesh per glTF file allowed
+	// currently. Later, we want to support whole scenes with more than
+	// just meshes.
 	if (object.meshes.size() != 1) return 0;
 
 	fx::gltf::Mesh const &objectMesh = object.meshes[0];
-	// TODO We want to support more than one vertex group eventually...
+	// TODO We want to support more than one vertex group per mesh
+	// eventually... right now this is hard-coded to use only the first one
+	// because we only care about the example triangle and cube
 	fx::gltf::Primitive const &objectPrimitive = objectMesh.primitives[0];
 	fx::gltf::Accessor posAccessor;
 

@@ -24,7 +24,7 @@
  * top.
  *
  * Each Mesh has an array of one or more vertex groups (called "primitives" in
- * glFW parlance) and an array of zero or more Materials.
+ * glTF parlance) and an array of zero or more Materials.
  *
  * Each vertex group describes a part of the meshes vertices by defining how
  * they should be rendered (as points, lines, triangles), how many indices and
@@ -43,8 +43,12 @@
 
 namespace vkcv::asset {
 
-// enum matches modes in fx-gltf, the library returns a standard mode (TRIANGLES) if no mode is given in the file
-enum PrimitiveMode { POINTS=0, LINES, LINELOOP, LINESTRIP, TRIANGLES, TRIANGLESTRIP, TRIANGLEFAN };
+/* This enum matches modes in fx-gltf, the library returns a standard mode
+ * (TRIANGLES) if no mode is given in the file. */
+enum PrimitiveMode {
+	POINTS=0, LINES, LINELOOP, LINESTRIP, TRIANGLES, TRIANGLESTRIP,
+	TRIANGLEFAN
+};
 /* With these enums, 0 is reserved to signal uninitialized or invalid data. */
 enum PrimitiveType { POSITION=1, NORMAL, TEXCOORD_0 };
 /* The indices in the index buffer can be of different bit width. */
