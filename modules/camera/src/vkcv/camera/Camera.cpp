@@ -11,6 +11,10 @@ namespace vkcv {
         m_pitch = 0.0;
         m_yaw = 180.0;
 
+        m_fov_nsteps = 100;
+        m_fov_min = 10;
+        m_fov_max = 120;
+
         m_forward = false;
         m_backward = false;
         m_left = false;
@@ -62,6 +66,20 @@ namespace vkcv {
     void Camera::setFov( float fov){
         m_fov = fov;
         setPerspective( m_fov, m_ratio, m_near, m_far);
+    }
+
+    void Camera::changeFov(double offset){
+        float fov = m_fov;
+        float fov_range = m_fov_max - m_fov_min;
+        float fov_stepsize = glm::radians(fov_range)/m_fov_nsteps;
+        fov -= (float) offset*fov_stepsize;
+        if (fov < glm::radians(m_fov_min)) {
+            fov = glm::radians(m_fov_min);
+        }
+        if (fov > glm::radians(m_fov_max)) {
+            fov = glm::radians(m_fov_max);
+        }
+        setFov(fov);
     }
 
     void Camera::updateRatio( float ratio){

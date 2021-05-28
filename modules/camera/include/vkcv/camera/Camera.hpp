@@ -25,6 +25,10 @@ namespace vkcv {
         float m_pitch;
         float m_yaw;
 
+        int m_fov_nsteps;
+        float m_fov_min;
+        float m_fov_max;
+
         bool m_forward;
         bool m_backward;
         bool m_left;
@@ -56,6 +60,8 @@ namespace vkcv {
         float getFov() const;
 
         void setFov(float fov);
+        
+        void changeFov(double fov);
 
         void updateRatio(float ratio);
 
