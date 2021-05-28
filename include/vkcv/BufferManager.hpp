@@ -6,6 +6,7 @@
 namespace vkcv
 {
 	enum class BufferType {
+		INDEX,
 		VERTEX,
 		UNIFORM,
 		STORAGE,
@@ -60,6 +61,26 @@ namespace vkcv
 		 * @return New buffer handle id
 		 */
 		uint64_t createBuffer(BufferType type, size_t size, BufferMemoryType memoryType);
+		
+		/**
+		 * Returns the Vulkan buffer handle of a buffer
+		 * represented by a given buffer handle id.
+		 *
+		 * @param id Buffer handle id
+		 * @return Vulkan buffer handle
+		 */
+		[[nodiscard]]
+		vk::Buffer getBuffer(uint64_t id) const;
+		
+		/**
+		 * Returns the Vulkan device memory handle of a buffer
+		 * represented by a given buffer handle id.
+		 *
+		 * @param id Buffer handle id
+		 * @return Vulkan device memory handle
+		 */
+		[[nodiscard]]
+		vk::DeviceMemory getDeviceMemory(uint64_t id) const;
 		
 		/**
 		 * Fills a buffer represented by a given buffer
