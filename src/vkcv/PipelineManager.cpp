@@ -69,6 +69,7 @@ namespace vkcv
         VertexLayout layout = config.m_ShaderProgram.getVertexLayout();
         std::unordered_map<uint32_t, VertexInputAttachment> attachments = layout.attachmentMap;
 
+        // TODO: Implement for all attachments
         VertexInputAttachment attachment = attachments.at(0);
         uint32_t location = attachment.location;
         uint32_t binding = attachment.binding;
@@ -88,12 +89,13 @@ namespace vkcv
         vk::VertexInputBindingDescription vertexInputBindingDescription(binding, layout.stride, vk::VertexInputRate::eVertex);    // TODO: What's with the input rate?
         vk::VertexInputAttributeDescription vertexInputAttributeDescription(location, binding, vk::Format::eR32G32B32Sfloat, offset);
 
+        // TODO: Add vertexInputBindingDescription and vertexInputAttributeDescription to pipelineVertexInputStateCreateInfo
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
-                {},			// no vertex input until vertex buffer is implemented
-                0,			// 1,
-                nullptr,	// &vertexInputBindingDescription,
-                0,			// 1,
-                nullptr		// &vertexInputAttributeDescription
+                {},
+                1,
+                &vertexInputBindingDescription,
+                1,
+                &vertexInputAttributeDescription
         );
 
         // input assembly state
