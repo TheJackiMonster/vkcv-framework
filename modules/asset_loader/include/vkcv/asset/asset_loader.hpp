@@ -95,6 +95,11 @@ typedef struct {
 	std::string name;
 	std::vector<VertexGroup> vertexGroups;
 	std::vector<Material> materials;
+	// FIXME Dirty hack to get one(!) texture for our cube demo
+	struct {
+		int w, h, ch;	// width, height and channels of image
+		void *img;	// raw data, free after use (deal with it)
+	} texture_hack;
 } Mesh;
 
 

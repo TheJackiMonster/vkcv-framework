@@ -170,6 +170,23 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 	
 	std::vector<Material> materials;
 
+	// FIXME HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK
+	// fail quietly if there is no texture
+	if (object.textures.size()) {
+		const std::string mime_type("image/jpeg");
+		const fx::gltf::Texture &tex = object.textures[0];
+		const fx::gltf::Image &img = object.images[tex.source];
+		printf("texture name=%s sampler=%u source=%u\n",
+				tex.name.c_str(), tex.sampler, tex.source);
+		printf("image   name=%s uri=%s mime=%s\n",
+				img.name.c_str(), img.uri.c_str(),
+				img.mimeType.c_str());
+		// URI is in img.uri
+
+		// TODO decode using stbimage lib and store in mesh.texture
+	}
+	// FIXME HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK
+
 	mesh = { object.meshes[0].name, vertexGroups, materials };
 	return 1;
 }
