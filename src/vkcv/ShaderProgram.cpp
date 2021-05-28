@@ -128,7 +128,7 @@ namespace vkcv {
         m_VertexLayout = VertexLayout(inputVec);
     }
 
-    VertexLayout& ShaderProgram::getVertexLayout(){
+    const VertexLayout& ShaderProgram::getVertexLayout() const{
         return m_VertexLayout;
 	}
 }

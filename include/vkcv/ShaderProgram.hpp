@@ -57,7 +57,7 @@ namespace vkcv {
 
         void reflectShader(ShaderStage shaderStage);
 
-        VertexLayout& getVertexLayout();
+        const VertexLayout &getVertexLayout() const;
 
 	private:
         std::unordered_map<ShaderStage, Shader> m_Shaders;
