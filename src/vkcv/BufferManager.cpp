@@ -69,6 +69,9 @@ namespace vkcv {
 			case BufferType::STAGING:
 				usageFlags = vk::BufferUsageFlagBits::eTransferSrc;
 				break;
+			case BufferType::INDEX:
+				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
+				break;
 			default:
 				// TODO: maybe an issue
 				break;

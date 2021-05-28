@@ -162,9 +162,9 @@ namespace vkcv
 		destroyTemporaryFramebuffers();
 	}
 
-	void Core::renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
+	void Core::renderMesh(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
 		const int width, const int height, const size_t pushConstantSize, const void *pushConstantData,
-		const BufferHandle vertexBuffer) {
+		const BufferHandle vertexBuffer, const BufferHandle indexBuffer, const size_t indexCount) {
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
@@ -175,7 +175,8 @@ namespace vkcv
 		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
         const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
 		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
-		const vk::Buffer vulkanVertexBuffer = m_BufferManager->getBuffer(vertexBuffer);
+		const vk::Buffer vulkanVertexBuffer	= m_BufferManager->getBuffer(vertexBuffer);
+		const vk::Buffer vulkanIndexBuffer	= m_BufferManager->getBuffer(indexBuffer);
 
 		const vk::Framebuffer framebuffer = createFramebuffer(m_Context.getDevice(), renderpass, width, height, imageView);
 		m_TemporaryFramebuffers.push_back(framebuffer);
@@ -184,7 +185,7 @@ namespace vkcv
 		submitInfo.queueType = QueueType::Graphics;
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
 		submitCommands(submitInfo, [renderpass, renderArea, imageView, framebuffer, pipeline, pipelineLayout, 
-			pushConstantSize, pushConstantData, vulkanVertexBuffer](const vk::CommandBuffer& cmdBuffer) {
+			pushConstantSize, pushConstantData, vulkanVertexBuffer, indexCount, vulkanIndexBuffer](const vk::CommandBuffer& cmdBuffer) {
 
 			const std::array<float, 4> clearColor = { 0.f, 0.f, 0.f, 1.f };
 			const vk::ClearValue clearValues(clearColor);
@@ -196,8 +197,9 @@ namespace vkcv
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 			
 			cmdBuffer.bindVertexBuffers(0, (vulkanVertexBuffer), { 0 });
+			cmdBuffer.bindIndexBuffer(vulkanIndexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
             cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
-			cmdBuffer.draw(3, 1, 0, 0, {});
+			cmdBuffer.drawIndexed(indexCount, 1, 0, 0, {});
 			cmdBuffer.endRenderPass();
 		}, nullptr);
 	}
