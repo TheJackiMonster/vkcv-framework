@@ -178,6 +178,26 @@ namespace vkcv {
 		);
 	}
 	
+	vk::Buffer BufferManager::getBuffer(uint64_t id) const {
+		if (id >= m_buffers.size()) {
+			return nullptr;
+		}
+		
+		auto& buffer = m_buffers[id];
+		
+		return buffer.m_handle;
+	}
+	
+	vk::DeviceMemory BufferManager::getDeviceMemory(uint64_t id) const {
+		if (id >= m_buffers.size()) {
+			return nullptr;
+		}
+		
+		auto& buffer = m_buffers[id];
+		
+		return buffer.m_memory;
+	}
+	
 	void BufferManager::fillBuffer(uint64_t id, void *data, size_t size, size_t offset) {
 		if (size == 0) {
 			size = SIZE_MAX;
