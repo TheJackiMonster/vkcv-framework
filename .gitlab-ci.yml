@@ -1,8 +1,16 @@
+variables:
+  RUN:
+    value: "all"
+    description: "The tests that should run. Possible values: ubuntu, win10, all."
+
 stages:
   - build
   - deploy
 
 build_ubuntu_gcc:
+  only:
+    variables:
+      - $RUN =~ /\bubuntu.*/i || $TARGET =~ /\ball.*/i
   stage: build
   tags: 
     - ubuntu-gcc
@@ -23,6 +31,9 @@ build_ubuntu_gcc:
     expire_in: never
 
 build_win10_msvc:
+  only:
+    variables:
+      - $RUN =~ /\bwin10.*/i || $TARGET =~ /\ball.*/i
   stage: build
   tags: 
     - win10-msvc
