@@ -4,6 +4,8 @@
  * @brief Window class to handle a basic rendering surface and input
  */
 
+#include <GLFW/glfw3.h>
+
 #include "vkcv/Window.hpp"
 
 namespace vkcv {
@@ -18,14 +20,15 @@ namespace vkcv {
         glfwDestroyWindow(m_window);
         s_WindowCount--;
 
-        if(s_WindowCount == 0)
+        if(s_WindowCount == 0) {
             glfwTerminate();
+        }
     }
 
-    Window Window::create(const char *windowTitle, int width, int height, bool resizable) {
-        if(s_WindowCount == 0)
+    Window Window::create( const char *windowTitle, int width, int height, bool resizable) {
+        if(s_WindowCount == 0) {
             glfwInit();
-
+        }
         s_WindowCount++;
 
         width = std::max(width, 1);
@@ -35,21 +38,54 @@ namespace vkcv {
         glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
         GLFWwindow *window;
         window = glfwCreateWindow(width, height, windowTitle, nullptr, nullptr);
+
         return Window(window);
-
-
     }
 
-    bool Window::isWindowOpen() const {
-        return !glfwWindowShouldClose(m_window);
+    void Window::initEvents() {
+        glfwSetWindowUserPointer(m_window, this);
+
+        // combine Callbacks with Events
+        glfwSetCursorPosCallback(m_window, Window::onMouseMoveEvent);
+
+        glfwSetWindowSizeCallback(m_window, Window::onResize);
+
+        glfwSetKeyCallback(m_window, Window::onKeyEvent);
     }
 
     void Window::pollEvents() {
         glfwPollEvents();
     }
 
-    GLFWwindow *Window::getWindow() const {
-        return m_window;
+    void Window::onMouseMoveEvent(GLFWwindow *callbackWindow, double x, double y) {
+
+        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+
+        if (window != nullptr) {
+            window->e_mouseMove(x, y);
+        }
+    }
+
+    void Window::onResize(GLFWwindow *callbackWindow, int width, int height) {
+
+        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+
+        if (window != nullptr) {
+            window->e_resize(width, height);
+        }
+    }
+
+    void Window::onKeyEvent(GLFWwindow *callbackWindow, int key, int scancode, int action, int mods) {
+
+        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+
+        if (window != nullptr) {
+            window->e_key(key, scancode, action, mods);
+        }
+    }
+
+    bool Window::isWindowOpen() const {
+        return !glfwWindowShouldClose(m_window);
     }
 
     int Window::getWidth() const {
@@ -62,5 +98,9 @@ namespace vkcv {
         int height;
         glfwGetWindowSize(m_window, nullptr, &height);
         return height;
+    }
+
+    GLFWwindow *Window::getWindow() const {
+        return m_window;
     }
 }

@@ -13,4 +13,5 @@ namespace vkcv
     struct BufferHandle     {uint64_t id;};
     struct PassHandle       {uint64_t id;};
     struct PipelineHandle   {uint64_t id;};
+    struct ResourcesHandle  {uint64_t id;};
 }
