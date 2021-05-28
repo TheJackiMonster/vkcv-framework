@@ -3,6 +3,9 @@
 #include <string.h>	// memcpy(3)
 #include <stdlib.h>	// calloc(3)
 #include <fx/gltf.h>
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_JPEG
+#include <stb_image.h>
 
 namespace vkcv::asset {
 
@@ -170,24 +173,30 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 	
 	std::vector<Material> materials;
 
+	mesh = {
+		object.meshes[0].name,
+		vertexGroups,
+		materials,
+		0, 0, 0, NULL
+	};
+
 	// FIXME HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK
 	// fail quietly if there is no texture
 	if (object.textures.size()) {
 		const std::string mime_type("image/jpeg");
 		const fx::gltf::Texture &tex = object.textures[0];
 		const fx::gltf::Image &img = object.images[tex.source];
+#ifdef DEBUG
 		printf("texture name=%s sampler=%u source=%u\n",
 				tex.name.c_str(), tex.sampler, tex.source);
-		printf("image   name=%s uri=%s mime=%s\n",
-				img.name.c_str(), img.uri.c_str(),
-				img.mimeType.c_str());
-		// URI is in img.uri
-
-		// TODO decode using stbimage lib and store in mesh.texture
+		printf("image   name=%s uri=%s mime=%s\n", img.name.c_str(),
+				img.uri.c_str(), img.mimeType.c_str());
+#endif
+		mesh.texture_hack.img = stbi_load(img.uri.c_str(),
+				&mesh.texture_hack.w, &mesh.texture_hack.h,
+				&mesh.texture_hack.ch, 4);
 	}
 	// FIXME HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK
-
-	mesh = { object.meshes[0].name, vertexGroups, materials };
 	return 1;
 }
 
