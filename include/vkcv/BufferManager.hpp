@@ -6,6 +6,7 @@
 namespace vkcv
 {
 	enum class BufferType {
+		INDEX,
 		VERTEX,
 		UNIFORM,
 		STORAGE,
