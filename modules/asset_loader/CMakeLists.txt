@@ -27,8 +27,14 @@ include(config/NLOHMANN_JSON.cmake)
 # Check and load FX-GLTF
 include(config/FX_GLTF.cmake)
 
+# Check and load STB
+include(config/STB.cmake)
+
 # link the required libraries to the module
 target_link_libraries(vkcv_asset_loader ${vkcv_asset_loader_libraries})
+
+# including headers of dependencies and the VkCV framework
+target_include_directories(vkcv_asset_loader SYSTEM BEFORE PRIVATE ${vkcv_asset_loader_includes})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_asset_loader BEFORE PUBLIC ${vkcv_asset_loader_include})
