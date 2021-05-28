@@ -37,17 +37,17 @@ namespace vkcv {
         pos = -mat_inv * pos;
     }
 
-    void Camera::getNearFar( float &near, float &far) {
+    void Camera::getNearFar( float &near, float &far) const {
         near = m_near;
         far = m_far;
     }
 
 
-    const glm::mat4 Camera::getView() {
+    const glm::mat4 Camera::getView() const {
         return m_view;
     }
 
-    const glm::mat4& Camera::getProjection() {
+    const glm::mat4& Camera::getProjection() const {
         return m_projection;
     }
 
@@ -55,7 +55,7 @@ namespace vkcv {
         m_projection = projection;
     }
 
-    float Camera::getFov(){
+    float Camera::getFov() const {
         return m_fov;
     }
 
@@ -69,7 +69,7 @@ namespace vkcv {
         setPerspective( m_fov, m_ratio, m_near, m_far);
     }
 
-    float Camera::getRatio(){
+    float Camera::getRatio() const {
         return 0.0f;
     }
 
@@ -87,7 +87,7 @@ namespace vkcv {
         m_projection = glm::perspective( m_fov, ratio, m_near, m_far);
     }
 
-    glm::vec3 Camera::getFront(){
+    glm::vec3 Camera::getFront() const {
         glm::vec3 direction;
         direction.x = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
         direction.y = sin(glm::radians(m_pitch));
@@ -95,7 +95,7 @@ namespace vkcv {
         return glm::normalize(direction);
     }
 
-    glm::vec3 Camera::getPosition(){
+    glm::vec3 Camera::getPosition() const {
         return m_position;
     }
 

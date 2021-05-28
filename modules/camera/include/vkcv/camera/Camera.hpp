@@ -37,7 +37,7 @@ namespace vkcv {
 
         void setPerspective(float fov, float ratio, float near, float far);
 
-        const glm::mat4 getView();
+        const glm::mat4 getView() const;
 
         void getView(glm::vec3 &x, glm::vec3 &y, glm::vec3 &z, glm::vec3 &pos);
 
@@ -45,27 +45,27 @@ namespace vkcv {
 
         void lookAt(glm::vec3 position, glm::vec3 center, glm::vec3 up);
 
-        const glm::mat4& getProjection();
+        const glm::mat4& getProjection() const;
 
         void setProjection(const glm::mat4 projection);
 
-        void getNearFar(float &near, float &far);
+        void getNearFar(float &near, float &far) const;
 
         void setUp(const glm::vec3 &Up);
 
-        float getFov();
+        float getFov() const;
 
         void setFov(float fov);
 
         void updateRatio(float ratio);
 
-        float getRatio();
+        float getRatio() const;
 
         void setNearFar(float near, float far);
 
-        glm::vec3 getFront();
+        glm::vec3 getFront() const;
 
-        glm::vec3 getPosition();
+        glm::vec3 getPosition() const;
 
         void setPosition( glm::vec3 position );
 
