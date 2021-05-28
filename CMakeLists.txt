@@ -72,12 +72,15 @@ endif()
 
 # add include directories from dependencies as system includes
 target_include_directories(vkcv SYSTEM BEFORE PRIVATE ${vkcv_includes})
+message(STATUS ${vkcv_includes})
 
 # add the own include directory for public headers
 target_include_directories(vkcv BEFORE PUBLIC ${vkcv_include})
+message(STATUS ${vkcv_include})
 
 # link the framework using all required libraries
 target_link_libraries(vkcv ${vkcv_libraries})
+message(STATUS ${vkcv_libraries})
 
 # add sub-projects/examples as targets
 add_subdirectory(projects)

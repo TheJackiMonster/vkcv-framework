@@ -10,3 +10,6 @@
 [submodule "modules/asset_loader/lib/stb"]
 	path = modules/asset_loader/lib/stb
 	url = https://github.com/nothings/stb.git
+[submodule "modules/camera/lib/glm"]
+	path = modules/camera/lib/glm
+	url = https://github.com/g-truc/glm.git
