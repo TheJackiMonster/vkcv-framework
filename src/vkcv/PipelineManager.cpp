@@ -66,9 +66,27 @@ namespace vkcv
                 nullptr
         );
 
+        VertexLayout layout = config.m_ShaderProgram.getVertexLayout();
+        std::unordered_map<uint32_t, VertexInputAttachment> attachments = layout.attachmentMap;
+
+        VertexInputAttachment attachment = attachments.at(0);
+        uint32_t location = attachment.location;
+        uint32_t binding = attachment.binding;
+        uint32_t offset = attachment.offset;
+        VertexFormat format = attachment.format;
+
+        std::cout << "--------------------------------" << std::endl;
+        std::cout << "Debug Print From PipelineManager" << std::endl;
+        std::cout << "Layout.stride: " << layout.stride << std::endl;
+        std::cout << "Location: " << location << std::endl;
+        std::cout << "Binding: " << binding << std::endl;
+        std::cout << "Offset: " << offset << std::endl;
+        std::cout << "Format: " << (int)format << std::endl;
+        std::cout << "--------------------------------" << std::endl;
+
         // vertex input state
-        vk::VertexInputBindingDescription vertexInputBindingDescription(0, 12, vk::VertexInputRate::eVertex);
-        vk::VertexInputAttributeDescription vertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, 0);
+        vk::VertexInputBindingDescription vertexInputBindingDescription(binding, layout.stride, vk::VertexInputRate::eVertex);    // TODO: What's with the input rate?
+        vk::VertexInputAttributeDescription vertexInputAttributeDescription(location, binding, static_cast<vk::Format>(format), offset);    // TODO: Format -> cast to vk::Format?
 
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
                 {},			// no vertex input until vertex buffer is implemented
