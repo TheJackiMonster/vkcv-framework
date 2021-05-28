@@ -3,11 +3,15 @@
 
 layout(location = 0) out vec3 fragColor;
 
+layout( push_constant ) uniform constants{
+    mat4 mvp;
+};
+
 void main()	{
     vec3 positions[3] = {
-        vec3(-0.5, 0.5, 0),
-        vec3( 0.5, 0.5, 0),
-        vec3(0, -0.5, 0)
+        vec3(-0.5, 0.5, -1),
+        vec3( 0.5, 0.5, -1),
+        vec3(0, -0.5, -1)
     };
     
     vec3 colors[3] = {
@@ -16,6 +20,6 @@ void main()	{
         vec3(0, 0, 1)
     };
 
-	gl_Position = vec4(positions[gl_VertexIndex], 1.0);
+	gl_Position = mvp * vec4(positions[gl_VertexIndex], 1.0);
 	fragColor = colors[gl_VertexIndex];
 }

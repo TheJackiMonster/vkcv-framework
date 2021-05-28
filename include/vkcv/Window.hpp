@@ -12,7 +12,7 @@
 struct GLFWwindow;
 
 namespace vkcv {
-	
+
     class Window final {
     private:
         GLFWwindow *m_window;
@@ -31,6 +31,16 @@ namespace vkcv {
          * @param[in] ypos The new cursor y-coordinate, relative to the top edge of the content area.
          */
         static void onMouseMoveEvent(GLFWwindow *window, double x, double y);
+
+        /**
+         * mouseButton callback for mouse buttons
+         * @param[in] button The [mouse button](@ref buttons) that was pressed or released.
+         * @param[in] action One of `GLFW_PRESS` or `GLFW_RELEASE`.  Future releases may add more actions.
+         * @param[in] mods Bit field describing which [modifier keys](@ref mods) were held down.
+         */
+        static void onMouseButtonEvent(GLFWwindow *callbackWindow, int button, int action, int mods);
+
+        static void onMouseScrollEvent(GLFWwindow *callbackWindow, double xoffset, double yoffset);
 
         /**
          * resize callback for the resize option of the window
@@ -81,7 +91,9 @@ namespace vkcv {
         /**
          * basic events of the window
          */
+        event< int, int, int> e_mouseButton;
         event< double, double > e_mouseMove;
+        event< double, double > e_mouseScroll;
         event< int, int > e_resize;
         event< int, int, int, int > e_key;
 
@@ -129,5 +141,5 @@ namespace vkcv {
          */
         virtual ~Window();
     };
-    
+
 }
