@@ -40,14 +40,16 @@ int main(int argc, const char** argv) {
 	
 	const size_t n = 5027;
 	
-	auto buffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, n, vkcv::BufferMemoryType::DEVICE_LOCAL);
-	vec3 vec_data [n];
+	auto vertexBuffer = core.createBuffer<float>(vkcv::BufferType::VERTEX, n, vkcv::BufferMemoryType::DEVICE_LOCAL);
+	float vec_data [n*3];
 	
-	for (size_t i = 0; i < n; i++) {
-		vec_data[i] = { 42, static_cast<float>(i), 7 };
-	}
+	for (int i = 0; i < n; i += 3) {
+		vec_data[i] = 42;
+		vec_data[i + 1] = static_cast<float>(i);
+		vec_data[i + 2] = 7;
+	};
 	
-	buffer.fill(vec_data);
+	vertexBuffer.fill(vec_data);
 	
 	/*vec3* m = buffer.map();
 	m[0] = { 0, 0, 0 };
@@ -142,7 +144,7 @@ int main(int argc, const char** argv) {
         cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
 		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp);
+	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp, vertexBuffer);
 	    core.endFrame();
 	}
 	return 0;

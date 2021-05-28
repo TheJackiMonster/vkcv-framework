@@ -10,6 +10,8 @@ namespace vkcv {
 
 	template<typename T>
 	class Buffer {
+		friend Core;
+
 	public:
 		// explicit destruction of default constructor
 		Buffer<T>() = delete;
@@ -56,6 +58,9 @@ namespace vkcv {
 				m_count(count),
 				m_memoryType(memoryType)
 		{}
-		
+
+		vk::Buffer getVulkanHandle() const {
+			return m_manager->getBuffer(m_handle_id);
+		}
 	};
 }

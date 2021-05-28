@@ -163,7 +163,8 @@ namespace vkcv
 	}
 
 	void Core::renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
-		const int width, const int height, const size_t pushConstantSize, const void *pushConstantData) {
+		const int width, const int height, const size_t pushConstantSize, const void *pushConstantData,
+		const Buffer<float> &vertexBuffer) {
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
@@ -174,6 +175,7 @@ namespace vkcv
 		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
         const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
 		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+		const vk::Buffer vulkanVertexBuffer = vertexBuffer.getVulkanHandle();
 
 		const vk::Framebuffer framebuffer = createFramebuffer(m_Context.getDevice(), renderpass, width, height, imageView);
 		m_TemporaryFramebuffers.push_back(framebuffer);
@@ -181,7 +183,8 @@ namespace vkcv
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
-		submitCommands(submitInfo, [renderpass, renderArea, imageView, framebuffer, pipeline, pipelineLayout, pushConstantSize, pushConstantData](const vk::CommandBuffer& cmdBuffer) {
+		submitCommands(submitInfo, [renderpass, renderArea, imageView, framebuffer, pipeline, pipelineLayout, 
+			pushConstantSize, pushConstantData, vulkanVertexBuffer](const vk::CommandBuffer& cmdBuffer) {
 
 			const std::array<float, 4> clearColor = { 0.f, 0.f, 0.f, 1.f };
 			const vk::ClearValue clearValues(clearColor);
@@ -191,6 +194,8 @@ namespace vkcv
 			cmdBuffer.beginRenderPass(beginInfo, subpassContents, {});
 
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
+			
+			cmdBuffer.bindVertexBuffers(0, (vulkanVertexBuffer), { 0 });
             cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
 			cmdBuffer.draw(3, 1, 0, 0, {});
 			cmdBuffer.endRenderPass();
