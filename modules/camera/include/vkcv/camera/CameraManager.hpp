@@ -14,7 +14,6 @@ namespace vkcv{
         std::function<void(double, double)> m_mouseScrollHandle;
         std::function<void(int, int, int)> m_mouseButtonHandle;
 
-        int i;
         Window &m_window;
         Camera m_camera;
         float m_width;
