@@ -10,7 +10,7 @@ stages:
 build_ubuntu_gcc:
   only:
     variables:
-      - $RUN =~ /\bubuntu.*/i || $TARGET =~ /\ball.*/i
+      - $RUN =~ /\bubuntu.*/i || $RUN =~ /\ball.*/i
   stage: build
   tags: 
     - ubuntu-gcc
@@ -33,7 +33,7 @@ build_ubuntu_gcc:
 build_win10_msvc:
   only:
     variables:
-      - $RUN =~ /\bwin10.*/i || $TARGET =~ /\ball.*/i
+      - $RUN =~ /\bwin10.*/i || $RUN =~ /\ball.*/i
   stage: build
   tags: 
     - win10-msvc
@@ -69,7 +69,7 @@ deploy_doc_develop:
 deploy_doc_branch:
   only:
     variables:
-      - $RUN =~ /\bubuntu.*/i || $TARGET =~ /\ball.*/i
+      - $RUN =~ /\bubuntu.*/i || $RUN =~ /\ball.*/i
   except:
     refs:
       - develop
