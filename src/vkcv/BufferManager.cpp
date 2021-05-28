@@ -9,7 +9,7 @@
 namespace vkcv {
 	
 	BufferManager::BufferManager() noexcept :
-		m_core(nullptr), m_buffers(), m_stagingBuffer(BufferHandle{ UINT64_MAX })
+		m_core(nullptr), m_buffers(), m_stagingBuffer(BufferHandle())
 	{
 	}
 	
@@ -22,8 +22,8 @@ namespace vkcv {
 	}
 	
 	BufferManager::~BufferManager() noexcept {
-		for (size_t id = 0; id < m_buffers.size(); id++) {
-			destroyBuffer(BufferHandle{ id });
+		for (uint64_t id = 0; id < m_buffers.size(); id++) {
+			destroyBuffer(BufferHandle(id));
 		}
 	}
 	
@@ -179,7 +179,7 @@ namespace vkcv {
 	}
 	
 	vk::Buffer BufferManager::getBuffer(const BufferHandle& handle) const {
-		const uint64_t id = handle.id;
+		const uint64_t id = handle.getId();
 		
 		if (id >= m_buffers.size()) {
 			return nullptr;
@@ -191,7 +191,7 @@ namespace vkcv {
 	}
 	
 	vk::DeviceMemory BufferManager::getDeviceMemory(const BufferHandle& handle) const {
-		const uint64_t id = handle.id;
+		const uint64_t id = handle.getId();
 		
 		if (id >= m_buffers.size()) {
 			return nullptr;
@@ -203,7 +203,7 @@ namespace vkcv {
 	}
 	
 	void BufferManager::fillBuffer(const BufferHandle& handle, void *data, size_t size, size_t offset) {
-		const uint64_t id = handle.id;
+		const uint64_t id = handle.getId();
 		
 		if (size == 0) {
 			size = SIZE_MAX;
@@ -232,7 +232,7 @@ namespace vkcv {
 			memcpy(mapped, data, max_size);
 			device.unmapMemory(buffer.m_memory);
 		} else {
-			auto& stagingBuffer = m_buffers[ m_stagingBuffer.id ];
+			auto& stagingBuffer = m_buffers[ m_stagingBuffer.getId() ];
 			
 			StagingStepInfo info;
 			info.data = data;
@@ -253,7 +253,7 @@ namespace vkcv {
 	}
 	
 	void* BufferManager::mapBuffer(const BufferHandle& handle, size_t offset, size_t size) {
-		const uint64_t id = handle.id;
+		const uint64_t id = handle.getId();
 		
 		if (size == 0) {
 			size = SIZE_MAX;
@@ -281,7 +281,7 @@ namespace vkcv {
 	}
 	
 	void BufferManager::unmapBuffer(const BufferHandle& handle) {
-		const uint64_t id = handle.id;
+		const uint64_t id = handle.getId();
 		
 		if (id >= m_buffers.size()) {
 			return;
@@ -300,7 +300,7 @@ namespace vkcv {
 	}
 	
 	void BufferManager::destroyBuffer(const BufferHandle& handle) {
-		const uint64_t id = handle.id;
+		const uint64_t id = handle.getId();
 		
 		if (id >= m_buffers.size()) {
 			return;
