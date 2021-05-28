@@ -41,6 +41,9 @@ namespace vkcv {
         float m_sensitivity;
         float m_stepSize, m_theta, m_phi, m_radius;
         glm::vec3 m_center;
+
+        float m_oldX;
+        float m_oldY;
     };
 
 }

@@ -1,10 +1,8 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
-#include <vkcv/Window.hpp>
-#include <vkcv/ShaderProgram.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
-#include <vkcv/DescriptorConfig.hpp>
+#include <chrono>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
@@ -131,11 +129,15 @@ int main(int argc, const char** argv) {
 	 *
 	 * PipelineHandle trianglePipeline = core.CreatePipeline(trianglePipeline);
 	 */
-
+    auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen())
 	{
 		core.beginFrame();
-
+        window.pollEvents();
+        auto end = std::chrono::system_clock::now();
+        auto deltatime = end - start;
+        start = end;
+        cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
 		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
 	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp);

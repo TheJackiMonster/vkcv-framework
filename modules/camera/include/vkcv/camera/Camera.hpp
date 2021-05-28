@@ -14,8 +14,6 @@ namespace vkcv {
 		int m_width;
 		int m_height;
 
-		float m_oldX;
-		float m_oldY;
 		float m_near;
 		float m_far;
 		float m_fov;
@@ -24,7 +22,6 @@ namespace vkcv {
         glm::vec3 m_up;
         glm::vec3 m_position;
         float m_cameraSpeed;
-        float m_roll;
         float m_pitch;
         float m_yaw;
 
@@ -36,7 +33,7 @@ namespace vkcv {
     public:
         Camera();
 
-        ~Camera();
+        virtual ~Camera();
 
         void setPerspective(float fov, float ratio, float near, float far);
 
@@ -44,7 +41,7 @@ namespace vkcv {
 
         void getView(glm::vec3 &x, glm::vec3 &y, glm::vec3 &z, glm::vec3 &pos);
 
-        glm::mat4 updateView();
+        glm::mat4 updateView(double deltatime);
 
         void lookAt(glm::vec3 position, glm::vec3 center, glm::vec3 up);
 
@@ -82,7 +79,7 @@ namespace vkcv {
 
         void panView( double xOffset, double yOffset );
 
-        void updatePosition();
+        void updatePosition(double deltatime);
 
         void moveForward(int action);
 

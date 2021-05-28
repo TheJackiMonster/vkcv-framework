@@ -6,9 +6,8 @@ namespace vkcv {
     Camera::Camera(){
         m_up = glm::vec3(0.0f, -1.0f, 0.0f);
         m_position = glm::vec3(0.0f, 0.0f, 0.0f);
-        m_cameraSpeed = 0.01f;
+        m_cameraSpeed = 2.f;
         // front
-        m_roll = 0.0;
         m_pitch = 0.0;
         m_yaw = 180.0;
 
@@ -24,8 +23,8 @@ namespace vkcv {
         m_view = glm::lookAt(position, center, up);
     }
 
-    glm::mat4 Camera::updateView(){
-        updatePosition();
+    glm::mat4 Camera::updateView(double deltatime){
+        updatePosition(deltatime);
         return m_view = glm::lookAt(m_position, m_position + getFront() , m_up);
     }
 
@@ -45,7 +44,6 @@ namespace vkcv {
 
 
     const glm::mat4 Camera::getView() {
-        updateView();
         return m_view;
     }
 
@@ -136,11 +134,11 @@ namespace vkcv {
         m_pitch += yOffset;
     }
 
-    void Camera::updatePosition(){
-        m_position += (m_cameraSpeed * getFront() * static_cast<float> (m_forward));
-        m_position -= (m_cameraSpeed * getFront() * static_cast<float> (m_backward));
-        m_position -= (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_left) );
-        m_position += (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_right));
+    void Camera::updatePosition(double deltatime ){
+        m_position += (m_cameraSpeed * getFront() * static_cast<float> (m_forward) * static_cast<float>(deltatime));
+        m_position -= (m_cameraSpeed * getFront() * static_cast<float> (m_backward) * static_cast<float>(deltatime));
+        m_position -= (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_left) * static_cast<float>(deltatime));
+        m_position += (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_right) * static_cast<float>(deltatime));
     }
 
     void Camera::moveForward(int action){
