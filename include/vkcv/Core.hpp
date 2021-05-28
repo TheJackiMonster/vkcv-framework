@@ -188,7 +188,7 @@ namespace vkcv
 		*/
 		void renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle,
 			const int width, const int height, const size_t pushConstantSize, const void* pushConstantData, 
-			const Buffer<float> &vertexBuffer);
+			const BufferHandle vertexBuffer);
 
 		/**
 		 * @brief end recording and present image

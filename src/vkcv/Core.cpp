@@ -164,7 +164,7 @@ namespace vkcv
 
 	void Core::renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
 		const int width, const int height, const size_t pushConstantSize, const void *pushConstantData,
-		const Buffer<float> &vertexBuffer) {
+		const BufferHandle vertexBuffer) {
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
@@ -175,7 +175,7 @@ namespace vkcv
 		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
         const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
 		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
-		const vk::Buffer vulkanVertexBuffer = vertexBuffer.getVulkanHandle();
+		const vk::Buffer vulkanVertexBuffer = m_BufferManager->getBuffer(vertexBuffer);
 
 		const vk::Framebuffer framebuffer = createFramebuffer(m_Context.getDevice(), renderpass, width, height, imageView);
 		m_TemporaryFramebuffers.push_back(framebuffer);
