@@ -50,16 +50,7 @@ namespace vkcv{
     }
 
     void CameraManager::scrollCallback(double offsetX, double offsetY) {
-
-        float fov = m_camera.getFov();
-        fov -= (float) offsetY;
-        if (fov < 1.0f) {
-            fov = 1.0f;
-        }
-        if (fov > 45.0f) {
-            fov = 45.0f;
-        }
-        m_camera.setFov(fov);
+        m_camera.changeFov(offsetY);
     }
 
     void CameraManager::keyCallback(int key, int scancode, int action, int mods) {
