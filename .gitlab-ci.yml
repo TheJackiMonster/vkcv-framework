@@ -8,6 +8,8 @@ build_ubuntu_gcc:
     - ubuntu-gcc
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
+  timeout: 10m
+  retry: 1
   script:
     - mkdir debug
     - cd debug
@@ -26,6 +28,8 @@ build_win10_msvc:
     - win10-msvc
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
+  timeout: 10m
+  retry: 1
   script:
     - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
     - .\Launch-VsDevShell.ps1
