@@ -67,6 +67,9 @@ deploy_doc_develop:
     - echo "Check it out at https://vkcv.de/develop"
 
 deploy_doc_branch:
+  only:
+    variables:
+      - $RUN =~ /\bubuntu.*/i || $TARGET =~ /\ball.*/i
   except:
     refs:
       - develop
