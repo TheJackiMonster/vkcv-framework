@@ -14,36 +14,18 @@ set(vkcv_asset_loader_sources
 		${vkcv_asset_loader_source}/vkcv/asset/asset_loader.cpp
 )
 
+# adding source files to the module
+add_library(vkcv_asset_loader STATIC ${vkcv_asset_loader_sources})
+
 # Setup some path variables to load libraries
 set(vkcv_asset_loader_lib lib)
 set(vkcv_asset_loader_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_asset_loader_lib})
 
 # Check and load NLOHMANN_JSON
-if (EXISTS "${vkcv_asset_loader_lib_path}/json")
-	set(JSON_BuildTests OFF CACHE INTERNAL "")
-	
-	add_subdirectory(${vkcv_asset_loader_lib}/json)
-	
-	list(APPEND vkcv_asset_loader_libraries nlohmann_json::nlohmann_json)
-else()
-	message(WARNING "NLOHMANN_JSON is required..! Update the submodules!")
-endif ()
+include(config/NLOHMANN_JSON.cmake)
 
 # Check and load FX-GLTF
-if (EXISTS "${vkcv_asset_loader_lib_path}/fx-gltf")
-	set(FX_GLTF_INSTALL OFF CACHE INTERNAL "")
-	set(FX_GLTF_USE_INSTALLED_DEPS OFF CACHE INTERNAL "")
-	set(BUILD_TESTING OFF CACHE INTERNAL "")
-	
-	add_subdirectory(${vkcv_asset_loader_lib}/fx-gltf)
-	
-	list(APPEND vkcv_asset_loader_libraries fx-gltf)
-else()
-	message(WARNING "FX-GLTF is required..! Update the submodules!")
-endif ()
-
-# adding source files to the module
-add_library(vkcv_asset_loader STATIC ${vkcv_asset_loader_sources})
+include(config/FX_GLTF.cmake)
 
 # link the required libraries to the module
 target_link_libraries(vkcv_asset_loader ${vkcv_asset_loader_libraries})
