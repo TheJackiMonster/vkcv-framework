@@ -186,7 +186,7 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		const std::string mime_type("image/jpeg");
 		const fx::gltf::Texture &tex = object.textures[0];
 		const fx::gltf::Image &img = object.images[tex.source];
-#ifdef DEBUG
+#ifndef NDEBUG
 		printf("texture name=%s sampler=%u source=%u\n",
 				tex.name.c_str(), tex.sampler, tex.source);
 		printf("image   name=%s uri=%s mime=%s\n", img.name.c_str(),
