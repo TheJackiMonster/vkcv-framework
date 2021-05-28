@@ -1,7 +1,7 @@
 variables:
   RUN:
     value: "all"
-    description: "The tests that should run. Possible values: ubuntu, win10, all."
+    description: "The tests that should run. Possible values: ubuntu, win, all."
 
 stages:
   - build
@@ -33,7 +33,7 @@ build_ubuntu_gcc:
 build_win10_msvc:
   only:
     variables:
-      - $RUN =~ /\bwin10.*/i || $RUN =~ /\ball.*/i
+      - $RUN =~ /\bwin.*/i || $RUN =~ /\ball.*/i
   stage: build
   tags: 
     - win10-msvc
