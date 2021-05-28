@@ -280,10 +280,12 @@ namespace vkcv {
 		
 		if (buffer.m_memory) {
 			device.freeMemory(buffer.m_memory);
+			buffer.m_memory = nullptr;
 		}
 		
 		if (buffer.m_handle) {
 			device.destroyBuffer(buffer.m_handle);
+			buffer.m_handle = nullptr;
 		}
 	}
 

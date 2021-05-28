@@ -18,6 +18,7 @@
 #include "SyncResources.hpp"
 #include "Result.hpp"
 #include "vkcv/DescriptorConfig.hpp"
+#include "Sampler.hpp"
 
 namespace vkcv
 {
@@ -26,6 +27,7 @@ namespace vkcv
     class PipelineManager;
     class DescriptorManager;
     class BufferManager;
+    class SamplerManager;
 
 	struct SubmitInfo {
 		QueueType queueType;
@@ -63,6 +65,7 @@ namespace vkcv
         std::unique_ptr<PipelineManager> m_PipelineManager;
         std::unique_ptr<DescriptorManager> m_DescriptorManager;
         std::unique_ptr<BufferManager> m_BufferManager;
+        std::unique_ptr<SamplerManager> m_SamplerManager;
 
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
@@ -160,7 +163,7 @@ namespace vkcv
         PassHandle createPass(const PassConfig &config);
 
         /**
-            * Creates a #Buffer with data-type T and @p bufferType 
+            * Creates a #Buffer with data-type T and @p bufferType
             * @param type Type of Buffer created
             * @param count Count of elements of type T
             * @param memoryType Type of Buffers memory
@@ -170,6 +173,19 @@ namespace vkcv
         Buffer<T> createBuffer(vkcv::BufferType type, size_t count, BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL) {
         	return Buffer<T>::create(m_BufferManager.get(), type, count, memoryType);
         }
+        
+        /**
+         * Creates a Sampler with given attributes.
+         *
+         * @param magFilter Magnifying filter
+         * @param minFilter Minimizing filter
+         * @param mipmapMode Mipmapping filter
+         * @param addressMode Address mode
+         * @return Sampler handle
+         */
+        [[nodiscard]]
+        SamplerHandle createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
+									SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode);
 
         /** TODO:
          *   @param setDescriptions
