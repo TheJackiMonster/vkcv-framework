@@ -66,16 +66,16 @@ namespace vkcv{
 
         switch (key) {
             case GLFW_KEY_W:
-                m_camera.moveForward();
+                m_camera.moveForward(action);
                 break;
             case GLFW_KEY_S:
-                m_camera.moveBackward();
+                m_camera.moveBackward(action);
                 break;
             case GLFW_KEY_A:
-                m_camera.moveLeft();
+                m_camera.moveLeft(action);
                 break;
             case GLFW_KEY_D:
-                m_camera.moveRight();
+                m_camera.moveRight(action);
                 break;
             case GLFW_KEY_ESCAPE:
                 glfwSetWindowShouldClose(m_window.getWindow(), 1);
@@ -84,7 +84,7 @@ namespace vkcv{
                 break;
         }
     }
-    Camera CameraManager::getCamera(){
+    Camera &CameraManager::getCamera(){
         return m_camera;
     }
 

@@ -28,6 +28,11 @@ namespace vkcv {
         float m_pitch;
         float m_yaw;
 
+        bool m_forward;
+        bool m_backward;
+        bool m_left;
+        bool m_right;
+
     public:
         Camera();
 
@@ -35,7 +40,7 @@ namespace vkcv {
 
         void setPerspective(float fov, float ratio, float near, float far);
 
-        const glm::mat4 &getView();
+        const glm::mat4 getView();
 
         void getView(glm::vec3 &x, glm::vec3 &y, glm::vec3 &z, glm::vec3 &pos);
 
@@ -77,13 +82,15 @@ namespace vkcv {
 
         void panView( double xOffset, double yOffset );
 
-        void moveForward();
+        void updatePosition();
 
-        void moveBackward();
+        void moveForward(int action);
 
-        void moveLeft();
+        void moveBackward(int action);
 
-        void moveRight();
+        void moveLeft(int action);
+
+        void moveRight(int action);
 
 
     };

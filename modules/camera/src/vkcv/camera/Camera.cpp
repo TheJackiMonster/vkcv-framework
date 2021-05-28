@@ -6,11 +6,16 @@ namespace vkcv {
     Camera::Camera(){
         m_up = glm::vec3(0.0f, -1.0f, 0.0f);
         m_position = glm::vec3(0.0f, 0.0f, 0.0f);
-        m_cameraSpeed = 0.05f;
+        m_cameraSpeed = 0.01f;
         // front
         m_roll = 0.0;
         m_pitch = 0.0;
         m_yaw = 180.0;
+
+        m_forward = false;
+        m_backward = false;
+        m_left = false;
+        m_right = false;
     }
 
     Camera::~Camera() = default;
@@ -20,6 +25,7 @@ namespace vkcv {
     }
 
     glm::mat4 Camera::updateView(){
+        updatePosition();
         return m_view = glm::lookAt(m_position, m_position + getFront() , m_up);
     }
 
@@ -32,14 +38,13 @@ namespace vkcv {
         pos = -mat_inv * pos;
     }
 
-    void Camera::getNearFar( float &near, float &far)
-    {
+    void Camera::getNearFar( float &near, float &far) {
         near = m_near;
         far = m_far;
     }
 
 
-    const glm::mat4& Camera::getView() {
+    const glm::mat4 Camera::getView() {
         updateView();
         return m_view;
     }
@@ -48,7 +53,7 @@ namespace vkcv {
         return m_projection;
     }
 
-    void Camera::setProjection(const glm::mat4 projection) {
+    void Camera::setProjection(const glm::mat4 projection){
         m_projection = projection;
     }
 
@@ -93,16 +98,11 @@ namespace vkcv {
     }
 
     glm::vec3 Camera::getPosition(){
-        glm::vec3 pos = glm::vec3( glm::column(m_view, 3));
-        glm::mat3 mat_inv = glm::inverse( glm::mat3(m_view));
-        return pos = -mat_inv * pos;
+        return m_position;
     }
 
     void Camera::setPosition( glm::vec3 position ){
-        m_view[3] = glm::vec4(0.0f,0.0f,0.0f,1.0f);
-        glm::mat4 translation = glm::mat4(1.0f);
-        translation[3] = glm::vec4(-position, 1.0f);
-        m_view = m_view * translation;
+        m_position = position;
     }
 
     void Camera::setUp(const glm::vec3 &up) {
@@ -136,21 +136,26 @@ namespace vkcv {
         m_pitch += yOffset;
     }
 
-    void Camera::moveForward(){
-        m_position +=  m_cameraSpeed * getFront();
-
+    void Camera::updatePosition(){
+        m_position += (m_cameraSpeed * getFront() * static_cast<float> (m_forward));
+        m_position -= (m_cameraSpeed * getFront() * static_cast<float> (m_backward));
+        m_position -= (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_left) );
+        m_position += (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_right));
     }
 
-    void Camera::moveBackward(){
-        m_position -= m_cameraSpeed * getFront();
+    void Camera::moveForward(int action){
+        m_forward = static_cast<bool>(action);
     }
 
-    void Camera::moveLeft(){
-
-        m_position -= glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed;
+    void Camera::moveBackward(int action){
+        m_backward = static_cast<bool>(action);
     }
 
-    void Camera::moveRight(){
-        m_position += glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed;
+    void Camera::moveLeft(int action){
+        m_left = static_cast<bool>(action);
+    }
+
+    void Camera::moveRight(int action){
+        m_right = static_cast<bool>(action);
     }
 }
