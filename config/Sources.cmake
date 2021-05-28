@@ -20,7 +20,9 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/Window.cpp
 
 		${vkcv_include}/vkcv/Buffer.hpp
-		${vkcv_source}/vkcv/Buffer.cpp
+		
+		${vkcv_include}/vkcv/BufferManager.hpp
+		${vkcv_source}/vkcv/BufferManager.cpp
 
 		${vkcv_include}/vkcv/SwapChain.hpp
 		${vkcv_source}/vkcv/SwapChain.cpp
@@ -53,4 +55,10 @@ set(vkcv_sources
         ${vkcv_source}/vkcv/Framebuffer.cpp
 
 		${vkcv_include}/vkcv/Event.hpp
+
+		${vkcv_source}/vkcv/DescriptorManager.hpp
+		${vkcv_source}/vkcv/DescriptorManager.cpp
+
+		${vkcv_include}/vkcv/DescriptorConfig.hpp
+		${vkcv_source}/vkcv/DescriptorConfig.cpp
 )

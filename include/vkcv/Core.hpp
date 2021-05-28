@@ -17,12 +17,24 @@
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "Result.hpp"
+#include "vkcv/DescriptorConfig.hpp"
 
 namespace vkcv
 {
     // forward declarations
     class PassManager;
     class PipelineManager;
+    class DescriptorManager;
+    class BufferManager;
+
+	struct SubmitInfo {
+		QueueType queueType;
+		std::vector<vk::Semaphore> waitSemaphores;
+		std::vector<vk::Semaphore> signalSemaphores;
+	};
+	
+	typedef std::function<void(const vk::CommandBuffer& cmdBuffer)> RecordCommandFunction;
+	typedef std::function<void(void)> FinishCommandFunction;
 
     class Core final
     {
@@ -49,6 +61,9 @@ namespace vkcv
 
         std::unique_ptr<PassManager> m_PassManager;
         std::unique_ptr<PipelineManager> m_PipelineManager;
+        std::unique_ptr<DescriptorManager> m_DescriptorManager;
+        std::unique_ptr<BufferManager> m_BufferManager;
+
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
 		uint32_t m_currentSwapchainImageIndex;
@@ -146,14 +161,22 @@ namespace vkcv
 
         /**
             * Creates a #Buffer with data-type T and @p bufferType 
-            * @param bufferType Type of Buffer created
-            * @param size Amount of Data of type T
+            * @param type Type of Buffer created
+            * @param count Count of elements of type T
+            * @param memoryType Type of Buffers memory
             * return Buffer-Object
             */
         template<typename T>
-        Buffer<T> createBuffer(vkcv::BufferType bufferType,size_t size) {
-        	return Buffer<T>::create(m_Context.getDevice(), m_Context.getPhysicalDevice(), bufferType, size);
+        Buffer<T> createBuffer(vkcv::BufferType type, size_t count, BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL) {
+        	return Buffer<T>::create(m_BufferManager.get(), type, count, memoryType);
         }
+
+        /** TODO:
+         *   @param setDescriptions
+         *   @return
+         */
+        [[nodiscard]]
+        ResourcesHandle createResourceDescription(const std::vector<DescriptorSet> &descriptorSets);
 
 		/**
 		 * @brief start recording command buffers and increment frame index
@@ -172,5 +195,16 @@ namespace vkcv
 		void endFrame();
 
 		vk::Format getSwapchainImageFormat();
+
+		/**
+		 * Submit a command buffer to any queue of selected type. The recording can be customized by a
+		 * custom record-command-function. If the command submission has finished, an optional finish-function
+		 * will be called.
+		 *
+		 * @param submitInfo Submit information
+		 * @param record Record-command-function
+		 * @param finish Finish-command-function or nullptr
+		 */
+		void submitCommands(const SubmitInfo &submitInfo, const RecordCommandFunction& record, const FinishCommandFunction& finish);
     };
 }

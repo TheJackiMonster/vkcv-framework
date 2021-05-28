@@ -15,6 +15,10 @@ add_executable(first_triangle src/main.cpp)
 if(MSVC)
 	set_target_properties(first_triangle PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 	set_target_properties(first_triangle PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+	# in addition to setting the output directory, the working directory has to be set
+	# by default visual studio sets the working directory to the build directory, when using the debugger
+	set_target_properties(first_triangle PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endif()
 
 # including headers of dependencies and the VkCV framework

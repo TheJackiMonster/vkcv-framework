@@ -4,7 +4,7 @@
 #include <vkcv/ShaderProgram.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
-
+#include <vkcv/DescriptorConfig.hpp>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
@@ -40,12 +40,22 @@ int main(int argc, const char** argv) {
 		float x, y, z;
 	};
 	
-	auto buffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, 3);
+	const size_t n = 5027;
 	
-	vec3* m = buffer.map();
+	auto buffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, n, vkcv::BufferMemoryType::DEVICE_LOCAL);
+	vec3 vec_data [n];
+	
+	for (size_t i = 0; i < n; i++) {
+		vec_data[i] = { 42, static_cast<float>(i), 7 };
+	}
+	
+	buffer.fill(vec_data);
+	
+	/*vec3* m = buffer.map();
 	m[0] = { 0, 0, 0 };
-	m[0] = { 0, 0, 0 };
-	m[0] = { 0, 0, 0 };
+	m[1] = { 0, 0, 0 };
+	m[2] = { 0, 0, 0 };
+	buffer.unmap();*/
 
 	std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
 
@@ -86,6 +96,24 @@ int main(int argc, const char** argv) {
 	{
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
+	}
+
+	//just an example
+	//creates 20 descriptor sets, each containing bindings for 50 uniform buffers, images, and samplers
+	std::vector<vkcv::DescriptorSet> sets;
+
+	for (uint32_t i = 0; i < 20; i++)
+	{
+		vkcv::DescriptorBinding uniformBufBinding(vkcv::DescriptorType::UNIFORM_BUFFER, 50, vkcv::ShaderStage::VERTEX);
+        vkcv::DescriptorBinding storageBufBinding(vkcv::DescriptorType::STORAGE_BUFFER, 50, vkcv::ShaderStage::VERTEX);
+        vkcv::DescriptorBinding imageBinding(vkcv::DescriptorType::IMAGE, 50, vkcv::ShaderStage::VERTEX);
+        vkcv::DescriptorBinding samplerBinding(vkcv::DescriptorType::SAMPLER, 50, vkcv::ShaderStage::VERTEX);
+
+        vkcv::DescriptorSet set({uniformBufBinding, storageBufBinding, imageBinding, samplerBinding});
+
+		sets.push_back(set);
+        auto resourceHandle = core.createResourceDescription(sets);
+        std::cout << "Resource " << resourceHandle.id << " created." << std::endl;
 	}
 
 	/*

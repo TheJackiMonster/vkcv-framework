@@ -2,7 +2,9 @@
 #include <vulkan/vulkan.hpp>
 
 namespace vkcv {
-	
+
+	enum class QueueType { Compute, Transfer, Graphics, Present };
+
 	struct Queue {
 		int familyIndex;
 		int queueIndex;
