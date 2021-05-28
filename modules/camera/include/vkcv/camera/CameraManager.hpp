@@ -16,9 +16,9 @@ namespace vkcv{
 
         Window &m_window;
         Camera m_camera;
+        TrackballCamera m_trackball;    // TODO: maybe there is a better way for switching between cameras?
         float m_width;
         float m_height;
-//        std::shared_ptr<vkcv::TrackballCamera> m_trackball;
 
         bool m_roationActive = false;
         double m_lastX ;
@@ -33,6 +33,8 @@ namespace vkcv{
     public:
         CameraManager(Window &window, float width, float height, glm::vec3 up = glm::vec3(0.0f,-1.0f,0.0f), glm::vec3 position = glm::vec3(0.0f,0.0f,0.0f));
 
-        Camera &getCamera();
+        Camera& getCamera();
+
+        TrackballCamera& getTrackballCamera();
     };
 }

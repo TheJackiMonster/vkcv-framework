@@ -17,6 +17,8 @@ int main(int argc, const char** argv) {
     );
 
     vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
+    cameraManager.getTrackballCamera().setPosition(glm::vec3(0.0f,0.0f,-0.5f));
+    cameraManager.getTrackballCamera().setCenter(glm::vec3(0.0f,0.0f,-1.0f));
 
     window.initEvents();
 
@@ -137,8 +139,8 @@ int main(int argc, const char** argv) {
         auto end = std::chrono::system_clock::now();
         auto deltatime = end - start;
         start = end;
-        cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
-		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+        cameraManager.getTrackballCamera().updateView(std::chrono::duration<double>(deltatime).count());
+		const glm::mat4 mvp = cameraManager.getTrackballCamera().getProjection() * cameraManager.getTrackballCamera().getView();
 
 	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp);
 	    core.endFrame();

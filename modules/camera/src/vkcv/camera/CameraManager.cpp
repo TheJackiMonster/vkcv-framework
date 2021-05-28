@@ -9,6 +9,9 @@ namespace vkcv{
         m_camera.setUp(up);
         m_camera.setPosition(position);
         m_camera.setPerspective( glm::radians(60.0f), m_width / m_height, 0.1f, 10.f);
+        m_trackball.setUp(up);
+        m_trackball.setPosition(position);
+        m_trackball.setPerspective( glm::radians(60.0f), m_width / m_height, 0.1f, 10.f);
         m_lastX = width/2.0;
         m_lastY = height/2.0;
         bindCamera();
@@ -47,10 +50,12 @@ namespace vkcv{
         yoffset *= sensitivity;
 
         m_camera.panView( xoffset , yoffset );
+        m_trackball.panView( xoffset , yoffset );
     }
 
     void CameraManager::scrollCallback(double offsetX, double offsetY) {
         m_camera.changeFov(offsetY);
+        m_trackball.changeFov(offsetY);
     }
 
     void CameraManager::keyCallback(int key, int scancode, int action, int mods) {
@@ -75,8 +80,13 @@ namespace vkcv{
                 break;
         }
     }
-    Camera &CameraManager::getCamera(){
+    Camera& CameraManager::getCamera(){
         return m_camera;
     }
+
+    TrackballCamera& CameraManager::getTrackballCamera() {
+        return m_trackball;
+    }
+
 
 }

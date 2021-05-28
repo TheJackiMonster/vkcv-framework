@@ -11,9 +11,6 @@ namespace vkcv {
 		glm::mat4 m_view;
 		glm::mat4 m_projection;
 
-		int m_width;
-		int m_height;
-
 		float m_near;
 		float m_far;
 		float m_fov;

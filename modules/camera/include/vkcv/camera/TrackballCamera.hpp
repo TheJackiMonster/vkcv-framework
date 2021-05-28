@@ -5,45 +5,31 @@
 namespace vkcv {
 
     class TrackballCamera : public vkcv::Camera {
+    protected:
+        glm::vec3 m_center;
+        float m_radius;
+
     public:
 
-        TrackballCamera( int width, int height, glm::mat4 projection);
-
-        TrackballCamera(int width, int height);
+        TrackballCamera();
 
         ~TrackballCamera();
 
-        float getSensitivity() const;
-
-        void setSensitivity(float sensitivity);
-
-        float getStepSize() const;
-
-        void setStepSize(float stepSize);
-
-        float getTheta() const;
-
-        void setTheta(float theta);
-
-        float getPhi() const;
-
-        void setPhi(float phi);
-
-        float getRadius() const;
+        float getRadius();
 
         void setRadius(float radius);
 
-        const glm::vec3& getCenter() const;
+        glm::vec3& getCenter();
 
         void setCenter(const glm::vec3 &center);
 
-    private:
-        float m_sensitivity;
-        float m_stepSize, m_theta, m_phi, m_radius;
-        glm::vec3 m_center;
+        void setPitch(float pitch);
 
-        float m_oldX;
-        float m_oldY;
+        void setYaw(float yaw);
+
+        glm::mat4 updateView(double deltaTime);
+
+        void updatePosition(double deltaTime);
     };
 
 }
