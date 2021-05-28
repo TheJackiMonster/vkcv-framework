@@ -46,11 +46,7 @@ void print_what (const std::exception& e, const std::string &path) {
 }
 
 int loadMesh(const std::string &path, Mesh &mesh) {
-
-	fx::gltf::Document object = {};
-	std::vector<VertexAttribute> vertexAttributes = {};
-	std::vector<VertexGroup> vertexGroups = {};
-	std::vector<Material> materials = {};
+	fx::gltf::Document object;
 
 	try {
 		if (path.rfind(".glb", (path.length()-4)) != std::string::npos) {
@@ -77,31 +73,37 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 	// because we only care about the example triangle and cube
 	fx::gltf::Primitive const &objectPrimitive = objectMesh.primitives[0];
 	fx::gltf::Accessor posAccessor;
-
+	
+	std::vector<VertexAttribute> vertexAttributes;
+	vertexAttributes.reserve(objectPrimitive.attributes.size());
+	
 	for (auto const & attrib : objectPrimitive.attributes) {
 		fx::gltf::Accessor accessor =  object.accessors[attrib.second];
+		VertexAttribute attribute;
 
-		vertexAttributes.push_back(VertexAttribute{});
 		if (attrib.first == "POSITION") {
-			vertexAttributes.back().type = POSITION;
+			attribute.type = POSITION;
 			posAccessor = accessor;
 		} else if (attrib.first == "NORMAL") {
-			vertexAttributes.back().type = NORMAL;
+			attribute.type = NORMAL;
 		} else if (attrib.first == "TEXCOORD_0") {
-			vertexAttributes.back().type = TEXCOORD_0;
+			attribute.type = TEXCOORD_0;
 		} else {
 			return 0;
 		}
-
-		vertexAttributes.back().offset = object.bufferViews[accessor.bufferView].byteOffset;
-		vertexAttributes.back().length = object.bufferViews[accessor.bufferView].byteLength;
-		vertexAttributes.back().stride = object.bufferViews[accessor.bufferView].byteStride;
-		vertexAttributes.back().componentType = static_cast<uint16_t>(accessor.componentType);
+		
+		attribute.offset = object.bufferViews[accessor.bufferView].byteOffset;
+		attribute.length = object.bufferViews[accessor.bufferView].byteLength;
+		attribute.stride = object.bufferViews[accessor.bufferView].byteStride;
+		attribute.componentType = static_cast<uint16_t>(accessor.componentType);
+		
 		if (convertTypeToInt(accessor.type) != 10) {
-			vertexAttributes.back().componentCount = convertTypeToInt(accessor.type);
+			attribute.componentCount = convertTypeToInt(accessor.type);
 		} else {
 			return 0;
 		}
+		
+		vertexAttributes.push_back(attribute);
 	}
 
 	// TODO consider the case where there is no index buffer (not all
@@ -109,6 +111,7 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 	const fx::gltf::Accessor &indexAccessor = object.accessors[objectPrimitive.indices];
 	const fx::gltf::BufferView &indexBufferView = object.bufferViews[indexAccessor.bufferView];
 	const fx::gltf::Buffer &indexBuffer = object.buffers[indexBufferView.buffer];
+	
 	std::vector<uint8_t> indexBufferData;
 	indexBufferData.resize(indexBufferView.byteLength);
 	{
@@ -120,8 +123,9 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		}
 	}
 
-	fx::gltf::BufferView& vertexBufferView = object.bufferViews[posAccessor.bufferView];
-	fx::gltf::Buffer& vertexBuffer = object.buffers[vertexBufferView.buffer];
+	const fx::gltf::BufferView& vertexBufferView = object.bufferViews[posAccessor.bufferView];
+	const fx::gltf::Buffer& vertexBuffer = object.buffers[vertexBufferView.buffer];
+	
 	std::vector<uint8_t> vertexBufferData;
 	vertexBufferData.resize(vertexBufferView.byteLength);
 	{
@@ -149,17 +153,22 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 	}
 
 	const size_t numVertexGroups = objectMesh.primitives.size();
-	vertexGroups.resize(numVertexGroups);
-	vertexGroups[0] = {
+	
+	std::vector<VertexGroup> vertexGroups;
+	vertexGroups.reserve(numVertexGroups);
+	
+	vertexGroups.push_back({
 		static_cast<PrimitiveMode>(objectPrimitive.mode),
 		object.accessors[objectPrimitive.indices].count,
 		posAccessor.count,
-		{ indexType, indexBufferData },
-		{ vertexBufferData, vertexAttributes },
+		{indexType, indexBufferData},
+		{vertexBufferData, vertexAttributes},
 		{posAccessor.min[0], posAccessor.min[1], posAccessor.min[2]},
 		{posAccessor.max[0], posAccessor.max[1], posAccessor.max[2]},
 		static_cast<uint8_t>(objectPrimitive.material)
-	};
+	});
+	
+	std::vector<Material> materials;
 
 	mesh = { object.meshes[0].name, vertexGroups, materials };
 	return 1;
