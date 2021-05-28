@@ -10,6 +10,8 @@
 #include <iostream>
 #include <filesystem>
 #include <vulkan/vulkan.hpp>
+#include <spirv_cross.hpp>
+#include "vkcv/VertexLayout.hpp"
 
 namespace vkcv {
 
@@ -53,8 +55,13 @@ namespace vkcv {
 
         bool existsShader(ShaderStage shaderStage) const;
 
+        void reflectShader(ShaderStage shaderStage);
+
+        VertexLayout& getVertexLayout();
+
 	private:
         std::unordered_map<ShaderStage, Shader> m_Shaders;
 
+        VertexLayout m_VertexLayout;
 	};
 }

@@ -16,6 +16,7 @@ set(vkcv_config_msg " - Library: ")
 # load dependencies via separate cmake file
 include(${vkcv_config_lib}/GLFW.cmake)    # glfw-x11 / glfw-wayland					# libglfw3-dev
 include(${vkcv_config_lib}/Vulkan.cmake)  # vulkan-intel / vulkan-radeon / nvidia	# libvulkan-dev
+include(${vkcv_config_lib}/SPIRV_Cross.cmake)  # SPIRV-Cross	                    # libspirv_cross_c_shared
 
 # cleanup of compiler flags
 if (vkcv_flags)
