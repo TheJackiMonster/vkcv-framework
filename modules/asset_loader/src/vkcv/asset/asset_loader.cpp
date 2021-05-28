@@ -192,7 +192,11 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		printf("image   name=%s uri=%s mime=%s\n", img.name.c_str(),
 				img.uri.c_str(), img.mimeType.c_str());
 #endif
-		mesh.texture_hack.img = stbi_load(img.uri.c_str(),
+		
+		size_t pos = path.find_last_of("/");
+		auto dir = path.substr(0, pos);
+		
+		mesh.texture_hack.img = stbi_load((dir + "/" + img.uri).c_str(),
 				&mesh.texture_hack.w, &mesh.texture_hack.h,
 				&mesh.texture_hack.ch, 4);
 	}
