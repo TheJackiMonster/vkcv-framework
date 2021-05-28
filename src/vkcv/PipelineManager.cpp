@@ -73,7 +73,7 @@ namespace vkcv
         uint32_t location = attachment.location;
         uint32_t binding = attachment.binding;
         uint32_t offset = attachment.offset;
-        VertexFormat format = attachment.format;
+        VertexFormat format = attachment.format;    // TODO: Format -> Where does this belong?
 
         std::cout << "--------------------------------" << std::endl;
         std::cout << "Debug Print From PipelineManager" << std::endl;
@@ -86,7 +86,7 @@ namespace vkcv
 
         // vertex input state
         vk::VertexInputBindingDescription vertexInputBindingDescription(binding, layout.stride, vk::VertexInputRate::eVertex);    // TODO: What's with the input rate?
-        vk::VertexInputAttributeDescription vertexInputAttributeDescription(location, binding, static_cast<vk::Format>(format), offset);    // TODO: Format -> cast to vk::Format?
+        vk::VertexInputAttributeDescription vertexInputAttributeDescription(location, binding, vk::Format::eR32G32B32Sfloat, offset);
 
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
                 {},			// no vertex input until vertex buffer is implemented
