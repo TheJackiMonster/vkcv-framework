@@ -7,3 +7,6 @@
 [submodule "modules/asset_loader/lib/json"]
 	path = modules/asset_loader/lib/json
 	url = https://github.com/nlohmann/json.git
+[submodule "modules/asset_loader/lib/stb"]
+	path = modules/asset_loader/lib/stb
+	url = https://github.com/nothings/stb.git
