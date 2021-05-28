@@ -13,3 +13,13 @@ More information about Git LFS [here](https://git-lfs.github.com/).
 
 Git submodules are used for libraries. 
 To download the submodules either clone using `git clone --recurse-submodules` or after `git clone` use `git submodule init` and `git submodule update`.
+
+## Documentation
+
+The documentation for the develop-branch can be found here:  
+https://vkcv.de/develop/  
+
+The documentation concerning the respective merge request is listed here:  
+https://vkcv.de/branch/  
+
+It is automatically generated and uploaded using the CI pipeline.
