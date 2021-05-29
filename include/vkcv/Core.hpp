@@ -17,12 +17,24 @@
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "Result.hpp"
+#include "vkcv/DescriptorConfig.hpp"
 
 namespace vkcv
 {
     // forward declarations
     class PassManager;
     class PipelineManager;
+    class DescriptorManager;
+    class BufferManager;
+
+	struct SubmitInfo {
+		QueueType queueType;
+		std::vector<vk::Semaphore> waitSemaphores;
+		std::vector<vk::Semaphore> signalSemaphores;
+	};
+	
+	typedef std::function<void(const vk::CommandBuffer& cmdBuffer)> RecordCommandFunction;
+	typedef std::function<void(void)> FinishCommandFunction;
 
     class Core final
     {
@@ -33,7 +45,7 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, const Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews, 
+        Core(Context &&context, Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews,
 			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
@@ -49,10 +61,21 @@ namespace vkcv
 
         std::unique_ptr<PassManager> m_PassManager;
         std::unique_ptr<PipelineManager> m_PipelineManager;
+        std::unique_ptr<DescriptorManager> m_DescriptorManager;
+        std::unique_ptr<BufferManager> m_BufferManager;
+
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
 		uint32_t m_currentSwapchainImageIndex;
 		std::vector<vk::Framebuffer> m_TemporaryFramebuffers;
+
+        /**
+         * recreates the swapchain
+         * @param[in] width new window width
+         * @param[in] height new window hight
+         */
+        static void recreateSwapchain(int width, int height);
+
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
@@ -107,7 +130,7 @@ namespace vkcv
              * @param[in] deviceExtensions (optional) Requested device extensions
              * @return New instance of #Context
              */
-        static Core create(const Window &window,
+        static Core create(Window &window,
                            const char *applicationName,
                            uint32_t applicationVersion,
                            std::vector<vk::QueueFlagBits> queueFlags    = {},
@@ -138,14 +161,22 @@ namespace vkcv
 
         /**
             * Creates a #Buffer with data-type T and @p bufferType 
-            * @param bufferType Type of Buffer created
-            * @param size Amount of Data of type T
+            * @param type Type of Buffer created
+            * @param count Count of elements of type T
+            * @param memoryType Type of Buffers memory
             * return Buffer-Object
             */
         template<typename T>
-        Buffer<T> createBuffer(vkcv::BufferType bufferType,size_t size) {
-        	return Buffer<T>::create(m_Context.getDevice(), m_Context.getPhysicalDevice(), bufferType, size);
+        Buffer<T> createBuffer(vkcv::BufferType type, size_t count, BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL) {
+        	return Buffer<T>::create(m_BufferManager.get(), type, count, memoryType);
         }
+
+        /** TODO:
+         *   @param setDescriptions
+         *   @return
+         */
+        [[nodiscard]]
+        ResourcesHandle createResourceDescription(const std::vector<DescriptorSet> &descriptorSets);
 
 		/**
 		 * @brief start recording command buffers and increment frame index
@@ -156,7 +187,7 @@ namespace vkcv
 		 * @brief render a beautiful triangle
 		*/
 		void renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle,
-			const int width, const int height);
+			const int width, const int height, const size_t pushConstantSize, const void* pushConstantData);
 
 		/**
 		 * @brief end recording and present image
@@ -164,5 +195,16 @@ namespace vkcv
 		void endFrame();
 
 		vk::Format getSwapchainImageFormat();
+
+		/**
+		 * Submit a command buffer to any queue of selected type. The recording can be customized by a
+		 * custom record-command-function. If the command submission has finished, an optional finish-function
+		 * will be called.
+		 *
+		 * @param submitInfo Submit information
+		 * @param record Record-command-function
+		 * @param finish Finish-command-function or nullptr
+		 */
+		void submitCommands(const SubmitInfo &submitInfo, const RecordCommandFunction& record, const FinishCommandFunction& finish);
     };
 }

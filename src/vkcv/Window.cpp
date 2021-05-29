@@ -42,12 +42,71 @@ namespace vkcv {
         return Window(window);
     }
 
-    bool Window::isWindowOpen() const {
-        return !glfwWindowShouldClose(m_window);
+    void Window::initEvents() {
+        glfwSetWindowUserPointer(m_window, this);
+
+        // combine Callbacks with Events
+        glfwSetMouseButtonCallback(m_window, Window::onMouseButtonEvent);
+
+        glfwSetCursorPosCallback(m_window, Window::onMouseMoveEvent);
+
+        glfwSetWindowSizeCallback(m_window, Window::onResize);
+
+        glfwSetKeyCallback(m_window, Window::onKeyEvent);
+
+        glfwSetScrollCallback(m_window, Window::onMouseScrollEvent);
     }
 
     void Window::pollEvents() {
         glfwPollEvents();
+    }
+
+    void Window::onMouseButtonEvent(GLFWwindow *callbackWindow, int button, int action, int mods) {
+
+        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+
+        if (window != nullptr) {
+            window->e_mouseButton(button, action, mods);
+        }
+    }
+
+    void Window::onMouseMoveEvent(GLFWwindow *callbackWindow, double x, double y) {
+
+        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+
+        if (window != nullptr) {
+            window->e_mouseMove(x, y);
+        }
+    }
+
+    void Window::onMouseScrollEvent(GLFWwindow *callbackWindow, double xoffset, double yoffset) {
+        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+
+        if (window != nullptr) {
+            window->e_mouseScroll(xoffset, yoffset);
+        }
+    }
+
+    void Window::onResize(GLFWwindow *callbackWindow, int width, int height) {
+
+        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+
+        if (window != nullptr) {
+            window->e_resize(width, height);
+        }
+    }
+
+    void Window::onKeyEvent(GLFWwindow *callbackWindow, int key, int scancode, int action, int mods) {
+
+        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+
+        if (window != nullptr) {
+            window->e_key(key, scancode, action, mods);
+        }
+    }
+
+    bool Window::isWindowOpen() const {
+        return !glfwWindowShouldClose(m_window);
     }
 
     int Window::getWidth() const {

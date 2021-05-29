@@ -1,7 +1,8 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
-#include <vkcv/Window.hpp>
-#include <vkcv/ShaderProgram.hpp>
+#include <GLFW/glfw3.h>
+#include <vkcv/camera/CameraManager.hpp>
+#include <chrono>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
@@ -14,6 +15,10 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		false
     );
+
+    vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
+
+    window.initEvents();
 
 	vkcv::Core core = vkcv::Core::create(
             window,
@@ -33,12 +38,22 @@ int main(int argc, const char** argv) {
 		float x, y, z;
 	};
 	
-	auto buffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, 3);
+	const size_t n = 5027;
 	
-	vec3* m = buffer.map();
+	auto buffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, n, vkcv::BufferMemoryType::DEVICE_LOCAL);
+	vec3 vec_data [n];
+	
+	for (size_t i = 0; i < n; i++) {
+		vec_data[i] = { 42, static_cast<float>(i), 7 };
+	}
+	
+	buffer.fill(vec_data);
+	
+	/*vec3* m = buffer.map();
 	m[0] = { 0, 0, 0 };
-	m[0] = { 0, 0, 0 };
-	m[0] = { 0, 0, 0 };
+	m[1] = { 0, 0, 0 };
+	m[2] = { 0, 0, 0 };
+	buffer.unmap();*/
 
 	std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
 
@@ -63,7 +78,7 @@ int main(int argc, const char** argv) {
 	vkcv::PassConfig trianglePassDefinition({present_color_attachment});
 	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
 
-	if (trianglePass.id == 0)
+	if (!trianglePass)
 	{
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
@@ -77,10 +92,29 @@ int main(int argc, const char** argv) {
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
-	if (trianglePipeline.id == 0)
+	
+	if (!trianglePipeline)
 	{
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
+	}
+
+	//just an example
+	//creates 20 descriptor sets, each containing bindings for 50 uniform buffers, images, and samplers
+	std::vector<vkcv::DescriptorSet> sets;
+
+	for (uint32_t i = 0; i < 20; i++)
+	{
+		vkcv::DescriptorBinding uniformBufBinding(vkcv::DescriptorType::UNIFORM_BUFFER, 50, vkcv::ShaderStage::VERTEX);
+        vkcv::DescriptorBinding storageBufBinding(vkcv::DescriptorType::STORAGE_BUFFER, 50, vkcv::ShaderStage::VERTEX);
+        vkcv::DescriptorBinding imageBinding(vkcv::DescriptorType::IMAGE, 50, vkcv::ShaderStage::VERTEX);
+        vkcv::DescriptorBinding samplerBinding(vkcv::DescriptorType::SAMPLER, 50, vkcv::ShaderStage::VERTEX);
+
+        vkcv::DescriptorSet set({uniformBufBinding, storageBufBinding, imageBinding, samplerBinding});
+
+		sets.push_back(set);
+        auto resourceHandle = core.createResourceDescription(sets);
+        std::cout << "Resource " << resourceHandle << " created." << std::endl;
 	}
 
 	/*
@@ -98,14 +132,19 @@ int main(int argc, const char** argv) {
 	 *
 	 * PipelineHandle trianglePipeline = core.CreatePipeline(trianglePipeline);
 	 */
-
+    auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen())
 	{
 		core.beginFrame();
-	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight);
-	    core.endFrame();
+        window.pollEvents();
+        auto end = std::chrono::system_clock::now();
+        auto deltatime = end - start;
+        start = end;
+        cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
+		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-		window.pollEvents();
+	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp);
+	    core.endFrame();
 	}
 	return 0;
 }
