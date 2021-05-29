@@ -4,6 +4,7 @@
  * @brief class for image handles
  */
 #include "vkcv/Image.hpp"
+#include "vkcv/ImageManager.hpp"
 
 namespace vkcv{
 	Image Image::create(ImageManager* manager, uint32_t width, uint32_t height)
@@ -11,13 +12,15 @@ namespace vkcv{
 		return Image(manager, manager->createImage(width, height));
 	}
 
-	void Image::switchImageLayout(vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+	void Image::switchImageLayout(vk::ImageLayout newLayout)
 	{
-		m_manager->switchImageLayout(m_handle_id, oldLayout, newLayout);
+		m_manager->switchImageLayout(m_handle_id, m_layout, newLayout);
+		m_layout = newLayout;
 	}
 	Image::Image(ImageManager* manager, uint64_t id) :
 		m_manager(manager),
-		m_handle_id(id)
+		m_handle_id(id),
+		m_layout(vk::ImageLayout::eUndefined)
 	{
 	}
 

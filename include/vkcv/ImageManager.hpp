@@ -9,7 +9,8 @@
 
 namespace vkcv {
 	class Core;
-	class ImageManager 
+	class BufferManager;
+	class ImageManager
 	{
 		friend class Core;
 	private:
@@ -17,11 +18,13 @@ namespace vkcv {
 		{
 			vk::Image m_handle;
 			vk::DeviceMemory m_memory;
-			void* m_mapped = nullptr;
-			bool m_mappable;
 		};
 		Core* m_core;
+		vk::Buffer m_stagingBuffer;
+		vk::DeviceMemory m_stagingMemory;
+
 		std::vector<Image> m_images;
+		void init(BufferManager* bufferManager);
 		ImageManager() noexcept;
 	public:
 		~ImageManager() noexcept;
@@ -30,9 +33,9 @@ namespace vkcv {
 
 		ImageManager& operator=(ImageManager&& other) = delete;
 		ImageManager& operator=(const ImageManager& other) = delete;
-
-		void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
+		
 		void switchImageLayout(uint64_t id, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+		void fillImage(uint64_t id, void* data, size_t size);
 
 		uint64_t createImage(uint32_t width, uint32_t height);
 

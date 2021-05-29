@@ -10,6 +10,7 @@
 #include "PassManager.hpp"
 #include "PipelineManager.hpp"
 #include "vkcv/BufferManager.hpp"
+#include "vkcv/ImageManager.hpp"
 #include "Surface.hpp"
 #include "ImageLayoutTransitions.hpp"
 #include "Framebuffer.hpp"
@@ -100,6 +101,7 @@ namespace vkcv
     	m_BufferManager->m_core = this;
     	m_BufferManager->init();
 		m_ImageManager->m_core = this;
+		m_ImageManager->init(m_BufferManager.get());
 	}
 
 	Core::~Core() noexcept {

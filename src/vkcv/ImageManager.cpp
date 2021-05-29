@@ -34,6 +34,15 @@ namespace vkcv {
 		return -1;
 	}
 	
+	void ImageManager::init(BufferManager* bufferManager)
+	{
+		if (!m_core) {
+			return;
+		}
+		uint64_t stagingID = bufferManager->createBuffer(BufferType::STAGING, 1024 * 1024, BufferMemoryType::HOST_VISIBLE);
+		m_stagingBuffer = bufferManager->m_buffers[stagingID].m_handle;
+	}
+
 	ImageManager::ImageManager() noexcept :
 		m_core(nullptr), m_images()
 	{
@@ -45,25 +54,7 @@ namespace vkcv {
 		}
 	}
 
-	void ImageManager::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height)
-	{
-		vk::BufferImageCopy copyRegion(0,width,height); // possibly add offset etc
-
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Transfer; //not sure
-		m_core->submitCommands(
-			submitInfo,
-			[buffer, image,copyRegion](const vk::CommandBuffer& commandBuffer) {
-				commandBuffer.copyBufferToImage(
-					buffer,
-					image,vk::ImageLayout::eTransferDstOptimal,
-					copyRegion
-				);
-			},
-			[]() {}
-			);
-
-	}
+	
 
 
 	uint64_t ImageManager::createImage(uint32_t width, uint32_t height)
@@ -95,7 +86,6 @@ namespace vkcv {
 		const vk::PhysicalDevice& physicalDevice = m_core->getContext().getPhysicalDevice();
 
 		vk::MemoryPropertyFlags memoryTypeFlags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
-		bool mappable = false;
 
 		const uint32_t memoryTypeIndex = searchImageMemoryType(
 			physicalDevice.getMemoryProperties(),
@@ -107,7 +97,7 @@ namespace vkcv {
 		device.bindImageMemory(image, memory, 0);
 
 		const uint64_t id = m_images.size();
-		m_images.push_back({ image, memory, nullptr, mappable });
+		m_images.push_back({ image, memory});
 		return id;
 	}
 
@@ -154,8 +144,112 @@ namespace vkcv {
 					imageMemoryBarrier
 				);
 			},
-			[]() {}
+			nullptr
 		);
+	}
+
+	struct ImageStagingStepInfo {
+		void* data;
+		size_t size;
+		uint32_t width;
+		uint32_t height;
+		size_t offset;
+
+		vk::Image image;
+		vk::Buffer stagingBuffer;
+		vk::DeviceMemory stagingMemory;
+
+		size_t stagingLimit;
+		size_t stagingPosition;
+	};
+
+	void copyStagingToImage(Core* core, ImageStagingStepInfo info)
+	{
+		/*
+		* Alte implementation
+		vk::BufferImageCopy copyRegion(0, width, height);
+
+		SubmitInfo submitInfo;
+		submitInfo.queueType = QueueType::Transfer; //not sure
+		core->submitCommands(
+			submitInfo,
+			[buffer, image, copyRegion](const vk::CommandBuffer& commandBuffer) {
+				commandBuffer.copyBufferToImage(
+					buffer,
+					image, vk::ImageLayout::eTransferDstOptimal,
+					copyRegion
+				);
+			},
+			[]() {}
+			);
+		*/
+
+		const size_t remaining = info.size - info.stagingPosition;
+		const size_t mapped_size = std::min(remaining, info.stagingLimit);
+
+		const vk::Device& device = core->getContext().getDevice();
+
+		void* mapped = device.mapMemory(info.stagingMemory, 0, mapped_size);
+		memcpy(mapped, reinterpret_cast<char*>(info.data) + info.stagingPosition, mapped_size);
+		device.unmapMemory(info.stagingMemory);
+
+		SubmitInfo submitInfo;
+		submitInfo.queueType = QueueType::Transfer;
+
+		core->submitCommands(
+			submitInfo,
+			[&info, &mapped_size](const vk::CommandBuffer& commandBuffer) {
+				/*
+				const vk::BufferImageCopy region(
+					info.offset, //bufferOffset
+					info.size, //bufferRowlength
+					0, //bufferImageHeight
+					vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor,0,0,1),//soubresource layer
+					vk::Offset2D(info.offset,0), //imageoffset
+					vk::Extent3D(info.width,info.height,1) //extend3d
+				);
+				
+				commandBuffer.copyBufferToImage(
+					info.stagingBuffer,
+					info.image,
+					vk::ImageLayout::eTransferDstOptimal,
+					region);
+				*/
+			},
+			[&core, &info, &mapped_size, &remaining]() {
+				if (mapped_size < remaining) {
+					info.stagingPosition += mapped_size;
+
+					copyStagingToImage(
+						core,
+						info
+					);
+				}
+			}
+			);
+	}
+	void ImageManager::fillImage(uint64_t id, void* data, size_t size)
+	{
+		uint64_t width =0, height = 0; // TODO
+		//Image wird geladen	
+		size_t sizeImage = width * height * 3; //TODO
+		switchImageLayout(id, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+		//const size_t max_size = std::min(size, image.m_size - offset);
+		ImageStagingStepInfo info;
+		info.data = data;
+		info.size = size;//TODO
+		info.offset = 0;
+
+		info.image = m_images[id].m_handle;
+		info.stagingBuffer = m_stagingBuffer;
+		info.stagingMemory = m_stagingMemory;
+
+		const vk::MemoryRequirements stagingRequirements = m_core->getContext().getDevice().getBufferMemoryRequirements(m_stagingBuffer);
+		info.stagingLimit = stagingRequirements.size;
+		info.stagingPosition = 0;
+
+		copyStagingToImage(m_core, info);
+		switchImageLayout(id, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
 	}
 
 	void ImageManager::destroyImage(uint64_t id)

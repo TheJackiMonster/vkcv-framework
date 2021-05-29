@@ -22,6 +22,7 @@ namespace vkcv
 	class BufferManager
 	{
 		friend class Core;
+		friend class ImageManager;
 	private:
 		
 		struct Buffer
