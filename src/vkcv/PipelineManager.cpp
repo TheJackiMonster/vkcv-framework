@@ -67,15 +67,30 @@ namespace vkcv
         );
 
         // vertex input state
-        vk::VertexInputBindingDescription vertexInputBindingDescription(0, 12, vk::VertexInputRate::eVertex);
-        vk::VertexInputAttributeDescription vertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, 0);
 
+        // Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
+        std::vector<vk::VertexInputBindingDescription> vertexBindingDescriptions;
+        std::vector<vk::VertexInputAttributeDescription> vertexAttributeDescriptions;
+
+        VertexLayout layout = config.m_ShaderProgram.getVertexLayout();
+        std::unordered_map<uint32_t, VertexInputAttachment> attachments = layout.attachmentMap;
+
+        for (auto& attachment: attachments) {
+            uint32_t location = attachment.second.location;
+            uint32_t binding = attachment.second.binding;
+            uint32_t offset = attachment.second.offset;
+            vk::Format vertexFormat = vertexFormatToVulkanFormat(attachment.second.format);
+            vertexBindingDescriptions.push_back({binding, layout.stride, vk::VertexInputRate::eVertex}); // TODO: What's about the input rate?
+            vertexAttributeDescriptions.push_back({location, binding, vk::Format::eR32G32B32Sfloat, offset});
+        }
+
+        // Handover Containers to PipelineVertexInputStateCreateIngo Struct
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
-                {},			// no vertex input until vertex buffer is implemented
-                0,			// 1,
-                nullptr,	// &vertexInputBindingDescription,
-                0,			// 1,
-                nullptr		// &vertexInputAttributeDescription
+                {},
+                vertexBindingDescriptions.size(),
+                vertexBindingDescriptions.data(),
+                vertexAttributeDescriptions.size(),
+                vertexAttributeDescriptions.data()
         );
 
         // input assembly state

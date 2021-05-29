@@ -50,4 +50,18 @@ namespace vkcv {
         }
     }
 
+	vk::Format vertexFormatToVulkanFormat(const VertexFormat format) {
+		switch (format) {
+			case VertexFormat::FLOAT	: return vk::Format::eR32Sfloat;
+			case VertexFormat::FLOAT2	: return vk::Format::eR32G32Sfloat;
+			case VertexFormat::FLOAT3	: return vk::Format::eR32G32B32Sfloat;
+			case VertexFormat::FLOAT4	: return vk::Format::eR32G32B32A32Sfloat;
+			case VertexFormat::INT		: return vk::Format::eR32Sint;
+			case VertexFormat::INT2		: return vk::Format::eR32G32Sint;
+			case VertexFormat::INT3		: return vk::Format::eR32G32B32Sint;
+			case VertexFormat::INT4		: return vk::Format::eR32G32B32A32Sint;
+			default: std::cerr << "Warning: Unknown vertex format" << std::endl; return vk::Format::eUndefined;
+		}
+	}
+
 }
