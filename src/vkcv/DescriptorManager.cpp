@@ -8,7 +8,7 @@ namespace vkcv
     descriptorSetLayouts{std::move(layouts)}
     {}
     DescriptorManager::DescriptorManager(vk::Device device) noexcept:
-        m_Device{ device }, m_NextResourceDescriptionID{ 1 }
+        m_Device{ device }, m_NextResourceDescriptionID{ 0 }
     {
         /**
          * Allocate a set size for the initial pool, namely 1000 units of each descriptor type below.
@@ -64,7 +64,7 @@ namespace vkcv
             if(m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &layout) != vk::Result::eSuccess)
             {
                 std::cout << "FAILED TO CREATE DESCRIPTOR SET LAYOUT" << std::endl;
-                return ResourcesHandle{0};
+                return ResourcesHandle();
             };
             vk_setLayouts.push_back(layout);
         }
@@ -79,11 +79,11 @@ namespace vkcv
             for(const auto &layout : vk_setLayouts)
                 m_Device.destroy(layout);
 
-            return ResourcesHandle{0};
+            return ResourcesHandle();
         };
 
         m_ResourceDescriptions.emplace_back(vk_sets, vk_setLayouts);
-        return ResourcesHandle{m_NextResourceDescriptionID++};
+        return ResourcesHandle(m_NextResourceDescriptionID++);
     }
 
     vk::DescriptorType DescriptorManager::convertDescriptorTypeFlag(DescriptorType type) {

@@ -5,13 +5,63 @@
  * @brief Central header file for all possible handles that the framework will hand out.
  */
 
-#include <cstdint>
+#include <iostream>
 
 namespace vkcv
 {
+	class Handle {
+		friend std::ostream& operator << (std::ostream& out, const Handle& handle);
+		
+	private:
+		uint64_t m_id;
+	
+	protected:
+		Handle();
+		
+		explicit Handle(uint64_t id);
+		
+		[[nodiscard]]
+		uint64_t getId() const;
+	
+	public:
+		virtual ~Handle() = default;
+		
+		Handle(const Handle& other) = default;
+		Handle(Handle&& other) = default;
+		
+		Handle& operator=(const Handle& other) = default;
+		Handle& operator=(Handle&& other) = default;
+		
+		explicit operator bool() const;
+		bool operator!() const;
+		
+	};
+	
+	std::ostream& operator << (std::ostream& out, const Handle& handle);
+	
     // Handle returned for any buffer created with the core/context objects
-    struct BufferHandle     {uint64_t id;};
-    struct PassHandle       {uint64_t id;};
-    struct PipelineHandle   {uint64_t id;};
-    struct ResourcesHandle  {uint64_t id;};
+    class BufferHandle : public Handle {
+    	friend class BufferManager;
+	private:
+		using Handle::Handle;
+    };
+	
+	class PassHandle : public Handle {
+		friend class PassManager;
+	private:
+		using Handle::Handle;
+	};
+	
+	class PipelineHandle : public Handle {
+		friend class PipelineManager;
+	private:
+		using Handle::Handle;
+	};
+	
+	class ResourcesHandle : public Handle {
+		friend class DescriptorManager;
+	private:
+		using Handle::Handle;
+	};
+	
 }
