@@ -93,11 +93,13 @@ namespace vkcv
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
             m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
 			m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
+			m_ImageManager{std::unique_ptr<ImageManager>(new ImageManager())},
             m_CommandResources(commandResources),
             m_SyncResources(syncResources)
 	{
     	m_BufferManager->m_core = this;
     	m_BufferManager->init();
+		m_ImageManager->m_core = this;
 	}
 
 	Core::~Core() noexcept {
