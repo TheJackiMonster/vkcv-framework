@@ -8,7 +8,14 @@
 
 namespace vkcv {
 
-	uint32_t searchMemoryType(const vk::PhysicalDeviceMemoryProperties& physicalMemoryProperties, uint32_t typeBits, vk::MemoryPropertyFlags requirements) {
+	/**
+	 * @brief searches memory type index for image allocation, combines requirements of image and application
+	 * @param physicalMemoryProperties Memory Properties of physical device
+	 * @param typeBits Bit field for suitable memory types
+	 * @param requirements Property flags that are required
+	 * @return memory type index for image
+	 */
+	uint32_t searchImageMemoryType(const vk::PhysicalDeviceMemoryProperties& physicalMemoryProperties, uint32_t typeBits, vk::MemoryPropertyFlags requirements) {
 		const uint32_t memoryCount = physicalMemoryProperties.memoryTypeCount;
 		for (uint32_t memoryIndex = 0; memoryIndex < memoryCount; ++memoryIndex) {
 			const uint32_t memoryTypeBits = (1 << memoryIndex);
@@ -75,7 +82,7 @@ namespace vkcv {
 		vk::MemoryPropertyFlags memoryTypeFlags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
 		bool mappable = false;
 
-		const uint32_t memoryTypeIndex = searchMemoryType(
+		const uint32_t memoryTypeIndex = searchImageMemoryType(
 			physicalDevice.getMemoryProperties(),
 			requirements.memoryTypeBits,
 			memoryTypeFlags
