@@ -66,36 +66,31 @@ namespace vkcv
                 nullptr
         );
 
+        // vertex input state
+
+        // Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
+        std::vector<vk::VertexInputBindingDescription> vertexBindingDescriptions;
+        std::vector<vk::VertexInputAttributeDescription> vertexAttributeDescriptions;
+
         VertexLayout layout = config.m_ShaderProgram.getVertexLayout();
         std::unordered_map<uint32_t, VertexInputAttachment> attachments = layout.attachmentMap;
 
-        // TODO: Implement for all attachments
-        VertexInputAttachment attachment = attachments.at(0);
-        uint32_t location = attachment.location;
-        uint32_t binding = attachment.binding;
-        uint32_t offset = attachment.offset;
-        VertexFormat format = attachment.format;    // TODO: Format -> Where does this belong?
+        for (auto& attachment: attachments) {
+            uint32_t location = attachment.second.location;
+            uint32_t binding = attachment.second.binding;
+            uint32_t offset = attachment.second.offset;
+            VertexFormat format = attachment.second.format;    // TODO: Format -> Where does this belong? -> This is not compatible with vk::Format
+            vertexBindingDescriptions.push_back({binding, layout.stride, vk::VertexInputRate::eVertex}); // TODO: What's about the input rate?
+            vertexAttributeDescriptions.push_back({location, binding, vk::Format::eR32G32B32Sfloat, offset});
+        }
 
-        std::cout << "--------------------------------" << std::endl;
-        std::cout << "Debug Print From PipelineManager" << std::endl;
-        std::cout << "Layout.stride: " << layout.stride << std::endl;
-        std::cout << "Location: " << location << std::endl;
-        std::cout << "Binding: " << binding << std::endl;
-        std::cout << "Offset: " << offset << std::endl;
-        std::cout << "Format: " << (int)format << std::endl;
-        std::cout << "--------------------------------" << std::endl;
-
-        // vertex input state
-        vk::VertexInputBindingDescription vertexInputBindingDescription(binding, layout.stride, vk::VertexInputRate::eVertex);    // TODO: What's with the input rate?
-        vk::VertexInputAttributeDescription vertexInputAttributeDescription(location, binding, vk::Format::eR32G32B32Sfloat, offset);
-
-        // TODO: Add vertexInputBindingDescription and vertexInputAttributeDescription to pipelineVertexInputStateCreateInfo
+        // Handover Containers to PipelineVertexInputStateCreateIngo Struct
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
                 {},
-                1,
-                &vertexInputBindingDescription,
-                1,
-                &vertexInputAttributeDescription
+                vertexBindingDescriptions.size(),
+                vertexBindingDescriptions.data(),
+                vertexAttributeDescriptions.size(),
+                vertexAttributeDescriptions.data()
         );
 
         // input assembly state
