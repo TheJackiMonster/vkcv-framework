@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 #include <iostream>
+#include <vulkan/vulkan.hpp>
 
 namespace vkcv{
     enum class VertexFormat{
@@ -33,5 +34,6 @@ namespace vkcv{
         uint32_t stride;
     };
 
-
+	// currently assuming default 32 bit formats, no lower precision or normalized variants supported
+	vk::Format vertexFormatToVulkanFormat(const VertexFormat format);
 }

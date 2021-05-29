@@ -79,7 +79,7 @@ namespace vkcv
             uint32_t location = attachment.second.location;
             uint32_t binding = attachment.second.binding;
             uint32_t offset = attachment.second.offset;
-            VertexFormat format = attachment.second.format;    // TODO: Format -> Where does this belong? -> This is not compatible with vk::Format
+            vk::Format vertexFormat = vertexFormatToVulkanFormat(attachment.second.format);
             vertexBindingDescriptions.push_back({binding, layout.stride, vk::VertexInputRate::eVertex}); // TODO: What's about the input rate?
             vertexAttributeDescriptions.push_back({location, binding, vk::Format::eR32G32B32Sfloat, offset});
         }
