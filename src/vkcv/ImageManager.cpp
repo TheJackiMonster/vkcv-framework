@@ -48,7 +48,7 @@ namespace vkcv {
 	{
 		vk::ImageCreateFlags createFlags;
 		vk::ImageUsageFlags imageUsageFlags = (vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
-		vk::Format format = vk::Format::eR8G8B8A8Unorm; // als Argument variabel?
+		vk::Format format = vk::Format::eR8G8B8A8Unorm; // als Argument variabel
 
 
 		const vk::Device& device = m_core->getContext().getDevice();
@@ -87,6 +87,53 @@ namespace vkcv {
 		const uint64_t id = m_images.size();
 		m_images.push_back({ image, memory, nullptr, mappable });
 		return id;
+	}
+
+	void ImageManager::switchImageLayout(uint64_t id, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) {
+		//alternativly we could use switch case for every variable to set
+		vk::AccessFlags sourceAccessMask;
+		vk::PipelineStageFlags sourceStage;
+		vk::AccessFlags destinationAccessMask;
+		vk::PipelineStageFlags destinationStage;
+		if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eTransferDstOptimal) {
+			destinationAccessMask = vk::AccessFlagBits::eTransferWrite;
+			sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+			destinationStage = vk::PipelineStageFlagBits::eTransfer;
+		}
+		else if (oldLayout == vk::ImageLayout::eTransferDstOptimal && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+			sourceAccessMask = vk::AccessFlagBits::eTransferWrite;
+			destinationAccessMask = vk::AccessFlagBits::eShaderRead;
+			sourceStage = vk::PipelineStageFlagBits::eTransfer;
+			destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
+		}
+		vk::ImageSubresourceRange imageSubresourceRange(vk::ImageAspectFlagBits::eColor , 0, 1, 0, 1);
+		ImageManager::Image image = m_images[id];
+		vk::ImageMemoryBarrier imageMemoryBarrier(
+			sourceAccessMask,
+			destinationAccessMask,
+			oldLayout,
+			newLayout,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			image.m_handle,
+			imageSubresourceRange
+			);
+		SubmitInfo submitInfo;
+		submitInfo.queueType = QueueType::Present; //not sure
+		m_core->submitCommands(
+			submitInfo,
+			[sourceStage, destinationStage, imageMemoryBarrier](const vk::CommandBuffer& commandBuffer) {
+				commandBuffer.pipelineBarrier(
+					sourceStage,
+					destinationStage,
+					{},
+					nullptr,
+					nullptr,
+					imageMemoryBarrier
+				);
+			},
+			[]() {}
+		);
 	}
 
 	void ImageManager::destroyImage(uint64_t id)

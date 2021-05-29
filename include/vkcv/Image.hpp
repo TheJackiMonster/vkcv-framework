@@ -9,7 +9,8 @@
 namespace vkcv {
 	class Image {
 	public:
-		static Image create(ImageManager* manager);
+		static Image create(ImageManager* manager, uint32_t width, uint32_t height);
+		void switchImageLayout(vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 	private:
 		ImageManager* const m_manager;
 		const uint64_t m_handle_id;

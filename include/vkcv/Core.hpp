@@ -13,6 +13,7 @@
 #include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
 #include "vkcv/Buffer.hpp"
+#include "vkcv/Image.hpp"
 #include "vkcv/PipelineConfig.hpp"
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
@@ -24,6 +25,7 @@ namespace vkcv
     class PassManager;
     class PipelineManager;
     class BufferManager;
+    class ImageManager;
 
 	struct SubmitInfo {
 		QueueType queueType;
@@ -60,6 +62,7 @@ namespace vkcv
         std::unique_ptr<PassManager> m_PassManager;
         std::unique_ptr<PipelineManager> m_PipelineManager;
         std::unique_ptr<BufferManager> m_BufferManager;
+        std::unique_ptr<ImageManager> m_ImageManager;
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
 		uint32_t m_currentSwapchainImageIndex;
