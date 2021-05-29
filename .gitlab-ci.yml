@@ -19,7 +19,7 @@ build_ubuntu_gcc:
     GIT_SUBMODULE_STRATEGY: recursive
   timeout: 10m
   retry: 1
-  before_script:
+  pre_clone_script:
     - git lfs install
   script:
     - mkdir debug
@@ -44,7 +44,7 @@ build_win10_msvc:
     GIT_SUBMODULE_STRATEGY: recursive
   timeout: 10m
   retry: 1
-  before_script:
+  pre_clone_script:
     - git lfs install
   script:
     - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
