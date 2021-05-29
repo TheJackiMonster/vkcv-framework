@@ -1,11 +1,9 @@
+#pragma once
 /**
  * @authors Mara Vogt, Mark Mints
  * @file src/vkcv/Pipeline.hpp
  * @brief Pipeline class to handle shader stages
  */
-
-#ifndef VKCV_PIPELINECONFIG_HPP
-#define VKCV_PIPELINECONFIG_HPP
 
 #include <vector>
 #include <cstdint>
@@ -40,4 +38,3 @@ namespace vkcv {
     };
 
 }
-#endif //VKCV_PIPELINECONFIG_HPP

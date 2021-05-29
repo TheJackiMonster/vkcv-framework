@@ -34,8 +34,9 @@ namespace vkcv {
          * adds a function handle to the event to be called
          * @param handle of the function
          */
-        void add(typename event_function<T...>::type handle) {
+        typename event_function<T...>::type add(typename event_function<T...>::type handle) {
             this->m_handles.push_back(handle);
+            return handle;
         }
 
         /**

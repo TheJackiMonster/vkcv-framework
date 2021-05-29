@@ -11,6 +11,7 @@
 #include "PipelineManager.hpp"
 #include "vkcv/BufferManager.hpp"
 #include "vkcv/ImageManager.hpp"
+#include "DescriptorManager.hpp"
 #include "Surface.hpp"
 #include "ImageLayoutTransitions.hpp"
 #include "Framebuffer.hpp"
@@ -93,6 +94,7 @@ namespace vkcv
             m_swapchainImageViews(imageViews),
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
             m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
+            m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
 			m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
 			m_ImageManager{std::unique_ptr<ImageManager>(new ImageManager())},
             m_CommandResources(commandResources),
@@ -160,13 +162,14 @@ namespace vkcv
     	if (acquireSwapchainImage() != Result::SUCCESS) {
     		return;
     	}
-		m_window.pollEvents();
 		m_Context.getDevice().waitIdle();	// FIMXE: this is a sin against graphics programming, but its getting late - Alex
 		destroyTemporaryFramebuffers();
 	}
 
-	void Core::renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
-		const int width, const int height) {
+	void Core::renderMesh(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
+		const int width, const int height, const size_t pushConstantSize, const void *pushConstantData,
+		const BufferHandle vertexBuffer, const BufferHandle indexBuffer, const size_t indexCount) {
+
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
 		}
@@ -174,7 +177,10 @@ namespace vkcv
 		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
 		const vk::ImageView imageView	= m_swapchainImageViews[m_currentSwapchainImageIndex];
 		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
+        const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
 		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+		const vk::Buffer vulkanVertexBuffer	= m_BufferManager->getBuffer(vertexBuffer);
+		const vk::Buffer vulkanIndexBuffer	= m_BufferManager->getBuffer(indexBuffer);
 
 		const vk::Framebuffer framebuffer = createFramebuffer(m_Context.getDevice(), renderpass, width, height, imageView);
 		m_TemporaryFramebuffers.push_back(framebuffer);
@@ -182,17 +188,22 @@ namespace vkcv
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
-		submitCommands(submitInfo, [renderpass, renderArea, imageView, framebuffer, pipeline](const vk::CommandBuffer& cmdBuffer) {
+		submitCommands(submitInfo, [renderpass, renderArea, imageView, framebuffer, pipeline, pipelineLayout, 
+			pushConstantSize, pushConstantData, vulkanVertexBuffer, indexCount, vulkanIndexBuffer](const vk::CommandBuffer& cmdBuffer) {
 
 			const std::array<float, 4> clearColor = { 0.f, 0.f, 0.f, 1.f };
 			const vk::ClearValue clearValues(clearColor);
-			
+
 			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, 1, &clearValues);
 			const vk::SubpassContents subpassContents = {};
 			cmdBuffer.beginRenderPass(beginInfo, subpassContents, {});
-			
+
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
-			cmdBuffer.draw(3, 1, 0, 0, {});
+			
+			cmdBuffer.bindVertexBuffers(0, (vulkanVertexBuffer), { 0 });
+			cmdBuffer.bindIndexBuffer(vulkanIndexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
+            cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
+			cmdBuffer.drawIndexed(indexCount, 1, 0, 0, {});
 			cmdBuffer.endRenderPass();
 		}, nullptr);
 	}
@@ -255,4 +266,9 @@ namespace vkcv
 			finish();
 		}
 	}
+
+    ResourcesHandle Core::createResourceDescription(const std::vector<DescriptorSet> &descriptorSets)
+    {
+        return m_DescriptorManager->createResourceDescription(descriptorSets);
+    }
 }

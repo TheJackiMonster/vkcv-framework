@@ -18,3 +18,4 @@ add_library(vkcv_testing STATIC ${vkcv_testing_sources})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_testing BEFORE PUBLIC ${vkcv_testing_include})
+

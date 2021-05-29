@@ -18,12 +18,14 @@
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "Result.hpp"
+#include "vkcv/DescriptorConfig.hpp"
 
 namespace vkcv
 {
     // forward declarations
     class PassManager;
     class PipelineManager;
+    class DescriptorManager;
     class BufferManager;
     class ImageManager;
 
@@ -61,8 +63,10 @@ namespace vkcv
 
         std::unique_ptr<PassManager> m_PassManager;
         std::unique_ptr<PipelineManager> m_PipelineManager;
+        std::unique_ptr<DescriptorManager> m_DescriptorManager;
         std::unique_ptr<BufferManager> m_BufferManager;
         std::unique_ptr<ImageManager> m_ImageManager;
+
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
 		uint32_t m_currentSwapchainImageIndex;
@@ -170,6 +174,13 @@ namespace vkcv
         	return Buffer<T>::create(m_BufferManager.get(), type, count, memoryType);
         }
 
+        /** TODO:
+         *   @param setDescriptions
+         *   @return
+         */
+        [[nodiscard]]
+        ResourcesHandle createResourceDescription(const std::vector<DescriptorSet> &descriptorSets);
+
 		/**
 		 * @brief start recording command buffers and increment frame index
 		*/
@@ -178,8 +189,9 @@ namespace vkcv
 		/**
 		 * @brief render a beautiful triangle
 		*/
-		void renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle,
-			const int width, const int height);
+		void renderMesh(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle,
+			const int width, const int height, const size_t pushConstantSize, const void* pushConstantData, 
+			const BufferHandle vertexBuffer, const BufferHandle indexBuffer, const size_t indexCount);
 
 		/**
 		 * @brief end recording and present image
