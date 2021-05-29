@@ -10,7 +10,7 @@
 #include "PassManager.hpp"
 #include "PipelineManager.hpp"
 #include "vkcv/BufferManager.hpp"
-#include "vkcv/ImageManager.hpp"
+#include "ImageManager.hpp"
 #include "DescriptorManager.hpp"
 #include "Surface.hpp"
 #include "ImageLayoutTransitions.hpp"
@@ -96,14 +96,14 @@ namespace vkcv
             m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
             m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
 			m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
-			m_ImageManager{std::unique_ptr<ImageManager>(new ImageManager())},
+			m_ImageManager{std::unique_ptr<ImageManager>(new ImageManager(*m_BufferManager))},
             m_CommandResources(commandResources),
             m_SyncResources(syncResources)
 	{
     	m_BufferManager->m_core = this;
     	m_BufferManager->init();
-		m_ImageManager->m_core = this;
-		m_ImageManager->init(m_BufferManager.get());
+    	
+    	m_ImageManager->m_core = this;
 	}
 
 	Core::~Core() noexcept {

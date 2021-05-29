@@ -194,6 +194,18 @@ namespace vkcv {
 		return buffer.m_handle;
 	}
 	
+	size_t BufferManager::getBufferSize(const BufferHandle &handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_buffers.size()) {
+			return 0;
+		}
+		
+		auto& buffer = m_buffers[id];
+		
+		return buffer.m_size;
+	}
+	
 	vk::DeviceMemory BufferManager::getDeviceMemory(const BufferHandle& handle) const {
 		const uint64_t id = handle.getId();
 		
