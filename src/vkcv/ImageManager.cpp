@@ -54,22 +54,21 @@ namespace vkcv {
 		}
 	}
 
-	
-
-
 	uint64_t ImageManager::createImage(uint32_t width, uint32_t height)
 	{
 		vk::ImageCreateFlags createFlags;
 		vk::ImageUsageFlags imageUsageFlags = (vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
-		vk::Format format = vk::Format::eR8G8B8A8Unorm; // als Argument variabel
-
+		
+		vk::Format format = vk::Format::eR8G8B8A8Unorm; // TODO
+		uint32_t channels = 3; // TODO
 
 		const vk::Device& device = m_core->getContext().getDevice();
 
 		vk::ImageCreateInfo imageCreateInfo(
 			createFlags,
 			vk::ImageType::e2D,
-			format, vk::Extent3D(width, height, 1),
+			format,
+			vk::Extent3D(width, height, 1),
 			1,
 			1,
 			vk::SampleCountFlagBits::e1,
@@ -85,7 +84,7 @@ namespace vkcv {
 		const vk::MemoryRequirements requirements = device.getImageMemoryRequirements(image);
 		const vk::PhysicalDevice& physicalDevice = m_core->getContext().getPhysicalDevice();
 
-		vk::MemoryPropertyFlags memoryTypeFlags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+		vk::MemoryPropertyFlags memoryTypeFlags = vk::MemoryPropertyFlagBits::eDeviceLocal;
 
 		const uint32_t memoryTypeIndex = searchImageMemoryType(
 			physicalDevice.getMemoryProperties(),
@@ -97,7 +96,7 @@ namespace vkcv {
 		device.bindImageMemory(image, memory, 0);
 
 		const uint64_t id = m_images.size();
-		m_images.push_back({ image, memory});
+		m_images.push_back({ image, memory, width * height * channels });
 		return id;
 	}
 
@@ -105,21 +104,36 @@ namespace vkcv {
 		//alternativly we could use switch case for every variable to set
 		vk::AccessFlags sourceAccessMask;
 		vk::PipelineStageFlags sourceStage;
+		
 		vk::AccessFlags destinationAccessMask;
 		vk::PipelineStageFlags destinationStage;
-		if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eTransferDstOptimal) {
+		
+		if ((oldLayout == vk::ImageLayout::eUndefined) &&
+			(newLayout == vk::ImageLayout::eTransferDstOptimal))
+		{
 			destinationAccessMask = vk::AccessFlagBits::eTransferWrite;
 			sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
 			destinationStage = vk::PipelineStageFlagBits::eTransfer;
 		}
-		else if (oldLayout == vk::ImageLayout::eTransferDstOptimal && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+		else if ((oldLayout == vk::ImageLayout::eTransferDstOptimal) &&
+				 (newLayout == vk::ImageLayout::eShaderReadOnlyOptimal))
+		{
 			sourceAccessMask = vk::AccessFlagBits::eTransferWrite;
 			destinationAccessMask = vk::AccessFlagBits::eShaderRead;
 			sourceStage = vk::PipelineStageFlagBits::eTransfer;
 			destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
 		}
-		vk::ImageSubresourceRange imageSubresourceRange(vk::ImageAspectFlagBits::eColor , 0, 1, 0, 1);
+		
+		vk::ImageSubresourceRange imageSubresourceRange(
+				vk::ImageAspectFlagBits::eColor ,
+				0,
+				1,
+				0,
+				1
+		);
+		
 		ImageManager::Image image = m_images[id];
+		
 		vk::ImageMemoryBarrier imageMemoryBarrier(
 			sourceAccessMask,
 			destinationAccessMask,
@@ -129,9 +143,11 @@ namespace vkcv {
 			VK_QUEUE_FAMILY_IGNORED,
 			image.m_handle,
 			imageSubresourceRange
-			);
+		);
+		
 		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Present; //not sure
+		submitInfo.queueType = QueueType::Transfer;
+		
 		m_core->submitCommands(
 			submitInfo,
 			[sourceStage, destinationStage, imageMemoryBarrier](const vk::CommandBuffer& commandBuffer) {
@@ -153,7 +169,6 @@ namespace vkcv {
 		size_t size;
 		uint32_t width;
 		uint32_t height;
-		size_t offset;
 
 		vk::Image image;
 		vk::Buffer stagingBuffer;
@@ -230,22 +245,31 @@ namespace vkcv {
 	}
 	void ImageManager::fillImage(uint64_t id, void* data, size_t size)
 	{
-		uint64_t width =0, height = 0; // TODO
-		//Image wird geladen	
-		size_t sizeImage = width * height * 3; //TODO
+		if (size == 0) {
+			size = SIZE_MAX;
+		}
+		
+		if (id >= m_images.size()) {
+			return;
+		}
+		
+		auto& image = m_images[id];
+		
 		switchImageLayout(id, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+		
+		const size_t max_size = std::min(size, image.m_size);
+		
 		//const size_t max_size = std::min(size, image.m_size - offset);
 		ImageStagingStepInfo info;
 		info.data = data;
-		info.size = size;//TODO
-		info.offset = 0;
+		info.size = max_size;
 
-		info.image = m_images[id].m_handle;
+		info.image = image.m_handle;
 		info.stagingBuffer = m_stagingBuffer;
 		info.stagingMemory = m_stagingMemory;
 
 		const vk::MemoryRequirements stagingRequirements = m_core->getContext().getDevice().getBufferMemoryRequirements(m_stagingBuffer);
-		info.stagingLimit = stagingRequirements.size;
+		info.stagingLimit = stagingRequirements.size; //TODO
 		info.stagingPosition = 0;
 
 		copyStagingToImage(m_core, info);
@@ -257,6 +281,7 @@ namespace vkcv {
 		if (id >= m_images.size()) {
 			return;
 		}
+		
 		auto& image = m_images[id];
 
 		const vk::Device& device = m_core->getContext().getDevice();

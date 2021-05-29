@@ -18,7 +18,9 @@ namespace vkcv {
 		{
 			vk::Image m_handle;
 			vk::DeviceMemory m_memory;
+			size_t m_size;
 		};
+		
 		Core* m_core;
 		vk::Buffer m_stagingBuffer;
 		vk::DeviceMemory m_stagingMemory;
