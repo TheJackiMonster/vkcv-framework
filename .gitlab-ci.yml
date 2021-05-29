@@ -2,7 +2,7 @@ variables:
   RUN:
     value: "all"
     description: "The tests that should run. Possible values: ubuntu, win, all."
-  GIT_DEPTH: 10
+  GIT_DEPTH: 1
 
 stages:
   - build
