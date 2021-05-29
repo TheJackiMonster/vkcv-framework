@@ -16,7 +16,7 @@ build_ubuntu_gcc:
   tags: 
     - ubuntu-gcc
   variables:
-    GIT_SUBMODULE_STRATEGY: normal
+    GIT_SUBMODULE_STRATEGY: recursive
   timeout: 10m
   retry: 1
   before_script:
@@ -41,7 +41,7 @@ build_win10_msvc:
   tags: 
     - win10-msvc
   variables:
-    GIT_SUBMODULE_STRATEGY: normal
+    GIT_SUBMODULE_STRATEGY: recursive
   timeout: 10m
   retry: 1
   before_script:
