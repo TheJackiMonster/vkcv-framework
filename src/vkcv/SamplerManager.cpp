@@ -10,7 +10,7 @@ namespace vkcv {
 	
 	SamplerManager::~SamplerManager() {
 		for (uint64_t id = 0; id < m_samplers.size(); id++) {
-			destroySampler(SamplerHandle{id});
+			destroySampler(SamplerHandle(id));
 		}
 	}
 	
@@ -96,11 +96,11 @@ namespace vkcv {
 		
 		const uint64_t id = m_samplers.size();
 		m_samplers.push_back(sampler);
-		return SamplerHandle{id};
+		return SamplerHandle(id);
 	}
 	
 	vk::Sampler SamplerManager::getVulkanSampler(const SamplerHandle &handle) const {
-		const uint64_t id = handle.id;
+		const uint64_t id = handle.getId();
 		
 		if (id >= m_samplers.size()) {
 			return nullptr;
@@ -110,7 +110,7 @@ namespace vkcv {
 	}
 	
 	void SamplerManager::destroySampler(const SamplerHandle &handle) {
-		const uint64_t id = handle.id;
+		const uint64_t id = handle.getId();
 		
 		if (id >= m_samplers.size()) {
 			return;

@@ -3,9 +3,12 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
+#include "Handles.hpp"
+
 namespace vkcv
 {
 	enum class BufferType {
+		INDEX,
 		VERTEX,
 		UNIFORM,
 		STORAGE,
@@ -35,7 +38,7 @@ namespace vkcv
 		
 		Core* m_core;
 		std::vector<Buffer> m_buffers;
-		uint64_t m_stagingBuffer;
+		BufferHandle m_stagingBuffer;
 		
 		BufferManager() noexcept;
 		
@@ -57,47 +60,67 @@ namespace vkcv
 		 * @param type Type of buffer
 		 * @param size Size of buffer in bytes
 		 * @param memoryType Type of buffers memory
-		 * @return New buffer handle id
+		 * @return New buffer handle
 		 */
-		uint64_t createBuffer(BufferType type, size_t size, BufferMemoryType memoryType);
+		BufferHandle createBuffer(BufferType type, size_t size, BufferMemoryType memoryType);
+		
+		/**
+		 * Returns the Vulkan buffer handle of a buffer
+		 * represented by a given buffer handle id.
+		 *
+		 * @param handle Buffer handle
+		 * @return Vulkan buffer handle
+		 */
+		[[nodiscard]]
+		vk::Buffer getBuffer(const BufferHandle& handle) const;
+		
+		/**
+		 * Returns the Vulkan device memory handle of a buffer
+		 * represented by a given buffer handle id.
+		 *
+		 * @param handle Buffer handle
+		 * @return Vulkan device memory handle
+		 */
+		[[nodiscard]]
+		vk::DeviceMemory getDeviceMemory(const BufferHandle& handle) const;
 		
 		/**
 		 * Fills a buffer represented by a given buffer
 		 * handle id with custom data.
 		 *
-		 * @param id Buffer handle id
+		 * @param handle Buffer handle
 		 * @param data Pointer to data
 		 * @param size Size of data in bytes
 		 * @param offset Offset to fill in data in bytes
 		 */
-		void fillBuffer(uint64_t id, void* data, size_t size, size_t offset);
+		void fillBuffer(const BufferHandle& handle, void* data, size_t size, size_t offset);
 		
 		/**
 		 * Maps memory to a buffer represented by a given
 		 * buffer handle id and returns it.
 		 *
-		 * @param id Buffer handle id
+		 * @param handle Buffer handle
 		 * @param offset Offset of mapping in bytes
 		 * @param size Size of mapping in bytes
 		 * @return Pointer to mapped memory
 		 */
-		void* mapBuffer(uint64_t id, size_t offset, size_t size);
+		void* mapBuffer(const BufferHandle& handle, size_t offset, size_t size);
 		
 		/**
 		 * Unmaps memory from a buffer represented by a given
 		 * buffer handle id.
 		 *
-		 * @param id Buffer handle id
+		 * @param handle Buffer handle
 		 */
-		void unmapBuffer(uint64_t id);
+		void unmapBuffer(const BufferHandle& handle);
 	
 		/**
 		 * Destroys and deallocates buffer represented by a given
 		 * buffer handle id.
 		 *
-		 * @param id Buffer handle id
+		 * @param handle Buffer handle
 		 */
-		void destroyBuffer(uint64_t id);
+		void destroyBuffer(const BufferHandle& handle);
 		
 	};
 	

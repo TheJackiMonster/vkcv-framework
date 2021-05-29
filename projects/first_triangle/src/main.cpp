@@ -1,9 +1,8 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
-#include <vkcv/Window.hpp>
-#include <vkcv/ShaderProgram.hpp>
 #include <GLFW/glfw3.h>
-#include <vkcv/DescriptorConfig.hpp>
+#include <vkcv/camera/CameraManager.hpp>
+#include <chrono>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "First Triangle";
@@ -16,6 +15,8 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		false
     );
+
+    vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
 
     window.initEvents();
 
@@ -84,7 +85,7 @@ int main(int argc, const char** argv) {
 	vkcv::PassConfig trianglePassDefinition({present_color_attachment});
 	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
 
-	if (trianglePass.id == 0)
+	if (!trianglePass)
 	{
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
@@ -96,7 +97,8 @@ int main(int argc, const char** argv) {
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
-	if (trianglePipeline.id == 0)
+	
+	if (!trianglePipeline)
 	{
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
@@ -117,7 +119,7 @@ int main(int argc, const char** argv) {
 
 		sets.push_back(set);
         auto resourceHandle = core.createResourceDescription(sets);
-        std::cout << "Resource " << resourceHandle.id << " created." << std::endl;
+        std::cout << "Resource " << resourceHandle << " created." << std::endl;
 	}
 
 	/*
@@ -135,11 +137,18 @@ int main(int argc, const char** argv) {
 	 *
 	 * PipelineHandle trianglePipeline = core.CreatePipeline(trianglePipeline);
 	 */
-
+    auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen())
 	{
 		core.beginFrame();
-	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight);
+        window.pollEvents();
+        auto end = std::chrono::system_clock::now();
+        auto deltatime = end - start;
+        start = end;
+        cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
+		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+
+	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp);
 	    core.endFrame();
 	}
 	return 0;

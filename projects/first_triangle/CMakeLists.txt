@@ -22,7 +22,7 @@ if(MSVC)
 endif()
 
 # including headers of dependencies and the VkCV framework
-target_include_directories(first_triangle SYSTEM BEFORE PRIVATE ${vkcv_include} ${vkcv_includes} ${vkcv_testing_include})
+target_include_directories(first_triangle SYSTEM BEFORE PRIVATE ${vkcv_include} ${vkcv_includes} ${vkcv_testing_include} ${vkcv_camera_include})
 
 # linking with libraries from all dependencies and the VkCV framework
-target_link_libraries(first_triangle vkcv ${vkcv_libraries} vkcv_testing)
+target_link_libraries(first_triangle vkcv vkcv_testing vkcv_camera)

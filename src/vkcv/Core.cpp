@@ -160,13 +160,13 @@ namespace vkcv
     	if (acquireSwapchainImage() != Result::SUCCESS) {
     		return;
     	}
-		m_window.pollEvents();
 		m_Context.getDevice().waitIdle();	// FIMXE: this is a sin against graphics programming, but its getting late - Alex
 		destroyTemporaryFramebuffers();
 	}
 
 	void Core::renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
-		const int width, const int height) {
+		const int width, const int height, const size_t pushConstantSize, const void *pushConstantData) {
+
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
 		}
@@ -174,6 +174,7 @@ namespace vkcv
 		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
 		const vk::ImageView imageView	= m_swapchainImageViews[m_currentSwapchainImageIndex];
 		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
+        const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
 		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
 
 		const vk::Framebuffer framebuffer = createFramebuffer(m_Context.getDevice(), renderpass, width, height, imageView);
@@ -182,16 +183,17 @@ namespace vkcv
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
-		submitCommands(submitInfo, [renderpass, renderArea, imageView, framebuffer, pipeline](const vk::CommandBuffer& cmdBuffer) {
+		submitCommands(submitInfo, [renderpass, renderArea, imageView, framebuffer, pipeline, pipelineLayout, pushConstantSize, pushConstantData](const vk::CommandBuffer& cmdBuffer) {
 
 			const std::array<float, 4> clearColor = { 0.f, 0.f, 0.f, 1.f };
 			const vk::ClearValue clearValues(clearColor);
-			
+
 			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, 1, &clearValues);
 			const vk::SubpassContents subpassContents = {};
 			cmdBuffer.beginRenderPass(beginInfo, subpassContents, {});
-			
+
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
+            cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
 			cmdBuffer.draw(3, 1, 0, 0, {});
 			cmdBuffer.endRenderPass();
 		}, nullptr);

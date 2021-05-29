@@ -9,7 +9,7 @@
 namespace vkcv {
 	
 	BufferManager::BufferManager() noexcept :
-		m_core(nullptr), m_buffers(), m_stagingBuffer(UINT64_MAX)
+		m_core(nullptr), m_buffers(), m_stagingBuffer(BufferHandle())
 	{
 	}
 	
@@ -22,8 +22,8 @@ namespace vkcv {
 	}
 	
 	BufferManager::~BufferManager() noexcept {
-		for (size_t id = 0; id < m_buffers.size(); id++) {
-			destroyBuffer(id);
+		for (uint64_t id = 0; id < m_buffers.size(); id++) {
+			destroyBuffer(BufferHandle(id));
 		}
 	}
 	
@@ -52,7 +52,7 @@ namespace vkcv {
 		return memoryTypeIndex;
 	}
 	
-	uint64_t BufferManager::createBuffer(BufferType type, size_t size, BufferMemoryType memoryType) {
+	BufferHandle BufferManager::createBuffer(BufferType type, size_t size, BufferMemoryType memoryType) {
 		vk::BufferCreateFlags createFlags;
 		vk::BufferUsageFlags usageFlags;
 		
@@ -115,7 +115,7 @@ namespace vkcv {
 		
 		const uint64_t id = m_buffers.size();
 		m_buffers.push_back({ buffer, memory, size, nullptr, mappable });
-		return id;
+		return BufferHandle{ id };
 	}
 	
 	struct StagingStepInfo {
@@ -178,7 +178,33 @@ namespace vkcv {
 		);
 	}
 	
-	void BufferManager::fillBuffer(uint64_t id, void *data, size_t size, size_t offset) {
+	vk::Buffer BufferManager::getBuffer(const BufferHandle& handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_buffers.size()) {
+			return nullptr;
+		}
+		
+		auto& buffer = m_buffers[id];
+		
+		return buffer.m_handle;
+	}
+	
+	vk::DeviceMemory BufferManager::getDeviceMemory(const BufferHandle& handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_buffers.size()) {
+			return nullptr;
+		}
+		
+		auto& buffer = m_buffers[id];
+		
+		return buffer.m_memory;
+	}
+	
+	void BufferManager::fillBuffer(const BufferHandle& handle, void *data, size_t size, size_t offset) {
+		const uint64_t id = handle.getId();
+		
 		if (size == 0) {
 			size = SIZE_MAX;
 		}
@@ -206,7 +232,7 @@ namespace vkcv {
 			memcpy(mapped, data, max_size);
 			device.unmapMemory(buffer.m_memory);
 		} else {
-			auto& stagingBuffer = m_buffers[m_stagingBuffer];
+			auto& stagingBuffer = m_buffers[ m_stagingBuffer.getId() ];
 			
 			StagingStepInfo info;
 			info.data = data;
@@ -226,7 +252,9 @@ namespace vkcv {
 		}
 	}
 	
-	void* BufferManager::mapBuffer(uint64_t id, size_t offset, size_t size) {
+	void* BufferManager::mapBuffer(const BufferHandle& handle, size_t offset, size_t size) {
+		const uint64_t id = handle.getId();
+		
 		if (size == 0) {
 			size = SIZE_MAX;
 		}
@@ -252,7 +280,9 @@ namespace vkcv {
 		return buffer.m_mapped;
 	}
 	
-	void BufferManager::unmapBuffer(uint64_t id) {
+	void BufferManager::unmapBuffer(const BufferHandle& handle) {
+		const uint64_t id = handle.getId();
+		
 		if (id >= m_buffers.size()) {
 			return;
 		}
@@ -269,7 +299,9 @@ namespace vkcv {
 		buffer.m_mapped = nullptr;
 	}
 	
-	void BufferManager::destroyBuffer(uint64_t id) {
+	void BufferManager::destroyBuffer(const BufferHandle& handle) {
+		const uint64_t id = handle.getId();
+		
 		if (id >= m_buffers.size()) {
 			return;
 		}

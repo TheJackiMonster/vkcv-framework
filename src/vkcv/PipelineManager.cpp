@@ -7,7 +7,7 @@ namespace vkcv
     m_Device{device},
     m_Pipelines{},
     m_PipelineLayouts{},
-    m_NextPipelineId{1}
+    m_NextPipelineId{0}
     {}
 
     PipelineManager::~PipelineManager() noexcept
@@ -20,7 +20,7 @@ namespace vkcv
 
         m_Pipelines.clear();
         m_PipelineLayouts.clear();
-        m_NextPipelineId = 1;
+        m_NextPipelineId = 0;
     }
 
     PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, const vk::RenderPass &pass)
@@ -30,7 +30,7 @@ namespace vkcv
         if (!(existsVertexShader && existsFragmentShader))
         {
             std::cout << "Core::createGraphicsPipeline requires vertex and fragment shader code" << std::endl;
-            return PipelineHandle{0};
+            return PipelineHandle();
         }
 
         // vertex shader stage
@@ -38,7 +38,7 @@ namespace vkcv
         vk::ShaderModuleCreateInfo vertexModuleInfo({}, vertexCode.size(), reinterpret_cast<uint32_t*>(vertexCode.data()));
         vk::ShaderModule vertexModule{};
         if (m_Device.createShaderModule(&vertexModuleInfo, nullptr, &vertexModule) != vk::Result::eSuccess)
-            return PipelineHandle{0};
+            return PipelineHandle();
 
         vk::PipelineShaderStageCreateInfo pipelineVertexShaderStageInfo(
                 {},
@@ -55,7 +55,7 @@ namespace vkcv
         if (m_Device.createShaderModule(&fragmentModuleInfo, nullptr, &fragmentModule) != vk::Result::eSuccess)
         {
             m_Device.destroy(vertexModule);
-            return PipelineHandle{0};
+            return PipelineHandle();
         }
 
         vk::PipelineShaderStageCreateInfo pipelineFragmentShaderStageInfo(
@@ -140,20 +140,20 @@ namespace vkcv
                 { 1.f,1.f,1.f,1.f }
         );
 
+		const size_t matrixPushConstantSize = 4 * 4 * sizeof(float);
+		const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, matrixPushConstantSize);
+
         // pipeline layout
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
-                {},
-                0,
-                {},
-                0,
-                {}
-        );
+			{},
+			{},
+			(pushConstantRange));
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
         {
             m_Device.destroy(vertexModule);
             m_Device.destroy(fragmentModule);
-            return PipelineHandle{0};
+            return PipelineHandle();
         }
 
         // graphics pipeline create
@@ -183,7 +183,7 @@ namespace vkcv
         {
             m_Device.destroy(vertexModule);
             m_Device.destroy(fragmentModule);
-            return PipelineHandle{0};
+            return PipelineHandle();
         }
 
         m_Device.destroy(vertexModule);
@@ -191,16 +191,16 @@ namespace vkcv
 
         m_Pipelines.push_back(vkPipeline);
         m_PipelineLayouts.push_back(vkPipelineLayout);
-        return PipelineHandle{m_NextPipelineId++};
+        return PipelineHandle(m_NextPipelineId++);
     }
 
     vk::Pipeline PipelineManager::getVkPipeline(const PipelineHandle &handle) const
     {
-        return m_Pipelines.at(handle.id -1);
+        return m_Pipelines.at(handle.getId());
     }
 
     vk::PipelineLayout PipelineManager::getVkPipelineLayout(const PipelineHandle &handle) const
     {
-        return m_PipelineLayouts.at(handle.id - 1);
+        return m_PipelineLayouts.at(handle.getId());
     }
 }
