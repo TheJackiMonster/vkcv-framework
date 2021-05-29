@@ -31,7 +31,7 @@ namespace vkcv {
 		ImageManager& operator=(ImageManager&& other) = delete;
 		ImageManager& operator=(const ImageManager& other) = delete;
 
-		void copyBufferToImage(vk::Buffer bufffer, vk::Image image, uint32_t width, uint32_t height);
+		void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
 		void switchImageLayout(uint64_t id, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
 		uint64_t createImage(uint32_t width, uint32_t height);

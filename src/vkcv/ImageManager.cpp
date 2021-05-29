@@ -45,9 +45,24 @@ namespace vkcv {
 		}
 	}
 
-	void ImageManager::copyBufferToImage(vk::Buffer bufffer, vk::Image image, uint32_t width, uint32_t height)
+	void ImageManager::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height)
 	{
-		//TODO
+		vk::BufferImageCopy copyRegion(0,width,height); // possibly add offset etc
+
+		SubmitInfo submitInfo;
+		submitInfo.queueType = QueueType::Transfer; //not sure
+		m_core->submitCommands(
+			submitInfo,
+			[buffer, image,copyRegion](const vk::CommandBuffer& commandBuffer) {
+				commandBuffer.copyBufferToImage(
+					buffer,
+					image,vk::ImageLayout::eTransferDstOptimal,
+					copyRegion
+				);
+			},
+			[]() {}
+			);
+
 	}
 
 
