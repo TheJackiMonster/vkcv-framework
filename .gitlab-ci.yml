@@ -2,7 +2,7 @@ variables:
   RUN:
     value: "all"
     description: "The tests that should run. Possible values: ubuntu, win, all."
-  GIT_DEPTH: 10
+  GIT_DEPTH: 1
 
 stages:
   - build
@@ -19,6 +19,8 @@ build_ubuntu_gcc:
     GIT_SUBMODULE_STRATEGY: recursive
   timeout: 10m
   retry: 1
+  before_script:
+    - git lfs install
   script:
     - mkdir debug
     - cd debug
@@ -42,6 +44,8 @@ build_win10_msvc:
     GIT_SUBMODULE_STRATEGY: recursive
   timeout: 10m
   retry: 1
+  before_script:
+    - git lfs install
   script:
     - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
     - .\Launch-VsDevShell.ps1
