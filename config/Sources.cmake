@@ -54,6 +54,9 @@ set(vkcv_sources
         ${vkcv_source}/vkcv/Framebuffer.hpp
         ${vkcv_source}/vkcv/Framebuffer.cpp
 
+		${vkcv_include}/vkcv/VertexLayout.hpp
+		${vkcv_source}/vkcv/VertexLayout.cpp
+
 		${vkcv_include}/vkcv/Event.hpp
 
 		${vkcv_source}/vkcv/DescriptorManager.hpp
@@ -61,7 +64,4 @@ set(vkcv_sources
 
 		${vkcv_include}/vkcv/DescriptorConfig.hpp
 		${vkcv_source}/vkcv/DescriptorConfig.cpp
-
-		${vkcv_include}/vkcv/VertexLayout.hpp
-		${vkcv_source}/vkcv/VertexLayout.cpp
 )

@@ -65,8 +65,7 @@ int main(int argc, const char** argv) {
 	vkcv::PassConfig trianglePassDefinition({ present_color_attachment });
 	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
 
-	if (trianglePass.id == 0)
-	{
+	if (!trianglePass) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -79,15 +78,14 @@ int main(int argc, const char** argv) {
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
-	if (trianglePipeline.id == 0)
-	{
+	
+	if (!trianglePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	auto start = std::chrono::system_clock::now();
-	while (window.isWindowOpen())
-	{
+	while (window.isWindowOpen()) {
 		core.beginFrame();
 		window.pollEvents();
 		auto end = std::chrono::system_clock::now();

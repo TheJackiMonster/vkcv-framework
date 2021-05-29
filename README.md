@@ -11,6 +11,8 @@ More information about Git LFS [here](https://git-lfs.github.com/).
 
 ## Build
 
+ [![pipeline status](https://gitlab.uni-koblenz.de/vulkan2021/vkcv-framework/badges/develop/pipeline.svg)](https://gitlab.uni-koblenz.de/vulkan2021/vkcv-framework/-/commits/develop)
+
 Git submodules are used for libraries. 
 To download the submodules either clone using `git clone --recurse-submodules` or after `git clone` use `git submodule init` and `git submodule update`.
 
