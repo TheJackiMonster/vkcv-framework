@@ -53,6 +53,8 @@ build_win10_msvc:
 
 deploy_doc_develop:
   only:
+    variables:
+      - $RUN =~ /\bubuntu.*/i || $RUN =~ /\ball.*/i
     refs:
       - develop
   stage: deploy
