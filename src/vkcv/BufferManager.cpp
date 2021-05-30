@@ -123,7 +123,7 @@ namespace vkcv {
 	}
 	
 	struct StagingStepInfo {
-		void* data;
+		const void* data;
 		size_t size;
 		size_t offset;
 		
@@ -152,7 +152,7 @@ namespace vkcv {
 		const vk::Device& device = core->getContext().getDevice();
 		
 		void* mapped = device.mapMemory(info.stagingMemory, 0, mapped_size);
-		memcpy(mapped, reinterpret_cast<char*>(info.data) + info.stagingPosition, mapped_size);
+		memcpy(mapped, reinterpret_cast<const char*>(info.data) + info.stagingPosition, mapped_size);
 		device.unmapMemory(info.stagingMemory);
 		
 		SubmitInfo submitInfo;
@@ -218,7 +218,7 @@ namespace vkcv {
 		return buffer.m_memory;
 	}
 	
-	void BufferManager::fillBuffer(const BufferHandle& handle, void *data, size_t size, size_t offset) {
+	void BufferManager::fillBuffer(const BufferHandle& handle, const void *data, size_t size, size_t offset) {
 		const uint64_t id = handle.getId();
 		
 		if (size == 0) {

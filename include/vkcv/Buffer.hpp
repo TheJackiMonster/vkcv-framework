@@ -7,6 +7,8 @@
 #include "Handles.hpp"
 #include "BufferManager.hpp"
 
+#include <vector>
+
 namespace vkcv {
 
 	template<typename T>
@@ -36,8 +38,12 @@ namespace vkcv {
 			return m_count * sizeof(T);
 		}
 		
-		void fill(T* data, size_t count = 0, size_t offset = 0) {
+		void fill(const T* data, size_t count = 0, size_t offset = 0) {
 			 m_manager->fillBuffer(m_handle, data, count * sizeof(T), offset * sizeof(T));
+		}
+		
+		void fill(const std::vector<T>& vector, size_t offset = 0) {
+			fill( static_cast<const T*>(vector.data()), static_cast<size_t>(vector.size()), offset);
 		}
 		
 		[[nodiscard]]

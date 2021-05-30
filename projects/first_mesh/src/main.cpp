@@ -45,13 +45,21 @@ int main(int argc, const char** argv) {
 	}
 
 	assert(mesh.vertexGroups.size() > 0);
-	const size_t vertexBufferSize = mesh.vertexGroups[0].vertexBuffer.data.size();
-	auto vertexBuffer = core.createBuffer<uint8_t>(vkcv::BufferType::VERTEX, vertexBufferSize, vkcv::BufferMemoryType::DEVICE_LOCAL);
-	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data.data(), vertexBufferSize);
+	auto vertexBuffer = core.createBuffer<uint8_t>(
+			vkcv::BufferType::VERTEX,
+			mesh.vertexGroups[0].vertexBuffer.data.size(),
+			vkcv::BufferMemoryType::DEVICE_LOCAL
+	);
+	
+	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
 
-	const size_t indexBufferSize = mesh.vertexGroups[0].indexBuffer.data.size();
-	auto indexBuffer = core.createBuffer<uint8_t>(vkcv::BufferType::INDEX, indexBufferSize, vkcv::BufferMemoryType::DEVICE_LOCAL);
-	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data.data(), indexBufferSize);
+	auto indexBuffer = core.createBuffer<uint8_t>(
+			vkcv::BufferType::INDEX,
+			mesh.vertexGroups[0].indexBuffer.data.size(),
+			vkcv::BufferMemoryType::DEVICE_LOCAL
+	);
+	
+	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
 
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
