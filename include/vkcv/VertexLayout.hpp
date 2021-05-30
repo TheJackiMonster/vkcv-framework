@@ -7,7 +7,12 @@
 namespace vkcv{
 
 	/* With these enums, 0 is reserved to signal uninitialized or invalid data. */
-	enum class PrimitiveType { UNDEFINED, POSITION, NORMAL, TEXCOORD_0 };
+	enum class PrimitiveType : uint32_t {
+		UNDEFINED = 0,
+		POSITION = 1,
+		NORMAL = 2,
+		TEXCOORD_0 = 3
+	};
 	/* This struct describes one vertex attribute of a vertex buffer. */
 	typedef struct {
 		PrimitiveType type;			// POSITION, NORMAL, ...

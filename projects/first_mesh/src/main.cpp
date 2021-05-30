@@ -93,6 +93,12 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
+	
+	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
+	
+	std::sort(attributes.begin(), attributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
+		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
+	});
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass, mesh.vertexGroups[0].vertexBuffer.attributes);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
