@@ -28,28 +28,29 @@ namespace vkcv {
 	}
 	
 	/**
-	 * @brief searches memory type index for buffer allocation, inspired by vulkan tutorial and "https://github.com/KhronosGroup/Vulkan-Hpp/blob/master/samples/utils/utils.hpp"
+	 * @brief searches memory type index for buffer allocation, combines requirements of buffer and application
 	 * @param physicalMemoryProperties Memory Properties of physical device
-	 * @param typeBits
+	 * @param typeBits Bit field for suitable memory types
 	 * @param requirements Property flags that are required
 	 * @return memory type index for Buffer
 	 */
-	uint32_t searchMemoryType(const vk::PhysicalDeviceMemoryProperties& physicalMemoryProperties, uint32_t typeBits, vk::MemoryPropertyFlags requirements) {
-		uint32_t memoryTypeIndex = 0;
-		
-		for (uint32_t i = 0; i < physicalMemoryProperties.memoryTypeCount; i++)
-		{
-			if ((typeBits & 1) &&
-				((physicalMemoryProperties.memoryTypes[i].propertyFlags & requirements) == requirements))
-			{
-				memoryTypeIndex = i;
-				break;
-			}
-			
-			typeBits >>= 1;
+	uint32_t searchBufferMemoryType(const vk::PhysicalDeviceMemoryProperties& physicalMemoryProperties, uint32_t typeBits, vk::MemoryPropertyFlags requirements) {
+		const uint32_t memoryCount = physicalMemoryProperties.memoryTypeCount;
+		for (uint32_t memoryIndex = 0; memoryIndex < memoryCount; ++memoryIndex) {
+			const uint32_t memoryTypeBits = (1 << memoryIndex);
+			const bool isRequiredMemoryType = typeBits & memoryTypeBits;
+
+			const vk::MemoryPropertyFlags properties =
+				physicalMemoryProperties.memoryTypes[memoryIndex].propertyFlags;
+			const bool hasRequiredProperties =
+				(properties & requirements) == requirements;
+
+			if (isRequiredMemoryType && hasRequiredProperties)
+				return static_cast<int32_t>(memoryIndex);
 		}
-		
-		return memoryTypeIndex;
+
+		// failed to find memory type
+		return -1;
 	}
 	
 	BufferHandle BufferManager::createBuffer(BufferType type, size_t size, BufferMemoryType memoryType) {
@@ -68,6 +69,9 @@ namespace vkcv {
 				break;
 			case BufferType::STAGING:
 				usageFlags = vk::BufferUsageFlagBits::eTransferSrc;
+				break;
+			case BufferType::INDEX:
+				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
 				break;
 			default:
 				// TODO: maybe an issue
@@ -103,7 +107,7 @@ namespace vkcv {
 				break;
 		}
 		
-		const uint32_t memoryTypeIndex = searchMemoryType(
+		const uint32_t memoryTypeIndex = searchBufferMemoryType(
 				physicalDevice.getMemoryProperties(),
 				requirements.memoryTypeBits,
 				memoryTypeFlags
@@ -119,7 +123,7 @@ namespace vkcv {
 	}
 	
 	struct StagingStepInfo {
-		void* data;
+		const void* data;
 		size_t size;
 		size_t offset;
 		
@@ -148,7 +152,7 @@ namespace vkcv {
 		const vk::Device& device = core->getContext().getDevice();
 		
 		void* mapped = device.mapMemory(info.stagingMemory, 0, mapped_size);
-		memcpy(mapped, reinterpret_cast<char*>(info.data) + info.stagingPosition, mapped_size);
+		memcpy(mapped, reinterpret_cast<const char*>(info.data) + info.stagingPosition, mapped_size);
 		device.unmapMemory(info.stagingMemory);
 		
 		SubmitInfo submitInfo;
@@ -190,6 +194,18 @@ namespace vkcv {
 		return buffer.m_handle;
 	}
 	
+	size_t BufferManager::getBufferSize(const BufferHandle &handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_buffers.size()) {
+			return 0;
+		}
+		
+		auto& buffer = m_buffers[id];
+		
+		return buffer.m_size;
+	}
+	
 	vk::DeviceMemory BufferManager::getDeviceMemory(const BufferHandle& handle) const {
 		const uint64_t id = handle.getId();
 		
@@ -202,7 +218,7 @@ namespace vkcv {
 		return buffer.m_memory;
 	}
 	
-	void BufferManager::fillBuffer(const BufferHandle& handle, void *data, size_t size, size_t offset) {
+	void BufferManager::fillBuffer(const BufferHandle& handle, const void *data, size_t size, size_t offset) {
 		const uint64_t id = handle.getId();
 		
 		if (size == 0) {

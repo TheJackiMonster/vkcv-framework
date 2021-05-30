@@ -13,6 +13,7 @@
 #include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
 #include "vkcv/Buffer.hpp"
+#include "vkcv/Image.hpp"
 #include "vkcv/PipelineConfig.hpp"
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
@@ -22,12 +23,18 @@
 
 namespace vkcv
 {
+	struct VertexBufferBinding {
+		vk::DeviceSize	offset;
+		BufferHandle	buffer;
+	};
+
     // forward declarations
     class PassManager;
     class PipelineManager;
     class DescriptorManager;
     class BufferManager;
     class SamplerManager;
+    class ImageManager;
 
 	struct SubmitInfo {
 		QueueType queueType;
@@ -66,6 +73,7 @@ namespace vkcv
         std::unique_ptr<DescriptorManager> m_DescriptorManager;
         std::unique_ptr<BufferManager> m_BufferManager;
         std::unique_ptr<SamplerManager> m_SamplerManager;
+        std::unique_ptr<ImageManager> m_ImageManager;
 
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
@@ -187,6 +195,18 @@ namespace vkcv
         SamplerHandle createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
 									SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode);
 
+        /**
+         * Creates an #Image with a given format, width, height and depth.
+         *
+         * @param format Image format
+         * @param width Image width
+         * @param height Image height
+         * @param depth Image depth
+         * @return Image-Object
+         */
+        [[nodiscard]]
+        Image createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth = 1);
+
         /** TODO:
          *   @param setDescriptions
          *   @return
@@ -202,8 +222,9 @@ namespace vkcv
 		/**
 		 * @brief render a beautiful triangle
 		*/
-		void renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle,
-			const int width, const int height, const size_t pushConstantSize, const void* pushConstantData);
+		void renderMesh(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle,
+			const int width, const int height, const size_t pushConstantSize, const void* pushConstantData, 
+			const std::vector<VertexBufferBinding> & vertexBufferBindings, const BufferHandle indexBuffer, const size_t indexCount);
 
 		/**
 		 * @brief end recording and present image

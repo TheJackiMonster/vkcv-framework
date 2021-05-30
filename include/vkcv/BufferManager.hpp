@@ -31,9 +31,9 @@ namespace vkcv
 		{
 			vk::Buffer m_handle;
 			vk::DeviceMemory m_memory;
-			size_t m_size;
+			size_t m_size = 0;
 			void* m_mapped = nullptr;
-			bool m_mappable;
+			bool m_mappable = false;
 		};
 		
 		Core* m_core;
@@ -55,7 +55,7 @@ namespace vkcv
 		
 		/**
 		 * Creates and allocates a new buffer and returns its
-		 * unique buffer handle id.
+		 * unique buffer handle.
 		 *
 		 * @param type Type of buffer
 		 * @param size Size of buffer in bytes
@@ -66,13 +66,23 @@ namespace vkcv
 		
 		/**
 		 * Returns the Vulkan buffer handle of a buffer
-		 * represented by a given buffer handle id.
+		 * represented by a given buffer handle.
 		 *
 		 * @param handle Buffer handle
 		 * @return Vulkan buffer handle
 		 */
 		[[nodiscard]]
 		vk::Buffer getBuffer(const BufferHandle& handle) const;
+		
+		/**
+		 * Returns the size of a buffer represented
+		 * by a given buffer handle.
+		 *
+		 * @param handle Buffer handle
+		 * @return Size of the buffer
+		 */
+		[[nodiscard]]
+		size_t getBufferSize(const BufferHandle& handle) const;
 		
 		/**
 		 * Returns the Vulkan device memory handle of a buffer
@@ -86,18 +96,18 @@ namespace vkcv
 		
 		/**
 		 * Fills a buffer represented by a given buffer
-		 * handle id with custom data.
+		 * handle with custom data.
 		 *
 		 * @param handle Buffer handle
 		 * @param data Pointer to data
 		 * @param size Size of data in bytes
 		 * @param offset Offset to fill in data in bytes
 		 */
-		void fillBuffer(const BufferHandle& handle, void* data, size_t size, size_t offset);
+		void fillBuffer(const BufferHandle& handle, const void* data, size_t size, size_t offset);
 		
 		/**
 		 * Maps memory to a buffer represented by a given
-		 * buffer handle id and returns it.
+		 * buffer handle and returns it.
 		 *
 		 * @param handle Buffer handle
 		 * @param offset Offset of mapping in bytes
@@ -108,7 +118,7 @@ namespace vkcv
 		
 		/**
 		 * Unmaps memory from a buffer represented by a given
-		 * buffer handle id.
+		 * buffer handle.
 		 *
 		 * @param handle Buffer handle
 		 */
@@ -116,7 +126,7 @@ namespace vkcv
 	
 		/**
 		 * Destroys and deallocates buffer represented by a given
-		 * buffer handle id.
+		 * buffer handle.
 		 *
 		 * @param handle Buffer handle
 		 */

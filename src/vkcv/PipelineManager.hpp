@@ -4,6 +4,7 @@
 #include <vector>
 #include "vkcv/Handles.hpp"
 #include "vkcv/PipelineConfig.hpp"
+#include "PassManager.hpp"
 
 namespace vkcv
 {
@@ -25,7 +26,7 @@ namespace vkcv
         PipelineManager & operator=(const PipelineManager &other) = delete; // copy-assign op
         PipelineManager & operator=(PipelineManager &&other) = delete; // move-assign op
 
-        PipelineHandle createPipeline(const PipelineConfig &config, const vk::RenderPass &pass);
+        PipelineHandle createPipeline(const PipelineConfig &config, PassManager& passManager);
 
         [[nodiscard]]
         vk::Pipeline getVkPipeline(const PipelineHandle &handle) const;

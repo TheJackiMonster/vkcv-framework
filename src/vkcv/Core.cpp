@@ -11,10 +11,10 @@
 #include "PipelineManager.hpp"
 #include "vkcv/BufferManager.hpp"
 #include "SamplerManager.hpp"
+#include "ImageManager.hpp"
 #include "DescriptorManager.hpp"
 #include "Surface.hpp"
 #include "ImageLayoutTransitions.hpp"
-#include "Framebuffer.hpp"
 
 namespace vkcv
 {
@@ -97,11 +97,14 @@ namespace vkcv
             m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
 			m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
 			m_SamplerManager(std::unique_ptr<SamplerManager>(new SamplerManager(m_Context.m_Device))),
+			m_ImageManager{std::unique_ptr<ImageManager>(new ImageManager(*m_BufferManager))},
             m_CommandResources(commandResources),
             m_SyncResources(syncResources)
 	{
     	m_BufferManager->m_core = this;
     	m_BufferManager->init();
+    	
+    	m_ImageManager->m_core = this;
 	}
 
 	Core::~Core() noexcept {
@@ -120,8 +123,7 @@ namespace vkcv
 
     PipelineHandle Core::createGraphicsPipeline(const PipelineConfig &config)
     {
-        const vk::RenderPass &pass = m_PassManager->getVkPass(config.m_PassHandle);
-        return m_PipelineManager->createPipeline(config, pass);
+        return m_PipelineManager->createPipeline(config, *m_PassManager);
     }
 
 
@@ -163,40 +165,102 @@ namespace vkcv
 		m_Context.getDevice().waitIdle();	// FIMXE: this is a sin against graphics programming, but its getting late - Alex
 		destroyTemporaryFramebuffers();
 	}
+	
+	vk::Framebuffer createFramebuffer(const vk::Device device, const vk::RenderPass& renderpass,
+									  const int width, const int height, const std::vector<vk::ImageView>& attachments) {
+		const vk::FramebufferCreateFlags flags = {};
+		const vk::FramebufferCreateInfo createInfo(flags, renderpass, attachments.size(), attachments.data(), width, height, 1);
+		return device.createFramebuffer(createInfo);
+	}
 
-	void Core::renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
-		const int width, const int height, const size_t pushConstantSize, const void *pushConstantData) {
+	void Core::renderMesh(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
+		const int width, const int height, const size_t pushConstantSize, const void *pushConstantData,
+		const std::vector<VertexBufferBinding>& vertexBufferBindings, const BufferHandle indexBuffer, const size_t indexCount) {
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
 		}
 
 		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
+		const PassConfig passConfig = m_PassManager->getPassConfig(renderpassHandle);
+		
+		ImageHandle depthImage;
+		
+		for (const auto& attachment : passConfig.attachments) {
+			if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
+				depthImage = m_ImageManager->createImage(width, height, 1, attachment.format);
+				break;
+			}
+		}
+		
 		const vk::ImageView imageView	= m_swapchainImageViews[m_currentSwapchainImageIndex];
 		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
         const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
 		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+		const vk::Buffer vulkanIndexBuffer	= m_BufferManager->getBuffer(indexBuffer);
 
-		const vk::Framebuffer framebuffer = createFramebuffer(m_Context.getDevice(), renderpass, width, height, imageView);
+		std::vector<vk::ImageView> attachments;
+		attachments.push_back(imageView);
+		
+		if (depthImage) {
+			attachments.push_back(m_ImageManager->getVulkanImageView(depthImage));
+		}
+		
+		const vk::Framebuffer framebuffer = createFramebuffer(
+				m_Context.getDevice(),
+				renderpass,
+				width,
+				height,
+				attachments
+		);
+		
 		m_TemporaryFramebuffers.push_back(framebuffer);
+
+		auto &bufferManager = m_BufferManager;
 
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
-		submitCommands(submitInfo, [renderpass, renderArea, imageView, framebuffer, pipeline, pipelineLayout, pushConstantSize, pushConstantData](const vk::CommandBuffer& cmdBuffer) {
 
-			const std::array<float, 4> clearColor = { 0.f, 0.f, 0.f, 1.f };
-			const vk::ClearValue clearValues(clearColor);
+		submitCommands(submitInfo, [&](const vk::CommandBuffer& cmdBuffer) {
+			std::vector<vk::ClearValue> clearValues;
+			
+			for (const auto& attachment : passConfig.attachments) {
+				if (attachment.load_operation == AttachmentOperation::CLEAR) {
+					float clear = 0.0f;
+					
+					if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
+						clear = 1.0f;
+					}
+					
+					clearValues.emplace_back(std::array<float, 4>{
+							clear,
+							clear,
+							clear,
+							1.f
+					});
+				}
+			}
 
-			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, 1, &clearValues);
+			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
 			const vk::SubpassContents subpassContents = {};
 			cmdBuffer.beginRenderPass(beginInfo, subpassContents, {});
 
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
-            cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
-			cmdBuffer.draw(3, 1, 0, 0, {});
+
+			for (uint32_t i = 0; i < vertexBufferBindings.size(); i++) {
+				const auto &vertexBinding = vertexBufferBindings[i];
+				const auto vertexBuffer = bufferManager->getBuffer(vertexBinding.buffer);
+				cmdBuffer.bindVertexBuffers(i, (vertexBuffer), (vertexBinding.offset));
+			}
+			
+			cmdBuffer.bindIndexBuffer(vulkanIndexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
+			cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
+			cmdBuffer.drawIndexed(indexCount, 1, 0, 0, {});
 			cmdBuffer.endRenderPass();
-		}, nullptr);
+		}, [&]() {
+			m_ImageManager->destroyImage(depthImage);
+		});
 	}
 
 	void Core::endFrame() {
@@ -262,6 +326,11 @@ namespace vkcv
 									  SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode) {
     	return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode);
     }
+    
+	Image Core::createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth)
+	{
+    	return Image::create(m_ImageManager.get(), format, width, height, depth);
+	}
 
     ResourcesHandle Core::createResourceDescription(const std::vector<DescriptorSet> &descriptorSets)
     {

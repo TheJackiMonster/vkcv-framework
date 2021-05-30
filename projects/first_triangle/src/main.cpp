@@ -40,15 +40,19 @@ int main(int argc, const char** argv) {
 	
 	const size_t n = 5027;
 	
-	auto buffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, n, vkcv::BufferMemoryType::DEVICE_LOCAL);
-	vec3 vec_data [n];
-	
+	auto testBuffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, n, vkcv::BufferMemoryType::DEVICE_LOCAL);
+	vec3 vec_data[n];
+
 	for (size_t i = 0; i < n; i++) {
 		vec_data[i] = { 42, static_cast<float>(i), 7 };
 	}
-	
-	buffer.fill(vec_data);
-	
+
+	testBuffer.fill(vec_data);
+
+	auto triangleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, n, vkcv::BufferMemoryType::DEVICE_LOCAL);
+	uint16_t indices[3] = { 0, 1, 2 };
+	triangleIndexBuffer.fill(&indices[0], sizeof(indices));
+
 	/*vec3* m = buffer.map();
 	m[0] = { 0, 0, 0 };
 	m[1] = { 0, 0, 0 };
@@ -94,8 +98,10 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram triangleShaderProgram{};
 	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
 	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
+	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
+    triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
-	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
+	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass, {});
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 	
 	if (!trianglePipeline)
@@ -121,6 +127,8 @@ int main(int argc, const char** argv) {
         auto resourceHandle = core.createResourceDescription(sets);
         std::cout << "Resource " << resourceHandle << " created." << std::endl;
 	}
+	
+	std::vector<vkcv::VertexBufferBinding> vertexBufferBindings;
 
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
@@ -148,7 +156,18 @@ int main(int argc, const char** argv) {
         cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
 		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-	    core.renderTriangle(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp);
+	    core.renderMesh(
+	    		trianglePass,
+	    		trianglePipeline,
+	    		windowWidth,
+	    		windowHeight,
+	    		sizeof(mvp),
+	    		&mvp,
+	    		vertexBufferBindings,
+	    		triangleIndexBuffer.getHandle(),
+	    		3
+		);
+	    
 	    core.endFrame();
 	}
 	return 0;

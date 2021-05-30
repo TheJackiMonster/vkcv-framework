@@ -10,8 +10,13 @@ namespace vkcv
     class PassManager
     {
     private:
+    	struct Pass {
+			vk::RenderPass m_Handle;
+			PassConfig m_Config;
+    	};
+    	
         vk::Device m_Device;
-        std::vector<vk::RenderPass> m_RenderPasses;
+        std::vector<Pass> m_Passes;
         uint64_t m_NextPassId;
     public:
         PassManager() = delete; // no default ctor
@@ -28,5 +33,9 @@ namespace vkcv
 
         [[nodiscard]]
         vk::RenderPass getVkPass(const PassHandle &handle) const;
+        
+        [[nodiscard]]
+        const PassConfig& getPassConfig(const PassHandle &handle) const;
+        
     };
 }

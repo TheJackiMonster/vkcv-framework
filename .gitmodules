@@ -1,6 +1,9 @@
 [submodule "lib/glfw"]
 	path = lib/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "lib/SPIRV-Cross"]
+	path = lib/SPIRV-Cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git
 [submodule "modules/asset_loader/lib/fx-gltf"]
 	path = modules/asset_loader/lib/fx-gltf
 	url = https://github.com/jessey-git/fx-gltf.git
