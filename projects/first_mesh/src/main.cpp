@@ -76,13 +76,19 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
-	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
+	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass, mesh.vertexGroups[0].vertexBuffer.attributes);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 	
 	if (!trianglePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
+
+	std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
+		{ mesh.vertexGroups[0].vertexBuffer.attributes[0].offset, vertexBuffer.getHandle() },
+		{ mesh.vertexGroups[0].vertexBuffer.attributes[1].offset, vertexBuffer.getHandle() },
+		{ mesh.vertexGroups[0].vertexBuffer.attributes[2].offset, vertexBuffer.getHandle() }
+	};
 
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
@@ -94,7 +100,7 @@ int main(int argc, const char** argv) {
 		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
 		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-		core.renderMesh(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp, vertexBuffer.getHandle(), indexBuffer.getHandle(), mesh.vertexGroups[0].numIndices);
+		core.renderMesh(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp, vertexBufferBindings, indexBuffer.getHandle(), mesh.vertexGroups[0].numIndices);
 		core.endFrame();
 	}
 	return 0;

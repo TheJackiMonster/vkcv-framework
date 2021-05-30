@@ -9,17 +9,11 @@
 #include <cstdint>
 #include "vkcv/Handles.hpp"
 #include "ShaderProgram.hpp"
+#include <vkcv/VertexLayout.hpp>
 
 namespace vkcv {
 
-    class PipelineConfig {
-
-    public:
-        /**
-         *  Default constructer is deleted!
-         */
-        PipelineConfig() = delete;
-
+    struct PipelineConfig {
         /**
          *  Constructor for the pipeline. Creates a pipeline using @p vertexCode, @p fragmentCode as well as the
          *  dimensions of the application window @p width and @p height. A handle for the Render Pass is also needed, @p passHandle.
@@ -29,12 +23,18 @@ namespace vkcv {
          * @param width width of the application window
          * @param passHandle handle for Render Pass
          */
-        PipelineConfig(const ShaderProgram& shaderProgram, uint32_t width, uint32_t height, PassHandle &passHandle);
+        PipelineConfig(
+			const ShaderProgram&				shaderProgram, 
+			uint32_t							width, 
+			uint32_t							height, 
+			PassHandle							&passHandle,
+			const std::vector<VertexAttribute>	&vertexAttributes);
 
-		ShaderProgram m_ShaderProgram;
-        uint32_t m_Height;
-        uint32_t m_Width;
-        PassHandle m_PassHandle;
+		ShaderProgram					m_ShaderProgram;
+        uint32_t						m_Height;
+        uint32_t						m_Width;
+        PassHandle						m_PassHandle;
+		std::vector<VertexAttribute>	m_vertexAttributes;
     };
 
 }

@@ -23,6 +23,21 @@ namespace vkcv
         m_NextPipelineId = 0;
     }
 
+	// currently assuming default 32 bit formats, no lower precision or normalized variants supported
+	vk::Format vertexFormatToVulkanFormat(const VertexFormat format) {
+		switch (format) {
+		case VertexFormat::FLOAT: return vk::Format::eR32Sfloat;
+		case VertexFormat::FLOAT2: return vk::Format::eR32G32Sfloat;
+		case VertexFormat::FLOAT3: return vk::Format::eR32G32B32Sfloat;
+		case VertexFormat::FLOAT4: return vk::Format::eR32G32B32A32Sfloat;
+		case VertexFormat::INT: return vk::Format::eR32Sint;
+		case VertexFormat::INT2: return vk::Format::eR32G32Sint;
+		case VertexFormat::INT3: return vk::Format::eR32G32B32Sint;
+		case VertexFormat::INT4: return vk::Format::eR32G32B32A32Sint;
+		default: std::cerr << "Warning: Unknown vertex format" << std::endl; return vk::Format::eUndefined;
+		}
+	}
+
     PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, const vk::RenderPass &pass)
     {
         const bool existsVertexShader = config.m_ShaderProgram.existsShader(ShaderStage::VERTEX);
@@ -69,19 +84,27 @@ namespace vkcv
         // vertex input state
 
         // Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
-        std::vector<vk::VertexInputBindingDescription> vertexBindingDescriptions;
-        std::vector<vk::VertexInputAttributeDescription> vertexAttributeDescriptions;
+        std::vector<vk::VertexInputAttributeDescription>	vertexAttributeDescriptions;
+		std::vector<vk::VertexInputBindingDescription>		vertexBindingDescriptions;
 
         VertexLayout layout = config.m_ShaderProgram.getVertexLayout();
         std::unordered_map<uint32_t, VertexInputAttachment> attachments = layout.attachmentMap;
 
-        for (auto& attachment: attachments) {
-            uint32_t location = attachment.second.location;
-            uint32_t binding = attachment.second.binding;
-            uint32_t offset = attachment.second.offset;
-            vk::Format vertexFormat = vertexFormatToVulkanFormat(attachment.second.format);
-            vertexBindingDescriptions.push_back({binding, layout.stride, vk::VertexInputRate::eVertex}); // TODO: What's about the input rate?
-            vertexAttributeDescriptions.push_back({location, binding, vk::Format::eR32G32B32Sfloat, offset});
+		for (int i = 0; i < attachments.size(); i++) {
+			VertexInputAttachment &attachment = attachments.at(i);
+
+            uint32_t	location		= attachment.location;
+            uint32_t	binding			= i;
+            vk::Format	vertexFormat	= vertexFormatToVulkanFormat(attachment.format);
+
+			//FIXME: hoping that order is the same and compatible: add explicit mapping and validation
+			const VertexAttribute attribute = config.m_vertexAttributes[i];
+
+            vertexAttributeDescriptions.push_back({location, binding, vertexFormatToVulkanFormat(attachment.format), 0});
+			vertexBindingDescriptions.push_back(vk::VertexInputBindingDescription(
+				binding,
+				attribute.stride + getFormatSize(attachment.format),
+				vk::VertexInputRate::eVertex));
         }
 
         // Handover Containers to PipelineVertexInputStateCreateIngo Struct

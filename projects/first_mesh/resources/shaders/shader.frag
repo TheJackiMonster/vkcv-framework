@@ -7,5 +7,6 @@ layout(location = 1) in vec2 passUV;
 layout(location = 0) out vec3 outColor;
 
 void main()	{
-	outColor = passNormal;
+	outColor = 0.5 * passNormal + 0.5;
+    //outColor = vec3(abs(passUV), 0);
 }
