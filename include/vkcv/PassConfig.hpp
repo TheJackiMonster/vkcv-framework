@@ -53,7 +53,6 @@ namespace vkcv
 
     struct PassConfig
     {
-        PassConfig() = delete;
         explicit PassConfig(std::vector<AttachmentDescription> attachments) noexcept;
         std::vector<AttachmentDescription> attachments{};
     };
