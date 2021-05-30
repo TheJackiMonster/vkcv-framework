@@ -67,6 +67,12 @@ namespace vkcv {
 		vk::ImageUsageFlags imageUsageFlags = (
 				vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst
 		);
+		
+		const bool isDepthFormat = isDepthImageFormat(format);
+		
+		if (isDepthFormat) {
+			imageUsageFlags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
+		}
 
 		const vk::Device& device = m_core->getContext().getDevice();
 
@@ -131,7 +137,7 @@ namespace vkcv {
 
 		vk::ImageAspectFlags aspectFlags;
 		
-		if (isDepthImageFormat(format)) {
+		if (isDepthFormat) {
 			aspectFlags = vk::ImageAspectFlagBits::eDepth;
 		} else {
 			aspectFlags = vk::ImageAspectFlagBits::eColor;

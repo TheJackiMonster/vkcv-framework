@@ -23,8 +23,10 @@ namespace vkcv
         m_NextPipelineId = 0;
     }
 
-    PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, const vk::RenderPass &pass)
+    PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, PassManager& passManager)
     {
+		const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
+    	
         const bool existsVertexShader = config.m_ShaderProgram.existsShader(ShaderStage::VERTEX);
         const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
         if (!(existsVertexShader && existsFragmentShader))
@@ -170,10 +172,34 @@ namespace vkcv
             m_Device.destroy(fragmentModule);
             return PipelineHandle();
         }
-
-        // graphics pipeline create
+	
+		const vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo(
+				vk::PipelineDepthStencilStateCreateFlags(),
+				true,
+				true,
+				vk::CompareOp::eLessOrEqual,
+				false,
+				false,
+				{},
+				{},
+				0.0f,
+				1.0f
+		);
+	
+		const vk::PipelineDepthStencilStateCreateInfo* p_depthStencilCreateInfo = nullptr;
+		
+		const PassConfig& passConfig = passManager.getPassConfig(config.m_PassHandle);
+		
+		for (const auto& attachment : passConfig.attachments) {
+			if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
+				p_depthStencilCreateInfo = &depthStencilCreateInfo;
+				break;
+			}
+		}
+	
+		// graphics pipeline create
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = { pipelineVertexShaderStageInfo, pipelineFragmentShaderStageInfo };
-        vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
+        const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
                 {},
                 static_cast<uint32_t>(shaderStages.size()),
                 shaderStages.data(),
@@ -183,7 +209,7 @@ namespace vkcv
                 &pipelineViewportStateCreateInfo,
                 &pipelineRasterizationStateCreateInfo,
                 &pipelineMultisampleStateCreateInfo,
-                nullptr,
+				p_depthStencilCreateInfo,
                 &pipelineColorBlendStateCreateInfo,
                 nullptr,
                 vkPipelineLayout,

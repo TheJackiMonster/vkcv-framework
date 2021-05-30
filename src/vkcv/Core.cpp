@@ -14,7 +14,6 @@
 #include "DescriptorManager.hpp"
 #include "Surface.hpp"
 #include "ImageLayoutTransitions.hpp"
-#include "Framebuffer.hpp"
 
 namespace vkcv
 {
@@ -122,8 +121,7 @@ namespace vkcv
 
     PipelineHandle Core::createGraphicsPipeline(const PipelineConfig &config)
     {
-        const vk::RenderPass &pass = m_PassManager->getVkPass(config.m_PassHandle);
-        return m_PipelineManager->createPipeline(config, pass);
+        return m_PipelineManager->createPipeline(config, *m_PassManager);
     }
 
 
@@ -165,6 +163,13 @@ namespace vkcv
 		m_Context.getDevice().waitIdle();	// FIMXE: this is a sin against graphics programming, but its getting late - Alex
 		destroyTemporaryFramebuffers();
 	}
+	
+	vk::Framebuffer createFramebuffer(const vk::Device device, const vk::RenderPass& renderpass,
+									  const int width, const int height, const std::vector<vk::ImageView>& attachments) {
+		const vk::FramebufferCreateFlags flags = {};
+		const vk::FramebufferCreateInfo createInfo(flags, renderpass, attachments.size(), attachments.data(), width, height, 1);
+		return device.createFramebuffer(createInfo);
+	}
 
 	void Core::renderMesh(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle, 
 		const int width, const int height, const size_t pushConstantSize, const void *pushConstantData,
@@ -175,6 +180,17 @@ namespace vkcv
 		}
 
 		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
+		const PassConfig passConfig = m_PassManager->getPassConfig(renderpassHandle);
+		
+		ImageHandle depthImage;
+		
+		for (const auto& attachment : passConfig.attachments) {
+			if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
+				depthImage = m_ImageManager->createImage(width, height, 1, attachment.format);
+				break;
+			}
+		}
+		
 		const vk::ImageView imageView	= m_swapchainImageViews[m_currentSwapchainImageIndex];
 		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
         const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
@@ -182,19 +198,47 @@ namespace vkcv
 		const vk::Buffer vulkanVertexBuffer	= m_BufferManager->getBuffer(vertexBuffer);
 		const vk::Buffer vulkanIndexBuffer	= m_BufferManager->getBuffer(indexBuffer);
 
-		const vk::Framebuffer framebuffer = createFramebuffer(m_Context.getDevice(), renderpass, width, height, imageView);
+		std::vector<vk::ImageView> attachments;
+		attachments.push_back(imageView);
+		
+		if (depthImage) {
+			attachments.push_back(m_ImageManager->getVulkanImageView(depthImage));
+		}
+		
+		const vk::Framebuffer framebuffer = createFramebuffer(
+				m_Context.getDevice(),
+				renderpass,
+				width,
+				height,
+				attachments
+		);
+		
 		m_TemporaryFramebuffers.push_back(framebuffer);
 
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
-		submitCommands(submitInfo, [renderpass, renderArea, imageView, framebuffer, pipeline, pipelineLayout, 
-			pushConstantSize, pushConstantData, vulkanVertexBuffer, indexCount, vulkanIndexBuffer](const vk::CommandBuffer& cmdBuffer) {
+		submitCommands(submitInfo, [&](const vk::CommandBuffer& cmdBuffer) {
+			std::vector<vk::ClearValue> clearValues;
+			
+			for (const auto& attachment : passConfig.attachments) {
+				if (attachment.load_operation == AttachmentOperation::CLEAR) {
+					float clear = 0.0f;
+					
+					if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
+						clear = 1.0f;
+					}
+					
+					clearValues.emplace_back(std::array<float, 4>{
+							clear,
+							clear,
+							clear,
+							1.f
+					});
+				}
+			}
 
-			const std::array<float, 4> clearColor = { 0.f, 0.f, 0.f, 1.f };
-			const vk::ClearValue clearValues(clearColor);
-
-			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, 1, &clearValues);
+			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
 			const vk::SubpassContents subpassContents = {};
 			cmdBuffer.beginRenderPass(beginInfo, subpassContents, {});
 
@@ -205,7 +249,9 @@ namespace vkcv
             cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
 			cmdBuffer.drawIndexed(indexCount, 1, 0, 0, {});
 			cmdBuffer.endRenderPass();
-		}, nullptr);
+		}, [&]() {
+			m_ImageManager->destroyImage(depthImage);
+		});
 	}
 
 	void Core::endFrame() {

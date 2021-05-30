@@ -60,9 +60,19 @@ int main(int argc, const char** argv) {
 		vkcv::AttachmentLayout::PRESENTATION,
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchainImageFormat());
+		core.getSwapchainImageFormat()
+	);
+	
+	const vkcv::AttachmentDescription depth_attachment(
+			vkcv::AttachmentLayout::UNDEFINED,
+			vkcv::AttachmentLayout::DEPTH_STENCIL_ATTACHMENT,
+			vkcv::AttachmentLayout::DEPTH_STENCIL_ATTACHMENT,
+			vkcv::AttachmentOperation::STORE,
+			vkcv::AttachmentOperation::CLEAR,
+			vk::Format::eD32Sfloat
+	);
 
-	vkcv::PassConfig trianglePassDefinition({ present_color_attachment });
+	vkcv::PassConfig trianglePassDefinition({ present_color_attachment, depth_attachment });
 	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
 
 	if (!trianglePass) {
@@ -98,7 +108,18 @@ int main(int argc, const char** argv) {
 		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
 		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-		core.renderMesh(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp, vertexBuffer.getHandle(), indexBuffer.getHandle(), mesh.vertexGroups[0].numIndices);
+		core.renderMesh(
+				trianglePass,
+				trianglePipeline,
+				windowWidth,
+				windowHeight,
+				sizeof(mvp),
+				&mvp,
+				vertexBuffer.getHandle(),
+				indexBuffer.getHandle(),
+				mesh.vertexGroups[0].numIndices
+		);
+		
 		core.endFrame();
 	}
 	
