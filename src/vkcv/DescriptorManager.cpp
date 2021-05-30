@@ -85,6 +85,13 @@ namespace vkcv
         m_ResourceDescriptions.emplace_back(vk_sets, vk_setLayouts);
         return ResourcesHandle(m_NextResourceDescriptionID++);
     }
+    
+    struct WriteDescriptorSetInfo {
+		size_t imageInfoIndex;
+		size_t bufferInfoIndex;
+		uint32_t binding;
+		vk::DescriptorType type;
+    };
 
 	void DescriptorManager::writeResourceDescription(
 		ResourcesHandle			handle, 
@@ -96,84 +103,124 @@ namespace vkcv
 
 		vk::DescriptorSet set = m_ResourceDescriptions[handle.getId()].descriptorSets[setIndex];
 
-		std::vector<vk::WriteDescriptorSet> vulkanWrites;
+		std::vector<vk::DescriptorImageInfo> imageInfos;
+		std::vector<vk::DescriptorBufferInfo> bufferInfos;
+		
+		std::vector<WriteDescriptorSetInfo> writeInfos;
 
 		for (const auto& write : writes.sampledImageWrites) {
-			vk::DescriptorImageInfo imageInfo(
+			const vk::DescriptorImageInfo imageInfo(
 				nullptr,
 				imageManager.getVulkanImageView(write.image),
-				vk::ImageLayout::eShaderReadOnlyOptimal);
-
-			vk::WriteDescriptorSet vulkanWrite(
-				set,
-				write.binding,
-				(uint32_t)0,
-				vk::DescriptorType::eSampledImage,
-				imageInfo);
-			vulkanWrites.push_back(vulkanWrite);
+				vk::ImageLayout::eShaderReadOnlyOptimal
+			);
+			
+			imageInfos.push_back(imageInfo);
+			
+			WriteDescriptorSetInfo vulkanWrite = {
+					imageInfos.size(),
+					0,
+					write.binding,
+					vk::DescriptorType::eSampledImage,
+			};
+			
+			writeInfos.push_back(vulkanWrite);
 		}
 
 		for (const auto& write : writes.storageImageWrites) {
-			vk::DescriptorImageInfo imageInfo(
+			const vk::DescriptorImageInfo imageInfo(
 				nullptr,
 				imageManager.getVulkanImageView(write.image),
-				vk::ImageLayout::eGeneral);
-
-			vk::WriteDescriptorSet vulkanWrite(
-				set,
-				write.binding,
-				(uint32_t)0,
-				vk::DescriptorType::eStorageImage,
-				imageInfo);
-			vulkanWrites.push_back(vulkanWrite);
+				vk::ImageLayout::eGeneral
+			);
+			
+			imageInfos.push_back(imageInfo);
+			
+			WriteDescriptorSetInfo vulkanWrite = {
+					imageInfos.size(),
+					0,
+					write.binding,
+					vk::DescriptorType::eStorageImage
+			};
+			
+			writeInfos.push_back(vulkanWrite);
 		}
 
 		for (const auto& write : writes.uniformBufferWrites) {
-			vk::DescriptorBufferInfo bufferInfo(
+			const vk::DescriptorBufferInfo bufferInfo(
 				bufferManager.getBuffer(write.buffer),
-				(uint32_t)0,
-				bufferManager.getBufferSize(write.buffer));
+				static_cast<uint32_t>(0),
+				bufferManager.getBufferSize(write.buffer)
+			);
+			
+			bufferInfos.push_back(bufferInfo);
 
-			vk::WriteDescriptorSet vulkanWrite(
-				set,
-				write.binding,
-				(uint32_t)0,
-				vk::DescriptorType::eUniformBuffer,
-				nullptr,
-				bufferInfo);
-			vulkanWrites.push_back(vulkanWrite);
+			WriteDescriptorSetInfo vulkanWrite = {
+					0,
+					bufferInfos.size(),
+					write.binding,
+					vk::DescriptorType::eUniformBuffer
+			};
+			
+			writeInfos.push_back(vulkanWrite);
 		}
 
 		for (const auto& write : writes.storageBufferWrites) {
-			vk::DescriptorBufferInfo bufferInfo(
+			const vk::DescriptorBufferInfo bufferInfo(
 				bufferManager.getBuffer(write.buffer),
-				(uint32_t)0,
-				bufferManager.getBufferSize(write.buffer));
-
-			vk::WriteDescriptorSet vulkanWrite(
-				set,
-				write.binding,
-				(uint32_t)0,
-				vk::DescriptorType::eStorageBuffer,
-				nullptr,
-				bufferInfo);
-			vulkanWrites.push_back(vulkanWrite);
+				static_cast<uint32_t>(0),
+				bufferManager.getBufferSize(write.buffer)
+			);
+			
+			bufferInfos.push_back(bufferInfo);
+			
+			WriteDescriptorSetInfo vulkanWrite = {
+					0,
+					bufferInfos.size(),
+					write.binding,
+					vk::DescriptorType::eStorageBuffer
+			};
+			
+			writeInfos.push_back(vulkanWrite);
 		}
 
 		for (const auto& write : writes.samplerWrites) {
-			vk::DescriptorImageInfo imageInfo(
-				samplerManager.getVulkanSampler(write.sampler),
+			const vk::Sampler& sampler = samplerManager.getVulkanSampler(write.sampler);
+			
+			const vk::DescriptorImageInfo imageInfo(
+				sampler,
 				nullptr,
-				vk::ImageLayout::eGeneral);
+				vk::ImageLayout::eGeneral
+			);
+			
+			imageInfos.push_back(imageInfo);
 
+			WriteDescriptorSetInfo vulkanWrite = {
+					imageInfos.size(),
+					0,
+					write.binding,
+					vk::DescriptorType::eSampler
+			};
+			
+			writeInfos.push_back(vulkanWrite);
+		}
+		
+		std::vector<vk::WriteDescriptorSet> vulkanWrites;
+		
+		for (const auto& write : writeInfos) {
 			vk::WriteDescriptorSet vulkanWrite(
-				set,
-				write.binding,
-				(uint32_t)0,
-				vk::DescriptorType::eSampler,
-				imageInfo);
+					set,
+					write.binding,
+					static_cast<uint32_t>(0),
+					1,
+					write.type,
+					(write.imageInfoIndex > 0? &(imageInfos[write.imageInfoIndex - 1]) : nullptr),
+					(write.bufferInfoIndex > 0? &(bufferInfos[write.bufferInfoIndex - 1]) : nullptr)
+			);
+			
 			vulkanWrites.push_back(vulkanWrite);
 		}
+		
 		m_Device.updateDescriptorSets(vulkanWrites, nullptr);
 	}
 
