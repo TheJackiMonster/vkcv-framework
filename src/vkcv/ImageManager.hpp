@@ -25,6 +25,8 @@ namespace vkcv {
 			uint32_t m_height = 0;
 			uint32_t m_depth = 0;
 			vk::Format m_format;
+			uint32_t m_layers = 1;
+			uint32_t m_levels = 1;
 		};
 		
 		Core* m_core;

@@ -6,6 +6,8 @@
 #include "ImageManager.hpp"
 #include "vkcv/Core.hpp"
 
+#include <algorithm>
+
 namespace vkcv {
 
 	/**
@@ -42,6 +44,16 @@ namespace vkcv {
 	ImageManager::~ImageManager() noexcept {
 		for (uint64_t id = 0; id < m_images.size(); id++) {
 			destroyImage(ImageHandle(id));
+		}
+	}
+	
+	bool isDepthImageFormat(vk::Format format) {
+		if ((format == vk::Format::eD16Unorm) || (format == vk::Format::eD16UnormS8Uint) ||
+			(format == vk::Format::eD24UnormS8Uint) || (format == vk::Format::eD32Sfloat) ||
+			(format == vk::Format::eD32SfloatS8Uint)) {
+			return true;
+		} else {
+			return false;
 		}
 	}
 
@@ -84,13 +96,16 @@ namespace vkcv {
 				format, imageType, imageTiling, imageUsageFlags
 		);
 		
+		const uint32_t mipLevels = std::min<uint32_t>(1, imageFormatProperties.maxMipLevels);
+		const uint32_t arrayLayers = std::min<uint32_t>(1, imageFormatProperties.maxArrayLayers);
+		
 		const vk::ImageCreateInfo imageCreateInfo(
 			createFlags,
 			imageType,
 			format,
 			vk::Extent3D(width, height, depth),
-			1,
-			1,
+			mipLevels,
+			arrayLayers,
 			vk::SampleCountFlagBits::e1,
 			imageTiling,
 			imageUsageFlags,
@@ -114,6 +129,14 @@ namespace vkcv {
 		vk::DeviceMemory memory = device.allocateMemory(vk::MemoryAllocateInfo(requirements.size, memoryTypeIndex));
 		device.bindImageMemory(image, memory, 0);
 
+		vk::ImageAspectFlags aspectFlags;
+		
+		if (isDepthImageFormat(format)) {
+			aspectFlags = vk::ImageAspectFlagBits::eDepth;
+		} else {
+			aspectFlags = vk::ImageAspectFlagBits::eColor;
+		}
+		
 		const vk::ImageViewCreateInfo imageViewCreateInfo (
 				{},
 				image,
@@ -126,18 +149,18 @@ namespace vkcv {
 						vk::ComponentSwizzle::eIdentity
 				),
 				vk::ImageSubresourceRange(
-						vk::ImageAspectFlagBits::eColor,
+						aspectFlags,
 						0,
-						1,
+						mipLevels,
 						0,
-						1
+						arrayLayers
 				)
 		);
 		
 		vk::ImageView view = device.createImageView(imageViewCreateInfo);
 		
 		const uint64_t id = m_images.size();
-		m_images.push_back({ image, memory, view, width, height, depth, format });
+		m_images.push_back({ image, memory, view, width, height, depth, format, arrayLayers, mipLevels });
 		return ImageHandle(id);
 	}
 	
@@ -178,6 +201,14 @@ namespace vkcv {
 	}
 	
 	void ImageManager::switchImageLayout(const ImageHandle& handle, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_images.size()) {
+			return;
+		}
+		
+		auto& image = m_images[id];
+		
 		//alternativly we could use switch case for every variable to set
 		vk::AccessFlags sourceAccessMask;
 		vk::PipelineStageFlags sourceStage;
@@ -203,21 +234,21 @@ namespace vkcv {
 			destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
 		}
 		
-		vk::ImageSubresourceRange imageSubresourceRange(
-				vk::ImageAspectFlagBits::eColor,
-				0,
-				1,
-				0,
-				1
-		);
+		vk::ImageAspectFlags aspectFlags;
 		
-		const uint64_t id = handle.getId();
-		
-		if (id >= m_images.size()) {
-			return;
+		if (isDepthImageFormat(image.m_format)) {
+			aspectFlags = vk::ImageAspectFlagBits::eDepth;
+		} else {
+			aspectFlags = vk::ImageAspectFlagBits::eColor;
 		}
 		
-		auto& image = m_images[id];
+		vk::ImageSubresourceRange imageSubresourceRange(
+				aspectFlags,
+				0,
+				image.m_levels,
+				0,
+				image.m_layers
+		);
 		
 		vk::ImageMemoryBarrier imageMemoryBarrier(
 			sourceAccessMask,
@@ -286,15 +317,23 @@ namespace vkcv {
 		m_core->submitCommands(
 				submitInfo,
 				[&image, &stagingBuffer](const vk::CommandBuffer& commandBuffer) {
+					vk::ImageAspectFlags aspectFlags;
+					
+					if (isDepthImageFormat(image.m_format)) {
+						aspectFlags = vk::ImageAspectFlagBits::eDepth;
+					} else {
+						aspectFlags = vk::ImageAspectFlagBits::eColor;
+					}
+					
 					const vk::BufferImageCopy region (
 							0,
 							0,
 							0,
 							vk::ImageSubresourceLayers(
-									vk::ImageAspectFlagBits::eColor,
+									aspectFlags,
 									0,
 									0,
-									1
+									image.m_layers
 							),
 							vk::Offset3D(0, 0, 0),
 							vk::Extent3D(image.m_width, image.m_height, image.m_depth)
