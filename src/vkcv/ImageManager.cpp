@@ -59,12 +59,15 @@ namespace vkcv {
 		const vk::Device& device = m_core->getContext().getDevice();
 
 		vk::ImageType imageType = vk::ImageType::e3D;
+		vk::ImageViewType imageViewType = vk::ImageViewType::e3D;
 		
 		if (depth <= 1) {
 			if (height <= 1) {
 				imageType = vk::ImageType::e1D;
+				imageViewType = vk::ImageViewType::e1D;
 			} else {
 				imageType = vk::ImageType::e2D;
+				imageViewType = vk::ImageViewType::e2D;
 			}
 		}
 		
@@ -81,7 +84,7 @@ namespace vkcv {
 				format, imageType, imageTiling, imageUsageFlags
 		);
 		
-		vk::ImageCreateInfo imageCreateInfo(
+		const vk::ImageCreateInfo imageCreateInfo(
 			createFlags,
 			imageType,
 			format,
@@ -111,11 +114,69 @@ namespace vkcv {
 		vk::DeviceMemory memory = device.allocateMemory(vk::MemoryAllocateInfo(requirements.size, memoryTypeIndex));
 		device.bindImageMemory(image, memory, 0);
 
+		const vk::ImageViewCreateInfo imageViewCreateInfo (
+				{},
+				image,
+				imageViewType,
+				format,
+				vk::ComponentMapping(
+						vk::ComponentSwizzle::eIdentity,
+						vk::ComponentSwizzle::eIdentity,
+						vk::ComponentSwizzle::eIdentity,
+						vk::ComponentSwizzle::eIdentity
+				),
+				vk::ImageSubresourceRange(
+						vk::ImageAspectFlagBits::eColor,
+						0,
+						1,
+						0,
+						1
+				)
+		);
+		
+		vk::ImageView view = device.createImageView(imageViewCreateInfo);
+		
 		const uint64_t id = m_images.size();
-		m_images.push_back({ image, memory, width, height, depth, format });
+		m_images.push_back({ image, memory, view, width, height, depth, format });
 		return ImageHandle(id);
 	}
-
+	
+	vk::Image ImageManager::getVulkanImage(const ImageHandle &handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_images.size()) {
+			return nullptr;
+		}
+		
+		auto& image = m_images[id];
+		
+		return image.m_handle;
+	}
+	
+	vk::DeviceMemory ImageManager::getVulkanDeviceMemory(const ImageHandle &handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_images.size()) {
+			return nullptr;
+		}
+		
+		auto& image = m_images[id];
+		
+		return image.m_memory;
+	}
+	
+	vk::ImageView ImageManager::getVulkanImageView(const ImageHandle &handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_images.size()) {
+			return nullptr;
+		}
+		
+		auto& image = m_images[id];
+		
+		return image.m_view;
+	}
+	
 	void ImageManager::switchImageLayout(const ImageHandle& handle, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) {
 		//alternativly we could use switch case for every variable to set
 		vk::AccessFlags sourceAccessMask;
@@ -270,6 +331,11 @@ namespace vkcv {
 		auto& image = m_images[id];
 
 		const vk::Device& device = m_core->getContext().getDevice();
+		
+		if (image.m_view) {
+			device.destroyImageView(image.m_view);
+			image.m_view = nullptr;
+		}
 
 		if (image.m_memory) {
 			device.freeMemory(image.m_memory);

@@ -20,6 +20,7 @@ namespace vkcv {
 		{
 			vk::Image m_handle;
 			vk::DeviceMemory m_memory;
+			vk::ImageView m_view;
 			uint32_t m_width = 0;
 			uint32_t m_height = 0;
 			uint32_t m_depth = 0;
@@ -41,10 +42,19 @@ namespace vkcv {
 		ImageManager& operator=(ImageManager&& other) = delete;
 		ImageManager& operator=(const ImageManager& other) = delete;
 		
+		ImageHandle createImage(uint32_t width, uint32_t height, uint32_t depth, vk::Format format);
+		
+		[[nodiscard]]
+		vk::Image getVulkanImage(const ImageHandle& handle) const;
+		
+		[[nodiscard]]
+		vk::DeviceMemory getVulkanDeviceMemory(const ImageHandle& handle) const;
+		
+		[[nodiscard]]
+		vk::ImageView getVulkanImageView(const ImageHandle& handle) const;
+		
 		void switchImageLayout(const ImageHandle& handle, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 		void fillImage(const ImageHandle& handle, void* data, size_t size);
-
-		ImageHandle createImage(uint32_t width, uint32_t height, uint32_t depth, vk::Format format);
 
 		/**
 		 * Destroys and deallocates image represented by a given
