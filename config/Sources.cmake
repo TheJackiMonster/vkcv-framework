@@ -70,4 +70,6 @@ set(vkcv_sources
 		
 		${vkcv_source}/vkcv/SamplerManager.hpp
 		${vkcv_source}/vkcv/SamplerManager.cpp
+        
+        ${vkcv_include}/vkcv/DescriptorWrites.hpp
 )

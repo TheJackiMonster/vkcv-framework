@@ -5,7 +5,6 @@
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
 
-
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
 
@@ -100,7 +99,19 @@ int main(int argc, const char** argv) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
 	});
 
-	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass, mesh.vertexGroups[0].vertexBuffer.attributes);
+	vkcv::DescriptorSetConfig setConfig({
+		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_SAMPLED,	1, vkcv::ShaderStage::FRAGMENT),
+		vkcv::DescriptorBinding(vkcv::DescriptorType::SAMPLER,			1, vkcv::ShaderStage::FRAGMENT)
+	});
+	vkcv::ResourcesHandle set = core.createResourceDescription({ setConfig });
+
+	const vkcv::PipelineConfig trianglePipelineDefinition(
+		triangleShaderProgram, 
+		windowWidth,
+		windowHeight,
+		trianglePass,
+		mesh.vertexGroups[0].vertexBuffer.attributes,
+		{ core.getDescritorSetLayout(set, 0) });
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 	
 	if (!trianglePipeline) {
@@ -109,14 +120,25 @@ int main(int argc, const char** argv) {
 	}
 	
 	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, mesh.texture_hack.w, mesh.texture_hack.h);
-	
 	texture.fill(mesh.texture_hack.img);
+
+	vkcv::SamplerHandle sampler = core.createSampler(
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerMipmapMode::LINEAR,
+		vkcv::SamplerAddressMode::REPEAT
+	);
 
 	std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
 		{ mesh.vertexGroups[0].vertexBuffer.attributes[0].offset, vertexBuffer.getHandle() },
 		{ mesh.vertexGroups[0].vertexBuffer.attributes[1].offset, vertexBuffer.getHandle() },
 		{ mesh.vertexGroups[0].vertexBuffer.attributes[2].offset, vertexBuffer.getHandle() }
 	};
+
+	vkcv::DescriptorWrites setWrites;
+	setWrites.sampledImageWrites	= { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
+	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
+	core.writeResourceDescription(set, 0, setWrites);
 
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
@@ -129,15 +151,17 @@ int main(int argc, const char** argv) {
 		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
 		core.renderMesh(
-				trianglePass,
-				trianglePipeline,
-				windowWidth,
-				windowHeight,
-				sizeof(mvp),
-				&mvp,
-				vertexBufferBindings,
-				indexBuffer.getHandle(),
-				mesh.vertexGroups[0].numIndices
+			trianglePass,
+			trianglePipeline,
+			windowWidth,
+			windowHeight,
+			sizeof(mvp),
+			&mvp,
+			vertexBufferBindings,
+			indexBuffer.getHandle(),
+			mesh.vertexGroups[0].numIndices,
+			set,
+			0
 		);
 
 		core.endFrame();
