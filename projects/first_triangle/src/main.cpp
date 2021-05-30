@@ -58,6 +58,13 @@ int main(int argc, const char** argv) {
 	m[1] = { 0, 0, 0 };
 	m[2] = { 0, 0, 0 };
 	buffer.unmap();*/
+	
+	vkcv::SamplerHandle sampler = core.createSampler(
+			vkcv::SamplerFilterType::NEAREST,
+			vkcv::SamplerFilterType::NEAREST,
+			vkcv::SamplerMipmapMode::NEAREST,
+			vkcv::SamplerAddressMode::REPEAT
+	);
 
 	std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
 

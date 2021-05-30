@@ -10,6 +10,7 @@
 #include "PassManager.hpp"
 #include "PipelineManager.hpp"
 #include "vkcv/BufferManager.hpp"
+#include "SamplerManager.hpp"
 #include "ImageManager.hpp"
 #include "DescriptorManager.hpp"
 #include "Surface.hpp"
@@ -95,6 +96,7 @@ namespace vkcv
             m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
             m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
 			m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
+			m_SamplerManager(std::unique_ptr<SamplerManager>(new SamplerManager(m_Context.m_Device))),
 			m_ImageManager{std::unique_ptr<ImageManager>(new ImageManager(*m_BufferManager))},
             m_CommandResources(commandResources),
             m_SyncResources(syncResources)
@@ -320,6 +322,11 @@ namespace vkcv
 		}
 	}
 	
+	SamplerHandle Core::createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
+									  SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode) {
+    	return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode);
+    }
+    
 	Image Core::createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth)
 	{
     	return Image::create(m_ImageManager.get(), format, width, height, depth);

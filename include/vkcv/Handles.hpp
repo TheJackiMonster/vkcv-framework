@@ -9,6 +9,7 @@
 
 namespace vkcv
 {
+	
 	class Handle {
 		friend std::ostream& operator << (std::ostream& out, const Handle& handle);
 		
@@ -64,6 +65,12 @@ namespace vkcv
 		using Handle::Handle;
 	};
 	
+	class SamplerHandle : public Handle {
+		friend class SamplerManager;
+	private:
+		using Handle::Handle;
+	};
+
 	class ImageHandle : public Handle {
 		friend class ImageManager;
 	private:
