@@ -266,6 +266,11 @@ namespace vkcv
 			finish();
 		}
 	}
+	
+	Image Core::createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth)
+	{
+    	return Image::create(m_ImageManager.get(), format, width, height, depth);
+	}
 
     ResourcesHandle Core::createResourceDescription(const std::vector<DescriptorSet> &descriptorSets)
     {

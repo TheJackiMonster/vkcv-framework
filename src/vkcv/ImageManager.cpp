@@ -47,22 +47,49 @@ namespace vkcv {
 
 	ImageHandle ImageManager::createImage(uint32_t width, uint32_t height, uint32_t depth, vk::Format format)
 	{
-		vk::ImageCreateFlags createFlags;
-		vk::ImageUsageFlags imageUsageFlags = (vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+		const vk::PhysicalDevice& physicalDevice = m_core->getContext().getPhysicalDevice();
 		
-		format = vk::Format::eR8G8B8A8Unorm; // TODO
+		const vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(format);
+		
+		vk::ImageCreateFlags createFlags;
+		vk::ImageUsageFlags imageUsageFlags = (
+				vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst
+		);
 
 		const vk::Device& device = m_core->getContext().getDevice();
 
+		vk::ImageType imageType = vk::ImageType::e3D;
+		
+		if (depth <= 1) {
+			if (height <= 1) {
+				imageType = vk::ImageType::e1D;
+			} else {
+				imageType = vk::ImageType::e2D;
+			}
+		}
+		
+		vk::ImageTiling imageTiling = vk::ImageTiling::eOptimal;
+		
+		if (!formatProperties.optimalTilingFeatures) {
+			if (!formatProperties.linearTilingFeatures)
+				return ImageHandle();
+			
+			imageTiling = vk::ImageTiling::eLinear;
+		}
+		
+		const vk::ImageFormatProperties imageFormatProperties = physicalDevice.getImageFormatProperties(
+				format, imageType, imageTiling, imageUsageFlags
+		);
+		
 		vk::ImageCreateInfo imageCreateInfo(
 			createFlags,
-			vk::ImageType::e2D,
+			imageType,
 			format,
-			vk::Extent3D(width, height, 1),
+			vk::Extent3D(width, height, depth),
 			1,
 			1,
 			vk::SampleCountFlagBits::e1,
-			vk::ImageTiling::eOptimal,
+			imageTiling,
 			imageUsageFlags,
 			vk::SharingMode::eExclusive,
 			{},
@@ -72,7 +99,6 @@ namespace vkcv {
 		vk::Image image = device.createImage(imageCreateInfo);
 		
 		const vk::MemoryRequirements requirements = device.getImageMemoryRequirements(image);
-		const vk::PhysicalDevice& physicalDevice = m_core->getContext().getPhysicalDevice();
 
 		vk::MemoryPropertyFlags memoryTypeFlags = vk::MemoryPropertyFlagBits::eDeviceLocal;
 
@@ -102,6 +128,7 @@ namespace vkcv {
 			(newLayout == vk::ImageLayout::eTransferDstOptimal))
 		{
 			destinationAccessMask = vk::AccessFlagBits::eTransferWrite;
+			
 			sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
 			destinationStage = vk::PipelineStageFlagBits::eTransfer;
 		}
@@ -110,6 +137,7 @@ namespace vkcv {
 		{
 			sourceAccessMask = vk::AccessFlagBits::eTransferWrite;
 			destinationAccessMask = vk::AccessFlagBits::eShaderRead;
+			
 			sourceStage = vk::PipelineStageFlagBits::eTransfer;
 			destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
 		}
@@ -142,7 +170,7 @@ namespace vkcv {
 		);
 		
 		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Transfer;
+		submitInfo.queueType = QueueType::Graphics;
 		
 		m_core->submitCommands(
 			submitInfo,
@@ -162,10 +190,6 @@ namespace vkcv {
 	
 	void ImageManager::fillImage(const ImageHandle& handle, void* data, size_t size)
 	{
-		if (size == 0) {
-			size = SIZE_MAX;
-		}
-		
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
@@ -180,9 +204,9 @@ namespace vkcv {
 				vk::ImageLayout::eTransferDstOptimal
 		);
 		
-		uint32_t channels = 3; // TODO
+		uint32_t channels = 4; // TODO: check image.m_format
 		const size_t image_size = (
-				image.m_width * image.m_height * image.m_depth * channels * sizeof(char)
+				image.m_width * image.m_height * image.m_depth * channels
 		);
 		
 		const size_t max_size = std::min(size, image_size);
@@ -249,10 +273,12 @@ namespace vkcv {
 
 		if (image.m_memory) {
 			device.freeMemory(image.m_memory);
+			image.m_memory = nullptr;
 		}
 
 		if (image.m_handle) {
 			device.destroyImage(image.m_handle);
+			image.m_handle = nullptr;
 		}
 	}
 

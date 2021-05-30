@@ -12,9 +12,8 @@ namespace vkcv {
 	
 	class ImageManager;
 	class Image {
+		friend class Core;
 	public:
-		static Image create(ImageManager* manager, vk::Format format, uint32_t width, uint32_t height, uint32_t depth);
-		
 		[[nodiscard]]
 		vk::Format getFormat() const;
 		
@@ -43,6 +42,9 @@ namespace vkcv {
 		vk::ImageLayout m_layout;
 
 		Image(ImageManager* manager, const ImageHandle& handle, vk::Format format, uint32_t width, uint32_t height, uint32_t depth);
+		
+		static Image create(ImageManager* manager, vk::Format format, uint32_t width, uint32_t height, uint32_t depth);
+		
 	};
 	
 }

@@ -173,6 +173,18 @@ namespace vkcv
         Buffer<T> createBuffer(vkcv::BufferType type, size_t count, BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL) {
         	return Buffer<T>::create(m_BufferManager.get(), type, count, memoryType);
         }
+        
+        /**
+         * Creates an #Image with a given format, width, height and depth.
+         *
+         * @param format Image format
+         * @param width Image width
+         * @param height Image height
+         * @param depth Image depth
+         * @return Image-Object
+         */
+        [[nodiscard]]
+        Image createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth = 1);
 
         /** TODO:
          *   @param setDescriptions

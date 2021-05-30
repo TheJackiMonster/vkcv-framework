@@ -83,6 +83,10 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
+	
+	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, mesh.texture_hack.w, mesh.texture_hack.h);
+	
+	texture.fill(mesh.texture_hack.img);
 
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
@@ -97,5 +101,6 @@ int main(int argc, const char** argv) {
 		core.renderMesh(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp, vertexBuffer.getHandle(), indexBuffer.getHandle(), mesh.vertexGroups[0].numIndices);
 		core.endFrame();
 	}
+	
 	return 0;
 }
