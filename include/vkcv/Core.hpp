@@ -13,6 +13,7 @@
 #include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
 #include "vkcv/Buffer.hpp"
+#include "vkcv/Image.hpp"
 #include "vkcv/PipelineConfig.hpp"
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
@@ -31,6 +32,7 @@ namespace vkcv
     class PipelineManager;
     class DescriptorManager;
     class BufferManager;
+    class ImageManager;
 
 	struct SubmitInfo {
 		QueueType queueType;
@@ -68,6 +70,7 @@ namespace vkcv
         std::unique_ptr<PipelineManager> m_PipelineManager;
         std::unique_ptr<DescriptorManager> m_DescriptorManager;
         std::unique_ptr<BufferManager> m_BufferManager;
+        std::unique_ptr<ImageManager> m_ImageManager;
 
 		CommandResources m_CommandResources;
 		SyncResources m_SyncResources;
@@ -175,6 +178,18 @@ namespace vkcv
         Buffer<T> createBuffer(vkcv::BufferType type, size_t count, BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL) {
         	return Buffer<T>::create(m_BufferManager.get(), type, count, memoryType);
         }
+        
+        /**
+         * Creates an #Image with a given format, width, height and depth.
+         *
+         * @param format Image format
+         * @param width Image width
+         * @param height Image height
+         * @param depth Image depth
+         * @return Image-Object
+         */
+        [[nodiscard]]
+        Image createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth = 1);
 
         /** TODO:
          *   @param setDescriptions
