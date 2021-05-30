@@ -103,7 +103,7 @@ namespace vkcv
 		 * @param size Size of data in bytes
 		 * @param offset Offset to fill in data in bytes
 		 */
-		void fillBuffer(const BufferHandle& handle, void* data, size_t size, size_t offset);
+		void fillBuffer(const BufferHandle& handle, const void* data, size_t size, size_t offset);
 		
 		/**
 		 * Maps memory to a buffer represented by a given

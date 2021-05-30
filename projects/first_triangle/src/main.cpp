@@ -94,7 +94,7 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
     triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
-	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
+	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass, {});
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 	
 	if (!trianglePipeline)
@@ -120,6 +120,8 @@ int main(int argc, const char** argv) {
         auto resourceHandle = core.createResourceDescription(sets);
         std::cout << "Resource " << resourceHandle << " created." << std::endl;
 	}
+	
+	std::vector<vkcv::VertexBufferBinding> vertexBufferBindings;
 
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
@@ -147,7 +149,18 @@ int main(int argc, const char** argv) {
         cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
 		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-	    core.renderMesh(trianglePass, trianglePipeline, windowWidth, windowHeight, sizeof(mvp), &mvp, testBuffer.getHandle(), triangleIndexBuffer.getHandle(), 3);
+	    core.renderMesh(
+	    		trianglePass,
+	    		trianglePipeline,
+	    		windowWidth,
+	    		windowHeight,
+	    		sizeof(mvp),
+	    		&mvp,
+	    		vertexBufferBindings,
+	    		triangleIndexBuffer.getHandle(),
+	    		3
+		);
+	    
 	    core.endFrame();
 	}
 	return 0;

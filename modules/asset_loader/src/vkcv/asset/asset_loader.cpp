@@ -85,12 +85,12 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		VertexAttribute attribute;
 
 		if (attrib.first == "POSITION") {
-			attribute.type = POSITION;
+			attribute.type = PrimitiveType::POSITION;
 			posAccessor = accessor;
 		} else if (attrib.first == "NORMAL") {
-			attribute.type = NORMAL;
+			attribute.type = PrimitiveType::NORMAL;
 		} else if (attrib.first == "TEXCOORD_0") {
-			attribute.type = TEXCOORD_0;
+			attribute.type = PrimitiveType::TEXCOORD_0;
 		} else {
 			return 0;
 		}
@@ -126,15 +126,16 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		}
 	}
 
-	const fx::gltf::BufferView& vertexBufferView = object.bufferViews[posAccessor.bufferView];
-	const fx::gltf::Buffer& vertexBuffer = object.buffers[vertexBufferView.buffer];
+	const fx::gltf::BufferView&	vertexBufferView	= object.bufferViews[posAccessor.bufferView];
+	const fx::gltf::Buffer&		vertexBuffer		= object.buffers[vertexBufferView.buffer];
 	
+	// FIXME: This only works when all vertex attributes are in one buffer
 	std::vector<uint8_t> vertexBufferData;
-	vertexBufferData.resize(vertexBufferView.byteLength);
+	vertexBufferData.resize(vertexBuffer.byteLength);
 	{
-		const size_t off = vertexBufferView.byteOffset;
+		const size_t off = 0;
 		const void *const ptr = ((char*)vertexBuffer.data.data()) + off;
-		if (!memcpy(vertexBufferData.data(), ptr, vertexBufferView.byteLength)) {
+		if (!memcpy(vertexBufferData.data(), ptr, vertexBuffer.byteLength)) {
 			std::cerr << "ERROR copying vertex buffer data.\n";
 			return 0;
 		}

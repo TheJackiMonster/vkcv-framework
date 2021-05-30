@@ -45,13 +45,21 @@ int main(int argc, const char** argv) {
 	}
 
 	assert(mesh.vertexGroups.size() > 0);
-	const size_t vertexBufferSize = mesh.vertexGroups[0].vertexBuffer.data.size();
-	auto vertexBuffer = core.createBuffer<uint8_t>(vkcv::BufferType::VERTEX, vertexBufferSize, vkcv::BufferMemoryType::DEVICE_LOCAL);
-	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data.data(), vertexBufferSize);
+	auto vertexBuffer = core.createBuffer<uint8_t>(
+			vkcv::BufferType::VERTEX,
+			mesh.vertexGroups[0].vertexBuffer.data.size(),
+			vkcv::BufferMemoryType::DEVICE_LOCAL
+	);
+	
+	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
 
-	const size_t indexBufferSize = mesh.vertexGroups[0].indexBuffer.data.size();
-	auto indexBuffer = core.createBuffer<uint8_t>(vkcv::BufferType::INDEX, indexBufferSize, vkcv::BufferMemoryType::DEVICE_LOCAL);
-	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data.data(), indexBufferSize);
+	auto indexBuffer = core.createBuffer<uint8_t>(
+			vkcv::BufferType::INDEX,
+			mesh.vertexGroups[0].indexBuffer.data.size(),
+			vkcv::BufferMemoryType::DEVICE_LOCAL
+	);
+	
+	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
 
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
@@ -85,8 +93,14 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
+	
+	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
+	
+	std::sort(attributes.begin(), attributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
+		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
+	});
 
-	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass);
+	const vkcv::PipelineConfig trianglePipelineDefinition(triangleShaderProgram, windowWidth, windowHeight, trianglePass, mesh.vertexGroups[0].vertexBuffer.attributes);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 	
 	if (!trianglePipeline) {
@@ -97,6 +111,12 @@ int main(int argc, const char** argv) {
 	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, mesh.texture_hack.w, mesh.texture_hack.h);
 	
 	texture.fill(mesh.texture_hack.img);
+
+	std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
+		{ mesh.vertexGroups[0].vertexBuffer.attributes[0].offset, vertexBuffer.getHandle() },
+		{ mesh.vertexGroups[0].vertexBuffer.attributes[1].offset, vertexBuffer.getHandle() },
+		{ mesh.vertexGroups[0].vertexBuffer.attributes[2].offset, vertexBuffer.getHandle() }
+	};
 
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
@@ -115,11 +135,11 @@ int main(int argc, const char** argv) {
 				windowHeight,
 				sizeof(mvp),
 				&mvp,
-				vertexBuffer.getHandle(),
+				vertexBufferBindings,
 				indexBuffer.getHandle(),
 				mesh.vertexGroups[0].numIndices
 		);
-		
+
 		core.endFrame();
 	}
 	

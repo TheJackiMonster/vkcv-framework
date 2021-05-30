@@ -110,22 +110,24 @@ namespace vkcv {
         spirv_cross::Compiler comp(move(shaderCode));
         spirv_cross::ShaderResources resources = comp.get_shader_resources();
 
-        std::vector<VertexInputAttachment> inputVec;
-        uint32_t offset = 0;
+		if (shaderStage == ShaderStage::VERTEX) {
+			std::vector<VertexInputAttachment> inputVec;
+			uint32_t offset = 0;
 
-        for (uint32_t i = 0; i < resources.stage_inputs.size() ; i++){
-            auto &u = resources.stage_inputs[i];
-            const spirv_cross::SPIRType &base_type = comp.get_type(u.base_type_id);
+			for (uint32_t i = 0; i < resources.stage_inputs.size(); i++) {
+				auto& u = resources.stage_inputs[i];
+				const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
 
-            VertexInputAttachment input = VertexInputAttachment(comp.get_decoration(u.id,spv::DecorationLocation),
-                                                                0,
-                                                                convertFormat(base_type.basetype, base_type.vecsize),
-                                                                offset);
-            inputVec.push_back(input);
-            offset += base_type.vecsize * base_type.width/8;
-        }
+				VertexInputAttachment input = VertexInputAttachment(comp.get_decoration(u.id, spv::DecorationLocation),
+					0,
+					convertFormat(base_type.basetype, base_type.vecsize),
+					offset);
+				inputVec.push_back(input);
+				offset += base_type.vecsize * base_type.width / 8;
+			}
 
-        m_VertexLayout = VertexLayout(inputVec);
+			m_VertexLayout = VertexLayout(inputVec);
+		}
     }
 
     const VertexLayout& ShaderProgram::getVertexLayout() const{
