@@ -20,7 +20,7 @@ namespace vkcv{
         float m_width;
         float m_height;
 
-        bool m_roationActive = false;
+        bool m_rotationActive = false;
         double m_lastX ;
         double m_lastY ;
 

@@ -1,13 +1,15 @@
 #include "vkcv/camera/TrackballCamera.hpp"
+#include <iostream>
 
 namespace vkcv {
 
     TrackballCamera::TrackballCamera() {
-        m_pitch = 90.0f;
+        m_pitch = 0.0f;
         m_yaw = 0.0f;
         m_radius = 1.5f;
-
         m_center = glm::vec3(0.0f,0.0f,0.0f);
+        m_cameraSpeed = 5.0f;
+        m_scrollSensitivity = 0.05f;
     }
 
     TrackballCamera::~TrackballCamera() = default;
@@ -32,23 +34,32 @@ namespace vkcv {
     }
 
     void TrackballCamera::setPitch(float pitch) {
-        if (pitch > 89.0f) {
-            pitch = 89.0f;
+        if (pitch < 0.0f) {
+            pitch += 360.0f;
         }
-        if (pitch < -89.0f) {
-            pitch = -89.0f;
+        else if (pitch > 360.0f) {
+            pitch -= 360.0f;
         }
         m_pitch = pitch;
     }
 
     void TrackballCamera::setYaw(float yaw) {
-        if (m_yaw < 0.0f) {
-            m_yaw += 360.0f;
+        if (yaw < 0.0f) {
+            yaw += 360.0f;
         }
-        else if (m_yaw > 360.0f) {
-            m_yaw -= 360.0f;
+        else if (yaw > 360.0f) {
+            yaw -= 360.0f;
         }
         m_yaw = yaw;
+    }
+
+    void TrackballCamera::changeFov(double fov) {
+        setRadius(m_radius - fov * m_scrollSensitivity);
+    }
+
+    void TrackballCamera::panView(double xOffset, double yOffset) {
+        setYaw(m_yaw + xOffset * m_cameraSpeed);
+        setPitch(m_pitch + yOffset * m_cameraSpeed);
     }
 
     glm::mat4 TrackballCamera::updateView(double deltaTime)  {
@@ -56,11 +67,12 @@ namespace vkcv {
         return m_view = glm::lookAt(m_position, m_center, m_up);
     }
 
-    // TODO: deal with gimbal lock problem, e.g. using quaternions, angleaxis etc.
     void TrackballCamera::updatePosition(double deltaTime) {
-        m_position.x = m_center.x + m_radius * sin(glm::radians(m_pitch)) * sin(glm::radians(m_yaw));
-        m_position.y = m_center.y + m_radius * cos(glm::radians(m_pitch));
-        m_position.z = m_center.z + m_radius * sin(glm::radians(m_pitch)) * cos(glm::radians(m_yaw));
+        glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(m_yaw), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 rotationX = glm::rotate(rotationY, glm::radians(m_pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+        glm::vec3 translate = glm::vec3(0.0f,0.0f,m_radius);
+        translate = glm::vec3(rotationX * glm::vec4(translate, 0.0f));
+        m_position = m_center + translate;
+        m_up = glm::vec3(rotationX * glm::vec4(glm::vec3(0.0f, 1.0f, 0.0f), 0.0f));
     }
-
 }

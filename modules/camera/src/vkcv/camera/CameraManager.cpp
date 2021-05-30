@@ -25,23 +25,22 @@ namespace vkcv{
     }
 
     void CameraManager::mouseButtonCallback(int button, int action, int mods){
-        if(button == GLFW_MOUSE_BUTTON_2 && m_roationActive == false && action == GLFW_PRESS){
+        if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == false && action == GLFW_PRESS){
             glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            m_roationActive = true;
-        }else if(button == GLFW_MOUSE_BUTTON_2 && m_roationActive == true && action == GLFW_RELEASE){
+            m_rotationActive = true;
+        }else if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == true && action == GLFW_RELEASE){
             glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            m_roationActive = false;
+            m_rotationActive = false;
         }
     }
 
     void CameraManager::mouseMoveCallback(double x, double y){
-
         float xoffset = x - m_lastX;
         float yoffset = m_lastY - y;
         m_lastX = x;
         m_lastY = y;
 
-        if(!m_roationActive){
+        if(!m_rotationActive){
             return;
         }
 

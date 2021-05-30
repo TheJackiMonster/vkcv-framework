@@ -8,6 +8,7 @@ namespace vkcv {
     protected:
         glm::vec3 m_center;
         float m_radius;
+        float m_scrollSensitivity;
 
     public:
 
@@ -19,13 +20,17 @@ namespace vkcv {
 
         void setRadius(float radius);
 
-        glm::vec3& getCenter();
+        glm::vec3 &getCenter();
 
         void setCenter(const glm::vec3 &center);
 
         void setPitch(float pitch);
 
         void setYaw(float yaw);
+
+        void changeFov(double fov);
+
+        void panView(double xOffset, double yOffset);
 
         glm::mat4 updateView(double deltaTime);
 

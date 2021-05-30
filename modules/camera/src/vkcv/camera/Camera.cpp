@@ -7,7 +7,7 @@ namespace vkcv {
         m_up = glm::vec3(0.0f, -1.0f, 0.0f);
         m_position = glm::vec3(0.0f, 0.0f, 0.0f);
         m_cameraSpeed = 2.f;
-        // front
+
         m_pitch = 0.0;
         m_yaw = 180.0;
 
@@ -148,8 +148,8 @@ namespace vkcv {
     }
 
     void Camera::panView(double xOffset, double yOffset) {
-        m_yaw += xOffset;
-        m_pitch += yOffset;
+        setYaw(m_yaw + xOffset);
+        setPitch(m_pitch + yOffset);
     }
 
     void Camera::updatePosition(double deltatime ){
