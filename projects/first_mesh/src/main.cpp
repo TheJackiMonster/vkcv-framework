@@ -147,8 +147,10 @@ int main(int argc, const char** argv) {
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = end - start;
 		start = end;
-		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
-		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+//		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
+//		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+        cameraManager.getTrackballCamera().updateView(std::chrono::duration<double>(deltatime).count());
+        const glm::mat4 mvp = cameraManager.getTrackballCamera().getProjection() * cameraManager.getTrackballCamera().getView();
 
 		core.renderMesh(
 			trianglePass,
