@@ -11,7 +11,8 @@ namespace vkcv
         UNIFORM_BUFFER,
         STORAGE_BUFFER,
         SAMPLER,
-        IMAGE
+        IMAGE_SAMPLED,
+		IMAGE_STORAGE
     };    
     
     /*
@@ -40,10 +41,9 @@ namespace vkcv
     * @param[in] a number of bindings that were created beforehand
     * @param[in] the number of (identical) sets that should be created from the attached bindings
     */
-    struct DescriptorSet
+    struct DescriptorSetConfig
     {
-        DescriptorSet() = delete;
-        explicit DescriptorSet(std::vector<DescriptorBinding> bindings) noexcept;
+        explicit DescriptorSetConfig(std::vector<DescriptorBinding> bindings) noexcept;
 
         std::vector<DescriptorBinding> bindings;
     };

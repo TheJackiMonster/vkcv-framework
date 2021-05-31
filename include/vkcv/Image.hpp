@@ -28,6 +28,9 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		vk::ImageLayout getLayout() const;
+
+		[[nodiscard]]
+		vkcv::ImageHandle getHandle() const;
 		
 		void switchLayout(vk::ImageLayout newLayout);
 		

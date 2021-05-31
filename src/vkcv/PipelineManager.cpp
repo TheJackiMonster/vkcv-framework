@@ -186,7 +186,7 @@ namespace vkcv
         // pipeline layout
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
 			{},
-			{},
+			(config.m_descriptorLayouts),
 			(pushConstantRange));
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)

@@ -38,6 +38,10 @@ namespace vkcv{
 		m_manager->switchImageLayout(m_handle, m_layout, newLayout);
 		m_layout = newLayout;
 	}
+
+	vkcv::ImageHandle Image::getHandle() const {
+		return m_handle;
+	}
 	
 	void Image::fill(void *data, size_t size) {
 		m_manager->fillImage(m_handle, data, size);

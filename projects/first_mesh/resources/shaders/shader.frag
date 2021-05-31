@@ -6,7 +6,9 @@ layout(location = 1) in vec2 passUV;
 
 layout(location = 0) out vec3 outColor;
 
+layout(set=0, binding=0) uniform texture2D  meshTexture;
+layout(set=0, binding=1) uniform sampler    textureSampler;
+
 void main()	{
-	outColor = 0.5 * passNormal + 0.5;
-    //outColor = vec3(abs(passUV), 0);
+	outColor = texture(sampler2D(meshTexture, textureSampler), passUV).rgb;
 }

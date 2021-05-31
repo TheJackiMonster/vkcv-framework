@@ -2,6 +2,11 @@
 
 #include "vkcv/Handles.hpp"
 #include "vkcv/DescriptorConfig.hpp"
+#include "vkcv/DescriptorWrites.hpp"
+
+#include "ImageManager.hpp"
+#include "vkcv/BufferManager.hpp"
+#include "SamplerManager.hpp"
 
 namespace vkcv
 {
@@ -18,11 +23,22 @@ namespace vkcv
 		* @param[in] vector of filled vkcv::DescriptorSet structs
 		* @return index into that objects a resource handle
 		*/
-        ResourcesHandle createResourceDescription(const std::vector<DescriptorSet> & descriptorSets);
+        ResourcesHandle createResourceDescription(const std::vector<DescriptorSetConfig> & descriptorSets);
+
+		void writeResourceDescription(
+			ResourcesHandle			handle,
+			size_t					setIndex,
+			const DescriptorWrites& writes,
+			const ImageManager& imageManager,
+			const BufferManager& bufferManager,
+			const SamplerManager& samplerManager);
+
+		vk::DescriptorSet		getDescriptorSet(ResourcesHandle handle, size_t index);
+		vk::DescriptorSetLayout getDescriptorSetLayout(ResourcesHandle handle, size_t index);
 
 	private:
-		vk::Device m_Device;
-        vk::DescriptorPool m_Pool;
+		vk::Device			m_Device;
+        vk::DescriptorPool	m_Pool;
 
 
 		/**
