@@ -24,6 +24,12 @@ set(vkcv_sources
 		${vkcv_include}/vkcv/BufferManager.hpp
 		${vkcv_source}/vkcv/BufferManager.cpp
 
+		${vkcv_include}/vkcv/Image.hpp
+		${vkcv_source}/vkcv/Image.cpp
+
+		${vkcv_source}/vkcv/ImageManager.hpp
+		${vkcv_source}/vkcv/ImageManager.cpp
+
 		${vkcv_include}/vkcv/SwapChain.hpp
 		${vkcv_source}/vkcv/SwapChain.cpp
 
@@ -50,9 +56,9 @@ set(vkcv_sources
         
         ${vkcv_source}/vkcv/ImageLayoutTransitions.hpp
         ${vkcv_source}/vkcv/ImageLayoutTransitions.cpp
-        
-        ${vkcv_source}/vkcv/Framebuffer.hpp
-        ${vkcv_source}/vkcv/Framebuffer.cpp
+
+		${vkcv_include}/vkcv/VertexLayout.hpp
+		${vkcv_source}/vkcv/VertexLayout.cpp
 
 		${vkcv_include}/vkcv/Event.hpp
 
@@ -61,4 +67,9 @@ set(vkcv_sources
 
 		${vkcv_include}/vkcv/DescriptorConfig.hpp
 		${vkcv_source}/vkcv/DescriptorConfig.cpp
+		
+		${vkcv_source}/vkcv/SamplerManager.hpp
+		${vkcv_source}/vkcv/SamplerManager.cpp
+        
+        ${vkcv_include}/vkcv/DescriptorWrites.hpp
 )

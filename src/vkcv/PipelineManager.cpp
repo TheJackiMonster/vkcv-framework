@@ -7,7 +7,7 @@ namespace vkcv
     m_Device{device},
     m_Pipelines{},
     m_PipelineLayouts{},
-    m_NextPipelineId{1}
+    m_NextPipelineId{0}
     {}
 
     PipelineManager::~PipelineManager() noexcept
@@ -20,17 +20,34 @@ namespace vkcv
 
         m_Pipelines.clear();
         m_PipelineLayouts.clear();
-        m_NextPipelineId = 1;
+        m_NextPipelineId = 0;
     }
 
-    PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, const vk::RenderPass &pass)
+	// currently assuming default 32 bit formats, no lower precision or normalized variants supported
+	vk::Format vertexFormatToVulkanFormat(const VertexFormat format) {
+		switch (format) {
+		case VertexFormat::FLOAT: return vk::Format::eR32Sfloat;
+		case VertexFormat::FLOAT2: return vk::Format::eR32G32Sfloat;
+		case VertexFormat::FLOAT3: return vk::Format::eR32G32B32Sfloat;
+		case VertexFormat::FLOAT4: return vk::Format::eR32G32B32A32Sfloat;
+		case VertexFormat::INT: return vk::Format::eR32Sint;
+		case VertexFormat::INT2: return vk::Format::eR32G32Sint;
+		case VertexFormat::INT3: return vk::Format::eR32G32B32Sint;
+		case VertexFormat::INT4: return vk::Format::eR32G32B32A32Sint;
+		default: std::cerr << "Warning: Unknown vertex format" << std::endl; return vk::Format::eUndefined;
+		}
+	}
+
+    PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, PassManager& passManager)
     {
+		const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
+    	
         const bool existsVertexShader = config.m_ShaderProgram.existsShader(ShaderStage::VERTEX);
         const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
         if (!(existsVertexShader && existsFragmentShader))
         {
             std::cout << "Core::createGraphicsPipeline requires vertex and fragment shader code" << std::endl;
-            return PipelineHandle{0};
+            return PipelineHandle();
         }
 
         // vertex shader stage
@@ -38,7 +55,7 @@ namespace vkcv
         vk::ShaderModuleCreateInfo vertexModuleInfo({}, vertexCode.size(), reinterpret_cast<uint32_t*>(vertexCode.data()));
         vk::ShaderModule vertexModule{};
         if (m_Device.createShaderModule(&vertexModuleInfo, nullptr, &vertexModule) != vk::Result::eSuccess)
-            return PipelineHandle{0};
+            return PipelineHandle();
 
         vk::PipelineShaderStageCreateInfo pipelineVertexShaderStageInfo(
                 {},
@@ -55,7 +72,7 @@ namespace vkcv
         if (m_Device.createShaderModule(&fragmentModuleInfo, nullptr, &fragmentModule) != vk::Result::eSuccess)
         {
             m_Device.destroy(vertexModule);
-            return PipelineHandle{0};
+            return PipelineHandle();
         }
 
         vk::PipelineShaderStageCreateInfo pipelineFragmentShaderStageInfo(
@@ -67,15 +84,38 @@ namespace vkcv
         );
 
         // vertex input state
-        vk::VertexInputBindingDescription vertexInputBindingDescription(0, 12, vk::VertexInputRate::eVertex);
-        vk::VertexInputAttributeDescription vertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, 0);
 
+        // Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
+        std::vector<vk::VertexInputAttributeDescription>	vertexAttributeDescriptions;
+		std::vector<vk::VertexInputBindingDescription>		vertexBindingDescriptions;
+
+        VertexLayout layout = config.m_ShaderProgram.getVertexLayout();
+        std::unordered_map<uint32_t, VertexInputAttachment> attachments = layout.attachmentMap;
+
+		for (int i = 0; i < attachments.size(); i++) {
+			VertexInputAttachment &attachment = attachments.at(i);
+
+            uint32_t	location		= attachment.location;
+            uint32_t	binding			= i;
+            vk::Format	vertexFormat	= vertexFormatToVulkanFormat(attachment.format);
+
+			//FIXME: hoping that order is the same and compatible: add explicit mapping and validation
+			const VertexAttribute attribute = config.m_vertexAttributes[i];
+
+            vertexAttributeDescriptions.push_back({location, binding, vertexFormatToVulkanFormat(attachment.format), 0});
+			vertexBindingDescriptions.push_back(vk::VertexInputBindingDescription(
+				binding,
+				attribute.stride + getFormatSize(attachment.format),
+				vk::VertexInputRate::eVertex));
+        }
+
+        // Handover Containers to PipelineVertexInputStateCreateIngo Struct
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
-                {},			// no vertex input until vertex buffer is implemented
-                0,			// 1,
-                nullptr,	// &vertexInputBindingDescription,
-                0,			// 1,
-                nullptr		// &vertexInputAttributeDescription
+                {},
+                vertexBindingDescriptions.size(),
+                vertexBindingDescriptions.data(),
+                vertexAttributeDescriptions.size(),
+                vertexAttributeDescriptions.data()
         );
 
         // input assembly state
@@ -146,19 +186,43 @@ namespace vkcv
         // pipeline layout
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
 			{},
-			{},
+			(config.m_descriptorLayouts),
 			(pushConstantRange));
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
         {
             m_Device.destroy(vertexModule);
             m_Device.destroy(fragmentModule);
-            return PipelineHandle{0};
+            return PipelineHandle();
         }
-
-        // graphics pipeline create
+	
+		const vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo(
+				vk::PipelineDepthStencilStateCreateFlags(),
+				true,
+				true,
+				vk::CompareOp::eLessOrEqual,
+				false,
+				false,
+				{},
+				{},
+				0.0f,
+				1.0f
+		);
+	
+		const vk::PipelineDepthStencilStateCreateInfo* p_depthStencilCreateInfo = nullptr;
+		
+		const PassConfig& passConfig = passManager.getPassConfig(config.m_PassHandle);
+		
+		for (const auto& attachment : passConfig.attachments) {
+			if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
+				p_depthStencilCreateInfo = &depthStencilCreateInfo;
+				break;
+			}
+		}
+	
+		// graphics pipeline create
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = { pipelineVertexShaderStageInfo, pipelineFragmentShaderStageInfo };
-        vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
+        const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
                 {},
                 static_cast<uint32_t>(shaderStages.size()),
                 shaderStages.data(),
@@ -168,7 +232,7 @@ namespace vkcv
                 &pipelineViewportStateCreateInfo,
                 &pipelineRasterizationStateCreateInfo,
                 &pipelineMultisampleStateCreateInfo,
-                nullptr,
+				p_depthStencilCreateInfo,
                 &pipelineColorBlendStateCreateInfo,
                 nullptr,
                 vkPipelineLayout,
@@ -183,7 +247,7 @@ namespace vkcv
         {
             m_Device.destroy(vertexModule);
             m_Device.destroy(fragmentModule);
-            return PipelineHandle{0};
+            return PipelineHandle();
         }
 
         m_Device.destroy(vertexModule);
@@ -191,16 +255,16 @@ namespace vkcv
 
         m_Pipelines.push_back(vkPipeline);
         m_PipelineLayouts.push_back(vkPipelineLayout);
-        return PipelineHandle{m_NextPipelineId++};
+        return PipelineHandle(m_NextPipelineId++);
     }
 
     vk::Pipeline PipelineManager::getVkPipeline(const PipelineHandle &handle) const
     {
-        return m_Pipelines.at(handle.id -1);
+        return m_Pipelines.at(handle.getId());
     }
 
     vk::PipelineLayout PipelineManager::getVkPipelineLayout(const PipelineHandle &handle) const
     {
-        return m_PipelineLayouts.at(handle.id - 1);
+        return m_PipelineLayouts.at(handle.getId());
     }
 }

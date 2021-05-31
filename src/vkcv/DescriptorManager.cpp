@@ -8,7 +8,7 @@ namespace vkcv
     descriptorSetLayouts{std::move(layouts)}
     {}
     DescriptorManager::DescriptorManager(vk::Device device) noexcept:
-        m_Device{ device }, m_NextResourceDescriptionID{ 1 }
+        m_Device{ device }, m_NextResourceDescriptionID{ 0 }
     {
         /**
          * Allocate a set size for the initial pool, namely 1000 units of each descriptor type below.
@@ -40,7 +40,7 @@ namespace vkcv
         m_Device.destroy(m_Pool);
     }
 
-    ResourcesHandle DescriptorManager::createResourceDescription(const std::vector<DescriptorSet> &descriptorSets)
+    ResourcesHandle DescriptorManager::createResourceDescription(const std::vector<DescriptorSetConfig> &descriptorSets)
     {
         std::vector<vk::DescriptorSet> vk_sets;
         std::vector<vk::DescriptorSetLayout> vk_setLayouts;
@@ -64,7 +64,7 @@ namespace vkcv
             if(m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &layout) != vk::Result::eSuccess)
             {
                 std::cout << "FAILED TO CREATE DESCRIPTOR SET LAYOUT" << std::endl;
-                return ResourcesHandle{0};
+                return ResourcesHandle();
             };
             vk_setLayouts.push_back(layout);
         }
@@ -79,12 +79,158 @@ namespace vkcv
             for(const auto &layout : vk_setLayouts)
                 m_Device.destroy(layout);
 
-            return ResourcesHandle{0};
+            return ResourcesHandle();
         };
 
         m_ResourceDescriptions.emplace_back(vk_sets, vk_setLayouts);
-        return ResourcesHandle{m_NextResourceDescriptionID++};
+        return ResourcesHandle(m_NextResourceDescriptionID++);
     }
+    
+    struct WriteDescriptorSetInfo {
+		size_t imageInfoIndex;
+		size_t bufferInfoIndex;
+		uint32_t binding;
+		vk::DescriptorType type;
+    };
+
+	void DescriptorManager::writeResourceDescription(
+		ResourcesHandle			handle, 
+		size_t					setIndex,
+		const DescriptorWrites	&writes,
+		const ImageManager		&imageManager, 
+		const BufferManager		&bufferManager,
+		const SamplerManager	&samplerManager) {
+
+		vk::DescriptorSet set = m_ResourceDescriptions[handle.getId()].descriptorSets[setIndex];
+
+		std::vector<vk::DescriptorImageInfo> imageInfos;
+		std::vector<vk::DescriptorBufferInfo> bufferInfos;
+		
+		std::vector<WriteDescriptorSetInfo> writeInfos;
+
+		for (const auto& write : writes.sampledImageWrites) {
+			const vk::DescriptorImageInfo imageInfo(
+				nullptr,
+				imageManager.getVulkanImageView(write.image),
+				vk::ImageLayout::eShaderReadOnlyOptimal
+			);
+			
+			imageInfos.push_back(imageInfo);
+			
+			WriteDescriptorSetInfo vulkanWrite = {
+					imageInfos.size(),
+					0,
+					write.binding,
+					vk::DescriptorType::eSampledImage,
+			};
+			
+			writeInfos.push_back(vulkanWrite);
+		}
+
+		for (const auto& write : writes.storageImageWrites) {
+			const vk::DescriptorImageInfo imageInfo(
+				nullptr,
+				imageManager.getVulkanImageView(write.image),
+				vk::ImageLayout::eGeneral
+			);
+			
+			imageInfos.push_back(imageInfo);
+			
+			WriteDescriptorSetInfo vulkanWrite = {
+					imageInfos.size(),
+					0,
+					write.binding,
+					vk::DescriptorType::eStorageImage
+			};
+			
+			writeInfos.push_back(vulkanWrite);
+		}
+
+		for (const auto& write : writes.uniformBufferWrites) {
+			const vk::DescriptorBufferInfo bufferInfo(
+				bufferManager.getBuffer(write.buffer),
+				static_cast<uint32_t>(0),
+				bufferManager.getBufferSize(write.buffer)
+			);
+			
+			bufferInfos.push_back(bufferInfo);
+
+			WriteDescriptorSetInfo vulkanWrite = {
+					0,
+					bufferInfos.size(),
+					write.binding,
+					vk::DescriptorType::eUniformBuffer
+			};
+			
+			writeInfos.push_back(vulkanWrite);
+		}
+
+		for (const auto& write : writes.storageBufferWrites) {
+			const vk::DescriptorBufferInfo bufferInfo(
+				bufferManager.getBuffer(write.buffer),
+				static_cast<uint32_t>(0),
+				bufferManager.getBufferSize(write.buffer)
+			);
+			
+			bufferInfos.push_back(bufferInfo);
+			
+			WriteDescriptorSetInfo vulkanWrite = {
+					0,
+					bufferInfos.size(),
+					write.binding,
+					vk::DescriptorType::eStorageBuffer
+			};
+			
+			writeInfos.push_back(vulkanWrite);
+		}
+
+		for (const auto& write : writes.samplerWrites) {
+			const vk::Sampler& sampler = samplerManager.getVulkanSampler(write.sampler);
+			
+			const vk::DescriptorImageInfo imageInfo(
+				sampler,
+				nullptr,
+				vk::ImageLayout::eGeneral
+			);
+			
+			imageInfos.push_back(imageInfo);
+
+			WriteDescriptorSetInfo vulkanWrite = {
+					imageInfos.size(),
+					0,
+					write.binding,
+					vk::DescriptorType::eSampler
+			};
+			
+			writeInfos.push_back(vulkanWrite);
+		}
+		
+		std::vector<vk::WriteDescriptorSet> vulkanWrites;
+		
+		for (const auto& write : writeInfos) {
+			vk::WriteDescriptorSet vulkanWrite(
+					set,
+					write.binding,
+					static_cast<uint32_t>(0),
+					1,
+					write.type,
+					(write.imageInfoIndex > 0? &(imageInfos[write.imageInfoIndex - 1]) : nullptr),
+					(write.bufferInfoIndex > 0? &(bufferInfos[write.bufferInfoIndex - 1]) : nullptr)
+			);
+			
+			vulkanWrites.push_back(vulkanWrite);
+		}
+		
+		m_Device.updateDescriptorSets(vulkanWrites, nullptr);
+	}
+
+	vk::DescriptorSet DescriptorManager::getDescriptorSet(ResourcesHandle handle, size_t index) {
+		return m_ResourceDescriptions[handle.getId()].descriptorSets[index];
+	}
+
+	vk::DescriptorSetLayout DescriptorManager::getDescriptorSetLayout(ResourcesHandle handle, size_t index) {
+		return m_ResourceDescriptions[handle.getId()].descriptorSetLayouts[index];
+	}
 
     vk::DescriptorType DescriptorManager::convertDescriptorTypeFlag(DescriptorType type) {
         switch (type)
@@ -95,9 +241,12 @@ namespace vkcv
                 return vk::DescriptorType::eStorageBuffer;
             case DescriptorType::SAMPLER:
                 return vk::DescriptorType::eSampler;
-            case DescriptorType::IMAGE:
+            case DescriptorType::IMAGE_SAMPLED:
                 return vk::DescriptorType::eSampledImage;
+			case DescriptorType::IMAGE_STORAGE:
+				return vk::DescriptorType::eStorageImage;
             default:
+				std::cerr << "Error: DescriptorManager::convertDescriptorTypeFlag, unknown DescriptorType" << std::endl;
                 return vk::DescriptorType::eUniformBuffer;
         }
     }

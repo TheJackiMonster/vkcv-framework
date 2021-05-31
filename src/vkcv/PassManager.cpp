@@ -49,17 +49,17 @@ namespace vkcv
 
     PassManager::PassManager(vk::Device device) noexcept :
     m_Device{device},
-    m_RenderPasses{},
-    m_NextPassId{1}
+    m_Passes{},
+    m_NextPassId(0)
     {}
 
     PassManager::~PassManager() noexcept
     {
-        for(const auto &pass : m_RenderPasses)
-            m_Device.destroy(pass);
-
-        m_RenderPasses.clear();
-        m_NextPassId = 1;
+        for(const auto &pass : m_Passes)
+            m_Device.destroy(pass.m_Handle);
+	
+		m_Passes.clear();
+        m_NextPassId = 0;
     }
 
     PassHandle PassManager::createPass(const PassConfig &config)
@@ -90,46 +90,74 @@ namespace vkcv
                 colorAttachmentReferences.push_back(attachmentRef);
             }
 
-            vk::AttachmentDescription attachmentDesc({},
-                                                     format,
-                                                     vk::SampleCountFlagBits::e1,
-                                                     getVKLoadOpFromAttachOp(config.attachments[i].load_operation),
-                                                     getVkStoreOpFromAttachOp(config.attachments[i].store_operation),
-                                                     vk::AttachmentLoadOp::eDontCare,
-                                                     vk::AttachmentStoreOp::eDontCare,
-                                                     getVkLayoutFromAttachLayout(config.attachments[i].layout_initial),
-                                                     getVkLayoutFromAttachLayout(config.attachments[i].layout_final));
+            vk::AttachmentDescription attachmentDesc(
+            		{},
+            		format,
+            		vk::SampleCountFlagBits::e1,
+            		getVKLoadOpFromAttachOp(config.attachments[i].load_operation),
+            		getVkStoreOpFromAttachOp(config.attachments[i].store_operation),
+            		vk::AttachmentLoadOp::eDontCare,
+            		vk::AttachmentStoreOp::eDontCare,
+            		getVkLayoutFromAttachLayout(config.attachments[i].layout_initial),
+            		getVkLayoutFromAttachLayout(config.attachments[i].layout_final)
+			);
+            
             attachmentDescriptions.push_back(attachmentDesc);
         }
-        vk::SubpassDescription subpassDescription({},
-                                                  vk::PipelineBindPoint::eGraphics,
-                                                  0,
-                                                  {},
-                                                  static_cast<uint32_t>(colorAttachmentReferences.size()),
-                                                  colorAttachmentReferences.data(),
-                                                  {},
-                                                  pDepthAttachment,
-                                                  0,
-                                                  {});
+        
+        const vk::SubpassDescription subpassDescription(
+        		{},
+        		vk::PipelineBindPoint::eGraphics,
+        		0,
+        		{},
+        		static_cast<uint32_t>(colorAttachmentReferences.size()),
+        		colorAttachmentReferences.data(),
+        		{},
+        		pDepthAttachment,
+        		0,
+        		{}
+        );
 
-        vk::RenderPassCreateInfo passInfo({},
-                                          static_cast<uint32_t>(attachmentDescriptions.size()),
-                                          attachmentDescriptions.data(),
-                                          1,
-                                          &subpassDescription,
-                                          0,
-                                          {});
+        const vk::RenderPassCreateInfo passInfo(
+        		{},
+        		static_cast<uint32_t>(attachmentDescriptions.size()),
+        		attachmentDescriptions.data(),
+        		1,
+        		&subpassDescription,
+        		0,
+        		{}
+	  	);
 
-        vk::RenderPass vkObject{nullptr};
-        if(m_Device.createRenderPass(&passInfo, nullptr, &vkObject) != vk::Result::eSuccess)
-            return PassHandle{0};
-
-        m_RenderPasses.push_back(vkObject);
-            return PassHandle{m_NextPassId++};
+        vk::RenderPass renderPass = m_Device.createRenderPass(passInfo);
+	
+		m_Passes.push_back({ renderPass, config });
+		return PassHandle(m_NextPassId++);
     }
 
     vk::RenderPass PassManager::getVkPass(const PassHandle &handle) const
     {
-        return m_RenderPasses[handle.id - 1];
+    	const uint64_t id = handle.getId();
+    	
+    	if (id >= m_Passes.size()) {
+    		return nullptr;
+    	}
+    	
+    	auto& pass = m_Passes[id];
+    	
+        return pass.m_Handle;
     }
+    
+    const PassConfig& PassManager::getPassConfig(const PassHandle &handle) const {
+		const uint64_t id = handle.getId();
+	
+		if (id >= m_Passes.size()) {
+			static PassConfig emptyConfig = PassConfig({});
+			return emptyConfig;
+		}
+	
+		auto& pass = m_Passes[id];
+	
+		return pass.m_Config;
+    }
+    
 }

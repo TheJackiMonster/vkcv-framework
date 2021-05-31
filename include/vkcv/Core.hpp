@@ -13,19 +13,29 @@
 #include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
 #include "vkcv/Buffer.hpp"
+#include "vkcv/Image.hpp"
 #include "vkcv/PipelineConfig.hpp"
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "Result.hpp"
 #include "vkcv/DescriptorConfig.hpp"
+#include "Sampler.hpp"
+#include "DescriptorWrites.hpp"
 
 namespace vkcv
 {
+	struct VertexBufferBinding {
+		vk::DeviceSize	offset;
+		BufferHandle	buffer;
+	};
+
     // forward declarations
     class PassManager;
     class PipelineManager;
     class DescriptorManager;
     class BufferManager;
+    class SamplerManager;
+    class ImageManager;
 
 	struct SubmitInfo {
 		QueueType queueType;
@@ -55,19 +65,21 @@ namespace vkcv
 
         Context m_Context;
 
-        SwapChain m_swapchain;
-        std::vector<vk::ImageView> m_swapchainImageViews;
-        const Window& m_window;
+        SwapChain					m_swapchain;
+        std::vector<vk::ImageView>	m_swapchainImageViews;
+        const Window&				m_window;
 
-        std::unique_ptr<PassManager> m_PassManager;
-        std::unique_ptr<PipelineManager> m_PipelineManager;
-        std::unique_ptr<DescriptorManager> m_DescriptorManager;
-        std::unique_ptr<BufferManager> m_BufferManager;
+        std::unique_ptr<PassManager>		m_PassManager;
+        std::unique_ptr<PipelineManager>	m_PipelineManager;
+        std::unique_ptr<DescriptorManager>	m_DescriptorManager;
+        std::unique_ptr<BufferManager>		m_BufferManager;
+        std::unique_ptr<SamplerManager>		m_SamplerManager;
+        std::unique_ptr<ImageManager>		m_ImageManager;
 
-		CommandResources m_CommandResources;
-		SyncResources m_SyncResources;
-		uint32_t m_currentSwapchainImageIndex;
-		std::vector<vk::Framebuffer> m_TemporaryFramebuffers;
+		CommandResources				m_CommandResources;
+		SyncResources					m_SyncResources;
+		uint32_t						m_currentSwapchainImageIndex;
+		std::vector<vk::Framebuffer>	m_TemporaryFramebuffers;
 
         /**
          * recreates the swapchain
@@ -160,7 +172,7 @@ namespace vkcv
         PassHandle createPass(const PassConfig &config);
 
         /**
-            * Creates a #Buffer with data-type T and @p bufferType 
+            * Creates a #Buffer with data-type T and @p bufferType
             * @param type Type of Buffer created
             * @param count Count of elements of type T
             * @param memoryType Type of Buffers memory
@@ -170,13 +182,41 @@ namespace vkcv
         Buffer<T> createBuffer(vkcv::BufferType type, size_t count, BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL) {
         	return Buffer<T>::create(m_BufferManager.get(), type, count, memoryType);
         }
+        
+        /**
+         * Creates a Sampler with given attributes.
+         *
+         * @param magFilter Magnifying filter
+         * @param minFilter Minimizing filter
+         * @param mipmapMode Mipmapping filter
+         * @param addressMode Address mode
+         * @return Sampler handle
+         */
+        [[nodiscard]]
+        SamplerHandle createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
+									SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode);
+
+        /**
+         * Creates an #Image with a given format, width, height and depth.
+         *
+         * @param format Image format
+         * @param width Image width
+         * @param height Image height
+         * @param depth Image depth
+         * @return Image-Object
+         */
+        [[nodiscard]]
+        Image createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth = 1);
 
         /** TODO:
          *   @param setDescriptions
          *   @return
          */
         [[nodiscard]]
-        ResourcesHandle createResourceDescription(const std::vector<DescriptorSet> &descriptorSets);
+        ResourcesHandle createResourceDescription(const std::vector<DescriptorSetConfig> &descriptorSets);
+		void writeResourceDescription(ResourcesHandle handle, size_t setIndex, const DescriptorWrites& writes);
+
+		vk::DescriptorSetLayout getDescritorSetLayout(ResourcesHandle handle, size_t setIndex);
 
 		/**
 		 * @brief start recording command buffers and increment frame index
@@ -186,8 +226,18 @@ namespace vkcv
 		/**
 		 * @brief render a beautiful triangle
 		*/
-		void renderTriangle(const PassHandle renderpassHandle, const PipelineHandle pipelineHandle,
-			const int width, const int height, const size_t pushConstantSize, const void* pushConstantData);
+		void renderMesh(
+			const PassHandle						renderpassHandle, 
+			const PipelineHandle					pipelineHandle,
+			const int								width, 
+			const int								height, 
+			const size_t							pushConstantSize, 
+			const void*								pushConstantData, 
+			const std::vector<VertexBufferBinding>	&vertexBufferBindings, 
+			const BufferHandle						indexBuffer, 
+			const size_t							indexCount,
+			const vkcv::ResourcesHandle				resourceHandle,
+			const size_t							resourceDescriptorSetIndex);
 
 		/**
 		 * @brief end recording and present image

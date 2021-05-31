@@ -14,7 +14,7 @@ namespace vkcv {
         shaderStage{shaderStage}
     {};
 
-    DescriptorSet::DescriptorSet(std::vector<DescriptorBinding> bindings) noexcept :
+    DescriptorSetConfig::DescriptorSetConfig(std::vector<DescriptorBinding> bindings) noexcept :
         bindings{std::move(bindings)}
     {};
 }

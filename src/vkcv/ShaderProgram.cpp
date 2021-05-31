@@ -27,8 +27,46 @@ namespace vkcv {
         return buffer;
 	}
 
+	VertexFormat convertFormat(spirv_cross::SPIRType::BaseType basetype, uint32_t vecsize){
+        switch (basetype) {
+            case spirv_cross::SPIRType::Int:
+                switch (vecsize) {
+                    case 1:
+                        return VertexFormat::INT;
+                    case 2:
+                        return VertexFormat::INT2;
+                    case 3:
+                        return VertexFormat::INT3;
+                    case 4:
+                        return VertexFormat::INT4;
+                    default:
+                        break;
+                }
+                break;
+            case spirv_cross::SPIRType::Float:
+                switch (vecsize) {
+                    case 1:
+                        return VertexFormat::FLOAT;
+                    case 2:
+                        return VertexFormat::FLOAT2;
+                    case 3:
+                        return VertexFormat::FLOAT3;
+                    case 4:
+                        return VertexFormat::FLOAT4;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
+        std::cout << "Shader Program Reflection: unknown Vertex Format" << std::endl;
+        return VertexFormat::FLOAT;
+	}
+
 	ShaderProgram::ShaderProgram() noexcept :
-	m_Shaders{}
+	m_Shaders{},
+    m_VertexLayout{}
 	{}
 
 	bool ShaderProgram::addShader(ShaderStage shaderStage, const std::filesystem::path &shaderPath)
@@ -59,4 +97,40 @@ namespace vkcv {
 	    else
 	        return true;
     }
+
+    void ShaderProgram::reflectShader(ShaderStage shaderStage)
+    {
+        auto shaderCodeChar = m_Shaders.at(shaderStage).shaderCode;
+        std::vector<uint32_t> shaderCode;
+
+        for (uint32_t i = 0; i < shaderCodeChar.size()/4; i++) {
+            shaderCode.push_back(((uint32_t*) shaderCodeChar.data())[i]);
+        }
+
+        spirv_cross::Compiler comp(move(shaderCode));
+        spirv_cross::ShaderResources resources = comp.get_shader_resources();
+
+		if (shaderStage == ShaderStage::VERTEX) {
+			std::vector<VertexInputAttachment> inputVec;
+			uint32_t offset = 0;
+
+			for (uint32_t i = 0; i < resources.stage_inputs.size(); i++) {
+				auto& u = resources.stage_inputs[i];
+				const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+
+				VertexInputAttachment input = VertexInputAttachment(comp.get_decoration(u.id, spv::DecorationLocation),
+					0,
+					convertFormat(base_type.basetype, base_type.vecsize),
+					offset);
+				inputVec.push_back(input);
+				offset += base_type.vecsize * base_type.width / 8;
+			}
+
+			m_VertexLayout = VertexLayout(inputVec);
+		}
+    }
+
+    const VertexLayout& ShaderProgram::getVertexLayout() const{
+        return m_VertexLayout;
+	}
 }
