@@ -53,8 +53,8 @@ namespace vkcv {
         m_yaw = yaw;
     }
 
-    void TrackballCamera::changeFov(double fov) {
-        setRadius(m_radius - fov * m_scrollSensitivity);
+    void TrackballCamera::changeFov(double offset) {
+        setRadius(m_radius - offset * m_scrollSensitivity);
     }
 
     void TrackballCamera::panView(double xOffset, double yOffset) {

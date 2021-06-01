@@ -27,8 +27,8 @@ namespace vkcv {
         m_view = glm::lookAt(position, center, up);
     }
 
-    glm::mat4 Camera::updateView(double deltatime){
-        updatePosition(deltatime);
+    glm::mat4 Camera::updateView(double deltaTime){
+        updatePosition(deltaTime);
         return m_view = glm::lookAt(m_position, m_position + getFront() , m_up);
     }
 

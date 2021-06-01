@@ -74,11 +74,11 @@ namespace vkcv {
         void getView(glm::vec3 &x, glm::vec3 &y, glm::vec3 &z, glm::vec3 &pos);
 
         /**
-         * @brief Updates the view matrix of the camera with respect to @p deltatime
-         * @param deltatime The time past between frames
-         * @return
+         * @brief Updates the view matrix of the camera with respect to @p deltaTime
+         * @param deltaTime The time that has passed since last update
+         * @return The updated view matrix of the camera
          */
-        glm::mat4 updateView(double deltatime);
+        glm::mat4 updateView(double deltaTime);
 
         /**
          * @brief Sets the view matrix of the camera according to @p position, @p center and @p up
@@ -127,7 +127,7 @@ namespace vkcv {
         
         /**
          * @brief Changes the field of view of the camera with an @p offset in degrees
-         * @param[in] offset in degrees
+         * @param[in] offset The offset in degrees
          */
         void changeFov(double offset);
 
