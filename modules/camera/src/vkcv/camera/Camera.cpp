@@ -158,11 +158,11 @@ namespace vkcv {
         setPitch(m_pitch + yOffset);
     }
 
-    void Camera::updatePosition(double deltatime ){
-        m_position += (m_cameraSpeed * getFront() * static_cast<float> (m_forward) * static_cast<float>(deltatime));
-        m_position -= (m_cameraSpeed * getFront() * static_cast<float> (m_backward) * static_cast<float>(deltatime));
-        m_position -= (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_left) * static_cast<float>(deltatime));
-        m_position += (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_right) * static_cast<float>(deltatime));
+    void Camera::updatePosition(double deltaTime ){
+        m_position += (m_cameraSpeed * getFront() * static_cast<float> (m_forward) * static_cast<float>(deltaTime));
+        m_position -= (m_cameraSpeed * getFront() * static_cast<float> (m_backward) * static_cast<float>(deltaTime));
+        m_position -= (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_left) * static_cast<float>(deltaTime));
+        m_position += (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_right) * static_cast<float>(deltaTime));
     }
 
     void Camera::moveForward(int action){
