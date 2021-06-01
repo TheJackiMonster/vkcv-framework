@@ -36,6 +36,14 @@ namespace vkcv {
 		
 		ImageManager(BufferManager& bufferManager) noexcept;
 		
+		/**
+		 * Destroys and deallocates image represented by a given
+		 * image handle id.
+		 *
+		 * @param id Image handle id
+		 */
+		void destroyImageById(uint64_t id);
+		
 	public:
 		~ImageManager() noexcept;
 		ImageManager(ImageManager&& other) = delete;
@@ -57,14 +65,15 @@ namespace vkcv {
 		
 		void switchImageLayout(const ImageHandle& handle, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 		void fillImage(const ImageHandle& handle, void* data, size_t size);
-
-		/**
-		 * Destroys and deallocates image represented by a given
-		 * buffer handle.
-		 *
-		 * @param handle Image handle
-		 */
-		void destroyImage(const ImageHandle& handle);
+		
+		[[nodiscard]]
+		uint32_t getImageWidth(const ImageHandle& handle) const;
+		
+		[[nodiscard]]
+		uint32_t getImageHeight(const ImageHandle& handle) const;
+		
+		[[nodiscard]]
+		uint32_t getImageDepth(const ImageHandle& handle) const;
 		
 	};
 }

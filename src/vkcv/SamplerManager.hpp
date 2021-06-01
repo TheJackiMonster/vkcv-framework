@@ -18,6 +18,8 @@ namespace vkcv {
 		
 		explicit SamplerManager(const vk::Device& device) noexcept;
 		
+		void destroySamplerById(uint64_t id);
+		
 	public:
 		~SamplerManager();
 		
@@ -34,8 +36,6 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		vk::Sampler getVulkanSampler(const SamplerHandle& handle) const;
-		
-		void destroySampler(const SamplerHandle& handle);
 	
 	};
 	
