@@ -6,10 +6,17 @@
 
 namespace vkcv {
 
+    /**
+     * @brief Used to create a camera whose position can be changed.
+     * 
+     */
     class Camera {
     protected:
 		glm::mat4 m_view;
 		glm::mat4 m_projection;
+
+		int m_width;
+		int m_height;
 
 		float m_near;
 		float m_far;
@@ -35,11 +42,27 @@ namespace vkcv {
         Camera();
 
         virtual ~Camera();
-
+        
+        /**
+         * @brief Set the Perspective object
+         * 
+         * @param fov The desired field of view in radians
+         * @param ratio The aspect ratio
+         * @param near Distance to near clipping plane
+         * @param far Distance to far clipping plane
+         */
         void setPerspective(float fov, float ratio, float near, float far);
 
         const glm::mat4 getView() const;
-
+        
+        /**
+         * @brief Get the View object
+         * 
+         * @param x 
+         * @param y 
+         * @param z 
+         * @param pos 
+         */
         void getView(glm::vec3 &x, glm::vec3 &y, glm::vec3 &z, glm::vec3 &pos);
 
         glm::mat4 updateView(double deltatime);
@@ -48,20 +71,45 @@ namespace vkcv {
 
         const glm::mat4& getProjection() const;
 
+        /**
+         * @brief Set the Projection matrix
+         * 
+         * @param projection The projection matrix (4x4)
+         */
         void setProjection(const glm::mat4 projection);
 
         void getNearFar(float &near, float &far) const;
 
         void setUp(const glm::vec3 &Up);
 
+        /**
+         * @brief Get the Field of view in radians
+         * 
+         * @return Field of view in radians
+         */
         float getFov() const;
 
+        /**
+         * @brief Set the Field of view in radians
+         * 
+         * @param fov Field of view in radians
+         */
         void setFov(float fov);
         
+        /**
+         * @brief Changes the Field of view with offset in degrees
+         * 
+         * @param offset in degrees
+         */
         void changeFov(double fov);
-
+        
         void updateRatio(float ratio);
 
+        /**
+         * @brief Get the Ratio
+         * 
+         * @return float aspect ratio
+         */
         float getRatio() const;
 
         void setNearFar(float near, float far);
@@ -91,7 +139,6 @@ namespace vkcv {
         void moveLeft(int action);
 
         void moveRight(int action);
-
 
     };
 
