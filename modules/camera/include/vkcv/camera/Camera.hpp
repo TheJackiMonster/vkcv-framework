@@ -36,6 +36,8 @@ namespace vkcv {
         bool m_backward;
         bool m_left;
         bool m_right;
+        bool m_top;
+        bool m_bottom;
 
     public:
 
@@ -228,6 +230,18 @@ namespace vkcv {
          * @param[in] action The performed action
          */
         void moveRight(int action);
+
+        /**
+         * @brief Indicates top movement of the camera depending on the performed @p action
+         * @param[in] action The performed action
+         */
+        void moveTop(int action);
+
+        /**
+         * @brief Indicates bottom movement of the camera depending on the performed @p action
+         * @param[in] action The performed action
+         */
+        void moveBottom(int action);
 
     };
 

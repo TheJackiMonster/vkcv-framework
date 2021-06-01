@@ -72,6 +72,12 @@ namespace vkcv{
             case GLFW_KEY_D:
                 m_camera.moveRight(action);
                 break;
+            case GLFW_KEY_E:
+                m_camera.moveTop(action);
+                break;
+            case GLFW_KEY_Q:
+                m_camera.moveBottom(action);
+                break;
             case GLFW_KEY_ESCAPE:
                 glfwSetWindowShouldClose(m_window.getWindow(), 1);
                 break;

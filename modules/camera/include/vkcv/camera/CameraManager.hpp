@@ -30,7 +30,7 @@ namespace vkcv{
         void bindCamera();
 
         /**
-         * @brief A callback function for key events. Currently, camera movement via W, A, S, D and window closure via Escape are supported
+         * @brief A callback function for key events. Currently, 3D camera movement via W, A, S, D, E, Q and window closure via Escape are supported
          * @param[in] key The keyboard key
          * @param[in] scancode The platform-specific scancode
          * @param[in] action The key action

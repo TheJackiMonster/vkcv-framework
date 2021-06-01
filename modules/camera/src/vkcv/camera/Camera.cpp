@@ -19,6 +19,8 @@ namespace vkcv {
         m_backward = false;
         m_left = false;
         m_right = false;
+        m_top = false;
+        m_bottom = false;
     }
 
     Camera::~Camera() = default;
@@ -163,6 +165,8 @@ namespace vkcv {
         m_position -= (m_cameraSpeed * getFront() * static_cast<float> (m_backward) * static_cast<float>(deltaTime));
         m_position -= (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_left) * static_cast<float>(deltaTime));
         m_position += (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_right) * static_cast<float>(deltaTime));
+        m_position -= m_up * m_cameraSpeed * static_cast<float> (m_top) * static_cast<float>(deltaTime);
+        m_position += m_up * m_cameraSpeed * static_cast<float> (m_bottom) * static_cast<float>(deltaTime);
     }
 
     void Camera::moveForward(int action){
@@ -179,5 +183,13 @@ namespace vkcv {
 
     void Camera::moveRight(int action){
         m_right = static_cast<bool>(action);
+    }
+
+    void Camera::moveTop(int action){
+        m_top = static_cast<bool>(action);
+    }
+
+    void Camera::moveBottom(int action){
+        m_bottom = static_cast<bool>(action);
     }
 }
