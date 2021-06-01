@@ -85,7 +85,7 @@ message(STATUS ${vkcv_libraries})
 # add sub-projects/examples as targets
 add_subdirectory(projects)
 
-if (WIN32)
+if (NOT WIN32)
 	# add doxygen as target if installed
 	include(${vkcv_config}/ext/Doxygen.cmake)
 endif()
