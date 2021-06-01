@@ -69,7 +69,7 @@ namespace vkcv {
 
     void TrackballCamera::updatePosition(double deltaTime) {
         glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(m_yaw), glm::vec3(0.0f, -1.0f, 0.0f));
-        glm::mat4 rotationX = glm::rotate(rotationY, glm::radians(m_pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+        glm::mat4 rotationX = glm::rotate(rotationY, -glm::radians(m_pitch), glm::vec3(1.0f, 0.0f, 0.0f));
         glm::vec3 translate = glm::vec3(0.0f,0.0f,m_radius);
         translate = glm::vec3(rotationX * glm::vec4(translate, 0.0f));
         m_position = m_center + translate;
