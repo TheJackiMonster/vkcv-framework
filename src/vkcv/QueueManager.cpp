@@ -4,7 +4,6 @@
 
 #include "vkcv/QueueManager.hpp"
 
-#include "vkcv/QueueManager.hpp"
 
 namespace vkcv {
 
@@ -89,7 +88,12 @@ namespace vkcv {
                         }
                     }
                     if (!found) {
-                        throw std::runtime_error("Too many graphics queues were requested than being available!");
+                        for (int i = 0; i < queueFamilyStatus.size() && !found; i++) {
+                            if (initialQueueFamilyStatus[i][0] > 0) {
+                                queuePairsGraphics.push_back(std::pair(i, 0));
+                                found = true;
+                            }
+                        }
                     }
                     break;
                 case vk::QueueFlagBits::eCompute:
@@ -104,7 +108,12 @@ namespace vkcv {
                         }
                     }
                     if (!found) {
-                        throw std::runtime_error("Too many compute queues were requested than being available!");
+                        for (int i = 0; i < queueFamilyStatus.size() && !found; i++) {
+                            if (initialQueueFamilyStatus[i][1] > 0) {
+                                queuePairsCompute.push_back(std::pair(i, 0));
+                                found = true;
+                            }
+                        }
                     }
                     break;
                 case vk::QueueFlagBits::eTransfer:
@@ -119,7 +128,12 @@ namespace vkcv {
                         }
                     }
                     if (!found) {
-                        throw std::runtime_error("Too many transfer queues were requested than being available!");
+                        for (int i = 0; i < queueFamilyStatus.size() && !found; i++) {
+                            if (initialQueueFamilyStatus[i][2] > 0) {
+                                queuePairsTransfer.push_back(std::pair(i, 0));
+                                found = true;
+                            }
+                        }
                     }
                     break;
                 default:
