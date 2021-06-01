@@ -43,7 +43,7 @@ namespace vkcv {
 
 	ImageManager::~ImageManager() noexcept {
 		for (uint64_t id = 0; id < m_images.size(); id++) {
-			destroyImage(ImageHandle(id));
+			destroyImageById(id);
 		}
 	}
 	
@@ -167,7 +167,7 @@ namespace vkcv {
 		
 		const uint64_t id = m_images.size();
 		m_images.push_back({ image, memory, view, width, height, depth, format, arrayLayers, mipLevels });
-		return ImageHandle(id);
+		return ImageHandle(id, [&](uint64_t id) { destroyImageById(id); });
 	}
 	
 	vk::Image ImageManager::getVulkanImage(const ImageHandle &handle) const {
@@ -359,16 +359,48 @@ namespace vkcv {
 							vk::ImageLayout::eTransferDstOptimal,
 							vk::ImageLayout::eShaderReadOnlyOptimal
 					);
-					
-					m_bufferManager.destroyBuffer(bufferHandle);
 				}
 		);
 	}
-
-	void ImageManager::destroyImage(const ImageHandle& handle)
-	{
+	
+	uint32_t ImageManager::getImageWidth(const ImageHandle &handle) const {
 		const uint64_t id = handle.getId();
 		
+		if (id >= m_images.size()) {
+			return 0;
+		}
+		
+		auto& image = m_images[id];
+		
+		return image.m_width;
+	}
+	
+	uint32_t ImageManager::getImageHeight(const ImageHandle &handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_images.size()) {
+			return 0;
+		}
+		
+		auto& image = m_images[id];
+		
+		return image.m_height;
+	}
+	
+	uint32_t ImageManager::getImageDepth(const ImageHandle &handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_images.size()) {
+			return 0;
+		}
+		
+		auto& image = m_images[id];
+		
+		return image.m_depth;
+	}
+	
+	void ImageManager::destroyImageById(uint64_t id)
+	{
 		if (id >= m_images.size()) {
 			return;
 		}

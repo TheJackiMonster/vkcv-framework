@@ -176,8 +176,8 @@ namespace vkcv
 	void Core::renderMesh(
 		const PassHandle						renderpassHandle, 
 		const PipelineHandle					pipelineHandle, 
-		const int								width, 
-		const int								height, 
+		const uint32_t 							width,
+		const uint32_t							height,
 		const size_t							pushConstantSize, 
 		const void								*pushConstantData,
 		const std::vector<VertexBufferBinding>& vertexBufferBindings, 
@@ -194,12 +194,18 @@ namespace vkcv
 		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
 		const PassConfig passConfig = m_PassManager->getPassConfig(renderpassHandle);
 		
-		ImageHandle depthImage;
+		const bool checkForDepthImage = (
+				(!m_DepthImage) ||
+				(width != m_ImageManager->getImageWidth(m_DepthImage)) ||
+				(height != m_ImageManager->getImageHeight(m_DepthImage))
+		);
 		
-		for (const auto& attachment : passConfig.attachments) {
-			if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
-				depthImage = m_ImageManager->createImage(width, height, 1, attachment.format);
-				break;
+		if (checkForDepthImage) {
+			for (const auto &attachment : passConfig.attachments) {
+				if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
+					m_DepthImage = m_ImageManager->createImage(width, height, 1, attachment.format);
+					break;
+				}
 			}
 		}
 		
@@ -212,8 +218,8 @@ namespace vkcv
 		std::vector<vk::ImageView> attachments;
 		attachments.push_back(imageView);
 		
-		if (depthImage) {
-			attachments.push_back(m_ImageManager->getVulkanImageView(depthImage));
+		if (m_DepthImage) {
+			attachments.push_back(m_ImageManager->getVulkanImageView(m_DepthImage));
 		}
 		
 		const vk::Framebuffer framebuffer = createFramebuffer(
@@ -273,9 +279,7 @@ namespace vkcv
 			cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
 			cmdBuffer.drawIndexed(indexCount, 1, 0, 0, {});
 			cmdBuffer.endRenderPass();
-		}, [&]() {
-			m_ImageManager->destroyImage(depthImage);
-		});
+		}, nullptr);
 	}
 
 	void Core::endFrame() {

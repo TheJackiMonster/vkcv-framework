@@ -39,12 +39,9 @@ namespace vkcv {
 		ImageManager* const m_manager;
 		const ImageHandle m_handle;
 		const vk::Format m_format;
-		const uint32_t m_width;
-		const uint32_t m_height;
-		const uint32_t m_depth;
 		vk::ImageLayout m_layout;
 
-		Image(ImageManager* manager, const ImageHandle& handle, vk::Format format, uint32_t width, uint32_t height, uint32_t depth);
+		Image(ImageManager* manager, const ImageHandle& handle, vk::Format format);
 		
 		static Image create(ImageManager* manager, vk::Format format, uint32_t width, uint32_t height, uint32_t depth);
 		
