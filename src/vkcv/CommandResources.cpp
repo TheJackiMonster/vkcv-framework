@@ -55,8 +55,14 @@ namespace vkcv {
 		else if (type == QueueType::Compute) {
 			return queueManager.getComputeQueues().front();
 		}
+		//example of how the non-existence of queues other than the graphics queue could be handled
 		else if (type == QueueType::Transfer) {
-			return queueManager.getTransferQueues().front();
+			if (queueManager.getTransferQueues().size() == 0) {
+				return queueManager.getGraphicsQueues().front();
+			}
+			else {
+				return queueManager.getTransferQueues().front();
+			}
 		}
 		else if (type == QueueType::Present) {
 			return queueManager.getPresentQueue();

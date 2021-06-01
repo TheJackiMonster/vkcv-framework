@@ -25,7 +25,7 @@ int main(int argc, const char** argv) {
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
-		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
+		{ vk::QueueFlagBits::eGraphics },	//at this place I now must remove the other queues for the app to work but probably there is a better way to handle this
 		{},
 		{ "VK_KHR_swapchain" }
 	);
