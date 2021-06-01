@@ -71,7 +71,7 @@ namespace vkcv {
 		 * @param width
 		 * @param height
 		 */
-        vk::SwapchainKHR recreateSwapchain( const Context &context, const Window &window, int width, int height);
+        void recreateSwapchain( const Context &context, const Window &window, int width, int height);
     };
 
 }

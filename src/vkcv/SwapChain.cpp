@@ -160,7 +160,7 @@ namespace vkcv {
         return SwapChain(surface, swapchain, surfaceFormat, imageCount, presentMode);
     }
 
-    vk::SwapchainKHR SwapChain::recreateSwapchain( const Context &context, const Window &window, int width, int height){
+    void SwapChain::recreateSwapchain( const Context &context, const Window &window, int width, int height){
         vk::SwapchainKHR oldSwapchain = m_swapchain;
         vk::Extent2D extent2D = chooseSwapExtent(context.getPhysicalDevice(), m_surface, window);
 
