@@ -10,6 +10,7 @@ namespace vkcv {
         vk::SurfaceKHR m_surface;
         vk::SwapchainKHR m_swapchain;
         vk::SurfaceFormatKHR m_format;
+        vk::PresentModeKHR m_presentMode;
 
 		uint32_t m_ImageCount;
 
@@ -21,7 +22,7 @@ namespace vkcv {
          * @param swapchain to show images in the window
          * @param format
          */
-        SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format, uint32_t imageCount);
+        SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format, uint32_t imageCount, vk::PresentModeKHR presentMode);
 
     public:
         SwapChain(const SwapChain &other) = default;
@@ -64,6 +65,13 @@ namespace vkcv {
 		 * @return number of images in swapchain
 		*/
 		uint32_t getImageCount();
+
+		/**
+		 *
+		 * @param width
+		 * @param height
+		 */
+        vk::SwapchainKHR recreateSwapchain( const Context &context, const Window &window, int width, int height);
     };
 
 }

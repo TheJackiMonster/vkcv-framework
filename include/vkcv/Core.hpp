@@ -88,7 +88,9 @@ namespace vkcv
          * @param[in] width new window width
          * @param[in] height new window hight
          */
-        static void recreateSwapchain( const vk::Device& device ,int width, int height);
+        void recreateSwapchain(int width, int height);
+
+        static std::vector<vk::ImageView> createImageViews( Context &context, SwapChain& swapChain);
 
     public:
         /**

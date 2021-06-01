@@ -142,8 +142,8 @@ int main(int argc, const char** argv) {
 
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
+        window.pollEvents();
 		core.beginFrame();
-		window.pollEvents();
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = end - start;
 		start = end;

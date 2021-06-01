@@ -2,8 +2,8 @@
 
 namespace vkcv {
 
-    SwapChain::SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format, uint32_t imageCount)
-        : m_surface(surface), m_swapchain(swapchain), m_format( format), m_ImageCount(imageCount)
+    SwapChain::SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format, uint32_t imageCount, vk::PresentModeKHR presentMode)
+        : m_surface(surface), m_swapchain(swapchain), m_format( format), m_ImageCount(imageCount), m_presentMode(presentMode)
     {}
 
     const vk::SwapchainKHR& SwapChain::getSwapchain() const {
@@ -157,7 +157,32 @@ namespace vkcv {
 
         vk::SwapchainKHR swapchain = device.createSwapchainKHR(swapchainCreateInfo);
 
-        return SwapChain(surface, swapchain, surfaceFormat, imageCount);
+        return SwapChain(surface, swapchain, surfaceFormat, imageCount, presentMode);
+    }
+
+    vk::SwapchainKHR SwapChain::recreateSwapchain( const Context &context, const Window &window, int width, int height){
+        vk::SwapchainKHR oldSwapchain = m_swapchain;
+        vk::Extent2D extent2D = chooseSwapExtent(context.getPhysicalDevice(), m_surface, window);
+
+        vk::SwapchainCreateInfoKHR swapchainCreateInfo(
+                vk::SwapchainCreateFlagsKHR(),
+                m_surface,
+                m_ImageCount,
+                m_format.format,
+                m_format.colorSpace,
+                extent2D,
+                1,
+                vk::ImageUsageFlagBits::eColorAttachment,
+                vk::SharingMode::eExclusive,
+                0,
+                nullptr,
+                vk::SurfaceTransformFlagBitsKHR::eIdentity,
+                vk::CompositeAlphaFlagBitsKHR::eOpaque,
+                m_presentMode,
+                true,
+                oldSwapchain
+        );
+        m_swapchain = context.getDevice().createSwapchainKHR(swapchainCreateInfo);
     }
 
 
