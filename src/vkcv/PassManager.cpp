@@ -49,17 +49,14 @@ namespace vkcv
 
     PassManager::PassManager(vk::Device device) noexcept :
     m_Device{device},
-    m_Passes{},
-    m_NextPassId(0)
+    m_Passes{}
     {}
 
     PassManager::~PassManager() noexcept
     {
-        for(const auto &pass : m_Passes)
-            m_Device.destroy(pass.m_Handle);
-	
-		m_Passes.clear();
-        m_NextPassId = 0;
+    	for (uint64_t id = 0; id < m_Passes.size(); id++) {
+			destroyPassById(id);
+    	}
     }
 
     PassHandle PassManager::createPass(const PassConfig &config)
@@ -130,8 +127,9 @@ namespace vkcv
 
         vk::RenderPass renderPass = m_Device.createRenderPass(passInfo);
 	
+        const uint64_t id = m_Passes.size();
 		m_Passes.push_back({ renderPass, config });
-		return PassHandle(m_NextPassId++);
+		return PassHandle(id, [&](uint64_t id) { destroyPassById(id); });
     }
 
     vk::RenderPass PassManager::getVkPass(const PassHandle &handle) const
@@ -158,6 +156,19 @@ namespace vkcv
 		auto& pass = m_Passes[id];
 	
 		return pass.m_Config;
+    }
+    
+    void PassManager::destroyPassById(uint64_t id) {
+    	if (id >= m_Passes.size()) {
+    		return;
+    	}
+    	
+    	auto& pass = m_Passes[id];
+	
+		if (pass.m_Handle) {
+			m_Device.destroy(pass.m_Handle);
+			pass.m_Handle = nullptr;
+		}
     }
     
 }

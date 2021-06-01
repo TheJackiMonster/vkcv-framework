@@ -5,22 +5,14 @@ namespace vkcv
 
     PipelineManager::PipelineManager(vk::Device device) noexcept :
     m_Device{device},
-    m_Pipelines{},
-    m_PipelineLayouts{},
-    m_NextPipelineId{0}
+    m_Pipelines{}
     {}
 
     PipelineManager::~PipelineManager() noexcept
     {
-        for(const auto &pipeline: m_Pipelines)
-            m_Device.destroy(pipeline);
-
-        for(const auto &layout : m_PipelineLayouts)
-            m_Device.destroy(layout);
-
-        m_Pipelines.clear();
-        m_PipelineLayouts.clear();
-        m_NextPipelineId = 0;
+    	for (uint64_t id = 0; id < m_Pipelines.size(); id++) {
+			destroyPipelineById(id);
+    	}
     }
 
 	// currently assuming default 32 bit formats, no lower precision or normalized variants supported
@@ -252,19 +244,54 @@ namespace vkcv
 
         m_Device.destroy(vertexModule);
         m_Device.destroy(fragmentModule);
-
-        m_Pipelines.push_back(vkPipeline);
-        m_PipelineLayouts.push_back(vkPipelineLayout);
-        return PipelineHandle(m_NextPipelineId++);
+        
+        const uint64_t id = m_Pipelines.size();
+        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout });
+        return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }
 
     vk::Pipeline PipelineManager::getVkPipeline(const PipelineHandle &handle) const
     {
-        return m_Pipelines.at(handle.getId());
+		const uint64_t id = handle.getId();
+	
+		if (id >= m_Pipelines.size()) {
+			return nullptr;
+		}
+	
+		auto& pipeline = m_Pipelines[id];
+	
+		return pipeline.m_handle;
     }
 
     vk::PipelineLayout PipelineManager::getVkPipelineLayout(const PipelineHandle &handle) const
     {
-        return m_PipelineLayouts.at(handle.getId());
+    	const uint64_t id = handle.getId();
+    	
+		if (id >= m_Pipelines.size()) {
+			return nullptr;
+		}
+	
+		auto& pipeline = m_Pipelines[id];
+    	
+        return pipeline.m_layout;
     }
+    
+    void PipelineManager::destroyPipelineById(uint64_t id) {
+    	if (id >= m_Pipelines.size()) {
+    		return;
+    	}
+    	
+    	auto& pipeline = m_Pipelines[id];
+    	
+    	if (pipeline.m_handle) {
+			m_Device.destroy(pipeline.m_handle);
+			pipeline.m_handle = nullptr;
+    	}
+	
+		if (pipeline.m_layout) {
+			m_Device.destroy(pipeline.m_layout);
+			pipeline.m_layout = nullptr;
+		}
+    }
+    
 }

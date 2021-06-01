@@ -58,8 +58,6 @@ namespace vkcv
 		* Contains all the resource descriptions that were requested by the user in calls of createResourceDescription.
 		*/
         std::vector<ResourceDescription> m_ResourceDescriptions;
-        // Counter for the vector above
-        uint64_t m_NextResourceDescriptionID;
 		
 		/**
 		* Converts the flags of the descriptor types from VulkanCV (vkcv) to Vulkan (vk).
@@ -73,5 +71,8 @@ namespace vkcv
 		* @return vk flag of the ShaderStage
 		*/
 		static vk::ShaderStageFlagBits convertShaderStageFlag(ShaderStage stage);
+		
+		void destroyResourceDescriptionById(uint64_t id);
+		
 	};
 }

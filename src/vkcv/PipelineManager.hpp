@@ -11,10 +11,16 @@ namespace vkcv
     class PipelineManager
     {
     private:
+    	struct Pipeline {
+			vk::Pipeline m_handle;
+			vk::PipelineLayout m_layout;
+    	};
+    	
         vk::Device m_Device;
-        std::vector<vk::Pipeline> m_Pipelines;
-        std::vector<vk::PipelineLayout> m_PipelineLayouts;
-        uint64_t m_NextPipelineId;
+        std::vector<Pipeline> m_Pipelines;
+        
+        void destroyPipelineById(uint64_t id);
+        
     public:
         PipelineManager() = delete; // no default ctor
         explicit PipelineManager(vk::Device device) noexcept; // ctor
