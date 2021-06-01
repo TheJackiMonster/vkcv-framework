@@ -144,6 +144,12 @@ namespace vkcv {
     }
 
     void Camera::setYaw(float yaw) {
+        if (yaw < 0.0f) {
+            yaw += 360.0f;
+        }
+        else if (yaw > 360.0f) {
+            yaw -= 360.0f;
+        }
         m_yaw = yaw;
     }
 
