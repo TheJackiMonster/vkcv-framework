@@ -1,0 +1,27 @@
+cmake_minimum_required(VERSION 3.16)
+project(vkcv_scene)
+
+# setting c++ standard for the module
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(vkcv_scene_source ${PROJECT_SOURCE_DIR}/src)
+set(vkcv_scene_include ${PROJECT_SOURCE_DIR}/include)
+
+# Add source and header files to the module
+set(vkcv_scene_sources
+		${vkcv_scene_include}/vkcv/scene/Scene.hpp
+		${vkcv_scene_source}/vkcv/scene/Scene.cpp
+)
+
+# adding source files to the module
+add_library(vkcv_scene STATIC ${vkcv_scene_sources})
+
+# link the required libraries to the module
+target_link_libraries(vkcv_scene vkcv)
+
+# including headers of dependencies and the VkCV framework
+target_include_directories(vkcv_scene SYSTEM BEFORE PRIVATE ${vkcv_include})
+
+# add the own include directory for public headers
+target_include_directories(vkcv_scene BEFORE PUBLIC ${vkcv_scene_include})
