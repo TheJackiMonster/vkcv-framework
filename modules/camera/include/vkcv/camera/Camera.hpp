@@ -101,7 +101,7 @@ namespace vkcv {
          * 
          * @param offset in degrees
          */
-        void changeFov(double fov);
+        void changeFov(double offset);
         
         void updateRatio(float ratio);
 
