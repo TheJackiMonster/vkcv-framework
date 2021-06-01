@@ -21,6 +21,7 @@
 #include "vkcv/DescriptorConfig.hpp"
 #include "Sampler.hpp"
 #include "DescriptorWrites.hpp"
+#include "Event.hpp"
 
 namespace vkcv
 {
@@ -43,8 +44,8 @@ namespace vkcv
 		std::vector<vk::Semaphore> signalSemaphores;
 	};
 	
-	typedef std::function<void(const vk::CommandBuffer& cmdBuffer)> RecordCommandFunction;
-	typedef std::function<void(void)> FinishCommandFunction;
+	typedef typename event_function<const vk::CommandBuffer&>::type RecordCommandFunction;
+	typedef typename event_function<>::type FinishCommandFunction;
 
     class Core final
     {
@@ -80,6 +81,8 @@ namespace vkcv
 		SyncResources					m_SyncResources;
 		uint32_t						m_currentSwapchainImageIndex;
 		std::vector<vk::Framebuffer>	m_TemporaryFramebuffers;
+		
+		ImageHandle						m_DepthImage;
 
         /**
          * recreates the swapchain
@@ -229,8 +232,8 @@ namespace vkcv
 		void renderMesh(
 			const PassHandle						renderpassHandle, 
 			const PipelineHandle					pipelineHandle,
-			const int								width, 
-			const int								height, 
+			const uint32_t							width,
+			const uint32_t							height,
 			const size_t							pushConstantSize, 
 			const void*								pushConstantData, 
 			const std::vector<VertexBufferBinding>	&vertexBufferBindings, 

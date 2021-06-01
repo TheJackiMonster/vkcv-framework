@@ -44,6 +44,14 @@ namespace vkcv
 		
 		void init();
 		
+		/**
+		 * Destroys and deallocates buffer represented by a given
+		 * buffer handle id.
+		 *
+		 * @param id Buffer handle id
+		 */
+		void destroyBufferById(uint64_t id);
+		
 	public:
 		~BufferManager() noexcept;
 		
@@ -123,14 +131,6 @@ namespace vkcv
 		 * @param handle Buffer handle
 		 */
 		void unmapBuffer(const BufferHandle& handle);
-	
-		/**
-		 * Destroys and deallocates buffer represented by a given
-		 * buffer handle.
-		 *
-		 * @param handle Buffer handle
-		 */
-		void destroyBuffer(const BufferHandle& handle);
 		
 	};
 	

@@ -10,7 +10,7 @@ namespace vkcv{
 	
 	Image Image::create(ImageManager* manager, vk::Format format, uint32_t width, uint32_t height, uint32_t depth)
 	{
-		return Image(manager, manager->createImage(width, height, depth, format), format, width, height, depth);
+		return Image(manager, manager->createImage(width, height, depth, format), format);
 	}
 	
 	vk::Format Image::getFormat() const {
@@ -18,15 +18,15 @@ namespace vkcv{
 	}
 	
 	uint32_t Image::getWidth() const {
-		return m_width;
+		return m_manager->getImageWidth(m_handle);
 	}
 	
 	uint32_t Image::getHeight() const {
-		return m_height;
+		return m_manager->getImageHeight(m_handle);
 	}
 	
 	uint32_t Image::getDepth() const {
-		return m_depth;
+		return m_manager->getImageDepth(m_handle);
 	}
 	
 	vk::ImageLayout Image::getLayout() const {
@@ -47,14 +47,10 @@ namespace vkcv{
 		m_manager->fillImage(m_handle, data, size);
 	}
 	
-	Image::Image(ImageManager* manager, const ImageHandle& handle,
-			  	 vk::Format format, uint32_t width, uint32_t height, uint32_t depth) :
+	Image::Image(ImageManager* manager, const ImageHandle& handle, vk::Format format) :
 		m_manager(manager),
 		m_handle(handle),
 		m_format(format),
-		m_width(width),
-		m_height(height),
-		m_depth(depth),
 		m_layout(vk::ImageLayout::eUndefined)
 	{
 	}

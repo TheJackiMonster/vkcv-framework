@@ -8,7 +8,7 @@ namespace vkcv
     descriptorSetLayouts{std::move(layouts)}
     {}
     DescriptorManager::DescriptorManager(vk::Device device) noexcept:
-        m_Device{ device }, m_NextResourceDescriptionID{ 0 }
+        m_Device{ device }
     {
         /**
          * Allocate a set size for the initial pool, namely 1000 units of each descriptor type below.
@@ -32,11 +32,10 @@ namespace vkcv
 
     DescriptorManager::~DescriptorManager() noexcept
     {
-        for(const auto &resource : m_ResourceDescriptions)
-        {
-            for(const auto &layout : resource.descriptorSetLayouts)
-                m_Device.destroyDescriptorSetLayout(layout);
+        for (uint64_t id = 0; id < m_ResourceDescriptions.size(); id++) {
+			destroyResourceDescriptionById(id);
         }
+        
         m_Device.destroy(m_Pool);
     }
 
@@ -82,8 +81,9 @@ namespace vkcv
             return ResourcesHandle();
         };
 
+        const uint64_t id = m_ResourceDescriptions.size();
         m_ResourceDescriptions.emplace_back(vk_sets, vk_setLayouts);
-        return ResourcesHandle(m_NextResourceDescriptionID++);
+        return ResourcesHandle(id, [&](uint64_t id) { destroyResourceDescriptionById(id); });
     }
     
     struct WriteDescriptorSetInfo {
@@ -270,5 +270,19 @@ namespace vkcv
                 return vk::ShaderStageFlagBits::eAll;
         }
     }
+    
+    void DescriptorManager::destroyResourceDescriptionById(uint64_t id) {
+		if (id >= m_ResourceDescriptions.size()) {
+			return;
+		}
+		
+		auto& resourceDescription = m_ResourceDescriptions[id];
+	
+		for(const auto &layout : resourceDescription.descriptorSetLayouts) {
+			m_Device.destroyDescriptorSetLayout(layout);
+		}
+	
+		resourceDescription.descriptorSetLayouts.clear();
+	}
 
 }
