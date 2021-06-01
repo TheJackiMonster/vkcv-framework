@@ -74,10 +74,6 @@ namespace vkcv
 		const auto						commandResources		= createCommandResources(context.getDevice(), queueFamilySet);
 		const auto						defaultSyncResources	= createSyncResources(context.getDevice());
 
-        window.e_resize.add([&](int width, int height){
-            recreateSwapchain(width,height);
-        });
-
         return Core(std::move(context) , window, swapChain, imageViews, commandResources, defaultSyncResources);
     }
 
@@ -105,6 +101,8 @@ namespace vkcv
     	m_BufferManager->init();
     	
     	m_ImageManager->m_core = this;
+
+        m_resizeHandle = window.e_resize.add( [&](int width, int height) { recreateSwapchain( this->getContext().getDevice(),width ,height ); });
 	}
 
 	Core::~Core() noexcept {
@@ -308,9 +306,8 @@ namespace vkcv
 		return m_swapchain.getSurfaceFormat().format;
 	}
 
-    void Core::recreateSwapchain(int width, int height) {
-        /* boilerplate for #34 */
-        std::cout << "Resized to : " << width << " , " << height << std::endl;
+    void Core::recreateSwapchain( const vk::Device& device, int width, int height) {
+        device.waitIdle();
     }
 	
 	void Core::submitCommands(const SubmitInfo &submitInfo, const RecordCommandFunction& record, const FinishCommandFunction& finish)

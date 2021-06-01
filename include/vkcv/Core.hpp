@@ -81,12 +81,14 @@ namespace vkcv
 		uint32_t						m_currentSwapchainImageIndex;
 		std::vector<vk::Framebuffer>	m_TemporaryFramebuffers;
 
+        std::function<void(int, int)> m_resizeHandle;
+
         /**
          * recreates the swapchain
          * @param[in] width new window width
          * @param[in] height new window hight
          */
-        static void recreateSwapchain(int width, int height);
+        static void recreateSwapchain( const vk::Device& device ,int width, int height);
 
     public:
         /**

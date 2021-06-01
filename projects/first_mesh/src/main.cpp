@@ -14,7 +14,7 @@ int main(int argc, const char** argv) {
 		applicationName,
 		windowWidth,
 		windowHeight,
-		false
+		true
 	);
 
 	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
