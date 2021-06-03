@@ -24,7 +24,7 @@ namespace vkcv
 			static_cast<uint32_t>(m_PoolSizes.size()),
 			m_PoolSizes.data());
 
-		vk::DescriptorPool initPool = allocateDescriptorPool();
+		allocateDescriptorPool();
     }
 
     DescriptorManager::~DescriptorManager() noexcept
@@ -32,8 +32,8 @@ namespace vkcv
         for (uint64_t id = 0; id < m_ResourceDescriptions.size(); id++) {
 			destroyResourceDescriptionById(id);
         }
-		for (uint64_t i = 0; i < m_Pools.size(); i++) {
-			m_Device.destroy(m_Pools[i]);
+		for (const auto &pool : m_Pools) {
+			m_Device.destroy(pool);
 		}
     }
 
@@ -100,7 +100,7 @@ namespace vkcv
     };
 
 	void DescriptorManager::writeResourceDescription(
-		ResourcesHandle			handle, 
+		const ResourcesHandle	&handle,
 		size_t					setIndex,
 		const DescriptorWrites	&writes,
 		const ImageManager		&imageManager, 
@@ -230,11 +230,11 @@ namespace vkcv
 		m_Device.updateDescriptorSets(vulkanWrites, nullptr);
 	}
 
-	vk::DescriptorSet DescriptorManager::getDescriptorSet(ResourcesHandle handle, size_t index) {
+	vk::DescriptorSet DescriptorManager::getDescriptorSet(const ResourcesHandle &handle, size_t index) const {
 		return m_ResourceDescriptions[handle.getId()].descriptorSets[index];
 	}
 
-	vk::DescriptorSetLayout DescriptorManager::getDescriptorSetLayout(ResourcesHandle handle, size_t index) {
+	vk::DescriptorSetLayout DescriptorManager::getDescriptorSetLayout(const ResourcesHandle &handle, size_t index) const {
 		return m_ResourceDescriptions[handle.getId()].descriptorSetLayouts[index];
 	}
 

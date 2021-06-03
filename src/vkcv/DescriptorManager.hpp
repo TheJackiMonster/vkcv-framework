@@ -1,5 +1,5 @@
 /**
- * @authors Artur Wasmut, Susanne Dötsch, Simeon Hermann
+ * @authors Artur Wasmut, Susanne Dï¿½tsch, Simeon Hermann
  * @file src/vkcv/DescriptorManager.cpp
  * @brief Creation and handling of descriptor sets and the respective descriptor pools
  */
@@ -31,15 +31,17 @@ namespace vkcv
         ResourcesHandle createResourceDescription(const std::vector<DescriptorSetConfig> & descriptorSets);
 
 		void writeResourceDescription(
-			ResourcesHandle			handle,
+			const ResourcesHandle	&handle,
 			size_t					setIndex,
-			const DescriptorWrites& writes,
-			const ImageManager& imageManager,
-			const BufferManager& bufferManager,
-			const SamplerManager& samplerManager);
+			const DescriptorWrites  &writes,
+			const ImageManager      &imageManager,
+			const BufferManager     &bufferManager,
+			const SamplerManager    &samplerManager);
 
-		vk::DescriptorSet		getDescriptorSet(ResourcesHandle handle, size_t index);
-		vk::DescriptorSetLayout getDescriptorSetLayout(ResourcesHandle handle, size_t index);
+		[[nodiscard]]
+		vk::DescriptorSet		getDescriptorSet(const ResourcesHandle &handle, size_t index) const;
+		[[nodiscard]]
+		vk::DescriptorSetLayout getDescriptorSetLayout(const ResourcesHandle &handle, size_t index) const;
 
 	private:
 		vk::Device			m_Device;
