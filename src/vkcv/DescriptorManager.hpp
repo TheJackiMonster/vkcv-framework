@@ -1,3 +1,8 @@
+/**
+ * @authors Artur Wasmut, Susanne D�tsch, Simeon Hermann
+ * @file src/vkcv/DescriptorManager.cpp
+ * @brief Creation and handling of descriptor sets and the respective descriptor pools
+ */
 #include <vulkan/vulkan.hpp>
 
 #include "vkcv/Handles.hpp"
@@ -26,19 +31,23 @@ namespace vkcv
         ResourcesHandle createResourceDescription(const std::vector<DescriptorSetConfig> & descriptorSets);
 
 		void writeResourceDescription(
-			ResourcesHandle			handle,
+			const ResourcesHandle	&handle,
 			size_t					setIndex,
-			const DescriptorWrites& writes,
-			const ImageManager& imageManager,
-			const BufferManager& bufferManager,
-			const SamplerManager& samplerManager);
+			const DescriptorWrites  &writes,
+			const ImageManager      &imageManager,
+			const BufferManager     &bufferManager,
+			const SamplerManager    &samplerManager);
 
-		vk::DescriptorSet		getDescriptorSet(ResourcesHandle handle, size_t index);
-		vk::DescriptorSetLayout getDescriptorSetLayout(ResourcesHandle handle, size_t index);
+		[[nodiscard]]
+		vk::DescriptorSet		getDescriptorSet(const ResourcesHandle &handle, size_t index) const;
+		[[nodiscard]]
+		vk::DescriptorSetLayout getDescriptorSetLayout(const ResourcesHandle &handle, size_t index) const;
 
 	private:
 		vk::Device			m_Device;
-        vk::DescriptorPool	m_Pool;
+		std::vector<vk::DescriptorPool>	m_Pools;
+		std::vector<vk::DescriptorPoolSize> m_PoolSizes;
+		vk::DescriptorPoolCreateInfo m_PoolInfo;
 
 
 		/**
@@ -72,7 +81,18 @@ namespace vkcv
 		*/
 		static vk::ShaderStageFlagBits convertShaderStageFlag(ShaderStage stage);
 		
+		/**
+		* Destroys a specific resource description
+		* @param[in] the handle id of the respective resource description
+		*/
 		void destroyResourceDescriptionById(uint64_t id);
+
+		/**
+		* creates a descriptor pool based on the poolSizes and poolInfo defined in the constructor
+		* is called initially in the constructor and then every time the pool runs out memory
+		* @return a DescriptorPool object
+		*/
+		vk::DescriptorPool allocateDescriptorPool();
 		
 	};
 }
