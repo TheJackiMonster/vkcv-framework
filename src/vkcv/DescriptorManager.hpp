@@ -1,3 +1,8 @@
+/**
+ * @authors Artur Wasmut, Susanne Dötsch, Simeon Hermann
+ * @file src/vkcv/DescriptorManager.cpp
+ * @brief Creation and handling of descriptor sets and the respective descriptor pools
+ */
 #include <vulkan/vulkan.hpp>
 
 #include "vkcv/Handles.hpp"
@@ -38,7 +43,9 @@ namespace vkcv
 
 	private:
 		vk::Device			m_Device;
-        vk::DescriptorPool	m_Pool;
+		std::vector<vk::DescriptorPool>	m_Pools;
+		std::vector<vk::DescriptorPoolSize> m_PoolSizes;
+		vk::DescriptorPoolCreateInfo m_PoolInfo;
 
 
 		/**
@@ -72,7 +79,18 @@ namespace vkcv
 		*/
 		static vk::ShaderStageFlagBits convertShaderStageFlag(ShaderStage stage);
 		
+		/**
+		* Destroys a specific resource description
+		* @param[in] the handle id of the respective resource description
+		*/
 		void destroyResourceDescriptionById(uint64_t id);
+
+		/**
+		* creates a descriptor pool based on the poolSizes and poolInfo defined in the constructor
+		* is called initially in the constructor and then every time the pool runs out memory
+		* @return a DescriptorPool object
+		*/
+		vk::DescriptorPool allocateDescriptorPool();
 		
 	};
 }

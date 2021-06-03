@@ -105,6 +105,12 @@ int main(int argc, const char** argv) {
 	});
 	vkcv::ResourcesHandle set = core.createResourceDescription({ setConfig });
 
+	//only exemplary code for testing
+	for (int i = 0; i < 1001; i++) {
+		vkcv::ResourcesHandle furtherSets = core.createResourceDescription({ setConfig });
+	}
+	//end of exemplary code
+
 	const vkcv::PipelineConfig trianglePipelineDefinition(
 		triangleShaderProgram, 
 		windowWidth,
