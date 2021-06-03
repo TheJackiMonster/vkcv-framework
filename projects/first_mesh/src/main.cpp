@@ -111,7 +111,7 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		trianglePass,
 		mesh.vertexGroups[0].vertexBuffer.attributes,
-		{ core.getDescritorSetLayout(set, 0) });
+		{ core.getDescriptorSetLayout(set, 0) });
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 	
 	if (!trianglePipeline) {
