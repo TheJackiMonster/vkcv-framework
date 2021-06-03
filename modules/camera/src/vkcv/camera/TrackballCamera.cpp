@@ -14,18 +14,18 @@ namespace vkcv {
 
     TrackballCamera::~TrackballCamera() = default;
 
-    float TrackballCamera::getRadius() {
+    float TrackballCamera::getRadius() const{
         return m_radius;
     }
 
-    void TrackballCamera::setRadius(float radius) {
+    void TrackballCamera::setRadius( const float radius) {
         if (m_radius < 0.1f) {
             m_radius = 0.1f;
         }
         m_radius = radius;
     }
 
-    glm::vec3& TrackballCamera::getCenter() {
+    const glm::vec3& TrackballCamera::getCenter() {
         return m_center;
     }
 

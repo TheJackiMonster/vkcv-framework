@@ -64,16 +64,7 @@ namespace vkcv {
          * @brief Gets the view matrix of the camera
          * @return The view matrix of the camera
          */
-        const glm::mat4 getView() const;
-        
-        /**
-         * @brief Gets the view object containing the @p x, @p y, @p z axis in camera space, and the camera position @p pos in world space
-         * @param x The horizontal axis in camera space
-         * @param y The vertical axis in camera space
-         * @param z The depth axis in camera space
-         * @param pos The position of the camera in world space
-         */
-        void getView(glm::vec3 &x, glm::vec3 &y, glm::vec3 &z, glm::vec3 &pos);
+        const glm::mat4& getView();
 
         /**
          * @brief Updates the view matrix of the camera with respect to @p deltaTime
@@ -94,7 +85,7 @@ namespace vkcv {
          * @brief Gets the current projection of the camera
          * @return The current projection matrix
          */
-        const glm::mat4& getProjection() const;
+        const glm::mat4& getProjection();
 
         /**
          * @brief Sets the projection matrix of the camera to @p projection

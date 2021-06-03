@@ -26,19 +26,19 @@ namespace vkcv {
          * @brief Gets the radius of the trackball camera that specifies the distance of the trackball camera to the center point
          * @return The radius of the trackball camera
          */
-        float getRadius();
+        float getRadius() const;
 
         /**
          * @brief Sets the current radius of the trackball camera to @p radius
          * @param[in] radius The new radius of the trackball camera
          */
-        void setRadius(float radius);
+        void setRadius( const float radius);
 
         /**
          * @brief Gets the center point the trackball camera is looking at
          * @return The center point of the trackball camera
          */
-        glm::vec3& getCenter();
+        const glm::vec3& getCenter();
 
         /**
          * @brief Sets the current center point of the trackball camera to @p center

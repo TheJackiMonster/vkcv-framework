@@ -34,26 +34,17 @@ namespace vkcv {
         return m_view = glm::lookAt(m_position, m_position + getFront() , m_up);
     }
 
-    void Camera::getView(glm::vec3 &x, glm::vec3 &y, glm::vec3 &z, glm::vec3 &pos){
-        x = glm::vec3( glm::row(m_view, 0));
-        y = glm::vec3( glm::row(m_view, 1));
-        z = glm::vec3( glm::row(m_view, 2));
-        pos = glm::vec3( glm::column(m_view, 3));
-        glm::mat3 mat_inv = glm::inverse( glm::mat3(m_view));
-        pos = -mat_inv * pos;
-    }
-
     void Camera::getNearFar( float &near, float &far) const {
         near = m_near;
         far = m_far;
     }
 
 
-    const glm::mat4 Camera::getView() const {
+    const glm::mat4& Camera::getView() {
         return m_view;
     }
 
-    const glm::mat4& Camera::getProjection() const {
+    const glm::mat4& Camera::getProjection() {
         return m_projection;
     }
 
