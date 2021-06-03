@@ -12,6 +12,7 @@
 #include <vulkan/vulkan.hpp>
 #include <spirv_cross.hpp>
 #include "vkcv/VertexLayout.hpp"
+#include "vkcv/DescriptorSetLayout.hpp"
 
 namespace vkcv {
 
@@ -59,9 +60,12 @@ namespace vkcv {
 
         const VertexLayout &getVertexLayout() const;
 
+        const DescriptorSetLayout &getDescriptorSetLayout() const;
+
 	private:
         std::unordered_map<ShaderStage, Shader> m_Shaders;
 
         VertexLayout m_VertexLayout;
+        DescriptorSetLayout m_DescriptorSetLayout;
 	};
 }

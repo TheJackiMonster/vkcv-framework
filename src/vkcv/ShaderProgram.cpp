@@ -66,7 +66,8 @@ namespace vkcv {
 
 	ShaderProgram::ShaderProgram() noexcept :
 	m_Shaders{},
-    m_VertexLayout{}
+    m_VertexLayout{},
+    m_DescriptorSetLayout{}
 	{}
 
 	bool ShaderProgram::addShader(ShaderStage shaderStage, const std::filesystem::path &shaderPath)
@@ -125,12 +126,50 @@ namespace vkcv {
 				inputVec.push_back(input);
 				offset += base_type.vecsize * base_type.width / 8;
 			}
-
 			m_VertexLayout = VertexLayout(inputVec);
 		}
+
+		//Descriptor Sets
+		//Storage buffer, uniform Buffer, storage image, sampled image, sampler (?)
+
+        std::vector<uint32_t> sampledImageVec;
+        for (uint32_t i = 0; i < resources.sampled_images.size(); i++) {
+            auto &u = resources.sampled_images[i];
+            sampledImageVec.push_back(comp.get_decoration(u.id, spv::DecorationDescriptorSet));
+        }
+
+        std::vector<uint32_t> storageImageVec;
+        for (uint32_t i = 0; i < resources.storage_images.size(); i++) {
+            auto &u = resources.storage_images[i];
+            storageImageVec.push_back(comp.get_decoration(u.id, spv::DecorationDescriptorSet));
+        }
+
+        std::vector<uint32_t> uniformBufferVec;
+        for (uint32_t i = 0; i < resources.uniform_buffers.size(); i++) {
+            auto &u = resources.uniform_buffers[i];
+            uniformBufferVec.push_back(comp.get_decoration(u.id, spv::DecorationDescriptorSet));
+        }
+
+		std::vector<uint32_t> storageBufferVec;
+        for (uint32_t i = 0; i < resources.storage_buffers.size(); i++) {
+            auto &u = resources.storage_buffers[i];
+            storageBufferVec.push_back(comp.get_decoration(u.id, spv::DecorationDescriptorSet));
+        }
+
+        std::vector<uint32_t> samplerVec;
+        for (uint32_t i = 0; i < resources.separate_samplers.size(); i++) {
+            auto &u = resources.separate_samplers[i];
+            samplerVec.push_back(comp.get_decoration(u.id, spv::DecorationDescriptorSet));
+        }
+
+        m_DescriptorSetLayout = DescriptorSetLayout(sampledImageVec, storageImageVec, uniformBufferVec, storageBufferVec, samplerVec);
     }
 
     const VertexLayout& ShaderProgram::getVertexLayout() const{
         return m_VertexLayout;
 	}
+
+    const DescriptorSetLayout& ShaderProgram::getDescriptorSetLayout() const {
+        return m_DescriptorSetLayout;
+    }
 }
