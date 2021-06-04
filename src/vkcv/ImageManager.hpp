@@ -54,6 +54,8 @@ namespace vkcv {
 		
 		ImageHandle createImage(uint32_t width, uint32_t height, uint32_t depth, vk::Format format);
 		
+		ImageHandle createSwapchainImage();
+		
 		[[nodiscard]]
 		vk::Image getVulkanImage(const ImageHandle& handle) const;
 		
