@@ -95,6 +95,12 @@ namespace vkcv
 		friend class ImageManager;
 	private:
 		using Handle::Handle;
+		
+		[[nodiscard]]
+		bool isSwapchainImage() const;
+		
+		static ImageHandle createSwapchainImageHandle(const HandleDestroyFunction& destroy = nullptr);
+		
 	};
 	
 }

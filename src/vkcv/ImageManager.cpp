@@ -170,6 +170,10 @@ namespace vkcv {
 		return ImageHandle(id, [&](uint64_t id) { destroyImageById(id); });
 	}
 	
+	ImageHandle ImageManager::createSwapchainImage() {
+		return ImageHandle::createSwapchainImageHandle();
+	}
+	
 	vk::Image ImageManager::getVulkanImage(const ImageHandle &handle) const {
 		const uint64_t id = handle.getId();
 		
