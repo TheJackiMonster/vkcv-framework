@@ -113,6 +113,7 @@ namespace vkcv
 		);
 		
 		if (acquireResult != vk::Result::eSuccess) {
+			std::cerr << vk::to_string(acquireResult) << std::endl;
 			return Result::ERROR;
 		}
 		
@@ -130,12 +131,14 @@ namespace vkcv
 			m_swapchain.updateSwapchain(m_Context, m_window);
 			m_swapchainImageViews = createImageViews(m_Context, m_swapchain);
 		}
-    	
+		
     	if (acquireSwapchainImage() != Result::SUCCESS) {
-    		return;
+    		std::cerr << "Acquire failed!" << std::endl;
+    		
+    		m_currentSwapchainImageIndex = std::numeric_limits<uint32_t>::max();
     	}
-    	
-		m_Context.getDevice().waitIdle();	// TODO: this is a sin against graphics programming, but its getting late - Alex
+		
+		m_Context.getDevice().waitIdle(); // TODO: this is a sin against graphics programming, but its getting late - Alex
 	}
 
 	void Core::renderMesh(
@@ -267,7 +270,6 @@ namespace vkcv
         };
 
 		submitCommands(submitInfo, submitFunction, finishFunction);
-
 	}
 
 	void Core::endFrame() {
