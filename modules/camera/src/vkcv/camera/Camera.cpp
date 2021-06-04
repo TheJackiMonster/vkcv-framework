@@ -85,7 +85,7 @@ namespace vkcv {
     void Camera::updateRatio( int width, int height){
         m_width = width;
         m_height = height;
-        m_ratio = static_cast<float>(width)/height;
+        m_ratio = static_cast<float>(width)/glm::max(height, 1);
         setPerspective( m_fov, m_ratio, m_near, m_far);
     }
 
