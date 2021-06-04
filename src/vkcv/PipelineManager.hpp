@@ -18,6 +18,7 @@ namespace vkcv
     	
         vk::Device m_Device;
         std::vector<Pipeline> m_Pipelines;
+        std::vector<PipelineConfig> m_Configs;
         
         void destroyPipelineById(uint64_t id);
         
@@ -36,7 +37,11 @@ namespace vkcv
 
         [[nodiscard]]
         vk::Pipeline getVkPipeline(const PipelineHandle &handle) const;
+
         [[nodiscard]]
         vk::PipelineLayout getVkPipelineLayout(const PipelineHandle &handle) const;
+
+        [[nodiscard]]
+        const PipelineConfig &getPipelineConfig(const PipelineHandle &handle) const;
     };
 }

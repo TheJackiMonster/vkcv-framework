@@ -5,7 +5,8 @@ namespace vkcv
 
     PipelineManager::PipelineManager(vk::Device device) noexcept :
     m_Device{device},
-    m_Pipelines{}
+    m_Pipelines{},
+    m_Configs{}
     {}
 
     PipelineManager::~PipelineManager() noexcept
@@ -258,6 +259,7 @@ namespace vkcv
         
         const uint64_t id = m_Pipelines.size();
         m_Pipelines.push_back({ vkPipeline, vkPipelineLayout });
+        m_Configs.push_back(config);
         return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }
 
@@ -304,5 +306,11 @@ namespace vkcv
 			pipeline.m_layout = nullptr;
 		}
     }
-    
+
+    const PipelineConfig &PipelineManager::getPipelineConfig(const PipelineHandle &handle) const
+    {
+        const uint64_t id = handle.getId();
+        return m_Configs.at(id);
+    }
+
 }

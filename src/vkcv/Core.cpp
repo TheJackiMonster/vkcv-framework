@@ -183,6 +183,7 @@ namespace vkcv
 		const vk::ImageView imageView	= m_swapchainImageViews[m_currentSwapchainImageIndex];
 		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
         const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
+        const vkcv::PipelineConfig pipelineConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
 		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
 		const vk::Buffer vulkanIndexBuffer	= m_BufferManager->getBuffer(indexBuffer);
 
@@ -244,8 +245,12 @@ namespace vkcv
             cmdBuffer.beginRenderPass(beginInfo, subpassContents, {});
 
             cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
-            cmdBuffer.setViewport(0, 1, &dynamicViewport);
-            cmdBuffer.setScissor(0, 1, &dynamicScissor);
+
+            if(pipelineConfig.m_Height == UINT32_MAX && pipelineConfig.m_Width == UINT32_MAX)
+            {
+                cmdBuffer.setViewport(0, 1, &dynamicViewport);
+                cmdBuffer.setScissor(0, 1, &dynamicScissor);
+            }
 
             for (uint32_t i = 0; i < vertexBufferBindings.size(); i++) {
                 const auto &vertexBinding = vertexBufferBindings[i];
