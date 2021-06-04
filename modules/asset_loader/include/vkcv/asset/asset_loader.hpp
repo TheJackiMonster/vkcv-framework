@@ -50,11 +50,51 @@ enum PrimitiveMode {
 	POINTS=0, LINES, LINELOOP, LINESTRIP, TRIANGLES, TRIANGLESTRIP,
 	TRIANGLEFAN
 };
+
 /* The indices in the index buffer can be of different bit width. */
 enum IndexType { UINT32=0, UINT16=1, UINT8=2 };
 
+/* Flags for the bit-mask in the Material struct. Use the bitof() macro to
+ * translate the enums value when checking a flag of the mask:
+ * Material mat = ...;
+ * if (mat.textureMask & bitflag(PBRTextureTarget::baseColor)) {...} */
+// TODO Maybe it's easier to replace the bitflag() macro with a "hasTexture()"
+// macro that already combines the logical AND with the bitflag?
+enum class PBRTextureTarget {
+	baseColor=1, metalRough=2, normal=4, occlusion=8, emissive=16
+};
+
+/* This macro translates the index of an enum in the defined order to an
+ * integer with a single bit set in the corresponding place. */
+#define bitflag(ENUM) (0x1u << (ENUM))
+
 typedef struct {
-	// TODO not yet needed for the first (unlit) triangle
+	// TODO define struct for samplers (low priority)
+} Sampler;
+
+typedef struct {
+	uint8_t sampler;	// index into the Meshes samplers array
+	uint8_t channels;	// number of channels
+	uint16_t w, h;		// width and height of the texture
+	std::vector<uint8_t> data;	// binary data of the decoded texture
+} Texture;
+
+/* The asset loader module only supports the PBR-MetallicRoughness model for
+ * materials.
+ * NOTE: Only a single UV-texture is currently supported to reduce the
+ * complexity at first. Later, there will need to be an association between
+ * each of the texture targets in the Material struct and a VertexAttribute of
+ * a VertexBuffer that defines the UV coordinates for that texture. */
+typedef struct {
+	uint8_t textureMask;	// bit mask with active texture targets
+	// Indices into the Mesh.textures array
+	uint8_t baseColor, metalRough, normal, occlusion, emissive;
+	// Scaling factors for each texture target
+	struct { float r, g, b, a; } baseColorFactor;
+	float metallicFactor, roughnessFactor;
+	float normalScale;
+	float occlusionStrength;
+	struct { float r, g, b; } emissiveFactor;
 } Material;
 
 /* This struct represents one (possibly the only) part of a mesh. There is
@@ -84,6 +124,10 @@ typedef struct {
 	std::string name;
 	std::vector<VertexGroup> vertexGroups;
 	std::vector<Material> materials;
+	std::vector<Texture> textures;
+	std::vector<Sampler> samplers;
+	// TODO Replace usage of the texture_hack everywhere with use of the
+	// textures, materials and sampler-arrays.
 	// FIXME Dirty hack to get one(!) texture for our cube demo
 	// hardcoded to always have RGBA channel layout
 	struct {

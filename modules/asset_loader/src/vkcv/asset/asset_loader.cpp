@@ -173,11 +173,15 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 	});
 	
 	std::vector<Material> materials;
+	std::vector<Texture> textures;
+	std::vector<Sampler> samplers;
 
 	mesh = {
 		object.meshes[0].name,
 		vertexGroups,
 		materials,
+		textures,
+		samplers,
 		0, 0, 0, NULL
 	};
 
