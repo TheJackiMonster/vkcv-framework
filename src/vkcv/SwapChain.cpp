@@ -32,14 +32,28 @@ namespace vkcv
                          vk::Format format,
                          vk::ColorSpaceKHR colorSpace,
                          vk::PresentModeKHR presentMode,
-                         uint32_t imageCount) noexcept :
+                         uint32_t imageCount,
+						 vk::Extent2D extent) noexcept :
     m_Surface(surface),
     m_Swapchain(swapchain),
     m_SwapchainFormat(format),
     m_SwapchainColorSpace(colorSpace),
     m_SwapchainPresentMode(presentMode),
-    m_SwapchainImageCount(imageCount)
+    m_SwapchainImageCount(imageCount),
+	m_Extent(extent),
+    m_RecreationRequired(false)
     {}
+    
+    SwapChain::SwapChain(const SwapChain &other) :
+			m_Surface(other.m_Surface),
+			m_Swapchain(other.m_Swapchain),
+			m_SwapchainFormat(other.m_SwapchainFormat),
+			m_SwapchainColorSpace(other.m_SwapchainColorSpace),
+			m_SwapchainPresentMode(other.m_SwapchainPresentMode),
+			m_SwapchainImageCount(other.m_SwapchainImageCount),
+			m_Extent(other.m_Extent),
+			m_RecreationRequired(other.m_RecreationRequired.load())
+	{}
 
     const vk::SwapchainKHR& SwapChain::getSwapchain() const {
         return m_Swapchain;
@@ -70,6 +84,7 @@ namespace vkcv
                 static_cast<uint32_t>(window.getWidth()),
                 static_cast<uint32_t>(window.getHeight())
         };
+        
         extent2D.width = std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, extent2D.width));
         extent2D.height = std::max(surfaceCapabilities.minImageExtent.height, std::min(surfaceCapabilities.maxImageExtent.height, extent2D.height));
 
@@ -189,34 +204,53 @@ namespace vkcv
                          chosenSurfaceFormat.format,
                          chosenSurfaceFormat.colorSpace,
                          chosenPresentMode,
-                         chosenImageCount);
+                         chosenImageCount,
+						 chosenExtent);
+    }
+    
+    bool SwapChain::shouldUpdateSwapchain() const {
+    	return m_RecreationRequired;
+    }
+    
+    void SwapChain::updateSwapchain(const Context &context, const Window &window) {
+    	if (!m_RecreationRequired.exchange(false))
+    		return;
+    	
+		vk::SwapchainKHR oldSwapchain = m_Swapchain;
+		vk::Extent2D extent2D = chooseExtent(context.getPhysicalDevice(), m_Surface.handle, window);
+	
+		vk::SwapchainCreateInfoKHR swapchainCreateInfo(
+				vk::SwapchainCreateFlagsKHR(),
+				m_Surface.handle,
+				m_SwapchainImageCount,
+				m_SwapchainFormat,
+				m_SwapchainColorSpace,
+				extent2D,
+				1,
+				vk::ImageUsageFlagBits::eColorAttachment,
+				vk::SharingMode::eExclusive,
+				0,
+				nullptr,
+				vk::SurfaceTransformFlagBitsKHR::eIdentity,
+				vk::CompositeAlphaFlagBitsKHR::eOpaque,
+				m_SwapchainPresentMode,
+				true,
+				oldSwapchain
+		);
+	
+		m_Swapchain = context.getDevice().createSwapchainKHR(swapchainCreateInfo);
+		context.getDevice().destroySwapchainKHR(oldSwapchain);
+		
+		m_Extent = extent2D;
     }
 
-    void SwapChain::recreateSwapchain( const Context &context, const Window &window, int width, int height){
-        vk::SwapchainKHR oldSwapchain = m_Swapchain;
-        vk::Extent2D extent2D = chooseExtent(context.getPhysicalDevice(), m_Surface.handle, window);
-
-        vk::SwapchainCreateInfoKHR swapchainCreateInfo(
-                vk::SwapchainCreateFlagsKHR(),
-                m_Surface.handle,
-                m_SwapchainImageCount,
-                m_SwapchainFormat,
-                m_SwapchainColorSpace,
-                extent2D,
-                1,
-                vk::ImageUsageFlagBits::eColorAttachment,
-                vk::SharingMode::eExclusive,
-                0,
-                nullptr,
-                vk::SurfaceTransformFlagBitsKHR::eIdentity,
-                vk::CompositeAlphaFlagBitsKHR::eOpaque,
-                m_SwapchainPresentMode,
-                true,
-                oldSwapchain
-        );
-        m_Swapchain = context.getDevice().createSwapchainKHR(swapchainCreateInfo);
+    void SwapChain::recreateSwapchain() {
+		m_RecreationRequired = true;
     }
-
+    
+    const vk::Extent2D& SwapChain::getExtent() const {
+    	return m_Extent;
+    }
 
     SwapChain::~SwapChain() {
         // needs to be destroyed by creator

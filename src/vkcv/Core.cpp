@@ -52,7 +52,7 @@ namespace vkcv
         return m_Context;
     }
 
-	Core::Core(Context &&context, Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews,
+	Core::Core(Context &&context, Window &window, const SwapChain& swapChain,  std::vector<vk::ImageView> imageViews,
 		const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
             m_Context(std::move(context)),
             m_window(window),
@@ -72,7 +72,9 @@ namespace vkcv
     	
     	m_ImageManager->m_core = this;
 
-        e_resizeHandle = window.e_resize.add( [&](int width, int height) { recreateSwapchain( width ,height ); });
+        e_resizeHandle = window.e_resize.add( [&](int width, int height) {
+        	m_swapchain.recreateSwapchain();
+        });
 	}
 
 	Core::~Core() noexcept {
@@ -119,17 +121,26 @@ namespace vkcv
 	}
 
 	void Core::beginFrame() {
+		if (m_swapchain.shouldUpdateSwapchain()) {
+			m_Context.getDevice().waitIdle();
+			
+			for (auto image : m_swapchainImageViews)
+				m_Context.m_Device.destroyImageView(image);
+			
+			m_swapchain.updateSwapchain(m_Context, m_window);
+			m_swapchainImageViews = createImageViews(m_Context, m_swapchain);
+		}
+    	
     	if (acquireSwapchainImage() != Result::SUCCESS) {
     		return;
     	}
+    	
 		m_Context.getDevice().waitIdle();	// TODO: this is a sin against graphics programming, but its getting late - Alex
 	}
 
 	void Core::renderMesh(
 		const PassHandle						&renderpassHandle,
 		const PipelineHandle					&pipelineHandle,
-		const uint32_t 							width,
-		const uint32_t							height,
 		const size_t							pushConstantSize,
 		const void								*pushConstantData,
 		const std::vector<VertexBufferBinding>& vertexBufferBindings, 
@@ -142,6 +153,11 @@ namespace vkcv
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
 		}
+		
+		const vk::Extent2D& extent = m_swapchain.getExtent();
+		
+		const uint32_t width = extent.width;
+		const uint32_t height = extent.height;
 
 		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
 		const PassConfig passConfig = m_PassManager->getPassConfig(renderpassHandle);
@@ -282,19 +298,6 @@ namespace vkcv
 	vk::Format Core::getSwapchainImageFormat() {
 		return m_swapchain.getSwapchainFormat();
 	}
-
-    void Core::recreateSwapchain( int width, int height) {
-        m_Context.getDevice().waitIdle();
-
-        if(width == 0 || height == 0)
-            return;
-
-        for (auto image : m_swapchainImageViews)
-            m_Context.m_Device.destroyImageView(image);
-
-        m_swapchain.recreateSwapchain(m_Context, m_window, width, height);
-        m_swapchainImageViews = createImageViews(m_Context, m_swapchain);
-    }
 	
 	void Core::submitCommands(const SubmitInfo &submitInfo, const RecordCommandFunction& record, const FinishCommandFunction& finish)
 	{

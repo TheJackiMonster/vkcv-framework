@@ -3,6 +3,8 @@
 #include "Context.hpp"
 #include "vkcv/Window.hpp"
 
+#include <atomic>
+
 namespace vkcv
 {
     class SwapChain final {
@@ -15,6 +17,7 @@ namespace vkcv
             vk::SurfaceCapabilitiesKHR capabilities;
             std::vector<vk::PresentModeKHR> presentModes;
         };
+        
         Surface m_Surface;
 
         vk::SwapchainKHR m_Swapchain;
@@ -22,6 +25,10 @@ namespace vkcv
         vk::ColorSpaceKHR m_SwapchainColorSpace;
         vk::PresentModeKHR m_SwapchainPresentMode;
 		uint32_t m_SwapchainImageCount;
+	
+		vk::Extent2D m_Extent;
+	
+		std::atomic<bool> m_RecreationRequired;
 
         /**
          * Constructor of a SwapChain object
@@ -37,11 +44,11 @@ namespace vkcv
                   vk::Format format,
                   vk::ColorSpaceKHR colorSpace,
                   vk::PresentModeKHR presentMode,
-                  uint32_t imageCount) noexcept;
+                  uint32_t imageCount,
+				  vk::Extent2D extent) noexcept;
 
     public:
-        SwapChain(const SwapChain &other) = default;
-        SwapChain(SwapChain &&other) = default;
+    	SwapChain(const SwapChain& other);
 
         /**
          * @return The swapchain linked with the #SwapChain class
@@ -81,12 +88,34 @@ namespace vkcv
 		 * @return number of images in swapchain
 		*/
 		uint32_t getImageCount();
+		
+		/**
+		 * TODO
+		 *
+		 * @return
+		 */
+		bool shouldUpdateSwapchain() const;
 
 		/**
+		 * TODO
 		 *
-		 * @param width
-		 * @param height
+		 * context
+		 * window
 		 */
-        void recreateSwapchain(const Context &context, const Window &window, int width, int height);
+		void updateSwapchain(const Context &context, const Window &window);
+		
+		/**
+		 *
+		 */
+        void recreateSwapchain();
+	
+        /**
+         * TODO
+         *
+         * @return
+         */
+        [[nodiscard]]
+		const vk::Extent2D& getExtent() const;
+    
     };
 }
