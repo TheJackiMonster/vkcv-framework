@@ -81,8 +81,6 @@ namespace vkcv
 		SyncResources					m_SyncResources;
 		uint32_t						m_currentSwapchainImageIndex;
 		std::vector<vk::Framebuffer>	m_TemporaryFramebuffers;
-		
-		ImageHandle						m_DepthImage;
 
         /**
          * recreates the swapchain
@@ -240,7 +238,8 @@ namespace vkcv
 			const BufferHandle						indexBuffer, 
 			const size_t							indexCount,
 			const vkcv::ResourcesHandle				resourceHandle,
-			const size_t							resourceDescriptorSetIndex);
+			const size_t							resourceDescriptorSetIndex,
+			const std::vector<ImageHandle>			&renderTargets);
 
 		/**
 		 * @brief end recording and present image

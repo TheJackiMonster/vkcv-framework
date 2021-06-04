@@ -184,8 +184,8 @@ namespace vkcv
 		const BufferHandle						indexBuffer, 
 		const size_t							indexCount,
 		const vkcv::ResourcesHandle				resourceHandle,
-		const size_t							resourceDescriptorSetIndex
-		) {
+		const size_t							resourceDescriptorSetIndex,
+		const std::vector<ImageHandle>&			renderTargets) {
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
@@ -193,41 +193,32 @@ namespace vkcv
 
 		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
 		const PassConfig passConfig = m_PassManager->getPassConfig(renderpassHandle);
-		
-		const bool checkForDepthImage = (
-				(!m_DepthImage) ||
-				(width != m_ImageManager->getImageWidth(m_DepthImage)) ||
-				(height != m_ImageManager->getImageHeight(m_DepthImage))
-		);
-		
-		if (checkForDepthImage) {
-			for (const auto &attachment : passConfig.attachments) {
-				if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
-					m_DepthImage = m_ImageManager->createImage(width, height, 1, attachment.format);
-					break;
-				}
-			}
-		}
-		
-		const vk::ImageView imageView	= m_swapchainImageViews[m_currentSwapchainImageIndex];
+
 		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
         const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
 		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
 		const vk::Buffer vulkanIndexBuffer	= m_BufferManager->getBuffer(indexBuffer);
 
-		std::vector<vk::ImageView> attachments;
-		attachments.push_back(imageView);
-		
-		if (m_DepthImage) {
-			attachments.push_back(m_ImageManager->getVulkanImageView(m_DepthImage));
+		const vk::ImageView swapchainImageView = m_swapchainImageViews[m_currentSwapchainImageIndex];
+
+		std::vector<vk::ImageView> attachmentsViews;
+		for (const ImageHandle handle : renderTargets) {
+			vk::ImageView targetHandle;
+			if (handle.isSwapchainImage()) {
+				targetHandle = m_swapchainImageViews[m_currentSwapchainImageIndex];
+			}
+			else {
+				targetHandle = m_ImageManager->getVulkanImageView(handle);
+			}
+			attachmentsViews.push_back(targetHandle);
 		}
-		
+
 		const vk::Framebuffer framebuffer = createFramebuffer(
-				m_Context.getDevice(),
-				renderpass,
-				width,
-				height,
-				attachments
+			m_Context.getDevice(),
+			renderpass,
+			width,
+			height,
+			attachmentsViews
 		);
 		
 		m_TemporaryFramebuffers.push_back(framebuffer);
