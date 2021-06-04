@@ -37,6 +37,13 @@ namespace vkcv
 		size_t                              indexCount;
 	};
 
+	struct PushConstantData {
+        inline PushConstantData(void* data, size_t sizePerDrawcall) : data(data), sizePerDrawcall(sizePerDrawcall){}
+
+		void*   data;
+		size_t  sizePerDrawcall;
+	};
+
     // forward declarations
     class PassManager;
     class PipelineManager;
@@ -232,8 +239,7 @@ namespace vkcv
 		void renderMesh(
 			const PassHandle                        renderpassHandle, 
 			const PipelineHandle                    pipelineHandle,
-			const size_t                            pushConstantSize, 
-			const void*                             pushConstantData, 
+			const PushConstantData                  &pushConstantData,
 			const Mesh                              &mesh,
 			const std::vector<DescriptorSetUsage>   &descriptorSets,
 			const std::vector<ImageHandle>	        &renderTargets);

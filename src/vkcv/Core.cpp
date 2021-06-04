@@ -144,8 +144,7 @@ namespace vkcv
 	void Core::renderMesh(
 		const PassHandle                        renderpassHandle, 
 		const PipelineHandle                    pipelineHandle, 
-		const size_t                            pushConstantSize, 
-		const void                              *pushConstantData,
+        const PushConstantData                  &pushConstantData,
 		const Mesh                              &mesh,
         const std::vector<DescriptorSetUsage>   &descriptorSets,
 		const std::vector<ImageHandle>          &renderTargets) {
@@ -273,7 +272,14 @@ namespace vkcv
             const vk::Buffer indexBuffer = m_BufferManager->getBuffer(mesh.indexBuffer);
 
             cmdBuffer.bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
-            cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
+
+            cmdBuffer.pushConstants(
+                pipelineLayout, 
+                vk::ShaderStageFlagBits::eAll, 
+                0, 
+                pushConstantData.sizePerDrawcall, 
+                pushConstantData.data);
+
             cmdBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, {});
             cmdBuffer.endRenderPass();
         };

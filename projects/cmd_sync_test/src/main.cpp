@@ -164,8 +164,7 @@ int main(int argc, const char** argv) {
 		core.renderMesh(
 			trianglePass,
 			trianglePipeline,
-			sizeof(mvp),
-			&mvp,
+			vkcv::PushConstantData((void*) &mvp, sizeof(mvp)),
 			boxMesh,
 			{ vkcv::DescriptorSetUsage(0, descriptorSet) },
 			{ swapchainInput, depthBuffer });
