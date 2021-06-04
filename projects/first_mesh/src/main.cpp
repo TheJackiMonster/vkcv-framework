@@ -15,7 +15,7 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-	vkcv::CameraManager cameraManager(window, window.getWidth(), window.getHeight());
+	vkcv::CameraManager cameraManager(window, static_cast<float>(window.getWidth()), static_cast<float>(window.getHeight()));
 
 	window.initEvents();
     window.e_resize.add([&cameraManager](int width, int height) {
@@ -49,7 +49,7 @@ int main(int argc, const char** argv) {
 		return 1;
 	}
 
-	assert(mesh.vertexGroups.size() > 0);
+	assert(!mesh.vertexGroups.empty());
 	auto vertexBuffer = core.createBuffer<uint8_t>(
 			vkcv::BufferType::VERTEX,
 			mesh.vertexGroups[0].vertexBuffer.data.size(),
@@ -154,7 +154,7 @@ int main(int argc, const char** argv) {
 
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
-        window.pollEvents();
+        vkcv::Window::pollEvents();
 
         if(window.getHeight() == 0 || window.getWidth() == 0)
             continue;
