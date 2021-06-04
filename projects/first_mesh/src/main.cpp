@@ -18,6 +18,14 @@ int main(int argc, const char** argv) {
 	vkcv::CameraManager cameraManager(window, window.getWidth(), window.getHeight());
 
 	window.initEvents();
+    window.e_resize.add([&cameraManager](int width, int height) {
+        auto& camera = cameraManager.getCamera();
+        float near;
+        float far;
+        camera.getNearFar(near, far);
+        const float aspectRatio = static_cast<float>(width) / height;
+        camera.setPerspective(camera.getFov(), aspectRatio, near, far);
+    });
 
 	vkcv::Core core = vkcv::Core::create(
 		window,
