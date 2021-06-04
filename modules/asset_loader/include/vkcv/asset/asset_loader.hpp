@@ -70,6 +70,9 @@ enum class PBRTextureTarget {
 
 typedef struct {
 	// TODO define struct for samplers (low priority)
+	// NOTE: glTF defines samplers based on OpenGL, which can not be
+	// directly translated to Vulkan. Specifically, OpenGL (and glTF)
+	// define a different set of Min/Mag-filters than Vulkan.
 } Sampler;
 
 typedef struct {
