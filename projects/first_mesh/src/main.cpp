@@ -125,8 +125,11 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, mesh.texture_hack.w, mesh.texture_hack.h);
-	texture.fill(mesh.texture_hack.img);
+	// FIXME There should be a test here to make sure there is at least 1
+	// texture in the mesh.
+	vkcv::asset::Texture &tex = mesh.textures[0];
+	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
+	texture.fill(tex.data.data());
 
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,

@@ -129,14 +129,6 @@ typedef struct {
 	std::vector<Material> materials;
 	std::vector<Texture> textures;
 	std::vector<Sampler> samplers;
-	// TODO Replace usage of the texture_hack everywhere with use of the
-	// textures, materials and sampler-arrays.
-	// FIXME Dirty hack to get one(!) texture for our cube demo
-	// hardcoded to always have RGBA channel layout
-	struct {
-		int w, h, ch;	// width, height and channels of image
-		uint8_t *img;	// raw bytes, free after use (deal with it)
-	} texture_hack;
 } Mesh;
 
 

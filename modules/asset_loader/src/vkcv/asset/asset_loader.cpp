@@ -182,11 +182,11 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		materials,
 		textures,
 		samplers,
-		0, 0, 0, NULL
 	};
 
 	// FIXME HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK
 	// fail quietly if there is no texture
+	mesh.textures.reserve(1);
 	if (object.textures.size()) {
 		const std::string mime_type("image/jpeg");
 		const fx::gltf::Texture &tex = object.textures[0];
@@ -201,9 +201,30 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		size_t pos = path.find_last_of("/");
 		auto dir = path.substr(0, pos);
 		
-		mesh.texture_hack.img = stbi_load((dir + "/" + img.uri).c_str(),
-				&mesh.texture_hack.w, &mesh.texture_hack.h,
-				&mesh.texture_hack.ch, 4);
+		std::string img_uri = dir + "/" + img.uri;
+		int w, h, c;
+		// FIXME hardcoded to always have RGBA channel layout
+		uint8_t *data = stbi_load(img_uri.c_str(), &w, &h, &c, 4);
+		if (!data) {
+			std::cerr << "ERROR loading texture image data.\n";
+			return 0;
+		}
+		const size_t byteLen = w * h * c;
+
+		std::vector<uint8_t> imgdata;
+		imgdata.resize(byteLen);
+		if (!memcpy(imgdata.data(), data, byteLen)) {
+			std::cerr << "ERROR copying texture image data.\n";
+			free(data);
+			return 0;
+		}
+		free(data);
+
+		mesh.textures.push_back({
+			0, static_cast<uint8_t>(c),
+			static_cast<uint16_t>(w), static_cast<uint16_t>(h),
+			imgdata
+		});
 	}
 	// FIXME HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK
 	return 1;
