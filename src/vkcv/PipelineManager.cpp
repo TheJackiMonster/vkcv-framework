@@ -5,7 +5,8 @@ namespace vkcv
 
     PipelineManager::PipelineManager(vk::Device device) noexcept :
     m_Device{device},
-    m_Pipelines{}
+    m_Pipelines{},
+    m_Configs{}
     {}
 
     PipelineManager::~PipelineManager() noexcept
@@ -94,8 +95,8 @@ namespace vkcv
 			//FIXME: hoping that order is the same and compatible: add explicit mapping and validation
 			const VertexAttribute attribute = config.m_vertexAttributes[i];
 
-            vertexAttributeDescriptions.push_back({location, binding, vertexFormatToVulkanFormat(attachment.format), 0});
-			vertexBindingDescriptions.push_back(vk::VertexInputBindingDescription(
+            vertexAttributeDescriptions.emplace_back(location, binding, vertexFormatToVulkanFormat(attachment.format), 0);
+			vertexBindingDescriptions.emplace_back(vk::VertexInputBindingDescription(
 				binding,
 				attribute.stride + getFormatSize(attachment.format),
 				vk::VertexInputRate::eVertex));
@@ -211,8 +212,19 @@ namespace vkcv
 				break;
 			}
 		}
-	
-		// graphics pipeline create
+
+		std::vector<vk::DynamicState> dynamicStates = {};
+		if(config.m_Width == UINT32_MAX && config.m_Height == UINT32_MAX)
+        {
+		    dynamicStates.push_back(vk::DynamicState::eViewport);
+		    dynamicStates.push_back(vk::DynamicState::eScissor);
+        }
+
+        vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo({},
+                                                            static_cast<uint32_t>(dynamicStates.size()),
+                                                            dynamicStates.data());
+
+        // graphics pipeline create
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = { pipelineVertexShaderStageInfo, pipelineFragmentShaderStageInfo };
         const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
                 {},
@@ -226,7 +238,7 @@ namespace vkcv
                 &pipelineMultisampleStateCreateInfo,
 				p_depthStencilCreateInfo,
                 &pipelineColorBlendStateCreateInfo,
-                nullptr,
+                &dynamicStateCreateInfo,
                 vkPipelineLayout,
                 pass,
                 0,
@@ -247,6 +259,7 @@ namespace vkcv
         
         const uint64_t id = m_Pipelines.size();
         m_Pipelines.push_back({ vkPipeline, vkPipelineLayout });
+        m_Configs.push_back(config);
         return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }
 
@@ -293,5 +306,11 @@ namespace vkcv
 			pipeline.m_layout = nullptr;
 		}
     }
-    
+
+    const PipelineConfig &PipelineManager::getPipelineConfig(const PipelineHandle &handle) const
+    {
+        const uint64_t id = handle.getId();
+        return m_Configs.at(id);
+    }
+
 }

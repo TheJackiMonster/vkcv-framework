@@ -3,15 +3,32 @@
 #include "Context.hpp"
 #include "vkcv/Window.hpp"
 
-namespace vkcv {
+#include <atomic>
+
+namespace vkcv
+{
     class SwapChain final {
     private:
 
-        vk::SurfaceKHR m_surface;
-        vk::SwapchainKHR m_swapchain;
-        vk::SurfaceFormatKHR m_format;
+        struct Surface
+        {
+            vk::SurfaceKHR handle;
+            std::vector<vk::SurfaceFormatKHR> formats;
+            vk::SurfaceCapabilitiesKHR capabilities;
+            std::vector<vk::PresentModeKHR> presentModes;
+        };
+        
+        Surface m_Surface;
 
-		uint32_t m_ImageCount;
+        vk::SwapchainKHR m_Swapchain;
+        vk::Format m_SwapchainFormat;
+        vk::ColorSpaceKHR m_SwapchainColorSpace;
+        vk::PresentModeKHR m_SwapchainPresentMode;
+		uint32_t m_SwapchainImageCount;
+	
+		vk::Extent2D m_Extent;
+	
+		std::atomic<bool> m_RecreationRequired;
 
         /**
          * Constructor of a SwapChain object
@@ -21,11 +38,17 @@ namespace vkcv {
          * @param swapchain to show images in the window
          * @param format
          */
-        SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format, uint32_t imageCount);
+         // TODO:
+        SwapChain(const Surface &surface,
+                  vk::SwapchainKHR swapchain,
+                  vk::Format format,
+                  vk::ColorSpaceKHR colorSpace,
+                  vk::PresentModeKHR presentMode,
+                  uint32_t imageCount,
+				  vk::Extent2D extent) noexcept;
 
     public:
-        SwapChain(const SwapChain &other) = default;
-        SwapChain(SwapChain &&other) = default;
+    	SwapChain(const SwapChain& other);
 
         /**
          * @return The swapchain linked with the #SwapChain class
@@ -39,13 +62,14 @@ namespace vkcv {
          * @return current surface
          */
         [[nodiscard]]
-        vk::SurfaceKHR getSurface();
+        vk::SurfaceKHR getSurface() const;
+
         /**
-         * gets the current surface format
-         * @return gets the surface format
+         * gets the chosen swapchain format
+         * @return gets the chosen swapchain format
          */
         [[nodiscard]]
-        vk::SurfaceFormatKHR getSurfaceFormat();
+        vk::Format getSwapchainFormat() const;
 
         /**
          * creates a swap chain object out of the given window and the given context
@@ -53,7 +77,7 @@ namespace vkcv {
          * @param context of the application
          * @return returns an object of swapChain
          */
-        static SwapChain create(const Window &window, const Context &context, const vk::SurfaceKHR surface);
+        static SwapChain create(const Window &window, const Context &context);
 
         /**
          * Destructor of SwapChain
@@ -64,6 +88,34 @@ namespace vkcv {
 		 * @return number of images in swapchain
 		*/
 		uint32_t getImageCount();
-    };
+		
+		/**
+		 * TODO
+		 *
+		 * @return
+		 */
+		bool shouldUpdateSwapchain() const;
 
+		/**
+		 * TODO
+		 *
+		 * context
+		 * window
+		 */
+		void updateSwapchain(const Context &context, const Window &window);
+		
+		/**
+		 *
+		 */
+        void recreateSwapchain();
+	
+        /**
+         * TODO
+         *
+         * @return
+         */
+        [[nodiscard]]
+		const vk::Extent2D& getExtent() const;
+    
+    };
 }
