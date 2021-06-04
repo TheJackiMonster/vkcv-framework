@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <mutex>
 
 namespace vkcv {
 
@@ -17,6 +18,7 @@ namespace vkcv {
     struct event {
     private:
         std::vector<typename event_function<T...>::type> m_handles;
+        std::mutex m_mutex;
 
     public:
 
@@ -25,9 +27,13 @@ namespace vkcv {
          * @param arguments of the given function
          */
         void operator()(T... arguments) {
+			lock();
+        	
             for (auto &handle : this->m_handles) {
                 handle(arguments...);
             }
+            
+            unlock();
         }
 
         /**
@@ -48,6 +54,20 @@ namespace vkcv {
                     remove(this->m_handles.begin(), this->m_handles.end(), handle),
                     this->m_handles.end()
             );
+        }
+        
+        /**
+         * locks the event so its function handles won't be called
+         */
+        void lock() {
+        	m_mutex.lock();
+        }
+	
+		/**
+		* unlocks the event so its function handles can be called after locking
+		*/
+        void unlock() {
+        	m_mutex.unlock();
         }
 
         event() = default;

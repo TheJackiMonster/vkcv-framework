@@ -18,8 +18,6 @@ int main(int argc, const char** argv) {
 
 	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
 
-	window.initEvents();
-
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,

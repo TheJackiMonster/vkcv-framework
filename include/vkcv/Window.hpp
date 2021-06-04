@@ -7,6 +7,7 @@
 
 #define NOMINMAX
 #include <algorithm>
+
 #include "Event.hpp"
 
 struct GLFWwindow;

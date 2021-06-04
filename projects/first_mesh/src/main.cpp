@@ -17,8 +17,6 @@ int main(int argc, const char** argv) {
 
 	vkcv::CameraManager cameraManager(window, static_cast<float>(window.getWidth()), static_cast<float>(window.getHeight()));
 
-	window.initEvents();
-
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
