@@ -60,6 +60,15 @@ int main(int argc, const char** argv) {
 	
 	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
 
+	vkcv::Mesh boxMesh;
+	boxMesh.indexBuffer = indexBuffer.getHandle();
+	boxMesh.vertexBufferBindings = {
+		{ mesh.vertexGroups[0].vertexBuffer.attributes[0].offset, vertexBuffer.getHandle() },
+		{ mesh.vertexGroups[0].vertexBuffer.attributes[1].offset, vertexBuffer.getHandle() },
+		{ mesh.vertexGroups[0].vertexBuffer.attributes[2].offset, vertexBuffer.getHandle() }
+	};
+	boxMesh.indexCount = mesh.vertexGroups[0].numIndices;
+
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentLayout::UNDEFINED,
@@ -136,12 +145,6 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
-	std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		{ mesh.vertexGroups[0].vertexBuffer.attributes[0].offset, vertexBuffer.getHandle() },
-		{ mesh.vertexGroups[0].vertexBuffer.attributes[1].offset, vertexBuffer.getHandle() },
-		{ mesh.vertexGroups[0].vertexBuffer.attributes[2].offset, vertexBuffer.getHandle() }
-	};
-
 	vkcv::DescriptorWrites setWrites;
 	setWrites.sampledImageWrites	= { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
 	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
@@ -170,9 +173,7 @@ int main(int argc, const char** argv) {
 			trianglePipeline,
 			sizeof(mvp),
 			&mvp,
-			vertexBufferBindings,
-			indexBuffer.getHandle(),
-			mesh.vertexGroups[0].numIndices,
+			boxMesh,
 			set,
 			0,
 			{ swapchainInput, depthBuffer });

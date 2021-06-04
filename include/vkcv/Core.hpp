@@ -30,6 +30,12 @@ namespace vkcv
 		BufferHandle	buffer;
 	};
 
+	struct Mesh {
+		std::vector<VertexBufferBinding>    vertexBufferBindings;
+		BufferHandle                        indexBuffer;
+		size_t                              indexCount;
+	};
+
     // forward declarations
     class PassManager;
     class PipelineManager;
@@ -227,9 +233,7 @@ namespace vkcv
 			const PipelineHandle					pipelineHandle,
 			const size_t							pushConstantSize, 
 			const void*								pushConstantData, 
-			const std::vector<VertexBufferBinding>	&vertexBufferBindings, 
-			const BufferHandle						&indexBuffer,
-			const size_t							indexCount,
+			const Mesh								&mesh,
 			const vkcv::ResourcesHandle				resourceHandle,
 			const size_t							resourceDescriptorSetIndex,
 			const std::vector<ImageHandle>			&renderTargets);

@@ -142,16 +142,14 @@ namespace vkcv
 	}
 
 	void Core::renderMesh(
-		const PassHandle						renderpassHandle, 
-		const PipelineHandle					pipelineHandle, 
-		const size_t							pushConstantSize, 
-		const void								*pushConstantData,
-		const std::vector<VertexBufferBinding>& vertexBufferBindings, 
-		const BufferHandle						&indexBuffer,
-		const size_t							indexCount,
-		const vkcv::ResourcesHandle				resourceHandle,
-		const size_t							resourceDescriptorSetIndex,
-		const std::vector<ImageHandle>&			renderTargets) {
+		const PassHandle				renderpassHandle, 
+		const PipelineHandle			pipelineHandle, 
+		const size_t					pushConstantSize, 
+		const void						*pushConstantData,
+		const Mesh						&mesh,
+		const vkcv::ResourcesHandle		resourceHandle,
+		const size_t					resourceDescriptorSetIndex,
+		const std::vector<ImageHandle>&	renderTargets) {
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
@@ -183,7 +181,6 @@ namespace vkcv
 		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
 		const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
 		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
-		const vk::Buffer vulkanIndexBuffer	= m_BufferManager->getBuffer(indexBuffer);
 
 		const vk::ImageView swapchainImageView = m_swapchainImageViews[m_currentSwapchainImageIndex];
 
@@ -259,8 +256,8 @@ namespace vkcv
                 cmdBuffer.setScissor(0, 1, &dynamicScissor);
             }
 
-            for (uint32_t i = 0; i < vertexBufferBindings.size(); i++) {
-                const auto &vertexBinding = vertexBufferBindings[i];
+            for (uint32_t i = 0; i < mesh.vertexBufferBindings.size(); i++) {
+                const auto &vertexBinding = mesh.vertexBufferBindings[i];
                 const auto vertexBuffer = bufferManager->getBuffer(vertexBinding.buffer);
                 cmdBuffer.bindVertexBuffers(i, (vertexBuffer), (vertexBinding.offset));
             }
@@ -270,9 +267,11 @@ namespace vkcv
                 cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, descriptorSet, nullptr);
             }
 
-            cmdBuffer.bindIndexBuffer(vulkanIndexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
+            const vk::Buffer indexBuffer = m_BufferManager->getBuffer(mesh.indexBuffer);
+
+            cmdBuffer.bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
             cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
-            cmdBuffer.drawIndexed(indexCount, 1, 0, 0, {});
+            cmdBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, {});
             cmdBuffer.endRenderPass();
         };
 
