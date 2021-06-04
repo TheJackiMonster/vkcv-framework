@@ -79,7 +79,7 @@ namespace vkcv
 		using Handle::Handle;
 	};
 	
-	class ResourcesHandle : public Handle {
+	class DescriptorSetHandle : public Handle {
 		friend class DescriptorManager;
 	private:
 		using Handle::Handle;

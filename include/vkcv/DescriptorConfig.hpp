@@ -1,8 +1,23 @@
 #pragma once
 #include <vkcv/ShaderProgram.hpp>
+#include <vkcv/Handles.hpp>
+#include <vulkan/vulkan.hpp>
 
 namespace vkcv
 {
+    struct DescriptorSet
+    {
+        vk::DescriptorSet       vulkanHandle;
+        vk::DescriptorSetLayout layout;
+    };
+
+    struct DescriptorSetUsage {
+        DescriptorSetUsage(uint32_t setLocation, DescriptorSetHandle handle) noexcept;
+
+        const uint32_t              setLocation;
+        const DescriptorSetHandle   handle;
+    };
+
     /*
     * All the types of descriptors (resources) that can be retrieved by the shaders
     */
@@ -24,7 +39,6 @@ namespace vkcv
     */
     struct DescriptorBinding
     {
-        DescriptorBinding() = delete;
         DescriptorBinding(
             DescriptorType descriptorType,
             uint32_t descriptorCount,
@@ -34,17 +48,5 @@ namespace vkcv
         DescriptorType descriptorType;
         uint32_t descriptorCount;
         ShaderStage shaderStage;
-    };
-
-    /*
-    * One descriptor set struct that contains all the necessary information for the actual creation.
-    * @param[in] a number of bindings that were created beforehand
-    * @param[in] the number of (identical) sets that should be created from the attached bindings
-    */
-    struct DescriptorSetConfig
-    {
-        explicit DescriptorSetConfig(std::vector<DescriptorBinding> bindings) noexcept;
-
-        std::vector<DescriptorBinding> bindings;
     };
 }

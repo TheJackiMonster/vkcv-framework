@@ -142,14 +142,13 @@ namespace vkcv
 	}
 
 	void Core::renderMesh(
-		const PassHandle				renderpassHandle, 
-		const PipelineHandle			pipelineHandle, 
-		const size_t					pushConstantSize, 
-		const void						*pushConstantData,
-		const Mesh						&mesh,
-		const vkcv::ResourcesHandle		resourceHandle,
-		const size_t					resourceDescriptorSetIndex,
-		const std::vector<ImageHandle>&	renderTargets) {
+		const PassHandle                        renderpassHandle, 
+		const PipelineHandle                    pipelineHandle, 
+		const size_t                            pushConstantSize, 
+		const void                              *pushConstantData,
+		const Mesh                              &mesh,
+        const std::vector<DescriptorSetUsage>   &descriptorSets,
+		const std::vector<ImageHandle>          &renderTargets) {
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
@@ -262,9 +261,13 @@ namespace vkcv
                 cmdBuffer.bindVertexBuffers(i, (vertexBuffer), (vertexBinding.offset));
             }
 
-            if (resourceHandle) {
-                const vk::DescriptorSet descriptorSet = m_DescriptorManager->getDescriptorSet(resourceHandle, resourceDescriptorSetIndex);
-                cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, descriptorSet, nullptr);
+            for (const auto &descriptorUsage : descriptorSets) {
+                cmdBuffer.bindDescriptorSets(
+                    vk::PipelineBindPoint::eGraphics, 
+                    pipelineLayout, 
+                    descriptorUsage.setLocation, 
+                    m_DescriptorManager->getDescriptorSet(descriptorUsage.handle).vulkanHandle,
+                    nullptr);
             }
 
             const vk::Buffer indexBuffer = m_BufferManager->getBuffer(mesh.indexBuffer);
@@ -346,12 +349,12 @@ namespace vkcv
     	return Image::create(m_ImageManager.get(), format, width, height, depth);
 	}
 
-    ResourcesHandle Core::createResourceDescription(const std::vector<DescriptorSetConfig> &descriptorSets)
+    DescriptorSetHandle Core::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
     {
-        return m_DescriptorManager->createResourceDescription(descriptorSets);
+        return m_DescriptorManager->createDescriptorSet(bindings);
     }
 
-	void Core::writeResourceDescription(ResourcesHandle handle, size_t setIndex, const DescriptorWrites &writes) {
+	void Core::writeResourceDescription(DescriptorSetHandle handle, size_t setIndex, const DescriptorWrites &writes) {
 		m_DescriptorManager->writeResourceDescription(
 			handle, 
 			setIndex, 
@@ -361,8 +364,8 @@ namespace vkcv
 			*m_SamplerManager);
 	}
 
-	vk::DescriptorSetLayout Core::getDescriptorSetLayout(ResourcesHandle handle, size_t setIndex) {
-		return m_DescriptorManager->getDescriptorSetLayout(handle, setIndex);
+	DescriptorSet Core::getDescriptorSet(const DescriptorSetHandle handle) const {
+		return m_DescriptorManager->getDescriptorSet(handle);
 	}
 
     std::vector<vk::ImageView> Core::createImageViews( Context &context, SwapChain& swapChain){

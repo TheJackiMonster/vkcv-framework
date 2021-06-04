@@ -108,17 +108,10 @@ int main(int argc, const char** argv) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
 	});
 
-	vkcv::DescriptorSetConfig setConfig({
+	std::vector<vkcv::DescriptorBinding> descriptorBindings = {
 		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_SAMPLED,	1, vkcv::ShaderStage::FRAGMENT),
-		vkcv::DescriptorBinding(vkcv::DescriptorType::SAMPLER,			1, vkcv::ShaderStage::FRAGMENT)
-	});
-	vkcv::ResourcesHandle set = core.createResourceDescription({ setConfig });
-
-	//only exemplary code for testing
-	for (int i = 0; i < 1001; i++) {
-		vkcv::ResourcesHandle furtherSets = core.createResourceDescription({ setConfig });
-	}
-	//end of exemplary code
+		vkcv::DescriptorBinding(vkcv::DescriptorType::SAMPLER,			1, vkcv::ShaderStage::FRAGMENT)};
+	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(
 		triangleShaderProgram, 
@@ -126,7 +119,7 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		trianglePass,
 		mesh.vertexGroups[0].vertexBuffer.attributes,
-		{ core.getDescriptorSetLayout(set, 0) },
+		{ core.getDescriptorSet(descriptorSet).layout },
 		true);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 	
@@ -148,7 +141,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorWrites setWrites;
 	setWrites.sampledImageWrites	= { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
 	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
-	core.writeResourceDescription(set, 0, setWrites);
+	core.writeResourceDescription(descriptorSet, 0, setWrites);
 
 	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
 
@@ -174,8 +167,7 @@ int main(int argc, const char** argv) {
 			sizeof(mvp),
 			&mvp,
 			boxMesh,
-			set,
-			0,
+			{ vkcv::DescriptorSetUsage(0, descriptorSet) },
 			{ swapchainInput, depthBuffer });
 
 		core.endFrame();

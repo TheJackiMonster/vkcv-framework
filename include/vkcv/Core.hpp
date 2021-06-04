@@ -25,6 +25,7 @@
 
 namespace vkcv
 {
+
 	struct VertexBufferBinding {
 		vk::DeviceSize	offset;
 		BufferHandle	buffer;
@@ -215,10 +216,10 @@ namespace vkcv
          *   @return
          */
         [[nodiscard]]
-        ResourcesHandle createResourceDescription(const std::vector<DescriptorSetConfig> &descriptorSets);
-		void writeResourceDescription(ResourcesHandle handle, size_t setIndex, const DescriptorWrites& writes);
+        DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &bindings);
+		void writeResourceDescription(DescriptorSetHandle handle, size_t setIndex, const DescriptorWrites& writes);
 
-		vk::DescriptorSetLayout getDescriptorSetLayout(ResourcesHandle handle, size_t setIndex);
+		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
 
 		/**
 		 * @brief start recording command buffers and increment frame index
@@ -229,14 +230,13 @@ namespace vkcv
 		 * @brief render a beautiful triangle
 		*/
 		void renderMesh(
-			const PassHandle						renderpassHandle, 
-			const PipelineHandle					pipelineHandle,
-			const size_t							pushConstantSize, 
-			const void*								pushConstantData, 
-			const Mesh								&mesh,
-			const vkcv::ResourcesHandle				resourceHandle,
-			const size_t							resourceDescriptorSetIndex,
-			const std::vector<ImageHandle>			&renderTargets);
+			const PassHandle                        renderpassHandle, 
+			const PipelineHandle                    pipelineHandle,
+			const size_t                            pushConstantSize, 
+			const void*                             pushConstantData, 
+			const Mesh                              &mesh,
+			const std::vector<DescriptorSetUsage>   &descriptorSets,
+			const std::vector<ImageHandle>	        &renderTargets);
 
 		/**
 		 * @brief end recording and present image

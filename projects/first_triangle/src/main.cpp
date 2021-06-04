@@ -155,7 +155,7 @@ int main(int argc, const char** argv) {
 			vertexBufferBindings,
 			triangleIndexBuffer.getHandle(),
 			3,
-			vkcv::ResourcesHandle(),
+			vkcv::DescriptorSetHandle(),
 			0,
 			{swapchainImageHandle});
 	    

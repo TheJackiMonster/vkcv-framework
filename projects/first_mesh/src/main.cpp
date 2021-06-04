@@ -104,11 +104,11 @@ int main(int argc, const char** argv) {
 		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_SAMPLED,	1, vkcv::ShaderStage::FRAGMENT),
 		vkcv::DescriptorBinding(vkcv::DescriptorType::SAMPLER,			1, vkcv::ShaderStage::FRAGMENT)
 	});
-	vkcv::ResourcesHandle set = core.createResourceDescription({ setConfig });
+	vkcv::DescriptorSetHandle set = core.createDescriptorSet({ setConfig });
 
 	//only exemplary code for testing
 	for (int i = 0; i < 1001; i++) {
-		vkcv::ResourcesHandle furtherSets = core.createResourceDescription({ setConfig });
+		vkcv::DescriptorSetHandle furtherSets = core.createDescriptorSet({ setConfig });
 	}
 	//end of exemplary code
 
@@ -118,7 +118,7 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
 		trianglePass,
 		mesh.vertexGroups[0].vertexBuffer.attributes,
-		{ core.getDescriptorSetLayout(set, 0) },
+		{ core.getDescriptorSet(set, 0) },
 		true);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 	
