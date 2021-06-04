@@ -62,7 +62,6 @@ namespace vkcv
         Core() = delete;
 
 		Result acquireSwapchainImage();
-		void destroyTemporaryFramebuffers();
 
         Context m_Context;
 
@@ -80,11 +79,10 @@ namespace vkcv
 		CommandResources				m_CommandResources;
 		SyncResources					m_SyncResources;
 		uint32_t						m_currentSwapchainImageIndex;
-		std::vector<vk::Framebuffer>	m_TemporaryFramebuffers;
-		
+
 		ImageHandle						m_DepthImage;
 
-        std::function<void(int, int)> m_resizeHandle;
+        std::function<void(int, int)> e_resizeHandle;
 
         /**
          * recreates the swapchain
@@ -234,14 +232,14 @@ namespace vkcv
 		 * @brief render a beautiful triangle
 		*/
 		void renderMesh(
-			const PassHandle						renderpassHandle, 
-			const PipelineHandle					pipelineHandle,
+			const PassHandle						&renderpassHandle,
+			const PipelineHandle					&pipelineHandle,
 			const uint32_t							width,
 			const uint32_t							height,
 			const size_t							pushConstantSize, 
 			const void*								pushConstantData, 
 			const std::vector<VertexBufferBinding>	&vertexBufferBindings, 
-			const BufferHandle						indexBuffer, 
+			const BufferHandle						&indexBuffer,
 			const size_t							indexCount,
 			const vkcv::ResourcesHandle				resourceHandle,
 			const size_t							resourceDescriptorSetIndex);

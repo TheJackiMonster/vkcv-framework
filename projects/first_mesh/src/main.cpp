@@ -8,16 +8,14 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
 
-	const int windowWidth = 800;
-	const int windowHeight = 600;
 	vkcv::Window window = vkcv::Window::create(
 		applicationName,
-		windowWidth,
-		windowHeight,
+        800,
+        600,
 		true
 	);
 
-	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
+	vkcv::CameraManager cameraManager(window, window.getWidth(), window.getHeight());
 
 	window.initEvents();
 
@@ -112,9 +110,9 @@ int main(int argc, const char** argv) {
 	//end of exemplary code
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(
-		triangleShaderProgram, 
-		windowWidth,
-		windowHeight,
+		triangleShaderProgram,
+        UINT32_MAX,
+        UINT32_MAX,
 		trianglePass,
 		mesh.vertexGroups[0].vertexBuffer.attributes,
 		{ core.getDescriptorSetLayout(set, 0) });
@@ -149,6 +147,10 @@ int main(int argc, const char** argv) {
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
         window.pollEvents();
+
+        if(window.getHeight() == 0 || window.getWidth() == 0)
+            continue;
+
 		core.beginFrame();
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = end - start;
@@ -159,8 +161,8 @@ int main(int argc, const char** argv) {
 		core.renderMesh(
 			trianglePass,
 			trianglePipeline,
-			windowWidth,
-			windowHeight,
+            window.getWidth(),
+            window.getHeight(),
 			sizeof(mvp),
 			&mvp,
 			vertexBufferBindings,

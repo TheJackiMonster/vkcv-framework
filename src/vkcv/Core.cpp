@@ -13,7 +13,6 @@
 #include "SamplerManager.hpp"
 #include "ImageManager.hpp"
 #include "DescriptorManager.hpp"
-#include "Surface.hpp"
 #include "ImageLayoutTransitions.hpp"
 
 namespace vkcv
@@ -32,14 +31,8 @@ namespace vkcv
         		instanceExtensions,
         		deviceExtensions
 		);
-	
-		const vk::SurfaceKHR surface = createSurface(
-				window.getWindow(),
-				context.getInstance(),
-				context.getPhysicalDevice()
-		);
 
-        SwapChain swapChain = SwapChain::create(window, context, surface);
+        SwapChain swapChain = SwapChain::create(window, context);
 
         std::vector<vk::ImageView> imageViews;
         imageViews = createImageViews( context, swapChain);
@@ -79,7 +72,7 @@ namespace vkcv
     	
     	m_ImageManager->m_core = this;
 
-        m_resizeHandle = window.e_resize.add( [&](int width, int height) { recreateSwapchain( width ,height ); });
+        e_resizeHandle = window.e_resize.add( [&](int width, int height) { recreateSwapchain( width ,height ); });
 	}
 
 	Core::~Core() noexcept {
@@ -90,7 +83,6 @@ namespace vkcv
 
 		destroyCommandResources(m_Context.getDevice(), m_CommandResources);
 		destroySyncResources(m_Context.getDevice(), m_SyncResources);
-		destroyTemporaryFramebuffers();
 
 		m_Context.m_Device.destroySwapchainKHR(m_swapchain.getSwapchain());
 		m_Context.m_Instance.destroySurfaceKHR(m_swapchain.getSurface());
@@ -126,37 +118,22 @@ namespace vkcv
 		return Result::SUCCESS;
 	}
 
-	void Core::destroyTemporaryFramebuffers() {
-		for (const vk::Framebuffer f : m_TemporaryFramebuffers) {
-			m_Context.getDevice().destroyFramebuffer(f);
-		}
-		m_TemporaryFramebuffers.clear();
-	}
-
 	void Core::beginFrame() {
     	if (acquireSwapchainImage() != Result::SUCCESS) {
     		return;
     	}
-		m_Context.getDevice().waitIdle();	// FIMXE: this is a sin against graphics programming, but its getting late - Alex
-		destroyTemporaryFramebuffers();
-	}
-	
-	vk::Framebuffer createFramebuffer(const vk::Device device, const vk::RenderPass& renderpass,
-									  const int width, const int height, const std::vector<vk::ImageView>& attachments) {
-		const vk::FramebufferCreateFlags flags = {};
-		const vk::FramebufferCreateInfo createInfo(flags, renderpass, attachments.size(), attachments.data(), width, height, 1);
-		return device.createFramebuffer(createInfo);
+		m_Context.getDevice().waitIdle();	// TODO: this is a sin against graphics programming, but its getting late - Alex
 	}
 
 	void Core::renderMesh(
-		const PassHandle						renderpassHandle, 
-		const PipelineHandle					pipelineHandle, 
+		const PassHandle						&renderpassHandle,
+		const PipelineHandle					&pipelineHandle,
 		const uint32_t 							width,
 		const uint32_t							height,
-		const size_t							pushConstantSize, 
+		const size_t							pushConstantSize,
 		const void								*pushConstantData,
 		const std::vector<VertexBufferBinding>& vertexBufferBindings, 
-		const BufferHandle						indexBuffer, 
+		const BufferHandle						&indexBuffer,
 		const size_t							indexCount,
 		const vkcv::ResourcesHandle				resourceHandle,
 		const size_t							resourceDescriptorSetIndex
@@ -197,15 +174,25 @@ namespace vkcv
 			attachments.push_back(m_ImageManager->getVulkanImageView(m_DepthImage));
 		}
 		
-		const vk::Framebuffer framebuffer = createFramebuffer(
-				m_Context.getDevice(),
-				renderpass,
-				width,
-				height,
-				attachments
-		);
-		
-		m_TemporaryFramebuffers.push_back(framebuffer);
+		vk::Framebuffer framebuffer = nullptr;
+        const vk::FramebufferCreateInfo createInfo({},
+                                                   renderpass,
+                                                   static_cast<uint32_t>(attachments.size()),
+                                                   attachments.data(),
+                                                   width,
+                                                   height,
+                                                   1);
+        if(m_Context.m_Device.createFramebuffer(&createInfo, nullptr, &framebuffer) != vk::Result::eSuccess)
+        {
+            std::cout << "FAILED TO CREATE TEMPORARY FRAMEBUFFER!" << std::endl;
+            return;
+        }
+
+        vk::Viewport dynamicViewport(0.0f, 0.0f,
+                                     static_cast<float>(width), static_cast<float>(height),
+                                     0.0f, 1.0f);
+
+        vk::Rect2D dynamicScissor({0, 0}, {width, height});
 
 		auto &bufferManager = m_BufferManager;
 
@@ -213,48 +200,58 @@ namespace vkcv
 		submitInfo.queueType = QueueType::Graphics;
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
 
-		submitCommands(submitInfo, [&](const vk::CommandBuffer& cmdBuffer) {
-			std::vector<vk::ClearValue> clearValues;
-			
-			for (const auto& attachment : passConfig.attachments) {
-				if (attachment.load_operation == AttachmentOperation::CLEAR) {
-					float clear = 0.0f;
-					
-					if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
-						clear = 1.0f;
-					}
-					
-					clearValues.emplace_back(std::array<float, 4>{
-							clear,
-							clear,
-							clear,
-							1.f
-					});
-				}
-			}
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+            std::vector<vk::ClearValue> clearValues;
 
-			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
-			const vk::SubpassContents subpassContents = {};
-			cmdBuffer.beginRenderPass(beginInfo, subpassContents, {});
+            for (const auto& attachment : passConfig.attachments) {
+                if (attachment.load_operation == AttachmentOperation::CLEAR) {
+                    float clear = 0.0f;
 
-			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
+                    if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
+                        clear = 1.0f;
+                    }
 
-			for (uint32_t i = 0; i < vertexBufferBindings.size(); i++) {
-				const auto &vertexBinding = vertexBufferBindings[i];
-				const auto vertexBuffer = bufferManager->getBuffer(vertexBinding.buffer);
-				cmdBuffer.bindVertexBuffers(i, (vertexBuffer), (vertexBinding.offset));
-			}
-			
-			if (resourceHandle) {
-				const vk::DescriptorSet descriptorSet = m_DescriptorManager->getDescriptorSet(resourceHandle, resourceDescriptorSetIndex);
-				cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, descriptorSet, nullptr);
-			}
-			
-			cmdBuffer.bindIndexBuffer(vulkanIndexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
-			cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
-			cmdBuffer.drawIndexed(indexCount, 1, 0, 0, {});
-			cmdBuffer.endRenderPass();
-		}, nullptr);
+                    clearValues.emplace_back(std::array<float, 4>{
+                            clear,
+                            clear,
+                            clear,
+                            1.f
+                    });
+                }
+            }
+
+            const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
+            const vk::SubpassContents subpassContents = {};
+            cmdBuffer.beginRenderPass(beginInfo, subpassContents, {});
+
+            cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
+            cmdBuffer.setViewport(0, 1, &dynamicViewport);
+            cmdBuffer.setScissor(0, 1, &dynamicScissor);
+
+            for (uint32_t i = 0; i < vertexBufferBindings.size(); i++) {
+                const auto &vertexBinding = vertexBufferBindings[i];
+                const auto vertexBuffer = bufferManager->getBuffer(vertexBinding.buffer);
+                cmdBuffer.bindVertexBuffers(i, (vertexBuffer), (vertexBinding.offset));
+            }
+
+            if (resourceHandle) {
+                const vk::DescriptorSet descriptorSet = m_DescriptorManager->getDescriptorSet(resourceHandle, resourceDescriptorSetIndex);
+                cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, descriptorSet, nullptr);
+            }
+
+            cmdBuffer.bindIndexBuffer(vulkanIndexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
+            cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
+            cmdBuffer.drawIndexed(indexCount, 1, 0, 0, {});
+            cmdBuffer.endRenderPass();
+        };
+
+        auto finishFunction = [&]()
+        {
+            m_Context.m_Device.destroy(framebuffer);
+        };
+
+		submitCommands(submitInfo, submitFunction, finishFunction);
+
 	}
 
 	void Core::endFrame() {
@@ -263,8 +260,7 @@ namespace vkcv
 		}
   
 		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
-		const vk::Image presentImage = swapchainImages[m_currentSwapchainImageIndex];
-		
+
 		const auto& queueManager = m_Context.getQueueManager();
 		std::array<vk::Semaphore, 2> waitSemaphores{ 
 			m_SyncResources.renderFinished, 
@@ -284,17 +280,17 @@ namespace vkcv
 	}
 
 	vk::Format Core::getSwapchainImageFormat() {
-		return m_swapchain.getSurfaceFormat().format;
+		return m_swapchain.getSwapchainFormat();
 	}
 
     void Core::recreateSwapchain( int width, int height) {
         m_Context.getDevice().waitIdle();
 
-        destroyTemporaryFramebuffers();
+        if(width == 0 || height == 0)
+            return;
 
-        for (auto image : m_swapchainImageViews) {
+        for (auto image : m_swapchainImageViews)
             m_Context.m_Device.destroyImageView(image);
-        }
 
         m_swapchain.recreateSwapchain(m_Context, m_window, width, height);
         m_swapchainImageViews = createImageViews(m_Context, m_swapchain);
@@ -372,7 +368,7 @@ namespace vkcv
                     vk::ImageViewCreateFlags(),
                     image,
                     vk::ImageViewType::e2D,
-                    swapChain.getSurfaceFormat().format,
+                    swapChain.getSwapchainFormat(),
                     componentMapping,
                     subResourceRange
             );
