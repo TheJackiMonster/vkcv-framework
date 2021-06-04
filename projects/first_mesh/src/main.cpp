@@ -8,10 +8,13 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
 
+	const int windowWidth = 800;
+	const int windowHeight = 600;
+
 	vkcv::Window window = vkcv::Window::create(
 		applicationName,
-        800,
-        600,
+		windowWidth,
+		windowHeight,
 		true
 	);
 
@@ -115,7 +118,8 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
 		trianglePass,
 		mesh.vertexGroups[0].vertexBuffer.attributes,
-		{ core.getDescriptorSetLayout(set, 0) });
+		{ core.getDescriptorSetLayout(set, 0) },
+		true);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 	
 	if (!trianglePipeline) {
@@ -144,6 +148,14 @@ int main(int argc, const char** argv) {
 	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
 	core.writeResourceDescription(set, 0, setWrites);
 
+	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
+
+	window.e_resize.add([&](int width, int height) {
+		depthBuffer = core.createImage(vk::Format::eD32Sfloat, width, height).getHandle();
+	});
+
+	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
         vkcv::Window::pollEvents();
@@ -167,8 +179,8 @@ int main(int argc, const char** argv) {
 			indexBuffer.getHandle(),
 			mesh.vertexGroups[0].numIndices,
 			set,
-			0
-		);
+			0,
+			{ swapchainInput, depthBuffer });
 
 		core.endFrame();
 	}
