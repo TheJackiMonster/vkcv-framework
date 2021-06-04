@@ -149,7 +149,6 @@ int main(int argc, const char** argv) {
 	});
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-	const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 
 	const vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 
@@ -184,6 +183,7 @@ int main(int argc, const char** argv) {
 			mvpMatrices.push_back(viewProjection * m);
 		}
 		vkcv::PushConstantData pushConstantData((void*)mvpMatrices.data(), sizeof(glm::mat4));
+        const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 
 		core.recordDrawcalls(
 			trianglePass,
