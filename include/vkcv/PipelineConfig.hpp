@@ -24,19 +24,22 @@ namespace vkcv {
          * @param passHandle handle for Render Pass
          */
         PipelineConfig(
-			const ShaderProgram&						shaderProgram, 
-			uint32_t									width, 
-			uint32_t									height, 
-			PassHandle									&passHandle,
-			const std::vector<VertexAttribute>			&vertexAttributes,
-			const std::vector<vk::DescriptorSetLayout>	&descriptorLayouts);
+            const ShaderProgram&                        shaderProgram,
+            uint32_t                                    width,
+            uint32_t                                    height,
+            PassHandle                                  &passHandle,
+            const std::vector<VertexAttribute>          &vertexAttributes,
+            const std::vector<vk::DescriptorSetLayout>  &descriptorLayouts,
+            bool                                        useDynamicViewport);
 
-		ShaderProgram							m_ShaderProgram;
-        uint32_t								m_Height;
-        uint32_t								m_Width;
-        PassHandle								m_PassHandle;
-		std::vector<VertexAttribute>			m_vertexAttributes;
-		std::vector<vk::DescriptorSetLayout>	m_descriptorLayouts;
+        ShaderProgram                           m_ShaderProgram;
+        uint32_t                                m_Height;
+        uint32_t                                m_Width;
+        PassHandle                              m_PassHandle;
+        std::vector<VertexAttribute>            m_VertexAttributes;
+        std::vector<vk::DescriptorSetLayout>    m_DescriptorLayouts;
+        bool                                    m_UseDynamicViewport;
+
     };
 
 }

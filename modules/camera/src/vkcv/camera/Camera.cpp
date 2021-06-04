@@ -82,13 +82,15 @@ namespace vkcv {
         setFov(fov);
     }
 
-    void Camera::updateRatio( float ratio){
-        m_ratio = ratio;
+    void Camera::updateRatio( int width, int height){
+        m_width = width;
+        m_height = height;
+        m_ratio = static_cast<float>(width)/glm::max(height, 1);
         setPerspective( m_fov, m_ratio, m_near, m_far);
     }
 
     float Camera::getRatio() const {
-        return 0.0f;
+        return m_ratio;
     }
 
     void Camera::setNearFar( float near, float far){

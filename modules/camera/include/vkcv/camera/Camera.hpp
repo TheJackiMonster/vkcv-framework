@@ -63,7 +63,7 @@ namespace vkcv {
         
         void changeFov(double fov);
 
-        void updateRatio(float ratio);
+        void updateRatio(int width, int height);
 
         float getRatio() const;
 

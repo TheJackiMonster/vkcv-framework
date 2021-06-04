@@ -134,10 +134,13 @@ int main(int argc, const char** argv) {
 	 * PipelineHandle trianglePipeline = core.CreatePipeline(trianglePipeline);
 	 */
     auto start = std::chrono::system_clock::now();
+
+	vkcv::ImageHandle swapchainImageHandle = vkcv::ImageHandle::createSwapchainImageHandle();
+
 	while (window.isWindowOpen())
 	{
-		core.beginFrame();
         window.pollEvents();
+        core.beginFrame();
         auto end = std::chrono::system_clock::now();
         auto deltatime = end - start;
         start = end;
@@ -147,15 +150,14 @@ int main(int argc, const char** argv) {
 	    core.renderMesh(
 			trianglePass,
 			trianglePipeline,
-			windowWidth,
-			windowHeight,
 			sizeof(mvp),
 			&mvp,
 			vertexBufferBindings,
 			triangleIndexBuffer.getHandle(),
 			3,
 			vkcv::ResourcesHandle(),
-			0);
+			0,
+			{swapchainImageHandle});
 	    
 	    core.endFrame();
 	}

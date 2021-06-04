@@ -56,13 +56,12 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews,
+        Core(Context &&context, Window &window, const SwapChain& swapChain,  std::vector<vk::ImageView> imageViews,
 			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
 
 		Result acquireSwapchainImage();
-		void destroyTemporaryFramebuffers();
 
         Context m_Context;
 
@@ -80,14 +79,10 @@ namespace vkcv
 		CommandResources				m_CommandResources;
 		SyncResources					m_SyncResources;
 		uint32_t						m_currentSwapchainImageIndex;
-		std::vector<vk::Framebuffer>	m_TemporaryFramebuffers;
 
-        /**
-         * recreates the swapchain
-         * @param[in] width new window width
-         * @param[in] height new window hight
-         */
-        static void recreateSwapchain(int width, int height);
+        std::function<void(int, int)> e_resizeHandle;
+
+        static std::vector<vk::ImageView> createImageViews( Context &context, SwapChain& swapChain);
 
     public:
         /**
@@ -233,7 +228,7 @@ namespace vkcv
 			const size_t							pushConstantSize, 
 			const void*								pushConstantData, 
 			const std::vector<VertexBufferBinding>	&vertexBufferBindings, 
-			const BufferHandle						indexBuffer, 
+			const BufferHandle						&indexBuffer,
 			const size_t							indexCount,
 			const vkcv::ResourcesHandle				resourceHandle,
 			const size_t							resourceDescriptorSetIndex,

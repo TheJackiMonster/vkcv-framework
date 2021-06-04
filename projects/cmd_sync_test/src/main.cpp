@@ -14,7 +14,7 @@ int main(int argc, const char** argv) {
 		applicationName,
 		windowWidth,
 		windowHeight,
-		false
+		true
 	);
 
 	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
@@ -117,7 +117,8 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		trianglePass,
 		mesh.vertexGroups[0].vertexBuffer.attributes,
-		{ core.getDescriptorSetLayout(set, 0) });
+		{ core.getDescriptorSetLayout(set, 0) },
+		true);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 	
 	if (!trianglePipeline) {
@@ -146,13 +147,18 @@ int main(int argc, const char** argv) {
 	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
 	core.writeResourceDescription(set, 0, setWrites);
 
-	const vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
+	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
+
+	window.e_resize.add([&](int width, int height) {
+		depthBuffer = core.createImage(vk::Format::eD32Sfloat, width, height).getHandle();
+	});
+
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
-		core.beginFrame();
 		window.pollEvents();
+		core.beginFrame();
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = end - start;
 		start = end;

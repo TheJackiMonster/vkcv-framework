@@ -15,10 +15,11 @@ namespace vkcv{
     }
 
     void CameraManager::bindCamera(){
-        m_keyHandle = m_window.e_key.add( [&](int key, int scancode, int action, int mods) { this->keyCallback(key, scancode, action, mods); });
-        m_mouseMoveHandle = m_window.e_mouseMove.add( [&]( double offsetX, double offsetY) {this->mouseMoveCallback( offsetX, offsetY);} );
-        m_mouseScrollHandle =  m_window.e_mouseScroll.add([&](double offsetX, double offsetY) {this->scrollCallback( offsetX, offsetY);} );
-        m_mouseButtonHandle = m_window.e_mouseButton.add([&] (int button, int action, int mods) {this->mouseButtonCallback( button,  action,  mods);});
+        e_keyHandle = m_window.e_key.add( [&](int key, int scancode, int action, int mods) { this->keyCallback(key, scancode, action, mods); });
+        e_mouseMoveHandle = m_window.e_mouseMove.add( [&]( double offsetX, double offsetY) {this->mouseMoveCallback( offsetX, offsetY);} );
+        e_mouseScrollHandle =  m_window.e_mouseScroll.add([&](double offsetX, double offsetY) {this->scrollCallback( offsetX, offsetY);} );
+        e_mouseButtonHandle = m_window.e_mouseButton.add([&] (int button, int action, int mods) {this->mouseButtonCallback( button,  action,  mods);});
+        e_resizeHandle = m_window.e_resize.add([&] (int width, int height) {this->resizeCallback( width, height);});
     }
 
     void CameraManager::mouseButtonCallback(int button, int action, int mods){
@@ -75,6 +76,11 @@ namespace vkcv{
                 break;
         }
     }
+
+    void CameraManager::resizeCallback(int width, int height){
+            m_camera.updateRatio(width, height);
+    }
+
     Camera &CameraManager::getCamera(){
         return m_camera;
     }

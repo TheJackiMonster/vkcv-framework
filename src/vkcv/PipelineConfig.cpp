@@ -9,18 +9,20 @@
 namespace vkcv {
 
     PipelineConfig::PipelineConfig(
-		const ShaderProgram&						shaderProgram, 
-		uint32_t									width, 
-		uint32_t									height, 
-		PassHandle									&passHandle, 
+		const ShaderProgram&						shaderProgram,
+		uint32_t									width,
+		uint32_t									height,
+		PassHandle									&passHandle,
 		const std::vector<VertexAttribute>			&vertexAttributes,
-		const std::vector<vk::DescriptorSetLayout>	&descriptorLayouts)
+		const std::vector<vk::DescriptorSetLayout>	&descriptorLayouts,
+		bool										useDynamicViewport)
 		:
 		m_ShaderProgram(shaderProgram),
 		m_Height(height),
 		m_Width(width),
 		m_PassHandle(passHandle),
-		m_vertexAttributes(vertexAttributes),
-		m_descriptorLayouts(descriptorLayouts)
+		m_VertexAttributes(vertexAttributes),
+		m_DescriptorLayouts(descriptorLayouts),
+		m_UseDynamicViewport(useDynamicViewport)
 		{}
 }
