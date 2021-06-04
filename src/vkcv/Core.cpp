@@ -141,13 +141,12 @@ namespace vkcv
 		m_Context.getDevice().waitIdle(); // TODO: this is a sin against graphics programming, but its getting late - Alex
 	}
 
-	void Core::renderMesh(
-		const PassHandle                        renderpassHandle, 
-		const PipelineHandle                    pipelineHandle, 
-        const PushConstantData                  &pushConstantData,
-		const Mesh                              &mesh,
-        const std::vector<DescriptorSetUsage>   &descriptorSets,
-		const std::vector<ImageHandle>          &renderTargets) {
+	void Core::recordDrawcalls(
+		const PassHandle                renderpassHandle, 
+		const PipelineHandle            pipelineHandle, 
+        const PushConstantData          &pushConstantData,
+        const std::vector<DrawcallInfo> &drawcalls,
+		const std::vector<ImageHandle>  &renderTargets) {
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
@@ -254,33 +253,10 @@ namespace vkcv
                 cmdBuffer.setScissor(0, 1, &dynamicScissor);
             }
 
-            for (uint32_t i = 0; i < mesh.vertexBufferBindings.size(); i++) {
-                const auto &vertexBinding = mesh.vertexBufferBindings[i];
-                const auto vertexBuffer = bufferManager->getBuffer(vertexBinding.buffer);
-                cmdBuffer.bindVertexBuffers(i, (vertexBuffer), (vertexBinding.offset));
+            for (int i = 0; i < drawcalls.size(); i++) {
+                recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
             }
 
-            for (const auto &descriptorUsage : descriptorSets) {
-                cmdBuffer.bindDescriptorSets(
-                    vk::PipelineBindPoint::eGraphics, 
-                    pipelineLayout, 
-                    descriptorUsage.setLocation, 
-                    m_DescriptorManager->getDescriptorSet(descriptorUsage.handle).vulkanHandle,
-                    nullptr);
-            }
-
-            const vk::Buffer indexBuffer = m_BufferManager->getBuffer(mesh.indexBuffer);
-
-            cmdBuffer.bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
-
-            cmdBuffer.pushConstants(
-                pipelineLayout, 
-                vk::ShaderStageFlagBits::eAll, 
-                0, 
-                pushConstantData.sizePerDrawcall, 
-                pushConstantData.data);
-
-            cmdBuffer.drawIndexed(mesh.indexCount, 1, 0, 0, {});
             cmdBuffer.endRenderPass();
         };
 

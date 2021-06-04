@@ -11,13 +11,6 @@ namespace vkcv
         vk::DescriptorSetLayout layout;
     };
 
-    struct DescriptorSetUsage {
-        DescriptorSetUsage(uint32_t setLocation, DescriptorSetHandle handle) noexcept;
-
-        const uint32_t              setLocation;
-        const DescriptorSetHandle   handle;
-    };
-
     /*
     * All the types of descriptors (resources) that can be retrieved by the shaders
     */

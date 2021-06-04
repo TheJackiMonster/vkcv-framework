@@ -18,6 +18,7 @@ int main(int argc, const char** argv) {
 	);
 
 	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
+	cameraManager.getCamera().setPosition(glm::vec3(0.f, 0.f, 3.f));
 
 	window.initEvents();
 
@@ -60,14 +61,12 @@ int main(int argc, const char** argv) {
 	
 	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
 
-	vkcv::Mesh boxMesh;
-	boxMesh.indexBuffer = indexBuffer.getHandle();
-	boxMesh.vertexBufferBindings = {
-		{ mesh.vertexGroups[0].vertexBuffer.attributes[0].offset, vertexBuffer.getHandle() },
-		{ mesh.vertexGroups[0].vertexBuffer.attributes[1].offset, vertexBuffer.getHandle() },
-		{ mesh.vertexGroups[0].vertexBuffer.attributes[2].offset, vertexBuffer.getHandle() }
-	};
-	boxMesh.indexCount = mesh.vertexGroups[0].numIndices;
+	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
+		vkcv::VertexBufferBinding(mesh.vertexGroups[0].vertexBuffer.attributes[0].offset, vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(mesh.vertexGroups[0].vertexBuffer.attributes[1].offset, vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(mesh.vertexGroups[0].vertexBuffer.attributes[2].offset, vertexBuffer.getVulkanHandle()) };
+
+	const vkcv::Mesh loadedMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
 
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
@@ -150,6 +149,25 @@ int main(int argc, const char** argv) {
 	});
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+	const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
+
+	const vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+
+	const std::vector<glm::vec3> instancePositions = {
+		glm::vec3( 0.f, -2.f, 0.f),
+		glm::vec3( 3.f,  0.f, 0.f),
+		glm::vec3(-3.f,  0.f, 0.f),
+		glm::vec3( 0.f,  2.f, 0.f)
+	};
+
+	std::vector<glm::mat4> modelMatrices;
+	std::vector<vkcv::DrawcallInfo> drawcalls;
+	for (const auto& position : instancePositions) {
+		modelMatrices.push_back(glm::translate(glm::mat4(1.f), position));
+		drawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, { descriptorUsage }));
+	}
+
+	std::vector<glm::mat4> mvpMatrices;
 
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
@@ -159,15 +177,20 @@ int main(int argc, const char** argv) {
 		auto deltatime = end - start;
 		start = end;
 		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
-		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-		core.renderMesh(
+		const glm::mat4 viewProjection = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+		mvpMatrices.clear();
+		for (const auto& m : modelMatrices) {
+			mvpMatrices.push_back(viewProjection * m);
+		}
+		vkcv::PushConstantData pushConstantData((void*)mvpMatrices.data(), sizeof(glm::mat4));
+
+		core.recordDrawcalls(
 			trianglePass,
 			trianglePipeline,
-			vkcv::PushConstantData((void*) &mvp, sizeof(mvp)),
-			boxMesh,
-			{ vkcv::DescriptorSetUsage(0, descriptorSet) },
-			{ swapchainInput, depthBuffer });
+			pushConstantData,
+			drawcalls,
+			renderTargets);
 
 		core.endFrame();
 	}

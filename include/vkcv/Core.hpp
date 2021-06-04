@@ -22,27 +22,10 @@
 #include "Sampler.hpp"
 #include "DescriptorWrites.hpp"
 #include "Event.hpp"
+#include "DrawcallRecording.hpp"
 
 namespace vkcv
 {
-
-	struct VertexBufferBinding {
-		vk::DeviceSize	offset;
-		BufferHandle	buffer;
-	};
-
-	struct Mesh {
-		std::vector<VertexBufferBinding>    vertexBufferBindings;
-		BufferHandle                        indexBuffer;
-		size_t                              indexCount;
-	};
-
-	struct PushConstantData {
-        inline PushConstantData(void* data, size_t sizePerDrawcall) : data(data), sizePerDrawcall(sizePerDrawcall){}
-
-		void*   data;
-		size_t  sizePerDrawcall;
-	};
 
     // forward declarations
     class PassManager;
@@ -236,13 +219,12 @@ namespace vkcv
 		/**
 		 * @brief render a beautiful triangle
 		*/
-		void renderMesh(
-			const PassHandle                        renderpassHandle, 
-			const PipelineHandle                    pipelineHandle,
-			const PushConstantData                  &pushConstantData,
-			const Mesh                              &mesh,
-			const std::vector<DescriptorSetUsage>   &descriptorSets,
-			const std::vector<ImageHandle>	        &renderTargets);
+		void recordDrawcalls(
+			const PassHandle                renderpassHandle, 
+			const PipelineHandle            pipelineHandle,
+			const PushConstantData          &pushConstantData,
+			const std::vector<DrawcallInfo> &drawcalls,
+			const std::vector<ImageHandle>  &renderTargets);
 
 		/**
 		 * @brief end recording and present image

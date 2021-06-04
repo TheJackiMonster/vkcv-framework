@@ -170,7 +170,7 @@ int main(int argc, const char** argv) {
 		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
 		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-		core.renderMesh(
+		core.recordDrawcalls(
 			trianglePass,
 			trianglePipeline,
 			sizeof(mvp),
