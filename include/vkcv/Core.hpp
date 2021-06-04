@@ -230,8 +230,6 @@ namespace vkcv
 		void renderMesh(
 			const PassHandle						renderpassHandle, 
 			const PipelineHandle					pipelineHandle,
-			const uint32_t							width,
-			const uint32_t							height,
 			const size_t							pushConstantSize, 
 			const void*								pushConstantData, 
 			const std::vector<VertexBufferBinding>	&vertexBufferBindings, 

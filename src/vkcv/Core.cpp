@@ -176,8 +176,6 @@ namespace vkcv
 	void Core::renderMesh(
 		const PassHandle						renderpassHandle, 
 		const PipelineHandle					pipelineHandle, 
-		const uint32_t 							width,
-		const uint32_t							height,
 		const size_t							pushConstantSize, 
 		const void								*pushConstantData,
 		const std::vector<VertexBufferBinding>& vertexBufferBindings, 
@@ -190,6 +188,25 @@ namespace vkcv
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
 		}
+
+		uint32_t width;
+		uint32_t height;
+		if (renderTargets.size() > 0) {
+			const vkcv::ImageHandle firstImage = renderTargets[0];
+			if (firstImage.isSwapchainImage()) {
+				width = m_window.getWidth();
+				height = m_window.getHeight();
+			}
+			else {
+				width = m_ImageManager->getImageWidth(firstImage);
+				height = m_ImageManager->getImageHeight(firstImage);
+			}
+		}
+		else {
+			width = 1;
+			height = 1;
+		}
+		// TODO: validate that width/height match for all attachments
 
 		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
 		const PassConfig passConfig = m_PassManager->getPassConfig(renderpassHandle);

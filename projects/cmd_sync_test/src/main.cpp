@@ -162,8 +162,6 @@ int main(int argc, const char** argv) {
 		core.renderMesh(
 			trianglePass,
 			trianglePipeline,
-			windowWidth,
-			windowHeight,
 			sizeof(mvp),
 			&mvp,
 			vertexBufferBindings,
