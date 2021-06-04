@@ -203,8 +203,8 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		
 		std::string img_uri = dir + "/" + img.uri;
 		int w, h, c;
-		// FIXME hardcoded to always have RGBA channel layout
 		uint8_t *data = stbi_load(img_uri.c_str(), &w, &h, &c, 4);
+		c = 4;	// FIXME hardcoded to always have RGBA channel layout
 		if (!data) {
 			std::cerr << "ERROR loading texture image data.\n";
 			return 0;
