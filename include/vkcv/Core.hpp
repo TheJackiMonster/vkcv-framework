@@ -223,7 +223,7 @@ namespace vkcv
         ResourcesHandle createResourceDescription(const std::vector<DescriptorSetConfig> &descriptorSets);
 		void writeResourceDescription(ResourcesHandle handle, size_t setIndex, const DescriptorWrites& writes);
 
-		vk::DescriptorSetLayout getDescritorSetLayout(ResourcesHandle handle, size_t setIndex);
+		vk::DescriptorSetLayout getDescriptorSetLayout(ResourcesHandle handle, size_t setIndex);
 
 		/**
 		 * @brief start recording command buffers and increment frame index

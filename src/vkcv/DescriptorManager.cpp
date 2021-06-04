@@ -11,23 +11,20 @@ namespace vkcv
         m_Device{ device }
     {
         /**
-         * Allocate a set size for the initial pool, namely 1000 units of each descriptor type below.
+         * Allocate the set size for the descriptor pools, namely 1000 units of each descriptor type below.
+		 * Finally, create an initial pool.
          */
-        const std::vector<vk::DescriptorPoolSize> poolSizes = {vk::DescriptorPoolSize(vk::DescriptorType::eSampler, 1000),
-                                                    vk::DescriptorPoolSize(vk::DescriptorType::eSampledImage, 1000),
-                                                    vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
-                                                    vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000)};
+		m_PoolSizes = { vk::DescriptorPoolSize(vk::DescriptorType::eSampler, 1000),
+													vk::DescriptorPoolSize(vk::DescriptorType::eSampledImage, 1000),
+													vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
+													vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000) };
 
-        vk::DescriptorPoolCreateInfo poolInfo({},
-                                              1000,
-                                              static_cast<uint32_t>(poolSizes.size()),
-                                              poolSizes.data());
+		m_PoolInfo = vk::DescriptorPoolCreateInfo({},
+			1000,
+			static_cast<uint32_t>(m_PoolSizes.size()),
+			m_PoolSizes.data());
 
-        if(m_Device.createDescriptorPool(&poolInfo, nullptr, &m_Pool) != vk::Result::eSuccess)
-        {
-            std::cout << "FAILED TO ALLOCATED DESCRIPTOR POOL." << std::endl;
-            m_Pool = nullptr;
-        };
+		allocateDescriptorPool();
     }
 
     DescriptorManager::~DescriptorManager() noexcept
@@ -35,8 +32,9 @@ namespace vkcv
         for (uint64_t id = 0; id < m_ResourceDescriptions.size(); id++) {
 			destroyResourceDescriptionById(id);
         }
-        
-        m_Device.destroy(m_Pool);
+		for (const auto &pool : m_Pools) {
+			m_Device.destroy(pool);
+		}
     }
 
     ResourcesHandle DescriptorManager::createResourceDescription(const std::vector<DescriptorSetConfig> &descriptorSets)
@@ -69,16 +67,24 @@ namespace vkcv
         }
         //create and allocate the set(s) based on the layouts that have been gathered above
         vk_sets.resize(vk_setLayouts.size());
-        vk::DescriptorSetAllocateInfo allocInfo(m_Pool, vk_sets.size(), vk_setLayouts.data());
+        vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), vk_sets.size(), vk_setLayouts.data());
         auto result = m_Device.allocateDescriptorSets(&allocInfo, vk_sets.data());
         if(result != vk::Result::eSuccess)
         {
-            std::cout << "FAILED TO ALLOCATE DESCRIPTOR SET" << std::endl;
-            std::cout << vk::to_string(result) << std::endl;
-            for(const auto &layout : vk_setLayouts)
-                m_Device.destroy(layout);
+			//create a new descriptor pool if the previous one ran out of memory
+			if (result == vk::Result::eErrorOutOfPoolMemory) {
+				allocateDescriptorPool();
+				allocInfo.setDescriptorPool(m_Pools.back());
+				result = m_Device.allocateDescriptorSets(&allocInfo, vk_sets.data());
+			}
+			if (result != vk::Result::eSuccess) {
+				std::cout << "FAILED TO ALLOCATE DESCRIPTOR SET" << std::endl;
+				std::cout << vk::to_string(result) << std::endl;
+				for (const auto& layout : vk_setLayouts)
+					m_Device.destroy(layout);
 
-            return ResourcesHandle();
+				return ResourcesHandle();
+			}
         };
 
         const uint64_t id = m_ResourceDescriptions.size();
@@ -94,7 +100,7 @@ namespace vkcv
     };
 
 	void DescriptorManager::writeResourceDescription(
-		ResourcesHandle			handle, 
+		const ResourcesHandle	&handle,
 		size_t					setIndex,
 		const DescriptorWrites	&writes,
 		const ImageManager		&imageManager, 
@@ -224,11 +230,11 @@ namespace vkcv
 		m_Device.updateDescriptorSets(vulkanWrites, nullptr);
 	}
 
-	vk::DescriptorSet DescriptorManager::getDescriptorSet(ResourcesHandle handle, size_t index) {
+	vk::DescriptorSet DescriptorManager::getDescriptorSet(const ResourcesHandle &handle, size_t index) const {
 		return m_ResourceDescriptions[handle.getId()].descriptorSets[index];
 	}
 
-	vk::DescriptorSetLayout DescriptorManager::getDescriptorSetLayout(ResourcesHandle handle, size_t index) {
+	vk::DescriptorSetLayout DescriptorManager::getDescriptorSetLayout(const ResourcesHandle &handle, size_t index) const {
 		return m_ResourceDescriptions[handle.getId()].descriptorSetLayouts[index];
 	}
 
@@ -283,6 +289,17 @@ namespace vkcv
 		}
 	
 		resourceDescription.descriptorSetLayouts.clear();
+	}
+
+	vk::DescriptorPool DescriptorManager::allocateDescriptorPool() {
+		vk::DescriptorPool pool;
+		if (m_Device.createDescriptorPool(&m_PoolInfo, nullptr, &pool) != vk::Result::eSuccess)
+		{
+			std::cout << "FAILED TO ALLOCATE DESCRIPTOR POOL." << std::endl;
+			pool = nullptr;
+		};
+		m_Pools.push_back(pool);
+		return pool;
 	}
 
 }

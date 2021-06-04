@@ -349,7 +349,7 @@ namespace vkcv
 			*m_SamplerManager);
 	}
 
-	vk::DescriptorSetLayout Core::getDescritorSetLayout(ResourcesHandle handle, size_t setIndex) {
+	vk::DescriptorSetLayout Core::getDescriptorSetLayout(ResourcesHandle handle, size_t setIndex) {
 		return m_DescriptorManager->getDescriptorSetLayout(handle, setIndex);
 	}
 
