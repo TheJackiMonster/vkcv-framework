@@ -251,7 +251,7 @@ namespace vkcv
 
 		CommandStreamHandle createCommandStream(QueueType queueType);
 
-		void Core::recordCommandsToStream(
+		void recordCommandsToStream(
 			const CommandStreamHandle   cmdStreamHandle,
 			const RecordCommandFunction &record,
 			const FinishCommandFunction &finish);

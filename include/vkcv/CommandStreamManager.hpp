@@ -6,6 +6,8 @@
 #include "vkcv/CommandRecordingFunctionTypes.hpp"
 
 namespace vkcv {
+	
+	class Core;
 
 	class CommandStreamManager
 	{
