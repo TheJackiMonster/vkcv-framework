@@ -109,17 +109,23 @@ namespace vkcv
 
 	Result Core::acquireSwapchainImage() {
     	uint32_t imageIndex;
-    	
-		const auto& acquireResult = m_Context.getDevice().acquireNextImageKHR(
-			m_swapchain.getSwapchain(), 
-			std::numeric_limits<uint64_t>::max(), 
-			m_SyncResources.swapchainImageAcquired,
-			nullptr, 
-			&imageIndex, {}
-		);
 		
-		if (acquireResult != vk::Result::eSuccess) {
-			std::cerr << vk::to_string(acquireResult) << std::endl;
+    	vk::Result result;
+    	
+		try {
+			result = m_Context.getDevice().acquireNextImageKHR(
+					m_swapchain.getSwapchain(),
+					std::numeric_limits<uint64_t>::max(),
+					m_SyncResources.swapchainImageAcquired,
+					nullptr,
+					&imageIndex, {}
+			);
+		} catch (vk::OutOfDateKHRError e) {
+			result = vk::Result::eErrorOutOfDateKHR;
+		}
+		
+		if (result != vk::Result::eSuccess) {
+			std::cerr << vk::to_string(result) << std::endl;
 			return Result::ERROR;
 		}
 		
@@ -127,7 +133,7 @@ namespace vkcv
 		return Result::SUCCESS;
 	}
 
-	void Core::beginFrame(uint32_t& width, uint32_t& height) {
+	bool Core::beginFrame(uint32_t& width, uint32_t& height) {
 		if (m_swapchain.shouldUpdateSwapchain()) {
 			m_Context.getDevice().waitIdle();
 			
@@ -154,6 +160,8 @@ namespace vkcv
 		
 		width = extent.width;
 		height = extent.height;
+		
+		return (m_currentSwapchainImageIndex != std::numeric_limits<uint32_t>::max());
 	}
 
 	void Core::recordDrawcallsToCmdStream(
@@ -302,16 +310,22 @@ namespace vkcv
 			m_SyncResources.renderFinished, 
 			m_SyncResources.swapchainImageAcquired };
 
-		vk::Result presentResult;
 		const vk::SwapchainKHR& swapchain = m_swapchain.getSwapchain();
 		const vk::PresentInfoKHR presentInfo(
 			waitSemaphores,
 			swapchain,
-			m_currentSwapchainImageIndex, 
-			presentResult);
-			queueManager.getPresentQueue().handle.presentKHR(presentInfo);
-		if (presentResult != vk::Result::eSuccess) {
-			std::cout << "Error: swapchain present failed" << std::endl;
+			m_currentSwapchainImageIndex);
+		
+		vk::Result result;
+		
+		try {
+			result = queueManager.getPresentQueue().handle.presentKHR(presentInfo);
+		} catch (vk::OutOfDateKHRError e) {
+			result = vk::Result::eErrorOutOfDateKHR;
+		}
+		
+		if (result != vk::Result::eSuccess) {
+			std::cout << "Error: swapchain present failed... " << vk::to_string(result) << std::endl;
 		}
 	}
 

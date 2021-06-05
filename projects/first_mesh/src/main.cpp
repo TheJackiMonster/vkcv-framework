@@ -152,7 +152,9 @@ int main(int argc, const char** argv) {
 			continue;
 		
 		uint32_t swapchainWidth, swapchainHeight;
-		core.beginFrame(swapchainWidth, swapchainHeight);
+		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+			continue;
+		}
 		
 		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
 			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
