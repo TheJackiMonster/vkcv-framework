@@ -112,6 +112,11 @@ namespace vkcv {
 			}
 		}
 		
+		if (isDepthFormat) {
+			imageType = vk::ImageType::e2D;
+			imageViewType = vk::ImageViewType::e2D;
+		}
+		
 		vk::ImageTiling imageTiling = vk::ImageTiling::eOptimal;
 		
 		if (!formatProperties.optimalTilingFeatures) {
