@@ -30,10 +30,10 @@ int main(int argc, const char** argv) {
 		{ "VK_KHR_swapchain" }
 	);
 
-	vkcv::asset::Mesh mesh;
+	vkcv::asset::Scene mesh;
 
-	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
-	int result = vkcv::asset::loadMesh(path, mesh);
+	const char* path = argc > 1 ? argv[1] : "resources/Szene/Szene.gltf";
+	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
 		std::cout << "Mesh loading successful!" << std::endl;
