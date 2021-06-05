@@ -60,11 +60,17 @@ int main(int argc, const char** argv) {
 	);
 	
 	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
+	
+	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
+	
+	std::sort(attributes.begin(), attributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
+		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
+	});
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::VertexBufferBinding(mesh.vertexGroups[0].vertexBuffer.attributes[0].offset, vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(mesh.vertexGroups[0].vertexBuffer.attributes[1].offset, vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(mesh.vertexGroups[0].vertexBuffer.attributes[2].offset, vertexBuffer.getVulkanHandle()) };
+		vkcv::VertexBufferBinding(attributes[0].offset, vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(attributes[1].offset, vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(attributes[2].offset, vertexBuffer.getVulkanHandle()) };
 
 	const vkcv::Mesh loadedMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
 
@@ -95,12 +101,6 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 	
-	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
-	
-	std::sort(attributes.begin(), attributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
-		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-	});
-
 	std::vector<vkcv::DescriptorBinding> descriptorBindings = {
 		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_SAMPLED,	1, vkcv::ShaderStage::FRAGMENT),
 		vkcv::DescriptorBinding(vkcv::DescriptorType::SAMPLER,			1, vkcv::ShaderStage::FRAGMENT)};
@@ -111,7 +111,7 @@ int main(int argc, const char** argv) {
 		windowWidth,
 		windowHeight,
 		trianglePass,
-		mesh.vertexGroups[0].vertexBuffer.attributes,
+		attributes,
 		{ core.getDescriptorSet(descriptorSet).layout },
 		true);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
