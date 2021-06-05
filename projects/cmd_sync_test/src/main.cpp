@@ -70,18 +70,12 @@ int main(int argc, const char** argv) {
 
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentLayout::UNDEFINED,
-		vkcv::AttachmentLayout::COLOR_ATTACHMENT,
-		vkcv::AttachmentLayout::PRESENTATION,
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
 		core.getSwapchainImageFormat()
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment(
-			vkcv::AttachmentLayout::UNDEFINED,
-			vkcv::AttachmentLayout::DEPTH_STENCIL_ATTACHMENT,
-			vkcv::AttachmentLayout::DEPTH_STENCIL_ATTACHMENT,
 			vkcv::AttachmentOperation::STORE,
 			vkcv::AttachmentOperation::CLEAR,
 			vk::Format::eD32Sfloat
@@ -185,12 +179,17 @@ int main(int argc, const char** argv) {
 		vkcv::PushConstantData pushConstantData((void*)mvpMatrices.data(), sizeof(glm::mat4));
         const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 
-		core.recordDrawcalls(
+		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+
+		core.recordDrawcallsToCmdStream(
+			cmdStream,
 			trianglePass,
 			trianglePipeline,
 			pushConstantData,
 			drawcalls,
 			renderTargets);
+		core.prepareSwapchainImageForPresent(cmdStream);
+		core.submitCommandStream(cmdStream);
 
 		core.endFrame();
 	}

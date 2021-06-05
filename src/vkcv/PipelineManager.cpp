@@ -1,4 +1,5 @@
 #include "PipelineManager.hpp"
+#include "vkcv/Image.hpp"
 
 namespace vkcv
 {
@@ -207,7 +208,7 @@ namespace vkcv
 		const PassConfig& passConfig = passManager.getPassConfig(config.m_PassHandle);
 		
 		for (const auto& attachment : passConfig.attachments) {
-			if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
+			if (isDepthFormat(attachment.format)) {
 				p_depthStencilCreateInfo = &depthStencilCreateInfo;
 				break;
 			}

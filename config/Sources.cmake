@@ -72,4 +72,9 @@ set(vkcv_sources
         
         ${vkcv_include}/vkcv/DrawcallRecording.hpp
         ${vkcv_source}/vkcv/DrawcallRecording.cpp
+        
+        ${vkcv_include}/vkcv/CommandStreamManager.hpp
+        ${vkcv_source}/vkcv/CommandStreamManager.cpp
+        
+        ${vkcv_include}/vkcv/CommandRecordingFunctionTypes.hpp
 )

@@ -101,5 +101,11 @@ namespace vkcv
 		static ImageHandle createSwapchainImageHandle(const HandleDestroyFunction& destroy = nullptr);
 		
 	};
+
+    class CommandStreamHandle : public Handle {
+        friend class CommandStreamManager;
+    private:
+        using Handle::Handle;
+    };
 	
 }
