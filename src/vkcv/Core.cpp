@@ -127,7 +127,7 @@ namespace vkcv
 		return Result::SUCCESS;
 	}
 
-	void Core::beginFrame() {
+	void Core::beginFrame(uint32_t& width, uint32_t& height) {
 		if (m_swapchain.shouldUpdateSwapchain()) {
 			m_Context.getDevice().waitIdle();
 			
@@ -149,6 +149,11 @@ namespace vkcv
     	}
 		
 		m_Context.getDevice().waitIdle(); // TODO: this is a sin against graphics programming, but its getting late - Alex
+		
+		const auto& extent = m_swapchain.getExtent();
+		
+		width = extent.width;
+		height = extent.height;
 	}
 
 	void Core::recordDrawcallsToCmdStream(

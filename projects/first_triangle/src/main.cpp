@@ -142,7 +142,10 @@ int main(int argc, const char** argv) {
 	while (window.isWindowOpen())
 	{
         window.pollEvents();
-        core.beginFrame();
+		
+		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
+		core.beginFrame(swapchainWidth, swapchainHeight);
+		
         auto end = std::chrono::system_clock::now();
         auto deltatime = end - start;
         start = end;

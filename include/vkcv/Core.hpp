@@ -218,7 +218,7 @@ namespace vkcv
 		/**
 		 * @brief start recording command buffers and increment frame index
 		*/
-		void beginFrame();
+		void beginFrame(uint32_t& width, uint32_t& height);
 
 		void recordDrawcallsToCmdStream(
             const CommandStreamHandle       cmdStreamHandle,

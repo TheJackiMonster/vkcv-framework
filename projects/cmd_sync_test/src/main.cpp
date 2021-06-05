@@ -8,8 +8,9 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
 
-	const int windowWidth = 800;
-	const int windowHeight = 600;
+	uint32_t windowWidth = 800;
+	uint32_t windowHeight = 600;
+	
 	vkcv::Window window = vkcv::Window::create(
 		applicationName,
 		windowWidth,
@@ -138,10 +139,6 @@ int main(int argc, const char** argv) {
 
 	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
 
-	window.e_resize.add([&](int width, int height) {
-		depthBuffer = core.createImage(vk::Format::eD32Sfloat, width, height).getHandle();
-	});
-
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
 	const vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
@@ -164,8 +161,18 @@ int main(int argc, const char** argv) {
 
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
-		window.pollEvents();
-		core.beginFrame();
+		vkcv::Window::pollEvents();
+		
+		uint32_t swapchainWidth, swapchainHeight;
+		core.beginFrame(swapchainWidth, swapchainHeight);
+		
+		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
+			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
+			
+			windowWidth = swapchainWidth;
+			windowHeight = swapchainHeight;
+		}
+		
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = end - start;
 		start = end;
