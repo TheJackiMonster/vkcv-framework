@@ -25,12 +25,13 @@
  * top.
  *
  * Each Mesh has an array of one or more vertex groups (called "primitives" in
- * glTF parlance) and an array of zero or more Materials.
+ * glTF parlance). Specifically, it has an array of indices into an array of
+ * vertex groups defined by the Scene struct.
  *
  * Each vertex group describes a part of the meshes vertices by defining how
  * they should be rendered (as points, lines, triangles), how many indices and
  * vertices there are, how the content of the vertex buffer is to be
- * interpreted and which material from the Meshes materials array should be
+ * interpreted and which material from the Scenes materials array should be
  * used for the surface of the vertices.
  * As a bonus there is also the axis aligned bounding box of the vertices.
  *
@@ -76,7 +77,7 @@ typedef struct {
 } Sampler;
 
 typedef struct {
-	uint8_t sampler;	// index into the Meshes samplers array
+	int sampler;		// index into the sampler array of the Scene
 	uint8_t channels;	// number of channels
 	uint16_t w, h;		// width and height of the texture
 	std::vector<uint8_t> data;	// binary data of the decoded texture
@@ -89,9 +90,9 @@ typedef struct {
  * each of the texture targets in the Material struct and a VertexAttribute of
  * a VertexBuffer that defines the UV coordinates for that texture. */
 typedef struct {
-	uint8_t textureMask;	// bit mask with active texture targets
+	uint16_t textureMask;	// bit mask with active texture targets
 	// Indices into the Mesh.textures array
-	uint8_t baseColor, metalRough, normal, occlusion, emissive;
+	int baseColor, metalRough, normal, occlusion, emissive;
 	// Scaling factors for each texture target
 	struct { float r, g, b, a; } baseColorFactor;
 	float metallicFactor, roughnessFactor;
@@ -118,19 +119,30 @@ typedef struct {
 	} vertexBuffer;
 	struct { float x, y, z; } min;	// bounding box lower left
 	struct { float x, y, z; } max;	// bounding box upper right
-	uint8_t materialIndex;		// index to one of the meshes materials
+	int materialIndex;		// index to one of the materials
 } VertexGroup;
 
-/* This struct represents a single mesh loaded from a glTF file. It consists of
- * at least one VertexVroup and any number of Materials. */
+/* This struct represents a single mesh as it was loaded from a glTF file. It
+ * consists of at least one VertexGroup, which then references other resources
+ * such as Materials. */
 typedef struct {
 	std::string name;
+	std::vector<int> vertexGroups;
+} Mesh;
+
+
+/* The scene struct is simply a collection of objects in the scene as well as
+ * the resources used by those objects.
+ * For now the only type of object are the meshes and they are represented in a
+ * flat array.
+ * Note that parent-child relations are not yet possible. */
+typedef struct {
+	std::vector<Mesh> meshes;
 	std::vector<VertexGroup> vertexGroups;
 	std::vector<Material> materials;
 	std::vector<Texture> textures;
 	std::vector<Sampler> samplers;
-} Mesh;
-
+} Scene;
 
 /**
  * In its first iteration the asset loader module will only allow loading
@@ -142,6 +154,10 @@ typedef struct {
  * 	content of the glTF file being loaded.
  * */
 int loadMesh(const std::string &path, Mesh &mesh);
+
+// TODO Either replace loadMesh with this new function loadScene, or implement
+// loadScene as a second function besides loadMesh...
+int loadScene(const std::string &path, Scene &scene);
 
 
 }
