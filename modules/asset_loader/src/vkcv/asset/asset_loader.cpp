@@ -48,6 +48,26 @@ void print_what (const std::exception& e, const std::string &path) {
 	}
 }
 
+/* Translate the component type used in the index accessor of fx-gltf to our
+ * enum for index type. The reason we have defined an incompatible enum that
+ * needs translation is that only a subset of component types is valid for
+ * indices and we want to catch these incompatibilities here. */
+enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &t)
+{
+	switch (t) {
+	case fx::gltf::Accessor::ComponentType::UnsignedByte:
+		return IndexType::UINT8;
+	case fx::gltf::Accessor::ComponentType::UnsignedShort:
+		return IndexType::UINT16;
+	case fx::gltf::Accessor::ComponentType::UnsignedInt:
+		return IndexType::UINT32;
+	default:
+		std::cerr << "ERROR: Index type not supported: " <<
+			static_cast<uint16_t>(t) << std::endl;
+		return IndexType::UNDEFINED;
+	}
+}
+
 int loadMesh(const std::string &path, Mesh &mesh) {
 	fx::gltf::Document object;
 
@@ -141,21 +161,8 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		}
 	}
 
-	IndexType indexType;
-	switch(indexAccessor.componentType) {
-	case fx::gltf::Accessor::ComponentType::UnsignedByte:
-		indexType = UINT8; break;
-	case fx::gltf::Accessor::ComponentType::UnsignedShort:
-		indexType = UINT16; break;
-	case fx::gltf::Accessor::ComponentType::UnsignedInt:
-		indexType = UINT32; break;
-	default:
-		std::cerr << "ERROR: Index type not supported: " <<
-			static_cast<uint16_t>(indexAccessor.componentType) <<
-			std::endl;
-		return 0;
-	}
-
+	IndexType indexType = getIndexType(indexAccessor.componentType);
+	if (indexType == IndexType::UNDEFINED) return 0; // TODO return vkcv::error;
 	const size_t numVertexGroups = objectMesh.primitives.size();
 	
 	std::vector<VertexGroup> vertexGroups;
@@ -325,19 +332,8 @@ int loadScene(const std::string &path, Scene &scene){
                     }
                 }
 
-                switch(indexAccessor.componentType) {
-                    case fx::gltf::Accessor::ComponentType::UnsignedByte:
-                        indexType = UINT8; break;
-                    case fx::gltf::Accessor::ComponentType::UnsignedShort:
-                        indexType = UINT16; break;
-                    case fx::gltf::Accessor::ComponentType::UnsignedInt:
-                        indexType = UINT32; break;
-                    default:
-                        std::cerr << "ERROR: Index type not supported: " <<
-                                  static_cast<uint16_t>(indexAccessor.componentType) <<
-                                  std::endl;
-                        return 0;
-                }
+		indexType = getIndexType(indexAccessor.componentType);
+		if (indexType == IndexType::UNDEFINED) return 0; // TODO return vkcv::error;
             }
 
             const fx::gltf::BufferView&	vertexBufferView	= sceneObjects.bufferViews[posAccessor.bufferView];
