@@ -47,7 +47,7 @@ namespace vkcv::asset {
 
 /* This enum matches modes in fx-gltf, the library returns a standard mode
  * (TRIANGLES) if no mode is given in the file. */
-enum PrimitiveMode {
+enum class PrimitiveMode : uint8_t {
 	POINTS=0, LINES, LINELOOP, LINESTRIP, TRIANGLES, TRIANGLESTRIP,
 	TRIANGLEFAN
 };
