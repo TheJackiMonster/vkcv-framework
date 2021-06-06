@@ -287,6 +287,7 @@ namespace vkcv {
 		auto& image = m_images[id];
 		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, newLayout);
 		recordImageBarrier(cmdBuffer, transitionBarrier);
+		image.m_layout = newLayout;
 	}
 	
 	void ImageManager::fillImage(const ImageHandle& handle, void* data, size_t size)
