@@ -232,12 +232,12 @@ int main(int argc, const char** argv) {
 		}
 		
 		auto end = std::chrono::system_clock::now();
-		auto deltatime = end - start;
+		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		start = end;
-		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
+		cameraManager.getCamera().updateView(deltatime.count() * 0.000001);
 
-		const float sunTheta = (end - appStartTime).count() * 0.0000001;
-		lightInfo.direction = glm::normalize(glm::vec3(cos(sunTheta), 1, sin(sunTheta)));
+		const float sunTheta = std::chrono::duration_cast<std::chrono::milliseconds>(end - appStartTime).count() * 0.001f;
+		lightInfo.direction = glm::normalize(glm::vec3(std::cos(sunTheta), 1, std::sin(sunTheta)));
 
 		const float shadowProjectionSize = 5.f;
 		glm::mat4 projectionLight = glm::ortho(
