@@ -53,7 +53,7 @@ enum PrimitiveMode {
 };
 
 /* The indices in the index buffer can be of different bit width. */
-enum IndexType { UINT32=0, UINT16=1, UINT8=2 };
+enum class IndexType : uint8_t { UNDEFINED=0, UINT8=1, UINT16=2, UINT32=3 };
 
 /* Flags for the bit-mask in the Material struct. Use the bitof() macro to
  * translate the enums value when checking a flag of the mask:
