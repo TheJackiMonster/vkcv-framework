@@ -375,7 +375,9 @@ namespace vkcv
 		const FinishCommandFunction &finish) {
 
 		m_CommandStreamManager->recordCommandsToStream(cmdStreamHandle, record);
-		m_CommandStreamManager->addFinishCallbackToStream(cmdStreamHandle, finish);
+		if (finish) {
+			m_CommandStreamManager->addFinishCallbackToStream(cmdStreamHandle, finish);
+		}
 	}
 
 	void Core::submitCommandStream(const CommandStreamHandle handle) {
@@ -456,5 +458,11 @@ namespace vkcv
 		m_CommandStreamManager->recordCommandsToStream(handle, [&](vk::CommandBuffer cmdBuffer) {
 			recordSwapchainImageLayoutTransition(cmdBuffer, vk::ImageLayout::ePresentSrcKHR);
 		});
+	}
+
+	void Core::prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image) {
+		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eShaderReadOnlyOptimal, cmdBuffer);
+		}, nullptr);
 	}
 }

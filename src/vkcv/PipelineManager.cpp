@@ -174,7 +174,7 @@ namespace vkcv
                 { 1.f,1.f,1.f,1.f }
         );
 
-		const size_t matrixPushConstantSize = 4 * 4 * sizeof(float);
+		const size_t matrixPushConstantSize = config.m_ShaderProgram.getPushConstantSize();
 		const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, matrixPushConstantSize);
 
         // pipeline layout

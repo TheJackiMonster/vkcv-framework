@@ -27,7 +27,7 @@ namespace vkcv {
             const ShaderProgram&                        shaderProgram,
             uint32_t                                    width,
             uint32_t                                    height,
-            PassHandle                                  &passHandle,
+            const PassHandle                            &passHandle,
             const std::vector<VertexAttribute>          &vertexAttributes,
             const std::vector<vk::DescriptorSetLayout>  &descriptorLayouts,
             bool                                        useDynamicViewport);

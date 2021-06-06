@@ -20,6 +20,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
 	cameraManager.getCamera().setPosition(glm::vec3(0.f, 0.f, 3.f));
+	cameraManager.getCamera().setNearFar(0.1, 30);
 
 	window.initEvents();
 
@@ -103,8 +104,11 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 	
 	std::vector<vkcv::DescriptorBinding> descriptorBindings = {
-		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_SAMPLED,	1, vkcv::ShaderStage::FRAGMENT),
-		vkcv::DescriptorBinding(vkcv::DescriptorType::SAMPLER,			1, vkcv::ShaderStage::FRAGMENT)};
+		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_SAMPLED,    1, vkcv::ShaderStage::FRAGMENT),
+		vkcv::DescriptorBinding(vkcv::DescriptorType::SAMPLER,          1, vkcv::ShaderStage::FRAGMENT),
+		vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT),
+		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_SAMPLED,    1, vkcv::ShaderStage::FRAGMENT) ,
+		vkcv::DescriptorBinding(vkcv::DescriptorType::SAMPLER,          1, vkcv::ShaderStage::FRAGMENT) };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(
@@ -132,10 +136,12 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
-	vkcv::DescriptorWrites setWrites;
-	setWrites.sampledImageWrites	= { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
-	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
-	core.writeResourceDescription(descriptorSet, 0, setWrites);
+    vkcv::SamplerHandle shadowSampler = core.createSampler(
+        vkcv::SamplerFilterType::NEAREST,
+        vkcv::SamplerFilterType::NEAREST,
+        vkcv::SamplerMipmapMode::NEAREST,
+        vkcv::SamplerAddressMode::CLAMP_TO_EDGE
+    );
 
 	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
 
@@ -147,19 +153,69 @@ int main(int argc, const char** argv) {
 		glm::vec3( 0.f, -2.f, 0.f),
 		glm::vec3( 3.f,  0.f, 0.f),
 		glm::vec3(-3.f,  0.f, 0.f),
-		glm::vec3( 0.f,  2.f, 0.f)
+		glm::vec3( 0.f,  2.f, 0.f),
+		glm::vec3( 0.f, -5.f, 0.f)
 	};
 
 	std::vector<glm::mat4> modelMatrices;
 	std::vector<vkcv::DrawcallInfo> drawcalls;
+	std::vector<vkcv::DrawcallInfo> shadowDrawcalls;
 	for (const auto& position : instancePositions) {
 		modelMatrices.push_back(glm::translate(glm::mat4(1.f), position));
 		drawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, { descriptorUsage }));
+		shadowDrawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, {}));
 	}
 
-	std::vector<glm::mat4> mvpMatrices;
+	modelMatrices.back() *= glm::scale(glm::mat4(1.f), glm::vec3(10.f, 1.f, 10.f));
+
+	std::vector<std::array<glm::mat4, 2>> mainPassMatrices;
+	std::vector<glm::mat4> mvpLight;
+
+	vkcv::ShaderProgram shadowShader;
+	shadowShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/shadow_vert.spv");
+	shadowShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/shadow_frag.spv");
+    shadowShader.reflectShader(vkcv::ShaderStage::VERTEX);
+    shadowShader.reflectShader(vkcv::ShaderStage::FRAGMENT);
+
+	const vk::Format shadowMapFormat = vk::Format::eD16Unorm;
+	const std::vector<vkcv::AttachmentDescription> shadowAttachments = {
+		vkcv::AttachmentDescription(vkcv::AttachmentOperation::STORE, vkcv::AttachmentOperation::CLEAR, shadowMapFormat)
+	};
+	const vkcv::PassConfig shadowPassConfig(shadowAttachments);
+	const vkcv::PassHandle shadowPass = core.createPass(shadowPassConfig);
+
+	const uint32_t shadowMapResolution = 1024;
+	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1);
+	const vkcv::PipelineConfig shadowPipeConfig(
+		shadowShader, 
+		shadowMapResolution, 
+		shadowMapResolution, 
+		shadowPass, 
+		attributes,
+		{}, 
+		false);
+	const vkcv::PipelineHandle shadowPipe = core.createGraphicsPipeline(shadowPipeConfig);
+
+	struct LightInfo {
+		glm::vec3 direction;
+		float padding;
+		glm::mat4 lightMatrix;
+	};
+	LightInfo lightInfo;
+	vkcv::Buffer lightBuffer = core.createBuffer<LightInfo>(vkcv::BufferType::UNIFORM, sizeof(glm::vec3));
+
+	vkcv::DescriptorWrites setWrites;
+	setWrites.sampledImageWrites    = { 
+        vkcv::SampledImageDescriptorWrite(0, texture.getHandle()),
+        vkcv::SampledImageDescriptorWrite(3, shadowMap.getHandle()) };
+	setWrites.samplerWrites         = { 
+        vkcv::SamplerDescriptorWrite(1, sampler), 
+        vkcv::SamplerDescriptorWrite(4, shadowSampler) };
+    setWrites.uniformBufferWrites   = { vkcv::UniformBufferDescriptorWrite(2, lightBuffer.getHandle()) };
+	core.writeResourceDescription(descriptorSet, 0, setWrites);
 
 	auto start = std::chrono::system_clock::now();
+	const auto appStartTime = start;
 	while (window.isWindowOpen()) {
 		vkcv::Window::pollEvents();
 		
@@ -180,15 +236,53 @@ int main(int argc, const char** argv) {
 		start = end;
 		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
 
-		const glm::mat4 viewProjection = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
-		mvpMatrices.clear();
+		const float sunTheta = (end - appStartTime).count() * 0.0000001;
+		lightInfo.direction = glm::normalize(glm::vec3(cos(sunTheta), 1, sin(sunTheta)));
+
+		const float shadowProjectionSize = 5.f;
+		glm::mat4 projectionLight = glm::ortho(
+			-shadowProjectionSize,
+			shadowProjectionSize,
+			-shadowProjectionSize,
+			shadowProjectionSize,
+			-shadowProjectionSize,
+			shadowProjectionSize);
+		
+		glm::mat4 vulkanCorrectionMatrix(1.f);
+		vulkanCorrectionMatrix[2][2] = 0.5;
+		vulkanCorrectionMatrix[3][2] = 0.5;
+		projectionLight = vulkanCorrectionMatrix * projectionLight;
+
+		const glm::mat4 viewLight = glm::lookAt(glm::vec3(0), -lightInfo.direction, glm::vec3(0, -1, 0));
+
+		lightInfo.lightMatrix = projectionLight * viewLight;
+		lightBuffer.fill({ lightInfo });
+
+		const glm::mat4 viewProjectionCamera = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+
+		mainPassMatrices.clear();
+		mvpLight.clear();
 		for (const auto& m : modelMatrices) {
-			mvpMatrices.push_back(viewProjection * m);
+			mainPassMatrices.push_back({ viewProjectionCamera * m, m });
+			mvpLight.push_back(lightInfo.lightMatrix* m);
 		}
-		vkcv::PushConstantData pushConstantData((void*)mvpMatrices.data(), sizeof(glm::mat4));
-        const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
+
+		vkcv::PushConstantData pushConstantData((void*)mainPassMatrices.data(), 2 * sizeof(glm::mat4));
+		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
+
+		vkcv::PushConstantData shadowPushConstantData((void*)mvpLight.data(), sizeof(glm::mat4));
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+
+		core.recordDrawcallsToCmdStream(
+			cmdStream,
+			shadowPass,
+			shadowPipe,
+			shadowPushConstantData,
+			shadowDrawcalls,
+			{ shadowMap.getHandle() });
+
+		core.prepareImageForSampling(cmdStream, shadowMap.getHandle());
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,

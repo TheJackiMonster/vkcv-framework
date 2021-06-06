@@ -58,10 +58,12 @@ namespace vkcv {
         void reflectShader(ShaderStage shaderStage);
 
         const VertexLayout &getVertexLayout() const;
+		size_t getPushConstantSize() const;
 
 	private:
         std::unordered_map<ShaderStage, Shader> m_Shaders;
 
         VertexLayout m_VertexLayout;
+		size_t m_pushConstantSize = 0;
 	};
 }
