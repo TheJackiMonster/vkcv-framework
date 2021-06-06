@@ -46,19 +46,19 @@ int main(int argc, const char** argv) {
 	assert(mesh.vertexGroups.size() > 0);
 	auto vertexBuffer = core.createBuffer<uint8_t>(
 			vkcv::BufferType::VERTEX,
-			mesh.vertexGroups[0].vertexBuffer.data.size(),
+			mesh.vertexGroups[2].vertexBuffer.data.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL
 	);
 	
-	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
+	vertexBuffer.fill(mesh.vertexGroups[2].vertexBuffer.data);
 
 	auto indexBuffer = core.createBuffer<uint8_t>(
 			vkcv::BufferType::INDEX,
-			mesh.vertexGroups[0].indexBuffer.data.size(),
+			mesh.vertexGroups[2].indexBuffer.data.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL
 	);
 	
-	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
+	indexBuffer.fill(mesh.vertexGroups[2].indexBuffer.data);
 
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
@@ -93,7 +93,7 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 	
-	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
+	auto& attributes = mesh.vertexGroups[2].vertexBuffer.attributes;
 	
 	std::sort(attributes.begin(), attributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
@@ -116,7 +116,7 @@ int main(int argc, const char** argv) {
 		windowWidth,
 		windowHeight,
 		trianglePass,
-		mesh.vertexGroups[0].vertexBuffer.attributes,
+		mesh.vertexGroups[2].vertexBuffer.attributes,
 		{ core.getDescriptorSetLayout(set, 0) });
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 	
@@ -127,7 +127,7 @@ int main(int argc, const char** argv) {
 	
 	// FIXME There should be a test here to make sure there is at least 1
 	// texture in the mesh.
-	vkcv::asset::Texture &tex = mesh.textures[0];
+	vkcv::asset::Texture &tex = mesh.textures[2];
 	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
 	texture.fill(tex.data.data());
 
@@ -139,9 +139,9 @@ int main(int argc, const char** argv) {
 	);
 
 	std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		{ mesh.vertexGroups[0].vertexBuffer.attributes[0].offset, vertexBuffer.getHandle() },
-		{ mesh.vertexGroups[0].vertexBuffer.attributes[1].offset, vertexBuffer.getHandle() },
-		{ mesh.vertexGroups[0].vertexBuffer.attributes[2].offset, vertexBuffer.getHandle() }
+		{ mesh.vertexGroups[2].vertexBuffer.attributes[0].offset, vertexBuffer.getHandle() },
+		{ mesh.vertexGroups[2].vertexBuffer.attributes[1].offset, vertexBuffer.getHandle() },
+		{ mesh.vertexGroups[2].vertexBuffer.attributes[2].offset, vertexBuffer.getHandle() }
 	};
 
 	vkcv::DescriptorWrites setWrites;
@@ -168,7 +168,7 @@ int main(int argc, const char** argv) {
 			&mvp,
 			vertexBufferBindings,
 			indexBuffer.getHandle(),
-			mesh.vertexGroups[0].numIndices,
+			mesh.vertexGroups[2].numIndices,
 			set,
 			0
 		);

@@ -282,6 +282,7 @@ int loadScene(const std::string &path, Scene &scene){
 
         for(int j = 0; j < objectMesh.primitives.size(); j++){
             fx::gltf::Primitive const &objectPrimitive = objectMesh.primitives[j];
+            vertexAttributes.clear();
             vertexAttributes.reserve(objectPrimitive.attributes.size());
 
             for (auto const & attrib : objectPrimitive.attributes) {
@@ -419,7 +420,39 @@ int loadScene(const std::string &path, Scene &scene){
         }
     }
 
-    // TODO fill materials struct and vector
+    if (sceneObjects.materials.size() > 0){
+        materials.reserve(sceneObjects.materials.size());
+
+        for (int l = 0; l < sceneObjects.materials.size(); l++){
+            fx::gltf::Material material = sceneObjects.materials[l];
+            materials.push_back({
+               0, // TODO; macros not yet defined
+               material.pbrMetallicRoughness.baseColorTexture.index,
+               material.pbrMetallicRoughness.metallicRoughnessTexture.index,
+               material.normalTexture.index,
+               material.occlusionTexture.index,
+               material.emissiveTexture.index,
+               {
+                   material.pbrMetallicRoughness.baseColorFactor[0],
+                   material.pbrMetallicRoughness.baseColorFactor[1],
+                   material.pbrMetallicRoughness.baseColorFactor[2],
+                   material.pbrMetallicRoughness.baseColorFactor[3]
+               },
+               material.pbrMetallicRoughness.metallicFactor,
+               material.pbrMetallicRoughness.roughnessFactor,
+               material.normalTexture.scale,
+               material.occlusionTexture.strength,
+               {
+                   material.emissiveFactor[0],
+                   material.emissiveFactor[1],
+                   material.emissiveFactor[2]
+               }
+
+            });
+            printf("baseColor index=%d normal=%d metallic factor=%f\n",
+                   materials[l].baseColor, materials[l].normal, materials[l].metallicFactor);
+        }
+    }
 
     scene = {
             meshes,
