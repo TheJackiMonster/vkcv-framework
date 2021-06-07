@@ -4,7 +4,7 @@
 namespace vkcv {
 
     Camera::Camera(){
-        m_up = glm::vec3(0.0f, -1.0f, 0.0f);
+        m_up = glm::vec3(0.0f, 1.0f, 0.0f);
         m_position = glm::vec3(0.0f, 0.0f, 0.0f);
         m_cameraSpeed = 2.f;
 
@@ -154,8 +154,8 @@ namespace vkcv {
     void Camera::updatePosition(double deltaTime ){
         m_position += (m_cameraSpeed * getFront() * static_cast<float> (m_forward) * static_cast<float>(deltaTime));
         m_position -= (m_cameraSpeed * getFront() * static_cast<float> (m_backward) * static_cast<float>(deltaTime));
-        m_position -= (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_left) * static_cast<float>(deltaTime));
-        m_position += (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_right) * static_cast<float>(deltaTime));
+        m_position += (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_left) * static_cast<float>(deltaTime));
+        m_position -= (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_right) * static_cast<float>(deltaTime));
         m_position -= m_up * m_cameraSpeed * static_cast<float> (m_top) * static_cast<float>(deltaTime);
         m_position += m_up * m_cameraSpeed * static_cast<float> (m_bottom) * static_cast<float>(deltaTime);
     }

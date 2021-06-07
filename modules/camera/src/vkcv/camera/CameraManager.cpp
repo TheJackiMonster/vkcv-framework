@@ -58,7 +58,6 @@ namespace vkcv{
     }
 
     void CameraManager::keyCallback(int key, int scancode, int action, int mods) {
-
         switch (key) {
             case GLFW_KEY_W:
                 m_camera.moveForward(action);
@@ -85,6 +84,7 @@ namespace vkcv{
                 break;
         }
     }
+
     Camera& CameraManager::getCamera(){
         return m_camera;
     }

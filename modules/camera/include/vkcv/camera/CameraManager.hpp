@@ -67,10 +67,10 @@ namespace vkcv{
          * @param[in] window The window
          * @param[in] width The width of the window
          * @param[in] height The height of the window
-         * @param[in] up The up vector of the camera. Per default: @code{.cpp} up = glm::vec3(0.0f, -1.0f, 0.0f) @endcode
+         * @param[in] up The up vector of the camera. Per default: @code{.cpp} up = glm::vec3(0.0f, 1.0f, 0.0f) @endcode
          * @param[in] position The position of the camera. Per default: @code{.cpp} position = glm::vec3(0.0f,0.0f,0.0f) @endcode
          */
-        CameraManager(Window &window, float width, float height, glm::vec3 up = glm::vec3(0.0f,-1.0f,0.0f), glm::vec3 position = glm::vec3(0.0f,0.0f,0.0f));
+        CameraManager(Window &window, float width, float height, glm::vec3 up = glm::vec3(0.0f,1.0f,0.0f), glm::vec3 position = glm::vec3(0.0f,0.0f,0.0f));
 
         /**
          * @brief Gets the camera object
