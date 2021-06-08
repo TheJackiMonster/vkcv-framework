@@ -1,3 +1,8 @@
+/**
+ * @authors Artur Wasmut, Susanne D�tsch, Simeon Hermann
+ * @file src/vkcv/DescriptorManager.cpp
+ * @brief Creation and handling of descriptor sets and the respective descriptor pools
+ */
 #include <vulkan/vulkan.hpp>
 
 #include "vkcv/Handles.hpp"
@@ -16,48 +21,30 @@ namespace vkcv
 	    explicit DescriptorManager(vk::Device device) noexcept;
 	    ~DescriptorManager() noexcept;
 
-		/**
-		* Creates all vk::DescriptorSets and allocates them from the pool. 
-		* DescriptorSets are put inside a ResourceDescription struct. 
-		* Structs are then put into m_ResourceDescriptions.
-		* @param[in] vector of filled vkcv::DescriptorSet structs
-		* @return index into that objects a resource handle
-		*/
-        ResourcesHandle createResourceDescription(const std::vector<DescriptorSetConfig> & descriptorSets);
+        DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &descriptorBindings);
 
 		void writeResourceDescription(
-			ResourcesHandle			handle,
+			const DescriptorSetHandle	&handle,
 			size_t					setIndex,
-			const DescriptorWrites& writes,
-			const ImageManager& imageManager,
-			const BufferManager& bufferManager,
-			const SamplerManager& samplerManager);
+			const DescriptorWrites  &writes,
+			const ImageManager      &imageManager,
+			const BufferManager     &bufferManager,
+			const SamplerManager    &samplerManager);
 
-		vk::DescriptorSet		getDescriptorSet(ResourcesHandle handle, size_t index);
-		vk::DescriptorSetLayout getDescriptorSetLayout(ResourcesHandle handle, size_t index);
+		[[nodiscard]]
+		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
 
 	private:
-		vk::Device			m_Device;
-        vk::DescriptorPool	m_Pool;
+		vk::Device m_Device;
+		std::vector<vk::DescriptorPool>	m_Pools;
+		std::vector<vk::DescriptorPoolSize> m_PoolSizes;
+		vk::DescriptorPoolCreateInfo m_PoolInfo;
 
-
-		/**
-		* Container for all resources requested by the user in one call of createResourceDescription.
-		* Includes descriptor sets and the respective descriptor set layouts.
-		*/
-        struct ResourceDescription
-        {
-            ResourceDescription() = delete;
-            ResourceDescription(std::vector<vk::DescriptorSet> sets, std::vector<vk::DescriptorSetLayout> layouts) noexcept;
-
-            std::vector<vk::DescriptorSet> descriptorSets;
-            std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
-        };
 
 		/**
 		* Contains all the resource descriptions that were requested by the user in calls of createResourceDescription.
 		*/
-        std::vector<ResourceDescription> m_ResourceDescriptions;
+        std::vector<DescriptorSet> m_DescriptorSets;
 		
 		/**
 		* Converts the flags of the descriptor types from VulkanCV (vkcv) to Vulkan (vk).
@@ -72,7 +59,18 @@ namespace vkcv
 		*/
 		static vk::ShaderStageFlagBits convertShaderStageFlag(ShaderStage stage);
 		
-		void destroyResourceDescriptionById(uint64_t id);
+		/**
+		* Destroys a specific resource description
+		* @param[in] the handle id of the respective resource description
+		*/
+		void destroyDescriptorSetById(uint64_t id);
+
+		/**
+		* creates a descriptor pool based on the poolSizes and poolInfo defined in the constructor
+		* is called initially in the constructor and then every time the pool runs out memory
+		* @return a DescriptorPool object
+		*/
+		vk::DescriptorPool allocateDescriptorPool();
 		
 	};
 }

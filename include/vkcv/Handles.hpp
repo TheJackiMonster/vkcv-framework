@@ -79,7 +79,7 @@ namespace vkcv
 		using Handle::Handle;
 	};
 	
-	class ResourcesHandle : public Handle {
+	class DescriptorSetHandle : public Handle {
 		friend class DescriptorManager;
 	private:
 		using Handle::Handle;
@@ -93,8 +93,19 @@ namespace vkcv
 
 	class ImageHandle : public Handle {
 		friend class ImageManager;
-	private:
 		using Handle::Handle;
+	public:
+		[[nodiscard]]
+		bool isSwapchainImage() const;
+		
+		static ImageHandle createSwapchainImageHandle(const HandleDestroyFunction& destroy = nullptr);
+		
 	};
+
+    class CommandStreamHandle : public Handle {
+        friend class CommandStreamManager;
+    private:
+        using Handle::Handle;
+    };
 	
 }

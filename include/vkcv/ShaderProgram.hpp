@@ -59,6 +59,7 @@ namespace vkcv {
         void reflectShader(ShaderStage shaderStage);
 
         const VertexLayout &getVertexLayout() const;
+		size_t getPushConstantSize() const;
 
         const DescriptorSetLayout &getDescriptorSetLayout() const;
 
@@ -67,5 +68,6 @@ namespace vkcv {
 
         VertexLayout m_VertexLayout;
         DescriptorSetLayout m_DescriptorSetLayout;
+		size_t m_pushConstantSize = 0;
 	};
 }
