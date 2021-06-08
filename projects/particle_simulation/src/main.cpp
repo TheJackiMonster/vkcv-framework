@@ -5,15 +5,15 @@
 #include <chrono>
 
 int main(int argc, const char** argv) {
-    const char* applicationName = "First Triangle";
+    const char* applicationName = "Particlesystem";
 
-    const int windowWidth = 800;
-    const int windowHeight = 600;
+    uint32_t windowWidth = 800;
+    uint32_t windowHeight = 600;
     vkcv::Window window = vkcv::Window::create(
             applicationName,
             windowWidth,
             windowHeight,
-            false
+            true
     );
 
     vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
@@ -53,33 +53,14 @@ int main(int argc, const char** argv) {
     uint16_t indices[3] = { 0, 1, 2 };
     triangleIndexBuffer.fill(&indices[0], sizeof(indices));
 
-
-    vkcv::SamplerHandle sampler = core.createSampler(
-            vkcv::SamplerFilterType::NEAREST,
-            vkcv::SamplerFilterType::NEAREST,
-            vkcv::SamplerMipmapMode::NEAREST,
-            vkcv::SamplerAddressMode::REPEAT
-    );
-
     std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
-
-    switch (physicalDevice.getProperties().vendorID) {
-        case 0x1002: std::cout << "Running AMD huh? You like underdogs, are you a Linux user?" << std::endl; break;
-        case 0x10DE: std::cout << "An NVidia GPU, how predictable..." << std::endl; break;
-        case 0x8086: std::cout << "Poor child, running on an Intel GPU, probably integrated..."
-                                  "or perhaps you are from the future with a dedicated one?" << std::endl; break;
-        case 0x13B5: std::cout << "ARM? What the hell are you running on, next thing I know you're trying to run Vulkan on a leg..." << std::endl; break;
-        default: std::cout << "Unknown GPU vendor?! Either you're on an exotic system or your driver is broken..." << std::endl;
-    }
 
     // an example attachment for passes that output to the window
     const vkcv::AttachmentDescription present_color_attachment(
-            vkcv::AttachmentLayout::UNDEFINED,
-            vkcv::AttachmentLayout::COLOR_ATTACHMENT,
-            vkcv::AttachmentLayout::PRESENTATION,
             vkcv::AttachmentOperation::STORE,
             vkcv::AttachmentOperation::CLEAR,
             core.getSwapchainImageFormat());
+
 
     vkcv::PassConfig particlePassDefinition({ present_color_attachment });
     vkcv::PassHandle particlePass = core.createPass(particlePassDefinition);
@@ -96,18 +77,19 @@ int main(int argc, const char** argv) {
     particleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
     particleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
-    vkcv::DescriptorSetConfig setConfig({
-        vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER, 1, vkcv::ShaderStage::FRAGMENT),
-    });
-    vkcv::ResourcesHandle set = core.createResourceDescription({setConfig});
+    std::vector<vkcv::DescriptorBinding> descriptorBindings = {
+            vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT)};
+    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
     const vkcv::PipelineConfig particlePipelineDefinition(
             particleShaderProgram,
-            windowWidth,
-            windowHeight,
+            UINT32_MAX,
+            UINT32_MAX,
             particlePass,
             {},
-            {core.getDescriptorSetLayout(set, 0)});
+            { core.getDescriptorSet(descriptorSet).layout },
+            true);
+
     vkcv::PipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
     vkcv::Buffer<glm_vec4> color = core.createBuffer<glm_vec4>(
             vkcv::BufferType::UNIFORM,
@@ -116,7 +98,7 @@ int main(int argc, const char** argv) {
 
     vkcv::DescriptorWrites setWrites;
     setWrites.uniformBufferWrites = {vkcv::UniformBufferDescriptorWrite(0,color.getHandle())};
-    core.writeResourceDescription(set,0,setWrites);
+    core.writeResourceDescription(descriptorSet,0,setWrites);
 
     if (!particlePipeline)
     {
@@ -124,30 +106,40 @@ int main(int argc, const char** argv) {
         return EXIT_FAILURE;
     }
 
-    std::vector<vkcv::VertexBufferBinding> vertexBufferBindings;
+    const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+
+    const vkcv::Mesh renderMesh({}, triangleIndexBuffer.getVulkanHandle(), 3);
+    vkcv::DrawcallInfo drawcalls(renderMesh, {});
 
     auto start = std::chrono::system_clock::now();
+
     while (window.isWindowOpen())
     {
-        core.beginFrame();
         window.pollEvents();
+
+        uint32_t swapchainWidth, swapchainHeight;
+        if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+            continue;
+        }
+
         auto end = std::chrono::system_clock::now();
         auto deltatime = end - start;
         start = end;
         cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
         const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-        core.renderMesh(
+        vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
+        auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+
+        core.recordDrawcallsToCmdStream(
+                cmdStream,
                 particlePass,
                 particlePipeline,
-                sizeof(mvp),
-                &mvp,
-                vertexBufferBindings,
-                triangleIndexBuffer.getHandle(),
-                3,
-                vkcv::ResourcesHandle(),
-                0);
-
+                pushConstantData,
+                {drawcalls},
+                {swapchainInput});
+        core.prepareSwapchainImageForPresent(cmdStream);
+        core.submitCommandStream(cmdStream);
         core.endFrame();
     }
     return 0;
