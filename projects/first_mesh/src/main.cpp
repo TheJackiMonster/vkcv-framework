@@ -23,7 +23,7 @@ int main(int argc, const char** argv) {
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
-		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
+		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
 		{},
 		{ "VK_KHR_swapchain" }
 	);
