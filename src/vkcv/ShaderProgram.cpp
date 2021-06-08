@@ -119,9 +119,9 @@ namespace vkcv {
 			for (uint32_t i = 0; i < resources.stage_inputs.size(); i++) {
 				auto& u = resources.stage_inputs[i];
 				const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
-
 				VertexInputAttachment input = VertexInputAttachment(comp.get_decoration(u.id, spv::DecorationLocation),
 					0,
+                    u.name,
 					convertFormat(base_type.basetype, base_type.vecsize),
 					offset);
 				inputVec.push_back(input);
@@ -133,10 +133,10 @@ namespace vkcv {
 		//Descriptor Sets
 		//Storage buffer, uniform Buffer, storage image, sampled image, sampler (?)
 
-        std::vector<uint32_t> sampledImageVec;
-        for (uint32_t i = 0; i < resources.sampled_images.size(); i++) {
-            auto &u = resources.sampled_images[i];
-            sampledImageVec.push_back(comp.get_decoration(u.id, spv::DecorationDescriptorSet));
+        std::vector<uint32_t> separateImageVec;
+        for (uint32_t i = 0; i < resources.separate_images.size(); i++) {
+            auto &u = resources.separate_images[i];
+            separateImageVec.push_back(comp.get_decoration(u.id, spv::DecorationDescriptorSet));
         }
 
         std::vector<uint32_t> storageImageVec;
@@ -163,7 +163,7 @@ namespace vkcv {
             samplerVec.push_back(comp.get_decoration(u.id, spv::DecorationDescriptorSet));
         }
 
-        m_DescriptorSetLayout = DescriptorSetLayout(sampledImageVec, storageImageVec, uniformBufferVec, storageBufferVec, samplerVec);
+        m_DescriptorSetLayout = DescriptorSetLayout(separateImageVec, storageImageVec, uniformBufferVec, storageBufferVec, samplerVec);
 
 		for (const auto &pushConstantBuffer : resources.push_constant_buffers) {
 			for (const auto &range : comp.get_active_buffer_ranges(pushConstantBuffer.id)) {
