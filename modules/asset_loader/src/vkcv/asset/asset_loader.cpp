@@ -118,7 +118,7 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		attribute.offset = object.bufferViews[accessor.bufferView].byteOffset;
 		attribute.length = object.bufferViews[accessor.bufferView].byteLength;
 		attribute.stride = object.bufferViews[accessor.bufferView].byteStride;
-		attribute.componentType = static_cast<uint16_t>(accessor.componentType);
+		attribute.componentType = static_cast<ComponentType>(accessor.componentType);
 		
 		if (convertTypeToInt(accessor.type) != 10) {
 			attribute.componentCount = convertTypeToInt(accessor.type);
@@ -304,8 +304,7 @@ int loadScene(const std::string &path, Scene &scene){
                 attribute.offset = sceneObjects.bufferViews[accessor.bufferView].byteOffset;
                 attribute.length = sceneObjects.bufferViews[accessor.bufferView].byteLength;
                 attribute.stride = sceneObjects.bufferViews[accessor.bufferView].byteStride;
-                // TODO use enums instead of only integer representation for types (defined in VertexLayout.hpp)
-                attribute.componentType = static_cast<uint16_t>(accessor.componentType);
+		attribute.componentType = static_cast<ComponentType>(accessor.componentType);
 
                 if (convertTypeToInt(accessor.type) != 10) {
                     attribute.componentCount = convertTypeToInt(accessor.type);

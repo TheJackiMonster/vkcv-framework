@@ -4,7 +4,7 @@
 #include <vector>
 #include <iostream>
 
-namespace vkcv{
+namespace vkcv {
 
 /* With these enums, 0 is reserved to signal uninitialized or invalid data. */
 enum class PrimitiveType : uint32_t {
@@ -19,7 +19,7 @@ enum class PrimitiveType : uint32_t {
  * convenience (easier to read in if/switch statements etc). While this enum
  * exists in (almost) the same definition in the fx-gltf library, we want to
  * avoid exposing that dependency, thus it is re-defined here. */
-enum class VertexComponentType : uint16_t {
+enum class ComponentType : uint16_t {
 	NONE=0, INT8=5120, UINT8=5121, INT16=5122, UINT16=5123,
 	UINT32=5125, FLOAT32=5126
 };
@@ -30,7 +30,7 @@ typedef struct {
 	uint32_t offset;		// offset in bytes
 	uint32_t length;		// length of ... in bytes
 	uint32_t stride;		// stride in bytes
-	uint16_t componentType;		// eg. 5126 for float
+	ComponentType componentType;	// eg. 5126 for float
 	uint8_t  componentCount;	// eg. 3 for vec3
 } VertexAttribute;
 
