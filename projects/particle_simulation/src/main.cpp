@@ -49,9 +49,9 @@ int main(int argc, const char** argv) {
 
     testBuffer.fill(vec_data);
 
-    auto triangleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, n, vkcv::BufferMemoryType::DEVICE_LOCAL);
+    auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, n, vkcv::BufferMemoryType::DEVICE_LOCAL);
     uint16_t indices[3] = { 0, 1, 2 };
-    triangleIndexBuffer.fill(&indices[0], sizeof(indices));
+    particleIndexBuffer.fill(&indices[0], sizeof(indices));
 
     std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
 
@@ -78,6 +78,7 @@ int main(int argc, const char** argv) {
     particleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
     std::vector<vkcv::DescriptorBinding> descriptorBindings = {
+            vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT),
             vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT)};
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
@@ -91,13 +92,19 @@ int main(int argc, const char** argv) {
             true);
 
     vkcv::PipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
-    vkcv::Buffer<glm_vec4> color = core.createBuffer<glm_vec4>(
+    vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
             vkcv::BufferType::UNIFORM,
             1
             );
 
+    vkcv::Buffer<glm::vec4> position = core.createBuffer<glm::vec4>(
+            vkcv::BufferType::UNIFORM,
+            1
+    );
+
     vkcv::DescriptorWrites setWrites;
-    setWrites.uniformBufferWrites = {vkcv::UniformBufferDescriptorWrite(0,color.getHandle())};
+    setWrites.uniformBufferWrites = {vkcv::UniformBufferDescriptorWrite(0,color.getHandle()),
+                                     vkcv::UniformBufferDescriptorWrite(1,position.getHandle())};
     core.writeResourceDescription(descriptorSet,0,setWrites);
 
     if (!particlePipeline)
@@ -108,8 +115,8 @@ int main(int argc, const char** argv) {
 
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    const vkcv::Mesh renderMesh({}, triangleIndexBuffer.getVulkanHandle(), 3);
-    vkcv::DrawcallInfo drawcalls(renderMesh, {});
+    const vkcv::Mesh renderMesh({}, particleIndexBuffer.getVulkanHandle(), 3);
+    vkcv::DrawcallInfo drawcalls(renderMesh, {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle)});
 
     auto start = std::chrono::system_clock::now();
 
