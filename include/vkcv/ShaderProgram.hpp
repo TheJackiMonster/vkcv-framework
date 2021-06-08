@@ -22,7 +22,8 @@ namespace vkcv {
         TESS_EVAL,
         GEOMETRY,
         FRAGMENT,
-        COMPUTE
+        COMPUTE,
+        ALL
     };
 
     struct Shader
