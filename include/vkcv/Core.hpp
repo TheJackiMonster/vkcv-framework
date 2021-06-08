@@ -203,7 +203,7 @@ namespace vkcv
          * @return Image-Object
          */
         [[nodiscard]]
-        Image createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth = 1);
+        Image createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth = 1, bool supportStorage = false, bool supportColorAttachment = false);
 
         /** TODO:
          *   @param setDescriptions
@@ -211,7 +211,7 @@ namespace vkcv
          */
         [[nodiscard]]
         DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &bindings);
-		void writeResourceDescription(DescriptorSetHandle handle, size_t setIndex, const DescriptorWrites& writes);
+		void writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites& writes);
 
 		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
 
@@ -259,5 +259,6 @@ namespace vkcv
 		void submitCommandStream(const CommandStreamHandle handle);
 		void prepareSwapchainImageForPresent(const CommandStreamHandle handle);
 		void prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image);
+		void prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image);
     };
 }

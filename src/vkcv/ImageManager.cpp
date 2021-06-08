@@ -80,7 +80,7 @@ namespace vkcv {
 		}
 	}
 
-	ImageHandle ImageManager::createImage(uint32_t width, uint32_t height, uint32_t depth, vk::Format format)
+	ImageHandle ImageManager::createImage(uint32_t width, uint32_t height, uint32_t depth, vk::Format format, bool supportStorage, bool supportColorAttachment)
 	{
 		const vk::PhysicalDevice& physicalDevice = m_core->getContext().getPhysicalDevice();
 		
@@ -90,6 +90,12 @@ namespace vkcv {
 		vk::ImageUsageFlags imageUsageFlags = (
 				vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst
 		);
+		if (supportStorage) {
+			imageUsageFlags |= vk::ImageUsageFlagBits::eStorage;
+		}
+		if (supportColorAttachment) {
+			imageUsageFlags |= vk::ImageUsageFlagBits::eColorAttachment;
+		}
 		
 		const bool isDepthFormat = isDepthImageFormat(format);
 		

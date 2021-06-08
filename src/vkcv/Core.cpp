@@ -217,7 +217,7 @@ namespace vkcv
 				targetHandle = m_ImageManager->getVulkanImageView(handle);
 				const bool isDepthImage = isDepthFormat(m_ImageManager->getImageFormat(handle));
 				const vk::ImageLayout targetLayout = 
-					isDepthFormat ? vk::ImageLayout::eDepthStencilAttachmentOptimal : vk::ImageLayout::eColorAttachmentOptimal;
+					isDepthImage ? vk::ImageLayout::eDepthStencilAttachmentOptimal : vk::ImageLayout::eColorAttachmentOptimal;
 				m_ImageManager->recordImageLayoutTransition(handle, targetLayout, cmdBuffer);
 			}
 			attachmentsViews.push_back(targetHandle);
@@ -392,9 +392,9 @@ namespace vkcv
 		return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode);
 	}
 
-	Image Core::createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth)
+	Image Core::createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth, bool supportStorage, bool supportColorAttachment)
 	{
-    	return Image::create(m_ImageManager.get(), format, width, height, depth);
+    	return Image::create(m_ImageManager.get(), format, width, height, depth, supportStorage, supportColorAttachment);
 	}
 
     DescriptorSetHandle Core::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
@@ -402,10 +402,9 @@ namespace vkcv
         return m_DescriptorManager->createDescriptorSet(bindings);
     }
 
-	void Core::writeResourceDescription(DescriptorSetHandle handle, size_t setIndex, const DescriptorWrites &writes) {
-		m_DescriptorManager->writeResourceDescription(
+	void Core::writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites &writes) {
+		m_DescriptorManager->writeDescriptorSet(
 			handle, 
-			setIndex, 
 			writes, 
 			*m_ImageManager, 
 			*m_BufferManager, 
@@ -463,6 +462,12 @@ namespace vkcv
 	void Core::prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image) {
 		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eShaderReadOnlyOptimal, cmdBuffer);
+		}, nullptr);
+	}
+
+	void Core::prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image) {
+		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eGeneral, cmdBuffer);
 		}, nullptr);
 	}
 }

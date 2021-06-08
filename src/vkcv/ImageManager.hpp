@@ -67,7 +67,7 @@ namespace vkcv {
 		ImageManager& operator=(ImageManager&& other) = delete;
 		ImageManager& operator=(const ImageManager& other) = delete;
 		
-		ImageHandle createImage(uint32_t width, uint32_t height, uint32_t depth, vk::Format format);
+		ImageHandle createImage(uint32_t width, uint32_t height, uint32_t depth, vk::Format format, bool supportStorage, bool supportColorAttachment);
 		
 		ImageHandle createSwapchainImage();
 		

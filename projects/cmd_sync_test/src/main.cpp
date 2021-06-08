@@ -63,16 +63,16 @@ int main(int argc, const char** argv) {
 	
 	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
 	
-	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
+	auto& vertexAttributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 	
-	std::sort(attributes.begin(), attributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
+	std::sort(vertexAttributes.begin(), vertexAttributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
 	});
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::VertexBufferBinding(attributes[0].offset, vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(attributes[1].offset, vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(attributes[2].offset, vertexBuffer.getVulkanHandle()) };
+		vkcv::VertexBufferBinding(vertexAttributes[0].offset, vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(vertexAttributes[1].offset, vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(vertexAttributes[2].offset, vertexBuffer.getVulkanHandle()) };
 
 	const vkcv::Mesh loadedMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
 
@@ -116,7 +116,7 @@ int main(int argc, const char** argv) {
 		windowWidth,
 		windowHeight,
 		trianglePass,
-		attributes,
+		vertexAttributes,
 		{ core.getDescriptorSet(descriptorSet).layout },
 		true);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
@@ -147,30 +147,6 @@ int main(int argc, const char** argv) {
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-	const vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
-
-	const std::vector<glm::vec3> instancePositions = {
-		glm::vec3( 0.f, -2.f, 0.f),
-		glm::vec3( 3.f,  0.f, 0.f),
-		glm::vec3(-3.f,  0.f, 0.f),
-		glm::vec3( 0.f,  2.f, 0.f),
-		glm::vec3( 0.f, -5.f, 0.f)
-	};
-
-	std::vector<glm::mat4> modelMatrices;
-	std::vector<vkcv::DrawcallInfo> drawcalls;
-	std::vector<vkcv::DrawcallInfo> shadowDrawcalls;
-	for (const auto& position : instancePositions) {
-		modelMatrices.push_back(glm::translate(glm::mat4(1.f), position));
-		drawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, { descriptorUsage }));
-		shadowDrawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, {}));
-	}
-
-	modelMatrices.back() *= glm::scale(glm::mat4(1.f), glm::vec3(10.f, 1.f, 10.f));
-
-	std::vector<std::array<glm::mat4, 2>> mainPassMatrices;
-	std::vector<glm::mat4> mvpLight;
-
 	vkcv::ShaderProgram shadowShader;
 	shadowShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/shadow_vert.spv");
 	shadowShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/shadow_frag.spv");
@@ -191,7 +167,7 @@ int main(int argc, const char** argv) {
 		shadowMapResolution, 
 		shadowMapResolution, 
 		shadowPass, 
-		attributes,
+		vertexAttributes,
 		{}, 
 		false);
 	const vkcv::PipelineHandle shadowPipe = core.createGraphicsPipeline(shadowPipeConfig);
@@ -212,7 +188,79 @@ int main(int argc, const char** argv) {
         vkcv::SamplerDescriptorWrite(1, sampler), 
         vkcv::SamplerDescriptorWrite(4, shadowSampler) };
     setWrites.uniformBufferWrites   = { vkcv::UniformBufferDescriptorWrite(2, lightBuffer.getHandle()) };
-	core.writeResourceDescription(descriptorSet, 0, setWrites);
+	core.writeDescriptorSet(descriptorSet, setWrites);
+
+	const uint32_t voxelResolution = 32;
+	vkcv::Image voxelImage = core.createImage(vk::Format::eR8Unorm, voxelResolution, voxelResolution, voxelResolution, true);
+
+	const vk::Format voxelizationDummyFormat = vk::Format::eR8Unorm;
+	vkcv::Image voxelizationDummyRenderTarget = core.createImage(voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, true);
+
+	vkcv::ShaderProgram voxelizationShader;
+	voxelizationShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelization_vert.spv");
+	voxelizationShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelization_frag.spv");
+	voxelizationShader.reflectShader(vkcv::ShaderStage::VERTEX);
+	voxelizationShader.reflectShader(vkcv::ShaderStage::FRAGMENT);
+
+	vkcv::PassConfig voxelizationPassConfig({
+		vkcv::AttachmentDescription(vkcv::AttachmentOperation::DONT_CARE, vkcv::AttachmentOperation::DONT_CARE, voxelizationDummyFormat)});
+	vkcv::PassHandle voxelizationPass = core.createPass(voxelizationPassConfig);
+
+	std::vector<vkcv::DescriptorBinding> voxelizationDescriptorBindings = {
+		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_STORAGE,  1, vkcv::ShaderStage::FRAGMENT),
+		vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER, 1, vkcv::ShaderStage::FRAGMENT)};
+	vkcv::DescriptorSetHandle voxelizationDescriptorSet = core.createDescriptorSet(voxelizationDescriptorBindings);
+
+	const vkcv::PipelineConfig voxelizationPipeConfig(
+		voxelizationShader,
+		voxelResolution,
+		voxelResolution,
+		voxelizationPass,
+		vertexAttributes,
+		{ core.getDescriptorSet(voxelizationDescriptorSet).layout },
+		false);
+	const vkcv::PipelineHandle voxelizationPipe = core.createGraphicsPipeline(voxelizationPipeConfig);
+
+	struct VoxelizationInfo {
+		float extent;
+	};
+	vkcv::Buffer voxelizationInfoBuffer = core.createBuffer<VoxelizationInfo>(vkcv::BufferType::UNIFORM, sizeof(VoxelizationInfo));
+	const float voxelizationExtent = 10.f;
+	VoxelizationInfo voxelizationInfo;
+	voxelizationInfo.extent = voxelizationExtent;
+	voxelizationInfoBuffer.fill({ voxelizationInfo });
+
+	vkcv::DescriptorWrites voxelizationDescriptorWrites;
+	voxelizationDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(0, voxelImage.getHandle()) };
+	voxelizationDescriptorWrites.uniformBufferWrites = { vkcv::UniformBufferDescriptorWrite(1, voxelizationInfoBuffer.getHandle()) };
+	core.writeDescriptorSet(voxelizationDescriptorSet, voxelizationDescriptorWrites);
+
+	const std::vector<glm::vec3> instancePositions = {
+		glm::vec3(0.f, -2.f, 0.f),
+		glm::vec3(3.f,  0.f, 0.f),
+		glm::vec3(-3.f,  0.f, 0.f),
+		glm::vec3(0.f,  2.f, 0.f),
+		glm::vec3(0.f, -5.f, 0.f)
+	};
+
+	const vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, core.getDescriptorSet(voxelizationDescriptorSet).vulkanHandle);
+
+	std::vector<glm::mat4> modelMatrices;
+	std::vector<vkcv::DrawcallInfo> drawcalls;
+	std::vector<vkcv::DrawcallInfo> shadowDrawcalls;
+	std::vector<vkcv::DrawcallInfo> voxelizationDrawcalls;
+	for (const auto& position : instancePositions) {
+		modelMatrices.push_back(glm::translate(glm::mat4(1.f), position));
+		drawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, { descriptorUsage }));
+		shadowDrawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, {}));
+		voxelizationDrawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, { voxelizationDescriptorUsage }));
+	}
+	modelMatrices.back() *= glm::scale(glm::mat4(1.f), glm::vec3(10.f, 1.f, 10.f));
+
+	std::vector<std::array<glm::mat4, 2>> mainPassMatrices;
+	std::vector<glm::mat4> mvpLight;
+	std::vector<std::array<glm::mat4, 2>> voxelizationMatrices;
 
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
@@ -247,7 +295,7 @@ int main(int argc, const char** argv) {
 			shadowProjectionSize,
 			-shadowProjectionSize,
 			shadowProjectionSize);
-		
+
 		glm::mat4 vulkanCorrectionMatrix(1.f);
 		vulkanCorrectionMatrix[2][2] = 0.5;
 		vulkanCorrectionMatrix[3][2] = 0.5;
@@ -260,17 +308,29 @@ int main(int argc, const char** argv) {
 
 		const glm::mat4 viewProjectionCamera = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
+		const float voxelizationHalfExtent = 0.5f * voxelizationExtent;
+		const glm::mat4 voxelizationProjection = vulkanCorrectionMatrix * glm::ortho(
+			-voxelizationHalfExtent,
+			 voxelizationHalfExtent,
+			-voxelizationHalfExtent,
+			 voxelizationHalfExtent,
+			-voxelizationHalfExtent,
+			 voxelizationHalfExtent);
+
 		mainPassMatrices.clear();
 		mvpLight.clear();
+		voxelizationMatrices.clear();
 		for (const auto& m : modelMatrices) {
 			mainPassMatrices.push_back({ viewProjectionCamera * m, m });
 			mvpLight.push_back(lightInfo.lightMatrix* m);
+			voxelizationMatrices.push_back({ voxelizationProjection * m, m });
 		}
 
 		vkcv::PushConstantData pushConstantData((void*)mainPassMatrices.data(), 2 * sizeof(glm::mat4));
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 
-		vkcv::PushConstantData shadowPushConstantData((void*)mvpLight.data(), sizeof(glm::mat4));
+		const vkcv::PushConstantData shadowPushConstantData((void*)mvpLight.data(), sizeof(glm::mat4));
+		const vkcv::PushConstantData voxelizationPushConstantData((void*)voxelizationMatrices.data(), 2 * sizeof(glm::mat4));
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
@@ -281,6 +341,15 @@ int main(int argc, const char** argv) {
 			shadowPushConstantData,
 			shadowDrawcalls,
 			{ shadowMap.getHandle() });
+
+		core.prepareImageForStorage(cmdStream, voxelImage.getHandle());
+		core.recordDrawcallsToCmdStream(
+			cmdStream,
+			voxelizationPass,
+			voxelizationPipe,
+			voxelizationPushConstantData,
+			voxelizationDrawcalls,
+			{ voxelizationDummyRenderTarget.getHandle() });
 
 		core.prepareImageForSampling(cmdStream, shadowMap.getHandle());
 
