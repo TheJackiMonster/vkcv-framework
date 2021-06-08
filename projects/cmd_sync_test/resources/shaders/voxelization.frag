@@ -21,7 +21,7 @@ void main()	{
     ivec3 voxeImageSize = imageSize(voxelImage);
     ivec3 UV = voxelCoordinatesToUV(voxelCoordinates, voxeImageSize);
     if(any(lessThan(UV, ivec3(0))) || any(greaterThanEqual(UV, voxeImageSize))){
-        //return;
+        return;
     }
     imageStore(voxelImage, UV, vec4(1));
 }

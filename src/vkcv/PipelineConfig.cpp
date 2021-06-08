@@ -15,7 +15,8 @@ namespace vkcv {
 		const PassHandle                            &passHandle,
 		const std::vector<VertexAttribute>          &vertexAttributes,
 		const std::vector<vk::DescriptorSetLayout>  &descriptorLayouts,
-		bool                                        useDynamicViewport)
+		bool                                        useDynamicViewport,
+		bool                                        useConservativeRasterization)
 		:
 		m_ShaderProgram(shaderProgram),
 		m_Height(height),
@@ -23,6 +24,7 @@ namespace vkcv {
 		m_PassHandle(passHandle),
 		m_VertexAttributes(vertexAttributes),
 		m_DescriptorLayouts(descriptorLayouts),
-		m_UseDynamicViewport(useDynamicViewport)
+		m_UseDynamicViewport(useDynamicViewport),
+		m_UseConservativeRasterization(useConservativeRasterization)
 		{}
 }

@@ -198,6 +198,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::ShaderProgram voxelizationShader;
 	voxelizationShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelization_vert.spv");
+	voxelizationShader.addShader(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelization_geom.spv");
 	voxelizationShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelization_frag.spv");
 	voxelizationShader.reflectShader(vkcv::ShaderStage::VERTEX);
 	voxelizationShader.reflectShader(vkcv::ShaderStage::FRAGMENT);
@@ -218,7 +219,8 @@ int main(int argc, const char** argv) {
 		voxelizationPass,
 		vertexAttributes,
 		{ core.getDescriptorSet(voxelizationDescriptorSet).layout },
-		false);
+		false,
+		true);
 	const vkcv::PipelineHandle voxelizationPipe = core.createGraphicsPipeline(voxelizationPipeConfig);
 
 	struct VoxelizationInfo {

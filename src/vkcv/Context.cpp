@@ -279,6 +279,7 @@ namespace vkcv
 		// FIXME: check if device feature is supported
 		vk::PhysicalDeviceFeatures deviceFeatures;
 		deviceFeatures.fragmentStoresAndAtomics = true;
+		deviceFeatures.geometryShader = true;
 		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
 		// Ablauf
