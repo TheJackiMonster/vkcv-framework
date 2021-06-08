@@ -4,6 +4,25 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 
+uint32_t findMemoryType( vk::PhysicalDeviceMemoryProperties const & memoryProperties,
+                         uint32_t                                   typeBits,
+                         vk::MemoryPropertyFlags                    requirementsMask )
+{
+    uint32_t typeIndex = uint32_t( ~0 );
+    for ( uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++ )
+    {
+        if ( ( typeBits & 1 ) &&
+             ( ( memoryProperties.memoryTypes[i].propertyFlags & requirementsMask ) == requirementsMask ) )
+        {
+            typeIndex = i;
+            break;
+        }
+        typeBits >>= 1;
+    }
+    assert( typeIndex != uint32_t( ~0 ) );
+    return typeIndex;
+}
+
 int main(int argc, const char** argv) {
     const char* applicationName = "Particlesystem";
 
@@ -97,7 +116,7 @@ int main(int argc, const char** argv) {
             1
             );
 
-    vkcv::Buffer<glm::vec4> position = core.createBuffer<glm::vec4>(
+    vkcv::Buffer<glm::vec2> position = core.createBuffer<glm::vec2>(
             vkcv::BufferType::UNIFORM,
             1
     );
@@ -120,6 +139,14 @@ int main(int argc, const char** argv) {
 
     auto start = std::chrono::system_clock::now();
 
+    glm::vec4 colorData = glm::vec4(1.0f,1.0f,0.0f,1.0f);
+
+    glm::vec2 pos = glm::vec2(1.f);
+
+    window.e_mouseMove.add([&]( double offsetX, double offsetY) {
+        pos = glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY));
+    });
+
     while (window.isWindowOpen())
     {
         window.pollEvents();
@@ -128,6 +155,10 @@ int main(int argc, const char** argv) {
         if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
             continue;
         }
+
+        color.fill(&colorData);
+
+        position.fill(&pos);
 
         auto end = std::chrono::system_clock::now();
         auto deltatime = end - start;
@@ -149,5 +180,6 @@ int main(int argc, const char** argv) {
         core.submitCommandStream(cmdStream);
         core.endFrame();
     }
+
     return 0;
 }

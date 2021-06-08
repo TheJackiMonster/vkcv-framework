@@ -8,11 +8,10 @@ layout(set=0, binding=0) uniform uColor {
 } Color;
 
 layout(set=0,binding=1) uniform uPosition{
-	vec3 position;
+	vec2 position;
 } Position;
 
 void main()
 {
-//	outColor = Color.color;
-	outColor = vec4(1.0f, 0.0f,0.f,1.f);
+	outColor = Color.color;
 }
