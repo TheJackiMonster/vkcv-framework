@@ -1,4 +1,5 @@
 #include "PipelineManager.hpp"
+#include "vkcv/Image.hpp"
 
 namespace vkcv
 {
@@ -93,7 +94,7 @@ namespace vkcv
             vk::Format	vertexFormat	= vertexFormatToVulkanFormat(attachment.format);
 
 			//FIXME: hoping that order is the same and compatible: add explicit mapping and validation
-			const VertexAttribute attribute = config.m_vertexAttributes[i];
+			const VertexAttribute attribute = config.m_VertexAttributes[i];
 
             vertexAttributeDescriptions.emplace_back(location, binding, vertexFormatToVulkanFormat(attachment.format), 0);
 			vertexBindingDescriptions.emplace_back(vk::VertexInputBindingDescription(
@@ -173,13 +174,13 @@ namespace vkcv
                 { 1.f,1.f,1.f,1.f }
         );
 
-		const size_t matrixPushConstantSize = 4 * 4 * sizeof(float);
+		const size_t matrixPushConstantSize = config.m_ShaderProgram.getPushConstantSize();
 		const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, matrixPushConstantSize);
 
         // pipeline layout
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
 			{},
-			(config.m_descriptorLayouts),
+			(config.m_DescriptorLayouts),
 			(pushConstantRange));
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
@@ -207,14 +208,14 @@ namespace vkcv
 		const PassConfig& passConfig = passManager.getPassConfig(config.m_PassHandle);
 		
 		for (const auto& attachment : passConfig.attachments) {
-			if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
+			if (isDepthFormat(attachment.format)) {
 				p_depthStencilCreateInfo = &depthStencilCreateInfo;
 				break;
 			}
 		}
 
 		std::vector<vk::DynamicState> dynamicStates = {};
-		if(config.m_Width == UINT32_MAX && config.m_Height == UINT32_MAX)
+		if(config.m_UseDynamicViewport)
         {
 		    dynamicStates.push_back(vk::DynamicState::eViewport);
 		    dynamicStates.push_back(vk::DynamicState::eScissor);

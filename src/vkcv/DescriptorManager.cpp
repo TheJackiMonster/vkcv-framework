@@ -2,11 +2,6 @@
 
 namespace vkcv
 {
-    DescriptorManager::ResourceDescription::ResourceDescription(std::vector<vk::DescriptorSet> sets,
-                                                                std::vector<vk::DescriptorSetLayout> layouts) noexcept :
-    descriptorSets{std::move(sets)},
-    descriptorSetLayouts{std::move(layouts)}
-    {}
     DescriptorManager::DescriptorManager(vk::Device device) noexcept:
         m_Device{ device }
     {
@@ -29,67 +24,63 @@ namespace vkcv
 
     DescriptorManager::~DescriptorManager() noexcept
     {
-        for (uint64_t id = 0; id < m_ResourceDescriptions.size(); id++) {
-			destroyResourceDescriptionById(id);
+        for (uint64_t id = 0; id < m_DescriptorSets.size(); id++) {
+			destroyDescriptorSetById(id);
         }
+		m_DescriptorSets.clear();
 		for (const auto &pool : m_Pools) {
 			m_Device.destroy(pool);
 		}
     }
 
-    ResourcesHandle DescriptorManager::createResourceDescription(const std::vector<DescriptorSetConfig> &descriptorSets)
+    DescriptorSetHandle DescriptorManager::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
     {
-        std::vector<vk::DescriptorSet> vk_sets;
-        std::vector<vk::DescriptorSetLayout> vk_setLayouts;
+        std::vector<vk::DescriptorSetLayoutBinding> setBindings = {};
 
-        for (const auto &set : descriptorSets) {
-            std::vector<vk::DescriptorSetLayoutBinding> setBindings = {};
-
-            //create each set's binding
-            for (uint32_t j = 0; j < set.bindings.size(); j++) {
-                vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding(
-                        j,
-                        convertDescriptorTypeFlag(set.bindings[j].descriptorType),
-                        set.bindings[j].descriptorCount,
-                        convertShaderStageFlag(set.bindings[j].shaderStage));
-                setBindings.push_back(descriptorSetLayoutBinding);
-            }
-
-            //create the descriptor set's layout from the bindings gathered above
-            vk::DescriptorSetLayoutCreateInfo layoutInfo({}, setBindings);
-            vk::DescriptorSetLayout layout = nullptr;
-            if(m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &layout) != vk::Result::eSuccess)
-            {
-                std::cout << "FAILED TO CREATE DESCRIPTOR SET LAYOUT" << std::endl;
-                return ResourcesHandle();
-            };
-            vk_setLayouts.push_back(layout);
+        //create each set's binding
+        for (uint32_t i = 0; i < bindings.size(); i++) {
+            vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding(
+                i,
+                convertDescriptorTypeFlag(bindings[i].descriptorType),
+                bindings[i].descriptorCount,
+                convertShaderStageFlag(bindings[i].shaderStage));
+            setBindings.push_back(descriptorSetLayoutBinding);
         }
-        //create and allocate the set(s) based on the layouts that have been gathered above
-        vk_sets.resize(vk_setLayouts.size());
-        vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), vk_sets.size(), vk_setLayouts.data());
-        auto result = m_Device.allocateDescriptorSets(&allocInfo, vk_sets.data());
+
+        DescriptorSet set;
+
+        //create the descriptor set's layout from the bindings gathered above
+        vk::DescriptorSetLayoutCreateInfo layoutInfo({}, setBindings);
+        if(m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &set.layout) != vk::Result::eSuccess)
+        {
+            std::cout << "FAILED TO CREATE DESCRIPTOR SET LAYOUT" << std::endl;
+            return DescriptorSetHandle();
+        };
+        
+        //create and allocate the set based on the layout that have been gathered above
+        vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), 1, &set.layout);
+        auto result = m_Device.allocateDescriptorSets(&allocInfo, &set.vulkanHandle);
         if(result != vk::Result::eSuccess)
         {
 			//create a new descriptor pool if the previous one ran out of memory
 			if (result == vk::Result::eErrorOutOfPoolMemory) {
 				allocateDescriptorPool();
 				allocInfo.setDescriptorPool(m_Pools.back());
-				result = m_Device.allocateDescriptorSets(&allocInfo, vk_sets.data());
+				result = m_Device.allocateDescriptorSets(&allocInfo, &set.vulkanHandle);
 			}
 			if (result != vk::Result::eSuccess) {
 				std::cout << "FAILED TO ALLOCATE DESCRIPTOR SET" << std::endl;
 				std::cout << vk::to_string(result) << std::endl;
-				for (const auto& layout : vk_setLayouts)
-					m_Device.destroy(layout);
+				m_Device.destroy(set.layout);
 
-				return ResourcesHandle();
+				return DescriptorSetHandle();
 			}
         };
 
-        const uint64_t id = m_ResourceDescriptions.size();
-        m_ResourceDescriptions.emplace_back(vk_sets, vk_setLayouts);
-        return ResourcesHandle(id, [&](uint64_t id) { destroyResourceDescriptionById(id); });
+        const uint64_t id = m_DescriptorSets.size();
+
+        m_DescriptorSets.push_back(set);
+        return DescriptorSetHandle(id, [&](uint64_t id) { destroyDescriptorSetById(id); });
     }
     
     struct WriteDescriptorSetInfo {
@@ -100,14 +91,14 @@ namespace vkcv
     };
 
 	void DescriptorManager::writeResourceDescription(
-		const ResourcesHandle	&handle,
+		const DescriptorSetHandle	&handle,
 		size_t					setIndex,
 		const DescriptorWrites	&writes,
 		const ImageManager		&imageManager, 
 		const BufferManager		&bufferManager,
 		const SamplerManager	&samplerManager) {
 
-		vk::DescriptorSet set = m_ResourceDescriptions[handle.getId()].descriptorSets[setIndex];
+		vk::DescriptorSet set = m_DescriptorSets[handle.getId()].vulkanHandle;
 
 		std::vector<vk::DescriptorImageInfo> imageInfos;
 		std::vector<vk::DescriptorBufferInfo> bufferInfos;
@@ -230,12 +221,8 @@ namespace vkcv
 		m_Device.updateDescriptorSets(vulkanWrites, nullptr);
 	}
 
-	vk::DescriptorSet DescriptorManager::getDescriptorSet(const ResourcesHandle &handle, size_t index) const {
-		return m_ResourceDescriptions[handle.getId()].descriptorSets[index];
-	}
-
-	vk::DescriptorSetLayout DescriptorManager::getDescriptorSetLayout(const ResourcesHandle &handle, size_t index) const {
-		return m_ResourceDescriptions[handle.getId()].descriptorSetLayouts[index];
+	DescriptorSet DescriptorManager::getDescriptorSet(const DescriptorSetHandle handle) const {
+		return m_DescriptorSets[handle.getId()];
 	}
 
     vk::DescriptorType DescriptorManager::convertDescriptorTypeFlag(DescriptorType type) {
@@ -277,18 +264,18 @@ namespace vkcv
         }
     }
     
-    void DescriptorManager::destroyResourceDescriptionById(uint64_t id) {
-		if (id >= m_ResourceDescriptions.size()) {
+    void DescriptorManager::destroyDescriptorSetById(uint64_t id) {
+		if (id >= m_DescriptorSets.size()) {
+			std::cerr << "Error: DescriptorManager::destroyResourceDescriptionById invalid id" << std::endl;
 			return;
 		}
 		
-		auto& resourceDescription = m_ResourceDescriptions[id];
-	
-		for(const auto &layout : resourceDescription.descriptorSetLayouts) {
-			m_Device.destroyDescriptorSetLayout(layout);
+		auto& set = m_DescriptorSets[id];
+		if (set.layout) {
+			m_Device.destroyDescriptorSetLayout(set.layout);
+			set.layout = nullptr;
 		}
-	
-		resourceDescription.descriptorSetLayouts.clear();
+		// FIXME: descriptor set itself not destroyed
 	}
 
 	vk::DescriptorPool DescriptorManager::allocateDescriptorPool() {

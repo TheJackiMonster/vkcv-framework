@@ -93,7 +93,7 @@ namespace vkcv {
 	}
 	
 	ImageHandle ImageHandle::createSwapchainImageHandle(const HandleDestroyFunction &destroy) {
-		return ImageHandle(UINT64_MAX - 1, destroy);
+		return ImageHandle(uint64_t(UINT64_MAX - 1), destroy);
 	}
 	
 }

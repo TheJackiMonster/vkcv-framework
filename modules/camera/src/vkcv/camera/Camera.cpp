@@ -90,7 +90,7 @@ namespace vkcv {
     }
 
     float Camera::getRatio() const {
-        return 0.0f;
+        return m_ratio;
     }
 
     void Camera::setNearFar( float near, float far){

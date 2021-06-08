@@ -1,24 +1,68 @@
 #include "ImageLayoutTransitions.hpp"
+#include "vkcv/Image.hpp"
 
 namespace vkcv {
-	void transitionImageLayoutImmediate(const vk::CommandBuffer cmdBuffer, const vk::Image image,
-		const vk::ImageLayout oldLayout, const vk::ImageLayout newLayout) {
+	vk::ImageMemoryBarrier createImageLayoutTransitionBarrier(const ImageManager::Image &image, vk::ImageLayout newLayout) {
 
-		// TODO: proper src and dst masks
-		const vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands;
-		const vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands;
-		const vk::DependencyFlags dependecyFlags = {};
+		vk::ImageAspectFlags aspectFlags;
+		if (isDepthFormat(image.m_format)) {
+			aspectFlags = vk::ImageAspectFlagBits::eDepth;
+		}
+		else {
+			aspectFlags = vk::ImageAspectFlagBits::eColor;
+		}
 
-		// TODO: proper src and dst masks
-		const vk::AccessFlags srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-		const vk::AccessFlags dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		vk::ImageSubresourceRange imageSubresourceRange(
+			aspectFlags,
+			0,
+			image.m_levels,
+			0,
+			image.m_layers
+		);
 
-		// TODO: proper aspect flags
-		const vk::ImageAspectFlags aspectFlags = vk::ImageAspectFlagBits::eColor;
+		// TODO: precise AccessFlagBits, will require a lot of context
+		return vk::ImageMemoryBarrier(
+			vk::AccessFlagBits::eMemoryWrite,
+			vk::AccessFlagBits::eMemoryRead,
+			image.m_layout,
+			newLayout,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			image.m_handle,
+			imageSubresourceRange);
+	}
 
-		const vk::ImageSubresourceRange subresourceRange(aspectFlags, 0, 1, 0, 1);
-		vk::ImageMemoryBarrier imageBarrier(srcAccessMask, dstAccessMask, oldLayout, newLayout, 0, 0, image, subresourceRange);
+	vk::ImageMemoryBarrier createSwapchainImageLayoutTransitionBarrier(
+		vk::Image       vulkanHandle, 
+		vk::ImageLayout oldLayout, 
+		vk::ImageLayout newLayout) {
 
-		cmdBuffer.pipelineBarrier(srcStageMask, dstStageMask, dependecyFlags, 0, nullptr, 0, nullptr, 1, &imageBarrier, {});
+		vk::ImageSubresourceRange imageSubresourceRange(
+			vk::ImageAspectFlagBits::eColor,
+			0,
+			1,
+			0,
+			1);
+
+		// TODO: precise AccessFlagBits, will require a lot of context
+		return vk::ImageMemoryBarrier(
+			vk::AccessFlagBits::eMemoryWrite,
+			vk::AccessFlagBits::eMemoryRead,
+			oldLayout,
+			newLayout,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			vulkanHandle,
+			imageSubresourceRange);
+	}
+
+	void recordImageBarrier(vk::CommandBuffer cmdBuffer, vk::ImageMemoryBarrier barrier) {
+		cmdBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTopOfPipe,
+			vk::PipelineStageFlagBits::eBottomOfPipe,
+			{},
+			nullptr,
+			nullptr,
+			barrier);
 	}
 }

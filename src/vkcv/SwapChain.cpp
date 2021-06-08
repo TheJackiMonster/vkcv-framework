@@ -244,7 +244,7 @@ namespace vkcv
 		m_Extent = extent2D;
     }
 
-    void SwapChain::recreateSwapchain() {
+    void SwapChain::signalSwapchainRecreation() {
 		m_RecreationRequired = true;
     }
     
