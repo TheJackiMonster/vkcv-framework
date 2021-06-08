@@ -23,7 +23,7 @@ namespace vkcv {
 	
 	BufferManager::~BufferManager() noexcept {
 		for (uint64_t id = 0; id < m_buffers.size(); id++) {
-			destroyBuffer(BufferHandle(id));
+			destroyBufferById(id);
 		}
 	}
 	
@@ -119,7 +119,7 @@ namespace vkcv {
 		
 		const uint64_t id = m_buffers.size();
 		m_buffers.push_back({ buffer, memory, size, nullptr, mappable });
-		return BufferHandle{ id };
+		return BufferHandle(id, [&](uint64_t id) { destroyBufferById(id); });
 	}
 	
 	struct StagingStepInfo {
@@ -158,7 +158,7 @@ namespace vkcv {
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Transfer;
 		
-		core->submitCommands(
+		core->recordAndSubmitCommands(
 				submitInfo,
 				[&info, &mapped_size](const vk::CommandBuffer& commandBuffer) {
 					const vk::BufferCopy region (
@@ -315,9 +315,7 @@ namespace vkcv {
 		buffer.m_mapped = nullptr;
 	}
 	
-	void BufferManager::destroyBuffer(const BufferHandle& handle) {
-		const uint64_t id = handle.getId();
-		
+	void BufferManager::destroyBufferById(uint64_t id) {
 		if (id >= m_buffers.size()) {
 			return;
 		}

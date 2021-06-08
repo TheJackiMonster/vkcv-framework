@@ -5,10 +5,33 @@
  */
 #include "ImageManager.hpp"
 #include "vkcv/Core.hpp"
+#include "ImageLayoutTransitions.hpp"
 
 #include <algorithm>
 
 namespace vkcv {
+
+	ImageManager::Image::Image(
+		vk::Image           handle,
+		vk::DeviceMemory    memory,
+		vk::ImageView       view,
+		uint32_t            width,
+		uint32_t            height,
+		uint32_t            depth,
+		vk::Format          format,
+		uint32_t            layers,
+		uint32_t            levels)
+		:
+		m_handle(handle),
+		m_memory(memory),
+		m_view(view),
+		m_width(width),
+		m_height(height),
+		m_depth(depth),
+		m_format(format),
+		m_layers(layers),
+		m_levels(levels)
+	{}
 
 	/**
 	 * @brief searches memory type index for image allocation, combines requirements of image and application
@@ -43,7 +66,7 @@ namespace vkcv {
 
 	ImageManager::~ImageManager() noexcept {
 		for (uint64_t id = 0; id < m_images.size(); id++) {
-			destroyImage(ImageHandle(id));
+			destroyImageById(id);
 		}
 	}
 	
@@ -87,6 +110,11 @@ namespace vkcv {
 				imageType = vk::ImageType::e2D;
 				imageViewType = vk::ImageViewType::e2D;
 			}
+		}
+		
+		if (isDepthFormat) {
+			imageType = vk::ImageType::e2D;
+			imageViewType = vk::ImageViewType::e2D;
 		}
 		
 		vk::ImageTiling imageTiling = vk::ImageTiling::eOptimal;
@@ -166,14 +194,19 @@ namespace vkcv {
 		vk::ImageView view = device.createImageView(imageViewCreateInfo);
 		
 		const uint64_t id = m_images.size();
-		m_images.push_back({ image, memory, view, width, height, depth, format, arrayLayers, mipLevels });
-		return ImageHandle(id);
+		m_images.push_back(Image(image, memory, view, width, height, depth, format, arrayLayers, mipLevels));
+		return ImageHandle(id, [&](uint64_t id) { destroyImageById(id); });
+	}
+	
+	ImageHandle ImageManager::createSwapchainImage() {
+		return ImageHandle::createSwapchainImageHandle();
 	}
 	
 	vk::Image ImageManager::getVulkanImage(const ImageHandle &handle) const {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
+			std::cerr << "Error: ImageManager::getVulkanImage invalid handle" << std::endl;
 			return nullptr;
 		}
 		
@@ -186,6 +219,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
+			std::cerr << "Error: ImageManager::getVulkanDeviceMemory invalid handle" << std::endl;
 			return nullptr;
 		}
 		
@@ -198,6 +232,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
+			std::cerr << "Error: ImageManager::getVulkanImageView invalid handle" << std::endl;
 			return nullptr;
 		}
 		
@@ -206,84 +241,53 @@ namespace vkcv {
 		return image.m_view;
 	}
 	
-	void ImageManager::switchImageLayout(const ImageHandle& handle, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) {
+	void ImageManager::switchImageLayoutImmediate(const ImageHandle& handle, vk::ImageLayout newLayout) {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
+			std::cerr << "Error: ImageManager::switchImageLayout invalid handle" << std::endl;
 			return;
 		}
 		
 		auto& image = m_images[id];
-		
-		//alternativly we could use switch case for every variable to set
-		vk::AccessFlags sourceAccessMask;
-		vk::PipelineStageFlags sourceStage;
-		
-		vk::AccessFlags destinationAccessMask;
-		vk::PipelineStageFlags destinationStage;
-		
-		if ((oldLayout == vk::ImageLayout::eUndefined) &&
-			(newLayout == vk::ImageLayout::eTransferDstOptimal))
-		{
-			destinationAccessMask = vk::AccessFlagBits::eTransferWrite;
-			
-			sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
-			destinationStage = vk::PipelineStageFlagBits::eTransfer;
-		}
-		else if ((oldLayout == vk::ImageLayout::eTransferDstOptimal) &&
-				 (newLayout == vk::ImageLayout::eShaderReadOnlyOptimal))
-		{
-			sourceAccessMask = vk::AccessFlagBits::eTransferWrite;
-			destinationAccessMask = vk::AccessFlagBits::eShaderRead;
-			
-			sourceStage = vk::PipelineStageFlagBits::eTransfer;
-			destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
-		}
-		
-		vk::ImageAspectFlags aspectFlags;
-		
-		if (isDepthImageFormat(image.m_format)) {
-			aspectFlags = vk::ImageAspectFlagBits::eDepth;
-		} else {
-			aspectFlags = vk::ImageAspectFlagBits::eColor;
-		}
-		
-		vk::ImageSubresourceRange imageSubresourceRange(
-				aspectFlags,
-				0,
-				image.m_levels,
-				0,
-				image.m_layers
-		);
-		
-		vk::ImageMemoryBarrier imageMemoryBarrier(
-			sourceAccessMask,
-			destinationAccessMask,
-			oldLayout,
-			newLayout,
-			VK_QUEUE_FAMILY_IGNORED,
-			VK_QUEUE_FAMILY_IGNORED,
-			image.m_handle,
-			imageSubresourceRange
-		);
+		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, newLayout);
 		
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
 		
-		m_core->submitCommands(
+		m_core->recordAndSubmitCommands(
 			submitInfo,
-			[sourceStage, destinationStage, imageMemoryBarrier](const vk::CommandBuffer& commandBuffer) {
-				commandBuffer.pipelineBarrier(
-					sourceStage,
-					destinationStage,
-					{},
-					nullptr,
-					nullptr,
-					imageMemoryBarrier
+			[transitionBarrier](const vk::CommandBuffer& commandBuffer) {
+			// TODO: precise PipelineStageFlagBits, will require a lot of context
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eTopOfPipe,
+				vk::PipelineStageFlagBits::eBottomOfPipe,
+				{},
+				nullptr,
+				nullptr,
+				transitionBarrier
 				);
 			},
-			nullptr
-		);
+			nullptr);
+		image.m_layout = newLayout;
+	}
+
+	void ImageManager::recordImageLayoutTransition(
+		const ImageHandle& handle, 
+		vk::ImageLayout newLayout, 
+		vk::CommandBuffer cmdBuffer) {
+
+		const uint64_t id = handle.getId();
+
+		if (id >= m_images.size()) {
+			std::cerr << "Error: ImageManager::switchImageLayout invalid handle" << std::endl;
+			return;
+		}
+
+		auto& image = m_images[id];
+		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, newLayout);
+		recordImageBarrier(cmdBuffer, transitionBarrier);
+		image.m_layout = newLayout;
 	}
 	
 	void ImageManager::fillImage(const ImageHandle& handle, void* data, size_t size)
@@ -291,16 +295,15 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
+			std::cerr << "Error: ImageManager::fillImage invalid handle" << std::endl;
 			return;
 		}
 		
 		auto& image = m_images[id];
 		
-		switchImageLayout(
+		switchImageLayoutImmediate(
 				handle,
-				vk::ImageLayout::eUndefined,
-				vk::ImageLayout::eTransferDstOptimal
-		);
+				vk::ImageLayout::eTransferDstOptimal);
 		
 		uint32_t channels = 4; // TODO: check image.m_format
 		const size_t image_size = (
@@ -320,7 +323,7 @@ namespace vkcv {
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Transfer;
 		
-		m_core->submitCommands(
+		m_core->recordAndSubmitCommands(
 				submitInfo,
 				[&image, &stagingBuffer](const vk::CommandBuffer& commandBuffer) {
 					vk::ImageAspectFlags aspectFlags;
@@ -354,22 +357,57 @@ namespace vkcv {
 					);
 				},
 				[&]() {
-					switchImageLayout(
+					switchImageLayoutImmediate(
 							handle,
-							vk::ImageLayout::eTransferDstOptimal,
 							vk::ImageLayout::eShaderReadOnlyOptimal
 					);
-					
-					m_bufferManager.destroyBuffer(bufferHandle);
 				}
 		);
 	}
-
-	void ImageManager::destroyImage(const ImageHandle& handle)
-	{
+	
+	uint32_t ImageManager::getImageWidth(const ImageHandle &handle) const {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
+			std::cerr << "Error: ImageManager::getImageWidth invalid handle" << std::endl;
+			return 0;
+		}
+		
+		auto& image = m_images[id];
+		
+		return image.m_width;
+	}
+	
+	uint32_t ImageManager::getImageHeight(const ImageHandle &handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_images.size()) {
+			std::cerr << "Error: ImageManager::getImageHeight invalid handle" << std::endl;
+			return 0;
+		}
+		
+		auto& image = m_images[id];
+		
+		return image.m_height;
+	}
+	
+	uint32_t ImageManager::getImageDepth(const ImageHandle &handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_images.size()) {
+			std::cerr << "Error: ImageManager::getImageDepth invalid handle" << std::endl;
+			return 0;
+		}
+		
+		auto& image = m_images[id];
+		
+		return image.m_depth;
+	}
+	
+	void ImageManager::destroyImageById(uint64_t id)
+	{
+		if (id >= m_images.size()) {
+			std::cerr << "Error: ImageManager::destroyImageById invalid handle" << std::endl;
 			return;
 		}
 		
@@ -393,5 +431,16 @@ namespace vkcv {
 		}
 	}
 
+	vk::Format ImageManager::getImageFormat(const ImageHandle& handle) const {
+
+		const uint64_t id = handle.getId();
+
+		if (id >= m_images.size()) {
+			std::cerr << "Error: ImageManager::destroyImageById invalid handle" << std::endl;
+			return vk::Format::eUndefined;
+		}
+
+		return m_images[id].m_format;
+	}
 
 }

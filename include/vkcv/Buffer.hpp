@@ -37,6 +37,11 @@ namespace vkcv {
 		size_t getSize() const {
 			return m_count * sizeof(T);
 		}
+
+        [[nodiscard]]
+        const vk::Buffer getVulkanHandle() const {
+            return m_manager->getBuffer(m_handle);
+        }
 		
 		void fill(const T* data, size_t count = 0, size_t offset = 0) {
 			 m_manager->fillBuffer(m_handle, data, count * sizeof(T), offset * sizeof(T));

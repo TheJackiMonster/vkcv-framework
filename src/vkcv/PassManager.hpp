@@ -17,7 +17,9 @@ namespace vkcv
     	
         vk::Device m_Device;
         std::vector<Pass> m_Passes;
-        uint64_t m_NextPassId;
+        
+        void destroyPassById(uint64_t id);
+        
     public:
         PassManager() = delete; // no default ctor
         explicit PassManager(vk::Device device) noexcept; // ctor

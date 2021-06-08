@@ -9,10 +9,11 @@ namespace vkcv{
 
     class CameraManager{
     private:
-        std::function<void(int, int, int, int)> m_keyHandle;
-        std::function<void(double, double)> m_mouseMoveHandle;
-        std::function<void(double, double)> m_mouseScrollHandle;
-        std::function<void(int, int, int)> m_mouseButtonHandle;
+        std::function<void(int, int, int, int)> e_keyHandle;
+        std::function<void(double, double)> e_mouseMoveHandle;
+        std::function<void(double, double)> e_mouseScrollHandle;
+        std::function<void(int, int, int)> e_mouseButtonHandle;
+        std::function<void(int, int)> e_resizeHandle;
 
         Window &m_window;
         Camera m_camera;
@@ -29,6 +30,7 @@ namespace vkcv{
         void scrollCallback( double offsetX, double offsetY);
         void mouseMoveCallback( double offsetX, double offsetY);
         void mouseButtonCallback(int button, int action, int mods);
+        void resizeCallback(int width, int height);
 
     public:
         CameraManager(Window &window, float width, float height, glm::vec3 up = glm::vec3(0.0f,-1.0f,0.0f), glm::vec3 position = glm::vec3(0.0f,0.0f,0.0f));

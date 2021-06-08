@@ -1,29 +1,70 @@
 #include <vkcv/SwapChain.hpp>
+#include <utility>
 
-namespace vkcv {
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
-    SwapChain::SwapChain(vk::SurfaceKHR surface, vk::SwapchainKHR swapchain, vk::SurfaceFormatKHR format, uint32_t imageCount)
-        : m_surface(surface), m_swapchain(swapchain), m_format( format), m_ImageCount(imageCount)
+namespace vkcv
+{
+    /**
+    * creates surface and checks availability
+    * @param window current window for the surface
+    * @param instance Vulkan-Instance
+    * @param physicalDevice Vulkan-PhysicalDevice
+    * @return created surface
+    */
+    vk::SurfaceKHR createSurface(GLFWwindow* window, const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice) {
+        //create surface
+        VkSurfaceKHR surface;
+        if (glfwCreateWindowSurface(VkInstance(instance), window, nullptr, &surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create a window surface!");
+        }
+        vk::Bool32 surfaceSupport = false;
+        if (physicalDevice.getSurfaceSupportKHR(0, vk::SurfaceKHR(surface), &surfaceSupport) != vk::Result::eSuccess && surfaceSupport != true) {
+            throw std::runtime_error("surface is not supported by the device!");
+        }
+
+        return vk::SurfaceKHR(surface);
+    }
+
+    SwapChain::SwapChain(const Surface &surface,
+                         vk::SwapchainKHR swapchain,
+                         vk::Format format,
+                         vk::ColorSpaceKHR colorSpace,
+                         vk::PresentModeKHR presentMode,
+                         uint32_t imageCount,
+						 vk::Extent2D extent) noexcept :
+    m_Surface(surface),
+    m_Swapchain(swapchain),
+    m_SwapchainFormat(format),
+    m_SwapchainColorSpace(colorSpace),
+    m_SwapchainPresentMode(presentMode),
+    m_SwapchainImageCount(imageCount),
+	m_Extent(extent),
+    m_RecreationRequired(false)
     {}
+    
+    SwapChain::SwapChain(const SwapChain &other) :
+			m_Surface(other.m_Surface),
+			m_Swapchain(other.m_Swapchain),
+			m_SwapchainFormat(other.m_SwapchainFormat),
+			m_SwapchainColorSpace(other.m_SwapchainColorSpace),
+			m_SwapchainPresentMode(other.m_SwapchainPresentMode),
+			m_SwapchainImageCount(other.m_SwapchainImageCount),
+			m_Extent(other.m_Extent),
+			m_RecreationRequired(other.m_RecreationRequired.load())
+	{}
 
     const vk::SwapchainKHR& SwapChain::getSwapchain() const {
-        return m_swapchain;
+        return m_Swapchain;
     }
 
-    /**
-     * gets surface of the swapchain
-     * @return current surface
-     */
-    vk::SurfaceKHR SwapChain::getSurface() {
-        return m_surface;
+    vk::SurfaceKHR SwapChain::getSurface() const {
+        return m_Surface.handle;
     }
 
-    /**
-     * gets the surface of the swapchain
-     * @return chosen format
-     */
-    vk::SurfaceFormatKHR SwapChain::getSurfaceFormat(){
-        return m_format;
+    vk::Format SwapChain::getSwapchainFormat() const{
+        return m_SwapchainFormat;
     }
 
     /**
@@ -33,7 +74,7 @@ namespace vkcv {
      * @param window of the current application
      * @return chosen Extent for the surface
      */
-    vk::Extent2D chooseSwapExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, const Window &window){
+    vk::Extent2D chooseExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, const Window &window){
         vk::SurfaceCapabilitiesKHR surfaceCapabilities;
         if(physicalDevice.getSurfaceCapabilitiesKHR(surface,&surfaceCapabilities) != vk::Result::eSuccess){
             throw std::runtime_error("cannot get surface capabilities. There is an issue with the surface.");
@@ -43,15 +84,10 @@ namespace vkcv {
                 static_cast<uint32_t>(window.getWidth()),
                 static_cast<uint32_t>(window.getHeight())
         };
+        
         extent2D.width = std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, extent2D.width));
         extent2D.height = std::max(surfaceCapabilities.minImageExtent.height, std::min(surfaceCapabilities.maxImageExtent.height, extent2D.height));
 
-        if (extent2D.width > surfaceCapabilities.maxImageExtent.width ||
-            extent2D.width < surfaceCapabilities.minImageExtent.width ||
-            extent2D.height > surfaceCapabilities.maxImageExtent.height ||
-            extent2D.height < surfaceCapabilities.minImageExtent.height) {
-            std::printf("Surface size not matching. Resizing to allowed value.");
-        }
         return extent2D;
     }
 
@@ -61,7 +97,7 @@ namespace vkcv {
      * @param surface of the swapchain
      * @return available Format
      */
-    vk::SurfaceFormatKHR chooseSwapSurfaceFormat(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
+    vk::SurfaceFormatKHR chooseSurfaceFormat(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
         uint32_t formatCount;
         physicalDevice.getSurfaceFormatsKHR(surface, &formatCount, nullptr);
         std::vector<vk::SurfaceFormatKHR> availableFormats(formatCount);
@@ -126,23 +162,29 @@ namespace vkcv {
      * @param context that keeps instance, physicalDevice and a device.
      * @return swapchain
      */
-    SwapChain SwapChain::create(const Window &window, const Context &context, const vk::SurfaceKHR surface) {
+    SwapChain SwapChain::create(const Window &window, const Context &context) {
         const vk::Instance& instance = context.getInstance();
         const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
         const vk::Device& device = context.getDevice();
 
-        vk::Extent2D extent2D = chooseSwapExtent(physicalDevice, surface, window);
-        vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(physicalDevice, surface);
-        vk::PresentModeKHR presentMode = choosePresentMode(physicalDevice, surface);
-        uint32_t imageCount = chooseImageCount(physicalDevice, surface);
+        Surface surface;
+        surface.handle       = createSurface(window.getWindow(), instance, physicalDevice);
+        surface.formats      = physicalDevice.getSurfaceFormatsKHR(surface.handle);
+        surface.capabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface.handle);
+        surface.presentModes = physicalDevice.getSurfacePresentModesKHR(surface.handle);
+
+        vk::Extent2D chosenExtent = chooseExtent(physicalDevice, surface.handle, window);
+        vk::SurfaceFormatKHR chosenSurfaceFormat = chooseSurfaceFormat(physicalDevice, surface.handle);
+        vk::PresentModeKHR chosenPresentMode = choosePresentMode(physicalDevice, surface.handle);
+        uint32_t chosenImageCount = chooseImageCount(physicalDevice, surface.handle);
 
         vk::SwapchainCreateInfoKHR swapchainCreateInfo(
                 vk::SwapchainCreateFlagsKHR(),  //flags
-                surface,    // surface
-                imageCount,  // minImageCount TODO: how many do we need for our application?? "must be less than or equal to the value returned in maxImageCount" -> 3 for Triple Buffering, else 2 for Double Buffering (should be the standard)
-                surfaceFormat.format,   // imageFormat
-                surfaceFormat.colorSpace,   // imageColorSpace
-                extent2D,   // imageExtent
+                surface.handle,    // surface
+                chosenImageCount,  // minImageCount TODO: how many do we need for our application?? "must be less than or equal to the value returned in maxImageCount" -> 3 for Triple Buffering, else 2 for Double Buffering (should be the standard)
+                chosenSurfaceFormat.format,   // imageFormat
+                chosenSurfaceFormat.colorSpace,   // imageColorSpace
+                chosenExtent,   // imageExtent
                 1,  // imageArrayLayers TODO: should we only allow non-stereoscopic applications? yes -> 1, no -> ? "must be greater than 0, less or equal to maxImageArrayLayers"
                 vk::ImageUsageFlagBits::eColorAttachment,  // imageUsage TODO: what attachments? only color? depth?
                 vk::SharingMode::eExclusive,    // imageSharingMode TODO: which sharing mode? "VK_SHARING_MODE_EXCLUSIV access exclusive to a single queue family, better performance", "VK_SHARING_MODE_CONCURRENT access from multiple queues"
@@ -150,22 +192,71 @@ namespace vkcv {
                 nullptr,    // pQueueFamilyIndices, the pointer to an array of queue family indices having access to the images(s) of the swapchain when imageSharingMode is VK_SHARING_MODE_CONCURRENT
                 vk::SurfaceTransformFlagBitsKHR::eIdentity, // preTransform, transformations applied onto the image before display
                 vk::CompositeAlphaFlagBitsKHR::eOpaque, // compositeAlpha, TODO: how to handle transparent pixels? do we need transparency? If no -> opaque
-                presentMode,    // presentMode
+                chosenPresentMode,    // presentMode
                 true,   // clipped
                 nullptr // oldSwapchain
         );
 
         vk::SwapchainKHR swapchain = device.createSwapchainKHR(swapchainCreateInfo);
 
-        return SwapChain(surface, swapchain, surfaceFormat, imageCount);
+        return SwapChain(surface,
+                         swapchain,
+                         chosenSurfaceFormat.format,
+                         chosenSurfaceFormat.colorSpace,
+                         chosenPresentMode,
+                         chosenImageCount,
+						 chosenExtent);
+    }
+    
+    bool SwapChain::shouldUpdateSwapchain() const {
+    	return m_RecreationRequired;
+    }
+    
+    void SwapChain::updateSwapchain(const Context &context, const Window &window) {
+    	if (!m_RecreationRequired.exchange(false))
+    		return;
+    	
+		vk::SwapchainKHR oldSwapchain = m_Swapchain;
+		vk::Extent2D extent2D = chooseExtent(context.getPhysicalDevice(), m_Surface.handle, window);
+	
+		vk::SwapchainCreateInfoKHR swapchainCreateInfo(
+				vk::SwapchainCreateFlagsKHR(),
+				m_Surface.handle,
+				m_SwapchainImageCount,
+				m_SwapchainFormat,
+				m_SwapchainColorSpace,
+				extent2D,
+				1,
+				vk::ImageUsageFlagBits::eColorAttachment,
+				vk::SharingMode::eExclusive,
+				0,
+				nullptr,
+				vk::SurfaceTransformFlagBitsKHR::eIdentity,
+				vk::CompositeAlphaFlagBitsKHR::eOpaque,
+				m_SwapchainPresentMode,
+				true,
+				oldSwapchain
+		);
+	
+		m_Swapchain = context.getDevice().createSwapchainKHR(swapchainCreateInfo);
+		context.getDevice().destroySwapchainKHR(oldSwapchain);
+		
+		m_Extent = extent2D;
     }
 
+    void SwapChain::signalSwapchainRecreation() {
+		m_RecreationRequired = true;
+    }
+    
+    const vk::Extent2D& SwapChain::getExtent() const {
+    	return m_Extent;
+    }
 
     SwapChain::~SwapChain() {
         // needs to be destroyed by creator
     }
 
 	uint32_t SwapChain::getImageCount() {
-		return m_ImageCount;
+		return m_SwapchainImageCount;
 	}
 }

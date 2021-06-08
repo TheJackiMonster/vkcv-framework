@@ -5,6 +5,7 @@
  */
 
 #include "vkcv/ShaderProgram.hpp"
+#include <algorithm>
 
 namespace vkcv {
     /**
@@ -128,9 +129,19 @@ namespace vkcv {
 
 			m_VertexLayout = VertexLayout(inputVec);
 		}
+		for (const auto &pushConstantBuffer : resources.push_constant_buffers) {
+			for (const auto &range : comp.get_active_buffer_ranges(pushConstantBuffer.id)) {
+				const size_t size = range.range + range.offset;
+				m_pushConstantSize = std::max(m_pushConstantSize, size);
+			}
+		}
     }
 
     const VertexLayout& ShaderProgram::getVertexLayout() const{
         return m_VertexLayout;
+	}
+
+	size_t ShaderProgram::getPushConstantSize() const {
+		return m_pushConstantSize;
 	}
 }
