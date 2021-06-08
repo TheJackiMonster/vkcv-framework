@@ -1,6 +1,7 @@
 
 #include <limits>
 #include <unordered_set>
+#include <iostream>
 
 #include "vkcv/QueueManager.hpp"
 
@@ -94,6 +95,7 @@ namespace vkcv {
                                 found = true;
                             }
                         }
+                        std::cerr << "Warning: not enought \"" << vk::to_string(qFlag) << "\"-Queues." << std::endl;
                     }
                     break;
                 case vk::QueueFlagBits::eCompute:
@@ -114,6 +116,7 @@ namespace vkcv {
                                 found = true;
                             }
                         }
+                        std::cerr << "Warning: not enought \"" << vk::to_string(qFlag) << "\"-Queues." << std::endl;
                     }
                     break;
                 case vk::QueueFlagBits::eTransfer:
@@ -134,6 +137,7 @@ namespace vkcv {
                                 found = true;
                             }
                         }
+                        std::cerr << "Warning: not enought \"" << vk::to_string(qFlag) << "\"-Queues." << std::endl;
                     }
                     break;
                 default:
