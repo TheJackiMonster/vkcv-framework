@@ -92,6 +92,7 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
+	// Graphics Pipeline
 	vkcv::ShaderProgram triangleShaderProgram{};
 	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
 	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
@@ -114,6 +115,12 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
+
+	// Compute Pipeline
+	vkcv::ShaderProgram computeShaderProgram{};
+	computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path("shaders/comp.spv"));
+
+	vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram);
 
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
