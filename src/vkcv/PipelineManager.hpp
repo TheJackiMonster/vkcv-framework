@@ -22,8 +22,9 @@ namespace vkcv
         
         void destroyPipelineById(uint64_t id);
 
-        vk::Result createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, const ShaderStage stage);
-        
+        vk::Result createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, ShaderStage stage);
+
+
     public:
         PipelineManager() = delete; // no default ctor
         explicit PipelineManager(vk::Device device) noexcept; // ctor

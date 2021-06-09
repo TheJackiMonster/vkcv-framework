@@ -318,12 +318,17 @@ namespace vkcv
     PipelineHandle PipelineManager::createComputePipeline(const ShaderProgram &shaderProgram) {
         // Temporally handing over the Shader Program instead of a pipeline config
 
-        // TODO: Set Compute Shader Stage
-        vk::ShaderModule computeModule{};
+        vk::ShaderModule computeModule;
         if (createShaderModule(computeModule, shaderProgram, ShaderStage::COMPUTE) != vk::Result::eSuccess)
             return PipelineHandle();
 
-        vk::PipelineShaderStageCreateInfo pipelineShaderStageCreateInfo; // TODO: Set params
+        vk::PipelineShaderStageCreateInfo pipelineComputeShaderStageInfo(
+                {},
+                vk::ShaderStageFlagBits::eCompute,
+                computeModule,
+                "main",
+                nullptr
+        );
 
         // TODO: Set Compute Pipeline Layout
         vk::PipelineLayout vkPipelineLayout{}; // TODO: Set params
