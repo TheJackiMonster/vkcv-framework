@@ -33,11 +33,13 @@ namespace vkcv
     struct DescriptorBinding
     {
         DescriptorBinding(
+            uint32_t bindingID,
             DescriptorType descriptorType,
             uint32_t descriptorCount,
             ShaderStage shaderStage
         ) noexcept;
-
+        
+        uint32_t bindingID;
         DescriptorType descriptorType;
         uint32_t descriptorCount;
         ShaderStage shaderStage;

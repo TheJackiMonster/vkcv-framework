@@ -8,11 +8,12 @@
 #include <unordered_map>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 #include <filesystem>
 #include <vulkan/vulkan.hpp>
 #include <spirv_cross.hpp>
 #include "vkcv/VertexLayout.hpp"
-#include "vkcv/DescriptorSetLayout.hpp"
+#include "vkcv/DescriptorConfig.hpp"
 
 namespace vkcv {
 
@@ -61,13 +62,13 @@ namespace vkcv {
         const VertexLayout &getVertexLayout() const;
 		size_t getPushConstantSize() const;
 
-        const DescriptorSetLayout &getDescriptorSetLayout() const;
+        const std::vector<std::vector<DescriptorBinding>> getReflectedDescriptors() const;
 
 	private:
         std::unordered_map<ShaderStage, Shader> m_Shaders;
 
         VertexLayout m_VertexLayout;
-        DescriptorSetLayout m_DescriptorSetLayout;
+        std::vector<std::vector<DescriptorBinding>> m_DescriptorSets;
 		size_t m_pushConstantSize = 0;
 	};
 }

@@ -69,8 +69,6 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/SamplerManager.cpp
         
         ${vkcv_include}/vkcv/DescriptorWrites.hpp
-		
-		${vkcv_include}/vkcv/DescriptorSetLayout.hpp
         
         ${vkcv_include}/vkcv/DrawcallRecording.hpp
         ${vkcv_source}/vkcv/DrawcallRecording.cpp
