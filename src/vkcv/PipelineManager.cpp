@@ -333,26 +333,35 @@ namespace vkcv
         const size_t matrixPushConstantSize = shaderProgram.getPushConstantSize();
         const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, matrixPushConstantSize);
 
-        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(   // TODO: Check this. I'm not sure if this is correct
+        const vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(   // TODO: Check this. I'm not sure if this is correct
                 {},
                 nullptr,
                 (pushConstantRange));
 
-        vk::PipelineLayout vkPipelineLayout{};
+        vk::PipelineLayout vkPipelineLayout;
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
         {
             m_Device.destroy(computeModule);
             return PipelineHandle();
         }
 
-        // TODO: Create Compute Pipeline
-        vk::Pipeline vkPipeline{};
-        vk::ComputePipelineCreateInfo computePipelineCreateInfo; // TODO: Set params
+        vk::ComputePipelineCreateInfo computePipelineCreateInfo;
+        computePipelineCreateInfo.stage = pipelineComputeShaderStageInfo;
+        computePipelineCreateInfo.layout = vkPipelineLayout;
+
+        vk::Pipeline vkPipeline;
         if (m_Device.createComputePipelines(nullptr, 1, &computePipelineCreateInfo, nullptr, &vkPipeline)!= vk::Result::eSuccess)
         {
-            // TODO: Set Params
+            m_Device.destroy(computeModule);
+            return PipelineHandle();
         }
-        return PipelineHandle();
+
+        m_Device.destroy(computeModule);
+
+        const uint64_t id = m_Pipelines.size();
+        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout });
+        
+        return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }
 
     // There is an issue for refactoring the Pipeline Manager.
