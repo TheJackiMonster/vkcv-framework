@@ -4,25 +4,6 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 
-uint32_t findMemoryType( vk::PhysicalDeviceMemoryProperties const & memoryProperties,
-                         uint32_t                                   typeBits,
-                         vk::MemoryPropertyFlags                    requirementsMask )
-{
-    uint32_t typeIndex = uint32_t( ~0 );
-    for ( uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++ )
-    {
-        if ( ( typeBits & 1 ) &&
-             ( ( memoryProperties.memoryTypes[i].propertyFlags & requirementsMask ) == requirementsMask ) )
-        {
-            typeIndex = i;
-            break;
-        }
-        typeBits >>= 1;
-    }
-    assert( typeIndex != uint32_t( ~0 ) );
-    return typeIndex;
-}
-
 int main(int argc, const char** argv) {
     const char* applicationName = "Particlesystem";
 
@@ -48,31 +29,10 @@ int main(int argc, const char** argv) {
             { "VK_KHR_swapchain" }
     );
 
-    const auto& context = core.getContext();
-    const vk::Instance& instance = context.getInstance();
-    const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
-    const vk::Device& device = context.getDevice();
-
-    struct vec3 {
-        float x, y, z;
-    };
-
-    const size_t n = 5027;
-
-    auto testBuffer = core.createBuffer<vec3>(vkcv::BufferType::VERTEX, n, vkcv::BufferMemoryType::DEVICE_LOCAL);
-    vec3 vec_data[n];
-
-    for (size_t i = 0; i < n; i++) {
-        vec_data[i] = { 42, static_cast<float>(i), 7 };
-    }
-
-    testBuffer.fill(vec_data);
-
-    auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, n, vkcv::BufferMemoryType::DEVICE_LOCAL);
+    auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
     uint16_t indices[3] = { 0, 1, 2 };
     particleIndexBuffer.fill(&indices[0], sizeof(indices));
 
-    std::cout << "Physical device: " << physicalDevice.getProperties().deviceName << std::endl;
 
     // an example attachment for passes that output to the window
     const vkcv::AttachmentDescription present_color_attachment(
@@ -96,6 +56,27 @@ int main(int argc, const char** argv) {
     particleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
     particleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
+    vkcv::Buffer<glm::vec3> vertexbuffer = core.createBuffer<glm::vec3>(
+            vkcv::BufferType::VERTEX,
+            3
+    );
+
+    const std::vector<glm::vec3> vertices = {glm::vec3(-0.5, 0.5, -1),
+                                             glm::vec3( 0.5, 0.5, -1),
+                                             glm::vec3(0, -0.5, -1)};
+
+    vertexbuffer.fill(vertices);
+
+
+    vkcv::VertexAttribute attrib = vkcv::VertexAttribute{
+            vkcv::PrimitiveType::POSITION,
+            0,
+            sizeof(glm::vec3) * vertices.size(),
+            0,
+            5126,
+            3};
+
+
     std::vector<vkcv::DescriptorBinding> descriptorBindings = {
             vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT),
             vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT)};
@@ -106,7 +87,7 @@ int main(int argc, const char** argv) {
             UINT32_MAX,
             UINT32_MAX,
             particlePass,
-            {},
+            {attrib},
             { core.getDescriptorSet(descriptorSet).layout },
             true);
 
@@ -121,6 +102,10 @@ int main(int argc, const char** argv) {
             1
     );
 
+    const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
+            vkcv::VertexBufferBinding(0, vertexbuffer.getVulkanHandle())
+    };
+
     vkcv::DescriptorWrites setWrites;
     setWrites.uniformBufferWrites = {vkcv::UniformBufferDescriptorWrite(0,color.getHandle()),
                                      vkcv::UniformBufferDescriptorWrite(1,position.getHandle())};
@@ -134,7 +119,8 @@ int main(int argc, const char** argv) {
 
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    const vkcv::Mesh renderMesh({}, particleIndexBuffer.getVulkanHandle(), 3);
+    const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(), 3);
+    vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
     vkcv::DrawcallInfo drawcalls(renderMesh, {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle)});
 
     auto start = std::chrono::system_clock::now();
@@ -146,6 +132,33 @@ int main(int argc, const char** argv) {
     window.e_mouseMove.add([&]( double offsetX, double offsetY) {
         pos = glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY));
     });
+
+
+    struct Particle{
+        glm::vec2 Position;
+        glm::vec2 Velocity;
+        float Rotation = 0.0f;
+        float SizeBegin, SizeEnd;
+
+        float LifeTime = 1.0f;
+        float LifeRemaining = 0.0f;
+
+        bool Active = true;
+    };
+
+    std::vector<Particle> m_ParticlePool;
+    uint32_t poolIndex = 999;
+
+    m_ParticlePool.resize(1000);
+
+    //float angle = 0.0005;
+    glm::mat4 modelmatrix = glm::mat4(1.0);
+
+    for(auto& particle : m_ParticlePool){
+        if(!particle.Active){
+            continue;
+        }
+    }
 
     while (window.isWindowOpen())
     {
@@ -159,12 +172,28 @@ int main(int argc, const char** argv) {
         color.fill(&colorData);
 
         position.fill(&pos);
-
         auto end = std::chrono::system_clock::now();
-        auto deltatime = end - start;
+        float deltatime = std::chrono::duration<float>(end - start).count();
         start = end;
-        cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
-        const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+
+        //modelmatrix = glm::rotate(modelmatrix, angle, glm::vec3(0,0,1));
+        for(auto& particle : m_ParticlePool){
+            if (!particle.Active){
+                continue;
+            }
+            if (particle.LifeRemaining <= 0.0f){
+                particle.Active = false;
+                continue;
+            }
+
+            particle.LifeRemaining -= deltatime;
+            particle.Position += particle.Velocity * deltatime;
+            particle.Rotation += 0.01f * deltatime;
+
+        }
+
+        cameraManager.getCamera().updateView(deltatime);
+        const glm::mat4 mvp = modelmatrix * cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
         vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);

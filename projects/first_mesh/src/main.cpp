@@ -89,6 +89,7 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 	
 	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
+
 	
 	std::sort(attributes.begin(), attributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
@@ -108,7 +109,8 @@ int main(int argc, const char** argv) {
 		{ core.getDescriptorSet(descriptorSet).layout },
 		true);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
-	
+
+
 	if (!trianglePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;

@@ -13,5 +13,8 @@ layout(set=0,binding=1) uniform uPosition{
 
 void main()
 {
-	outColor = Color.color;
+	vec2 mouse = vec2(Position.position.x, Position.position.y);
+
+		outColor = float(distance(gl_FragCoord.xy, mouse) < 100) * vec4(0,0,1,0) +
+		 		   float(distance(gl_FragCoord.xy, mouse) >= 100) * Color.color;
 }
