@@ -182,6 +182,7 @@ namespace vkcv
 			{},
 			(config.m_DescriptorLayouts),
 			(pushConstantRange));
+
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
         {
@@ -314,4 +315,23 @@ namespace vkcv
         return m_Configs.at(id);
     }
 
+    PipelineHandle PipelineManager::createComputePipeline() {
+
+
+        // TODO: Set Compute Shader Stage
+        vk::PipelineShaderStageCreateInfo pipelineShaderStageCreateInfo; // TODO: Set params
+
+        // TODO: Set Compute Pipeline Layout
+        vk::PipelineLayout vkPipelineLayout{}; // TODO: Set params
+
+        // TODO: Create Compute Pipeline
+        vk::Pipeline vkPipeline{};
+        vk::ComputePipelineCreateInfo computePipelineCreateInfo; // TODO: Set params
+        if (m_Device.createComputePipelines(nullptr, 1, &computePipelineCreateInfo, nullptr, &vkPipeline)!= vk::Result::eSuccess)
+        {
+            // TODO: Set Params
+        }
+
+        return PipelineHandle();
+    }
 }

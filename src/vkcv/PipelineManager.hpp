@@ -35,6 +35,8 @@ namespace vkcv
 
         PipelineHandle createPipeline(const PipelineConfig &config, PassManager& passManager);
 
+        PipelineHandle createComputePipeline();
+
         [[nodiscard]]
         vk::Pipeline getVkPipeline(const PipelineHandle &handle) const;
 
