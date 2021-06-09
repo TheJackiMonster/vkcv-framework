@@ -21,6 +21,8 @@ namespace vkcv
         std::vector<PipelineConfig> m_Configs;
         
         void destroyPipelineById(uint64_t id);
+
+        vk::Result createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, const ShaderStage stage);
         
     public:
         PipelineManager() = delete; // no default ctor
@@ -35,7 +37,7 @@ namespace vkcv
 
         PipelineHandle createPipeline(const PipelineConfig &config, PassManager& passManager);
 
-        PipelineHandle createComputePipeline();
+        PipelineHandle createComputePipeline(const ShaderProgram &shaderProgram);
 
         [[nodiscard]]
         vk::Pipeline getVkPipeline(const PipelineHandle &handle) const;

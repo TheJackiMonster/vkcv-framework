@@ -315,10 +315,14 @@ namespace vkcv
         return m_Configs.at(id);
     }
 
-    PipelineHandle PipelineManager::createComputePipeline() {
-
+    PipelineHandle PipelineManager::createComputePipeline(const ShaderProgram &shaderProgram) {
+        // Temporally handing over the Shader Program instead of a pipeline config
 
         // TODO: Set Compute Shader Stage
+        vk::ShaderModule computeModule{};
+        if (createShaderModule(computeModule, shaderProgram, ShaderStage::COMPUTE) != vk::Result::eSuccess)
+            return PipelineHandle();
+
         vk::PipelineShaderStageCreateInfo pipelineShaderStageCreateInfo; // TODO: Set params
 
         // TODO: Set Compute Pipeline Layout
@@ -331,7 +335,16 @@ namespace vkcv
         {
             // TODO: Set Params
         }
-
         return PipelineHandle();
+    }
+
+    // There is an issue for refactoring the Pipeline Manager.
+    // While including Compute Pipeline Creation, some private helper functions where introduced:
+
+    vk::Result PipelineManager::createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, const ShaderStage stage)
+    {
+        std::vector<char> code = shaderProgram.getShader(stage).shaderCode;
+        vk::ShaderModuleCreateInfo moduleInfo({}, code.size(), reinterpret_cast<uint32_t*>(code.data()));
+        return m_Device.createShaderModule(&moduleInfo, nullptr, &module);
     }
 }
