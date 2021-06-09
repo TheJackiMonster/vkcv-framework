@@ -330,8 +330,20 @@ namespace vkcv
                 nullptr
         );
 
-        // TODO: Set Compute Pipeline Layout
-        vk::PipelineLayout vkPipelineLayout{}; // TODO: Set params
+        const size_t matrixPushConstantSize = shaderProgram.getPushConstantSize();
+        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, matrixPushConstantSize);
+
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(   // TODO: Check this. I'm not sure if this is correct
+                {},
+                nullptr,
+                (pushConstantRange));
+
+        vk::PipelineLayout vkPipelineLayout{};
+        if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
+        {
+            m_Device.destroy(computeModule);
+            return PipelineHandle();
+        }
 
         // TODO: Create Compute Pipeline
         vk::Pipeline vkPipeline{};
