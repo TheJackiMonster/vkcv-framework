@@ -6,7 +6,7 @@
 #include "vkcv/Handles.hpp"
 #include "vkcv/DescriptorConfig.hpp"
 
-namespace vkcv
+namespace vkcv::material
 {
     class pbrMaterial : Material
     {

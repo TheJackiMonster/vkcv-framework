@@ -1,6 +1,6 @@
 #include "vkcv/material/pbrMetallicRoughness.hpp"
 
-namespace vkcv
+namespace vkcv::material
 {
     pbrMaterial::pbrMaterial(const ImageHandle          &colorImg,
                              const SamplerHandle        &colorSmp,
