@@ -158,6 +158,17 @@ namespace vkcv
         PipelineHandle createGraphicsPipeline(const PipelineConfig &config);
 
         /**
+         * Creates a basic vulkan compute pipeline using @p shader program and returns it using the @p handle.
+         * Fixed Functions for pipeline are set with standard values.
+         *
+         * @param shader program that hold the compiles compute shader
+         * @param handle a handle to return the created vulkan handle
+         * @return True if pipeline creation was successful, False if not
+         */
+        [[nodiscard]]
+        PipelineHandle createComputePipeline(const ShaderProgram &config);
+
+        /**
          * Creates a basic vulkan render pass using @p config from the render pass config class and returns it using the @p handle.
          * Fixed Functions for pipeline are set with standard values.
          *

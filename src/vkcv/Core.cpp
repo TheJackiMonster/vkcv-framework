@@ -101,6 +101,11 @@ namespace vkcv
         return m_PipelineManager->createPipeline(config, *m_PassManager);
     }
 
+    PipelineHandle Core::createComputePipeline(const ShaderProgram &shaderProgram)
+    {
+        return m_PipelineManager->createComputePipeline(shaderProgram);
+    }
+
 
     PassHandle Core::createPass(const PassConfig &config)
     {
