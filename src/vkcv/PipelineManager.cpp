@@ -318,7 +318,7 @@ namespace vkcv
     PipelineHandle PipelineManager::createComputePipeline(const ShaderProgram &shaderProgram) {
         // Temporally handing over the Shader Program instead of a pipeline config
 
-        vk::ShaderModule computeModule;
+        vk::ShaderModule computeModule{};
         if (createShaderModule(computeModule, shaderProgram, ShaderStage::COMPUTE) != vk::Result::eSuccess)
             return PipelineHandle();
 
@@ -330,22 +330,23 @@ namespace vkcv
                 nullptr
         );
 
+        // TODO: Validation Layer Error -> the size is 0 but has to be greater!
         const size_t matrixPushConstantSize = shaderProgram.getPushConstantSize();
         const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, matrixPushConstantSize);
 
-        const vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(   // TODO: Check this. I'm not sure if this is correct
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo( // TODO: Check this. I'm not sure if this is correct
                 {},
-                nullptr,
+                {}, // TODO: For now no Descriptor Set
                 (pushConstantRange));
 
-        vk::PipelineLayout vkPipelineLayout;
+        vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
         {
             m_Device.destroy(computeModule);
             return PipelineHandle();
         }
 
-        vk::ComputePipelineCreateInfo computePipelineCreateInfo;
+        vk::ComputePipelineCreateInfo computePipelineCreateInfo{};
         computePipelineCreateInfo.stage = pipelineComputeShaderStageInfo;
         computePipelineCreateInfo.layout = vkPipelineLayout;
 
@@ -360,7 +361,7 @@ namespace vkcv
 
         const uint64_t id = m_Pipelines.size();
         m_Pipelines.push_back({ vkPipeline, vkPipelineLayout });
-        
+
         return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }
 
