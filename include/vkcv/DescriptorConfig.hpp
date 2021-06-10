@@ -1,7 +1,9 @@
 #pragma once
-#include <vkcv/ShaderProgram.hpp>
-#include <vkcv/Handles.hpp>
+
 #include <vulkan/vulkan.hpp>
+
+#include "vkcv/Handles.hpp"
+#include "vkcv/ShaderStage.hpp"
 
 namespace vkcv
 {

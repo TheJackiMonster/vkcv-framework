@@ -13,19 +13,10 @@
 #include <vulkan/vulkan.hpp>
 #include <spirv_cross.hpp>
 #include "vkcv/VertexLayout.hpp"
+#include "vkcv/ShaderStage.hpp"
 #include "vkcv/DescriptorConfig.hpp"
 
 namespace vkcv {
-
-    enum class ShaderStage
-    {
-        VERTEX,
-        TESS_CONTROL,
-        TESS_EVAL,
-        GEOMETRY,
-        FRAGMENT,
-        COMPUTE
-    };
 
     struct Shader
     {
