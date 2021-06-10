@@ -111,6 +111,7 @@ namespace vkcv {
         spirv_cross::Compiler comp(move(shaderCode));
         spirv_cross::ShaderResources resources = comp.get_shader_resources();
 
+        //reflect vertex input
 		if (shaderStage == ShaderStage::VERTEX) {
 			std::vector<VertexInputAttachment> inputVec;
 			uint32_t offset = 0;
@@ -129,9 +130,7 @@ namespace vkcv {
 			m_VertexLayout = VertexLayout(inputVec);
 		}
 
-		//Descriptor Sets
-		//Uniform buffer, storage buffer, sampler, sampled image, storage image
-
+		//reflect descriptor sets (uniform buffer, storage buffer, sampler, sampled image, storage image)
         std::vector<std::pair<uint32_t, DescriptorBinding>> bindings;
         int32_t maxSetID = -1;
         for (uint32_t i = 0; i < resources.uniform_buffers.size(); i++) {
@@ -149,7 +148,8 @@ namespace vkcv {
             std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
                 DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::STORAGE_BUFFER, base_type.vecsize, shaderStage));
             bindings.push_back(descriptor);
-            if (comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) 
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
         }
 
         for (uint32_t i = 0; i < resources.separate_samplers.size(); i++) {
@@ -158,7 +158,8 @@ namespace vkcv {
             std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
                 DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::SAMPLER, base_type.vecsize, shaderStage));
             bindings.push_back(descriptor);
-            if (comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) 
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
         }
 
         for (uint32_t i = 0; i < resources.separate_images.size(); i++) {
@@ -167,7 +168,8 @@ namespace vkcv {
             std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
                 DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::IMAGE_SAMPLED, base_type.vecsize, shaderStage));
             bindings.push_back(descriptor);
-            if (comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID)
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
 
         }
 
@@ -177,14 +179,15 @@ namespace vkcv {
             std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
                 DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::IMAGE_STORAGE, base_type.vecsize, shaderStage));
             bindings.push_back(descriptor);
-            if (comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID)
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
         }
-
-        m_DescriptorSets.resize(maxSetID);
-        for (auto binding : bindings) {
-            m_DescriptorSets[binding.first].push_back(binding.second);
+        if (maxSetID != -1) {
+            if(m_DescriptorSets.size() < maxSetID) m_DescriptorSets.resize(maxSetID + 1);
+            for (const auto &binding : bindings) {
+                m_DescriptorSets[binding.first].push_back(binding.second);
+            }
         }
-
 
         //reflect push constants
 		for (const auto &pushConstantBuffer : resources.push_constant_buffers) {
