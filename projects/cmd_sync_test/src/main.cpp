@@ -204,9 +204,7 @@ int main(int argc, const char** argv) {
 		vkcv::AttachmentDescription(vkcv::AttachmentOperation::DONT_CARE, vkcv::AttachmentOperation::DONT_CARE, voxelizationDummyFormat)});
 	vkcv::PassHandle voxelizationPass = core.createPass(voxelizationPassConfig);
 
-	std::vector<vkcv::DescriptorBinding> voxelizationDescriptorBindings = {
-		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_STORAGE,  1, vkcv::ShaderStage::FRAGMENT),
-		vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER, 1, vkcv::ShaderStage::FRAGMENT)};
+	std::vector<vkcv::DescriptorBinding> voxelizationDescriptorBindings = { voxelizationShader.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle voxelizationDescriptorSet = core.createDescriptorSet(voxelizationDescriptorBindings);
 
 	const vkcv::PipelineConfig voxelizationPipeConfig(
@@ -244,9 +242,7 @@ int main(int argc, const char** argv) {
 	voxelVisualisationShader.reflectShader(vkcv::ShaderStage::GEOMETRY);
 	voxelVisualisationShader.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
-	const std::vector<vkcv::DescriptorBinding> voxelVisualisationDescriptorBindings = {
-		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_STORAGE,    1, vkcv::ShaderStage::VERTEX),
-		vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::VERTEX) };
+	const std::vector<vkcv::DescriptorBinding> voxelVisualisationDescriptorBindings = { voxelVisualisationShader.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle voxelVisualisationDescriptorSet = core.createDescriptorSet(voxelVisualisationDescriptorBindings);
 
 	const vkcv::AttachmentDescription voxelVisualisationColorAttachments(
