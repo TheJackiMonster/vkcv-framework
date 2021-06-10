@@ -16,7 +16,8 @@ namespace vkcv {
 		const std::vector<VertexAttribute>          &vertexAttributes,
 		const std::vector<vk::DescriptorSetLayout>  &descriptorLayouts,
 		bool                                        useDynamicViewport,
-		bool                                        useConservativeRasterization)
+		bool                                        useConservativeRasterization,
+        PrimitiveTopology                           primitiveTopology)
 		:
 		m_ShaderProgram(shaderProgram),
 		m_Height(height),
@@ -25,6 +26,7 @@ namespace vkcv {
 		m_VertexAttributes(vertexAttributes),
 		m_DescriptorLayouts(descriptorLayouts),
 		m_UseDynamicViewport(useDynamicViewport),
-		m_UseConservativeRasterization(useConservativeRasterization)
+		m_UseConservativeRasterization(useConservativeRasterization),
+        m_PrimitiveTopology(primitiveTopology)
 		{}
 }

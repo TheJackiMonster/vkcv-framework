@@ -86,6 +86,10 @@ namespace vkcv {
 			vk::ImageLayout newLayout, 
 			vk::CommandBuffer cmdBuffer);
 
+		void recordImageMemoryBarrier(
+			const ImageHandle& handle,
+			vk::CommandBuffer cmdBuffer);
+
 		void fillImage(const ImageHandle& handle, void* data, size_t size);
 		
 		[[nodiscard]]

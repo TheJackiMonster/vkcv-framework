@@ -95,7 +95,7 @@ namespace vkcv {
 
         void moveRight(int action);
 
-
+        void setSpeed(float speed);
     };
 
 }

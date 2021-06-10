@@ -176,4 +176,8 @@ namespace vkcv {
     void Camera::moveRight(int action){
         m_right = static_cast<bool>(action);
     }
+
+    void Camera::setSpeed(float speed) {
+        m_cameraSpeed = speed;
+    }
 }

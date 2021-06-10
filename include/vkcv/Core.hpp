@@ -260,5 +260,6 @@ namespace vkcv
 		void prepareSwapchainImageForPresent(const CommandStreamHandle handle);
 		void prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image);
 		void prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image);
+		void recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image);
     };
 }

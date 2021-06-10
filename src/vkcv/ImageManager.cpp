@@ -295,6 +295,22 @@ namespace vkcv {
 		recordImageBarrier(cmdBuffer, transitionBarrier);
 		image.m_layout = newLayout;
 	}
+
+	void ImageManager::recordImageMemoryBarrier(
+		const ImageHandle& handle,
+		vk::CommandBuffer cmdBuffer) {
+
+		const uint64_t id = handle.getId();
+
+		if (id >= m_images.size()) {
+			std::cerr << "Error: ImageManager::recordImageMemoryBarrier invalid handle" << std::endl;
+			return;
+		}
+
+		auto& image = m_images[id];
+		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, image.m_layout);
+		recordImageBarrier(cmdBuffer, transitionBarrier);
+	}
 	
 	void ImageManager::fillImage(const ImageHandle& handle, void* data, size_t size)
 	{

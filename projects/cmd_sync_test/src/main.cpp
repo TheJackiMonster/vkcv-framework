@@ -21,6 +21,7 @@ int main(int argc, const char** argv) {
 	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
 	cameraManager.getCamera().setPosition(glm::vec3(0.f, 0.f, 3.f));
 	cameraManager.getCamera().setNearFar(0.1, 30);
+    cameraManager.getCamera().setSpeed(25.f);
 
 	window.initEvents();
 
@@ -83,10 +84,11 @@ int main(int argc, const char** argv) {
 		core.getSwapchainImageFormat()
 	);
 	
+	const vk::Format depthBufferFormat = vk::Format::eD32Sfloat;
 	const vkcv::AttachmentDescription depth_attachment(
-			vkcv::AttachmentOperation::STORE,
-			vkcv::AttachmentOperation::CLEAR,
-			vk::Format::eD32Sfloat
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::CLEAR,
+		depthBufferFormat
 	);
 
 	vkcv::PassConfig trianglePassDefinition({ present_color_attachment, depth_attachment });
@@ -237,6 +239,64 @@ int main(int argc, const char** argv) {
 	voxelizationDescriptorWrites.uniformBufferWrites = { vkcv::UniformBufferDescriptorWrite(1, voxelizationInfoBuffer.getHandle()) };
 	core.writeDescriptorSet(voxelizationDescriptorSet, voxelizationDescriptorWrites);
 
+	const size_t voxelCount = voxelResolution * voxelResolution * voxelResolution;
+
+	vkcv::ShaderProgram voxelVisualisationShader;
+	voxelVisualisationShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelVisualisation_vert.spv");
+	voxelVisualisationShader.addShader(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelVisualisation_geom.spv");
+	voxelVisualisationShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelVisualisation_frag.spv");
+	voxelVisualisationShader.reflectShader(vkcv::ShaderStage::VERTEX);
+	voxelVisualisationShader.reflectShader(vkcv::ShaderStage::GEOMETRY);
+	voxelVisualisationShader.reflectShader(vkcv::ShaderStage::FRAGMENT);
+
+	const std::vector<vkcv::DescriptorBinding> voxelVisualisationDescriptorBindings = {
+		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_STORAGE,    1, vkcv::ShaderStage::VERTEX),
+		vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::VERTEX) };
+	vkcv::DescriptorSetHandle voxelVisualisationDescriptorSet = core.createDescriptorSet(voxelVisualisationDescriptorBindings);
+
+	const vkcv::AttachmentDescription voxelVisualisationColorAttachments(
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::LOAD,
+		core.getSwapchainImageFormat()
+	);
+
+	const vkcv::AttachmentDescription voxelVisualisationDepthAttachments(
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::LOAD,
+		depthBufferFormat
+	);
+
+	vkcv::PassConfig voxelVisualisationPassDefinition({ voxelVisualisationColorAttachments, voxelVisualisationDepthAttachments });
+	vkcv::PassHandle voxelVisualisationPass = core.createPass(voxelVisualisationPassDefinition);
+
+	const vkcv::PipelineConfig voxelVisualisationPipeConfig(
+		voxelVisualisationShader, 
+		0, 
+		0, 
+		voxelVisualisationPass,
+		{}, 
+		{ core.getDescriptorSet(voxelVisualisationDescriptorSet).layout },
+		true,
+		false,
+		vkcv::PrimitiveTopology::PointList);	// points are extended to cubes in the geometry shader
+	const vkcv::PipelineHandle voxelVisualisationPipe = core.createGraphicsPipeline(voxelVisualisationPipeConfig);
+
+	vkcv::Buffer<uint16_t> voxelVisualisationIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, voxelCount);
+	std::vector<uint16_t> voxelIndexData;
+	for (int i = 0; i < voxelCount; i++) {
+		voxelIndexData.push_back(i);
+	}
+
+	vkcv::DescriptorWrites voxelVisualisationDescriptorWrite;
+	voxelVisualisationDescriptorWrite.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(0,  voxelImage.getHandle()) };
+	voxelVisualisationDescriptorWrite.uniformBufferWrites = { vkcv::UniformBufferDescriptorWrite(1, voxelizationInfoBuffer.getHandle()) };
+	core.writeDescriptorSet(voxelVisualisationDescriptorSet, voxelVisualisationDescriptorWrite);
+
+	voxelVisualisationIndexBuffer.fill(voxelIndexData);
+	const vkcv::DrawcallInfo voxelVisualisationDrawcall(
+		vkcv::Mesh({}, voxelVisualisationIndexBuffer.getVulkanHandle(), voxelCount),
+		{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(voxelVisualisationDescriptorSet).vulkanHandle) });
+
 	const std::vector<glm::vec3> instancePositions = {
 		glm::vec3(0.f, -2.f, 0.f),
 		glm::vec3(3.f,  0.f, 0.f),
@@ -264,6 +324,13 @@ int main(int argc, const char** argv) {
 	std::vector<glm::mat4> mvpLight;
 	std::vector<std::array<glm::mat4, 2>> voxelizationMatrices;
 
+	bool renderVoxelVis = false;
+	window.e_key.add([&renderVoxelVis](int key ,int scancode, int action, int mods) {
+		if (key == GLFW_KEY_V && action == GLFW_PRESS) {
+			renderVoxelVis = !renderVoxelVis;
+		}
+	});
+
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
 	while (window.isWindowOpen()) {
@@ -275,7 +342,7 @@ int main(int argc, const char** argv) {
 		}
 		
 		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
-			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
+			depthBuffer = core.createImage(depthBufferFormat, swapchainWidth, swapchainHeight).getHandle();
 			
 			windowWidth = swapchainWidth;
 			windowHeight = swapchainHeight;
@@ -311,7 +378,7 @@ int main(int argc, const char** argv) {
 		const glm::mat4 viewProjectionCamera = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
 		const float voxelizationHalfExtent = 0.5f * voxelizationExtent;
-		const glm::mat4 voxelizationProjection = vulkanCorrectionMatrix * glm::ortho(
+		const glm::mat4 voxelizationProjection = glm::ortho(
 			-voxelizationHalfExtent,
 			 voxelizationHalfExtent,
 			-voxelizationHalfExtent,
@@ -362,6 +429,20 @@ int main(int argc, const char** argv) {
 			pushConstantData,
 			drawcalls,
 			renderTargets);
+
+		if (renderVoxelVis) {
+			const vkcv::PushConstantData voxelVisualisationPushConstantData((void*)&viewProjectionCamera, sizeof(glm::mat4));
+
+			core.recordImageMemoryBarrier(cmdStream, voxelImage.getHandle());
+			core.recordDrawcallsToCmdStream(
+				cmdStream,
+				voxelVisualisationPass,
+				voxelVisualisationPipe,
+				voxelVisualisationPushConstantData,
+				{ voxelVisualisationDrawcall },
+				renderTargets);
+		}
+
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
 

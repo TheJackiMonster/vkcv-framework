@@ -24,7 +24,8 @@ void main()	{
         else{
             gl_Position = gl_in[i].gl_Position.xzyw;
         }
-        passPos = passPosIn[i].xzy;
+        gl_Position.z = gl_Position.z * 0.5 + 0.5;  // xyz are kept in NDC range [-1, 1] so swizzling works, but vulkan needs final z in range [0, 1]
+        passPos = passPosIn[i];
         EmitVertex();
     }
     EndPrimitive();

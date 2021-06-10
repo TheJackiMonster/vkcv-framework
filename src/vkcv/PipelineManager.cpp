@@ -32,6 +32,15 @@ namespace vkcv
 		}
 	}
 
+    vk::PrimitiveTopology primitiveTopologyToVulkanPrimitiveTopology(const PrimitiveTopology topology) {
+        switch (topology) {
+        case(PrimitiveTopology::PointList):     return vk::PrimitiveTopology::ePointList;
+        case(PrimitiveTopology::LineList):      return vk::PrimitiveTopology::eLineList;
+        case(PrimitiveTopology::TriangleList):  return vk::PrimitiveTopology::eTriangleList;
+        default: std::cout << "Error: Unknown primitive topology type" << std::endl; return vk::PrimitiveTopology::eTriangleList;
+        }
+    }
+
     PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, PassManager& passManager)
     {
 		const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
@@ -114,9 +123,9 @@ namespace vkcv
 
         // input assembly state
         vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
-                {},
-                vk::PrimitiveTopology::eTriangleList,
-                false
+            {},
+            primitiveTopologyToVulkanPrimitiveTopology(config.m_PrimitiveTopology),
+            false
         );
 
         // viewport state

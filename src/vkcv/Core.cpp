@@ -470,4 +470,10 @@ namespace vkcv
 			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eGeneral, cmdBuffer);
 		}, nullptr);
 	}
+
+	void Core::recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image) {
+		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordImageMemoryBarrier(image, cmdBuffer);
+		}, nullptr);
+	}
 }

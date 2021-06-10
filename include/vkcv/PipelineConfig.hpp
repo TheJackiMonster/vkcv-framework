@@ -13,6 +13,8 @@
 
 namespace vkcv {
 
+    enum class PrimitiveTopology{PointList, LineList, TriangleList };
+
     struct PipelineConfig {
         /**
          *  Constructor for the pipeline. Creates a pipeline using @p vertexCode, @p fragmentCode as well as the
@@ -31,7 +33,8 @@ namespace vkcv {
             const std::vector<VertexAttribute>          &vertexAttributes,
             const std::vector<vk::DescriptorSetLayout>  &descriptorLayouts,
             bool                                        useDynamicViewport,
-            bool                                        useConservativeRasterization = false);
+            bool                                        useConservativeRasterization = false,
+            PrimitiveTopology                           primitiveTopology = PrimitiveTopology::TriangleList);
 
         ShaderProgram                           m_ShaderProgram;
         uint32_t                                m_Height;
@@ -41,6 +44,7 @@ namespace vkcv {
         std::vector<vk::DescriptorSetLayout>    m_DescriptorLayouts;
         bool                                    m_UseDynamicViewport;
         bool                                    m_UseConservativeRasterization;
+        PrimitiveTopology                       m_PrimitiveTopology;
     };
 
 }
