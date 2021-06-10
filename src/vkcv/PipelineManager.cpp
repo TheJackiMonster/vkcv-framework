@@ -335,9 +335,9 @@ namespace vkcv
         const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, matrixPushConstantSize);
 
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo( // TODO: Check this. I'm not sure if this is correct
-                {},
-                {}, // TODO: For now no Descriptor Set
-                (pushConstantRange));
+            {},
+            {}, // TODO: For now no Descriptor Set
+            {});// (pushConstantRange)); push constant range must not be size 0, either do not specify or or set size
 
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
