@@ -312,6 +312,18 @@ namespace vkcv {
 		recordImageBarrier(cmdBuffer, transitionBarrier);
 	}
 	
+	constexpr uint32_t getChannelsByFormat(vk::Format format) {
+		switch (format) {
+			case vk::Format::eR8Unorm:
+				return 1;
+			case vk::Format::eR8G8B8A8Srgb:
+				return 4;
+			default:
+				std::cerr << "Check format instead of guessing, please!" << std::endl;
+				return 4;
+		}
+	}
+	
 	void ImageManager::fillImage(const ImageHandle& handle, void* data, size_t size)
 	{
 		const uint64_t id = handle.getId();
@@ -327,7 +339,7 @@ namespace vkcv {
 				handle,
 				vk::ImageLayout::eTransferDstOptimal);
 		
-		uint32_t channels = 4; // TODO: check image.m_format
+		uint32_t channels = getChannelsByFormat(image.m_format);
 		const size_t image_size = (
 				image.m_width * image.m_height * image.m_depth * channels
 		);

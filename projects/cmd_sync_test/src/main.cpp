@@ -190,6 +190,12 @@ int main(int argc, const char** argv) {
 	const uint32_t voxelResolution = 32;
 	vkcv::Image voxelImage = core.createImage(vk::Format::eR8Unorm, voxelResolution, voxelResolution, voxelResolution, true);
 
+	{
+		char voxelData [voxelResolution * voxelResolution * voxelResolution];
+		memset(voxelData, 0, sizeof(voxelData));
+		voxelImage.fill(voxelData);
+	}
+	
 	const vk::Format voxelizationDummyFormat = vk::Format::eR8Unorm;
 	vkcv::Image voxelizationDummyRenderTarget = core.createImage(voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, true);
 
