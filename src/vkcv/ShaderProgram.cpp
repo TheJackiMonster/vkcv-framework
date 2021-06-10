@@ -183,7 +183,7 @@ namespace vkcv {
                 maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
         }
         if (maxSetID != -1) {
-            if(m_DescriptorSets.size() < maxSetID) m_DescriptorSets.resize(maxSetID + 1);
+            if((int32_t)m_DescriptorSets.size() <= maxSetID) m_DescriptorSets.resize(maxSetID + 1);
             for (const auto &binding : bindings) {
                 m_DescriptorSets[binding.first].push_back(binding.second);
             }
