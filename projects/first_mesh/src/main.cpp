@@ -95,8 +95,7 @@ int main(int argc, const char** argv) {
 	});
 
 	uint32_t setID = 0;
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = {
-		triangleShaderProgram.getReflectedDescriptors()[setID] };
+	std::vector<vkcv::DescriptorBinding> descriptorBindings = { triangleShaderProgram.getReflectedDescriptors()[setID] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(

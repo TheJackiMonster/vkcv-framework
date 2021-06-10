@@ -102,13 +102,8 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
-	
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = {
-		vkcv::DescriptorBinding(0, vkcv::DescriptorType::IMAGE_SAMPLED,    1, vkcv::ShaderStage::FRAGMENT),
-		vkcv::DescriptorBinding(1, vkcv::DescriptorType::SAMPLER,          1, vkcv::ShaderStage::FRAGMENT),
-		vkcv::DescriptorBinding(2, vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT),
-		vkcv::DescriptorBinding(3, vkcv::DescriptorType::IMAGE_SAMPLED,    1, vkcv::ShaderStage::FRAGMENT) ,
-		vkcv::DescriptorBinding(4, vkcv::DescriptorType::SAMPLER,          1, vkcv::ShaderStage::FRAGMENT) };
+
+	std::vector<vkcv::DescriptorBinding> descriptorBindings = { triangleShaderProgram.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(
