@@ -5,7 +5,6 @@
  */
 
 #include "vkcv/ShaderProgram.hpp"
-#include <algorithm>
 
 namespace vkcv {
     /**
@@ -67,7 +66,8 @@ namespace vkcv {
 
 	ShaderProgram::ShaderProgram() noexcept :
 	m_Shaders{},
-    m_VertexLayout{}
+    m_VertexLayout{},
+    m_DescriptorSets{}
 	{}
 
 	bool ShaderProgram::addShader(ShaderStage shaderStage, const std::filesystem::path &shaderPath)
@@ -111,6 +111,7 @@ namespace vkcv {
         spirv_cross::Compiler comp(move(shaderCode));
         spirv_cross::ShaderResources resources = comp.get_shader_resources();
 
+        //reflect vertex input
 		if (shaderStage == ShaderStage::VERTEX) {
 			std::vector<VertexInputAttachment> inputVec;
 			uint32_t offset = 0;
@@ -118,17 +119,77 @@ namespace vkcv {
 			for (uint32_t i = 0; i < resources.stage_inputs.size(); i++) {
 				auto& u = resources.stage_inputs[i];
 				const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
-
 				VertexInputAttachment input = VertexInputAttachment(comp.get_decoration(u.id, spv::DecorationLocation),
 					0,
+                    u.name,
 					convertFormat(base_type.basetype, base_type.vecsize),
 					offset);
 				inputVec.push_back(input);
 				offset += base_type.vecsize * base_type.width / 8;
 			}
-
 			m_VertexLayout = VertexLayout(inputVec);
 		}
+
+		//reflect descriptor sets (uniform buffer, storage buffer, sampler, sampled image, storage image)
+        std::vector<std::pair<uint32_t, DescriptorBinding>> bindings;
+        int32_t maxSetID = -1;
+        for (uint32_t i = 0; i < resources.uniform_buffers.size(); i++) {
+            auto& u = resources.uniform_buffers[i];
+            const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+            std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
+                DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::UNIFORM_BUFFER, base_type.vecsize, shaderStage));
+            bindings.push_back(descriptor);
+            if (comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+        }
+
+        for (uint32_t i = 0; i < resources.storage_buffers.size(); i++) {
+            auto& u = resources.storage_buffers[i];
+            const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+            std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
+                DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::STORAGE_BUFFER, base_type.vecsize, shaderStage));
+            bindings.push_back(descriptor);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) 
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+        }
+
+        for (uint32_t i = 0; i < resources.separate_samplers.size(); i++) {
+            auto& u = resources.separate_samplers[i];
+            const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+            std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
+                DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::SAMPLER, base_type.vecsize, shaderStage));
+            bindings.push_back(descriptor);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) 
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+        }
+
+        for (uint32_t i = 0; i < resources.separate_images.size(); i++) {
+            auto& u = resources.separate_images[i];
+            const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+            std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
+                DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::IMAGE_SAMPLED, base_type.vecsize, shaderStage));
+            bindings.push_back(descriptor);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID)
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+
+        }
+
+        for (uint32_t i = 0; i < resources.storage_images.size(); i++) {
+            auto& u = resources.storage_images[i];
+            const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+            std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
+                DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::IMAGE_STORAGE, base_type.vecsize, shaderStage));
+            bindings.push_back(descriptor);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID)
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+        }
+        if (maxSetID != -1) {
+            if((int32_t)m_DescriptorSets.size() <= maxSetID) m_DescriptorSets.resize(maxSetID + 1);
+            for (const auto &binding : bindings) {
+                m_DescriptorSets[binding.first].push_back(binding.second);
+            }
+        }
+
+        //reflect push constants
 		for (const auto &pushConstantBuffer : resources.push_constant_buffers) {
 			for (const auto &range : comp.get_active_buffer_ranges(pushConstantBuffer.id)) {
 				const size_t size = range.range + range.offset;
@@ -141,6 +202,9 @@ namespace vkcv {
         return m_VertexLayout;
 	}
 
+    const std::vector<std::vector<DescriptorBinding>> ShaderProgram::getReflectedDescriptors() const {
+        return m_DescriptorSets;
+    }
 	size_t ShaderProgram::getPushConstantSize() const {
 		return m_pushConstantSize;
 	}

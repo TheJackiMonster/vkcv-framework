@@ -32,7 +32,9 @@ set(vkcv_sources
 
 		${vkcv_include}/vkcv/SwapChain.hpp
 		${vkcv_source}/vkcv/SwapChain.cpp
-
+		
+		${vkcv_include}/vkcv/ShaderStage.hpp
+		
 		${vkcv_include}/vkcv/ShaderProgram.hpp
 		${vkcv_source}/vkcv/ShaderProgram.cpp
 
