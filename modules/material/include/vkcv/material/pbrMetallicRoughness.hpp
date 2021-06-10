@@ -2,9 +2,10 @@
 
 #include <vector>
 
+#include <vkcv/Handles.hpp>
+#include <vkcv/DescriptorConfig.hpp>
+
 #include "Material.hpp"
-#include "vkcv/Handles.hpp"
-#include "vkcv/DescriptorConfig.hpp"
 
 namespace vkcv::material
 {
