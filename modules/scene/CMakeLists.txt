@@ -21,7 +21,10 @@ add_library(vkcv_scene STATIC ${vkcv_scene_sources})
 target_link_libraries(vkcv_scene vkcv)
 
 # including headers of dependencies and the VkCV framework
-target_include_directories(vkcv_scene SYSTEM BEFORE PRIVATE ${vkcv_include})
+target_include_directories(vkcv_scene SYSTEM BEFORE PRIVATE ${vkcv_include} ${vkcv_asset_loader_include})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_scene BEFORE PUBLIC ${vkcv_scene_include})
+
+# linking with libraries from all dependencies and the VkCV framework
+target_link_libraries(vkcv_scene vkcv vkcv_asset_loader)
