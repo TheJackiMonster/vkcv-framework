@@ -1,7 +1,9 @@
 #pragma once
-#include <vkcv/ShaderProgram.hpp>
-#include <vkcv/Handles.hpp>
+
 #include <vulkan/vulkan.hpp>
+
+#include "vkcv/Handles.hpp"
+#include "vkcv/ShaderStage.hpp"
 
 namespace vkcv
 {
@@ -33,11 +35,13 @@ namespace vkcv
     struct DescriptorBinding
     {
         DescriptorBinding(
+            uint32_t bindingID,
             DescriptorType descriptorType,
             uint32_t descriptorCount,
             ShaderStage shaderStage
         ) noexcept;
-
+        
+        uint32_t bindingID;
         DescriptorType descriptorType;
         uint32_t descriptorCount;
         ShaderStage shaderStage;

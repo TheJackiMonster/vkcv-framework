@@ -40,7 +40,7 @@ namespace vkcv
         //create each set's binding
         for (uint32_t i = 0; i < bindings.size(); i++) {
             vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding(
-                i,
+                bindings[i].bindingID,
                 convertDescriptorTypeFlag(bindings[i].descriptorType),
                 bindings[i].descriptorCount,
                 convertShaderStageFlag(bindings[i].shaderStage));
