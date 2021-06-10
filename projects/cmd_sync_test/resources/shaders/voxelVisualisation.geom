@@ -44,13 +44,13 @@ void main()	{
     EndPrimitive();
     // back
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1,   1, -1), 1);
-    passColor = vec3(1, 0, 0);
+    passColor = vec3(0, 0, 1);
     EmitVertex();                                                                  
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1,  -1, -1), 1);
-    passColor = vec3(1, 0, 0);
+    passColor = vec3(0, 0, 1);
     EmitVertex();                                                                  
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1,  1, -1), 1);
-    passColor = vec3(1, 0, 0);
+    passColor = vec3(0, 0, 1);
     EmitVertex();                                                                  
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1, -1, -1), 1);
     passColor = vec3(0, 0, 1);
