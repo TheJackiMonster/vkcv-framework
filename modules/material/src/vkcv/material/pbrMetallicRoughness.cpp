@@ -30,14 +30,47 @@ namespace vkcv::material
     }
     void pbrMaterial::create(vkcv::Core core)
     {   
-        //Test if Images and samplers valid
-        //create default
-        vkcv::SamplerHandle defaultSampler = core.createSampler(
-            vkcv::SamplerFilterType::LINEAR,
-            vkcv::SamplerFilterType::LINEAR,
-            vkcv::SamplerMipmapMode::LINEAR,
-            vkcv::SamplerAddressMode::REPEAT
-        );         
+        //Test if Images and samplers valid, if not use default
+        if (m_ColorTexture) {
+            //TODO
+        }
+        if (m_NormalTexture) {
+            //TODO
+        }
+        if (m_MetRoughTexture) {
+            //TODO
+        }
+        if (m_ColorSampler) {
+            /*
+            m_ColorSampler = core.createSampler(
+                vkcv::SamplerFilterType::LINEAR,
+                vkcv::SamplerFilterType::LINEAR,
+                vkcv::SamplerMipmapMode::LINEAR,
+                vkcv::SamplerAddressMode::REPEAT
+            );//only non const member
+            */
+        }
+        if (m_NormalSampler) {
+            /*
+            m_NormalSampler = core.createSampler(
+                vkcv::SamplerFilterType::LINEAR,
+                vkcv::SamplerFilterType::LINEAR,
+                vkcv::SamplerMipmapMode::LINEAR,
+                vkcv::SamplerAddressMode::REPEAT
+            ); //only non const member
+            */
+        }
+        if (m_MetRoughSampler) {
+            /*
+            m_MetRoughSampler = core.createSampler(
+                vkcv::SamplerFilterType::LINEAR,
+                vkcv::SamplerFilterType::LINEAR,
+                vkcv::SamplerMipmapMode::LINEAR,
+                vkcv::SamplerAddressMode::REPEAT
+            ); //only non const member
+            */
+        }
+          
         //create descriptorset
         vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(getDescriptorBindings());       
         //writes
