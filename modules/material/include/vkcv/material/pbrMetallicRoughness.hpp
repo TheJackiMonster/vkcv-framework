@@ -4,11 +4,14 @@
 
 #include <vkcv/Handles.hpp>
 #include <vkcv/DescriptorConfig.hpp>
+#include <vkcv/Core.hpp>
+
 
 #include "Material.hpp"
 
 namespace vkcv::material
 {
+    class Core;
     class pbrMaterial : Material
     {
     public:
@@ -46,5 +49,8 @@ namespace vkcv::material
         * 5 - metallic roughness sampler
         */
         static std::vector<DescriptorBinding> getDescriptorBindings() noexcept;
+
+        void create(vkcv::Core core);
+
     };
 }
