@@ -4,6 +4,8 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 
+#include <vkcv/shader/GLSLCompiler.hpp>
+
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Triangle";
 
@@ -91,12 +93,26 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
-
+	
 	vkcv::ShaderProgram triangleShaderProgram{};
-	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
-	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
+	vkcv::shader::GLSLCompiler compiler;
+	
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/shader.vert"),
+					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		 triangleShaderProgram.addShader(shaderStage, path);
+		 triangleShaderProgram.reflectShader(shaderStage);
+	});
+	
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/shader.frag"),
+					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		triangleShaderProgram.addShader(shaderStage, path);
+		triangleShaderProgram.reflectShader(shaderStage);
+	});
+	
+	//triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
+	//triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
+	//triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
+	//triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(
 		triangleShaderProgram,

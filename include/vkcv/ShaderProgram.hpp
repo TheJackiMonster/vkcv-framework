@@ -53,7 +53,7 @@ namespace vkcv {
         const VertexLayout &getVertexLayout() const;
 		size_t getPushConstantSize() const;
 
-        const std::vector<std::vector<DescriptorBinding>> getReflectedDescriptors() const;
+        const std::vector<std::vector<DescriptorBinding>>& getReflectedDescriptors() const;
 
 	private:
         std::unordered_map<ShaderStage, Shader> m_Shaders;

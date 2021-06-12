@@ -14,17 +14,21 @@ namespace vkcv {
      * @param[in] relative path to the shader code
      * @return vector of chars as a buffer for the code
      */
-	std::vector<char> readShaderCode(const std::filesystem::path &shaderPath)
-	{
-		std::ifstream file(shaderPath.string(), std::ios::ate | std::ios::binary);
+	std::vector<char> readShaderCode(const std::filesystem::path &shaderPath) {
+		std::ifstream file (shaderPath.string(), std::ios::ate | std::ios::binary);
+		
 		if (!file.is_open()) {
 			vkcv_log(LogLevel::ERROR, "The file could not be opened");
 			return std::vector<char>{};
 		}
+		
 		size_t fileSize = (size_t)file.tellg();
 		std::vector<char> buffer(fileSize);
+		
 		file.seekg(0);
 		file.read(buffer.data(), fileSize);
+		file.close();
+		
         return buffer;
 	}
 
@@ -205,7 +209,7 @@ namespace vkcv {
         return m_VertexLayout;
 	}
 
-    const std::vector<std::vector<DescriptorBinding>> ShaderProgram::getReflectedDescriptors() const {
+    const std::vector<std::vector<DescriptorBinding>>& ShaderProgram::getReflectedDescriptors() const {
         return m_DescriptorSets;
     }
 	size_t ShaderProgram::getPushConstantSize() const {
