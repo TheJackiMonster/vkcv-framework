@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "vkcv/QueueManager.hpp"
-
+#include "vkcv/Logger.hpp"
 
 namespace vkcv {
 
@@ -95,7 +95,8 @@ namespace vkcv {
                                 found = true;
                             }
                         }
-                        std::cerr << "Warning: not enough \"" << vk::to_string(qFlag) << "\"-Queues." << std::endl;
+	
+						vkcv_log(vkcv::LogLevel::WARNING, "Not enough %s queues", vk::to_string(qFlag).c_str());
                     }
                     break;
                 case vk::QueueFlagBits::eCompute:
@@ -116,7 +117,8 @@ namespace vkcv {
                                 found = true;
                             }
                         }
-                        std::cerr << "Warning: not enough \"" << vk::to_string(qFlag) << "\"-Queues." << std::endl;
+                        
+						vkcv_log(vkcv::LogLevel::WARNING, "Not enough %s queues", vk::to_string(qFlag).c_str());
                     }
                     break;
                 case vk::QueueFlagBits::eTransfer:
@@ -137,7 +139,8 @@ namespace vkcv {
                                 found = true;
                             }
                         }
-                        std::cerr << "Warning: not enough \"" << vk::to_string(qFlag) << "\"-Queues." << std::endl;
+	
+						vkcv_log(vkcv::LogLevel::WARNING, "Not enough %s queues", vk::to_string(qFlag).c_str());
                     }
                     break;
                 default:

@@ -1,6 +1,7 @@
 #include "vkcv/CommandResources.hpp"
 #include <iostream>
 
+#include "vkcv/Logger.hpp"
 
 namespace vkcv {
 
@@ -62,7 +63,7 @@ namespace vkcv {
 			return queueManager.getPresentQueue();
 		}
 		else {
-			std::cerr << "getQueueForSubmit error: unknown queue type" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Unknown queue type");
 			return queueManager.getGraphicsQueues().front();	// graphics is the most general queue
 		}
 	}

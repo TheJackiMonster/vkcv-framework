@@ -3,6 +3,7 @@
 //
 
 #include "vkcv/VertexLayout.hpp"
+#include "vkcv/Logger.hpp"
 
 namespace vkcv {
     uint32_t getFormatSize(VertexFormat format) {
@@ -24,10 +25,9 @@ namespace vkcv {
             case VertexFormat::INT4:
                 return 16;
             default:
-                break;
+				vkcv_log(vkcv::LogLevel::WARNING, "No format given");
+                return 0;
         }
-        std::cout << "VertexLayout: No format given" << std::endl;
-        return 0;
     }
 
     VertexInputAttachment::VertexInputAttachment(uint32_t location, uint32_t binding, std::string name, VertexFormat format, uint32_t offset) noexcept:

@@ -5,6 +5,7 @@
  */
 
 #include "vkcv/ShaderProgram.hpp"
+#include "vkcv/Logger.hpp"
 
 namespace vkcv {
     /**
@@ -17,7 +18,7 @@ namespace vkcv {
 	{
 		std::ifstream file(shaderPath.string(), std::ios::ate | std::ios::binary);
 		if (!file.is_open()) {
-		    std::cout << "The file could not be opened." << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "The file could not be opened");
 			return std::vector<char>{};
 		}
 		size_t fileSize = (size_t)file.tellg();
@@ -60,7 +61,8 @@ namespace vkcv {
             default:
                 break;
         }
-        std::cout << "Shader Program Reflection: unknown Vertex Format" << std::endl;
+		
+		vkcv_log(vkcv::LogLevel::WARNING, "Unknown vertex format");
         return VertexFormat::FLOAT;
 	}
 
@@ -72,14 +74,15 @@ namespace vkcv {
 
 	bool ShaderProgram::addShader(ShaderStage shaderStage, const std::filesystem::path &shaderPath)
 	{
-	    if(m_Shaders.find(shaderStage) != m_Shaders.end())
-	        std::cout << "Found existing shader stage. Overwriting."  << std::endl;
+	    if(m_Shaders.find(shaderStage) != m_Shaders.end()) {
+			vkcv_log(vkcv::LogLevel::WARNING, "Overwriting existing shader stage");
+		}
 
 	    const std::vector<char> shaderCode = readShaderCode(shaderPath);
-	    if (shaderCode.empty())
-	        return false;
-	    else
-        {
+	    
+	    if (shaderCode.empty()) {
+			return false;
+		} else {
             Shader shader{shaderCode, shaderStage};
             m_Shaders.insert(std::make_pair(shaderStage, shader));
             return true;

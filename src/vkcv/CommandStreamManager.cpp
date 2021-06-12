@@ -1,6 +1,8 @@
 #include "vkcv/CommandStreamManager.hpp"
 #include "vkcv/Core.hpp"
 
+#include "vkcv/Logger.hpp"
+
 namespace vkcv {
 	CommandStreamManager::CommandStreamManager() noexcept : m_core(nullptr){}
 
@@ -14,7 +16,7 @@ namespace vkcv {
 
 	void CommandStreamManager::init(Core* core) {
 		if (!core) {
-			std::cerr << "Error: CommandStreamManager::init requires valid core pointer" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Requires valid core pointer");
 		}
 		m_core = core;
 	}
@@ -57,7 +59,7 @@ namespace vkcv {
 
 		const size_t id = handle.getId();
 		if (id >= m_commandStreams.size()) {
-			std::cerr << "Error: CommandStreamManager::recordCommandsToStream requires valid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Requires valid handle");
 			return;
 		}
 
@@ -71,7 +73,7 @@ namespace vkcv {
 
 		const size_t id = handle.getId();
 		if (id >= m_commandStreams.size()) {
-			std::cerr << "Error: CommandStreamManager::addFinishCallbackToStream requires valid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Requires valid handle");
 			return;
 		}
 
@@ -86,7 +88,7 @@ namespace vkcv {
 
 		const size_t id = handle.getId();
 		if (id >= m_commandStreams.size()) {
-			std::cerr << "Error: CommandStreamManager::submitCommandStreamSynchronous requires valid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Requires valid handle");
 			return;
 		}
 		CommandStream& stream = m_commandStreams[id];
@@ -111,7 +113,7 @@ namespace vkcv {
 	vk::CommandBuffer CommandStreamManager::getStreamCommandBuffer(const CommandStreamHandle handle) {
 		const size_t id = handle.getId();
 		if (id >= m_commandStreams.size()) {
-			std::cerr << "Error: CommandStreamManager::submitCommandStreamSynchronous requires valid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Requires valid handle");
 			return nullptr;
 		}
 		return m_commandStreams[id].cmdBuffer;

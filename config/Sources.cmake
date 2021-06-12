@@ -29,6 +29,8 @@ set(vkcv_sources
 
 		${vkcv_source}/vkcv/ImageManager.hpp
 		${vkcv_source}/vkcv/ImageManager.cpp
+		
+		${vkcv_include}/vkcv/Logger.hpp
 
 		${vkcv_include}/vkcv/SwapChain.hpp
 		${vkcv_source}/vkcv/SwapChain.cpp

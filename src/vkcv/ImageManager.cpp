@@ -6,6 +6,7 @@
 #include "ImageManager.hpp"
 #include "vkcv/Core.hpp"
 #include "ImageLayoutTransitions.hpp"
+#include "vkcv/Logger.hpp"
 
 #include <algorithm>
 
@@ -206,7 +207,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			std::cerr << "Error: ImageManager::getVulkanImage invalid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
 			return nullptr;
 		}
 		
@@ -219,7 +220,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			std::cerr << "Error: ImageManager::getVulkanDeviceMemory invalid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
 			return nullptr;
 		}
 		
@@ -232,7 +233,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			std::cerr << "Error: ImageManager::getVulkanImageView invalid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
 			return nullptr;
 		}
 		
@@ -245,7 +246,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			std::cerr << "Error: ImageManager::switchImageLayout invalid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
 			return;
 		}
 		
@@ -280,7 +281,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 
 		if (id >= m_images.size()) {
-			std::cerr << "Error: ImageManager::switchImageLayout invalid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
 			return;
 		}
 
@@ -295,7 +296,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			std::cerr << "Error: ImageManager::fillImage invalid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
 			return;
 		}
 		
@@ -369,7 +370,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			std::cerr << "Error: ImageManager::getImageWidth invalid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
 			return 0;
 		}
 		
@@ -382,7 +383,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			std::cerr << "Error: ImageManager::getImageHeight invalid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
 			return 0;
 		}
 		
@@ -395,7 +396,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			std::cerr << "Error: ImageManager::getImageDepth invalid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
 			return 0;
 		}
 		
@@ -407,7 +408,7 @@ namespace vkcv {
 	void ImageManager::destroyImageById(uint64_t id)
 	{
 		if (id >= m_images.size()) {
-			std::cerr << "Error: ImageManager::destroyImageById invalid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
 			return;
 		}
 		
@@ -436,7 +437,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 
 		if (id >= m_images.size()) {
-			std::cerr << "Error: ImageManager::destroyImageById invalid handle" << std::endl;
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
 			return vk::Format::eUndefined;
 		}
 
