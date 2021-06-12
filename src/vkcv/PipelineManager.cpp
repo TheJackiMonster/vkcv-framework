@@ -315,9 +315,11 @@ namespace vkcv
         return m_Configs.at(id);
     }
 
-    PipelineHandle PipelineManager::createComputePipeline(const ShaderProgram &shaderProgram) {
-        // Temporally handing over the Shader Program instead of a pipeline config
+    PipelineHandle PipelineManager::createComputePipeline(
+        const ShaderProgram &shaderProgram, 
+        const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts) {
 
+        // Temporally handing over the Shader Program instead of a pipeline config
         vk::ShaderModule computeModule{};
         if (createShaderModule(computeModule, shaderProgram, ShaderStage::COMPUTE) != vk::Result::eSuccess)
             return PipelineHandle();
@@ -330,14 +332,14 @@ namespace vkcv
                 nullptr
         );
 
-        // TODO: Validation Layer Error -> the size is 0 but has to be greater!
-        const size_t matrixPushConstantSize = shaderProgram.getPushConstantSize();
-        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, matrixPushConstantSize);
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo({}, descriptorSetLayouts);
 
-        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo( // TODO: Check this. I'm not sure if this is correct
-            {},
-            {}, // TODO: For now no Descriptor Set
-            {});// (pushConstantRange)); push constant range must not be size 0, either do not specify or or set size
+        const size_t pushConstantSize = shaderProgram.getPushConstantSize();
+        vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute, 0, pushConstantSize);
+        if (pushConstantSize > 0) {
+            pipelineLayoutCreateInfo.setPushConstantRangeCount(1);
+            pipelineLayoutCreateInfo.setPPushConstantRanges(&pushConstantRange);
+        }
 
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)

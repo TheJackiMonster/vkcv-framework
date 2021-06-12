@@ -37,7 +37,9 @@ namespace vkcv
 
         PipelineHandle createPipeline(const PipelineConfig &config, PassManager& passManager);
 
-        PipelineHandle createComputePipeline(const ShaderProgram &shaderProgram);
+        PipelineHandle createComputePipeline(
+            const ShaderProgram& shaderProgram,
+            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
 
         [[nodiscard]]
         vk::Pipeline getVkPipeline(const PipelineHandle &handle) const;

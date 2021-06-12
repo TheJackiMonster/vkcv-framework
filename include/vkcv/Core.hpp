@@ -166,7 +166,9 @@ namespace vkcv
          * @return True if pipeline creation was successful, False if not
          */
         [[nodiscard]]
-        PipelineHandle createComputePipeline(const ShaderProgram &config);
+        PipelineHandle createComputePipeline(
+            const ShaderProgram &config, 
+            const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
 
         /**
          * Creates a basic vulkan render pass using @p config from the render pass config class and returns it using the @p handle.

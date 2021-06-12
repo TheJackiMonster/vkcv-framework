@@ -119,8 +119,14 @@ int main(int argc, const char** argv) {
 	// Compute Pipeline
 	vkcv::ShaderProgram computeShaderProgram{};
 	computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path("shaders/comp.spv"));
+	computeShaderProgram.reflectShader(vkcv::ShaderStage::COMPUTE);
 
-	vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram);
+	// take care, assuming shader has exactly one descriptor set
+	vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
+
+	vkcv::PipelineHandle computePipeline = core.createComputePipeline(
+		computeShaderProgram, 
+		{ core.getDescriptorSet(computeDescriptorSet).layout });
 
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
