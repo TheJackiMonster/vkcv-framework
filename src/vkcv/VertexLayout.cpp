@@ -30,9 +30,10 @@ namespace vkcv {
         return 0;
     }
 
-    VertexInputAttachment::VertexInputAttachment(uint32_t location, uint32_t binding, VertexFormat format, uint32_t offset) noexcept:
+    VertexInputAttachment::VertexInputAttachment(uint32_t location, uint32_t binding, std::string name, VertexFormat format, uint32_t offset) noexcept:
             location{location},
             binding{binding},
+            name{name},
             format{format},
             offset{offset}
             {}

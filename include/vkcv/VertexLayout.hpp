@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 #include <iostream>
+#include <string>
 
 namespace vkcv{
 
@@ -38,10 +39,11 @@ namespace vkcv{
 
     struct VertexInputAttachment{
         VertexInputAttachment() = delete;
-        VertexInputAttachment(uint32_t location, uint32_t binding, VertexFormat format, uint32_t offset) noexcept;
+        VertexInputAttachment(uint32_t location, uint32_t binding, std::string name, VertexFormat format, uint32_t offset) noexcept;
 
         uint32_t location;
         uint32_t binding;
+        std::string name;
         VertexFormat format;
         uint32_t offset;
     };
