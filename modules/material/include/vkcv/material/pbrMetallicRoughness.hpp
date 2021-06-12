@@ -12,11 +12,11 @@
 namespace vkcv::material
 {
     class Core;
-    class pbrMaterial : Material
+    class PBRMaterial : Material
     {
     public:
-        pbrMaterial() = delete;
-        pbrMaterial(const ImageHandle           &colorImg,
+        PBRMaterial() = delete;
+        PBRMaterial(const ImageHandle           &colorImg,
                     const SamplerHandle         &colorSmp,
                     const ImageHandle           &normalImg,
                     const SamplerHandle         &normalSmp,

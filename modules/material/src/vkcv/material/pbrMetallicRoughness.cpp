@@ -1,9 +1,9 @@
-#include "vkcv/material/pbrMetallicRoughness.hpp"
+#include "vkcv/material/PBRMetallicRoughness.hpp"
 
 
 namespace vkcv::material
 {
-    pbrMaterial::pbrMaterial(const ImageHandle          &colorImg,
+    PBRMaterial::PBRMaterial(const ImageHandle          &colorImg,
                              const SamplerHandle        &colorSmp,
                              const ImageHandle          &normalImg,
                              const SamplerHandle        &normalSmp,
@@ -19,7 +19,7 @@ namespace vkcv::material
     m_DescriptorSetHandle(setHandle)
     {}
 
-    std::vector<DescriptorBinding> pbrMaterial::getDescriptorBindings() noexcept
+    std::vector<DescriptorBinding> PBRMaterial::getDescriptorBindings() noexcept
     {
         return {{DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT},
                 {DescriptorType::SAMPLER      , 1, ShaderStage::FRAGMENT},
@@ -28,7 +28,7 @@ namespace vkcv::material
                 {DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT},
                 {DescriptorType::SAMPLER      , 1, ShaderStage::FRAGMENT}};
     }
-    void pbrMaterial::create(vkcv::Core core)
+    void PBRMaterial::create(vkcv::Core core)
     {   
         //Test if Images and samplers valid, if not use default
         if (m_ColorTexture) {

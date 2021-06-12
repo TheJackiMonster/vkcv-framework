@@ -12,8 +12,8 @@ set(vkcv_material_include ${PROJECT_SOURCE_DIR}/include)
 set(vkcv_material_sources
 		${vkcv_material_include}/vkcv/material/Material.hpp
 		${vkcv_material_source}/vkcv/material/Material.cpp
-		${vkcv_material_include}/vkcv/material/pbrMetallicRoughness.hpp
-		${vkcv_material_source}/vkcv/material/pbrMetallicRoughness.cpp
+		${vkcv_material_include}/vkcv/material/PBRMetallicRoughness.hpp
+		${vkcv_material_source}/vkcv/material/PBRMetallicRoughness.cpp
 )
 
 # adding source files to the module
