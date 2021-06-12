@@ -207,7 +207,7 @@ int main(int argc, const char** argv) {
         vkcv::SamplerDescriptorWrite(1, sampler), 
         vkcv::SamplerDescriptorWrite(4, shadowSampler) };
     setWrites.uniformBufferWrites   = { vkcv::UniformBufferDescriptorWrite(2, lightBuffer.getHandle()) };
-	core.writeResourceDescription(descriptorSet, 0, setWrites);
+	core.writeDescriptorSet(descriptorSet, setWrites);
 
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;

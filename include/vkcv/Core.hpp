@@ -224,7 +224,7 @@ namespace vkcv
          */
         [[nodiscard]]
         DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &bindings);
-		void writeResourceDescription(DescriptorSetHandle handle, size_t setIndex, const DescriptorWrites& writes);
+		void writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites& writes);
 
 		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
 
@@ -240,6 +240,13 @@ namespace vkcv
 			const PushConstantData          &pushConstantData,
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets);
+
+		void recordComputeDispatchToCmdStream(
+			CommandStreamHandle cmdStream,
+			PipelineHandle computePipeline,
+			const uint32_t dispatchCount[3],
+			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
+			const PushConstantData& pushConstantData);
 
 		/**
 		 * @brief end recording and present image

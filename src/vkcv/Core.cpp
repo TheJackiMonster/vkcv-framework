@@ -305,6 +305,40 @@ namespace vkcv
 		recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
 	}
 
+	void Core::recordComputeDispatchToCmdStream(
+		CommandStreamHandle cmdStreamHandle,
+		PipelineHandle computePipeline,
+		const uint32_t dispatchCount[3],
+		const std::vector<DescriptorSetUsage>& descriptorSetUsages,
+		const PushConstantData& pushConstantData) {
+
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+
+			const auto pipelineLayout = m_PipelineManager->getVkPipelineLayout(computePipeline);
+
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_PipelineManager->getVkPipeline(computePipeline));
+			for (const auto& usage : descriptorSetUsages) {
+				cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eCompute,
+					pipelineLayout,
+					usage.setLocation,
+					{ usage.vulkanHandle },
+					{});
+			}
+			if (pushConstantData.sizePerDrawcall > 0) {
+				cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eCompute,
+					0,
+					pushConstantData.sizePerDrawcall,
+					pushConstantData.data);
+			}
+			cmdBuffer.dispatch(dispatchCount[0], dispatchCount[1], dispatchCount[2]);
+		};
+
+		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);
+	}
+
 	void Core::endFrame() {
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
@@ -409,10 +443,9 @@ namespace vkcv
         return m_DescriptorManager->createDescriptorSet(bindings);
     }
 
-	void Core::writeResourceDescription(DescriptorSetHandle handle, size_t setIndex, const DescriptorWrites &writes) {
-		m_DescriptorManager->writeResourceDescription(
-			handle, 
-			setIndex, 
+	void Core::writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites &writes) {
+		m_DescriptorManager->writeDescriptorSet(
+			handle,  
 			writes, 
 			*m_ImageManager, 
 			*m_BufferManager, 

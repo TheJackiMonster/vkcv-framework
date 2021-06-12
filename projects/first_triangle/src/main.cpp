@@ -128,6 +128,18 @@ int main(int argc, const char** argv) {
 		computeShaderProgram, 
 		{ core.getDescriptorSet(computeDescriptorSet).layout });
 
+	struct ComputeTestBuffer {
+		float test1[10];
+		float test2[10];
+		float test3[10];
+	};
+
+	vkcv::Buffer computeTestBuffer = core.createBuffer<ComputeTestBuffer>(vkcv::BufferType::STORAGE, 1);
+
+	vkcv::DescriptorWrites computeDescriptorWrites;
+	computeDescriptorWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0, computeTestBuffer.getHandle()) };
+	core.writeDescriptorSet(computeDescriptorSet, computeDescriptorWrites);
+
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
 	 * BufferHandle triangleIndices = core.createBuffer(indices);
@@ -177,6 +189,17 @@ int main(int argc, const char** argv) {
 			pushConstantData,
 			{ drawcall },
 			{ swapchainInput });
+
+		const uint32_t dispatchSize[3] = { 2, 1, 1 };
+		const float theMeaningOfLife = 42;
+
+		core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			computePipeline,
+			dispatchSize,
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(computeDescriptorSet).vulkanHandle) },
+			vkcv::PushConstantData((void*)&theMeaningOfLife, sizeof(theMeaningOfLife)));
+
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
 	    
