@@ -1,4 +1,4 @@
-#include "vkcv/material/PBRMetallicRoughness.hpp"
+#include "vkcv/material/pbrMetallicRoughness.hpp"
 
 
 namespace vkcv::material
