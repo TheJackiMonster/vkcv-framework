@@ -3,21 +3,23 @@
 
 namespace vkcv::material
 {
-    PBRMaterial::PBRMaterial(const ImageHandle          &colorImg,
-                             const SamplerHandle        &colorSmp,
-                             const ImageHandle          &normalImg,
-                             const SamplerHandle        &normalSmp,
-                             const ImageHandle          &metRoughImg,
-                             const SamplerHandle        &metRoughSmp,
-                             const DescriptorSetHandle  &setHandle) noexcept :
-    m_ColorTexture(colorImg),
-    m_ColorSampler(colorSmp),
-    m_NormalTexture(normalImg),
-    m_NormalSampler(normalSmp),
-    m_MetRoughTexture(metRoughImg),
-    m_MetRoughSampler(metRoughSmp),
-    m_DescriptorSetHandle(setHandle)
-    {}
+    PBRMaterial::PBRMaterial(
+        const ImageHandle          &colorImg,
+        const SamplerHandle        &colorSmp,
+        const ImageHandle          &normalImg,
+        const SamplerHandle        &normalSmp,
+        const ImageHandle          &metRoughImg,
+        const SamplerHandle        &metRoughSmp,
+        const DescriptorSetHandle  &setHandle) noexcept :
+        m_ColorTexture(colorImg),
+        m_ColorSampler(colorSmp),
+        m_NormalTexture(normalImg),
+        m_NormalSampler(normalSmp),
+        m_MetRoughTexture(metRoughImg),
+        m_MetRoughSampler(metRoughSmp),
+        m_DescriptorSetHandle(setHandle)
+    {
+    }
 
     std::vector<DescriptorBinding> PBRMaterial::getDescriptorBindings() noexcept
     {
@@ -28,61 +30,65 @@ namespace vkcv::material
                 {DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT},
                 {DescriptorType::SAMPLER      , 1, ShaderStage::FRAGMENT}};
     }
-    void PBRMaterial::create(vkcv::Core core)
-    {   
+    PBRMaterial PBRMaterial::create(
+        vkcv::Core* core,
+        ImageHandle& colorImg,
+        SamplerHandle& colorSmp,
+        ImageHandle& normalImg,
+        SamplerHandle& normalSmp,
+        ImageHandle& metRoughImg,
+        SamplerHandle& metRoughSmp)
+    {
         //Test if Images and samplers valid, if not use default
-        if (m_ColorTexture) {
+        if (colorImg) {
             //TODO
         }
-        if (m_NormalTexture) {
+        if (normalImg) {
             //TODO
         }
-        if (m_MetRoughTexture) {
+        if (metRoughImg) {
             //TODO
         }
-        if (m_ColorSampler) {
-            /*
-            m_ColorSampler = core.createSampler(
+        if (colorSmp) {            
+            colorSmp = core->createSampler(
                 vkcv::SamplerFilterType::LINEAR,
                 vkcv::SamplerFilterType::LINEAR,
                 vkcv::SamplerMipmapMode::LINEAR,
                 vkcv::SamplerAddressMode::REPEAT
-            );//only non const member
-            */
+            );            
         }
-        if (m_NormalSampler) {
-            /*
-            m_NormalSampler = core.createSampler(
+        if (normalSmp) {            
+            normalSmp = core->createSampler(
                 vkcv::SamplerFilterType::LINEAR,
                 vkcv::SamplerFilterType::LINEAR,
                 vkcv::SamplerMipmapMode::LINEAR,
                 vkcv::SamplerAddressMode::REPEAT
-            ); //only non const member
-            */
+            );            
         }
-        if (m_MetRoughSampler) {
-            /*
-            m_MetRoughSampler = core.createSampler(
+        if (metRoughSmp) {
+            metRoughSmp = core->createSampler(
                 vkcv::SamplerFilterType::LINEAR,
                 vkcv::SamplerFilterType::LINEAR,
                 vkcv::SamplerMipmapMode::LINEAR,
                 vkcv::SamplerAddressMode::REPEAT
-            ); //only non const member
-            */
+            );            
         }
-          
+
+
         //create descriptorset
-        vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(getDescriptorBindings());       
+        vkcv::DescriptorSetHandle descriptorSetHandle = core->createDescriptorSet(getDescriptorBindings());
         //writes
         vkcv::DescriptorWrites setWrites;
         setWrites.sampledImageWrites = {
-            vkcv::SampledImageDescriptorWrite(0, m_ColorTexture),
-            vkcv::SampledImageDescriptorWrite(2, m_NormalTexture),
-            vkcv::SampledImageDescriptorWrite(4, m_MetRoughTexture) };
+            vkcv::SampledImageDescriptorWrite(0, colorImg),
+            vkcv::SampledImageDescriptorWrite(2, normalImg),
+            vkcv::SampledImageDescriptorWrite(4, metRoughImg) };
         setWrites.samplerWrites = {
-            vkcv::SamplerDescriptorWrite(1, m_ColorSampler),
-            vkcv::SamplerDescriptorWrite(3, m_NormalSampler), 
-            vkcv::SamplerDescriptorWrite(5, m_MetRoughSampler) };
-        core.writeResourceDescription(descriptorSet, 0, setWrites);
+            vkcv::SamplerDescriptorWrite(1, colorSmp),
+            vkcv::SamplerDescriptorWrite(3, normalSmp),
+            vkcv::SamplerDescriptorWrite(5, metRoughSmp) };
+        core->writeResourceDescription(descriptorSetHandle, 0, setWrites);
+
+        return PBRMaterial(colorImg, colorSmp, normalImg, normalSmp, metRoughImg, metRoughSmp, descriptorSetHandle);        
     }
 }

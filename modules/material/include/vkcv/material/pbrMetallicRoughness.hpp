@@ -11,7 +11,6 @@
 
 namespace vkcv::material
 {
-    class Core;
     class PBRMaterial : Material
     {
     public:
@@ -50,7 +49,14 @@ namespace vkcv::material
         */
         static std::vector<DescriptorBinding> getDescriptorBindings() noexcept;
 
-        void create(vkcv::Core core);
+        static PBRMaterial create(
+            vkcv::Core* core,
+            ImageHandle          &colorImg,
+            SamplerHandle        &colorSmp,
+            ImageHandle          &normalImg,
+            SamplerHandle        &normalSmp,
+            ImageHandle          &metRoughImg,
+            SamplerHandle        &metRoughSmp);
 
     };
 }
