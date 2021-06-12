@@ -33,24 +33,32 @@ namespace vkcv {
 	}
 	
 #ifndef NDEBUG
+#ifndef VKCV_DEBUG_MESSAGE_LEN
+#define VKCV_DEBUG_MESSAGE_LEN 1024
+#endif
 
-#define vkcv_log(level, ...) { \
-  char output_message [1024];           \
-                                        \
-  sprintf(                              \
-    output_message,                     \
-    __VA_ARGS__                         \
-  );                                    \
-                                        \
-  std::fprintf(                         \
-    getLogOutput(level),                \
-    "[%s]: %s [%s, line %d: %s]\n",     \
-  	vkcv::getLogName(level),            \
-    output_message,                     \
-    __FILE__,                           \
-    __LINE__,                           \
-    __PRETTY_FUNCTION__                 \
-  );                                    \
+#ifdef _MSC_VER
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
+
+#define vkcv_log(level, ...) {      \
+  char output_message [             \
+    VKCV_DEBUG_MESSAGE_LEN          \
+  ];                                \
+  std::snprintf(                    \
+    output_message,                 \
+    VKCV_DEBUG_MESSAGE_LEN,         \
+    __VA_ARGS__                     \
+  );                                \
+  std::fprintf(                     \
+    getLogOutput(level),            \
+    "[%s]: %s [%s, line %d: %s]\n", \
+  	vkcv::getLogName(level),        \
+    output_message,                 \
+    __FILE__,                       \
+    __LINE__,                       \
+    __PRETTY_FUNCTION__             \
+  );                                \
 }
 
 #else
