@@ -1,5 +1,7 @@
 #include "DescriptorManager.hpp"
 
+#include "vkcv/Logger.hpp"
+
 namespace vkcv
 {
     DescriptorManager::DescriptorManager(vk::Device device) noexcept:
@@ -53,7 +55,7 @@ namespace vkcv
         vk::DescriptorSetLayoutCreateInfo layoutInfo({}, setBindings);
         if(m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &set.layout) != vk::Result::eSuccess)
         {
-            std::cout << "FAILED TO CREATE DESCRIPTOR SET LAYOUT" << std::endl;
+			vkcv_log(LogLevel::ERROR, "Failed to create descriptor set layout");
             return DescriptorSetHandle();
         };
         
@@ -69,10 +71,10 @@ namespace vkcv
 				result = m_Device.allocateDescriptorSets(&allocInfo, &set.vulkanHandle);
 			}
 			if (result != vk::Result::eSuccess) {
-				std::cout << "FAILED TO ALLOCATE DESCRIPTOR SET" << std::endl;
-				std::cout << vk::to_string(result) << std::endl;
+				vkcv_log(LogLevel::ERROR, "Failed to create descriptor set (%s)",
+						 vk::to_string(result).c_str());
+				
 				m_Device.destroy(set.layout);
-
 				return DescriptorSetHandle();
 			}
         };
@@ -239,7 +241,7 @@ namespace vkcv
 			case DescriptorType::IMAGE_STORAGE:
 				return vk::DescriptorType::eStorageImage;
             default:
-				std::cerr << "Error: DescriptorManager::convertDescriptorTypeFlag, unknown DescriptorType" << std::endl;
+				vkcv_log(LogLevel::ERROR, "Unknown DescriptorType");
                 return vk::DescriptorType::eUniformBuffer;
         }
     }
@@ -266,7 +268,7 @@ namespace vkcv
     
     void DescriptorManager::destroyDescriptorSetById(uint64_t id) {
 		if (id >= m_DescriptorSets.size()) {
-			std::cerr << "Error: DescriptorManager::destroyResourceDescriptionById invalid id" << std::endl;
+			vkcv_log(LogLevel::ERROR, "Invalid id");
 			return;
 		}
 		
@@ -282,7 +284,7 @@ namespace vkcv
 		vk::DescriptorPool pool;
 		if (m_Device.createDescriptorPool(&m_PoolInfo, nullptr, &pool) != vk::Result::eSuccess)
 		{
-			std::cout << "FAILED TO ALLOCATE DESCRIPTOR POOL." << std::endl;
+			vkcv_log(LogLevel::WARNING, "Failed to allocate descriptor pool");
 			pool = nullptr;
 		};
 		m_Pools.push_back(pool);
