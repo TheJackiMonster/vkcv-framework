@@ -184,7 +184,9 @@ namespace vkcv::shader {
 			return false;
 		}
 		
-		std::streamsize fileSize = static_cast<std::streamsize>(spirv.size()) * sizeof(uint32_t);
+		const auto fileSize = static_cast<std::streamsize>(
+				sizeof(uint32_t) * spirv.size()
+		);
 		
 		file.seekp(0);
 		file.write(reinterpret_cast<const char*>(spirv.data()), fileSize);
@@ -256,6 +258,10 @@ namespace vkcv::shader {
 		}
 		
 		std::filesystem::remove(tmp_path);
+		
+		if (update) {
+			// TODO: Shader hot compilation during runtime
+		}
 	}
 	
 }
