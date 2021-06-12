@@ -38,7 +38,7 @@ namespace vkcv
 		case VertexFormat::INT4:
 			return vk::Format::eR32G32B32A32Sint;
 		default:
-			vkcv_log(vkcv::LogLevel::WARNING, "Unknown vertex format");
+			vkcv_log(LogLevel::WARNING, "Unknown vertex format");
 			return vk::Format::eUndefined;
 		}
 	}
@@ -51,7 +51,7 @@ namespace vkcv
         const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
         if (!(existsVertexShader && existsFragmentShader))
         {
-			vkcv_log(vkcv::LogLevel::ERROR, "Requires vertex and fragment shader code");
+			vkcv_log(LogLevel::ERROR, "Requires vertex and fragment shader code");
             return PipelineHandle();
         }
 

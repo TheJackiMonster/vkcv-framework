@@ -41,7 +41,7 @@ uint8_t convertTypeToInt(const fx::gltf::Accessor::Type type) {
  * @param path path to file that is responsible for error
  */
 void print_what (const std::exception& e, const std::string &path) {
-	vkcv_log(vkcv::LogLevel::ERROR, "Loading file %s: %s",
+	vkcv_log(LogLevel::ERROR, "Loading file %s: %s",
 			 path.c_str(), e.what());
 	
 	try {
@@ -124,7 +124,7 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		const size_t off = indexBufferView.byteOffset;
 		const void *const ptr = ((char*)indexBuffer.data.data()) + off;
 		if (!memcpy(indexBufferData.data(), ptr, indexBufferView.byteLength)) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Copying index buffer data");
+			vkcv_log(LogLevel::ERROR, "Copying index buffer data");
 			return 0;
 		}
 	}
@@ -139,7 +139,7 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		const size_t off = 0;
 		const void *const ptr = ((char*)vertexBuffer.data.data()) + off;
 		if (!memcpy(vertexBufferData.data(), ptr, vertexBuffer.byteLength)) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Copying vertex buffer data");
+			vkcv_log(LogLevel::ERROR, "Copying vertex buffer data");
 			return 0;
 		}
 	}
@@ -153,7 +153,7 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 	case fx::gltf::Accessor::ComponentType::UnsignedInt:
 		indexType = UINT32; break;
 	default:
-		vkcv_log(vkcv::LogLevel::ERROR, "Index type (%u) not supported",
+		vkcv_log(LogLevel::ERROR, "Index type (%u) not supported",
 				 static_cast<uint16_t>(indexAccessor.componentType));
 		return 0;
 	}

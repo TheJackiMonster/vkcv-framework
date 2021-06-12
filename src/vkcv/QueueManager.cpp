@@ -96,7 +96,7 @@ namespace vkcv {
                             }
                         }
 	
-						vkcv_log(vkcv::LogLevel::WARNING, "Not enough %s queues", vk::to_string(qFlag).c_str());
+						vkcv_log(LogLevel::WARNING, "Not enough %s queues", vk::to_string(qFlag).c_str());
                     }
                     break;
                 case vk::QueueFlagBits::eCompute:
@@ -118,7 +118,7 @@ namespace vkcv {
                             }
                         }
                         
-						vkcv_log(vkcv::LogLevel::WARNING, "Not enough %s queues", vk::to_string(qFlag).c_str());
+						vkcv_log(LogLevel::WARNING, "Not enough %s queues", vk::to_string(qFlag).c_str());
                     }
                     break;
                 case vk::QueueFlagBits::eTransfer:
@@ -140,7 +140,7 @@ namespace vkcv {
                             }
                         }
 	
-						vkcv_log(vkcv::LogLevel::WARNING, "Not enough %s queues", vk::to_string(qFlag).c_str());
+						vkcv_log(LogLevel::WARNING, "Not enough %s queues", vk::to_string(qFlag).c_str());
                     }
                     break;
                 default:

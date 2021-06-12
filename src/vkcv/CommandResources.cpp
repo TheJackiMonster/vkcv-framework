@@ -63,7 +63,7 @@ namespace vkcv {
 			return queueManager.getPresentQueue();
 		}
 		else {
-			vkcv_log(vkcv::LogLevel::ERROR, "Unknown queue type");
+			vkcv_log(LogLevel::ERROR, "Unknown queue type");
 			return queueManager.getGraphicsQueues().front();	// graphics is the most general queue
 		}
 	}

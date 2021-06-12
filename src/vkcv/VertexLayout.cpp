@@ -25,7 +25,7 @@ namespace vkcv {
             case VertexFormat::INT4:
                 return 16;
             default:
-				vkcv_log(vkcv::LogLevel::WARNING, "No format given");
+				vkcv_log(LogLevel::WARNING, "No format given");
                 return 0;
         }
     }

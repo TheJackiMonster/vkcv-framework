@@ -16,7 +16,7 @@ namespace vkcv {
 
 	void CommandStreamManager::init(Core* core) {
 		if (!core) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Requires valid core pointer");
+			vkcv_log(LogLevel::ERROR, "Requires valid core pointer");
 		}
 		m_core = core;
 	}
@@ -59,7 +59,7 @@ namespace vkcv {
 
 		const size_t id = handle.getId();
 		if (id >= m_commandStreams.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Requires valid handle");
+			vkcv_log(LogLevel::ERROR, "Requires valid handle");
 			return;
 		}
 
@@ -73,7 +73,7 @@ namespace vkcv {
 
 		const size_t id = handle.getId();
 		if (id >= m_commandStreams.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Requires valid handle");
+			vkcv_log(LogLevel::ERROR, "Requires valid handle");
 			return;
 		}
 
@@ -88,7 +88,7 @@ namespace vkcv {
 
 		const size_t id = handle.getId();
 		if (id >= m_commandStreams.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Requires valid handle");
+			vkcv_log(LogLevel::ERROR, "Requires valid handle");
 			return;
 		}
 		CommandStream& stream = m_commandStreams[id];
@@ -113,7 +113,7 @@ namespace vkcv {
 	vk::CommandBuffer CommandStreamManager::getStreamCommandBuffer(const CommandStreamHandle handle) {
 		const size_t id = handle.getId();
 		if (id >= m_commandStreams.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Requires valid handle");
+			vkcv_log(LogLevel::ERROR, "Requires valid handle");
 			return nullptr;
 		}
 		return m_commandStreams[id].cmdBuffer;

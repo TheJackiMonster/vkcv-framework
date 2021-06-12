@@ -127,7 +127,7 @@ namespace vkcv
 		}
 		
 		if (result != vk::Result::eSuccess) {
-			vkcv_log(vkcv::LogLevel::ERROR, "%s", vk::to_string(result).c_str());
+			vkcv_log(LogLevel::ERROR, "%s", vk::to_string(result).c_str());
 			return Result::ERROR;
 		}
 		
@@ -151,7 +151,7 @@ namespace vkcv
 		}
 		
     	if (acquireSwapchainImage() != Result::SUCCESS) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Acquire failed");
+			vkcv_log(LogLevel::ERROR, "Acquire failed");
     		
     		m_currentSwapchainImageIndex = std::numeric_limits<uint32_t>::max();
     	}
@@ -236,7 +236,7 @@ namespace vkcv
             1);
         if(m_Context.m_Device.createFramebuffer(&createInfo, nullptr, &framebuffer) != vk::Result::eSuccess)
         {
-			vkcv_log(vkcv::LogLevel::ERROR, "Failed to create temporary framebuffer");
+			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
             return;
         }
 
@@ -327,7 +327,7 @@ namespace vkcv
 		}
 		
 		if (result != vk::Result::eSuccess) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Swapchain present failed (%s)", vk::to_string(result).c_str());
+			vkcv_log(LogLevel::ERROR, "Swapchain present failed (%s)", vk::to_string(result).c_str());
 		}
 	}
 

@@ -207,7 +207,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return nullptr;
 		}
 		
@@ -220,7 +220,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return nullptr;
 		}
 		
@@ -233,7 +233,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return nullptr;
 		}
 		
@@ -246,7 +246,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return;
 		}
 		
@@ -281,7 +281,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 
 		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return;
 		}
 
@@ -296,7 +296,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return;
 		}
 		
@@ -370,7 +370,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return 0;
 		}
 		
@@ -383,7 +383,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return 0;
 		}
 		
@@ -396,7 +396,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 		
 		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return 0;
 		}
 		
@@ -408,7 +408,7 @@ namespace vkcv {
 	void ImageManager::destroyImageById(uint64_t id)
 	{
 		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return;
 		}
 		
@@ -437,7 +437,7 @@ namespace vkcv {
 		const uint64_t id = handle.getId();
 
 		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid handle");
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return vk::Format::eUndefined;
 		}
 

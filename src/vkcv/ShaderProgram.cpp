@@ -18,7 +18,7 @@ namespace vkcv {
 	{
 		std::ifstream file(shaderPath.string(), std::ios::ate | std::ios::binary);
 		if (!file.is_open()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "The file could not be opened");
+			vkcv_log(LogLevel::ERROR, "The file could not be opened");
 			return std::vector<char>{};
 		}
 		size_t fileSize = (size_t)file.tellg();
@@ -62,7 +62,7 @@ namespace vkcv {
                 break;
         }
 		
-		vkcv_log(vkcv::LogLevel::WARNING, "Unknown vertex format");
+		vkcv_log(LogLevel::WARNING, "Unknown vertex format");
         return VertexFormat::FLOAT;
 	}
 
@@ -75,7 +75,7 @@ namespace vkcv {
 	bool ShaderProgram::addShader(ShaderStage shaderStage, const std::filesystem::path &shaderPath)
 	{
 	    if(m_Shaders.find(shaderStage) != m_Shaders.end()) {
-			vkcv_log(vkcv::LogLevel::WARNING, "Overwriting existing shader stage");
+			vkcv_log(LogLevel::WARNING, "Overwriting existing shader stage");
 		}
 
 	    const std::vector<char> shaderCode = readShaderCode(shaderPath);
