@@ -431,8 +431,14 @@ int loadScene(const std::string &path, Scene &scene){
 
         for (int l = 0; l < sceneObjects.materials.size(); l++){
             fx::gltf::Material material = sceneObjects.materials[l];
+	    // TODO I think we shouldn't set the index for a texture target if
+	    // it isn't defined. So we need to test first if there is a normal
+	    // texture before assigning material.normalTexture.index.
+	    // About the bitmask: If a normal texture is there, modify the
+	    // materials textureMask like this:
+	    // 		mat.textureMask |= bitflag(asset::normal);
             materials.push_back({
-               0, // TODO; macros not yet defined
+               0,
                material.pbrMetallicRoughness.baseColorTexture.index,
                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                material.normalTexture.index,
