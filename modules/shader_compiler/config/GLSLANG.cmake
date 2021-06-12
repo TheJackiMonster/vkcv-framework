@@ -16,6 +16,9 @@ if (EXISTS "${vkcv_shader_compiler_lib_path}/glslang")
 	set(ENABLE_CTEST OFF CACHE INTERNAL "")
 	set(USE_CCACHE OFF CACHE INTERNAL "")
 	
+	set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
+	set(BUILD_EXTERNAL OFF CACHE INTERNAL "")
+	
 	add_subdirectory(${vkcv_shader_compiler_lib}/glslang)
 	
 	list(APPEND vkcv_shader_compiler_libraries glslang SPIRV)
