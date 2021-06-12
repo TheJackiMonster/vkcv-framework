@@ -241,6 +241,13 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 	return 1;
 }
 
+
+bool materialHasTexture(const Material *const m, const PBRTextureTarget t)
+{
+	return m->textureMask & bitflag(t);
+}
+
+
 int loadScene(const std::string &path, Scene &scene){
     fx::gltf::Document sceneObjects;
 

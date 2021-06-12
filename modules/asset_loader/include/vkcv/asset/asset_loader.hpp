@@ -55,20 +55,6 @@ enum class PrimitiveMode : uint8_t {
 /* The indices in the index buffer can be of different bit width. */
 enum class IndexType : uint8_t { UNDEFINED=0, UINT8=1, UINT16=2, UINT32=3 };
 
-/* Flags for the bit-mask in the Material struct. Use the bitof() macro to
- * translate the enums value when checking a flag of the mask:
- * Material mat = ...;
- * if (mat.textureMask & bitflag(PBRTextureTarget::baseColor)) {...} */
-// TODO Maybe it's easier to replace the bitflag() macro with a "hasTexture()"
-// macro that already combines the logical AND with the bitflag?
-enum class PBRTextureTarget {
-	baseColor=1, metalRough=2, normal=4, occlusion=8, emissive=16
-};
-
-/* This macro translates the index of an enum in the defined order to an
- * integer with a single bit set in the corresponding place. */
-#define bitflag(ENUM) (0x1u << (ENUM))
-
 typedef struct {
 	// TODO define struct for samplers (low priority)
 	// NOTE: glTF defines samplers based on OpenGL, which can not be
@@ -100,6 +86,30 @@ typedef struct {
 	float occlusionStrength;
 	struct { float r, g, b; } emissiveFactor;
 } Material;
+
+/* Flags for the bit-mask in the Material struct. To check if a material has a
+ * certain texture target, you can use the hasTexture() function below, passing
+ * the material struct and the enum. */
+enum class PBRTextureTarget {
+	baseColor=1, metalRough=2, normal=4, occlusion=8, emissive=16
+};
+
+/* This macro translates the index of an enum in the defined order to an
+ * integer with a single bit set in the corresponding place. It is used for
+ * working with the bitmask of texture targets ("textureMask") in the Material
+ * struct:
+ * 	Material mat = ...;
+ * 	if (mat.textureMask & bitflag(PBRTextureTarget::baseColor)) {...}
+ * However, this logic is also encapsulated in the convenience-function
+ * materialHasTexture() so users of the asset loader module can avoid direct
+ * contact with bit-level operations. */
+#define bitflag(ENUM) (0x1u << ((unsigned)(ENUM)))
+
+/* To signal that a certain texture target is active in a Material struct, its
+ * bit is set in the textureMask. You can use this function to check that:
+ * Material mat = ...;
+ * if (materialHasTexture(&mat, baseColor)) {...} */
+bool materialHasTexture(const Material *const m, const PBRTextureTarget t);
 
 /* This struct represents one (possibly the only) part of a mesh. There is
  * always one vertexBuffer and zero or one indexBuffer (indexed rendering is
