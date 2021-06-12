@@ -16,6 +16,8 @@
 #include "ImageLayoutTransitions.hpp"
 #include "vkcv/CommandStreamManager.hpp"
 
+#include "vkcv/Logger.hpp"
+
 namespace vkcv
 {
 
@@ -132,7 +134,7 @@ namespace vkcv
 		}
 		
 		if (result != vk::Result::eSuccess) {
-			std::cerr << vk::to_string(result) << std::endl;
+			vkcv_log(LogLevel::ERROR, "%s", vk::to_string(result).c_str());
 			return Result::ERROR;
 		}
 		
@@ -156,7 +158,7 @@ namespace vkcv
 		}
 		
     	if (acquireSwapchainImage() != Result::SUCCESS) {
-    		std::cerr << "Acquire failed!" << std::endl;
+			vkcv_log(LogLevel::ERROR, "Acquire failed");
     		
     		m_currentSwapchainImageIndex = std::numeric_limits<uint32_t>::max();
     	}
@@ -241,7 +243,7 @@ namespace vkcv
             1);
         if(m_Context.m_Device.createFramebuffer(&createInfo, nullptr, &framebuffer) != vk::Result::eSuccess)
         {
-            std::cout << "FAILED TO CREATE TEMPORARY FRAMEBUFFER!" << std::endl;
+			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
             return;
         }
 
@@ -366,7 +368,7 @@ namespace vkcv
 		}
 		
 		if (result != vk::Result::eSuccess) {
-			std::cout << "Error: swapchain present failed... " << vk::to_string(result) << std::endl;
+			vkcv_log(LogLevel::ERROR, "Swapchain present failed (%s)", vk::to_string(result).c_str());
 		}
 	}
 

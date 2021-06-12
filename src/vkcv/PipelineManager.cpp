@@ -1,5 +1,6 @@
 #include "PipelineManager.hpp"
 #include "vkcv/Image.hpp"
+#include "vkcv/Logger.hpp"
 
 namespace vkcv
 {
@@ -20,15 +21,25 @@ namespace vkcv
 	// currently assuming default 32 bit formats, no lower precision or normalized variants supported
 	vk::Format vertexFormatToVulkanFormat(const VertexFormat format) {
 		switch (format) {
-		case VertexFormat::FLOAT: return vk::Format::eR32Sfloat;
-		case VertexFormat::FLOAT2: return vk::Format::eR32G32Sfloat;
-		case VertexFormat::FLOAT3: return vk::Format::eR32G32B32Sfloat;
-		case VertexFormat::FLOAT4: return vk::Format::eR32G32B32A32Sfloat;
-		case VertexFormat::INT: return vk::Format::eR32Sint;
-		case VertexFormat::INT2: return vk::Format::eR32G32Sint;
-		case VertexFormat::INT3: return vk::Format::eR32G32B32Sint;
-		case VertexFormat::INT4: return vk::Format::eR32G32B32A32Sint;
-		default: std::cerr << "Warning: Unknown vertex format" << std::endl; return vk::Format::eUndefined;
+		case VertexFormat::FLOAT:
+			return vk::Format::eR32Sfloat;
+		case VertexFormat::FLOAT2:
+			return vk::Format::eR32G32Sfloat;
+		case VertexFormat::FLOAT3:
+			return vk::Format::eR32G32B32Sfloat;
+		case VertexFormat::FLOAT4:
+			return vk::Format::eR32G32B32A32Sfloat;
+		case VertexFormat::INT:
+			return vk::Format::eR32Sint;
+		case VertexFormat::INT2:
+			return vk::Format::eR32G32Sint;
+		case VertexFormat::INT3:
+			return vk::Format::eR32G32B32Sint;
+		case VertexFormat::INT4:
+			return vk::Format::eR32G32B32A32Sint;
+		default:
+			vkcv_log(LogLevel::WARNING, "Unknown vertex format");
+			return vk::Format::eUndefined;
 		}
 	}
 
@@ -40,7 +51,7 @@ namespace vkcv
         const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
         if (!(existsVertexShader && existsFragmentShader))
         {
-            std::cout << "Core::createGraphicsPipeline requires vertex and fragment shader code" << std::endl;
+			vkcv_log(LogLevel::ERROR, "Requires vertex and fragment shader code");
             return PipelineHandle();
         }
 
