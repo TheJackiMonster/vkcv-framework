@@ -1,5 +1,6 @@
 #include "PipelineManager.hpp"
 #include "vkcv/Image.hpp"
+#include "vkcv/Logger.hpp"
 
 namespace vkcv
 {
@@ -20,15 +21,25 @@ namespace vkcv
 	// currently assuming default 32 bit formats, no lower precision or normalized variants supported
 	vk::Format vertexFormatToVulkanFormat(const VertexFormat format) {
 		switch (format) {
-		case VertexFormat::FLOAT: return vk::Format::eR32Sfloat;
-		case VertexFormat::FLOAT2: return vk::Format::eR32G32Sfloat;
-		case VertexFormat::FLOAT3: return vk::Format::eR32G32B32Sfloat;
-		case VertexFormat::FLOAT4: return vk::Format::eR32G32B32A32Sfloat;
-		case VertexFormat::INT: return vk::Format::eR32Sint;
-		case VertexFormat::INT2: return vk::Format::eR32G32Sint;
-		case VertexFormat::INT3: return vk::Format::eR32G32B32Sint;
-		case VertexFormat::INT4: return vk::Format::eR32G32B32A32Sint;
-		default: std::cerr << "Warning: Unknown vertex format" << std::endl; return vk::Format::eUndefined;
+		case VertexFormat::FLOAT:
+			return vk::Format::eR32Sfloat;
+		case VertexFormat::FLOAT2:
+			return vk::Format::eR32G32Sfloat;
+		case VertexFormat::FLOAT3:
+			return vk::Format::eR32G32B32Sfloat;
+		case VertexFormat::FLOAT4:
+			return vk::Format::eR32G32B32A32Sfloat;
+		case VertexFormat::INT:
+			return vk::Format::eR32Sint;
+		case VertexFormat::INT2:
+			return vk::Format::eR32G32Sint;
+		case VertexFormat::INT3:
+			return vk::Format::eR32G32B32Sint;
+		case VertexFormat::INT4:
+			return vk::Format::eR32G32B32A32Sint;
+		default:
+			vkcv_log(LogLevel::WARNING, "Unknown vertex format");
+			return vk::Format::eUndefined;
 		}
 	}
 
@@ -49,7 +60,7 @@ namespace vkcv
         const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
         if (!(existsVertexShader && existsFragmentShader))
         {
-            std::cout << "Core::createGraphicsPipeline requires vertex and fragment shader code" << std::endl;
+			vkcv_log(LogLevel::ERROR, "Requires vertex and fragment shader code");
             return PipelineHandle();
         }
 
@@ -199,6 +210,7 @@ namespace vkcv
 			{},
 			(config.m_DescriptorLayouts),
 			(pushConstantRange));
+
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
         {
@@ -352,4 +364,65 @@ namespace vkcv
         return m_Configs.at(id);
     }
 
+    PipelineHandle PipelineManager::createComputePipeline(
+        const ShaderProgram &shaderProgram, 
+        const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts) {
+
+        // Temporally handing over the Shader Program instead of a pipeline config
+        vk::ShaderModule computeModule{};
+        if (createShaderModule(computeModule, shaderProgram, ShaderStage::COMPUTE) != vk::Result::eSuccess)
+            return PipelineHandle();
+
+        vk::PipelineShaderStageCreateInfo pipelineComputeShaderStageInfo(
+                {},
+                vk::ShaderStageFlagBits::eCompute,
+                computeModule,
+                "main",
+                nullptr
+        );
+
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo({}, descriptorSetLayouts);
+
+        const size_t pushConstantSize = shaderProgram.getPushConstantSize();
+        vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute, 0, pushConstantSize);
+        if (pushConstantSize > 0) {
+            pipelineLayoutCreateInfo.setPushConstantRangeCount(1);
+            pipelineLayoutCreateInfo.setPPushConstantRanges(&pushConstantRange);
+        }
+
+        vk::PipelineLayout vkPipelineLayout{};
+        if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
+        {
+            m_Device.destroy(computeModule);
+            return PipelineHandle();
+        }
+
+        vk::ComputePipelineCreateInfo computePipelineCreateInfo{};
+        computePipelineCreateInfo.stage = pipelineComputeShaderStageInfo;
+        computePipelineCreateInfo.layout = vkPipelineLayout;
+
+        vk::Pipeline vkPipeline;
+        if (m_Device.createComputePipelines(nullptr, 1, &computePipelineCreateInfo, nullptr, &vkPipeline)!= vk::Result::eSuccess)
+        {
+            m_Device.destroy(computeModule);
+            return PipelineHandle();
+        }
+
+        m_Device.destroy(computeModule);
+
+        const uint64_t id = m_Pipelines.size();
+        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout });
+
+        return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
+    }
+
+    // There is an issue for refactoring the Pipeline Manager.
+    // While including Compute Pipeline Creation, some private helper functions where introduced:
+
+    vk::Result PipelineManager::createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, const ShaderStage stage)
+    {
+        std::vector<char> code = shaderProgram.getShader(stage).shaderCode;
+        vk::ShaderModuleCreateInfo moduleInfo({}, code.size(), reinterpret_cast<uint32_t*>(code.data()));
+        return m_Device.createShaderModule(&moduleInfo, nullptr, &module);
+    }
 }
