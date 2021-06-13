@@ -11,10 +11,14 @@ set(vkcv_camera_include ${PROJECT_SOURCE_DIR}/include)
 set(vkcv_camera_sources
 		${vkcv_camera_include}/vkcv/camera/Camera.hpp
 		${vkcv_camera_source}/vkcv/camera/Camera.cpp
-		${vkcv_camera_include}/vkcv/camera/TrackballCamera.hpp
-		${vkcv_camera_source}/vkcv/camera/TrackballCamera.cpp
 		${vkcv_camera_include}/vkcv/camera/CameraManager.hpp
 		${vkcv_camera_source}/vkcv/camera/CameraManager.cpp
+		${vkcv_camera_include}/vkcv/camera/CameraController.hpp
+		${vkcv_camera_source}/vkcv/camera/CameraController.cpp
+		${vkcv_camera_include}/vkcv/camera/PilotCameraController.hpp
+		${vkcv_camera_source}/vkcv/camera/PilotCameraController.cpp
+		${vkcv_camera_include}/vkcv/camera/TrackballCameraController.hpp
+		${vkcv_camera_source}/vkcv/camera/TrackballCameraController.cpp
 )
 
 # adding source files to the project

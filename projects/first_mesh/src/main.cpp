@@ -17,8 +17,6 @@ int main(int argc, const char** argv) {
 		false
 	);
 
-	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
-
 	window.initEvents();
 
 	vkcv::Core core = vkcv::Core::create(
@@ -140,17 +138,24 @@ int main(int argc, const char** argv) {
 	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
 	core.writeResourceDescription(set, 0, setWrites);
 
-	auto start = std::chrono::system_clock::now();
+    vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
+    uint32_t camIndex = cameraManager.addCamera();
+    uint32_t controllerIndex = cameraManager.addController(vkcv::ControllerType::PILOT, camIndex);
+
+    uint32_t camIndex2 = cameraManager.addCamera();
+    uint32_t controllerIndex2 = cameraManager.addController(vkcv::ControllerType::TRACKBALL, camIndex2);
+
+
+    auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
 		core.beginFrame();
 		window.pollEvents();
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = end - start;
 		start = end;
-//		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
-//		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
-        cameraManager.getTrackballCamera().updateView(std::chrono::duration<double>(deltatime).count());
-        const glm::mat4 mvp = cameraManager.getTrackballCamera().getProjection() * cameraManager.getTrackballCamera().getView();
+		cameraManager.update(std::chrono::duration<double>(deltatime).count());
+        glm::mat4 mvp = cameraManager.getActiveController().getCamera().getMVP();
+
 
 		core.renderMesh(
 			trianglePass,

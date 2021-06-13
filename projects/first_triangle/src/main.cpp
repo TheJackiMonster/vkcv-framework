@@ -16,10 +16,6 @@ int main(int argc, const char** argv) {
             false
     );
 
-    vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
-    cameraManager.getTrackballCamera().setPosition(glm::vec3(0.0f,0.5f,0.0f));
-    cameraManager.getTrackballCamera().setCenter(glm::vec3(0.0f,0.0f,-1.0f));
-
     window.initEvents();
 
     vkcv::Core core = vkcv::Core::create(
@@ -135,6 +131,18 @@ int main(int argc, const char** argv) {
      *
      * PipelineHandle trianglePipeline = core.CreatePipeline(trianglePipeline);
      */
+
+    vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
+    uint32_t camIndex = cameraManager.addCamera();
+    cameraManager.getCamera(camIndex).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    cameraManager.getCamera(camIndex).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
+    uint32_t controllerIndex = cameraManager.addController(vkcv::ControllerType::PILOT, camIndex);
+
+    uint32_t camIndex2 = cameraManager.addCamera();
+    cameraManager.getCamera(camIndex2).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    cameraManager.getCamera(camIndex2).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
+    uint32_t controllerIndex2 = cameraManager.addController(vkcv::ControllerType::TRACKBALL, camIndex2);
+
     auto start = std::chrono::system_clock::now();
     while (window.isWindowOpen())
     {
@@ -143,10 +151,8 @@ int main(int argc, const char** argv) {
         auto end = std::chrono::system_clock::now();
         auto deltatime = end - start;
         start = end;
-//        cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
-//        const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
-        cameraManager.getTrackballCamera().updateView(std::chrono::duration<double>(deltatime).count());
-        const glm::mat4 mvp = cameraManager.getTrackballCamera().getProjection() * cameraManager.getTrackballCamera().getView();
+        cameraManager.update(std::chrono::duration<double>(deltatime).count());
+        glm::mat4 mvp = cameraManager.getActiveController().getCamera().getMVP();
 
         core.renderMesh(
                 trianglePass,

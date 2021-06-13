@@ -3,95 +3,129 @@
 
 namespace vkcv{
 
-    CameraManager::CameraManager(Window &window, float width, float height, glm::vec3 up, glm::vec3 position):
-    m_window(window), m_width(width), m_height(height)
+    CameraManager::CameraManager(Window &window, float width, float height)
+    : m_window(window)
     {
-        m_camera.setUp(up);
-        m_camera.setPosition(position);
-        m_camera.setPerspective( glm::radians(60.0f), m_width / m_height, 0.1f, 10.f);
-        m_trackball.setUp(up);
-        m_trackball.setPosition(position);
-        m_trackball.setPerspective( glm::radians(60.0f), m_width / m_height, 0.1f, 10.f);
-        m_lastX = width/2.0;
-        m_lastY = height/2.0;
-        bindCamera();
+        bindCameraToEvents();
     }
 
-    void CameraManager::bindCamera(){
+    CameraManager::~CameraManager() {
+        // free memory of allocated pointers (specified with 'new')
+        for (auto controller : m_controllers) {
+            delete controller;
+        }
+
+        for (auto camera : m_cameras) {
+            delete camera;
+        }
+    }
+
+    void CameraManager::bindCameraToEvents() {
         m_keyHandle = m_window.e_key.add( [&](int key, int scancode, int action, int mods) { this->keyCallback(key, scancode, action, mods); });
         m_mouseMoveHandle = m_window.e_mouseMove.add( [&]( double offsetX, double offsetY) {this->mouseMoveCallback( offsetX, offsetY);} );
         m_mouseScrollHandle =  m_window.e_mouseScroll.add([&](double offsetX, double offsetY) {this->scrollCallback( offsetX, offsetY);} );
         m_mouseButtonHandle = m_window.e_mouseButton.add([&] (int button, int action, int mods) {this->mouseButtonCallback( button,  action,  mods);});
+        m_resizeHandle = m_window.e_resize.add([&](int width, int height) {this->resizeCallback(width, height);});
+    }
+
+    void CameraManager::resizeCallback(int width, int height) {
+        for (size_t i = 0; i < m_cameras.size(); i++) {
+            getCamera(i).setRatio(static_cast<float>(width) / static_cast<float>(height));;
+        }
     }
 
     void CameraManager::mouseButtonCallback(int button, int action, int mods){
-        if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == false && action == GLFW_PRESS){
-            glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            m_rotationActive = true;
-        }else if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == true && action == GLFW_RELEASE){
-            glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            m_rotationActive = false;
-        }
+        m_controllers[m_activeControllerIndex]->mouseButtonCallback(button, action, mods);
     }
 
     void CameraManager::mouseMoveCallback(double x, double y){
-        float xoffset = x - m_lastX;
-        float yoffset = m_lastY - y;
-        m_lastX = x;
-        m_lastY = y;
-
-        if(!m_rotationActive){
-            return;
-        }
-
-        float sensitivity = 0.05f;
-        xoffset *= sensitivity;
-        yoffset *= sensitivity;
-
-        m_camera.panView( xoffset , yoffset );
-        m_trackball.panView( xoffset , yoffset );
+        m_controllers[m_activeControllerIndex]->mouseMoveCallback(x, y);
     }
 
     void CameraManager::scrollCallback(double offsetX, double offsetY) {
-        m_camera.changeFov(offsetY);
-        m_trackball.changeFov(offsetY);
+        m_controllers[m_activeControllerIndex]->scrollCallback(offsetX, offsetY);
     }
 
-    void CameraManager::keyCallback(int key, int scancode, int action, int mods) {
-        switch (key) {
-            case GLFW_KEY_W:
-                m_camera.moveForward(action);
-                break;
-            case GLFW_KEY_S:
-                m_camera.moveBackward(action);
-                break;
-            case GLFW_KEY_A:
-                m_camera.moveLeft(action);
-                break;
-            case GLFW_KEY_D:
-                m_camera.moveRight(action);
-                break;
-            case GLFW_KEY_E:
-                m_camera.moveTop(action);
-                break;
-            case GLFW_KEY_Q:
-                m_camera.moveBottom(action);
-                break;
-            case GLFW_KEY_ESCAPE:
-                glfwSetWindowShouldClose(m_window.getWindow(), 1);
-                break;
+    void CameraManager::keyCallback(int key, int scancode, int action, int mods)  {
+        switch (action) {
+            case GLFW_RELEASE:
+                switch (key) {
+                    case GLFW_KEY_TAB:
+                        if (m_activeControllerIndex + 1 == m_controllers.size()) {
+                            m_activeControllerIndex = 0;
+                        }
+                        else {
+                            m_activeControllerIndex++;
+                        }
+                        return;
+                    case GLFW_KEY_ESCAPE:
+                        glfwSetWindowShouldClose(m_window.getWindow(), 1);
+                        return;
+                }
             default:
-                break;
+                m_controllers[m_activeControllerIndex]->keyCallback(key, scancode, action, mods);
         }
     }
 
-    Camera& CameraManager::getCamera(){
-        return m_camera;
+    int CameraManager::addCamera() {
+        m_cameras.push_back(new Camera());  // TODO: is there another way we can do this?
+        m_cameras.back()->setPerspective(glm::radians(60.0f), m_window.getWidth() / m_window.getHeight(), 0.1f, 10.0f);
+        return m_cameras.size() - 1;
     }
 
-    TrackballCamera& CameraManager::getTrackballCamera() {
-        return m_trackball;
+    Camera& CameraManager::getCamera(uint32_t cameraIndex) {
+        return *m_cameras[cameraIndex];
     }
 
 
+    int CameraManager::addController(ControllerType controllerType, uint32_t cameraIndex) {
+        switch(controllerType) {
+            case ControllerType::PILOT: {
+                m_controllers.push_back(new PilotCameraController());   // TODO: is there another way we can do this?
+                break;
+            }
+            case ControllerType::TRACKBALL: {
+                m_controllers.push_back(new TrackballCameraController());
+                break;
+            }
+            case ControllerType::TRACE: {
+                // TODO: implement (Josch)
+            }
+        }
+
+        m_controllers.back()->setWindow(m_window);
+
+        int controllerIndex = m_controllers.size() - 1;
+        bindCameraToController(cameraIndex, controllerIndex);
+
+        if (controllerIndex == 0) {
+            setActiveController(0);
+        }
+
+        return controllerIndex;
+    }
+
+    CameraController& CameraManager::getController(uint32_t controllerIndex) {
+        return *m_controllers[controllerIndex];
+    }
+
+    void CameraManager::bindCameraToController(uint32_t cameraIndex, uint32_t controllerIndex) {
+        m_controllers[controllerIndex]->setCamera(*m_cameras[cameraIndex]);
+    }
+
+    CameraController& CameraManager::getActiveController() {
+        return *m_controllers[m_activeControllerIndex];
+    }
+
+    void CameraManager::setActiveController(uint32_t controllerIndex) {
+        m_activeControllerIndex = controllerIndex;
+    }
+
+    void CameraManager::update(double deltaTime) {
+        m_controllers[m_activeControllerIndex]->updateCamera(deltaTime);
+    }
+
+    void CameraManager::update(double deltaTime, uint32_t controllerIndex) {
+        m_controllers[controllerIndex]->updateCamera(deltaTime);
+    }
 }

@@ -9,37 +9,24 @@
 namespace vkcv {
 
     /**
-     * @brief Used to create a camera whose position can be changed.
+     * @brief Used to create a camera which governs the view and projection matrices.
      */
-    class Camera {
+    class Camera final {
     protected:
 		glm::mat4 m_view;
 		glm::mat4 m_projection;
-
-		int m_width;
-		int m_height;
 
 		float m_near;
 		float m_far;
 		float m_fov;
 		float m_ratio;
 
-        glm::vec3 m_up;
+		glm::vec3 m_up;
         glm::vec3 m_position;
-        float m_cameraSpeed;
+        glm::vec3 m_center;
+
         float m_pitch;
         float m_yaw;
-
-        int m_fov_nsteps;
-        float m_fov_min;
-        float m_fov_max;
-
-        bool m_forward;
-        bool m_backward;
-        bool m_left;
-        bool m_right;
-        bool m_top;
-        bool m_bottom;
 
     public:
 
@@ -51,7 +38,7 @@ namespace vkcv {
         /**
          * @brief The destructor of the camera (default behavior)
          */
-        virtual ~Camera();
+        ~Camera();
         
         /**
          * @brief Sets the perspective object according to @p fov, @p ratio, @p near and @p far. This leads to changes in the projection matrix of the camera
@@ -66,14 +53,7 @@ namespace vkcv {
          * @brief Gets the view matrix of the camera
          * @return The view matrix of the camera
          */
-        const glm::mat4& getView();
-
-        /**
-         * @brief Updates the view matrix of the camera with respect to @p deltaTime
-         * @param deltaTime The time that has passed since last update
-         * @return The updated view matrix of the camera
-         */
-        glm::mat4 updateView(double deltaTime);
+        glm::mat4& getView();
 
         /**
          * @brief Sets the view matrix of the camera according to @p position, @p center and @p up
@@ -87,13 +67,19 @@ namespace vkcv {
          * @brief Gets the current projection of the camera
          * @return The current projection matrix
          */
-        const glm::mat4& getProjection();
+        glm::mat4& getProjection();
 
         /**
          * @brief Sets the projection matrix of the camera to @p projection
          * @param[in] projection The projection matrix
          */
         void setProjection(const glm::mat4 projection);
+
+        /**
+         * @brief Gets the model-view-projection matrix of the camera
+         * @return The model-view-projection matrix
+         */
+        glm::mat4 getMVP() const;
 
         /**
          * @brief Gets the near and far bounds of the view frustum of the camera.
@@ -103,40 +89,28 @@ namespace vkcv {
         void getNearFar(float &near, float &far) const;
 
         /**
-         * @brief Sets the up vector of the camera to @p up
-         * @param[in] up The new up vector of the camera
-         */
-        void setUp(const glm::vec3 &up);
-
-        /**
          * @brief Gets the current field of view of the camera in radians
          * @return[in] The current field of view in radians
          */
-        float getFov() const;
+        const float getFov() const;
 
         /**
          * @brief Sets the field of view of the camera to @p fov in radians
          * @param[in] fov The new field of view in radians
          */
         void setFov(float fov);
-        
-        /**
-         * @brief Changes the field of view of the camera with an @p offset in degrees
-         * @param[in] offset The offset in degrees
-         */
-        void changeFov(double offset);
-
-        /**
-         * @brief Updates the aspect ratio of the camera with @p ratio and, thus, changes the projection matrix
-         * @param[in] ratio The new aspect ratio of the camera
-         */
-        void updateRatio(float ratio);
 
         /**
          * @brief Gets the current aspect ratio of the camera
          * @return The current aspect ratio of the camera
          */
         float getRatio() const;
+
+        /**
+         * @brief Updates the aspect ratio of the camera with @p ratio and, thus, changes the projection matrix
+         * @param[in] ratio The new aspect ratio of the camera
+         */
+        void setRatio(float ratio);
 
         /**
          * @brief Sets @p near and @p far as new values for the view frustum of the camera. This leads to changes in the projection matrix according to these two values.
@@ -164,78 +138,52 @@ namespace vkcv {
         void setPosition( glm::vec3 position );
 
         /**
-         * @brief Gets the pitch value of the camera in degrees
-         * @return The pitch value in degrees
+         * @brief Gets the center point.
+         * @return The center point.
+         */
+        glm::vec3 getCenter() const;
+
+        /**
+         * @brief Sets @p center as the new center point.
+         * @param center The new center point.
+         */
+        void setCenter(glm::vec3 center);
+
+        /**
+         * @brief Gets the pitch value of the camera in degrees.
+         * @return The pitch value in degrees.
          */
         float getPitch() const;
 
         /**
-         * @brief Sets the pitch value of the camera to @p pitch in degrees
-         * @param[in] pitch The new pitch value in degrees
+         * @brief Sets the pitch value of the camera to @p pitch in degrees.
+         * @param[in] pitch The new pitch value in degrees.
          */
         void setPitch(float pitch);
 
         /**
-         * @brief Gets the yaw value of the camera in degrees
-         * @return The yaw value in degrees
+         * @brief Gets the yaw value of the camera in degrees.
+         * @return The yaw value in degrees.
          */
         float getYaw() const;
 
         /**
-         * @brief Sets the yaw value of the camera to @p yaw
-         * @param[in] yaw The new yaw value in degrees
+         * @brief Sets the yaw value of the camera to @p yaw.
+         * @param[in] yaw The new yaw value in degrees.
          */
         void setYaw(float yaw);
 
         /**
-         * @brief Pans the view of the camera according to the pitch and yaw values and additional offsets @p xOffset and @p yOffset (e.g. taken from mouse movement)
-         * @param[in] xOffset The offset added to the yaw value
-         * @param[in] yOffset The offset added to the pitch value
+         * @brief Gets the up vector.
+         * @return The up vector.
          */
-        void panView( double xOffset, double yOffset );
+        glm::vec3 getUp() const;
 
         /**
-         * @brief Updates the position of the camera with respect to @p deltaTime
-         * @param[in] deltaTime The time that has passed since last update
+         * @brief Sets @p up as the new up vector.
+         * @param up The new up vector.
          */
-        void updatePosition(double deltaTime);
-
-        /**
-         * @brief Indicates forward movement of the camera depending on the performed @p action
-         * @param[in] action The performed action
-         */
-        void moveForward(int action);
-
-        /**
-         * @brief Indicates backward movement of the camera depending on the performed @p action
-         * @param[in] action The performed action
-         */
-        void moveBackward(int action);
-
-        /**
-         * @brief Indicates left movement of the camera depending on the performed @p action
-         * @param[in] action The performed action
-         */
-        void moveLeft(int action);
-
-        /**
-         * @brief Indicates right movement of the camera depending on the performed @p action
-         * @param[in] action The performed action
-         */
-        void moveRight(int action);
-
-        /**
-         * @brief Indicates top movement of the camera depending on the performed @p action
-         * @param[in] action The performed action
-         */
-        void moveTop(int action);
-
-        /**
-         * @brief Indicates bottom movement of the camera depending on the performed @p action
-         * @param[in] action The performed action
-         */
-        void moveBottom(int action);
-
+        void setUp(const glm::vec3 &up);
     };
 
 }
