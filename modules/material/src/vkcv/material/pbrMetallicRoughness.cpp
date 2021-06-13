@@ -17,7 +17,7 @@ namespace vkcv::material
         m_NormalSampler(normalSmp),
         m_MetRoughTexture(metRoughImg),
         m_MetRoughSampler(metRoughSmp),
-        m_DescriptorSetHandle(setHandle)
+        Material(setHandle)        
     {
     }
 

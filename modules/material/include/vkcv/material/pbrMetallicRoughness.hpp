@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include <vkcv/Handles.hpp>
 #include <vkcv/DescriptorConfig.hpp>
 #include <vkcv/Core.hpp>
 
@@ -13,15 +12,17 @@ namespace vkcv::material
 {
     class PBRMaterial : Material
     {
+    private:
+        PBRMaterial(const ImageHandle& colorImg,
+            const SamplerHandle& colorSmp,
+            const ImageHandle& normalImg,
+            const SamplerHandle& normalSmp,
+            const ImageHandle& metRoughImg,
+            const SamplerHandle& metRoughSmp,
+            const DescriptorSetHandle& setHandle) noexcept;
     public:
         PBRMaterial() = delete;
-        PBRMaterial(const ImageHandle           &colorImg,
-                    const SamplerHandle         &colorSmp,
-                    const ImageHandle           &normalImg,
-                    const SamplerHandle         &normalSmp,
-                    const ImageHandle           &metRoughImg,
-                    const SamplerHandle         &metRoughSmp,
-                    const DescriptorSetHandle   &setHandle) noexcept;
+       
 
         const ImageHandle   m_ColorTexture;
         const SamplerHandle m_ColorSampler;
@@ -34,8 +35,6 @@ namespace vkcv::material
 
         // ImageHandle m_OcclusionTexture;
         // SamplerHandle m_EmissiveTexture;
-
-        const DescriptorSetHandle m_DescriptorSetHandle;
 
         /*
         * Returns the material's necessary descriptor bindings which serves as its descriptor layout
