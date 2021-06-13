@@ -6,7 +6,7 @@ namespace vkcv {
         m_rotationActive = false;
         m_radius = 3.0f;
         m_cameraSpeed = 2.5f;
-        m_scrollSensitivity = 0.05f;
+        m_scrollSensitivity = 0.2f;
     }
 
     void TrackballCameraController::setRadius(const float radius) {
