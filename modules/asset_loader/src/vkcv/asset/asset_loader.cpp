@@ -167,11 +167,11 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 	IndexType indexType;
 	switch(indexAccessor.componentType) {
 	case fx::gltf::Accessor::ComponentType::UnsignedByte:
-		indexType = UINT8; break;
+		indexType = IndexType::UINT8; break;
 	case fx::gltf::Accessor::ComponentType::UnsignedShort:
-		indexType = UINT16; break;
+		indexType = IndexType::UINT16; break;
 	case fx::gltf::Accessor::ComponentType::UnsignedInt:
-		indexType = UINT32; break;
+		indexType = IndexType::UINT32; break;
 	default:
 		vkcv_log(LogLevel::ERROR, "Index type (%u) not supported",
 				 static_cast<uint16_t>(indexAccessor.componentType));

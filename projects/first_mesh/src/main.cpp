@@ -103,7 +103,7 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
         UINT32_MAX,
 		trianglePass,
-		mesh.vertexGroups[0].vertexBuffer.attributes,
+		mesh.vertexGroups[2].vertexBuffer.attributes,
 		{ core.getDescriptorSet(descriptorSet).layout },
 		true);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
@@ -127,9 +127,9 @@ int main(int argc, const char** argv) {
 	);
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::VertexBufferBinding( mesh.vertexGroups[0].vertexBuffer.attributes[0].offset, vertexBuffer.getVulkanHandle() ),
-		vkcv::VertexBufferBinding( mesh.vertexGroups[0].vertexBuffer.attributes[1].offset, vertexBuffer.getVulkanHandle() ),
-		vkcv::VertexBufferBinding( mesh.vertexGroups[0].vertexBuffer.attributes[2].offset, vertexBuffer.getVulkanHandle() )
+		vkcv::VertexBufferBinding( mesh.vertexGroups[2].vertexBuffer.attributes[0].offset, vertexBuffer.getVulkanHandle() ),
+		vkcv::VertexBufferBinding( mesh.vertexGroups[2].vertexBuffer.attributes[1].offset, vertexBuffer.getVulkanHandle() ),
+		vkcv::VertexBufferBinding( mesh.vertexGroups[2].vertexBuffer.attributes[2].offset, vertexBuffer.getVulkanHandle() )
 	};
 
 	vkcv::DescriptorWrites setWrites;
@@ -141,7 +141,7 @@ int main(int argc, const char** argv) {
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-	const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
+	const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[2].numIndices);
 
 	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage });
