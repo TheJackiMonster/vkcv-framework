@@ -8,13 +8,14 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
 
-	const int windowWidth = 800;
-	const int windowHeight = 600;
+	uint32_t windowWidth = 800;
+	uint32_t windowHeight = 600;
+
 	vkcv::Window window = vkcv::Window::create(
 		applicationName,
 		windowWidth,
 		windowHeight,
-		false
+		true
 	);
 
 	window.initEvents();
@@ -23,7 +24,7 @@ int main(int argc, const char** argv) {
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
-		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
+		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
 		{},
 		{ "VK_KHR_swapchain" }
 	);
@@ -41,7 +42,7 @@ int main(int argc, const char** argv) {
 		return 1;
 	}
 
-	assert(mesh.vertexGroups.size() > 0);
+	assert(!mesh.vertexGroups.empty());
 	auto vertexBuffer = core.createBuffer<uint8_t>(
 			vkcv::BufferType::VERTEX,
 			mesh.vertexGroups[0].vertexBuffer.data.size(),
@@ -60,18 +61,12 @@ int main(int argc, const char** argv) {
 
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentLayout::UNDEFINED,
-		vkcv::AttachmentLayout::COLOR_ATTACHMENT,
-		vkcv::AttachmentLayout::PRESENTATION,
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
 		core.getSwapchainImageFormat()
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment(
-			vkcv::AttachmentLayout::UNDEFINED,
-			vkcv::AttachmentLayout::DEPTH_STENCIL_ATTACHMENT,
-			vkcv::AttachmentLayout::DEPTH_STENCIL_ATTACHMENT,
 			vkcv::AttachmentOperation::STORE,
 			vkcv::AttachmentOperation::CLEAR,
 			vk::Format::eD32Sfloat
@@ -97,19 +92,18 @@ int main(int argc, const char** argv) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
 	});
 
-	vkcv::DescriptorSetConfig setConfig({
-		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_SAMPLED,	1, vkcv::ShaderStage::FRAGMENT),
-		vkcv::DescriptorBinding(vkcv::DescriptorType::SAMPLER,			1, vkcv::ShaderStage::FRAGMENT)
-	});
-	vkcv::ResourcesHandle set = core.createResourceDescription({ setConfig });
+	uint32_t setID = 0;
+	std::vector<vkcv::DescriptorBinding> descriptorBindings = { triangleShaderProgram.getReflectedDescriptors()[setID] };
+	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(
-		triangleShaderProgram, 
-		windowWidth,
-		windowHeight,
+		triangleShaderProgram,
+        UINT32_MAX,
+        UINT32_MAX,
 		trianglePass,
 		mesh.vertexGroups[0].vertexBuffer.attributes,
-		{ core.getDescritorSetLayout(set, 0) });
+		{ core.getDescriptorSet(descriptorSet).layout },
+		true);
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 	
 	if (!trianglePipeline) {
@@ -127,16 +121,25 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
-	std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		{ mesh.vertexGroups[0].vertexBuffer.attributes[0].offset, vertexBuffer.getHandle() },
-		{ mesh.vertexGroups[0].vertexBuffer.attributes[1].offset, vertexBuffer.getHandle() },
-		{ mesh.vertexGroups[0].vertexBuffer.attributes[2].offset, vertexBuffer.getHandle() }
+	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
+		vkcv::VertexBufferBinding( mesh.vertexGroups[0].vertexBuffer.attributes[0].offset, vertexBuffer.getVulkanHandle() ),
+		vkcv::VertexBufferBinding( mesh.vertexGroups[0].vertexBuffer.attributes[1].offset, vertexBuffer.getVulkanHandle() ),
+		vkcv::VertexBufferBinding( mesh.vertexGroups[0].vertexBuffer.attributes[2].offset, vertexBuffer.getVulkanHandle() )
 	};
 
 	vkcv::DescriptorWrites setWrites;
-	setWrites.sampledImageWrites	= { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
-	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
-	core.writeResourceDescription(set, 0, setWrites);
+	setWrites.sampledImageWrites    = { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
+	setWrites.samplerWrites         = { vkcv::SamplerDescriptorWrite(1, sampler) };
+	core.writeDescriptorSet(descriptorSet, setWrites);
+
+	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
+
+	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+
+	const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
+
+	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage });
 
     vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
     uint32_t camIndex = cameraManager.addCamera();
@@ -145,31 +148,46 @@ int main(int argc, const char** argv) {
     uint32_t camIndex2 = cameraManager.addCamera();
     uint32_t controllerIndex2 = cameraManager.addController(vkcv::ControllerType::TRACKBALL, camIndex2);
 
-
     auto start = std::chrono::system_clock::now();
+    
 	while (window.isWindowOpen()) {
-		core.beginFrame();
-		window.pollEvents();
+        vkcv::Window::pollEvents();
+		
+		if(window.getHeight() == 0 || window.getWidth() == 0)
+			continue;
+		
+		uint32_t swapchainWidth, swapchainHeight;
+		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+			continue;
+		}
+		
+		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
+			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
+			
+			windowWidth = swapchainWidth;
+			windowHeight = swapchainHeight;
+		}
+  
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = end - start;
 		start = end;
 		cameraManager.update(std::chrono::duration<double>(deltatime).count());
         glm::mat4 mvp = cameraManager.getActiveController().getCamera().getMVP();
 
+		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
 
-		core.renderMesh(
+		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
+		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+
+		core.recordDrawcallsToCmdStream(
+			cmdStream,
 			trianglePass,
 			trianglePipeline,
-			windowWidth,
-			windowHeight,
-			sizeof(mvp),
-			&mvp,
-			vertexBufferBindings,
-			indexBuffer.getHandle(),
-			mesh.vertexGroups[0].numIndices,
-			set,
-			0
-		);
+			pushConstantData,
+			{ drawcall },
+			renderTargets);
+		core.prepareSwapchainImageForPresent(cmdStream);
+		core.submitCommandStream(cmdStream);
 
 		core.endFrame();
 	}

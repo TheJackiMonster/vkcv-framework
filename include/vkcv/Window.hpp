@@ -17,7 +17,6 @@ namespace vkcv {
     private:
         GLFWwindow *m_window;
 
-
         /**
          *
          * @param GLFWwindow of the class
