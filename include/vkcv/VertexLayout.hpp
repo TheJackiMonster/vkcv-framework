@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 #include <iostream>
+#include <string>
 
 namespace vkcv {
 

@@ -7,6 +7,8 @@
 #define STBI_ONLY_JPEG
 #include <stb_image.h>
 
+#include <vkcv/Logger.hpp>
+
 namespace vkcv::asset {
 
 /**
@@ -39,11 +41,12 @@ uint8_t convertTypeToInt(const fx::gltf::Accessor::Type type) {
  * @param path path to file that is responsible for error
  */
 void print_what (const std::exception& e, const std::string &path) {
-	fprintf(stderr, "ERROR loading file %s: %s\n", path.c_str(), e.what());
+	vkcv_log(LogLevel::ERROR, "Loading file %s: %s",
+			 path.c_str(), e.what());
+	
 	try {
 		std::rethrow_if_nested(e);
 	} catch (const std::exception& nested) {
-		std::cerr << "nested: ";
 		print_what(nested, path);
 	}
 }
@@ -141,7 +144,7 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		const size_t off = indexBufferView.byteOffset;
 		const void *const ptr = ((char*)indexBuffer.data.data()) + off;
 		if (!memcpy(indexBufferData.data(), ptr, indexBufferView.byteLength)) {
-			std::cerr << "ERROR copying index buffer data.\n";
+			vkcv_log(LogLevel::ERROR, "Copying index buffer data");
 			return 0;
 		}
 	}
@@ -156,13 +159,25 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 		const size_t off = 0;
 		const void *const ptr = ((char*)vertexBuffer.data.data()) + off;
 		if (!memcpy(vertexBufferData.data(), ptr, vertexBuffer.byteLength)) {
-			std::cerr << "ERROR copying vertex buffer data.\n";
+			vkcv_log(LogLevel::ERROR, "Copying vertex buffer data");
 			return 0;
 		}
 	}
 
-	IndexType indexType = getIndexType(indexAccessor.componentType);
-	if (indexType == IndexType::UNDEFINED) return 0; // TODO return vkcv::error;
+	IndexType indexType;
+	switch(indexAccessor.componentType) {
+	case fx::gltf::Accessor::ComponentType::UnsignedByte:
+		indexType = UINT8; break;
+	case fx::gltf::Accessor::ComponentType::UnsignedShort:
+		indexType = UINT16; break;
+	case fx::gltf::Accessor::ComponentType::UnsignedInt:
+		indexType = UINT32; break;
+	default:
+		vkcv_log(LogLevel::ERROR, "Index type (%u) not supported",
+				 static_cast<uint16_t>(indexAccessor.componentType));
+		return 0;
+	}
+
 	const size_t numVertexGroups = objectMesh.primitives.size();
 	
 	std::vector<VertexGroup> vertexGroups;

@@ -79,9 +79,6 @@ int main(int argc, const char** argv) {
 
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentLayout::UNDEFINED,
-		vkcv::AttachmentLayout::COLOR_ATTACHMENT,
-		vkcv::AttachmentLayout::PRESENTATION,
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
 		core.getSwapchainImageFormat());
@@ -95,6 +92,7 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
+	// Graphics Pipeline
 	vkcv::ShaderProgram triangleShaderProgram{};
 	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
 	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
@@ -103,20 +101,44 @@ int main(int argc, const char** argv) {
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(
 		triangleShaderProgram,
-		windowWidth,
-		windowHeight,
+		(uint32_t)windowWidth,
+		(uint32_t)windowHeight,
 		trianglePass,
 		{},
-		{});
+		{},
+		false);
+
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
-	
+
 	if (!trianglePipeline)
 	{
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 
-	std::vector<vkcv::VertexBufferBinding> vertexBufferBindings;
+	// Compute Pipeline
+	vkcv::ShaderProgram computeShaderProgram{};
+	computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path("shaders/comp.spv"));
+	computeShaderProgram.reflectShader(vkcv::ShaderStage::COMPUTE);
+
+	// take care, assuming shader has exactly one descriptor set
+	vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
+
+	vkcv::PipelineHandle computePipeline = core.createComputePipeline(
+		computeShaderProgram, 
+		{ core.getDescriptorSet(computeDescriptorSet).layout });
+
+	struct ComputeTestBuffer {
+		float test1[10];
+		float test2[10];
+		float test3[10];
+	};
+
+	vkcv::Buffer computeTestBuffer = core.createBuffer<ComputeTestBuffer>(vkcv::BufferType::STORAGE, 1);
+
+	vkcv::DescriptorWrites computeDescriptorWrites;
+	computeDescriptorWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0, computeTestBuffer.getHandle()) };
+	core.writeDescriptorSet(computeDescriptorSet, computeDescriptorWrites);
 
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
@@ -133,29 +155,53 @@ int main(int argc, const char** argv) {
 	 *
 	 * PipelineHandle trianglePipeline = core.CreatePipeline(trianglePipeline);
 	 */
-    auto start = std::chrono::system_clock::now();
+	auto start = std::chrono::system_clock::now();
+
+	vkcv::ImageHandle swapchainImageHandle = vkcv::ImageHandle::createSwapchainImageHandle();
+
+	const vkcv::Mesh renderMesh({}, triangleIndexBuffer.getVulkanHandle(), 3);
+	vkcv::DrawcallInfo drawcall(renderMesh, {});
+
+	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+
 	while (window.isWindowOpen())
 	{
-		core.beginFrame();
         window.pollEvents();
+		
+		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
+		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+			continue;
+		}
+		
         auto end = std::chrono::system_clock::now();
         auto deltatime = end - start;
         start = end;
         cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
 		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-	    core.renderMesh(
+		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
+		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+
+		core.recordDrawcallsToCmdStream(
+			cmdStream,
 			trianglePass,
 			trianglePipeline,
-			windowWidth,
-			windowHeight,
-			sizeof(mvp),
-			&mvp,
-			vertexBufferBindings,
-			triangleIndexBuffer.getHandle(),
-			3,
-			vkcv::ResourcesHandle(),
-			0);
+			pushConstantData,
+			{ drawcall },
+			{ swapchainInput });
+
+		const uint32_t dispatchSize[3] = { 2, 1, 1 };
+		const float theMeaningOfLife = 42;
+
+		core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			computePipeline,
+			dispatchSize,
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(computeDescriptorSet).vulkanHandle) },
+			vkcv::PushConstantData((void*)&theMeaningOfLife, sizeof(theMeaningOfLife)));
+
+		core.prepareSwapchainImageForPresent(cmdStream);
+		core.submitCommandStream(cmdStream);
 	    
 	    core.endFrame();
 	}

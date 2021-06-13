@@ -88,4 +88,12 @@ namespace vkcv {
 		}
 	}
 	
+	bool ImageHandle::isSwapchainImage() const {
+		return (getId() == UINT64_MAX - 1);
+	}
+	
+	ImageHandle ImageHandle::createSwapchainImageHandle(const HandleDestroyFunction &destroy) {
+		return ImageHandle(uint64_t(UINT64_MAX - 1), destroy);
+	}
+	
 }
