@@ -56,6 +56,12 @@ int main(int argc, const char** argv) {
     particleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
     particleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
+    std::vector<vkcv::DescriptorBinding> descriptorBindings = {
+            vkcv::DescriptorBinding(0, vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT),
+            vkcv::DescriptorBinding(1, vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT)};
+
+    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+
     vkcv::Buffer<glm::vec3> vertexbuffer = core.createBuffer<glm::vec3>(
             vkcv::BufferType::VERTEX,
             3
@@ -75,12 +81,6 @@ int main(int argc, const char** argv) {
             0,
             5126,
             3};
-
-
-    std::vector<vkcv::DescriptorBinding> descriptorBindings = {
-            vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT),
-            vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT)};
-    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
     const vkcv::PipelineConfig particlePipelineDefinition(
             particleShaderProgram,
@@ -109,7 +109,7 @@ int main(int argc, const char** argv) {
     vkcv::DescriptorWrites setWrites;
     setWrites.uniformBufferWrites = {vkcv::UniformBufferDescriptorWrite(0,color.getHandle()),
                                      vkcv::UniformBufferDescriptorWrite(1,position.getHandle())};
-    core.writeResourceDescription(descriptorSet,0,setWrites);
+    core.writeDescriptorSet(descriptorSet, setWrites);
 
     if (!particlePipeline)
     {
