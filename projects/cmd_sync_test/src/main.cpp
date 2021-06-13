@@ -65,7 +65,7 @@ int main(int argc, const char** argv) {
 	
 	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 	
-	std::sort(attributes.begin(), attributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
+	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
 	});
 
@@ -89,34 +89,45 @@ int main(int argc, const char** argv) {
 			vk::Format::eD32Sfloat
 	);
 
-	vkcv::PassConfig trianglePassDefinition({ present_color_attachment, depth_attachment });
-	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
+	vkcv::PassConfig firstMeshPassDefinition({ present_color_attachment, depth_attachment });
+	vkcv::PassHandle firstMeshPass = core.createPass(firstMeshPassDefinition);
 
-	if (!trianglePass) {
+	if (!firstMeshPass) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 
-	vkcv::ShaderProgram triangleShaderProgram{};
-	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
-	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
+	vkcv::ShaderProgram firstMeshProgram{};
+    firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
+    firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = { triangleShaderProgram.getReflectedDescriptors()[0] };
+    /**
+     * TODO:
+     *  Since the framework's vertex layout specification is now separate
+     *  from that defined in the asset loader module, there needs to be a smarter way to translate the asset loader's
+     *  specific layout into "our" uniform vertex layout spec.
+     *
+     *  This is just a quick hack.
+     */
+
+    const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
+    const vkcv::VertexBinding vertexBinding(0, vertexAttachments);
+    const vkcv::VertexLayout firstMeshLayout({vertexBinding});
+
+	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
-	const vkcv::PipelineConfig trianglePipelineDefinition(
-		triangleShaderProgram, 
+	const vkcv::PipelineConfig firstMeshPipelineConfig(
+        firstMeshProgram,
 		windowWidth,
 		windowHeight,
-		trianglePass,
-		attributes,
+        firstMeshPass,
+        {firstMeshLayout},
 		{ core.getDescriptorSet(descriptorSet).layout },
 		true);
-	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
+	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
 	
-	if (!trianglePipeline) {
+	if (!firstMeshPipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -169,8 +180,6 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram shadowShader;
 	shadowShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/shadow_vert.spv");
 	shadowShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/shadow_frag.spv");
-    shadowShader.reflectShader(vkcv::ShaderStage::VERTEX);
-    shadowShader.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
 	const vk::Format shadowMapFormat = vk::Format::eD16Unorm;
 	const std::vector<vkcv::AttachmentDescription> shadowAttachments = {
@@ -185,8 +194,8 @@ int main(int argc, const char** argv) {
 		shadowShader, 
 		shadowMapResolution, 
 		shadowMapResolution, 
-		shadowPass, 
-		attributes,
+		shadowPass,
+        {firstMeshLayout},
 		{}, 
 		false);
 	const vkcv::PipelineHandle shadowPipe = core.createGraphicsPipeline(shadowPipeConfig);
@@ -281,8 +290,8 @@ int main(int argc, const char** argv) {
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			trianglePass,
-			trianglePipeline,
+            firstMeshPass,
+            firstMeshPipeline,
 			pushConstantData,
 			drawcalls,
 			renderTargets);

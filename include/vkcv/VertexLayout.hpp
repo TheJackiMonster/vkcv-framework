@@ -1,30 +1,11 @@
 #pragma once
 
-#include <unordered_map>
 #include <vector>
 #include <iostream>
 #include <string>
 
 namespace vkcv{
-
-	/* With these enums, 0 is reserved to signal uninitialized or invalid data. */
-	enum class PrimitiveType : uint32_t {
-		UNDEFINED = 0,
-		POSITION = 1,
-		NORMAL = 2,
-		TEXCOORD_0 = 3
-	};
-	/* This struct describes one vertex attribute of a vertex buffer. */
-	typedef struct {
-		PrimitiveType type;			// POSITION, NORMAL, ...
-		uint32_t offset;			// offset in bytes
-		uint32_t length;			// length of ... in bytes
-		uint32_t stride;			// stride in bytes
-		uint16_t componentType;		// eg. 5126 for float
-		uint8_t  componentCount;	// eg. 3 for vec3
-	} VertexAttribute;
-
-    enum class VertexFormat{
+    enum class VertexAttachmentFormat{
         FLOAT,
         FLOAT2,
         FLOAT3,
@@ -35,23 +16,50 @@ namespace vkcv{
         INT4
     };
 
-	uint32_t getFormatSize(VertexFormat format);
+	uint32_t getFormatSize(VertexAttachmentFormat format);
 
-    struct VertexInputAttachment{
-        VertexInputAttachment() = delete;
-        VertexInputAttachment(uint32_t location, uint32_t binding, std::string name, VertexFormat format, uint32_t offset) noexcept;
+    struct VertexAttachment{
+        /**
+         * Describes an individual vertex input attribute/attachment.
+         * @param inputLocation its location in the vertex shader.
+         * @param name the name referred to in the shader.
+         * @param format the format (and therefore, the size) this attachment is in.
+         * @param offset the attachment's byte offset within a vertex.
+         */
+        VertexAttachment(uint32_t inputLocation, const std::string &name, VertexAttachmentFormat format, uint32_t offset) noexcept;
+        VertexAttachment() = delete;
 
-        uint32_t location;
-        uint32_t binding;
-        std::string name;
-        VertexFormat format;
-        uint32_t offset;
+        uint32_t                inputLocation;
+        std::string             name;
+        VertexAttachmentFormat  format;
+        uint32_t                offset;
+    };
+
+    struct VertexBinding{
+        /**
+         * Describes all vertex input attachments _one_ buffer contains to create a vertex buffer binding.
+         * NOTE: multiple vertex layouts may contain various (mutually exclusive) vertex input attachments
+         * to form one complete vertex buffer binding!
+         * @param bindingLocation its entry in the buffers that make up the whole vertex buffer.
+         * @param attachments the vertex input attachments this specific buffer layout contains.
+         */
+        VertexBinding(uint32_t bindingLocation, const std::vector<VertexAttachment> &attachments) noexcept;
+        VertexBinding() = delete;
+
+        uint32_t                        bindingLocation;
+        uint32_t                        stride;
+        std::vector<VertexAttachment>   vertexAttachments;
     };
 
     struct VertexLayout{
+        /**
+         * Describes the complete layout of one vertex, e.g. all of the vertex input attachments used,
+         * and all of the buffer bindings that refer to the attachments (for when multiple buffers are used).
+         * @param bindings bindings the complete vertex buffer is comprised of.
+         */
         VertexLayout() noexcept;
-        VertexLayout(const std::vector<VertexInputAttachment> &inputs) noexcept;
-        std::unordered_map<uint32_t, VertexInputAttachment> attachmentMap;
-        uint32_t stride;
+        VertexLayout(const std::vector<VertexBinding> &bindings) noexcept;
+
+        std::vector<VertexBinding> vertexBindings;
     };
 }
