@@ -92,6 +92,7 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
+	// Graphics Pipeline
 	vkcv::ShaderProgram triangleShaderProgram{};
 	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
 	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
@@ -114,6 +115,30 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
+
+	// Compute Pipeline
+	vkcv::ShaderProgram computeShaderProgram{};
+	computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path("shaders/comp.spv"));
+	computeShaderProgram.reflectShader(vkcv::ShaderStage::COMPUTE);
+
+	// take care, assuming shader has exactly one descriptor set
+	vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
+
+	vkcv::PipelineHandle computePipeline = core.createComputePipeline(
+		computeShaderProgram, 
+		{ core.getDescriptorSet(computeDescriptorSet).layout });
+
+	struct ComputeTestBuffer {
+		float test1[10];
+		float test2[10];
+		float test3[10];
+	};
+
+	vkcv::Buffer computeTestBuffer = core.createBuffer<ComputeTestBuffer>(vkcv::BufferType::STORAGE, 1);
+
+	vkcv::DescriptorWrites computeDescriptorWrites;
+	computeDescriptorWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0, computeTestBuffer.getHandle()) };
+	core.writeDescriptorSet(computeDescriptorSet, computeDescriptorWrites);
 
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
@@ -164,6 +189,17 @@ int main(int argc, const char** argv) {
 			pushConstantData,
 			{ drawcall },
 			{ swapchainInput });
+
+		const uint32_t dispatchSize[3] = { 2, 1, 1 };
+		const float theMeaningOfLife = 42;
+
+		core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			computePipeline,
+			dispatchSize,
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(computeDescriptorSet).vulkanHandle) },
+			vkcv::PushConstantData((void*)&theMeaningOfLife, sizeof(theMeaningOfLife)));
+
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
 	    

@@ -102,13 +102,8 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
 	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
-	
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = {
-		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_SAMPLED,    1, vkcv::ShaderStage::FRAGMENT),
-		vkcv::DescriptorBinding(vkcv::DescriptorType::SAMPLER,          1, vkcv::ShaderStage::FRAGMENT),
-		vkcv::DescriptorBinding(vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT),
-		vkcv::DescriptorBinding(vkcv::DescriptorType::IMAGE_SAMPLED,    1, vkcv::ShaderStage::FRAGMENT) ,
-		vkcv::DescriptorBinding(vkcv::DescriptorType::SAMPLER,          1, vkcv::ShaderStage::FRAGMENT) };
+
+	std::vector<vkcv::DescriptorBinding> descriptorBindings = { triangleShaderProgram.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(
@@ -212,7 +207,7 @@ int main(int argc, const char** argv) {
         vkcv::SamplerDescriptorWrite(1, sampler), 
         vkcv::SamplerDescriptorWrite(4, shadowSampler) };
     setWrites.uniformBufferWrites   = { vkcv::UniformBufferDescriptorWrite(2, lightBuffer.getHandle()) };
-	core.writeResourceDescription(descriptorSet, 0, setWrites);
+	core.writeDescriptorSet(descriptorSet, setWrites);
 
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;

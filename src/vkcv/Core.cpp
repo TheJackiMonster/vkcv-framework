@@ -16,6 +16,8 @@
 #include "ImageLayoutTransitions.hpp"
 #include "vkcv/CommandStreamManager.hpp"
 
+#include "vkcv/Logger.hpp"
+
 namespace vkcv
 {
 
@@ -101,6 +103,13 @@ namespace vkcv
         return m_PipelineManager->createPipeline(config, *m_PassManager);
     }
 
+    PipelineHandle Core::createComputePipeline(
+        const ShaderProgram &shaderProgram, 
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    {
+        return m_PipelineManager->createComputePipeline(shaderProgram, descriptorSetLayouts);
+    }
+
 
     PassHandle Core::createPass(const PassConfig &config)
     {
@@ -125,7 +134,7 @@ namespace vkcv
 		}
 		
 		if (result != vk::Result::eSuccess) {
-			std::cerr << vk::to_string(result) << std::endl;
+			vkcv_log(LogLevel::ERROR, "%s", vk::to_string(result).c_str());
 			return Result::ERROR;
 		}
 		
@@ -149,7 +158,7 @@ namespace vkcv
 		}
 		
     	if (acquireSwapchainImage() != Result::SUCCESS) {
-    		std::cerr << "Acquire failed!" << std::endl;
+			vkcv_log(LogLevel::ERROR, "Acquire failed");
     		
     		m_currentSwapchainImageIndex = std::numeric_limits<uint32_t>::max();
     	}
@@ -234,7 +243,7 @@ namespace vkcv
             1);
         if(m_Context.m_Device.createFramebuffer(&createInfo, nullptr, &framebuffer) != vk::Result::eSuccess)
         {
-            std::cout << "FAILED TO CREATE TEMPORARY FRAMEBUFFER!" << std::endl;
+			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
             return;
         }
 
@@ -298,6 +307,40 @@ namespace vkcv
 		recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
 	}
 
+	void Core::recordComputeDispatchToCmdStream(
+		CommandStreamHandle cmdStreamHandle,
+		PipelineHandle computePipeline,
+		const uint32_t dispatchCount[3],
+		const std::vector<DescriptorSetUsage>& descriptorSetUsages,
+		const PushConstantData& pushConstantData) {
+
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+
+			const auto pipelineLayout = m_PipelineManager->getVkPipelineLayout(computePipeline);
+
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_PipelineManager->getVkPipeline(computePipeline));
+			for (const auto& usage : descriptorSetUsages) {
+				cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eCompute,
+					pipelineLayout,
+					usage.setLocation,
+					{ usage.vulkanHandle },
+					{});
+			}
+			if (pushConstantData.sizePerDrawcall > 0) {
+				cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eCompute,
+					0,
+					pushConstantData.sizePerDrawcall,
+					pushConstantData.data);
+			}
+			cmdBuffer.dispatch(dispatchCount[0], dispatchCount[1], dispatchCount[2]);
+		};
+
+		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);
+	}
+
 	void Core::endFrame() {
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
@@ -325,7 +368,7 @@ namespace vkcv
 		}
 		
 		if (result != vk::Result::eSuccess) {
-			std::cout << "Error: swapchain present failed... " << vk::to_string(result) << std::endl;
+			vkcv_log(LogLevel::ERROR, "Swapchain present failed (%s)", vk::to_string(result).c_str());
 		}
 	}
 
@@ -402,10 +445,9 @@ namespace vkcv
         return m_DescriptorManager->createDescriptorSet(bindings);
     }
 
-	void Core::writeResourceDescription(DescriptorSetHandle handle, size_t setIndex, const DescriptorWrites &writes) {
-		m_DescriptorManager->writeResourceDescription(
-			handle, 
-			setIndex, 
+	void Core::writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites &writes) {
+		m_DescriptorManager->writeDescriptorSet(
+			handle,  
 			writes, 
 			*m_ImageManager, 
 			*m_BufferManager, 
