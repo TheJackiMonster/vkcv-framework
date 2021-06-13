@@ -11,4 +11,6 @@
 %VULKAN_SDK%\Bin32\glslc.exe voxelVisualisation.vert -o voxelVisualisation_vert.spv
 %VULKAN_SDK%\Bin32\glslc.exe voxelVisualisation.geom -o voxelVisualisation_geom.spv
 %VULKAN_SDK%\Bin32\glslc.exe voxelVisualisation.frag -o voxelVisualisation_frag.spv
+
+%VULKAN_SDK%\Bin32\glslc.exe voxelReset.comp -o voxelReset_comp.spv
 pause
