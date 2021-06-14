@@ -55,8 +55,6 @@ int main(int argc, const char** argv) {
     vkcv::ShaderProgram particleShaderProgram{};
     particleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
     particleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
-    particleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
-    particleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(particleShaderProgram.getReflectedDescriptors()[0]);
 
@@ -64,29 +62,29 @@ int main(int argc, const char** argv) {
             vkcv::BufferType::VERTEX,
             3
     );
+    const std::vector<vkcv::VertexAttachment> vertexAttachments = particleShaderProgram.getVertexAttachments();
 
-    const std::vector<glm::vec3> vertices = {glm::vec3(-0.1, 0.1, 0),
-                                             glm::vec3( 0.1, 0.1, 0),
-                                             glm::vec3(0, -0.1, 0)};
+    std::vector<vkcv::VertexBinding> bindings;
+    for (size_t i = 0; i < vertexAttachments.size(); i++) {
+        bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+    }
 
-    vertexBuffer.fill(vertices);
-
-    vkcv::VertexAttribute attrib = vkcv::VertexAttribute{
-            vkcv::PrimitiveType::POSITION,
-            0,
-            sizeof(glm::vec3) * vertices.size(),
-            0,
-            5126,
-            3};
+    const vkcv::VertexLayout particleLayout(bindings);
 
     const vkcv::PipelineConfig particlePipelineDefinition(
             particleShaderProgram,
             UINT32_MAX,
             UINT32_MAX,
             particlePass,
-            {attrib},
+            {particleLayout},
             { core.getDescriptorSet(descriptorSet).layout },
             true);
+
+    const std::vector<glm::vec3> vertices = {glm::vec3(-0.1, 0.1, 0),
+                                             glm::vec3( 0.1, 0.1, 0),
+                                             glm::vec3(0, -0.1, 0)};
+
+    vertexBuffer.fill(vertices);
 
     vkcv::PipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
     vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
