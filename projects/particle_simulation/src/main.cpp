@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
+#include "ParticleSystem.hpp"
 
 int main(int argc, const char** argv) {
     const char* applicationName = "Particlesystem";
@@ -62,25 +63,27 @@ int main(int argc, const char** argv) {
 
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
-    vkcv::Buffer<glm::vec3> vertexbuffer = core.createBuffer<glm::vec3>(
+    vkcv::Buffer<Particle> vertexBuffer = core.createBuffer<Particle>(
             vkcv::BufferType::VERTEX,
             3
     );
 
-    const std::vector<glm::vec3> vertices = {glm::vec3(-0.5, 0.5, -1),
-                                             glm::vec3( 0.5, 0.5, -1),
-                                             glm::vec3(0, -0.5, -1)};
+    ParticleSystem particleSystem;
+    particleSystem.addParticles({
+                                        Particle(glm::vec3(-0.5, 0.5, -1), glm::vec3(0.f)),
+                                        Particle(glm::vec3(0.5, 0.5, -1), glm::vec3(0.f)),
+                                        Particle(glm::vec3(0, -0.5, -1), glm::vec3(0.f))});
 
-    vertexbuffer.fill(vertices);
-
+    vertexBuffer.fill(particleSystem.getParticles());
 
     vkcv::VertexAttribute attrib = vkcv::VertexAttribute{
             vkcv::PrimitiveType::POSITION,
-            0,
-            sizeof(glm::vec3) * vertices.size(),
-            0,
+            offsetof(Particle, m_position),
+            sizeof(Particle::m_position) * particleSystem.getParticles().size(),
+            sizeof(Particle) - sizeof(Particle::m_position), // why is this the difference and not the total size? maybe calced after the last element not from the first like OpenGL
             5126,
-            3};
+            sizeof(Particle::m_position) / sizeof(float)// number of elements, like vec3 = 3
+            };
 
     const vkcv::PipelineConfig particlePipelineDefinition(
             particleShaderProgram,
@@ -103,7 +106,7 @@ int main(int argc, const char** argv) {
     );
 
     const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-            vkcv::VertexBufferBinding(0, vertexbuffer.getVulkanHandle())
+            vkcv::VertexBufferBinding(0, vertexBuffer.getVulkanHandle())
     };
 
     vkcv::DescriptorWrites setWrites;
