@@ -48,8 +48,8 @@ namespace vkcv {
         {
             offset += getFormatSize(attachment.format);
             attachment.offset = offset;
-            stride += offset;
         }
+        stride = offset;
     }
 
     VertexLayout::VertexLayout() noexcept :
