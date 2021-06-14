@@ -57,11 +57,7 @@ int main(int argc, const char** argv) {
     particleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
     particleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
-    std::vector<vkcv::DescriptorBinding> descriptorBindings = {
-            vkcv::DescriptorBinding(0, vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT),
-            vkcv::DescriptorBinding(1, vkcv::DescriptorType::UNIFORM_BUFFER,   1, vkcv::ShaderStage::FRAGMENT)};
-
-    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(particleShaderProgram.getReflectedDescriptors()[0]);
 
     vkcv::Buffer<glm::vec3> vertexBuffer = core.createBuffer<glm::vec3>(
             vkcv::BufferType::VERTEX,
@@ -124,22 +120,19 @@ int main(int argc, const char** argv) {
     vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
     //vkcv::DrawcallInfo drawcalls(renderMesh, {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle)});
 
-    glm::vec3 instancePosition;
-
     glm::vec2 pos = glm::vec2(1.f);
 
     window.e_mouseMove.add([&]( double offsetX, double offsetY) {
         pos = glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY));
-        instancePosition.x = static_cast<float>(offsetX);
-        instancePosition.y = static_cast<float>(offsetY);
-        instancePosition.z = -1.f;
     });
 
     ParticleSystem particleSystem;
+    particleSystem.setMaxLifeTime(3.f);
+    glm::vec3 vel = glm::vec3(0.f , 0.1f, 0.0f);
     particleSystem.addParticles({
-                                        Particle(instancePosition, glm::vec3(0.f)),
-                                        Particle(glm::vec3( 0.2f,  0.1f, 0.f), glm::vec3(0.f)),
-                                        Particle(glm::vec3(0.15f,  0.f, 0.1f), glm::vec3(0.f))});
+                                        Particle(glm::vec3(0.f, 1.f, 0.f), vel, 1.f),
+                                        Particle(glm::vec3( 0.2f,  0.1f, 0.f), vel, 2.f),
+                                        Particle(glm::vec3(0.15f,  0.f, 0.1f), vel, 3.f)});
 
     std::vector<glm::mat4> modelMatrices;
     std::vector<vkcv::DrawcallInfo> drawcalls;
@@ -151,8 +144,6 @@ int main(int argc, const char** argv) {
     auto start = std::chrono::system_clock::now();
 
     glm::vec4 colorData = glm::vec4(1.0f,1.0f,0.0f,1.0f);
-
-
 
     while (window.isWindowOpen())
     {
@@ -169,6 +160,12 @@ int main(int argc, const char** argv) {
         auto end = std::chrono::system_clock::now();
         float deltatime = std::chrono::duration<float>(end - start).count();
         start = end;
+        particleSystem.updateParticles( deltatime );
+
+        modelMatrices.clear();
+        for(Particle particle :  particleSystem.getParticles()) {
+            modelMatrices.push_back(glm::translate(glm::mat4(1.f), particle.getPosition()));
+        }
 
         //modelmatrix = glm::rotate(modelmatrix, angle, glm::vec3(0,0,1));
 
