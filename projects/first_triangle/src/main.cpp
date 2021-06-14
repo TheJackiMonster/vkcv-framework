@@ -96,8 +96,6 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram triangleShaderProgram{};
 	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
 	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
 	const vkcv::PipelineConfig trianglePipelineDefinition(
 		triangleShaderProgram,
@@ -119,7 +117,6 @@ int main(int argc, const char** argv) {
 	// Compute Pipeline
 	vkcv::ShaderProgram computeShaderProgram{};
 	computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path("shaders/comp.spv"));
-	computeShaderProgram.reflectShader(vkcv::ShaderStage::COMPUTE);
 
 	// take care, assuming shader has exactly one descriptor set
 	vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
