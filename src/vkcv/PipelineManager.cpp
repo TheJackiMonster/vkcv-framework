@@ -109,10 +109,18 @@ namespace vkcv
                 vertexAttributeDescriptions.emplace_back(vertexAttachment.inputLocation,
                                                          vertexBinding.bindingLocation,
                                                          vertexFormatToVulkanFormat(vertexAttachment.format),
-                                                         vertexAttachment.offset);
+                                                         vertexAttachment.offset % vertexBinding.stride);
 
             }
         }
+	
+		for (auto& a : vertexAttributeDescriptions) {
+			std::cout << a.binding << " " << a.offset << " " << vk::to_string(a.format) << " " << a.location << std::endl;
+		}
+	
+		for (auto& a : vertexBindingDescriptions) {
+			std::cout << a.binding << " " << a.stride << std::endl;
+		}
 
         // Handover Containers to PipelineVertexInputStateCreateIngo Struct
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(

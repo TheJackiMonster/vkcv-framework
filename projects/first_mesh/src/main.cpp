@@ -85,7 +85,13 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram firstMeshProgram{};
     firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
     firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
-
+	
+	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
+	
+	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
+		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
+	});
+	
 	/**
 	 * TODO:
 	 *  Since the framework's vertex layout specification is now separate
@@ -95,9 +101,13 @@ int main(int argc, const char** argv) {
 	 */
 
     const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
-
-    const vkcv::VertexBinding vertexBinding(0, vertexAttachments);
-    const vkcv::VertexLayout firstMeshLayout({vertexBinding});
+	
+	std::vector<vkcv::VertexBinding> bindings;
+	for (size_t i = 0; i < vertexAttachments.size(); i++) {
+		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+	}
+	
+	const vkcv::VertexLayout firstMeshLayout (bindings);
 
 	uint32_t setID = 0;
 	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[setID] };
@@ -128,12 +138,6 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
-    auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
-
-    std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-        return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-    });
-
     /*
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
 		vkcv::VertexBufferBinding( static_cast<vk::DeviceSize>(mesh.vertexGroups[0].vertexBuffer.attributes[0].offset), vertexBuffer.getVulkanHandle() ),
@@ -141,9 +145,11 @@ int main(int argc, const char** argv) {
 		vkcv::VertexBufferBinding( static_cast<vk::DeviceSize>(mesh.vertexGroups[0].vertexBuffer.attributes[2].offset), vertexBuffer.getVulkanHandle() )
 	};
     */
-    const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-            vkcv::VertexBufferBinding( 0, vertexBuffer.getVulkanHandle() ),
-    };
+	
+	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
+			vkcv::VertexBufferBinding(attributes[0].offset, vertexBuffer.getVulkanHandle()),
+			vkcv::VertexBufferBinding(attributes[1].offset, vertexBuffer.getVulkanHandle()),
+			vkcv::VertexBufferBinding(attributes[2].offset, vertexBuffer.getVulkanHandle()) };
 
 	vkcv::DescriptorWrites setWrites;
 	setWrites.sampledImageWrites    = { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };

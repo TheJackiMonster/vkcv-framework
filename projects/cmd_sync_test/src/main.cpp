@@ -111,8 +111,13 @@ int main(int argc, const char** argv) {
      */
 
     const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
-    const vkcv::VertexBinding vertexBinding(0, vertexAttachments);
-    const vkcv::VertexLayout firstMeshLayout({vertexBinding});
+    
+    std::vector<vkcv::VertexBinding> bindings;
+    for (size_t i = 0; i < vertexAttachments.size(); i++) {
+		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+    }
+    
+    const vkcv::VertexLayout firstMeshLayout (bindings);
 
 	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
