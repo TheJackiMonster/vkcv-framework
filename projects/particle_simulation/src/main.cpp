@@ -68,9 +68,9 @@ int main(int argc, const char** argv) {
             3
     );
 
-    const std::vector<glm::vec3> vertices = {glm::vec3(-0.5, 0.5, -1),
-                                             glm::vec3( 0.5, 0.5, -1),
-                                             glm::vec3(0, -0.5, -1)};
+    const std::vector<glm::vec3> vertices = {glm::vec3(-0.1, 0.1, 0),
+                                             glm::vec3( 0.1, 0.1, 0),
+                                             glm::vec3(0, -0.1, 0)};
 
     vertexBuffer.fill(vertices);
 
@@ -81,12 +81,6 @@ int main(int argc, const char** argv) {
             0,
             5126,
             3};
-
-    ParticleSystem particleSystem;
-    particleSystem.addParticles({
-                                        Particle(glm::vec3(0.f), glm::vec3(0.f)),
-                                        Particle(glm::vec3(0.f), glm::vec3(0.f)),
-                                        Particle(glm::vec3(0.f), glm::vec3(0.f))});
 
     const vkcv::PipelineConfig particlePipelineDefinition(
             particleShaderProgram,
@@ -112,6 +106,7 @@ int main(int argc, const char** argv) {
             vkcv::VertexBufferBinding(0, vertexBuffer.getVulkanHandle())
     };
 
+
     vkcv::DescriptorWrites setWrites;
     setWrites.uniformBufferWrites = {vkcv::UniformBufferDescriptorWrite(0,color.getHandle()),
                                      vkcv::UniformBufferDescriptorWrite(1,position.getHandle())};
@@ -125,46 +120,39 @@ int main(int argc, const char** argv) {
 
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(), 3);
+    const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(), particleIndexBuffer.getCount());
     vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
-    vkcv::DrawcallInfo drawcalls(renderMesh, {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle)});
+    //vkcv::DrawcallInfo drawcalls(renderMesh, {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle)});
 
-    auto start = std::chrono::system_clock::now();
-
-    glm::vec4 colorData = glm::vec4(1.0f,1.0f,0.0f,1.0f);
+    glm::vec3 instancePosition;
 
     glm::vec2 pos = glm::vec2(1.f);
 
     window.e_mouseMove.add([&]( double offsetX, double offsetY) {
         pos = glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY));
+        instancePosition.x = static_cast<float>(offsetX);
+        instancePosition.y = static_cast<float>(offsetY);
+        instancePosition.z = -1.f;
     });
 
+    ParticleSystem particleSystem;
+    particleSystem.addParticles({
+                                        Particle(instancePosition, glm::vec3(0.f)),
+                                        Particle(glm::vec3( 0.2f,  0.1f, 0.f), glm::vec3(0.f)),
+                                        Particle(glm::vec3(0.15f,  0.f, 0.1f), glm::vec3(0.f))});
 
-    struct Particle{
-        glm::vec2 Position;
-        glm::vec2 Velocity;
-        float Rotation = 0.0f;
-        float SizeBegin, SizeEnd;
-
-        float LifeTime = 1.0f;
-        float LifeRemaining = 0.0f;
-
-        bool Active = true;
-    };
-
-    std::vector<Particle> m_ParticlePool;
-    uint32_t poolIndex = 999;
-
-    m_ParticlePool.resize(1000);
-
-    //float angle = 0.0005;
-    glm::mat4 modelmatrix = glm::mat4(1.0);
-
-    for(auto& particle : m_ParticlePool){
-        if(!particle.Active){
-            continue;
-        }
+    std::vector<glm::mat4> modelMatrices;
+    std::vector<vkcv::DrawcallInfo> drawcalls;
+    for(auto particle :  particleSystem.getParticles()) {
+        modelMatrices.push_back(glm::translate(glm::mat4(1.f), particle.getPosition()));
+        drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}));
     }
+
+    auto start = std::chrono::system_clock::now();
+
+    glm::vec4 colorData = glm::vec4(1.0f,1.0f,0.0f,1.0f);
+
+
 
     while (window.isWindowOpen())
     {
@@ -183,25 +171,16 @@ int main(int argc, const char** argv) {
         start = end;
 
         //modelmatrix = glm::rotate(modelmatrix, angle, glm::vec3(0,0,1));
-        for(auto& particle : m_ParticlePool){
-            if (!particle.Active){
-                continue;
-            }
-            if (particle.LifeRemaining <= 0.0f){
-                particle.Active = false;
-                continue;
-            }
-
-            particle.LifeRemaining -= deltatime;
-            particle.Position += particle.Velocity * deltatime;
-            particle.Rotation += 0.01f * deltatime;
-
-        }
 
         cameraManager.getCamera().updateView(deltatime);
-        const glm::mat4 mvp = modelmatrix * cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+        //const glm::mat4 mvp = modelmatrix * cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+        std::vector<glm::mat4> mvp;
+        mvp.clear();
+        for(const auto& m : modelMatrices){
+            mvp.push_back(m * cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView());
+        }
 
-        vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
+        vkcv::PushConstantData pushConstantData((void*)mvp.data(), sizeof(glm::mat4));
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
         core.recordDrawcallsToCmdStream(
