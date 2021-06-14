@@ -219,13 +219,10 @@ int main(int argc, const char** argv) {
 	const vkcv::PipelineHandle voxelizationPipe = core.createGraphicsPipeline(voxelizationPipeConfig);
 
 	struct VoxelizationInfo {
+		glm::vec3 offset;
 		float extent;
 	};
 	vkcv::Buffer voxelizationInfoBuffer = core.createBuffer<VoxelizationInfo>(vkcv::BufferType::UNIFORM, sizeof(VoxelizationInfo));
-	const float voxelizationExtent = 10.f;
-	VoxelizationInfo voxelizationInfo;
-	voxelizationInfo.extent = voxelizationExtent;
-	voxelizationInfoBuffer.fill({ voxelizationInfo });
 
 	vkcv::DescriptorWrites voxelizationDescriptorWrites;
 	voxelizationDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(0, voxelImage.getHandle()) };
@@ -362,6 +359,17 @@ int main(int argc, const char** argv) {
 
 		const glm::mat4 viewProjectionCamera = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
+		const float voxelizationExtent = 20.f;
+		VoxelizationInfo voxelizationInfo;
+		voxelizationInfo.extent = voxelizationExtent;
+
+		// move voxel offset with camera in voxel sized steps
+		const glm::vec3 cameraPos = cameraManager.getCamera().getPosition();
+		const float voxelSize = voxelizationExtent / voxelResolution;
+		voxelizationInfo.offset = glm::floor(cameraPos / voxelSize) * voxelSize;
+
+		voxelizationInfoBuffer.fill({ voxelizationInfo });
+
 		const float voxelizationHalfExtent = 0.5f * voxelizationExtent;
 		const glm::mat4 voxelizationProjection = glm::ortho(
 			-voxelizationHalfExtent,
@@ -370,6 +378,9 @@ int main(int argc, const char** argv) {
 			voxelizationHalfExtent,
 			-voxelizationHalfExtent,
 			voxelizationHalfExtent);
+
+		const glm::mat4 voxelizationView = glm::translate(glm::mat4(1.f), -voxelizationInfo.offset);
+		const glm::mat4 voxelizationViewProjection = voxelizationProjection * voxelizationView;
 
 		// compute positions and transform matrices
 		std::vector<glm::vec3> instancePositions = {
@@ -398,7 +409,7 @@ int main(int argc, const char** argv) {
 		for (const auto& m : modelMatrices) {
 			mainPassMatrices.push_back({ viewProjectionCamera * m, m });
 			mvpLight.push_back(lightInfo.lightMatrix * m);
-			voxelizationMatrices.push_back({ voxelizationProjection * m, m });
+			voxelizationMatrices.push_back({ voxelizationViewProjection * m, m });
 		}
 
 		vkcv::PushConstantData pushConstantData((void*)mainPassMatrices.data(), 2 * sizeof(glm::mat4));

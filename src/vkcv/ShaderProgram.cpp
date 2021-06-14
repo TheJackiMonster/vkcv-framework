@@ -142,7 +142,8 @@ namespace vkcv {
             std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
                 DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::UNIFORM_BUFFER, base_type.vecsize, shaderStage));
             bindings.push_back(descriptor);
-            if (comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) 
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
         }
 
         for (uint32_t i = 0; i < resources.storage_buffers.size(); i++) {

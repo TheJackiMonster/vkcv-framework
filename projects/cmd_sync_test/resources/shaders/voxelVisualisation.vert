@@ -1,5 +1,8 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
+#extension GL_GOOGLE_include_directive : enable
+
+#include "voxelInfo.inc"
 
 layout(location = 0) out float passCubeHalf;
 
@@ -9,8 +12,8 @@ layout( push_constant ) uniform constants{
 
 layout(set=0, binding=0, r8) uniform image3D  voxelImage;
 layout(set=0, binding=1) uniform voxelizationInfo{
-    float extent;
-} voxelInfo;
+    VoxelInfo voxelInfo;
+};
 
 
 void main()	{
@@ -21,7 +24,7 @@ void main()	{
     int index2D         = gl_VertexIndex % slicePixelCount;
     int y               = index2D / voxelResolution;
     int x               = index2D % voxelResolution;
-    vec3 position       = (vec3(x, y, z) / voxelResolution - 0.5) * voxelInfo.extent + passCubeHalf;
+    vec3 position       = (vec3(x, y, z) / voxelResolution - 0.5) * voxelInfo.extent + passCubeHalf + voxelInfo.offset;
 	gl_Position         = vec4(position, 1.0);
     
     if(imageLoad(voxelImage, ivec3(x,y,z)).x == 0){
