@@ -113,14 +113,6 @@ namespace vkcv
 
             }
         }
-	
-		for (auto& a : vertexAttributeDescriptions) {
-			std::cout << a.binding << " " << a.offset << " " << vk::to_string(a.format) << " " << a.location << std::endl;
-		}
-	
-		for (auto& a : vertexBindingDescriptions) {
-			std::cout << a.binding << " " << a.stride << std::endl;
-		}
 
         // Handover Containers to PipelineVertexInputStateCreateIngo Struct
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
