@@ -11,6 +11,10 @@ public:
 
     void setPosition( const glm::vec3 pos );
 
+    const glm::vec3& Particle::getVelocity()const;
+
+    void setVelocity( const glm::vec3 vel );
+
     void update( const float delta );
 
     const bool isAlive()const;

@@ -4,6 +4,7 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include "ParticleSystem.hpp"
+#include <random>
 
 int main(int argc, const char** argv) {
     const char* applicationName = "Particlesystem";
@@ -126,13 +127,18 @@ int main(int argc, const char** argv) {
         pos = glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY));
     });
 
+    std::uniform_real_distribution<float> rdmVel(-0.1f,0.1f);
+    std::default_random_engine rdmEngine;
+
     ParticleSystem particleSystem;
     particleSystem.setMaxLifeTime(3.f);
-    glm::vec3 vel = glm::vec3(0.f , 0.1f, 0.0f);
+    glm::vec3 vel0 = glm::vec3(rdmVel(rdmEngine) , rdmVel(rdmEngine), 0.0f);
+    glm::vec3 vel1 = glm::vec3(rdmVel(rdmEngine) , rdmVel(rdmEngine), 0.0f);
+    glm::vec3 vel2 = glm::vec3(rdmVel(rdmEngine) , rdmVel(rdmEngine), 0.0f);
     particleSystem.addParticles({
-                                        Particle(glm::vec3(0.f, 1.f, 0.f), vel, 1.f),
-                                        Particle(glm::vec3( 0.2f,  0.1f, 0.f), vel, 2.f),
-                                        Particle(glm::vec3(0.15f,  0.f, 0.1f), vel, 3.f)});
+                                        Particle(glm::vec3(0.f, 1.f, 0.f), vel0, 1.f),
+                                        Particle(glm::vec3( 0.2f,  0.1f, 0.f), vel1, 2.f),
+                                        Particle(glm::vec3(0.15f,  0.f, 0.1f), vel2, 3.f)});
 
     std::vector<glm::mat4> modelMatrices;
     std::vector<vkcv::DrawcallInfo> drawcalls;

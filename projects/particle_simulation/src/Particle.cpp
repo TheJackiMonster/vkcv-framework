@@ -19,6 +19,14 @@ void Particle::setPosition( const glm::vec3 pos ){
     m_position = pos;
 }
 
+const glm::vec3& Particle::getVelocity()const{
+    return m_velocity;
+}
+
+void Particle::setVelocity( const glm::vec3 vel ){
+    m_velocity = vel;
+}
+
 void Particle::update( const float delta ){
     m_position += m_velocity * delta;
 }
