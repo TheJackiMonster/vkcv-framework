@@ -19,7 +19,7 @@ void ParticleSystem::updateParticles( const float deltaTime ){
     for(Particle& particle :m_particles){
         bool alive = particle.isAlive();
         particle.setPosition( particle.getPosition() * static_cast<float>(alive) + static_cast<float>(!alive) * m_respawnPos );
-        particle.setVelocity( particle.getVelocity() * static_cast<float>(alive) + static_cast<float>(!alive) *  glm::vec3(m_rdmVel(m_rdmEngine), m_rdmVel(m_rdmEngine),m_rdmVel(m_rdmEngine)));
+        particle.setVelocity( particle.getVelocity() * static_cast<float>(alive) + static_cast<float>(!alive) *  glm::vec3(m_rdmVel(m_rdmEngine), m_rdmVel(m_rdmEngine),0.0f));
         particle.setLifeTime( (particle.getLifeTime() * alive + !alive * m_maxLifeTime ) - deltaTime );
         particle.update(deltaTime);
     }

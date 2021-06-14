@@ -19,6 +19,7 @@ int main(int argc, const char** argv) {
     );
 
     vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
+    cameraManager.getCamera().setNearFar(0.000000001f, 10.f);
 
     window.initEvents();
 
@@ -80,9 +81,9 @@ int main(int argc, const char** argv) {
             { core.getDescriptorSet(descriptorSet).layout },
             true);
 
-    const std::vector<glm::vec3> vertices = {glm::vec3(-0.1, 0.1, 0),
-                                             glm::vec3( 0.1, 0.1, 0),
-                                             glm::vec3(0, -0.1, 0)};
+    const std::vector<glm::vec3> vertices = {glm::vec3(-0.02, 0.02, 0),
+                                             glm::vec3( 0.02, 0.02, 0),
+                                             glm::vec3(0, -0.02, 0)};
 
     vertexBuffer.fill(vertices);
 
@@ -134,9 +135,12 @@ int main(int argc, const char** argv) {
     glm::vec3 vel1 = glm::vec3(rdmVel(rdmEngine) , rdmVel(rdmEngine), 0.0f);
     glm::vec3 vel2 = glm::vec3(rdmVel(rdmEngine) , rdmVel(rdmEngine), 0.0f);
     particleSystem.addParticles({
-                                        Particle(glm::vec3(0.f, 1.f, 0.f), vel0, 1.f),
-                                        Particle(glm::vec3( 0.2f,  0.1f, 0.f), vel1, 2.f),
-                                        Particle(glm::vec3(0.15f,  0.f, 0.1f), vel2, 3.f)});
+                                        Particle(glm::vec3(0.f, 1.f, 0.0f), vel0, 1.f),
+                                        Particle(glm::vec3( 0.2f,  0.1f, 0.0f), vel1, 1.5f),
+                                        Particle(glm::vec3(0.15f,  0.f, 0.0f), vel2, 2.f),
+                                        Particle(glm::vec3(-0.15f,  0.1f, 0.0f), vel2, 2.5f),
+                                        Particle(glm::vec3(0.25f,  0.f, 0.0f), vel2, 3.f),
+                                        Particle(glm::vec3(-0.15f,  0.2f, 0.0f), vel2, 3.5f)});
 
     std::vector<glm::mat4> modelMatrices;
     std::vector<vkcv::DrawcallInfo> drawcalls;
