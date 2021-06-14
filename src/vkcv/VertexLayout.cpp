@@ -30,11 +30,11 @@ namespace vkcv {
         }
     }
 
-    VertexAttachment::VertexAttachment(uint32_t inputLocation, const std::string &name, VertexAttachmentFormat format, uint32_t offset) noexcept:
+    VertexAttachment::VertexAttachment(uint32_t inputLocation, const std::string &name, VertexAttachmentFormat format) noexcept:
             inputLocation{inputLocation},
             name{name},
             format{format},
-            offset{offset}
+            offset{0}
     {}
 
 
@@ -43,8 +43,13 @@ namespace vkcv {
     stride{0},
     vertexAttachments{attachments}
     {
-        for (const auto &attachment : attachments)
-            stride += getFormatSize(attachment.format);
+        uint32_t offset = 0;
+        for (auto &attachment : vertexAttachments)
+        {
+            offset += getFormatSize(attachment.format);
+            attachment.offset = offset;
+            stride += offset;
+        }
     }
 
     VertexLayout::VertexLayout() noexcept :

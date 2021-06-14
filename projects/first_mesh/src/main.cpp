@@ -91,17 +91,8 @@ int main(int argc, const char** argv) {
 	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
 	});
-	
-	/**
-	 * TODO:
-	 *  Since the framework's vertex layout specification is now separate
-	 *  from that defined in the asset loader module, there needs to be a smarter way to translate the asset loader's
-	 *  specific layout into "our" uniform vertex layout spec.
-	 *
-	 */
 
     const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
-	
 	std::vector<vkcv::VertexBinding> bindings;
 	for (size_t i = 0; i < vertexAttachments.size(); i++) {
 		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
@@ -138,18 +129,10 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
-    /*
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::VertexBufferBinding( static_cast<vk::DeviceSize>(mesh.vertexGroups[0].vertexBuffer.attributes[0].offset), vertexBuffer.getVulkanHandle() ),
-		vkcv::VertexBufferBinding( static_cast<vk::DeviceSize>(mesh.vertexGroups[0].vertexBuffer.attributes[1].offset), vertexBuffer.getVulkanHandle() ),
-		vkcv::VertexBufferBinding( static_cast<vk::DeviceSize>(mesh.vertexGroups[0].vertexBuffer.attributes[2].offset), vertexBuffer.getVulkanHandle() )
-	};
-    */
-	
-	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::VertexBufferBinding(attributes[0].offset, vertexBuffer.getVulkanHandle()),
-			vkcv::VertexBufferBinding(attributes[1].offset, vertexBuffer.getVulkanHandle()),
-			vkcv::VertexBufferBinding(attributes[2].offset, vertexBuffer.getVulkanHandle()) };
+			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
+			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
+			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
 	vkcv::DescriptorWrites setWrites;
 	setWrites.sampledImageWrites    = { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };

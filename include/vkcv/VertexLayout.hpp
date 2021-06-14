@@ -19,14 +19,15 @@ namespace vkcv{
 	uint32_t getFormatSize(VertexAttachmentFormat format);
 
     struct VertexAttachment{
+        friend struct VertexBinding;
         /**
          * Describes an individual vertex input attribute/attachment.
          * @param inputLocation its location in the vertex shader.
          * @param name the name referred to in the shader.
          * @param format the format (and therefore, the size) this attachment is in.
-         * @param offset the attachment's byte offset within a vertex.
+         * The offset is calculated when a collection of attachments forms a binding, hence the friend declaration.
          */
-        VertexAttachment(uint32_t inputLocation, const std::string &name, VertexAttachmentFormat format, uint32_t offset) noexcept;
+        VertexAttachment(uint32_t inputLocation, const std::string &name, VertexAttachmentFormat format) noexcept;
         VertexAttachment() = delete;
 
         uint32_t                inputLocation;

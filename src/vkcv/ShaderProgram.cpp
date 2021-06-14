@@ -117,8 +117,6 @@ namespace vkcv {
         //reflect vertex input
 		if (shaderStage == ShaderStage::VERTEX)
 		{
-			uint32_t attachment_offset = 0;
-
 			// spirv-cross API (hopefully) returns the stage_inputs in order
 			for (uint32_t i = 0; i < resources.stage_inputs.size(); i++)
 			{
@@ -133,13 +131,7 @@ namespace vkcv {
 				// vertex input format (implies its size)
 				const VertexAttachmentFormat attachment_format = convertFormat(base_type.basetype, base_type.vecsize);
 
-                m_VertexAttachments.emplace_back(attachment_loc,
-                                                 attachment_name,
-                                                 attachment_format,
-                                                 attachment_offset);
-
-                // calculate offset for the next vertex attachment input in line
-                attachment_offset += base_type.vecsize * base_type.width / 8;
+                m_VertexAttachments.emplace_back(attachment_loc, attachment_name, attachment_format);
             }
 		}
 

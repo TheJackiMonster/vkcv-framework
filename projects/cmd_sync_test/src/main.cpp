@@ -101,15 +101,6 @@ int main(int argc, const char** argv) {
     firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
     firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 
-    /**
-     * TODO:
-     *  Since the framework's vertex layout specification is now separate
-     *  from that defined in the asset loader module, there needs to be a smarter way to translate the asset loader's
-     *  specific layout into "our" uniform vertex layout spec.
-     *
-     *  This is just a quick hack.
-     */
-
     const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
     
     std::vector<vkcv::VertexBinding> bindings;
