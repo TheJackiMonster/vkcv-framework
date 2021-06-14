@@ -6,7 +6,7 @@ namespace vkcv {
 
     TrackballCameraController::TrackballCameraController() {
         m_rotationActive = false;
-        m_radius = 3.0f;
+        m_radius = 3.0f; // TODO: Needs to be removed. Radius should only depend on camera
         m_cameraSpeed = 2.5f;
         m_scrollSensitivity = 0.2f;
     }
@@ -20,31 +20,31 @@ namespace vkcv {
         }
     }
 
-    void TrackballCameraController::panView(double xOffset, double yOffset) {
+    void TrackballCameraController::panView(double xOffset, double yOffset, Camera &camera) {
         // handle yaw rotation
-        float yaw = m_camera->getYaw() + xOffset * m_cameraSpeed;
+        float yaw = camera.getYaw() + xOffset * m_cameraSpeed;
         if (yaw < 0.0f) {
             yaw += 360.0f;
         }
         else if (yaw > 360.0f) {
             yaw -= 360.0f;
         }
-        m_camera->setYaw(yaw);
+        camera.setYaw(yaw);
 
         // handle pitch rotation
-        float pitch = m_camera->getPitch() + yOffset * m_cameraSpeed;
+        float pitch = camera.getPitch() + yOffset * m_cameraSpeed;
         if (pitch < 0.0f) {
             pitch += 360.0f;
         }
         else if (pitch > 360.0f) {
             pitch -= 360.0f;
         }
-        m_camera->setPitch(pitch);
+        camera.setPitch(pitch);
     }
 
-    glm::vec3 TrackballCameraController::updatePosition() {
-        float yaw = m_camera->getYaw();
-        float pitch = m_camera->getPitch();
+    glm::vec3 TrackballCameraController::updatePosition(Camera &camera) {
+        float yaw = camera.getYaw();
+        float pitch = camera.getPitch();
         glm::vec3 yAxis = glm::vec3(0.0f, 1.0f, 0.0f);
         glm::vec3 xAxis = glm::vec3(1.0f, 0.0f, 0.0f);
 
@@ -52,44 +52,38 @@ namespace vkcv {
         glm::mat4 rotationX = glm::rotate(rotationY, glm::radians(pitch), xAxis);
         glm::vec3 translate = glm::vec3(0.0f, 0.0f, m_radius);
         translate = glm::vec3(rotationX * glm::vec4(translate, 0.0f));
-        glm::vec3 center = m_camera->getCenter();
+        glm::vec3 center = camera.getCenter();
         glm::vec3 position = center +translate;
-        m_camera->setPosition(position);
+        camera.setPosition(position);
         glm::vec3 up = glm::vec3(rotationX * glm::vec4(glm::vec3(0.0f, 1.0f, 0.0f), 0.0f));
-        m_camera->setUp(up);
+        camera.setUp(up);
         return position;
     }
 
-    glm::mat4 TrackballCameraController::updateView() {
-        updatePosition();
-        glm::vec3 position = m_camera->getPosition();
-        glm::vec3 center = m_camera->getCenter();
-        glm::vec3 up = m_camera->getUp();
-        m_camera->lookAt(position, center, up);
-        return m_camera->getView();
+    glm::mat4 TrackballCameraController::updateView(Camera &camera) {
+        updatePosition(camera);
+        glm::vec3 position = camera.getPosition();
+        glm::vec3 center = camera.getCenter();
+        glm::vec3 up = camera.getUp();
+        camera.lookAt(position, center, up);
+        return camera.getView();
     }
 
     void TrackballCameraController::updateRadius(double offset) {
         setRadius(m_radius - offset * m_scrollSensitivity);
     }
 
-    void TrackballCameraController::updateCamera(double deltaTime) {
-        updateView();
+    void TrackballCameraController::updateCamera(double deltaTime, Camera &camera) {
+        updateView(camera);
     }
 
-    void TrackballCameraController::keyCallback(int key, int scancode, int action, int mods) {}
+    void TrackballCameraController::keyCallback(int key, int scancode, int action, int mods, Camera &camera) {}
 
-    void TrackballCameraController::scrollCallback(double offsetX, double offsetY) {
+    void TrackballCameraController::scrollCallback(double offsetX, double offsetY, Camera &camera) {
         updateRadius(offsetY);
     }
 
-    void TrackballCameraController::mouseMoveCallback(double x, double y) {
-        auto xoffset = static_cast<float>(x - m_lastX);
-        auto yoffset = static_cast<float>(y - m_lastY);
-        
-        m_lastX = x;
-        m_lastY = y;
-
+    void TrackballCameraController::mouseMoveCallback(double xoffset, double yoffset, Camera &camera) {
         if(!m_rotationActive){
             return;
         }
@@ -98,16 +92,14 @@ namespace vkcv {
         xoffset *= sensitivity;
         yoffset *= sensitivity;
 
-        panView(xoffset , yoffset);
+        panView(xoffset , yoffset, camera);
     }
 
-    void TrackballCameraController::mouseButtonCallback(int button, int action, int mods) {
+    void TrackballCameraController::mouseButtonCallback(int button, int action, int mods, Camera &camera) {
         if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == false && action == GLFW_PRESS){
-            glfwSetInputMode(m_window->getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             m_rotationActive = true;
         }
         else if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == true && action == GLFW_RELEASE){
-            glfwSetInputMode(m_window->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             m_rotationActive = false;
         }
     }
