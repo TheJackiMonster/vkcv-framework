@@ -31,14 +31,14 @@ namespace vkcv {
          * @param[in] deltaTime The time that has passed since last update.
          * @return The updated camera position.
          */
-        glm::vec3 updatePosition(double deltaTime);
+        glm::vec3 updatePosition(double deltaTime, Camera &camera);
 
         /**
          * @brief Updates the view matrix of the camera with respect to @p deltaTime.
          * @param deltaTime The time that has passed since last update.
          * @return The updated view matrix of the camera.
          */
-        glm::mat4 updateView(double deltaTime);
+        glm::mat4 updateView(double deltaTime, Camera &camera);
 
         /**
          * @brief Indicates forward movement of the camera depending on the performed @p action.
@@ -92,7 +92,7 @@ namespace vkcv {
          * @brief Changes the field of view of the camera with an @p offset in degrees.
          * @param[in] offset The offset in degrees.
          */
-        void changeFov(double offset);
+        void changeFov(double offset, Camera &camera);
 
         /**
          * @brief Pans the view of the camera according to the pitch and yaw values and additional offsets @p xOffset
@@ -100,19 +100,13 @@ namespace vkcv {
          * @param[in] xOffset The offset added to the yaw value.
          * @param[in] yOffset The offset added to the pitch value.
          */
-        void panView(double xOffset, double yOffset);
-
-        /**
-         * @brief Sets @p camera as the new camera object.
-         * @param camera The new camera object.
-         */
-        virtual void setCamera(Camera &camera);
+        void panView(double xOffset, double yOffset, Camera &camera);
 
         /**
          * @brief Updates the camera object in respect to @p deltaTime.
          * @param deltaTime The time that has passed since last update.
          */
-        void updateCamera(double deltaTime);
+        void updateCamera(double deltaTime, Camera &camera);
 
         /**
          * @brief A callback function for key events. Currently, 3D camera movement via W, A, S, D, E, Q are supported.
@@ -121,7 +115,7 @@ namespace vkcv {
          * @param[in] action The key action.
          * @param[in] mods The modifier bits.
          */
-        void keyCallback(int key, int scancode, int action, int mods);
+        void keyCallback(int key, int scancode, int action, int mods, Camera &camera);
 
         /**
          * @brief A callback function for mouse scrolling events. Currently, this leads to changes in the field of view
@@ -129,7 +123,7 @@ namespace vkcv {
          * @param[in] offsetX The offset in horizontal direction.
          * @param[in] offsetY The offset in vertical direction.
          */
-        void scrollCallback( double offsetX, double offsetY);
+        void scrollCallback(double offsetX, double offsetY, Camera &camera);
 
         /**
          * @brief A callback function for mouse movement events. Currently, this leads to panning the view of the camera,
@@ -137,7 +131,7 @@ namespace vkcv {
          * @param[in] x The horizontal mouse position
          * @param[in] y The vertical mouse position
          */
-        void mouseMoveCallback(double x, double y);
+        void mouseMoveCallback(double x, double y, Camera &camera);
 
         /**
          * @brief A callback function for mouse button events. Currently, the right mouse button enables panning the
@@ -146,7 +140,7 @@ namespace vkcv {
          * @param[in] action The button action
          * @param[in] mods The modifier bits
          */
-        void mouseButtonCallback(int button, int action, int mods);
+        void mouseButtonCallback(int button, int action, int mods, Camera &camera);
     };
 
 }

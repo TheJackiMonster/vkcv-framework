@@ -20,13 +20,10 @@ namespace vkcv {
         m_fov_nsteps = 100;
         m_fov_min = 10;
         m_fov_max = 120;
-
-        m_lastX = 0.0;
-        m_lastY = 0.0;
     }
 
-    void PilotCameraController::changeFov(double offset){
-        float fov = m_camera->getFov();
+    void PilotCameraController::changeFov(double offset, Camera &camera){
+        float fov = camera.getFov();
         float fov_range = m_fov_max - m_fov_min;
         float fov_stepsize = glm::radians(fov_range) / static_cast<float>(m_fov_nsteps);
         fov -= (float) offset*fov_stepsize;
@@ -36,64 +33,59 @@ namespace vkcv {
         if (fov > glm::radians(m_fov_max)) {
             fov = glm::radians(m_fov_max);
         }
-        m_camera->setFov(fov);
+        camera.setFov(fov);
     }
 
-    void PilotCameraController::panView(double xOffset, double yOffset) {
+    void PilotCameraController::panView(double xOffset, double yOffset, Camera &camera) {
         // handle yaw rotation
-        float yaw = m_camera->getYaw() + xOffset;
+        float yaw = camera.getYaw() + xOffset;
         if (yaw < -180.0f) {
             yaw += 360.0f;
         }
         else if (yaw > 180.0f) {
             yaw -= 360.0f;
         }
-        m_camera->setYaw(yaw);
+        camera.setYaw(yaw);
 
         // handle pitch rotation
-        float pitch = m_camera->getPitch() - yOffset;
+        float pitch = camera.getPitch() - yOffset;
         if (pitch > 89.0f) {
             pitch = 89.0f;
         }
         if (pitch < -89.0f) {
             pitch = -89.0f;
         }
-        m_camera->setPitch(pitch);
+        camera.setPitch(pitch);
     }
 
-    glm::mat4 PilotCameraController::updateView(double deltaTime){
-        updatePosition(deltaTime);
-        glm::vec3 position = m_camera->getPosition();
-        glm::vec3 front = m_camera->getFront();
-        glm::vec3 up = m_camera->getUp();
-        m_camera->lookAt(position, position + front, up);
-        return m_camera->getView();
+    glm::mat4 PilotCameraController::updateView(double deltaTime, Camera &camera){
+        updatePosition(deltaTime, camera);
+        glm::vec3 position = camera.getPosition();
+        glm::vec3 front = camera.getFront();
+        glm::vec3 up = camera.getUp();
+        camera.lookAt(position, position + front, up);
+        return camera.getView();
     }
 
-    glm::vec3 PilotCameraController::updatePosition(double deltaTime ){
-        glm::vec3 position = m_camera->getPosition();
-        glm::vec3 front = m_camera->getFront();
-        glm::vec3 up = m_camera->getUp();
+    glm::vec3 PilotCameraController::updatePosition(double deltaTime, Camera &camera){
+        glm::vec3 position = camera.getPosition();
+        glm::vec3 front = camera.getFront();
+        glm::vec3 up = camera.getUp();
         position += (m_cameraSpeed * front * static_cast<float> (m_forward) * static_cast<float>(deltaTime));
         position -= (m_cameraSpeed * front * static_cast<float> (m_backward) * static_cast<float>(deltaTime));
         position += (glm::normalize(glm::cross(front, up)) * m_cameraSpeed * static_cast<float> (m_left) * static_cast<float>(deltaTime));
         position -= (glm::normalize(glm::cross(front, up)) * m_cameraSpeed * static_cast<float> (m_right) * static_cast<float>(deltaTime));
         position -= up * m_cameraSpeed * static_cast<float> (m_upward) * static_cast<float>(deltaTime);
         position += up * m_cameraSpeed * static_cast<float> (m_downward) * static_cast<float>(deltaTime);
-        m_camera->setPosition(position);
+        camera.setPosition(position);
         return position;
     }
 
-    void PilotCameraController::setCamera(Camera &camera) {
-        m_camera = &camera;
-        m_camera->setYaw(180.0f);
+    void PilotCameraController::updateCamera(double deltaTime, Camera &camera) {
+        updateView(deltaTime, camera);
     }
 
-    void PilotCameraController::updateCamera(double deltaTime) {
-        updateView(deltaTime);
-    }
-
-    void PilotCameraController::keyCallback(int key, int scancode, int action, int mods) {
+    void PilotCameraController::keyCallback(int key, int scancode, int action, int mods, Camera &camera) {
         switch (key) {
             case GLFW_KEY_W:
                 moveForward(action);
@@ -118,17 +110,11 @@ namespace vkcv {
         }
     }
 
-    void PilotCameraController::scrollCallback(double offsetX, double offsetY) {
-        changeFov(offsetY);
+    void PilotCameraController::scrollCallback(double offsetX, double offsetY, Camera &camera) {
+        changeFov(offsetY, camera);
     }
 
-    void PilotCameraController::mouseMoveCallback(double x, double y) {
-		auto xoffset = static_cast<float>(x - m_lastX);
-		auto yoffset = static_cast<float>(y - m_lastY);
-        
-        m_lastX = x;
-        m_lastY = y;
-
+    void PilotCameraController::mouseMoveCallback(double xoffset, double yoffset, Camera &camera) {
         if(!m_rotationActive){
             return;
         }
@@ -137,16 +123,14 @@ namespace vkcv {
         xoffset *= sensitivity;
         yoffset *= sensitivity;
 
-        panView(xoffset , yoffset);
+        panView(xoffset , yoffset, camera);
     }
 
-    void PilotCameraController::mouseButtonCallback(int button, int action, int mods) {
+    void PilotCameraController::mouseButtonCallback(int button, int action, int mods, Camera &camera) {
         if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == false && action == GLFW_PRESS){
-            glfwSetInputMode(m_window->getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             m_rotationActive = true;
         }
         else if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == true && action == GLFW_RELEASE){
-            glfwSetInputMode(m_window->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             m_rotationActive = false;
         }
     }
