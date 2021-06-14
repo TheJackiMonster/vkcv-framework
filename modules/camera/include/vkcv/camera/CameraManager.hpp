@@ -14,6 +14,7 @@ namespace vkcv {
      * #CameraManager.
      */
     enum class ControllerType {
+        NONE,
         PILOT,
         TRACKBALL,
         TRACE
@@ -31,10 +32,15 @@ namespace vkcv {
         std::function<void(int, int)> m_resizeHandle;
 
         Window& m_window;
-        std::vector<Camera*> m_cameras;
-        std::vector<CameraController*> m_controllers;
-        uint32_t m_activeControllerIndex;
+        std::vector<Camera> m_cameras;
+        std::vector<ControllerType> m_cameraControllerTypes;
+        uint32_t m_activeCameraIndex;
 
+        PilotCameraController m_pilotController;
+        TrackballCameraController m_trackController;
+
+        double m_lastX;
+        double m_lastY;
 
         /**
          * @brief Binds the camera object to the window event handles.
@@ -104,6 +110,9 @@ namespace vkcv {
          */
         int addCamera();
 
+        // TODO: Add docu!
+        int addCamera(ControllerType controllerType);
+
         /**
          * @brief Gets the stored camera object located at @p cameraIndex.
          * @param cameraIndex The index of the stored camera object.
@@ -111,55 +120,31 @@ namespace vkcv {
          */
         Camera& getCamera(uint32_t cameraIndex);
 
-        /**
-         * @brief Adds a new camera controller object of @p controllerType to the #CameraManager. If the newly created
-         * camera controller object is the first controller object that has been added, it becomes the active
-         * controllerType.
-         * @param[in] controllerType The controllerType type that should be used.
-         * @param[in] cameraIndex The camera index.
-         * @return The index of the camera controllerType.
-         */
-        int addController(ControllerType controllerType, uint32_t cameraIndex);
+        // TODO: Add docu!
+        Camera& getActiveCamera();
 
-        /**
-         * @brief Gets the stored camera controller object located at @p controllerIndex.
-         * @param controllerIndex The controller index.
-         * @return The camera controller object at @p controllerIndex.
-         */
-        CameraController& getController(uint32_t controllerIndex);
+        // TODO: Add docu!
+        void setActiveCamera(uint32_t cameraIndex);
 
-        /**
-         * @brief Binds the stored camera object located at @p cameraIndex to the stored camera controller object
-         * located at @p controllerIndex.
-         * @param cameraIndex The camera index.
-         * @param controllerIndex The controller index.
-         */
-        void bindCameraToController(uint32_t cameraIndex, uint32_t controllerIndex);
+        
 
-        /**
-         * @brief Gets the currently active camera controller that is bound to the window.
-         * @return The currently active camera controller object.
-         */
-        CameraController& getActiveController();
+        // TODO: Add docu!
+        uint32_t getActiveCameraIndex();
 
-        /**
-         * @brief Sets the camera controller located at @p controllerIndex as the active camera controller.
-         * @param controllerIndex The controller index.
-         */
-        void setActiveController(uint32_t controllerIndex);
+        // TODO: Add docu!
+        void setControllerType(uint32_t cameraIndex, ControllerType controllerType);
+
+        // TODO: Add docu!
+        ControllerType getControllerType(uint32_t cameraIndex);
+
+        // TODO: Add docu!
+        CameraController& getControllerByType(ControllerType controllerType);
 
         /**
          * @brief Updates all stored camera controllers in respect to @p deltaTime.
          * @param deltaTime The time that has passed since last update.
          */
         void update(double deltaTime);
-
-        /**
-         * @brief Updates the stored camera controller located at @p controllerIndex in respect to @p deltaTime.
-         * @param deltaTime The time that has passed since last update.
-         * @param controllerIndex The controller index.
-         */
-        void update(double deltaTime, uint32_t controllerIndex);
 
     };
 }
