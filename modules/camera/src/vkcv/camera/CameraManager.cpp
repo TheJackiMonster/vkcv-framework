@@ -7,18 +7,13 @@ namespace vkcv{
     : m_window(window)
     {
         bindCameraToEvents();
+        m_activeCameraIndex = 0;
+        m_lastX = window.getWidth() / 2.0f;
+        m_lastY = window.getHeight() / 2.0f;
+
     }
 
-    CameraManager::~CameraManager() {
-        // free memory of allocated pointers (specified with 'new')
-        for (auto controller : m_controllers) {
-            delete controller;
-        }
-
-        for (auto camera : m_cameras) {
-            delete camera;
-        }
-    }
+    CameraManager::~CameraManager() {}
 
     void CameraManager::bindCameraToEvents() {
         m_keyHandle = m_window.e_key.add( [&](int key, int scancode, int action, int mods) { this->keyCallback(key, scancode, action, mods); });
@@ -35,15 +30,28 @@ namespace vkcv{
     }
 
     void CameraManager::mouseButtonCallback(int button, int action, int mods){
-        m_controllers[m_activeControllerIndex]->mouseButtonCallback(button, action, mods);
+        if(button == GLFW_MOUSE_BUTTON_2 && action == GLFW_PRESS){
+            glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+        else if(button == GLFW_MOUSE_BUTTON_2 && action == GLFW_RELEASE){
+            glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+        getControllerByType(getControllerType(getActiveCameraIndex())).mouseButtonCallback(button, action, mods, getActiveCamera());
     }
 
     void CameraManager::mouseMoveCallback(double x, double y){
-        m_controllers[m_activeControllerIndex]->mouseMoveCallback(x, y);
+        auto xoffset = static_cast<float>(x - m_lastX);
+		auto yoffset = static_cast<float>(y - m_lastY);
+        
+        m_lastX = x;
+        m_lastY = y;
+
+        getControllerByType(getControllerType(getActiveCameraIndex())).mouseMoveCallback(xoffset, yoffset, getActiveCamera());
     }
 
     void CameraManager::scrollCallback(double offsetX, double offsetY) {
-        m_controllers[m_activeControllerIndex]->scrollCallback(offsetX, offsetY);
+
+        getControllerByType(getControllerType(getActiveCameraIndex())).scrollCallback(offsetX, offsetY, getActiveCamera());
     }
 
     void CameraManager::keyCallback(int key, int scancode, int action, int mods)  {
@@ -51,11 +59,11 @@ namespace vkcv{
             case GLFW_RELEASE:
                 switch (key) {
                     case GLFW_KEY_TAB:
-                        if (m_activeControllerIndex + 1 == m_controllers.size()) {
-                            m_activeControllerIndex = 0;
+                        if (m_activeCameraIndex + 1 == m_cameras.size()) {
+                            m_activeCameraIndex = 0;
                         }
                         else {
-                            m_activeControllerIndex++;
+                            m_activeCameraIndex++;
                         }
                         return;
                     case GLFW_KEY_ESCAPE:
@@ -63,69 +71,65 @@ namespace vkcv{
                         return;
                 }
             default:
-                m_controllers[m_activeControllerIndex]->keyCallback(key, scancode, action, mods);
+                getControllerByType(getControllerType(getActiveCameraIndex())).keyCallback(key, scancode, action, mods, getActiveCamera());
         }
+        
     }
 
     int CameraManager::addCamera() {
-        m_cameras.push_back(new Camera());  // TODO: is there another way we can do this?
-        m_cameras.back()->setPerspective(glm::radians(60.0f), m_window.getWidth() / m_window.getHeight(), 0.1f, 10.0f);
+        Camera camera;
+        m_cameras.push_back(camera);  // TODO: is there another way we can do this?
+        m_cameras.back().setPerspective(glm::radians(60.0f), m_window.getWidth() / m_window.getHeight(), 0.1f, 10.0f);
+        m_cameraControllerTypes.push_back(ControllerType::NONE);
+        setActiveCamera(m_cameras.size() - 1);
+        return m_cameras.size() - 1;
+    }
+
+    int CameraManager::addCamera(ControllerType controllerType) {
+        Camera camera;
+        m_cameras.push_back(camera);  // TODO: is there another way we can do this?
+        m_cameras.back().setPerspective(glm::radians(60.0f), m_window.getWidth() / m_window.getHeight(), 0.1f, 10.0f);
+        m_cameraControllerTypes.push_back(controllerType);
         return m_cameras.size() - 1;
     }
 
     Camera& CameraManager::getCamera(uint32_t cameraIndex) {
-        return *m_cameras[cameraIndex];
+        return m_cameras[cameraIndex];
+    }
+
+    Camera& CameraManager::getActiveCamera() {
+        return m_cameras[getActiveCameraIndex()];
     }
 
 
-    int CameraManager::addController(ControllerType controllerType, uint32_t cameraIndex) {
+    void CameraManager::setActiveCamera(uint32_t cameraIndex) {
+        m_activeCameraIndex = cameraIndex;
+    }
+
+    uint32_t CameraManager::getActiveCameraIndex() {
+        return m_activeCameraIndex;
+    }
+
+    void CameraManager::setControllerType(uint32_t cameraIndex, ControllerType controllerType) {
+        m_cameraControllerTypes[cameraIndex] = controllerType;
+    }
+
+    ControllerType CameraManager::getControllerType(uint32_t cameraIndex) {
+        return m_cameraControllerTypes[cameraIndex];
+    }
+
+    CameraController& CameraManager::getControllerByType(ControllerType controllerType) {
         switch(controllerType) {
-            case ControllerType::PILOT: {
-                m_controllers.push_back(new PilotCameraController());   // TODO: is there another way we can do this?
-                break;
-            }
-            case ControllerType::TRACKBALL: {
-                m_controllers.push_back(new TrackballCameraController());
-                break;
-            }
-            case ControllerType::TRACE: {
-                // TODO: implement (Josch)
-            }
+            case ControllerType::PILOT:
+                return m_pilotController;
+            case ControllerType::TRACKBALL:
+                return m_trackController;
+            default:
+                return m_pilotController;
         }
-
-        m_controllers.back()->setWindow(m_window);
-
-        int controllerIndex = m_controllers.size() - 1;
-        bindCameraToController(cameraIndex, controllerIndex);
-
-        if (controllerIndex == 0) {
-            setActiveController(0);
-        }
-
-        return controllerIndex;
-    }
-
-    CameraController& CameraManager::getController(uint32_t controllerIndex) {
-        return *m_controllers[controllerIndex];
-    }
-
-    void CameraManager::bindCameraToController(uint32_t cameraIndex, uint32_t controllerIndex) {
-        m_controllers[controllerIndex]->setCamera(*m_cameras[cameraIndex]);
-    }
-
-    CameraController& CameraManager::getActiveController() {
-        return *m_controllers[m_activeControllerIndex];
-    }
-
-    void CameraManager::setActiveController(uint32_t controllerIndex) {
-        m_activeControllerIndex = controllerIndex;
     }
 
     void CameraManager::update(double deltaTime) {
-        m_controllers[m_activeControllerIndex]->updateCamera(deltaTime);
-    }
-
-    void CameraManager::update(double deltaTime, uint32_t controllerIndex) {
-        m_controllers[controllerIndex]->updateCamera(deltaTime);
-    }
+            getControllerByType(getControllerType(getActiveCameraIndex())).updateCamera(deltaTime, getActiveCamera());
+        }
 }
