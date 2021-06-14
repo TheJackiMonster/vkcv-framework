@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-#include <vkcv/VertexLayout.hpp>
 
 /* These macros define limits of the following structs. Implementations can
  * test against these limits when performing sanity checks. The main constraint
@@ -53,6 +52,23 @@ enum PrimitiveMode {
 /* The indices in the index buffer can be of different bit width. */
 enum IndexType { UINT32=0, UINT16=1, UINT8=2 };
 
+/* With these enums, 0 is reserved to signal uninitialized or invalid data. */
+enum class PrimitiveType : uint32_t {
+    UNDEFINED = 0,
+    POSITION = 1,
+    NORMAL = 2,
+    TEXCOORD_0 = 3
+};
+/* This struct describes one vertex attribute of a vertex buffer. */
+typedef struct {
+    PrimitiveType type;			// POSITION, NORMAL, ...
+    uint32_t offset;			// offset in bytes
+    uint32_t length;			// length of ... in bytes
+    uint32_t stride;			// stride in bytes
+    uint16_t componentType;		// eg. 5126 for float
+    uint8_t  componentCount;	// eg. 3 for vec3
+} VertexAttribute;
+
 typedef struct {
 	// TODO not yet needed for the first (unlit) triangle
 } Material;
@@ -71,7 +87,7 @@ typedef struct {
 	} indexBuffer;
 	struct {
 		std::vector<uint8_t> data; // binary data of the vertex buffer
-		std::vector<VertexAttribute> attributes;
+		std::vector<VertexAttribute> attributes; // description of one
 	} vertexBuffer;
 	struct { float x, y, z; } min;	// bounding box lower left
 	struct { float x, y, z; } max;	// bounding box upper right

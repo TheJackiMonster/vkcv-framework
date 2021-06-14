@@ -7,9 +7,9 @@
 
 #include <vector>
 #include <cstdint>
-#include "vkcv/Handles.hpp"
+#include "Handles.hpp"
 #include "ShaderProgram.hpp"
-#include <vkcv/VertexLayout.hpp>
+#include "VertexLayout.hpp"
 
 namespace vkcv {
 
@@ -21,24 +21,25 @@ namespace vkcv {
          * @param shaderProgram shaders of the pipeline
          * @param height height of the application window
          * @param width width of the application window
-         * @param passHandle handle for Render Pass
+         * @param passHandle handle for render pass
+         * @param vertexLayout layout of vertex buffer, comprised of its bindings and the bindings' attachments
          */
         PipelineConfig(
             const ShaderProgram&                        shaderProgram,
             uint32_t                                    width,
             uint32_t                                    height,
             const PassHandle                            &passHandle,
-            const std::vector<VertexAttribute>          &vertexAttributes,
+            const VertexLayout                          &vertexLayouts,
             const std::vector<vk::DescriptorSetLayout>  &descriptorLayouts,
             bool                                        useDynamicViewport);
 
-        ShaderProgram                           m_ShaderProgram;
-        uint32_t                                m_Height;
-        uint32_t                                m_Width;
-        PassHandle                              m_PassHandle;
-        std::vector<VertexAttribute>            m_VertexAttributes;
-        std::vector<vk::DescriptorSetLayout>    m_DescriptorLayouts;
-        bool                                    m_UseDynamicViewport;
+        ShaderProgram                         m_ShaderProgram;
+        uint32_t                              m_Height;
+        uint32_t                              m_Width;
+        PassHandle                            m_PassHandle;
+        VertexLayout                          m_VertexLayout;
+        std::vector<vk::DescriptorSetLayout>  m_DescriptorLayouts;
+        bool                                  m_UseDynamicViewport;
 
     };
 
