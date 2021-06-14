@@ -63,27 +63,30 @@ int main(int argc, const char** argv) {
 
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
-    vkcv::Buffer<Particle> vertexBuffer = core.createBuffer<Particle>(
+    vkcv::Buffer<glm::vec3> vertexBuffer = core.createBuffer<glm::vec3>(
             vkcv::BufferType::VERTEX,
             3
     );
 
-    ParticleSystem particleSystem;
-    particleSystem.addParticles({
-                                        Particle(glm::vec3(-0.5, 0.5, -1), glm::vec3(0.f)),
-                                        Particle(glm::vec3(0.5, 0.5, -1), glm::vec3(0.f)),
-                                        Particle(glm::vec3(0, -0.5, -1), glm::vec3(0.f))});
+    const std::vector<glm::vec3> vertices = {glm::vec3(-0.5, 0.5, -1),
+                                             glm::vec3( 0.5, 0.5, -1),
+                                             glm::vec3(0, -0.5, -1)};
 
-    vertexBuffer.fill(particleSystem.getParticles());
+    vertexBuffer.fill(vertices);
 
     vkcv::VertexAttribute attrib = vkcv::VertexAttribute{
             vkcv::PrimitiveType::POSITION,
-            offsetof(Particle, m_position),
-            sizeof(Particle::m_position) * particleSystem.getParticles().size(),
-            sizeof(Particle) - sizeof(Particle::m_position), // why is this the difference and not the total size? maybe calced after the last element not from the first like OpenGL
+            0,
+            sizeof(glm::vec3) * vertices.size(),
+            0,
             5126,
-            sizeof(Particle::m_position) / sizeof(float)// number of elements, like vec3 = 3
-            };
+            3};
+
+    ParticleSystem particleSystem;
+    particleSystem.addParticles({
+                                        Particle(glm::vec3(0.f), glm::vec3(0.f)),
+                                        Particle(glm::vec3(0.f), glm::vec3(0.f)),
+                                        Particle(glm::vec3(0.f), glm::vec3(0.f))});
 
     const vkcv::PipelineConfig particlePipelineDefinition(
             particleShaderProgram,
