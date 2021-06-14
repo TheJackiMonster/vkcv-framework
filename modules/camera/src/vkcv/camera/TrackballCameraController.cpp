@@ -1,5 +1,7 @@
 #include "vkcv/camera/TrackballCameraController.hpp"
 
+#include <GLFW/glfw3.h>
+
 namespace vkcv {
 
     TrackballCameraController::TrackballCameraController() {
@@ -82,8 +84,9 @@ namespace vkcv {
     }
 
     void TrackballCameraController::mouseMoveCallback(double x, double y) {
-        float xoffset = x - m_lastX;
-        float yoffset = m_lastY - y;
+        auto xoffset = static_cast<float>(x - m_lastX);
+        auto yoffset = static_cast<float>(y - m_lastY);
+        
         m_lastX = x;
         m_lastY = y;
 

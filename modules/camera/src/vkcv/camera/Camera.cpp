@@ -9,17 +9,17 @@ namespace vkcv {
         m_center = glm::vec3(0.0f, 0.0f, 0.0f);
         lookAt(m_position, m_center, m_up);
         glm::vec3 front = glm::normalize(m_center - m_position);
-        m_pitch = atan2(front.y, sqrt(front.x * front.x + front.z * front.z));
-        m_yaw = atan2(front.x, front.z);
+        m_pitch = std::atan2(front.y, std::sqrt(front.x * front.x + front.z * front.z));
+        m_yaw = std::atan2(front.x, front.z);
     }
 
     Camera::~Camera() = default;
 
     void Camera::lookAt(glm::vec3 position, glm::vec3 center, glm::vec3 up){
-        m_view = glm::lookAt(position, center, up);
-        m_position = position;
-        m_up = up;
-        m_center = center;
+		m_position = position;
+		m_center = center;
+		m_up = up;
+        m_view = glm::lookAt(m_position, m_center, m_up);
     }
 
     void Camera::getNearFar( float &near, float &far) const {
@@ -43,13 +43,12 @@ namespace vkcv {
         return m_projection * m_view;
     }
 
-    const float Camera::getFov() const {
+    float Camera::getFov() const {
         return m_fov;
     }
 
     void Camera::setFov( float fov){
-        m_fov = fov;
-        setPerspective( m_fov, m_ratio, m_near, m_far);
+        setPerspective(fov, m_ratio, m_near, m_far);
     }
 
     float Camera::getRatio() const {
@@ -57,29 +56,33 @@ namespace vkcv {
     }
 
     void Camera::setRatio(float ratio){
-        m_ratio = ratio;
-        setPerspective( m_fov, m_ratio, m_near, m_far);
+        setPerspective( m_fov, ratio, m_near, m_far);
     }
 
-    void Camera::setNearFar( float near, float far){
-        m_near = near;
-        m_far = far;
-        setPerspective(m_fov, m_ratio, m_near, m_far);
+    void Camera::setNearFar(float near, float far){
+        setPerspective(m_fov, m_ratio, near, far);
     }
 
-    void Camera::setPerspective(float fov, float ratio, float near, float far){
+    void Camera::setPerspective(float fov, float ratio, float near, float far) {
+    	const glm::mat4 y_correction (
+    			1.0f,  0.0f,  0.0f,  0.0f,
+    			0.0f, -1.0f,  0.0f,  0.0f,
+    			0.0f,  0.0f,  1.0f,  0.0f,
+    			0.0f,  0.0f,  0.0f,  1.0f
+		);
+    	
         m_fov = fov;
         m_ratio = ratio;
         m_near = near;
         m_far = far;
-        m_projection = glm::perspective( m_fov, ratio, m_near, m_far);
+        m_projection = y_correction * glm::perspective(m_fov, m_ratio, m_near, m_far);
     }
 
     glm::vec3 Camera::getFront() const {
         glm::vec3 direction;
-        direction.x = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-        direction.y = sin(glm::radians(m_pitch));
-        direction.z = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        direction.x = std::sin(glm::radians(m_yaw)) * std::cos(glm::radians(m_pitch));
+        direction.y = std::sin(glm::radians(m_pitch));
+        direction.z = std::cos(glm::radians(m_yaw)) * std::cos(glm::radians(m_pitch));
         return glm::normalize(direction);
     }
 

@@ -2,7 +2,6 @@
 
 #include "Camera.hpp"
 #include "vkcv/Window.hpp"
-#include <glfw/glfw3.h>
 
 namespace vkcv {
 

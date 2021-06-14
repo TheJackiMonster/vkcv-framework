@@ -92,7 +92,7 @@ namespace vkcv {
          * @brief Gets the current field of view of the camera in radians
          * @return[in] The current field of view in radians
          */
-        const float getFov() const;
+        float getFov() const;
 
         /**
          * @brief Sets the field of view of the camera to @p fov in radians

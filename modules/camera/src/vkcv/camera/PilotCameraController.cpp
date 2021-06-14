@@ -1,5 +1,7 @@
 #include "vkcv/camera/PilotCameraController.hpp"
+
 #include <iostream>
+#include <GLFW/glfw3.h>
 
 namespace vkcv {
 
@@ -26,7 +28,7 @@ namespace vkcv {
     void PilotCameraController::changeFov(double offset){
         float fov = m_camera->getFov();
         float fov_range = m_fov_max - m_fov_min;
-        float fov_stepsize = glm::radians(fov_range)/m_fov_nsteps;
+        float fov_stepsize = glm::radians(fov_range) / static_cast<float>(m_fov_nsteps);
         fov -= (float) offset*fov_stepsize;
         if (fov < glm::radians(m_fov_min)) {
             fov = glm::radians(m_fov_min);
@@ -121,8 +123,9 @@ namespace vkcv {
     }
 
     void PilotCameraController::mouseMoveCallback(double x, double y) {
-        float xoffset = x - m_lastX;
-        float yoffset = m_lastY - y;
+		auto xoffset = static_cast<float>(x - m_lastX);
+		auto yoffset = static_cast<float>(y - m_lastY);
+        
         m_lastX = x;
         m_lastY = y;
 
