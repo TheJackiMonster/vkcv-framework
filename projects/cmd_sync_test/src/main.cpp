@@ -18,16 +18,8 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
-	uint32_t camIndex = cameraManager.addCamera();
-	uint32_t controllerIndex = cameraManager.addController(vkcv::ControllerType::PILOT, camIndex);
-	cameraManager.getCamera(camIndex).setPosition(glm::vec3(0.f, 0.f, 3.f));
-    cameraManager.getCamera(camIndex).setNearFar(0.1, 30);
-
-    uint32_t camIndex2 = cameraManager.addCamera();
-    uint32_t controllerIndex2 = cameraManager.addController(vkcv::ControllerType::TRACKBALL, camIndex2);
-    cameraManager.getCamera(camIndex2).setPosition(glm::vec3(0.f, 0.f, 3.f));
-    cameraManager.getCamera(camIndex2).setNearFar(0.1, 30);
+    vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
+    uint32_t camIndex = cameraManager.addCamera(vkcv::ControllerType::PILOT);
 
 	window.initEvents();
 
@@ -236,7 +228,8 @@ int main(int argc, const char** argv) {
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		start = end;
-		cameraManager.update(deltatime.count() * 0.000001);
+		cameraManager.update(std::chrono::duration<double>(deltatime).count());
+
 
 		const float sunTheta = std::chrono::duration_cast<std::chrono::milliseconds>(end - appStartTime).count() * 0.001f;
 		lightInfo.direction = glm::normalize(glm::vec3(std::cos(sunTheta), 1, std::sin(sunTheta)));
@@ -260,7 +253,7 @@ int main(int argc, const char** argv) {
 		lightInfo.lightMatrix = projectionLight * viewLight;
 		lightBuffer.fill({ lightInfo });
 
-		const glm::mat4 viewProjectionCamera = cameraManager.getActiveController().getCamera().getMVP();
+		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();
 
 		mainPassMatrices.clear();
 		mvpLight.clear();

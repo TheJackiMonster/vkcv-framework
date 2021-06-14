@@ -142,11 +142,8 @@ int main(int argc, const char** argv) {
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage });
 
     vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
-    uint32_t camIndex = cameraManager.addCamera();
-    uint32_t controllerIndex = cameraManager.addController(vkcv::ControllerType::PILOT, camIndex);
-
-    uint32_t camIndex2 = cameraManager.addCamera();
-    uint32_t controllerIndex2 = cameraManager.addController(vkcv::ControllerType::TRACKBALL, camIndex2);
+    uint32_t camIndex0 = cameraManager.addCamera(vkcv::ControllerType::PILOT);
+	uint32_t camIndex1 = cameraManager.addCamera(vkcv::ControllerType::TRACKBALL);
 
     auto start = std::chrono::system_clock::now();
     
@@ -172,7 +169,7 @@ int main(int argc, const char** argv) {
 		auto deltatime = end - start;
 		start = end;
 		cameraManager.update(std::chrono::duration<double>(deltatime).count());
-        glm::mat4 mvp = cameraManager.getActiveController().getCamera().getMVP();
+        glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 
 		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
 
