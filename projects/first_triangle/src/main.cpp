@@ -4,6 +4,8 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 
+#include <vkcv/shader/GLSLCompiler.hpp>
+
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Triangle";
 
@@ -17,12 +19,6 @@ int main(int argc, const char** argv) {
 	);
 
 	window.initEvents();
-	
-	vkcv::camera::CameraManager cameraManager(window, windowWidth, windowHeight);
-	uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-	uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
-	
-	cameraManager.getCamera(camIndex).setPosition(glm::vec3(0, 0, -2));
 	
 	vkcv::Core core = vkcv::Core::create(
 		window,
@@ -96,10 +92,18 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	// Graphics Pipeline
 	vkcv::ShaderProgram triangleShaderProgram{};
-	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
-	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
+	vkcv::shader::GLSLCompiler compiler;
+	
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/shader.vert"),
+					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		 triangleShaderProgram.addShader(shaderStage, path);
+	});
+	
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/shader.frag"),
+					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		triangleShaderProgram.addShader(shaderStage, path);
+	});
 
 	const vkcv::PipelineConfig trianglePipelineDefinition {
 		triangleShaderProgram,
@@ -165,6 +169,12 @@ int main(int argc, const char** argv) {
 	vkcv::DrawcallInfo drawcall(renderMesh, {});
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+
+    vkcv::camera::CameraManager cameraManager(window);
+    uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+    uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	
+	cameraManager.getCamera(camIndex).setPosition(glm::vec3(0, 0, -2));
 
 	while (window.isWindowOpen())
 	{
