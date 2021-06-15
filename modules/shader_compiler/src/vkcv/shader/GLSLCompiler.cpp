@@ -159,10 +159,10 @@ namespace vkcv::shader {
 	}
 	
 	static std::vector<char> readShaderCode(const std::filesystem::path &shaderPath) {
-		std::ifstream file (shaderPath.string(), std::ios::ate | std::ios::binary);
+		std::ifstream file (shaderPath.string(), std::ios::ate);
 		
 		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened");
+			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", shaderPath.string().c_str());
 			return std::vector<char>{};
 		}
 		
@@ -180,7 +180,7 @@ namespace vkcv::shader {
 		std::ofstream file (shaderPath.string(), std::ios::out);
 		
 		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened");
+			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", shaderPath.string().c_str());
 			return false;
 		}
 		
@@ -200,7 +200,7 @@ namespace vkcv::shader {
 		const EShLanguage language = findShaderLanguage(shaderStage);
 		
 		if (language == EShLangCount) {
-			vkcv_log(LogLevel::ERROR, "Shader stage not supported");
+			vkcv_log(LogLevel::ERROR, "Shader stage not supported (%s)", shaderPath.string().c_str());
 			return;
 		}
 		
@@ -223,23 +223,23 @@ namespace vkcv::shader {
 		);
 		
 		if (!shader.parse(&resources, 100, false, messages)) {
-			vkcv_log(LogLevel::ERROR, "Shader parsing failed {\n%s\n%s\n}",
-					 shader.getInfoLog(), shader.getInfoDebugLog());
+			vkcv_log(LogLevel::ERROR, "Shader parsing failed {\n%s\n%s\n} (%s)",
+					 shader.getInfoLog(), shader.getInfoDebugLog(), shaderPath.string().c_str());
 			return;
 		}
 		
 		program.addShader(&shader);
 		
 		if (!program.link(messages)) {
-			vkcv_log(LogLevel::ERROR, "Shader linking failed {\n%s\n%s\n}",
-					 shader.getInfoLog(), shader.getInfoDebugLog());
+			vkcv_log(LogLevel::ERROR, "Shader linking failed {\n%s\n%s\n} (%s)",
+					 shader.getInfoLog(), shader.getInfoDebugLog(), shaderPath.string().c_str());
 			return;
 		}
 		
 		const glslang::TIntermediate* intermediate = program.getIntermediate(language);
 		
 		if (!intermediate) {
-			vkcv_log(LogLevel::ERROR, "No valid intermediate representation");
+			vkcv_log(LogLevel::ERROR, "No valid intermediate representation (%s)", shaderPath.string().c_str());
 			return;
 		}
 		
@@ -249,7 +249,7 @@ namespace vkcv::shader {
 		const std::filesystem::path tmp_path (std::tmpnam(nullptr));
 		
 		if (!writeSpirvCode(tmp_path, spirv)) {
-			vkcv_log(LogLevel::ERROR, "Spir-V could not be written to disk");
+			vkcv_log(LogLevel::ERROR, "Spir-V could not be written to disk (%s)", shaderPath.string().c_str());
 			return;
 		}
 		
