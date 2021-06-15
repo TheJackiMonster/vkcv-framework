@@ -177,7 +177,7 @@ namespace vkcv::shader {
 	}
 	
 	static bool writeSpirvCode(const std::filesystem::path &shaderPath, const std::vector<uint32_t>& spirv) {
-		std::ofstream file (shaderPath.string(), std::ios::out);
+		std::ofstream file (shaderPath.string(), std::ios::out | std::ios::binary);
 		
 		if (!file.is_open()) {
 			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", shaderPath.string().c_str());
