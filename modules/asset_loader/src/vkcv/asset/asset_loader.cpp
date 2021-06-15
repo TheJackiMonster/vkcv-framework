@@ -6,7 +6,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG
 #include <stb_image.h>
-
 #include <vkcv/Logger.hpp>
 
 namespace vkcv::asset {
@@ -92,12 +91,12 @@ std::array<float, 16> computeModelMatrix(std::array<float, 3> translation, std::
     auto q2 = rotation[2];
     auto q3 = rotation[3];
 
-    modelMatrix[0] = (2 * (a * a + q1 * q1) + 1) * scale[0];
+    modelMatrix[0] = (2 * (a * a + q1 * q1) - 1) * scale[0];
     modelMatrix[1] = (2 * (q1 * q2 - a * q3)) * scale[1];
     modelMatrix[2] = (2 * (q1 * q3 + a * q2)) * scale[2];
 
     modelMatrix[4] = (2 * (q1 * q2 + a * q3)) * scale[0];
-    modelMatrix[5] = (2 * (a * a + q2 * q2) + 1) * scale[1];
+    modelMatrix[5] = (2 * (a * a + q2 * q2) - 1) * scale[1];
     modelMatrix[6] = (2 * (q2 * q3 - a * q1)) * scale[2];
 
     modelMatrix[8] = (2 * (q1 * q3 - a * q2)) * scale[0];

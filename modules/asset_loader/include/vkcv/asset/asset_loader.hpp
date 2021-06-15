@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 #include <cstdint>
 #include <vkcv/VertexLayout.hpp>
 

@@ -7,12 +7,9 @@
 
 glm::mat4 arrayTo4x4Matrix(std::array<float,16> array){
     glm::mat4 matrix;
-    int r = 0;
     for (int i = 0; i < 4; i++){
         for (int j = 0; j < 4; j++){
-            matrix[i][j] = array[r];
-            r++;
-            std::cout << matrix[i][j] << std::endl;
+            matrix[i][j] = array[j * 4 + i];
         }
     }
     return matrix;
