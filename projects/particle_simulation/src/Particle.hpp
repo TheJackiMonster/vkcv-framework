@@ -11,7 +11,7 @@ public:
 
     void setPosition( const glm::vec3 pos );
 
-    const glm::vec3& Particle::getVelocity()const;
+    const glm::vec3& getVelocity()const;
 
     void setVelocity( const glm::vec3 vel );
 
