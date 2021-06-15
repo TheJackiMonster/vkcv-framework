@@ -48,6 +48,13 @@ namespace vkcv::camera {
         void bindCameraToEvents();
 
         /**
+         * @brief Gets a camera controller object of specified @p controllerType.
+         * @param[in] controllerType The type of the camera controller.
+         * @return The specified camera controller object.
+         */
+        CameraController& getControllerByType(ControllerType controllerType);
+
+        /**
          * @brief A callback function for key events. Currently, cycling between all existing camera controllers via Tab,
          * window closure via Esc and polling key events from the active camera controller are supported.
          * @param[in] key The keyboard key.
@@ -182,6 +189,5 @@ namespace vkcv::camera {
          * @param[in] deltaTime The time that has passed since last update.
          */
         void update(double deltaTime);
-
     };
 }
