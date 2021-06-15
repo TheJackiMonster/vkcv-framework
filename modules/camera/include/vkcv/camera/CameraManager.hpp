@@ -105,39 +105,68 @@ namespace vkcv {
         ~CameraManager();
 
         /**
-         * @brief Adds a new camera object to the #CameraManager.
+         * @brief Adds a new camera object to the #CameraManager. The camera is not binded to a controller type.
          * @return The index of the newly created camera object.
          */
         int addCamera();
 
-        // TODO: Add docu!
+        /**
+         * @brief Adds a new camera object to the #CameraManager and binds it to a camera controller object of specified
+         * @p controllerType.
+         * @param controllerType The type of the camera controller
+         * @return The index of the newly created camera object.
+         */
         int addCamera(ControllerType controllerType);
 
         /**
          * @brief Gets the stored camera object located at @p cameraIndex.
-         * @param cameraIndex The index of the stored camera object.
+         * @param cameraIndex The camera index.
          * @return The camera object at @p cameraIndex.
+         * @throws std::runtime_error If @p cameraIndex is not a valid camera index.
          */
         Camera& getCamera(uint32_t cameraIndex);
 
-        // TODO: Add docu!
+        /**
+         * @brief Gets the stored camera object set as the active camera.
+         * @return The active camera.
+         */
         Camera& getActiveCamera();
 
-        // TODO: Add docu!
+        /**
+         * @brief Sets the stored camera object located at @p cameraIndex as the active camera.
+         * @param cameraIndex The camera index.
+         * @throws std::runtime_error If @p cameraIndex is not a valid camera index.
+         */
         void setActiveCamera(uint32_t cameraIndex);
 
-        
-
-        // TODO: Add docu!
+        /**
+         * @brief Gets the index of the stored active camera object.
+         * @return The active camera index.
+         */
         uint32_t getActiveCameraIndex();
 
-        // TODO: Add docu!
+        /**
+         * @brief Binds a stored camera object located at @p cameraIndex to a camera controller of specified
+         * @p controllerType.
+         * @param cameraIndex The camera index.
+         * @param controllerType The type of the camera controller.
+         * @throws std::runtime_error If @p cameraIndex is not a valid camera index.
+         */
         void setControllerType(uint32_t cameraIndex, ControllerType controllerType);
 
-        // TODO: Add docu!
+        /**
+         * @brief Gets the currently bound camera controller type of the stored camera object located at @p cameraIndex.
+         * @param cameraIndex The camera index.
+         * @return The type of the camera controller of the specified camera object.
+         * @throws std::runtime_error If @p cameraIndex is not a valid camera index.
+         */
         ControllerType getControllerType(uint32_t cameraIndex);
 
-        // TODO: Add docu!
+        /**
+         * @brief Gets a camera controller object of specified @p controllerType.
+         * @param controllerType The type of the camera controller.
+         * @return The specified camera controller object.
+         */
         CameraController& getControllerByType(ControllerType controllerType);
 
         /**
