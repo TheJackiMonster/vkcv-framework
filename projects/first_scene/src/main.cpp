@@ -203,7 +203,9 @@ int main(int argc, const char** argv) {
 		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
 		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
+		std::vector<glm::mat4> pushConstantDataVector(drawcalls.size(), mvp);
+
+		vkcv::PushConstantData pushConstantData((void*)pushConstantDataVector.data(), sizeof(glm::mat4));
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
