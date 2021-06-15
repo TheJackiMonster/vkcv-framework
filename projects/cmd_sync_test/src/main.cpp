@@ -18,10 +18,15 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
-	cameraManager.getCamera().setPosition(glm::vec3(0.f, 0.f, 3.f));
-	cameraManager.getCamera().setNearFar(0.1, 30);
-    cameraManager.getCamera().setSpeed(25.f);
+    vkcv::camera::CameraManager cameraManager(window);
+    uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+    uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+    
+    cameraManager.getCamera(camIndex).setPosition(glm::vec3(0.f, 0.f, 3.f));
+    cameraManager.getCamera(camIndex).setNearFar(0.1f, 30.0f);
+	cameraManager.getCamera(camIndex).setYaw(180.0f);
+	
+	cameraManager.getCamera(camIndex2).setNearFar(0.1f, 30.0f);
 
 	window.initEvents();
 
@@ -66,7 +71,7 @@ int main(int argc, const char** argv) {
 	
 	auto& vertexAttributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 	
-	std::sort(vertexAttributes.begin(), vertexAttributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
+	std::sort(vertexAttributes.begin(), vertexAttributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
 	});
 
@@ -91,34 +96,43 @@ int main(int argc, const char** argv) {
 		depthBufferFormat
 	);
 
-	vkcv::PassConfig trianglePassDefinition({ present_color_attachment, depth_attachment });
-	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
+	vkcv::PassConfig firstMeshPassDefinition({ present_color_attachment, depth_attachment });
+	vkcv::PassHandle firstMeshPass = core.createPass(firstMeshPassDefinition);
 
-	if (!trianglePass) {
+	if (!firstMeshPass) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 
-	vkcv::ShaderProgram triangleShaderProgram{};
-	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
-	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
+	vkcv::ShaderProgram firstMeshProgram{};
+    firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
+    firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = { triangleShaderProgram.getReflectedDescriptors()[0] };
+    const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
+    
+    std::vector<vkcv::VertexBinding> bindings;
+    for (size_t i = 0; i < vertexAttachments.size(); i++) {
+		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+    }
+    
+    const vkcv::VertexLayout firstMeshLayout (bindings);
+
+	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
-	const vkcv::PipelineConfig trianglePipelineDefinition(
-		triangleShaderProgram, 
+	const vkcv::PipelineConfig firstMeshPipelineConfig {
+        firstMeshProgram,
 		windowWidth,
 		windowHeight,
-		trianglePass,
-		vertexAttributes,
+        firstMeshPass,
+        firstMeshLayout,
 		{ core.getDescriptorSet(descriptorSet).layout },
-		true);
-	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
+		true
+	};
 	
-	if (!trianglePipeline) {
+	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
+	
+	if (!firstMeshPipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -147,8 +161,6 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram shadowShader;
 	shadowShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/shadow_vert.spv");
 	shadowShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/shadow_frag.spv");
-    shadowShader.reflectShader(vkcv::ShaderStage::VERTEX);
-    shadowShader.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
 	const vk::Format shadowMapFormat = vk::Format::eD16Unorm;
 	const std::vector<vkcv::AttachmentDescription> shadowAttachments = {
@@ -159,14 +171,16 @@ int main(int argc, const char** argv) {
 
 	const uint32_t shadowMapResolution = 1024;
 	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1);
-	const vkcv::PipelineConfig shadowPipeConfig(
+	const vkcv::PipelineConfig shadowPipeConfig {
 		shadowShader, 
 		shadowMapResolution, 
 		shadowMapResolution, 
-		shadowPass, 
-		vertexAttributes,
-		{}, 
-		false);
+		shadowPass,
+        firstMeshLayout,
+		{},
+		false
+	};
+	
 	const vkcv::PipelineHandle shadowPipe = core.createGraphicsPipeline(shadowPipeConfig);
 
 	struct LightInfo {
@@ -197,8 +211,6 @@ int main(int argc, const char** argv) {
 	voxelizationShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelization_vert.spv");
 	voxelizationShader.addShader(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelization_geom.spv");
 	voxelizationShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelization_frag.spv");
-	voxelizationShader.reflectShader(vkcv::ShaderStage::VERTEX);
-	voxelizationShader.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
 	vkcv::PassConfig voxelizationPassConfig({
 		vkcv::AttachmentDescription(vkcv::AttachmentOperation::DONT_CARE, vkcv::AttachmentOperation::DONT_CARE, voxelizationDummyFormat)});
@@ -207,15 +219,15 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DescriptorBinding> voxelizationDescriptorBindings = { voxelizationShader.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle voxelizationDescriptorSet = core.createDescriptorSet(voxelizationDescriptorBindings);
 
-	const vkcv::PipelineConfig voxelizationPipeConfig(
+	const vkcv::PipelineConfig voxelizationPipeConfig{
 		voxelizationShader,
 		voxelResolution,
 		voxelResolution,
 		voxelizationPass,
-		vertexAttributes,
+		firstMeshLayout,
 		{ core.getDescriptorSet(voxelizationDescriptorSet).layout },
 		false,
-		true);
+		true };
 	const vkcv::PipelineHandle voxelizationPipe = core.createGraphicsPipeline(voxelizationPipeConfig);
 
 	struct VoxelizationInfo {
@@ -235,9 +247,6 @@ int main(int argc, const char** argv) {
 	voxelVisualisationShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelVisualisation_vert.spv");
 	voxelVisualisationShader.addShader(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelVisualisation_geom.spv");
 	voxelVisualisationShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelVisualisation_frag.spv");
-	voxelVisualisationShader.reflectShader(vkcv::ShaderStage::VERTEX);
-	voxelVisualisationShader.reflectShader(vkcv::ShaderStage::GEOMETRY);
-	voxelVisualisationShader.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
 	const std::vector<vkcv::DescriptorBinding> voxelVisualisationDescriptorBindings = { voxelVisualisationShader.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle voxelVisualisationDescriptorSet = core.createDescriptorSet(voxelVisualisationDescriptorBindings);
@@ -257,16 +266,16 @@ int main(int argc, const char** argv) {
 	vkcv::PassConfig voxelVisualisationPassDefinition({ voxelVisualisationColorAttachments, voxelVisualisationDepthAttachments });
 	vkcv::PassHandle voxelVisualisationPass = core.createPass(voxelVisualisationPassDefinition);
 
-	const vkcv::PipelineConfig voxelVisualisationPipeConfig(
-		voxelVisualisationShader, 
-		0, 
-		0, 
+	const vkcv::PipelineConfig voxelVisualisationPipeConfig{
+		voxelVisualisationShader,
+		0,
+		0,
 		voxelVisualisationPass,
-		{}, 
+		{},
 		{ core.getDescriptorSet(voxelVisualisationDescriptorSet).layout },
 		true,
 		false,
-		vkcv::PrimitiveTopology::PointList);	// points are extended to cubes in the geometry shader
+		vkcv::PrimitiveTopology::PointList };	// points are extended to cubes in the geometry shader
 	const vkcv::PipelineHandle voxelVisualisationPipe = core.createGraphicsPipeline(voxelVisualisationPipeConfig);
 
 	vkcv::Buffer<uint16_t> voxelVisualisationIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, voxelCount);
@@ -301,7 +310,6 @@ int main(int argc, const char** argv) {
 
 	vkcv::ShaderProgram resetVoxelShader;
 	resetVoxelShader.addShader(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelReset_comp.spv");
-	resetVoxelShader.reflectShader(vkcv::ShaderStage::COMPUTE);
 
 	vkcv::DescriptorSetHandle resetVoxelDescriptorSet = core.createDescriptorSet(resetVoxelShader.getReflectedDescriptors()[0]);
 	vkcv::PipelineHandle resetVoxelPipeline = core.createComputePipeline(
@@ -331,11 +339,13 @@ int main(int argc, const char** argv) {
 
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		
 		start = end;
-		cameraManager.getCamera().updateView(deltatime.count() * 0.000001);
+		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 
-		const float timeSinceStart = std::chrono::duration_cast<std::chrono::milliseconds>(end - appStartTime).count();
-		const float sunTheta = timeSinceStart * 0.001f;
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - appStartTime);
+		
+		const float sunTheta = 0.001f * static_cast<float>(duration.count());
 		lightInfo.direction = glm::normalize(glm::vec3(std::cos(sunTheta), 1, std::sin(sunTheta)));
 
 		const float shadowProjectionSize = 5.f;
@@ -357,14 +367,14 @@ int main(int argc, const char** argv) {
 		lightInfo.lightMatrix = projectionLight * viewLight;
 		lightBuffer.fill({ lightInfo });
 
-		const glm::mat4 viewProjectionCamera = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();
 
 		const float voxelizationExtent = 20.f;
 		VoxelizationInfo voxelizationInfo;
 		voxelizationInfo.extent = voxelizationExtent;
 
 		// move voxel offset with camera in voxel sized steps
-		const glm::vec3 cameraPos = cameraManager.getCamera().getPosition();
+		const glm::vec3 cameraPos = cameraManager.getActiveCamera().getPosition();
 		const float voxelSize = voxelizationExtent / voxelResolution;
 		voxelizationInfo.offset = glm::floor(cameraPos / voxelSize) * voxelSize;
 
@@ -385,7 +395,7 @@ int main(int argc, const char** argv) {
 		// compute positions and transform matrices
 		std::vector<glm::vec3> instancePositions = {
 		glm::vec3(0.f, -2.f, 0.f),
-		glm::vec3(3.f,  2 * glm::sin(timeSinceStart * 0.0025), 0.f),
+		glm::vec3(3.f,  2 * glm::sin(duration.count() * 0.0025), 0.f),
 		glm::vec3(-3.f,  0.f, 0.f),
 		glm::vec3(0.f,  2.f, 0.f),
 		glm::vec3(0.f, -5.f, 0.f)
@@ -459,8 +469,8 @@ int main(int argc, const char** argv) {
 		// main pass
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			trianglePass,
-			trianglePipeline,
+            firstMeshPass,
+            firstMeshPipeline,
 			pushConstantData,
 			drawcalls,
 			renderTargets);

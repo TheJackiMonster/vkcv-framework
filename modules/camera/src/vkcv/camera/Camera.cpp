@@ -1,44 +1,28 @@
 #include "vkcv/camera/Camera.hpp"
-#include <iostream>
 
-namespace vkcv {
+#define _USE_MATH_DEFINES
+#include <math.h>
 
-    Camera::Camera(){
-        m_up = glm::vec3(0.0f, -1.0f, 0.0f);
-        m_position = glm::vec3(0.0f, 0.0f, 0.0f);
-        m_cameraSpeed = 2.f;
-        // front
-        m_pitch = 0.0;
-        m_yaw = 180.0;
+namespace vkcv::camera {
 
-        m_fov_nsteps = 100;
-        m_fov_min = 10;
-        m_fov_max = 120;
-
-        m_forward = false;
-        m_backward = false;
-        m_left = false;
-        m_right = false;
+    Camera::Camera() {
+        lookAt(
+			glm::vec3(0.0f, 0.0f, -1.0f),
+			glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f)
+		);
+  
+		setFront(glm::normalize(m_center - m_position));
     }
 
     Camera::~Camera() = default;
 
-    void Camera::lookAt(glm::vec3 position, glm::vec3 center, glm::vec3 up){
-        m_view = glm::lookAt(position, center, up);
-    }
-
-    glm::mat4 Camera::updateView(double deltatime){
-        updatePosition(deltatime);
-        return m_view = glm::lookAt(m_position, m_position + getFront() , m_up);
-    }
-
-    void Camera::getView(glm::vec3 &x, glm::vec3 &y, glm::vec3 &z, glm::vec3 &pos){
-        x = glm::vec3( glm::row(m_view, 0));
-        y = glm::vec3( glm::row(m_view, 1));
-        z = glm::vec3( glm::row(m_view, 2));
-        pos = glm::vec3( glm::column(m_view, 3));
-        glm::mat3 mat_inv = glm::inverse( glm::mat3(m_view));
-        pos = -mat_inv * pos;
+    void Camera::lookAt(const glm::vec3& position, const glm::vec3& center, const glm::vec3& up) {
+    	m_position = position;
+    	m_center = center;
+    	m_up = up;
+    	
+		setView(glm::lookAt(position, center, up));
     }
 
     void Camera::getNearFar( float &near, float &far) const {
@@ -46,98 +30,111 @@ namespace vkcv {
         far = m_far;
     }
 
-
-    const glm::mat4 Camera::getView() const {
+    const glm::mat4& Camera::getView() const {
         return m_view;
     }
+    
+    void Camera::setView(const glm::mat4 &view) {
+		m_view = view;
+	}
 
     const glm::mat4& Camera::getProjection() const {
         return m_projection;
     }
 
-    void Camera::setProjection(const glm::mat4 projection){
-        m_projection = projection;
+    void Camera::setProjection(const glm::mat4& projection) {
+        m_projection =  projection;
+    }
+
+    glm::mat4 Camera::getMVP() const {
+		const glm::mat4 y_correction (
+				1.0f,  0.0f,  0.0f,  0.0f,
+				0.0f, -1.0f,  0.0f,  0.0f,
+				0.0f,  0.0f,  1.0f,  0.0f,
+				0.0f,  0.0f,  0.0f,  1.0f
+		);
+    	
+        return y_correction * m_projection * m_view;
     }
 
     float Camera::getFov() const {
-        return m_fov;
+    	const float tanHalfFovy = 1.0f / m_projection[1][1];
+    	float halfFovy = std::atan(tanHalfFovy);
+    	
+    	if (halfFovy < 0) {
+    		halfFovy += static_cast<float>(M_PI);
+    	}
+    	
+        return halfFovy * 2.0f;
     }
 
     void Camera::setFov( float fov){
-        m_fov = fov;
-        setPerspective( m_fov, m_ratio, m_near, m_far);
-    }
-
-    void Camera::changeFov(double offset){
-        float fov = m_fov;
-        float fov_range = m_fov_max - m_fov_min;
-        float fov_stepsize = glm::radians(fov_range)/m_fov_nsteps;
-        fov -= (float) offset*fov_stepsize;
-        if (fov < glm::radians(m_fov_min)) {
-            fov = glm::radians(m_fov_min);
-        }
-        if (fov > glm::radians(m_fov_max)) {
-            fov = glm::radians(m_fov_max);
-        }
-        setFov(fov);
-    }
-
-    void Camera::updateRatio( int width, int height){
-        m_width = width;
-        m_height = height;
-        m_ratio = static_cast<float>(width)/glm::max(height, 1);
-        setPerspective( m_fov, m_ratio, m_near, m_far);
+        setPerspective(fov, getRatio(), m_near, m_far);
     }
 
     float Camera::getRatio() const {
-        return m_ratio;
+    	const float aspectProduct = 1.0f / m_projection[0][0];
+		const float tanHalfFovy = 1.0f / m_projection[1][1];
+		
+        return aspectProduct / tanHalfFovy;
     }
 
-    void Camera::setNearFar( float near, float far){
-        m_near = near;
-        m_far = far;
-        setPerspective(m_fov, m_ratio, m_near, m_far);
+    void Camera::setRatio(float ratio){
+        setPerspective( getFov(), ratio, m_near, m_far);
     }
 
-    void Camera::setPerspective(float fov, float ratio, float near, float far){
-        m_fov = fov;
-        m_ratio = ratio;
-        m_near = near;
-        m_far = far;
-        m_projection = glm::perspective( m_fov, ratio, m_near, m_far);
+    void Camera::setNearFar(float near, float far){
+        setPerspective(getFov(), getRatio(), near, far);
+    }
+
+    void Camera::setPerspective(float fov, float ratio, float near, float far) {
+		m_near = near;
+		m_far = far;
+		setProjection(glm::perspective(fov, ratio, near, far));
     }
 
     glm::vec3 Camera::getFront() const {
         glm::vec3 direction;
-        direction.x = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-        direction.y = sin(glm::radians(m_pitch));
-        direction.z = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        direction.x = std::sin(glm::radians(m_yaw)) * std::cos(glm::radians(m_pitch));
+        direction.y = std::sin(glm::radians(m_pitch));
+        direction.z = std::cos(glm::radians(m_yaw)) * std::cos(glm::radians(m_pitch));
         return glm::normalize(direction);
     }
+    
+    void Camera::setFront(const glm::vec3 &front) {
+		m_pitch = std::atan2(front.y, std::sqrt(front.x * front.x + front.z * front.z));
+		m_yaw = std::atan2(front.x, front.z);
+    }
 
-    glm::vec3 Camera::getPosition() const {
+    const glm::vec3& Camera::getPosition() const {
         return m_position;
     }
 
-    void Camera::setPosition( glm::vec3 position ){
-        m_position = position;
+    void Camera::setPosition( const glm::vec3& position ){
+		lookAt(position, m_center, m_up);
     }
 
-    void Camera::setUp(const glm::vec3 &up) {
-        m_up = up;
+    const glm::vec3& Camera::getCenter() const {
+        return m_center;
     }
+
+    void Camera::setCenter(const glm::vec3& center) {
+		lookAt(m_position, center, m_up);
+    }
+	
+	const glm::vec3& Camera::getUp() const {
+		return m_up;
+	}
+	
+	void Camera::setUp(const glm::vec3 &up) {
+		lookAt(m_position, m_center, up);
+	}
 
     float Camera::getPitch() const {
         return m_pitch;
     }
 
     void Camera::setPitch(float pitch) {
-        if (pitch > 89.0f) {
-            pitch = 89.0f;
-        }
-        if (pitch < -89.0f) {
-            pitch = -89.0f;
-        }
         m_pitch = pitch;
     }
 
@@ -149,35 +146,4 @@ namespace vkcv {
         m_yaw = yaw;
     }
 
-    void Camera::panView(double xOffset, double yOffset) {
-        m_yaw += xOffset;
-        m_pitch += yOffset;
-    }
-
-    void Camera::updatePosition(double deltatime ){
-        m_position += (m_cameraSpeed * getFront() * static_cast<float> (m_forward) * static_cast<float>(deltatime));
-        m_position -= (m_cameraSpeed * getFront() * static_cast<float> (m_backward) * static_cast<float>(deltatime));
-        m_position -= (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_left) * static_cast<float>(deltatime));
-        m_position += (glm::normalize(glm::cross(getFront(), m_up)) * m_cameraSpeed * static_cast<float> (m_right) * static_cast<float>(deltatime));
-    }
-
-    void Camera::moveForward(int action){
-        m_forward = static_cast<bool>(action);
-    }
-
-    void Camera::moveBackward(int action){
-        m_backward = static_cast<bool>(action);
-    }
-
-    void Camera::moveLeft(int action){
-        m_left = static_cast<bool>(action);
-    }
-
-    void Camera::moveRight(int action){
-        m_right = static_cast<bool>(action);
-    }
-
-    void Camera::setSpeed(float speed) {
-        m_cameraSpeed = speed;
-    }
 }
