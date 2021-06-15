@@ -1,0 +1,17 @@
+# version 450
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(set=0, binding=0) uniform texture2D  offscreenAttachment;
+layout(set=0, binding=1) uniform sampler    offscreenSampler;
+layout(r11f_g11f_b10f, set=0, binding=2) uniform writeonly image2D  blurAttachment;
+
+void main()
+{
+    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+    vec2 uv = vec2(pixel_coords) / imageSize(blurAttachment);
+
+    // TODO: BLUR
+
+
+    imageStore(blurAttachment, pixel_coords, vec4(1.0, 0.0 ,0.0, 0.0));
+}

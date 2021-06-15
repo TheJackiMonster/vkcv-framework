@@ -36,8 +36,8 @@ namespace vkcv {
 	struct DescriptorWrites {
 		std::vector<SampledImageDescriptorWrite>		sampledImageWrites;
 		std::vector<StorageImageDescriptorWrite>		storageImageWrites;
-		std::vector<UniformBufferDescriptorWrite>	uniformBufferWrites;
-		std::vector<StorageBufferDescriptorWrite>	storageBufferWrites;
-		std::vector<SamplerDescriptorWrite>			samplerWrites;
+		std::vector<UniformBufferDescriptorWrite>	    uniformBufferWrites;
+		std::vector<StorageBufferDescriptorWrite>	    storageBufferWrites;
+		std::vector<SamplerDescriptorWrite>			    samplerWrites;
 	};
 }

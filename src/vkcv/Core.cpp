@@ -507,4 +507,10 @@ namespace vkcv
 			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eShaderReadOnlyOptimal, cmdBuffer);
 		}, nullptr);
 	}
+
+    void Core::prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image) {
+        recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
+            m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eGeneral, cmdBuffer);
+        }, nullptr);
+    }
 }
