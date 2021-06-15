@@ -1,6 +1,5 @@
 #include "vkcv/camera/PilotCameraController.hpp"
 
-#include <iostream>
 #include <GLFW/glfw3.h>
 
 namespace vkcv {
@@ -75,8 +74,8 @@ namespace vkcv {
         position -= (m_cameraSpeed * front * static_cast<float> (m_backward) * static_cast<float>(deltaTime));
         position += (glm::normalize(glm::cross(front, up)) * m_cameraSpeed * static_cast<float> (m_left) * static_cast<float>(deltaTime));
         position -= (glm::normalize(glm::cross(front, up)) * m_cameraSpeed * static_cast<float> (m_right) * static_cast<float>(deltaTime));
-        position -= up * m_cameraSpeed * static_cast<float> (m_upward) * static_cast<float>(deltaTime);
-        position += up * m_cameraSpeed * static_cast<float> (m_downward) * static_cast<float>(deltaTime);
+        position += up * m_cameraSpeed * static_cast<float> (m_upward) * static_cast<float>(deltaTime);
+        position -= up * m_cameraSpeed * static_cast<float> (m_downward) * static_cast<float>(deltaTime);
         camera.setPosition(position);
         return position;
     }
