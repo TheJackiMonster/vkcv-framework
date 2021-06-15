@@ -81,7 +81,6 @@ namespace vkcv{
         m_cameras.push_back(camera);  // TODO: is there another way we can do this?
         m_cameras.back().setPerspective(glm::radians(60.0f), m_window.getWidth() / m_window.getHeight(), 0.1f, 10.0f);
         m_cameraControllerTypes.push_back(ControllerType::NONE);
-        setActiveCamera(m_cameras.size() - 1);
         return m_cameras.size() - 1;
     }
 
