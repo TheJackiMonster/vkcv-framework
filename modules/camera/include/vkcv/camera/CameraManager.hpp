@@ -7,7 +7,7 @@
 #include <GLFW/glfw3.h>
 #include <functional>
 
-namespace vkcv {
+namespace vkcv::camera {
 
     /**
      * @brief Used for specifying existing types of camera controllers when adding a new controller object to the
@@ -86,7 +86,19 @@ namespace vkcv {
          * @param[in] height The new height of the window.
          */
         void resizeCallback(int width, int height);
-
+	
+		/**
+		 * @brief Gets a camera controller object of specified @p controllerType.
+		 * @param[in] controllerType The type of the camera controller.
+		 * @return The specified camera controller object.
+		 */
+		CameraController& getControllerByType(ControllerType controllerType);
+        
+        /**
+         * @briof A method to get the currently active controller for the active camera.
+         * @return Reference to the active #CameraController
+         */
+        CameraController& getActiveController();
 
     public:
 
@@ -105,18 +117,21 @@ namespace vkcv {
         ~CameraManager();
 
         /**
-         * @brief Adds a new camera object to the #CameraManager. The camera is not binded to a controller type.
-         * @return The index of the newly created camera object.
-         */
-        int addCamera();
-
-        /**
          * @brief Adds a new camera object to the #CameraManager and binds it to a camera controller object of specified
          * @p controllerType.
          * @param[in] controllerType The type of the camera controller.
          * @return The index of the newly created camera object.
          */
-        int addCamera(ControllerType controllerType);
+		uint32_t addCamera(ControllerType controllerType = ControllerType::NONE);
+	
+		/**
+		 * @brief Adds a new camera object to the #CameraManager and binds it to a camera controller object of specified
+		 * @p controllerType.
+		 * @param[in] controllerType The type of the camera controller.
+		 * @param[in] camera The new camera object.
+		 * @return The index of the newly bound camera object.
+		 */
+		uint32_t addCamera(ControllerType controllerType, const Camera& camera);
 
         /**
          * @brief Gets the stored camera object located at @p cameraIndex.
@@ -143,7 +158,7 @@ namespace vkcv {
          * @brief Gets the index of the stored active camera object.
          * @return The active camera index.
          */
-        uint32_t getActiveCameraIndex();
+        uint32_t getActiveCameraIndex() const;
 
         /**
          * @brief Binds a stored camera object located at @p cameraIndex to a camera controller of specified
@@ -161,13 +176,6 @@ namespace vkcv {
          * @throws std::runtime_error If @p cameraIndex is not a valid camera index.
          */
         ControllerType getControllerType(uint32_t cameraIndex);
-
-        /**
-         * @brief Gets a camera controller object of specified @p controllerType.
-         * @param[in] controllerType The type of the camera controller.
-         * @return The specified camera controller object.
-         */
-        CameraController& getControllerByType(ControllerType controllerType);
 
         /**
          * @brief Updates all stored camera controllers in respect to @p deltaTime.

@@ -159,9 +159,11 @@ int main(int argc, const char** argv) {
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	
-    vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
-    uint32_t camIndex = cameraManager.addCamera(vkcv::ControllerType::PILOT);
-    uint32_t camIndex2 = cameraManager.addCamera(vkcv::ControllerType::TRACKBALL);
+    vkcv::camera::CameraManager cameraManager(window, windowWidth, windowHeight);
+    uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+    uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	
+	cameraManager.getCamera(camIndex).setPosition(glm::vec3(0, 0, -2));
 
 	while (window.isWindowOpen())
 	{
@@ -173,9 +175,10 @@ int main(int argc, const char** argv) {
 		}
 		
         auto end = std::chrono::system_clock::now();
-        auto deltatime = end - start;
+        auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         start = end;
-		cameraManager.update(std::chrono::duration<double>(deltatime).count());
+		
+		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 
 		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));

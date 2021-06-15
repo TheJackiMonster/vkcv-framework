@@ -18,9 +18,15 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-    vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
-    uint32_t camIndex = cameraManager.addCamera(vkcv::ControllerType::PILOT);
-    uint32_t camIndex2 = cameraManager.addCamera(vkcv::ControllerType::TRACKBALL);
+    vkcv::camera::CameraManager cameraManager(window, windowWidth, windowHeight);
+    uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+    uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+    
+    cameraManager.getCamera(camIndex).setPosition(glm::vec3(0.f, 0.f, 3.f));
+    cameraManager.getCamera(camIndex).setNearFar(0.1f, 30.0f);
+	cameraManager.getCamera(camIndex).setYaw(180.0f);
+	
+	cameraManager.getCamera(camIndex2).setNearFar(0.1f, 30.0f);
 
 	window.initEvents();
 
@@ -233,11 +239,13 @@ int main(int argc, const char** argv) {
 		
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		
 		start = end;
-		cameraManager.update(std::chrono::duration<double>(deltatime).count());
+		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 
-
-		const float sunTheta = std::chrono::duration_cast<std::chrono::milliseconds>(end - appStartTime).count() * 0.001f;
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - appStartTime);
+		
+		const float sunTheta = 0.001f * static_cast<float>(duration.count());
 		lightInfo.direction = glm::normalize(glm::vec3(std::cos(sunTheta), 1, std::sin(sunTheta)));
 
 		const float shadowProjectionSize = 5.f;

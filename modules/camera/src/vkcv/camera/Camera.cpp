@@ -1,25 +1,26 @@
 #include "vkcv/camera/Camera.hpp"
 #include <iostream>
 
-namespace vkcv {
+namespace vkcv::camera {
 
     Camera::Camera() {
-        m_position = glm::vec3(0.0f, 0.0f, -1.0f);
-        m_up = glm::vec3(0.0f, 1.0f, 0.0f);
-        m_center = glm::vec3(0.0f, 0.0f, 0.0f);
-        lookAt(m_position, m_center, m_up);
-        glm::vec3 front = glm::normalize(m_center - m_position);
-        m_pitch = std::atan2(front.y, std::sqrt(front.x * front.x + front.z * front.z));
-        m_yaw = std::atan2(front.x, front.z);
+        lookAt(
+			glm::vec3(0.0f, 0.0f, -1.0f),
+			glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f)
+		);
+  
+		setFront(glm::normalize(m_center - m_position));
     }
 
     Camera::~Camera() = default;
 
-    void Camera::lookAt(glm::vec3 position, glm::vec3 center, glm::vec3 up){
-		m_position = position;
-		m_center = center;
-		m_up = up;
-        m_view = glm::lookAt(m_position, m_center, m_up);
+    void Camera::lookAt(const glm::vec3& position, const glm::vec3& center, const glm::vec3& up) {
+    	m_position = position;
+    	m_center = center;
+    	m_up = up;
+    	
+		setView(glm::lookAt(position, center, up));
     }
 
     void Camera::getNearFar( float &near, float &far) const {
@@ -27,55 +28,67 @@ namespace vkcv {
         far = m_far;
     }
 
-    glm::mat4& Camera::getView() {
+    const glm::mat4& Camera::getView() const {
         return m_view;
     }
+    
+    void Camera::setView(const glm::mat4 &view) {
+		m_view = view;
+	}
 
-    glm::mat4& Camera::getProjection() {
+    const glm::mat4& Camera::getProjection() const {
         return m_projection;
     }
 
-    void Camera::setProjection(const glm::mat4 projection){
-        m_projection = projection;
+    void Camera::setProjection(const glm::mat4& projection) {
+        m_projection =  projection;
     }
 
     glm::mat4 Camera::getMVP() const {
-        return m_projection * m_view;
+		const glm::mat4 y_correction (
+				1.0f,  0.0f,  0.0f,  0.0f,
+				0.0f, -1.0f,  0.0f,  0.0f,
+				0.0f,  0.0f,  1.0f,  0.0f,
+				0.0f,  0.0f,  0.0f,  1.0f
+		);
+    	
+        return y_correction * m_projection * m_view;
     }
 
     float Camera::getFov() const {
-        return m_fov;
+    	const float tanHalfFovy = 1.0f / m_projection[1][1];
+    	float halfFovy = std::atan(tanHalfFovy);
+    	
+    	if (halfFovy < 0) {
+    		halfFovy += M_PIf32;
+    	}
+    	
+        return halfFovy * 2.0f;
     }
 
     void Camera::setFov( float fov){
-        setPerspective(fov, m_ratio, m_near, m_far);
+        setPerspective(fov, getRatio(), m_near, m_far);
     }
 
     float Camera::getRatio() const {
-        return m_ratio;
+    	const float aspectProduct = 1.0f / m_projection[0][0];
+		const float tanHalfFovy = 1.0f / m_projection[1][1];
+		
+        return aspectProduct / tanHalfFovy;
     }
 
     void Camera::setRatio(float ratio){
-        setPerspective( m_fov, ratio, m_near, m_far);
+        setPerspective( getFov(), ratio, m_near, m_far);
     }
 
     void Camera::setNearFar(float near, float far){
-        setPerspective(m_fov, m_ratio, near, far);
+        setPerspective(getFov(), getRatio(), near, far);
     }
 
     void Camera::setPerspective(float fov, float ratio, float near, float far) {
-    	const glm::mat4 y_correction (
-    			1.0f,  0.0f,  0.0f,  0.0f,
-    			0.0f, -1.0f,  0.0f,  0.0f,
-    			0.0f,  0.0f,  1.0f,  0.0f,
-    			0.0f,  0.0f,  0.0f,  1.0f
-		);
-    	
-        m_fov = fov;
-        m_ratio = ratio;
-        m_near = near;
-        m_far = far;
-        m_projection = y_correction * glm::perspective(m_fov, m_ratio, m_near, m_far);
+		m_near = near;
+		m_far = far;
+		setProjection(glm::perspective(fov, ratio, near, far));
     }
 
     glm::vec3 Camera::getFront() const {
@@ -85,22 +98,35 @@ namespace vkcv {
         direction.z = std::cos(glm::radians(m_yaw)) * std::cos(glm::radians(m_pitch));
         return glm::normalize(direction);
     }
+    
+    void Camera::setFront(const glm::vec3 &front) {
+		m_pitch = std::atan2(front.y, std::sqrt(front.x * front.x + front.z * front.z));
+		m_yaw = std::atan2(front.x, front.z);
+    }
 
-    glm::vec3 Camera::getPosition() const {
+    const glm::vec3& Camera::getPosition() const {
         return m_position;
     }
 
-    void Camera::setPosition( glm::vec3 position ){
-        m_position = position;
+    void Camera::setPosition( const glm::vec3& position ){
+		lookAt(position, m_center, m_up);
     }
 
-    glm::vec3 Camera::getCenter() const {
+    const glm::vec3& Camera::getCenter() const {
         return m_center;
     }
 
-    void Camera::setCenter(glm::vec3 center) {
-        m_center = center;
+    void Camera::setCenter(const glm::vec3& center) {
+		lookAt(m_position, center, m_up);
     }
+	
+	const glm::vec3& Camera::getUp() const {
+		return m_up;
+	}
+	
+	void Camera::setUp(const glm::vec3 &up) {
+		lookAt(m_position, m_center, up);
+	}
 
     float Camera::getPitch() const {
         return m_pitch;
@@ -116,14 +142,6 @@ namespace vkcv {
 
     void Camera::setYaw(float yaw) {
         m_yaw = yaw;
-    }
-
-    glm::vec3 Camera::getUp() const {
-        return m_up;
-    }
-
-    void Camera::setUp(const glm::vec3 &up) {
-        m_up = up;
     }
 
 }

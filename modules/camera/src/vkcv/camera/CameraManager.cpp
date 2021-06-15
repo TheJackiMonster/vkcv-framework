@@ -1,17 +1,17 @@
-#include <iostream>
-#include <string>
+
 #include "vkcv/camera/CameraManager.hpp"
 
-namespace vkcv{
+#include <vkcv/Logger.hpp>
+
+namespace vkcv::camera {
 
     CameraManager::CameraManager(Window &window, float width, float height)
     : m_window(window)
     {
         bindCameraToEvents();
         m_activeCameraIndex = 0;
-        m_lastX = window.getWidth() / 2.0f;
-        m_lastY = window.getHeight() / 2.0f;
-
+        m_lastX = static_cast<float>(window.getWidth()) / 2.0f;
+        m_lastY = static_cast<float>(window.getHeight()) / 2.0f;
     }
 
     CameraManager::~CameraManager() {}
@@ -37,7 +37,7 @@ namespace vkcv{
         else if(button == GLFW_MOUSE_BUTTON_2 && action == GLFW_RELEASE){
             glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
-        getControllerByType(getControllerType(getActiveCameraIndex())).mouseButtonCallback(button, action, mods, getActiveCamera());
+		getActiveController().mouseButtonCallback(button, action, mods, getActiveCamera());
     }
 
     void CameraManager::mouseMoveCallback(double x, double y){
@@ -45,11 +45,11 @@ namespace vkcv{
 		auto yoffset = static_cast<float>(y - m_lastY);
         m_lastX = x;
         m_lastY = y;
-        getControllerByType(getControllerType(getActiveCameraIndex())).mouseMoveCallback(xoffset, yoffset, getActiveCamera());
+		getActiveController().mouseMoveCallback(xoffset, yoffset, getActiveCamera());
     }
 
     void CameraManager::scrollCallback(double offsetX, double offsetY) {
-        getControllerByType(getControllerType(getActiveCameraIndex())).scrollCallback(offsetX, offsetY, getActiveCamera());
+		getActiveController().scrollCallback(offsetX, offsetY, getActiveCamera());
     }
 
     void CameraManager::keyCallback(int key, int scancode, int action, int mods)  {
@@ -67,33 +67,39 @@ namespace vkcv{
                     case GLFW_KEY_ESCAPE:
                         glfwSetWindowShouldClose(m_window.getWindow(), 1);
                         return;
+					default:
+						break;
                 }
             default:
-                getControllerByType(getControllerType(getActiveCameraIndex())).keyCallback(key, scancode, action, mods, getActiveCamera());
+				getActiveController().keyCallback(key, scancode, action, mods, getActiveCamera());
+                break;
         }
     }
-
-    int CameraManager::addCamera() {
-        Camera camera;
-        m_cameras.push_back(camera);
-        m_cameras.back().setPerspective(glm::radians(60.0f), m_window.getWidth() / m_window.getHeight(), 0.1f, 10.0f);
-        m_cameraControllerTypes.push_back(ControllerType::NONE);
-        return m_cameras.size() - 1;
+    
+    CameraController& CameraManager::getActiveController() {
+    	const ControllerType type = getControllerType(getActiveCameraIndex());
+    	return getControllerByType(type);
     }
-
-    int CameraManager::addCamera(ControllerType controllerType) {
+	
+	uint32_t CameraManager::addCamera(ControllerType controllerType) {
         Camera camera;
-        m_cameras.push_back(camera);
-        m_cameras.back().setPerspective(glm::radians(60.0f), m_window.getWidth() / m_window.getHeight(), 0.1f, 10.0f);
-        m_cameraControllerTypes.push_back(controllerType);
-        return m_cameras.size() - 1;
+        camera.setPerspective(glm::radians(60.0f), m_window.getWidth() / m_window.getHeight(), 0.1f, 10.0f);
+        return addCamera(controllerType, camera);
+    }
+    
+    uint32_t CameraManager::addCamera(ControllerType controllerType, const Camera &camera) {
+    	const uint32_t index = static_cast<uint32_t>(m_cameras.size());
+    	m_cameras.push_back(camera);
+		m_cameraControllerTypes.push_back(controllerType);
+		return index;
     }
 
     Camera& CameraManager::getCamera(uint32_t cameraIndex) {
         if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
-            throw std::runtime_error("Invalid camera index. The index must range from 0 to " +
-                std::to_string(m_cameras.size()) + ".");
+        	vkcv_log(LogLevel::ERROR, "Invalid camera index: The index must range from 0 to %lu", m_cameras.size());
+        	return getActiveCamera();
         }
+        
         return m_cameras[cameraIndex];
     }
 
@@ -103,29 +109,32 @@ namespace vkcv{
 
     void CameraManager::setActiveCamera(uint32_t cameraIndex) {
         if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
-            throw std::runtime_error("Invalid camera index. The index must range from 0 to " +
-                std::to_string(m_cameras.size()) + ".");
+			vkcv_log(LogLevel::ERROR, "Invalid camera index: The index must range from 0 to %lu", m_cameras.size());
+			return;
         }
+        
         m_activeCameraIndex = cameraIndex;
     }
 
-    uint32_t CameraManager::getActiveCameraIndex() {
+    uint32_t CameraManager::getActiveCameraIndex() const {
         return m_activeCameraIndex;
     }
 
     void CameraManager::setControllerType(uint32_t cameraIndex, ControllerType controllerType) {
         if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
-            throw std::runtime_error("Invalid camera index. The index must range from 0 to " +
-                std::to_string(m_cameras.size()) + ".");
+			vkcv_log(LogLevel::ERROR, "Invalid camera index: The index must range from 0 to %lu", m_cameras.size());
+			return;
         }
+        
         m_cameraControllerTypes[cameraIndex] = controllerType;
     }
 
     ControllerType CameraManager::getControllerType(uint32_t cameraIndex) {
         if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
-            throw std::runtime_error("Invalid camera index. The index must range from 0 to " +
-                std::to_string(m_cameras.size()) + ".");
+			vkcv_log(LogLevel::ERROR, "Invalid camera index: The index must range from 0 to %lu", m_cameras.size());
+			return ControllerType::NONE;
         }
+        
         return m_cameraControllerTypes[cameraIndex];
     }
 
@@ -141,6 +150,7 @@ namespace vkcv{
     }
 
     void CameraManager::update(double deltaTime) {
-            getControllerByType(getControllerType(getActiveCameraIndex())).updateCamera(deltaTime, getActiveCamera());
-        }
+		getActiveController().updateCamera(deltaTime, getActiveCamera());
+	}
+	
 }

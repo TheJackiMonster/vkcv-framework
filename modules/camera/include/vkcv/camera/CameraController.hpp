@@ -3,7 +3,7 @@
 #include "Camera.hpp"
 #include "vkcv/Window.hpp"
 
-namespace vkcv {
+namespace vkcv::camera {
 
     /**
      * @brief Used as a base class for defining camera controller classes with different behaviors, e.g. the
@@ -23,7 +23,7 @@ namespace vkcv {
          * @param[in] deltaTime The time that has passed since last update.
          * @param[in] camera The camera object.
          */
-        virtual void updateCamera(double deltaTime, Camera &camera);
+        virtual void updateCamera(double deltaTime, Camera &camera) = 0;
 
         /**
          * @brief A callback function for key events.
@@ -33,7 +33,7 @@ namespace vkcv {
          * @param[in] mods The modifier bits.
          * @param[in] camera The camera object.
          */
-        virtual void keyCallback(int key, int scancode, int action, int mods, Camera &camera);
+        virtual void keyCallback(int key, int scancode, int action, int mods, Camera &camera) = 0;
 
         /**
          * @brief A callback function for mouse scrolling events.
@@ -41,7 +41,7 @@ namespace vkcv {
          * @param[in] offsetY The offset in vertical direction.
          * @param[in] camera The camera object.
          */
-        virtual void scrollCallback( double offsetX, double offsetY, Camera &camera);
+        virtual void scrollCallback( double offsetX, double offsetY, Camera &camera) = 0;
 
         /**
          * @brief A callback function for mouse movement events.
@@ -49,7 +49,7 @@ namespace vkcv {
          * @param[in] y The vertical mouse position.
          * @param[in] camera The camera object.
          */
-        virtual void mouseMoveCallback(double offsetX, double offsetY, Camera &camera);
+        virtual void mouseMoveCallback(double offsetX, double offsetY, Camera &camera) = 0;
 
         /**
          * @brief A callback function for mouse button events.
@@ -58,7 +58,7 @@ namespace vkcv {
          * @param[in] mods The modifier bits.
          * @param[in] camera The camera object.
          */
-        virtual void mouseButtonCallback(int button, int action, int mods, Camera &camera);
+        virtual void mouseButtonCallback(int button, int action, int mods, Camera &camera) = 0;
     };
 
 }

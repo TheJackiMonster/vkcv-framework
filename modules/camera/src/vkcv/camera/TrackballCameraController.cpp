@@ -2,7 +2,7 @@
 
 #include <GLFW/glfw3.h>
 
-namespace vkcv {
+namespace vkcv::camera {
 
     TrackballCameraController::TrackballCameraController() {
         m_rotationActive = false;
@@ -42,33 +42,6 @@ namespace vkcv {
         camera.setPitch(pitch);
     }
 
-    glm::vec3 TrackballCameraController::updatePosition(Camera &camera) {
-        float yaw = camera.getYaw();
-        float pitch = camera.getPitch();
-        glm::vec3 yAxis = glm::vec3(0.0f, 1.0f, 0.0f);
-        glm::vec3 xAxis = glm::vec3(1.0f, 0.0f, 0.0f);
-
-        glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(yaw), yAxis);
-        glm::mat4 rotationX = glm::rotate(rotationY, glm::radians(pitch), xAxis);
-        glm::vec3 translate = glm::vec3(0.0f, 0.0f, m_radius);
-        translate = glm::vec3(rotationX * glm::vec4(translate, 0.0f));
-        glm::vec3 center = camera.getCenter();
-        glm::vec3 position = center + translate;
-        camera.setPosition(position);
-        glm::vec3 up = glm::vec3(rotationX * glm::vec4(glm::vec3(0.0f, 1.0f, 0.0f), 0.0f));
-        camera.setUp(up);
-        return position;
-    }
-
-    glm::mat4 TrackballCameraController::updateView(Camera &camera) {
-        updatePosition(camera);
-        glm::vec3 position = camera.getPosition();
-        glm::vec3 center = camera.getCenter();
-        glm::vec3 up = camera.getUp();
-        camera.lookAt(position, center, up);
-        return camera.getView();
-    }
-
     void TrackballCameraController::updateRadius(double offset, Camera &camera) {
         glm::vec3 cameraPosition = camera.getPosition();
         glm::vec3 cameraCenter = camera.getCenter();
@@ -77,7 +50,25 @@ namespace vkcv {
     }
 
     void TrackballCameraController::updateCamera(double deltaTime, Camera &camera) {
-        updateView(camera);
+		float yaw = camera.getYaw();
+		float pitch = camera.getPitch();
+		
+		const glm::vec3 yAxis = glm::vec3(0.0f, 1.0f, 0.0f);
+		const glm::vec3 xAxis = glm::vec3(1.0f, 0.0f, 0.0f);
+	
+		const glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(yaw), yAxis);
+		const glm::mat4 rotationX = glm::rotate(rotationY, glm::radians(pitch), xAxis);
+		const glm::vec3 translation = glm::vec3(
+				rotationX * glm::vec4(0.0f, 0.0f, m_radius, 0.0f)
+		);
+		
+		const glm::vec3 center = camera.getCenter();
+		const glm::vec3 position = center + translation;
+		const glm::vec3 up = glm::vec3(
+				rotationX * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)
+		);
+		
+		camera.lookAt(position, center, up);
     }
 
     void TrackballCameraController::keyCallback(int key, int scancode, int action, int mods, Camera &camera) {}

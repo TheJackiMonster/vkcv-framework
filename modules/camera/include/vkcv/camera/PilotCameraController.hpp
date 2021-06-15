@@ -2,7 +2,7 @@
 
 #include <vkcv/camera/CameraController.hpp>
 
-namespace vkcv {
+namespace vkcv::camera {
 
     /**
      * @brief Used to move around a camera object in world space.
@@ -24,23 +24,6 @@ namespace vkcv {
         int m_fov_nsteps;
         float m_fov_min;
         float m_fov_max;
-
-
-        /**
-         * @brief Updates the position of @p camera with respect to @p deltaTime.
-         * @param[in] deltaTime The time that has passed since last update.
-         * @param[in] camera The camera object.
-         * @return The updated camera position.
-         */
-        glm::vec3 updatePosition(double deltaTime, Camera &camera);
-
-        /**
-         * @brief Updates the view matrix of @p camera with respect to @p deltaTime.
-         * @param[in] deltaTime The time that has passed since last update.
-         * @param[in] camera The camera object.
-         * @return The updated view matrix of the camera.
-         */
-        glm::mat4 updateView(double deltaTime, Camera &camera);
 
         /**
          * @brief Indicates forward movement of the camera depending on the performed @p action.

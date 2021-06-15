@@ -2,7 +2,7 @@
 
 #include "CameraController.hpp"
 
-namespace vkcv {
+namespace vkcv::camera {
 
     /**
      * @brief Used to orbit a camera around its center point.
@@ -14,22 +14,6 @@ namespace vkcv {
         float m_cameraSpeed;
         float m_scrollSensitivity;
         float m_radius;
-
-
-        /**
-         * @brief Updates the position of @p camera.
-         * @param[in] camera The camera object.
-         * @param[in] camera The camera object.
-         * @return The updated camera position.
-         */
-        glm::vec3 updatePosition(Camera &camera);
-
-        /**
-         * @brief Updates the view matrix of @p camera.
-         * @param[in] camera The camera object.
-         * @return The updated view matrix of the camera.
-         */
-        glm::mat4 updateView(Camera &camera);
 
         /**
          * @brief Updates the current radius of @p camera in respect to the @p offset.

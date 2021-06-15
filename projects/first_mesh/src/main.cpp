@@ -146,9 +146,11 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage });
 
-    vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
-    uint32_t camIndex0 = cameraManager.addCamera(vkcv::ControllerType::PILOT);
-	uint32_t camIndex1 = cameraManager.addCamera(vkcv::ControllerType::TRACKBALL);
+    vkcv::camera::CameraManager cameraManager(window, windowWidth, windowHeight);
+    uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	
+	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
 
     auto start = std::chrono::system_clock::now();
     
@@ -171,9 +173,10 @@ int main(int argc, const char** argv) {
 		}
   
 		auto end = std::chrono::system_clock::now();
-		auto deltatime = end - start;
+		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		
 		start = end;
-		cameraManager.update(std::chrono::duration<double>(deltatime).count());
+		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 
 		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));

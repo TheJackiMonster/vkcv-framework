@@ -2,7 +2,7 @@
 
 #include <GLFW/glfw3.h>
 
-namespace vkcv {
+namespace vkcv::camera {
 
     PilotCameraController::PilotCameraController() {
         m_forward = false;
@@ -56,32 +56,25 @@ namespace vkcv {
         }
         camera.setPitch(pitch);
     }
-
-    glm::mat4 PilotCameraController::updateView(double deltaTime, Camera &camera){
-        updatePosition(deltaTime, camera);
-        glm::vec3 position = camera.getPosition();
-        glm::vec3 front = camera.getFront();
-        glm::vec3 up = camera.getUp();
-        camera.lookAt(position, position + front, up);
-        return camera.getView();
-    }
-
-    glm::vec3 PilotCameraController::updatePosition(double deltaTime, Camera &camera){
-        glm::vec3 position = camera.getPosition();
-        glm::vec3 front = camera.getFront();
-        glm::vec3 up = camera.getUp();
-        position += (m_cameraSpeed * front * static_cast<float> (m_forward) * static_cast<float>(deltaTime));
-        position -= (m_cameraSpeed * front * static_cast<float> (m_backward) * static_cast<float>(deltaTime));
-        position += (glm::normalize(glm::cross(front, up)) * m_cameraSpeed * static_cast<float> (m_left) * static_cast<float>(deltaTime));
-        position -= (glm::normalize(glm::cross(front, up)) * m_cameraSpeed * static_cast<float> (m_right) * static_cast<float>(deltaTime));
-        position += up * m_cameraSpeed * static_cast<float> (m_upward) * static_cast<float>(deltaTime);
-        position -= up * m_cameraSpeed * static_cast<float> (m_downward) * static_cast<float>(deltaTime);
-        camera.setPosition(position);
-        return position;
+    
+    constexpr float getDirectionFactor(bool positive, bool negative) {
+    	return static_cast<float>(positive) - static_cast<float>(negative);
     }
 
     void PilotCameraController::updateCamera(double deltaTime, Camera &camera) {
-        updateView(deltaTime, camera);
+		glm::vec3 position = camera.getPosition();
+	
+		const glm::vec3 front = camera.getFront();
+		const glm::vec3 up = camera.getUp();
+		const glm::vec3 left = glm::normalize(glm::cross(front, up));
+	
+		const float distance = m_cameraSpeed * static_cast<float>(deltaTime);
+	
+		position += distance * getDirectionFactor(m_forward, m_backward) * front;
+		position += distance * getDirectionFactor(m_left, m_right) * left;
+		position += distance * getDirectionFactor(m_upward, m_downward) * up;
+	
+		camera.lookAt(position, position + front, up);
     }
 
     void PilotCameraController::keyCallback(int key, int scancode, int action, int mods, Camera &camera) {

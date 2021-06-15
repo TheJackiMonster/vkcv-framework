@@ -6,7 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
 
-namespace vkcv {
+namespace vkcv::camera {
 
     /**
      * @brief Used to create a camera which governs the view and projection matrices.
@@ -18,8 +18,6 @@ namespace vkcv {
 
 		float m_near;
 		float m_far;
-		float m_fov;
-		float m_ratio;
 
 		glm::vec3 m_up;
         glm::vec3 m_position;
@@ -27,6 +25,18 @@ namespace vkcv {
 
         float m_pitch;
         float m_yaw;
+	
+		/**
+		 * @brief Sets the view matrix of the camera to @p view
+		 * @param[in] view The view matrix
+		 */
+		void setView(const glm::mat4& view);
+	
+		/**
+		 * @brief Sets the projection matrix of the camera to @p projection
+		 * @param[in] projection The projection matrix
+		 */
+		void setProjection(const glm::mat4& projection);
 
     public:
 
@@ -53,7 +63,7 @@ namespace vkcv {
          * @brief Gets the view matrix of the camera
          * @return The view matrix of the camera
          */
-        glm::mat4& getView();
+        const glm::mat4& getView() const;
 
         /**
          * @brief Sets the view matrix of the camera according to @p position, @p center and @p up
@@ -61,22 +71,16 @@ namespace vkcv {
          * @param[in] center The target position the camera is looking at
          * @param[in] up The vector that defines which direction is 'up' depending on the camera's orientation
          */
-        void lookAt(glm::vec3 position, glm::vec3 center, glm::vec3 up);
+        void lookAt(const glm::vec3& position, const glm::vec3& center, const glm::vec3& up);
 
         /**
          * @brief Gets the current projection of the camera
          * @return The current projection matrix
          */
-        glm::mat4& getProjection();
+        const glm::mat4& getProjection() const;
 
         /**
-         * @brief Sets the projection matrix of the camera to @p projection
-         * @param[in] projection The projection matrix
-         */
-        void setProjection(const glm::mat4 projection);
-
-        /**
-         * @brief Gets the model-view-projection matrix of the camera
+         * @brief Gets the model-view-projection matrix of the camera with y-axis-correction applied
          * @return The model-view-projection matrix
          */
         glm::mat4 getMVP() const;
@@ -124,30 +128,36 @@ namespace vkcv {
          * @return The current front vector of the camera
          */
         glm::vec3 getFront() const;
+        
+        /**
+         * @brief Sets the front vector of the camera in world space to @p front
+         * @param[in] front The new front vector of the camera
+         */
+        void setFront(const glm::vec3& front);
 
         /**
          * @brief Gets the current position of the camera in world space
          * @return The current position of the camera in world space
          */
-        glm::vec3 getPosition() const;
+        const glm::vec3& getPosition() const;
 
         /**
          * @brief Sets the position of the camera to @p position
          * @param[in] position The new position of the camera
          */
-        void setPosition( glm::vec3 position );
+        void setPosition( const glm::vec3& position );
 
         /**
          * @brief Gets the center point.
          * @return The center point.
          */
-        glm::vec3 getCenter() const;
+        const glm::vec3& getCenter() const;
 
         /**
          * @brief Sets @p center as the new center point.
          * @param[in] center The new center point.
          */
-        void setCenter(glm::vec3 center);
+        void setCenter(const glm::vec3& center);
 
         /**
          * @brief Gets the pitch value of the camera in degrees.
@@ -177,7 +187,7 @@ namespace vkcv {
          * @brief Gets the up vector.
          * @return The up vector.
          */
-        glm::vec3 getUp() const;
+        const glm::vec3& getUp() const;
 
         /**
          * @brief Sets @p up as the new up vector.
