@@ -94,6 +94,9 @@ namespace vkcv{
     }
 
     Camera& CameraManager::getCamera(uint32_t cameraIndex) {
+        if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
+            throw std::runtime_error("Invalid camera index.");
+        }
         return m_cameras[cameraIndex];
     }
 
@@ -101,8 +104,10 @@ namespace vkcv{
         return m_cameras[getActiveCameraIndex()];
     }
 
-
     void CameraManager::setActiveCamera(uint32_t cameraIndex) {
+        if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
+            throw std::runtime_error("Invalid camera index.");
+        }
         m_activeCameraIndex = cameraIndex;
     }
 
@@ -111,10 +116,16 @@ namespace vkcv{
     }
 
     void CameraManager::setControllerType(uint32_t cameraIndex, ControllerType controllerType) {
+        if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
+            throw std::runtime_error("Invalid camera index.");
+        }
         m_cameraControllerTypes[cameraIndex] = controllerType;
     }
 
     ControllerType CameraManager::getControllerType(uint32_t cameraIndex) {
+        if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
+            throw std::runtime_error("Invalid camera index.");
+        }
         return m_cameraControllerTypes[cameraIndex];
     }
 
