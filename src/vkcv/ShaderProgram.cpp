@@ -28,18 +28,18 @@ namespace vkcv {
         return buffer;
 	}
 
-	VertexFormat convertFormat(spirv_cross::SPIRType::BaseType basetype, uint32_t vecsize){
+	VertexAttachmentFormat convertFormat(spirv_cross::SPIRType::BaseType basetype, uint32_t vecsize){
         switch (basetype) {
             case spirv_cross::SPIRType::Int:
                 switch (vecsize) {
                     case 1:
-                        return VertexFormat::INT;
+                        return VertexAttachmentFormat::INT;
                     case 2:
-                        return VertexFormat::INT2;
+                        return VertexAttachmentFormat::INT2;
                     case 3:
-                        return VertexFormat::INT3;
+                        return VertexAttachmentFormat::INT3;
                     case 4:
-                        return VertexFormat::INT4;
+                        return VertexAttachmentFormat::INT4;
                     default:
                         break;
                 }
@@ -47,13 +47,13 @@ namespace vkcv {
             case spirv_cross::SPIRType::Float:
                 switch (vecsize) {
                     case 1:
-                        return VertexFormat::FLOAT;
+                        return VertexAttachmentFormat::FLOAT;
                     case 2:
-                        return VertexFormat::FLOAT2;
+                        return VertexAttachmentFormat::FLOAT2;
                     case 3:
-                        return VertexFormat::FLOAT3;
+                        return VertexAttachmentFormat::FLOAT3;
                     case 4:
-                        return VertexFormat::FLOAT4;
+                        return VertexAttachmentFormat::FLOAT4;
                     default:
                         break;
                 }
@@ -63,12 +63,12 @@ namespace vkcv {
         }
 		
 		vkcv_log(LogLevel::WARNING, "Unknown vertex format");
-        return VertexFormat::FLOAT;
+        return VertexAttachmentFormat::FLOAT;
 	}
 
 	ShaderProgram::ShaderProgram() noexcept :
 	m_Shaders{},
-    m_VertexLayout{},
+    m_VertexAttachments{},
     m_DescriptorSets{}
 	{}
 
@@ -85,6 +85,7 @@ namespace vkcv {
 		} else {
             Shader shader{shaderCode, shaderStage};
             m_Shaders.insert(std::make_pair(shaderStage, shader));
+            reflectShader(shaderStage);
             return true;
         }
 	}
@@ -107,30 +108,31 @@ namespace vkcv {
         auto shaderCodeChar = m_Shaders.at(shaderStage).shaderCode;
         std::vector<uint32_t> shaderCode;
 
-        for (uint32_t i = 0; i < shaderCodeChar.size()/4; i++) {
+        for (uint32_t i = 0; i < shaderCodeChar.size()/4; i++)
             shaderCode.push_back(((uint32_t*) shaderCodeChar.data())[i]);
-        }
 
         spirv_cross::Compiler comp(move(shaderCode));
         spirv_cross::ShaderResources resources = comp.get_shader_resources();
 
         //reflect vertex input
-		if (shaderStage == ShaderStage::VERTEX) {
-			std::vector<VertexInputAttachment> inputVec;
-			uint32_t offset = 0;
+		if (shaderStage == ShaderStage::VERTEX)
+		{
+			// spirv-cross API (hopefully) returns the stage_inputs in order
+			for (uint32_t i = 0; i < resources.stage_inputs.size(); i++)
+			{
+                // spirv-cross specific objects
+				auto& stage_input = resources.stage_inputs[i];
+				const spirv_cross::SPIRType& base_type = comp.get_type(stage_input.base_type_id);
 
-			for (uint32_t i = 0; i < resources.stage_inputs.size(); i++) {
-				auto& u = resources.stage_inputs[i];
-				const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
-				VertexInputAttachment input = VertexInputAttachment(comp.get_decoration(u.id, spv::DecorationLocation),
-					0,
-                    u.name,
-					convertFormat(base_type.basetype, base_type.vecsize),
-					offset);
-				inputVec.push_back(input);
-				offset += base_type.vecsize * base_type.width / 8;
-			}
-			m_VertexLayout = VertexLayout(inputVec);
+				// vertex input location
+				const uint32_t attachment_loc = comp.get_decoration(stage_input.id, spv::DecorationLocation);
+                // vertex input name
+                const std::string attachment_name = stage_input.name;
+				// vertex input format (implies its size)
+				const VertexAttachmentFormat attachment_format = convertFormat(base_type.basetype, base_type.vecsize);
+
+                m_VertexAttachments.emplace_back(attachment_loc, attachment_name, attachment_format);
+            }
 		}
 
 		//reflect descriptor sets (uniform buffer, storage buffer, sampler, sampled image, storage image)
@@ -142,7 +144,8 @@ namespace vkcv {
             std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
                 DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::UNIFORM_BUFFER, base_type.vecsize, shaderStage));
             bindings.push_back(descriptor);
-            if (comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) 
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
         }
 
         for (uint32_t i = 0; i < resources.storage_buffers.size(); i++) {
@@ -201,14 +204,18 @@ namespace vkcv {
 		}
     }
 
-    const VertexLayout& ShaderProgram::getVertexLayout() const{
-        return m_VertexLayout;
+    const std::vector<VertexAttachment> &ShaderProgram::getVertexAttachments() const
+    {
+        return m_VertexAttachments;
 	}
 
-    const std::vector<std::vector<DescriptorBinding>> ShaderProgram::getReflectedDescriptors() const {
+    const std::vector<std::vector<DescriptorBinding>> &ShaderProgram::getReflectedDescriptors() const
+    {
         return m_DescriptorSets;
     }
-	size_t ShaderProgram::getPushConstantSize() const {
+
+	size_t ShaderProgram::getPushConstantSize() const
+	{
 		return m_pushConstantSize;
 	}
 }

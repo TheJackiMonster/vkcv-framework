@@ -13,7 +13,7 @@ namespace vkcv {
 		uint32_t                                    width,
 		uint32_t                                    height,
 		const PassHandle                            &passHandle,
-		const std::vector<VertexAttribute>          &vertexAttributes,
+		const VertexLayout                          &vertexLayout,
 		const std::vector<vk::DescriptorSetLayout>  &descriptorLayouts,
 		bool                                        useDynamicViewport)
 		:
@@ -21,7 +21,7 @@ namespace vkcv {
 		m_Height(height),
 		m_Width(width),
 		m_PassHandle(passHandle),
-		m_VertexAttributes(vertexAttributes),
+		m_VertexLayout(vertexLayout),
 		m_DescriptorLayouts(descriptorLayouts),
 		m_UseDynamicViewport(useDynamicViewport)
 		{}
