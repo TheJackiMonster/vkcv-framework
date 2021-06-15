@@ -19,7 +19,7 @@ int main(int argc, const char** argv) {
 	);
 
 	window.initEvents();
-
+	
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
@@ -105,14 +105,15 @@ int main(int argc, const char** argv) {
 		triangleShaderProgram.addShader(shaderStage, path);
 	});
 
-	const vkcv::PipelineConfig trianglePipelineDefinition(
+	const vkcv::PipelineConfig trianglePipelineDefinition {
 		triangleShaderProgram,
 		(uint32_t)windowWidth,
 		(uint32_t)windowHeight,
 		trianglePass,
 		{},
 		{},
-		false);
+		false
+	};
 
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 
@@ -168,7 +169,7 @@ int main(int argc, const char** argv) {
 	vkcv::DrawcallInfo drawcall(renderMesh, {});
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-	
+
     vkcv::camera::CameraManager cameraManager(window);
     uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
     uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
