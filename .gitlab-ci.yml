@@ -46,6 +46,7 @@ build_win10_msvc:
     - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
     - .\Launch-VsDevShell.ps1
     - cd C:\cached\vkcv-framework
+    - ls ~/.ssh/
     - git fetch
     - git checkout $CI_COMMIT_BRANCH
     - git pull $CI_COMMIT_SHA
