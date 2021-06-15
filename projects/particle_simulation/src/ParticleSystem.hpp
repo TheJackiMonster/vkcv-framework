@@ -3,6 +3,7 @@
 #include <vector>
 #include "Particle.hpp"
 #include <random>
+#include "vkcv/Buffer.hpp"
 
 class ParticleSystem {
 

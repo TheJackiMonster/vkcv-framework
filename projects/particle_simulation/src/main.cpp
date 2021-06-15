@@ -47,11 +47,27 @@ int main(int argc, const char** argv) {
     vkcv::PassConfig particlePassDefinition({ present_color_attachment });
     vkcv::PassHandle particlePass = core.createPass(particlePassDefinition);
 
-    if (!particlePass)
+    vkcv::PassConfig computePassDefinition({});
+    vkcv::PassHandle computePass = core.createPass(computePassDefinition);
+
+    if (!particlePass || !computePass)
     {
         std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
         return EXIT_FAILURE;
     }
+
+    vkcv::ShaderProgram computeShaderProgram{};
+    computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path("shaders/comp1.spv"));
+
+    vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
+
+    const std::vector<vkcv::VertexAttachment> computeVertexAttachments = computeShaderProgram.getVertexAttachments();
+
+    std::vector<vkcv::VertexBinding> computeBindings;
+    for (size_t i = 0; i < computeVertexAttachments.size(); i++) {
+        computeBindings.push_back(vkcv::VertexBinding(i, { computeVertexAttachments[i] }));
+    }
+    const vkcv::VertexLayout computeLayout(computeBindings);
 
     vkcv::ShaderProgram particleShaderProgram{};
     particleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
@@ -64,6 +80,9 @@ int main(int argc, const char** argv) {
             3
     );
     const std::vector<vkcv::VertexAttachment> vertexAttachments = particleShaderProgram.getVertexAttachments();
+
+    const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
+            vkcv::VertexBufferBinding(0, vertexBuffer.getVulkanHandle())};
 
     std::vector<vkcv::VertexBinding> bindings;
     for (size_t i = 0; i < vertexAttachments.size(); i++) {
@@ -88,6 +107,9 @@ int main(int argc, const char** argv) {
     vertexBuffer.fill(vertices);
 
     vkcv::PipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
+
+    vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, {core.getDescriptorSet(computeDescriptorSet).layout} );
+
     vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
             vkcv::BufferType::UNIFORM,
             1
@@ -98,17 +120,29 @@ int main(int argc, const char** argv) {
             1
     );
 
-    const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-            vkcv::VertexBufferBinding(0, vertexBuffer.getVulkanHandle())
-    };
+    glm::vec3 minVelocity = glm::vec3(-0.0f,-0.0f,0.f);
+    glm::vec3 maxVelocity = glm::vec3(0.0f,0.0f,0.f);
+    glm::vec2 lifeTime = glm::vec2(0.f,5.f);
+    ParticleSystem particleSystem = ParticleSystem( 100 , minVelocity, maxVelocity, lifeTime);
 
+    vkcv::Buffer<Particle> particleBuffer = core.createBuffer<Particle>(
+            vkcv::BufferType::STORAGE,
+            particleSystem.getParticles().size()
+    );
+
+    particleBuffer.fill(particleSystem.getParticles());
 
     vkcv::DescriptorWrites setWrites;
     setWrites.uniformBufferWrites = {vkcv::UniformBufferDescriptorWrite(0,color.getHandle()),
                                      vkcv::UniformBufferDescriptorWrite(1,position.getHandle())};
+    setWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(2,particleBuffer.getHandle())};
     core.writeDescriptorSet(descriptorSet, setWrites);
 
-    if (!particlePipeline)
+    vkcv::DescriptorWrites computeWrites;
+    computeWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0,particleBuffer.getHandle())};
+    core.writeDescriptorSet(computeDescriptorSet, computeWrites);
+
+    if (!particlePipeline || !computePipeline)
     {
         std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
         return EXIT_FAILURE;
@@ -118,7 +152,6 @@ int main(int argc, const char** argv) {
 
     const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(), particleIndexBuffer.getCount());
     vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
-    //vkcv::DrawcallInfo drawcalls(renderMesh, {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle)});
 
     glm::vec2 pos = glm::vec2(1.f);
 
@@ -126,15 +159,9 @@ int main(int argc, const char** argv) {
         pos = glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY));
     });
 
-    glm::vec3 minVelocity = glm::vec3(-0.5f,-0.5f,0.f);
-    glm::vec3 maxVelocity = glm::vec3(0.5f,0.5f,0.f);
-    glm::vec2 lifeTime = glm::vec2(0.f,5.f);
-    ParticleSystem particleSystem = ParticleSystem( 100 , minVelocity, maxVelocity, lifeTime);
-
     std::vector<glm::mat4> modelMatrices;
     std::vector<vkcv::DrawcallInfo> drawcalls;
     for(auto particle :  particleSystem.getParticles()) {
-        modelMatrices.push_back(glm::translate(glm::mat4(1.f), particle.getPosition()));
         drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}));
     }
 
@@ -164,10 +191,7 @@ int main(int argc, const char** argv) {
             modelMatrices.push_back(glm::translate(glm::mat4(1.f), particle.getPosition()));
         }
 
-        //modelmatrix = glm::rotate(modelmatrix, angle, glm::vec3(0,0,1));
-
         cameraManager.getCamera().updateView(deltatime);
-        //const glm::mat4 mvp = modelmatrix * cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
         std::vector<glm::mat4> mvp;
         mvp.clear();
         for(const auto& m : modelMatrices){
@@ -176,6 +200,13 @@ int main(int argc, const char** argv) {
 
         vkcv::PushConstantData pushConstantData((void*)mvp.data(), sizeof(glm::mat4));
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+
+        uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(particleSystem.getParticles().size()/64.f)),1,1};
+        core.recordComputeDispatchToCmdStream(cmdStream,
+                                              computePipeline,
+                                              computeDispatchCount,
+                                              {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet).vulkanHandle)},
+                                               vkcv::PushConstantData(nullptr, 0));
 
         core.recordDrawcallsToCmdStream(
                 cmdStream,

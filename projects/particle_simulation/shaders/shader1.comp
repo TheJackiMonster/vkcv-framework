@@ -1,0 +1,22 @@
+#version 450 core
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+struct Particle
+{
+    vec3 position;
+    float lifeTime;
+    vec3 velocity;
+    float padding_2;
+};
+
+layout(std430, binding = 0) coherent buffer buffer_inParticle
+{
+    Particle inParticle[];
+};
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+    inParticle[id].position = inParticle[id].position + vec3(0.f,0.01f,0.f);
+}
