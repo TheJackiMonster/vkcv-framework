@@ -1,5 +1,5 @@
 #include "vkcv/camera/Camera.hpp"
-#include <iostream>
+#include <cmath>
 
 namespace vkcv::camera {
 
@@ -60,7 +60,7 @@ namespace vkcv::camera {
     	float halfFovy = std::atan(tanHalfFovy);
     	
     	if (halfFovy < 0) {
-    		halfFovy += M_PIf32;
+    		halfFovy += static_cast<float>(M_PI);
     	}
     	
         return halfFovy * 2.0f;
