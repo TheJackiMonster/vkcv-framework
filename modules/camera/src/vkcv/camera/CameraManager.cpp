@@ -43,15 +43,12 @@ namespace vkcv{
     void CameraManager::mouseMoveCallback(double x, double y){
         auto xoffset = static_cast<float>(x - m_lastX);
 		auto yoffset = static_cast<float>(y - m_lastY);
-        
         m_lastX = x;
         m_lastY = y;
-
         getControllerByType(getControllerType(getActiveCameraIndex())).mouseMoveCallback(xoffset, yoffset, getActiveCamera());
     }
 
     void CameraManager::scrollCallback(double offsetX, double offsetY) {
-
         getControllerByType(getControllerType(getActiveCameraIndex())).scrollCallback(offsetX, offsetY, getActiveCamera());
     }
 
@@ -74,12 +71,11 @@ namespace vkcv{
             default:
                 getControllerByType(getControllerType(getActiveCameraIndex())).keyCallback(key, scancode, action, mods, getActiveCamera());
         }
-        
     }
 
     int CameraManager::addCamera() {
         Camera camera;
-        m_cameras.push_back(camera);  // TODO: is there another way we can do this?
+        m_cameras.push_back(camera);
         m_cameras.back().setPerspective(glm::radians(60.0f), m_window.getWidth() / m_window.getHeight(), 0.1f, 10.0f);
         m_cameraControllerTypes.push_back(ControllerType::NONE);
         return m_cameras.size() - 1;

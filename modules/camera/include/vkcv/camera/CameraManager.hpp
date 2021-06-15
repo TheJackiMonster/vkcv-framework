@@ -113,7 +113,7 @@ namespace vkcv {
         /**
          * @brief Adds a new camera object to the #CameraManager and binds it to a camera controller object of specified
          * @p controllerType.
-         * @param controllerType The type of the camera controller
+         * @param controllerType The type of the camera controller.
          * @return The index of the newly created camera object.
          */
         int addCamera(ControllerType controllerType);
