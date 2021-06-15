@@ -38,6 +38,7 @@ build_win10_msvc:
   stage: build
   tags: 
     - win10-msvc
+    - with-cache
   variables:
     GIT_STRATEGY: none
   timeout: 10m
