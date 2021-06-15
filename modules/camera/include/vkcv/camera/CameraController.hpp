@@ -19,8 +19,9 @@ namespace vkcv {
         CameraController() = default;
 
         /**
-         * @brief Updates the camera object in respect to @p deltaTime.
-         * @param deltaTime The time that has passed since last update.
+         * @brief Updates @p camera in respect to @p deltaTime.
+         * @param[in] deltaTime The time that has passed since last update.
+         * @param[in] camera The camera object.
          */
         virtual void updateCamera(double deltaTime, Camera &camera);
 
@@ -30,6 +31,7 @@ namespace vkcv {
          * @param[in] scancode The platform-specific scancode.
          * @param[in] action The key action.
          * @param[in] mods The modifier bits.
+         * @param[in] camera The camera object.
          */
         virtual void keyCallback(int key, int scancode, int action, int mods, Camera &camera);
 
@@ -37,6 +39,7 @@ namespace vkcv {
          * @brief A callback function for mouse scrolling events.
          * @param[in] offsetX The offset in horizontal direction.
          * @param[in] offsetY The offset in vertical direction.
+         * @param[in] camera The camera object.
          */
         virtual void scrollCallback( double offsetX, double offsetY, Camera &camera);
 
@@ -44,6 +47,7 @@ namespace vkcv {
          * @brief A callback function for mouse movement events.
          * @param[in] x The horizontal mouse position.
          * @param[in] y The vertical mouse position.
+         * @param[in] camera The camera object.
          */
         virtual void mouseMoveCallback(double offsetX, double offsetY, Camera &camera);
 
@@ -52,6 +56,7 @@ namespace vkcv {
          * @param[in] button The mouse button.
          * @param[in] action The button action.
          * @param[in] mods The modifier bits.
+         * @param[in] camera The camera object.
          */
         virtual void mouseButtonCallback(int button, int action, int mods, Camera &camera);
     };

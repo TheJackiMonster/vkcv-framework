@@ -42,10 +42,10 @@ namespace vkcv {
         
         /**
          * @brief Sets the perspective object according to @p fov, @p ratio, @p near and @p far. This leads to changes in the projection matrix of the camera
-         * @param fov The desired field of view in radians
-         * @param ratio The aspect ratio
-         * @param near Distance to near clipping plane
-         * @param far Distance to far clipping plane
+         * @param[in] fov The desired field of view in radians
+         * @param[in] ratio The aspect ratio
+         * @param[in] near Distance to near clipping plane
+         * @param[in] far Distance to far clipping plane
          */
         void setPerspective(float fov, float ratio, float near, float far);
 
@@ -57,9 +57,9 @@ namespace vkcv {
 
         /**
          * @brief Sets the view matrix of the camera according to @p position, @p center and @p up
-         * @param[out] position The position of the camera
-         * @param[out] center The target position the camera is looking at
-         * @param[out] up The vector that defines which direction is 'up' depending on the camera's orientation
+         * @param[in] position The position of the camera
+         * @param[in] center The target position the camera is looking at
+         * @param[in] up The vector that defines which direction is 'up' depending on the camera's orientation
          */
         void lookAt(glm::vec3 position, glm::vec3 center, glm::vec3 up);
 
@@ -145,7 +145,7 @@ namespace vkcv {
 
         /**
          * @brief Sets @p center as the new center point.
-         * @param center The new center point.
+         * @param[in] center The new center point.
          */
         void setCenter(glm::vec3 center);
 
@@ -181,7 +181,7 @@ namespace vkcv {
 
         /**
          * @brief Sets @p up as the new up vector.
-         * @param up The new up vector.
+         * @param[in] up The new up vector.
          */
         void setUp(const glm::vec3 &up);
     };

@@ -6,7 +6,7 @@ namespace vkcv {
 
     TrackballCameraController::TrackballCameraController() {
         m_rotationActive = false;
-        m_radius = 3.0f; // TODO: Needs to be removed. Radius should only depend on camera
+        m_radius = 3.0f;
         m_cameraSpeed = 2.5f;
         m_scrollSensitivity = 0.2f;
     }
@@ -53,7 +53,7 @@ namespace vkcv {
         glm::vec3 translate = glm::vec3(0.0f, 0.0f, m_radius);
         translate = glm::vec3(rotationX * glm::vec4(translate, 0.0f));
         glm::vec3 center = camera.getCenter();
-        glm::vec3 position = center +translate;
+        glm::vec3 position = center + translate;
         camera.setPosition(position);
         glm::vec3 up = glm::vec3(rotationX * glm::vec4(glm::vec3(0.0f, 1.0f, 0.0f), 0.0f));
         camera.setUp(up);
@@ -69,8 +69,11 @@ namespace vkcv {
         return camera.getView();
     }
 
-    void TrackballCameraController::updateRadius(double offset) {
-        setRadius(m_radius - offset * m_scrollSensitivity);
+    void TrackballCameraController::updateRadius(double offset, Camera &camera) {
+        glm::vec3 cameraPosition = camera.getPosition();
+        glm::vec3 cameraCenter = camera.getCenter();
+        float radius = glm::length(cameraCenter - cameraPosition);  // get current camera radius
+        setRadius(radius - offset * m_scrollSensitivity);
     }
 
     void TrackballCameraController::updateCamera(double deltaTime, Camera &camera) {
@@ -80,7 +83,7 @@ namespace vkcv {
     void TrackballCameraController::keyCallback(int key, int scancode, int action, int mods, Camera &camera) {}
 
     void TrackballCameraController::scrollCallback(double offsetX, double offsetY, Camera &camera) {
-        updateRadius(offsetY);
+        updateRadius(offsetY, camera);
     }
 
     void TrackballCameraController::mouseMoveCallback(double xoffset, double yoffset, Camera &camera) {

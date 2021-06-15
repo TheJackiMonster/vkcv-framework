@@ -27,15 +27,17 @@ namespace vkcv {
 
 
         /**
-         * @brief Updates the position of the camera with respect to @p deltaTime.
+         * @brief Updates the position of @p camera with respect to @p deltaTime.
          * @param[in] deltaTime The time that has passed since last update.
+         * @param[in] camera The camera object.
          * @return The updated camera position.
          */
         glm::vec3 updatePosition(double deltaTime, Camera &camera);
 
         /**
-         * @brief Updates the view matrix of the camera with respect to @p deltaTime.
-         * @param deltaTime The time that has passed since last update.
+         * @brief Updates the view matrix of @p camera with respect to @p deltaTime.
+         * @param[in] deltaTime The time that has passed since last update.
+         * @param[in] camera The camera object.
          * @return The updated view matrix of the camera.
          */
         glm::mat4 updateView(double deltaTime, Camera &camera);
@@ -89,22 +91,25 @@ namespace vkcv {
         ~PilotCameraController() = default;
 
         /**
-         * @brief Changes the field of view of the camera with an @p offset in degrees.
+         * @brief Changes the field of view of @p camera with an @p offset in degrees.
          * @param[in] offset The offset in degrees.
+         * @param[in] camera The camera object.
          */
         void changeFov(double offset, Camera &camera);
 
         /**
-         * @brief Pans the view of the camera according to the pitch and yaw values and additional offsets @p xOffset
+         * @brief Pans the view of @p camera according to the pitch and yaw values and additional offsets @p xOffset
          * and @p yOffset.
          * @param[in] xOffset The offset added to the yaw value.
          * @param[in] yOffset The offset added to the pitch value.
+         * @param[in] camera The camera object.
          */
         void panView(double xOffset, double yOffset, Camera &camera);
 
         /**
-         * @brief Updates the camera object in respect to @p deltaTime.
-         * @param deltaTime The time that has passed since last update.
+         * @brief Updates @p camera in respect to @p deltaTime.
+         * @param[in] deltaTime The time that has passed since last update.
+         * @param[in] camera The camera object.
          */
         void updateCamera(double deltaTime, Camera &camera);
 
@@ -114,14 +119,16 @@ namespace vkcv {
          * @param[in] scancode The platform-specific scancode.
          * @param[in] action The key action.
          * @param[in] mods The modifier bits.
+         * @param[in] camera The camera object.
          */
         void keyCallback(int key, int scancode, int action, int mods, Camera &camera);
 
         /**
          * @brief A callback function for mouse scrolling events. Currently, this leads to changes in the field of view
-         * of the camera object.
+         * of @p camera.
          * @param[in] offsetX The offset in horizontal direction.
          * @param[in] offsetY The offset in vertical direction.
+         * @param[in] camera The camera object.
          */
         void scrollCallback(double offsetX, double offsetY, Camera &camera);
 
@@ -130,6 +137,7 @@ namespace vkcv {
          * if #mouseButtonCallback(int button, int action, int mods) enabled panning.
          * @param[in] x The horizontal mouse position
          * @param[in] y The vertical mouse position
+         * @param[in] camera The camera object.
          */
         void mouseMoveCallback(double x, double y, Camera &camera);
 
@@ -139,6 +147,7 @@ namespace vkcv {
          * @param[in] button The mouse button
          * @param[in] action The button action
          * @param[in] mods The modifier bits
+         * @param[in] camera The camera object.
          */
         void mouseButtonCallback(int button, int action, int mods, Camera &camera);
     };
