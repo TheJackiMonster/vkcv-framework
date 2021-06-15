@@ -23,9 +23,8 @@ namespace vkcv
 
         DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &descriptorBindings);
 
-		void writeResourceDescription(
+		void writeDescriptorSet(
 			const DescriptorSetHandle	&handle,
-			size_t					setIndex,
 			const DescriptorWrites  &writes,
 			const ImageManager      &imageManager,
 			const BufferManager     &bufferManager,

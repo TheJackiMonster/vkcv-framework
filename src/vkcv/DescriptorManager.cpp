@@ -92,9 +92,8 @@ namespace vkcv
 		vk::DescriptorType type;
     };
 
-	void DescriptorManager::writeResourceDescription(
+	void DescriptorManager::writeDescriptorSet(
 		const DescriptorSetHandle	&handle,
-		size_t					setIndex,
 		const DescriptorWrites	&writes,
 		const ImageManager		&imageManager, 
 		const BufferManager		&bufferManager,

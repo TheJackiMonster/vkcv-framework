@@ -6,23 +6,23 @@
 #include "vkcv/Logger.hpp"
 
 namespace vkcv {
-    uint32_t getFormatSize(VertexFormat format) {
+    uint32_t getFormatSize(VertexAttachmentFormat format) {
         switch (format) {
-            case VertexFormat::FLOAT:
+            case VertexAttachmentFormat::FLOAT:
                 return 4;
-            case VertexFormat::FLOAT2:
+            case VertexAttachmentFormat::FLOAT2:
                 return 8;
-            case VertexFormat::FLOAT3:
+            case VertexAttachmentFormat::FLOAT3:
                 return 12;
-            case VertexFormat::FLOAT4:
+            case VertexAttachmentFormat::FLOAT4:
                 return 16;
-            case VertexFormat::INT:
+            case VertexAttachmentFormat::INT:
                 return 4;
-            case VertexFormat::INT2:
+            case VertexAttachmentFormat::INT2:
                 return 8;
-            case VertexFormat::INT3:
+            case VertexAttachmentFormat::INT3:
                 return 12;
-            case VertexFormat::INT4:
+            case VertexAttachmentFormat::INT4:
                 return 16;
             default:
 				vkcv_log(LogLevel::WARNING, "No format given");
@@ -30,25 +30,33 @@ namespace vkcv {
         }
     }
 
-    VertexInputAttachment::VertexInputAttachment(uint32_t location, uint32_t binding, std::string name, VertexFormat format, uint32_t offset) noexcept:
-            location{location},
-            binding{binding},
+    VertexAttachment::VertexAttachment(uint32_t inputLocation, const std::string &name, VertexAttachmentFormat format) noexcept:
+            inputLocation{inputLocation},
             name{name},
             format{format},
-            offset{offset}
-            {}
-
-    VertexLayout::VertexLayout() noexcept :
-    stride{0},
-    attachmentMap()
+            offset{0}
     {}
 
-    VertexLayout::VertexLayout(const std::vector<VertexInputAttachment> &inputs) noexcept {
-        stride = 0;
-        for (const auto &input : inputs) {
-            attachmentMap.insert(std::make_pair(input.location, input));
-            stride += getFormatSize(input.format);
+
+    VertexBinding::VertexBinding(uint32_t bindingLocation, const std::vector<VertexAttachment> &attachments) noexcept :
+    bindingLocation{bindingLocation},
+    stride{0},
+    vertexAttachments{attachments}
+    {
+        uint32_t offset = 0;
+        for (auto &attachment : vertexAttachments)
+        {
+            offset += getFormatSize(attachment.format);
+            attachment.offset = offset;
         }
+        stride = offset;
     }
 
+    VertexLayout::VertexLayout() noexcept :
+    vertexBindings{}
+    {}
+
+    VertexLayout::VertexLayout(const std::vector<VertexBinding> &bindings) noexcept :
+    vertexBindings{bindings}
+    {}
 }

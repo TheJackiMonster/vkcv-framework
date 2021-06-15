@@ -158,6 +158,19 @@ namespace vkcv
         PipelineHandle createGraphicsPipeline(const PipelineConfig &config);
 
         /**
+         * Creates a basic vulkan compute pipeline using @p shader program and returns it using the @p handle.
+         * Fixed Functions for pipeline are set with standard values.
+         *
+         * @param shader program that hold the compiles compute shader
+         * @param handle a handle to return the created vulkan handle
+         * @return True if pipeline creation was successful, False if not
+         */
+        [[nodiscard]]
+        PipelineHandle createComputePipeline(
+            const ShaderProgram &config, 
+            const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
+
+        /**
          * Creates a basic vulkan render pass using @p config from the render pass config class and returns it using the @p handle.
          * Fixed Functions for pipeline are set with standard values.
          *
@@ -211,7 +224,7 @@ namespace vkcv
          */
         [[nodiscard]]
         DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &bindings);
-		void writeResourceDescription(DescriptorSetHandle handle, size_t setIndex, const DescriptorWrites& writes);
+		void writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites& writes);
 
 		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
 
@@ -227,6 +240,13 @@ namespace vkcv
 			const PushConstantData          &pushConstantData,
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets);
+
+		void recordComputeDispatchToCmdStream(
+			CommandStreamHandle cmdStream,
+			PipelineHandle computePipeline,
+			const uint32_t dispatchCount[3],
+			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
+			const PushConstantData& pushConstantData);
 
 		/**
 		 * @brief end recording and present image
