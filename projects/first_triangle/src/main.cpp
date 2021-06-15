@@ -17,7 +17,13 @@ int main(int argc, const char** argv) {
 	);
 
 	window.initEvents();
-
+	
+	vkcv::camera::CameraManager cameraManager(window, windowWidth, windowHeight);
+	uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	
+	cameraManager.getCamera(camIndex).setPosition(glm::vec3(0, 0, -2));
+	
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
@@ -95,14 +101,15 @@ int main(int argc, const char** argv) {
 	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
 	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
 
-	const vkcv::PipelineConfig trianglePipelineDefinition(
+	const vkcv::PipelineConfig trianglePipelineDefinition {
 		triangleShaderProgram,
 		(uint32_t)windowWidth,
 		(uint32_t)windowHeight,
 		trianglePass,
 		{},
 		{},
-		false);
+		false
+	};
 
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 
@@ -158,12 +165,6 @@ int main(int argc, const char** argv) {
 	vkcv::DrawcallInfo drawcall(renderMesh, {});
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-	
-    vkcv::camera::CameraManager cameraManager(window, windowWidth, windowHeight);
-    uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-    uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
-	
-	cameraManager.getCamera(camIndex).setPosition(glm::vec3(0, 0, -2));
 
 	while (window.isWindowOpen())
 	{

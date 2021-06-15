@@ -119,14 +119,16 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
-	const vkcv::PipelineConfig firstMeshPipelineConfig(
+	const vkcv::PipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,
 		windowWidth,
 		windowHeight,
         firstMeshPass,
-        {firstMeshLayout},
+        firstMeshLayout,
 		{ core.getDescriptorSet(descriptorSet).layout },
-		true);
+		true
+	};
+	
 	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
 	
 	if (!firstMeshPipeline) {
@@ -192,14 +194,16 @@ int main(int argc, const char** argv) {
 
 	const uint32_t shadowMapResolution = 1024;
 	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1);
-	const vkcv::PipelineConfig shadowPipeConfig(
+	const vkcv::PipelineConfig shadowPipeConfig {
 		shadowShader, 
 		shadowMapResolution, 
 		shadowMapResolution, 
 		shadowPass,
-        {firstMeshLayout},
-		{}, 
-		false);
+        firstMeshLayout,
+		{},
+		false
+	};
+	
 	const vkcv::PipelineHandle shadowPipe = core.createGraphicsPipeline(shadowPipeConfig);
 
 	struct LightInfo {

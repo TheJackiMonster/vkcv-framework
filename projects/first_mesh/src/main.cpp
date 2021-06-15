@@ -102,14 +102,15 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[setID] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
-	const vkcv::PipelineConfig firstMeshPipelineConfig(
+	const vkcv::PipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,
         UINT32_MAX,
         UINT32_MAX,
         firstMeshPass,
         {firstMeshLayout},
 		{ core.getDescriptorSet(descriptorSet).layout },
-		true);
+		true
+	};
 	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
 	
 	if (!firstMeshPipeline) {
