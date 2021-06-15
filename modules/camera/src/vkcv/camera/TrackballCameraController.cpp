@@ -57,7 +57,7 @@ namespace vkcv::camera {
 		const glm::vec3 xAxis = glm::vec3(1.0f, 0.0f, 0.0f);
 	
 		const glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(yaw), yAxis);
-		const glm::mat4 rotationX = glm::rotate(rotationY, glm::radians(pitch), xAxis);
+		const glm::mat4 rotationX = glm::rotate(rotationY, -glm::radians(pitch), xAxis);
 		const glm::vec3 translation = glm::vec3(
 				rotationX * glm::vec4(0.0f, 0.0f, m_radius, 0.0f)
 		);
