@@ -20,6 +20,7 @@ int main(int argc, const char** argv) {
 
     vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
     uint32_t camIndex = cameraManager.addCamera(vkcv::ControllerType::PILOT);
+    uint32_t camIndex2 = cameraManager.addCamera(vkcv::ControllerType::TRACKBALL);
 
 	window.initEvents();
 
