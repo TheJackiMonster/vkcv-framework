@@ -137,6 +137,7 @@ typedef struct {
  * such as Materials. */
 typedef struct {
 	std::string name;
+	std::array<float, 16> modelMatrix;
 	std::vector<int> vertexGroups;
 } Mesh;
 

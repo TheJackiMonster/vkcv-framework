@@ -71,6 +71,41 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &t)
 	}
 }
 
+std::array<float, 16> computeModelMatrix(std::array<float, 3> translation, std::array<float, 3> scale, std::array<float, 4> rotation){
+    std::array<float, 16> modelMatrix;
+    // row 4
+    modelMatrix[12] = 0;
+    modelMatrix[13] = 0;
+    modelMatrix[14] = 0;
+    modelMatrix[15] = 1;
+    // translation
+    modelMatrix[3] = translation[0];
+    modelMatrix[7] = translation[1];
+    modelMatrix[11] = translation[2];
+    // scale
+    //modelMatrix[0] = scale[0];
+    //modelMatrix[5] = scale[1];
+    //modelMatrix[10] = scale[2];
+    // rotation and scale
+    auto a = rotation[0];
+    auto q1 = rotation[1];
+    auto q2 = rotation[2];
+    auto q3 = rotation[3];
+
+    modelMatrix[0] = (2 * (a * a + q1 * q1) + 1) * scale[0];
+    modelMatrix[1] = (2 * (q1 * q2 - a * q3)) * scale[1];
+    modelMatrix[2] = (2 * (q1 * q3 + a * q2)) * scale[2];
+
+    modelMatrix[4] = (2 * (q1 * q2 + a * q3)) * scale[0];
+    modelMatrix[5] = (2 * (a * a + q2 * q2) + 1) * scale[1];
+    modelMatrix[6] = (2 * (q2 * q3 - a * q1)) * scale[2];
+
+    modelMatrix[8] = (2 * (q1 * q3 - a * q2)) * scale[0];
+    modelMatrix[9] = (2 * (q2 * q3 + a * q1)) * scale[1];
+    modelMatrix[10] = (2 * (a * a + q3 * q3) - 1) * scale[2];
+    return modelMatrix;
+}
+
 int loadMesh(const std::string &path, Mesh &mesh) {
 	fx::gltf::Document object;
 
@@ -200,6 +235,7 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 
 	std::vector<int> vertexGroupsIndex;
 
+    //glm::mat4 modelMatrix = object.nodes[0].matrix;
 	for(int i = 0; i < numVertexGroups; i++){
         vertexGroupsIndex.push_back(i);
 	}
@@ -207,6 +243,7 @@ int loadMesh(const std::string &path, Mesh &mesh) {
 
 	mesh = {
 		object.meshes[0].name,
+        object.nodes[0].matrix,
 		vertexGroupsIndex,
 	};
 
@@ -391,13 +428,22 @@ int loadScene(const std::string &path, Scene &scene){
             vertexGroupsIndex.push_back(groupCount);
         }
 
+        std::array<float, 16> modelMatrix = computeModelMatrix(sceneObjects.nodes[i].translation, sceneObjects.nodes[i].scale, sceneObjects.nodes[i].rotation);
         mesh = {
                 sceneObjects.meshes[i].name,
+                modelMatrix,
                 vertexGroupsIndex,
         };
 
+        /*mesh.name = sceneObjects.meshes[i].name;
+        mesh.vertexGroups = vertexGroupsIndex;*/
+
         meshes.push_back(mesh);
     }
+
+    /*for(int m = 0; m < sceneObjects.nodes.size(); m++){
+        meshes[sceneObjects.nodes[m].mesh].modelMatrix = sceneObjects.nodes[m].matrix;
+    }*/
 
     if (sceneObjects.textures.size() > 0){
         textures.reserve(sceneObjects.textures.size());

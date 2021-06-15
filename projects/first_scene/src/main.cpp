@@ -5,6 +5,19 @@
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
 
+glm::mat4 arrayTo4x4Matrix(std::array<float,16> array){
+    glm::mat4 matrix;
+    int r = 0;
+    for (int i = 0; i < 4; i++){
+        for (int j = 0; j < 4; j++){
+            matrix[i][j] = array[r];
+            r++;
+            std::cout << matrix[i][j] << std::endl;
+        }
+    }
+    return matrix;
+}
+
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Scene";
 
@@ -178,6 +191,13 @@ int main(int argc, const char** argv) {
 	    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}));
 	}
 
+	std::vector<glm::mat4> modelMatrices;
+	modelMatrices.clear();
+	for(int m = 0; m < scene.meshes.size(); m++){
+	    modelMatrices.push_back(arrayTo4x4Matrix(scene.meshes[m].modelMatrix));
+	}
+    std::vector<glm::mat4> mvp;
+
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
         vkcv::Window::pollEvents();
@@ -201,11 +221,18 @@ int main(int argc, const char** argv) {
 		auto deltatime = end - start;
 		start = end;
 		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
-		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+		const glm::mat4 vp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-		std::vector<glm::mat4> pushConstantDataVector(drawcalls.size(), mvp);
+		mvp.clear();
+        for (const auto& m : modelMatrices) {
+            mvp.push_back(vp * m);
+        }
 
-		vkcv::PushConstantData pushConstantData((void*)pushConstantDataVector.data(), sizeof(glm::mat4));
+        //vkcv::PushConstantData pushConstantData((void*)mainPassMatrices.data(), 2 * sizeof(glm::mat4));
+
+		//std::vector<glm::mat4> pushConstantDataVector(drawcalls.size(), mvp);
+
+		vkcv::PushConstantData pushConstantData((void*)mvp.data(), sizeof(glm::mat4));
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
