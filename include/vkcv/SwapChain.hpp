@@ -107,7 +107,7 @@ namespace vkcv
 		/**
 		 *
 		 */
-        void recreateSwapchain();
+        void signalSwapchainRecreation();
 	
         /**
          * TODO

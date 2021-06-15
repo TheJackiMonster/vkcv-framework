@@ -32,23 +32,15 @@ namespace vkcv
 
     struct AttachmentDescription
     {
-        AttachmentDescription() = delete;
         AttachmentDescription(
-			AttachmentLayout initial,
-			AttachmentLayout in_pass,
-			AttachmentLayout final,
-			AttachmentOperation store_op,
-			AttachmentOperation load_op,
-			vk::Format format) noexcept;
-
-        AttachmentLayout layout_initial;
-        AttachmentLayout layout_in_pass;
-        AttachmentLayout layout_final;
+            AttachmentOperation store_op,
+            AttachmentOperation load_op,
+            vk::Format format) noexcept;
 
         AttachmentOperation store_operation;
         AttachmentOperation load_operation;
 
-		vk::Format format;
+        vk::Format format;
     };
 
     struct PassConfig

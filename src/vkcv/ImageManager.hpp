@@ -11,23 +11,38 @@
 #include "vkcv/Handles.hpp"
 
 namespace vkcv {
-	
+
 	class ImageManager
 	{
 		friend class Core;
-	private:
+	public:
 		struct Image
 		{
-			vk::Image m_handle;
-			vk::DeviceMemory m_memory;
-			vk::ImageView m_view;
-			uint32_t m_width = 0;
-			uint32_t m_height = 0;
-			uint32_t m_depth = 0;
-			vk::Format m_format;
-			uint32_t m_layers = 1;
-			uint32_t m_levels = 1;
+			vk::Image           m_handle;
+			vk::DeviceMemory    m_memory;
+			vk::ImageView       m_view;
+			uint32_t            m_width = 0;
+			uint32_t            m_height = 0;
+			uint32_t            m_depth = 0;
+			vk::Format          m_format;
+			uint32_t            m_layers = 1;
+			uint32_t            m_levels = 1;
+			vk::ImageLayout     m_layout = vk::ImageLayout::eUndefined;
+		private:
+			// struct is public so utility functions can access members, but only ImageManager can create Image
+			friend ImageManager;
+			Image(
+				vk::Image           handle,
+				vk::DeviceMemory    memory,
+				vk::ImageView       view,
+				uint32_t            width,
+				uint32_t            height,
+				uint32_t            depth,
+				vk::Format          format,
+				uint32_t            layers,
+				uint32_t            levels);
 		};
+	private:
 		
 		Core* m_core;
 		BufferManager& m_bufferManager;
@@ -64,8 +79,13 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		vk::ImageView getVulkanImageView(const ImageHandle& handle) const;
-		
-		void switchImageLayout(const ImageHandle& handle, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+
+		void switchImageLayoutImmediate(const ImageHandle& handle, vk::ImageLayout newLayout);
+		void recordImageLayoutTransition(
+			const ImageHandle& handle, 
+			vk::ImageLayout newLayout, 
+			vk::CommandBuffer cmdBuffer);
+
 		void fillImage(const ImageHandle& handle, void* data, size_t size);
 		
 		[[nodiscard]]
@@ -77,5 +97,7 @@ namespace vkcv {
 		[[nodiscard]]
 		uint32_t getImageDepth(const ImageHandle& handle) const;
 		
+		[[nodiscard]]
+		vk::Format getImageFormat(const ImageHandle& handle) const;
 	};
 }
