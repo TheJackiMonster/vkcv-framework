@@ -5,7 +5,7 @@
 
 namespace vkcv::camera {
 
-    CameraManager::CameraManager(Window &window, float width, float height)
+    CameraManager::CameraManager(Window& window)
     : m_window(window)
     {
         bindCameraToEvents();
@@ -82,8 +82,10 @@ namespace vkcv::camera {
     }
 	
 	uint32_t CameraManager::addCamera(ControllerType controllerType) {
+    	const float ratio = static_cast<float>(m_window.getWidth()) / static_cast<float>(m_window.getHeight());
+    	
         Camera camera;
-        camera.setPerspective(glm::radians(60.0f), m_window.getWidth() / m_window.getHeight(), 0.1f, 10.0f);
+        camera.setPerspective(glm::radians(60.0f), ratio, 0.1f, 10.0f);
         return addCamera(controllerType, camera);
     }
     

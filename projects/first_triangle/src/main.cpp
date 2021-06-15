@@ -169,7 +169,7 @@ int main(int argc, const char** argv) {
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	
-    vkcv::camera::CameraManager cameraManager(window, windowWidth, windowHeight);
+    vkcv::camera::CameraManager cameraManager(window);
     uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
     uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	

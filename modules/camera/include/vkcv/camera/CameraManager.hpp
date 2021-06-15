@@ -105,10 +105,8 @@ namespace vkcv::camera {
         /**
          * @brief The constructor of the #CameraManager.
          * @param[in] window The window.
-         * @param[in] width The width of the window.
-         * @param[in] height The height of the window.
          */
-        CameraManager(Window &window, float width, float height);
+        CameraManager(Window &window);
 
         /**
          * @brief The destructor of the #CameraManager. Destroying the #CameraManager leads to deletion of all stored
