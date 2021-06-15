@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include "vkcv/camera/CameraManager.hpp"
 
 namespace vkcv{
@@ -86,7 +87,7 @@ namespace vkcv{
 
     int CameraManager::addCamera(ControllerType controllerType) {
         Camera camera;
-        m_cameras.push_back(camera);  // TODO: is there another way we can do this?
+        m_cameras.push_back(camera);
         m_cameras.back().setPerspective(glm::radians(60.0f), m_window.getWidth() / m_window.getHeight(), 0.1f, 10.0f);
         m_cameraControllerTypes.push_back(controllerType);
         return m_cameras.size() - 1;
@@ -94,7 +95,8 @@ namespace vkcv{
 
     Camera& CameraManager::getCamera(uint32_t cameraIndex) {
         if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
-            throw std::runtime_error("Invalid camera index.");
+            throw std::runtime_error("Invalid camera index. The index must range from 0 to " +
+                std::to_string(m_cameras.size()) + ".");
         }
         return m_cameras[cameraIndex];
     }
@@ -105,7 +107,8 @@ namespace vkcv{
 
     void CameraManager::setActiveCamera(uint32_t cameraIndex) {
         if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
-            throw std::runtime_error("Invalid camera index.");
+            throw std::runtime_error("Invalid camera index. The index must range from 0 to " +
+                std::to_string(m_cameras.size()) + ".");
         }
         m_activeCameraIndex = cameraIndex;
     }
@@ -116,14 +119,16 @@ namespace vkcv{
 
     void CameraManager::setControllerType(uint32_t cameraIndex, ControllerType controllerType) {
         if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
-            throw std::runtime_error("Invalid camera index.");
+            throw std::runtime_error("Invalid camera index. The index must range from 0 to " +
+                std::to_string(m_cameras.size()) + ".");
         }
         m_cameraControllerTypes[cameraIndex] = controllerType;
     }
 
     ControllerType CameraManager::getControllerType(uint32_t cameraIndex) {
         if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
-            throw std::runtime_error("Invalid camera index.");
+            throw std::runtime_error("Invalid camera index. The index must range from 0 to " +
+                std::to_string(m_cameras.size()) + ".");
         }
         return m_cameraControllerTypes[cameraIndex];
     }
