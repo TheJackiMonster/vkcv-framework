@@ -109,6 +109,10 @@ std::array<float, 16> computeModelMatrix(std::array<float, 3> translation, std::
         modelMatrix[8] = (2 * (q1 * q3 - a * q2)) * scale[0];
         modelMatrix[9] = (2 * (q2 * q3 + a * q1)) * scale[1];
         modelMatrix[10] = (2 * (a * a + q3 * q3) - 1) * scale[2];
+
+        // flip y, because GLTF uses y up, but vulkan -y up
+        modelMatrix[5] *= -1;
+
         return modelMatrix;
     }
 
