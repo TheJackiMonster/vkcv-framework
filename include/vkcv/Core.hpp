@@ -8,7 +8,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "vkcv/Context.hpp"
-#include "vkcv/SwapChain.hpp"
+#include "vkcv/Swapchain.hpp"
 #include "vkcv/Window.hpp"
 #include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
@@ -52,7 +52,7 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, Window &window, const SwapChain& swapChain,  std::vector<vk::ImageView> imageViews,
+        Core(Context &&context, Window &window, const Swapchain& swapChain,  std::vector<vk::ImageView> imageViews,
 			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
@@ -61,7 +61,7 @@ namespace vkcv
 
         Context m_Context;
 
-        SwapChain                       m_swapchain;
+        Swapchain                       m_swapchain;
         std::vector<vk::ImageView>      m_swapchainImageViews;
         std::vector<vk::Image>          m_swapchainImages;
 		std::vector<vk::ImageLayout>    m_swapchainImageLayouts;
@@ -81,7 +81,7 @@ namespace vkcv
 
         std::function<void(int, int)> e_resizeHandle;
 
-        static std::vector<vk::ImageView> createImageViews( Context &context, SwapChain& swapChain);
+        static std::vector<vk::ImageView> createImageViews( Context &context, Swapchain& swapChain);
 
 		void recordSwapchainImageLayoutTransition(vk::CommandBuffer cmdBuffer, vk::ImageLayout newLayout);
 
@@ -123,6 +123,9 @@ namespace vkcv
 
         [[nodiscard]]
         const Context &getContext() const;
+        
+        [[nodiscard]]
+        const Swapchain& getSwapchain() const;
 
         /**
              * Creates a #Core with given @p applicationName and @p applicationVersion for your application.
@@ -252,8 +255,6 @@ namespace vkcv
 		 * @brief end recording and present image
 		*/
 		void endFrame();
-
-		vk::Format getSwapchainImageFormat();
 
 		/**
 		 * Submit a command buffer to any queue of selected type. The recording can be customized by a

@@ -35,7 +35,7 @@ namespace vkcv
         		deviceExtensions
 		);
 
-        SwapChain swapChain = SwapChain::create(window, context);
+        Swapchain swapChain = Swapchain::create(window, context);
 
         std::vector<vk::ImageView> imageViews;
         imageViews = createImageViews( context, swapChain);
@@ -54,8 +54,12 @@ namespace vkcv
     {
         return m_Context;
     }
+    
+    const Swapchain& Core::getSwapchain() const {
+    	return m_swapchain;
+    }
 
-    Core::Core(Context &&context, Window &window, const SwapChain& swapChain,  std::vector<vk::ImageView> imageViews,
+    Core::Core(Context &&context, Window &window, const Swapchain& swapChain,  std::vector<vk::ImageView> imageViews,
         const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
             m_Context(std::move(context)),
             m_window(window),
@@ -371,10 +375,6 @@ namespace vkcv
 			vkcv_log(LogLevel::ERROR, "Swapchain present failed (%s)", vk::to_string(result).c_str());
 		}
 	}
-
-	vk::Format Core::getSwapchainImageFormat() {
-		return m_swapchain.getSwapchainFormat();
-	}
 	
 	void Core::recordAndSubmitCommands(
 		const SubmitInfo &submitInfo, 
@@ -458,7 +458,7 @@ namespace vkcv
 		return m_DescriptorManager->getDescriptorSet(handle);
 	}
 
-    std::vector<vk::ImageView> Core::createImageViews( Context &context, SwapChain& swapChain){
+    std::vector<vk::ImageView> Core::createImageViews( Context &context, Swapchain& swapChain){
         std::vector<vk::ImageView> imageViews;
         std::vector<vk::Image> swapChainImages = context.getDevice().getSwapchainImagesKHR(swapChain.getSwapchain());
         imageViews.reserve( swapChainImages.size() );
@@ -477,7 +477,7 @@ namespace vkcv
                     vk::ImageViewCreateFlags(),
                     image,
                     vk::ImageViewType::e2D,
-                    swapChain.getSwapchainFormat(),
+                    swapChain.getFormat(),
                     componentMapping,
                     subResourceRange);
 

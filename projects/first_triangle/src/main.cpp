@@ -81,7 +81,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchainImageFormat());
+		core.getSwapchain().getFormat());
 
 	vkcv::PassConfig trianglePassDefinition({ present_color_attachment });
 	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);

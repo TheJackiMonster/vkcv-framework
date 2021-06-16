@@ -112,7 +112,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchainImageFormat()
+		core.getSwapchain().getFormat()
 	);
 
 	const vkcv::AttachmentDescription depth_attachment(

@@ -24,22 +24,25 @@ namespace vkcv {
             glfwTerminate();
         }
     }
+	
+    GLFWwindow* Window::createGLFWWindow(const char *windowTitle, int width, int height, bool resizable) {
+		if(s_WindowCount == 0) {
+			glfwInit();
+		}
+	
+		s_WindowCount++;
+	
+		width = std::max(width, 1);
+		height = std::max(height, 1);
+	
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
+		
+		return glfwCreateWindow(width, height, windowTitle, nullptr, nullptr);
+    }
 
     Window Window::create( const char *windowTitle, int width, int height, bool resizable) {
-        if(s_WindowCount == 0) {
-            glfwInit();
-        }
-        s_WindowCount++;
-
-        width = std::max(width, 1);
-        height = std::max(height, 1);
-
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
-        GLFWwindow *window;
-        window = glfwCreateWindow(width, height, windowTitle, nullptr, nullptr);
-
-        return Window(window);
+        return Window(createGLFWWindow(windowTitle, width, height, resizable));
     }
 
     void Window::initEvents() {

@@ -13,16 +13,19 @@ struct GLFWwindow;
 
 namespace vkcv {
 
-    class Window final {
-    private:
-        GLFWwindow *m_window;
-
-        /**
+    class Window {
+	protected:
+		GLFWwindow *m_window;
+	
+		/**
          *
          * @param GLFWwindow of the class
          */
-        explicit Window(GLFWwindow *window);
-
+		explicit Window(GLFWwindow *window);
+		
+		static GLFWwindow* createGLFWWindow(const char *windowTitle, int width, int height, bool resizable);
+		
+    private:
         /**
          * mouse callback for moving the mouse on the screen
          * @param[in] window The window that received the event.
