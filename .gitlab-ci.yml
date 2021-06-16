@@ -1,6 +1,6 @@
 variables:
   RUN:
-    value: "all"
+    value: "win"
     description: "The tests that should run. Possible values: ubuntu, win, all."
   GIT_DEPTH: 1
 
