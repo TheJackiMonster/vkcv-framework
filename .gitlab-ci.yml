@@ -14,7 +14,7 @@ build_ubuntu_gcc:
       - $RUN =~ /\bubuntu.*/i || $RUN =~ /\ball.*/i
   stage: build
   tags: 
-    - ubuntu-gcc
+    - ubuntu-gcc-cached
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
   timeout: 10m
