@@ -11,4 +11,5 @@ layout(set=0, binding=1) uniform sampler    textureSampler;
 
 void main()	{
 	outColor = texture(sampler2D(meshTexture, textureSampler), passUV).rgb;
+    outColor = passNormal * 0.5 + 0.5;
 }
