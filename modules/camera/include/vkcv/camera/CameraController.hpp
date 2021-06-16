@@ -59,6 +59,12 @@ namespace vkcv::camera {
          * @param[in] camera The camera object.
          */
         virtual void mouseButtonCallback(int button, int action, int mods, Camera &camera) = 0;
+
+        /**
+         * @brief todo
+         * @param gamepadIndex
+         */
+        virtual void gamepadCallback(int gamepadIndex, Camera &camera) = 0;
     };
 
 }

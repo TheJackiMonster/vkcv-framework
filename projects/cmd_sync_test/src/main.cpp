@@ -223,7 +223,7 @@ int main(int argc, const char** argv) {
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
 	while (window.isWindowOpen()) {
-		vkcv::Window::pollEvents();
+		window.pollEvents();
 		
 		uint32_t swapchainWidth, swapchainHeight;
 		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {

@@ -5,7 +5,6 @@
  */
 
 #include <GLFW/glfw3.h>
-
 #include "vkcv/Window.hpp"
 
 namespace vkcv {
@@ -55,14 +54,16 @@ namespace vkcv {
         glfwSetKeyCallback(m_window, Window::onKeyEvent);
 
         glfwSetScrollCallback(m_window, Window::onMouseScrollEvent);
+
+        glfwSetJoystickUserPointer(GLFW_JOYSTICK_1, this);
     }
 
     void Window::pollEvents() {
+        onGamepadEvent(GLFW_JOYSTICK_1, this);
         glfwPollEvents();
     }
 
     void Window::onMouseButtonEvent(GLFWwindow *callbackWindow, int button, int action, int mods) {
-
         auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
 
         if (window != nullptr) {
@@ -71,7 +72,6 @@ namespace vkcv {
     }
 
     void Window::onMouseMoveEvent(GLFWwindow *callbackWindow, double x, double y) {
-
         auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
 
         if (window != nullptr) {
@@ -88,7 +88,6 @@ namespace vkcv {
     }
 
     void Window::onResize(GLFWwindow *callbackWindow, int width, int height) {
-
         auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
 
         if (window != nullptr) {
@@ -97,11 +96,16 @@ namespace vkcv {
     }
 
     void Window::onKeyEvent(GLFWwindow *callbackWindow, int key, int scancode, int action, int mods) {
-
         auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
 
         if (window != nullptr) {
             window->e_key(key, scancode, action, mods);
+        }
+    }
+
+    void Window::onGamepadEvent(int gamepadIndex, Window *window) {
+        if (glfwJoystickPresent(gamepadIndex)) {
+            window->e_gamepad(gamepadIndex);
         }
     }
 

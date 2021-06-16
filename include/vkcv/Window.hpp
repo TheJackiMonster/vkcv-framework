@@ -39,6 +39,12 @@ namespace vkcv {
          */
         static void onMouseButtonEvent(GLFWwindow *callbackWindow, int button, int action, int mods);
 
+        /**
+         * @brief A callback function for handling mouse scrolling events.
+         * @param[in] callbackWindow The window that received the event.
+         * @param[in] xoffset The extent of horizontal scrolling.
+         * @param[in] yoffset The extent of vertical scrolling.
+         */
         static void onMouseScrollEvent(GLFWwindow *callbackWindow, double xoffset, double yoffset);
 
         /**
@@ -58,6 +64,11 @@ namespace vkcv {
          * @param[in] mods Bit field describing which [modifier keys](@ref mods) were held down.
          */
         static void onKeyEvent(GLFWwindow *callbackWindow, int key, int scancode, int action, int mods);
+
+        /**
+         * @brief TODO
+         */
+        static void onGamepadEvent(int gamepadIndex, Window *window);
 
     public:
         /**
@@ -85,7 +96,7 @@ namespace vkcv {
         /**
          * polls all events on the GLFWwindow
          */
-        static void pollEvents();
+        void pollEvents();
 
         /**
          * basic events of the window
@@ -95,6 +106,7 @@ namespace vkcv {
         event< double, double > e_mouseScroll;
         event< int, int > e_resize;
         event< int, int, int, int > e_key;
+        event< int > e_gamepad;
 
         /**
          * returns the current window

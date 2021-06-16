@@ -30,6 +30,7 @@ namespace vkcv::camera {
         std::function<void(double, double)> m_mouseScrollHandle;
         std::function<void(int, int, int)> m_mouseButtonHandle;
         std::function<void(int, int)> m_resizeHandle;
+        std::function<void(int)> m_gamepadHandle;
 
         Window& m_window;
         std::vector<Camera> m_cameras;
@@ -41,6 +42,8 @@ namespace vkcv::camera {
 
         double m_lastX;
         double m_lastY;
+
+        double m_inputDelayTimer;
 
         /**
          * @brief Binds the camera object to the window event handles.
@@ -86,6 +89,11 @@ namespace vkcv::camera {
          * @param[in] height The new height of the window.
          */
         void resizeCallback(int width, int height);
+
+        /**
+         * @brief TODO
+         */
+        void gamepadCallback(int gamepadIndex);
 	
 		/**
 		 * @brief Gets a camera controller object of specified @p controllerType.

@@ -1,6 +1,5 @@
 
 #include "vkcv/camera/CameraManager.hpp"
-
 #include <vkcv/Logger.hpp>
 
 namespace vkcv::camera {
@@ -12,6 +11,7 @@ namespace vkcv::camera {
         m_activeCameraIndex = 0;
         m_lastX = static_cast<float>(window.getWidth()) / 2.0f;
         m_lastY = static_cast<float>(window.getHeight()) / 2.0f;
+        m_inputDelayTimer = glfwGetTime() + 0.2;
     }
 
     CameraManager::~CameraManager() {}
@@ -22,6 +22,7 @@ namespace vkcv::camera {
         m_mouseScrollHandle =  m_window.e_mouseScroll.add([&](double offsetX, double offsetY) {this->scrollCallback( offsetX, offsetY);} );
         m_mouseButtonHandle = m_window.e_mouseButton.add([&] (int button, int action, int mods) {this->mouseButtonCallback( button,  action,  mods);});
         m_resizeHandle = m_window.e_resize.add([&](int width, int height) {this->resizeCallback(width, height);});
+        m_gamepadHandle = m_window.e_gamepad.add([&](int gamepadIndex) {this->gamepadCallback(gamepadIndex);});
     }
 
     void CameraManager::resizeCallback(int width, int height) {
@@ -75,7 +76,29 @@ namespace vkcv::camera {
                 break;
         }
     }
-    
+
+    // todo: fix event catch speed
+    void CameraManager::gamepadCallback(int gamepadIndex) {
+        // handle camera switching
+        GLFWgamepadstate gamepadState;
+        glfwGetGamepadState(gamepadIndex, &gamepadState);
+
+        double time = glfwGetTime();
+        if (time - m_inputDelayTimer > 0.2) {
+            int switchDirection = gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] - gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT];
+            m_activeCameraIndex += switchDirection;
+            if (std::greater<int>{}(m_activeCameraIndex, m_cameras.size() - 1)) {
+                m_activeCameraIndex = 0;
+            }
+            else if (std::less<int>{}(m_activeCameraIndex, 0)) {
+                m_activeCameraIndex = m_cameras.size() - 1;
+            }
+            m_inputDelayTimer = time;
+        }
+
+        getActiveController().gamepadCallback(gamepadIndex, getActiveCamera());     // handle camera rotation, translation
+    }
+
     CameraController& CameraManager::getActiveController() {
     	const ControllerType type = getControllerType(getActiveCameraIndex());
     	return getControllerByType(type);

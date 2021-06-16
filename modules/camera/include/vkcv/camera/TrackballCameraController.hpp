@@ -95,6 +95,11 @@ namespace vkcv::camera {
          */
         void mouseButtonCallback(int button, int action, int mods, Camera &camera);
 
+        /**
+         * @brief todo
+         * @param gamepadIndex
+         */
+        void gamepadCallback(int gamepadIndex, Camera &camera);
     };
 
 }

@@ -1,5 +1,4 @@
 #include "vkcv/camera/TrackballCameraController.hpp"
-
 #include <GLFW/glfw3.h>
 
 namespace vkcv::camera {
@@ -82,7 +81,7 @@ namespace vkcv::camera {
             return;
         }
 
-        float sensitivity = 0.05f;
+        float sensitivity = 0.025f;
         xoffset *= sensitivity;
         yoffset *= sensitivity;
 
@@ -95,6 +94,28 @@ namespace vkcv::camera {
         }
         else if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == true && action == GLFW_RELEASE){
             m_rotationActive = false;
+        }
+    }
+
+    void TrackballCameraController::gamepadCallback(int gamepadIndex, Camera &camera) {
+        GLFWgamepadstate gamepadState;
+        glfwGetGamepadState(gamepadIndex, &gamepadState);
+
+        float sensitivity = 0.025f;
+        double threshold = 0.03;    // todo: needs further investigation!
+
+        // handle rotations
+        double stickRightX = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
+        double stickRightY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
+        if ((std::less<double>{}(stickRightX, -threshold) || std::greater<double>{}(stickRightX, threshold))
+            && (std::less<double>{}(stickRightY, -threshold) || std::greater<double>{}(stickRightY, threshold))) {
+            panView(stickRightX * sensitivity, stickRightY * sensitivity, camera);
+        }
+
+        // handle translation
+        double stickLeftY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);
+        if (std::less<double>{}(stickLeftY, -threshold) || std::greater<double>{}(stickLeftY, threshold)) {
+            updateRadius(-stickLeftY * sensitivity, camera);
         }
     }
 }

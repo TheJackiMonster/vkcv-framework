@@ -1,5 +1,4 @@
 #include "vkcv/camera/PilotCameraController.hpp"
-
 #include <GLFW/glfw3.h>
 
 namespace vkcv::camera {
@@ -12,9 +11,13 @@ namespace vkcv::camera {
         m_left = false;
         m_right = false;
 
+        m_gamepadX = 0.0f;
+        m_gamepadY = 0.0f;
+        m_gamepadZ = 0.0f;
+
         m_rotationActive = false;
 
-        m_cameraSpeed = 2.0f;
+        m_cameraSpeed = 2.5f;
 
         m_fov_nsteps = 100;
         m_fov_min = 10;
@@ -70,9 +73,9 @@ namespace vkcv::camera {
 	
 		const float distance = m_cameraSpeed * static_cast<float>(deltaTime);
 	
-		position += distance * getDirectionFactor(m_forward, m_backward) * front;
-		position += distance * getDirectionFactor(m_left, m_right) * left;
-		position += distance * getDirectionFactor(m_upward, m_downward) * up;
+		position += distance * (getDirectionFactor(m_forward, m_backward) + m_gamepadZ) * front;
+		position += distance * (getDirectionFactor(m_left, m_right) + m_gamepadX) * left;
+		position += distance * (getDirectionFactor(m_upward, m_downward) + m_gamepadY) * up;
 	
 		camera.lookAt(position, position + front, up);
     }
@@ -124,6 +127,45 @@ namespace vkcv::camera {
         }
         else if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == true && action == GLFW_RELEASE){
             m_rotationActive = false;
+        }
+    }
+
+    void PilotCameraController::gamepadCallback(int gamepadIndex, Camera &camera) {
+        GLFWgamepadstate gamepadState;
+        glfwGetGamepadState(gamepadIndex, &gamepadState);
+
+        float sensitivity = 0.05f;
+        double threshold = 0.03;    // todo: needs further investigation!
+
+        // handle rotations
+        double stickRightX = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
+        double stickRightY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
+        if ((std::less<double>{}(stickRightX, -threshold) || std::greater<double>{}(stickRightX, threshold))
+            && (std::less<double>{}(stickRightY, -threshold) || std::greater<double>{}(stickRightY, threshold))) {
+            panView(stickRightX * sensitivity, stickRightY * sensitivity, camera);
+        }
+
+        // handle zooming
+        double zoom = static_cast<double>((gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER]
+                - gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER])
+                * sensitivity * 0.5);
+        changeFov(zoom, camera);
+
+        // handle translation
+        m_gamepadY = gamepadState.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER] - gamepadState.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER];
+        float stickLeftX = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+        float stickLeftY = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+        if (std::less<float>{}(stickLeftY, -threshold) || std::greater<float>{}(stickLeftY, threshold)) {
+            m_gamepadZ = -stickLeftY;
+        }
+        else {
+            m_gamepadZ = 0.0f;
+        }
+        if (std::less<float>{}(stickLeftX, -threshold) || std::greater<float>{}(stickLeftX, threshold)) {
+            m_gamepadX = -stickLeftX;
+        }
+        else {
+            m_gamepadX = 0.0f;
         }
     }
 
