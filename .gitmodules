@@ -16,3 +16,6 @@
 [submodule "modules/camera/lib/glm"]
 	path = modules/camera/lib/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "modules/shader_compiler/lib/glslang"]
+	path = modules/shader_compiler/lib/glslang
+	url = https://github.com/KhronosGroup/glslang.git

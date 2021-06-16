@@ -18,9 +18,15 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
-	cameraManager.getCamera().setPosition(glm::vec3(0.f, 0.f, 3.f));
-	cameraManager.getCamera().setNearFar(0.1, 30);
+    vkcv::camera::CameraManager cameraManager(window);
+    uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+    uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+    
+    cameraManager.getCamera(camIndex).setPosition(glm::vec3(0.f, 0.f, 3.f));
+    cameraManager.getCamera(camIndex).setNearFar(0.1f, 30.0f);
+	cameraManager.getCamera(camIndex).setYaw(180.0f);
+	
+	cameraManager.getCamera(camIndex2).setNearFar(0.1f, 30.0f);
 
 	window.initEvents();
 
@@ -65,7 +71,7 @@ int main(int argc, const char** argv) {
 	
 	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 	
-	std::sort(attributes.begin(), attributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
+	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
 	});
 
@@ -89,34 +95,43 @@ int main(int argc, const char** argv) {
 			vk::Format::eD32Sfloat
 	);
 
-	vkcv::PassConfig trianglePassDefinition({ present_color_attachment, depth_attachment });
-	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
+	vkcv::PassConfig firstMeshPassDefinition({ present_color_attachment, depth_attachment });
+	vkcv::PassHandle firstMeshPass = core.createPass(firstMeshPassDefinition);
 
-	if (!trianglePass) {
+	if (!firstMeshPass) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 
-	vkcv::ShaderProgram triangleShaderProgram{};
-	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
-	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
+	vkcv::ShaderProgram firstMeshProgram{};
+    firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
+    firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = { triangleShaderProgram.getReflectedDescriptors()[0] };
+    const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
+    
+    std::vector<vkcv::VertexBinding> bindings;
+    for (size_t i = 0; i < vertexAttachments.size(); i++) {
+		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+    }
+    
+    const vkcv::VertexLayout firstMeshLayout (bindings);
+
+	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
-	const vkcv::PipelineConfig trianglePipelineDefinition(
-		triangleShaderProgram, 
+	const vkcv::PipelineConfig firstMeshPipelineConfig {
+        firstMeshProgram,
 		windowWidth,
 		windowHeight,
-		trianglePass,
-		attributes,
+        firstMeshPass,
+        firstMeshLayout,
 		{ core.getDescriptorSet(descriptorSet).layout },
-		true);
-	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
+		true
+	};
 	
-	if (!trianglePipeline) {
+	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
+	
+	if (!firstMeshPipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -172,8 +187,6 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram shadowShader;
 	shadowShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/shadow_vert.spv");
 	shadowShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/shadow_frag.spv");
-    shadowShader.reflectShader(vkcv::ShaderStage::VERTEX);
-    shadowShader.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
 	const vk::Format shadowMapFormat = vk::Format::eD16Unorm;
 	const std::vector<vkcv::AttachmentDescription> shadowAttachments = {
@@ -184,14 +197,16 @@ int main(int argc, const char** argv) {
 
 	const uint32_t shadowMapResolution = 1024;
 	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1);
-	const vkcv::PipelineConfig shadowPipeConfig(
+	const vkcv::PipelineConfig shadowPipeConfig {
 		shadowShader, 
 		shadowMapResolution, 
 		shadowMapResolution, 
-		shadowPass, 
-		attributes,
-		{}, 
-		false);
+		shadowPass,
+        firstMeshLayout,
+		{},
+		false
+	};
+	
 	const vkcv::PipelineHandle shadowPipe = core.createGraphicsPipeline(shadowPipeConfig);
 
 	struct LightInfo {
@@ -231,10 +246,13 @@ int main(int argc, const char** argv) {
 		
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		
 		start = end;
-		cameraManager.getCamera().updateView(deltatime.count() * 0.000001);
+		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 
-		const float sunTheta = std::chrono::duration_cast<std::chrono::milliseconds>(end - appStartTime).count() * 0.001f;
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - appStartTime);
+		
+		const float sunTheta = 0.001f * static_cast<float>(duration.count());
 		lightInfo.direction = glm::normalize(glm::vec3(std::cos(sunTheta), 1, std::sin(sunTheta)));
 
 		const float shadowProjectionSize = 5.f;
@@ -256,7 +274,7 @@ int main(int argc, const char** argv) {
 		lightInfo.lightMatrix = projectionLight * viewLight;
 		lightBuffer.fill({ lightInfo });
 
-		const glm::mat4 viewProjectionCamera = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();
 
 		mainPassMatrices.clear();
 		mvpLight.clear();
@@ -284,8 +302,8 @@ int main(int argc, const char** argv) {
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			trianglePass,
-			trianglePipeline,
+            firstMeshPass,
+            firstMeshPipeline,
 			pushConstantData,
 			drawcalls,
 			renderTargets);

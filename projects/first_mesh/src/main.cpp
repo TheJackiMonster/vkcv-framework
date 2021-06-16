@@ -18,8 +18,6 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-	vkcv::CameraManager cameraManager(window, static_cast<float>(window.getWidth()), static_cast<float>(window.getHeight()));
-
 	window.initEvents();
 
 	vkcv::Core core = vkcv::Core::create(
@@ -74,41 +72,48 @@ int main(int argc, const char** argv) {
 			vk::Format::eD32Sfloat
 	);
 
-	vkcv::PassConfig trianglePassDefinition({ present_color_attachment, depth_attachment });
-	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
+	vkcv::PassConfig firstMeshPassDefinition({ present_color_attachment, depth_attachment });
+	vkcv::PassHandle firstMeshPass = core.createPass(firstMeshPassDefinition);
 
-	if (!trianglePass) {
+	if (!firstMeshPass) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 
-	vkcv::ShaderProgram triangleShaderProgram{};
-	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
-	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
+	vkcv::ShaderProgram firstMeshProgram{};
+    firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
+    firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 	
 	auto& attributes = mesh.vertexGroups[2].vertexBuffer.attributes;
 	
-	std::sort(attributes.begin(), attributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
+	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
 	});
 
+    const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
+	std::vector<vkcv::VertexBinding> bindings;
+	for (size_t i = 0; i < vertexAttachments.size(); i++) {
+		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+	}
+	
+	const vkcv::VertexLayout firstMeshLayout (bindings);
+
 	uint32_t setID = 0;
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = { triangleShaderProgram.getReflectedDescriptors()[setID] };
+	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[setID] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
-	const vkcv::PipelineConfig trianglePipelineDefinition(
-		triangleShaderProgram,
+	const vkcv::PipelineConfig firstMeshPipelineConfig {
+        firstMeshProgram,
         UINT32_MAX,
         UINT32_MAX,
-		trianglePass,
-		mesh.vertexGroups[2].vertexBuffer.attributes,
+        firstMeshPass,
+        {firstMeshLayout},
 		{ core.getDescriptorSet(descriptorSet).layout },
-		true);
-	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
+		true
+	};
+	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
 	
-	if (!trianglePipeline) {
+	if (!firstMeshPipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -127,10 +132,9 @@ int main(int argc, const char** argv) {
 	);
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::VertexBufferBinding( mesh.vertexGroups[2].vertexBuffer.attributes[0].offset, vertexBuffer.getVulkanHandle() ),
-		vkcv::VertexBufferBinding( mesh.vertexGroups[2].vertexBuffer.attributes[1].offset, vertexBuffer.getVulkanHandle() ),
-		vkcv::VertexBufferBinding( mesh.vertexGroups[2].vertexBuffer.attributes[2].offset, vertexBuffer.getVulkanHandle() )
-	};
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
 	vkcv::DescriptorWrites setWrites;
 	setWrites.sampledImageWrites    = { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
@@ -146,7 +150,14 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage });
 
-	auto start = std::chrono::system_clock::now();
+    vkcv::camera::CameraManager cameraManager(window);
+    uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	
+	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
+
+    auto start = std::chrono::system_clock::now();
+    
 	while (window.isWindowOpen()) {
         vkcv::Window::pollEvents();
 		
@@ -166,10 +177,11 @@ int main(int argc, const char** argv) {
 		}
   
 		auto end = std::chrono::system_clock::now();
-		auto deltatime = end - start;
+		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		
 		start = end;
-		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
-		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+        glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 
 		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
 
@@ -178,8 +190,8 @@ int main(int argc, const char** argv) {
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			trianglePass,
-			trianglePipeline,
+			firstMeshPass,
+			firstMeshPipeline,
 			pushConstantData,
 			{ drawcall },
 			renderTargets);
