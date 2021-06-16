@@ -25,10 +25,10 @@ include(config/ImGui.cmake)
 add_library(vkcv_gui STATIC ${vkcv_gui_sources} ${vkcv_imgui_sources})
 
 # link the required libraries to the module
-target_link_libraries(vkcv_gui ${vkcv_gui_libraries} vkcv)
+target_link_libraries(vkcv_gui ${vkcv_gui_libraries} vkcv ${vkcv_libraries})
 
 # including headers of dependencies and the VkCV framework
-target_include_directories(vkcv_gui SYSTEM BEFORE PRIVATE ${vkcv_gui_includes} ${vkcv_include})
+target_include_directories(vkcv_gui SYSTEM BEFORE PRIVATE ${vkcv_gui_includes} ${vkcv_include} ${vkcv_includes})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_gui BEFORE PUBLIC ${vkcv_gui_include} ${vkcv_imgui_includes})
