@@ -52,7 +52,7 @@ void print_what (const std::exception& e, const std::string &path) {
 	}
 }
 
-/* Translate the component type used in the index accessor of fx-gltf to our
+/** Translate the component type used in the index accessor of fx-gltf to our
  * enum for index type. The reason we have defined an incompatible enum that
  * needs translation is that only a subset of component types is valid for
  * indices and we want to catch these incompatibilities here. */
@@ -66,12 +66,20 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &t)
 	case fx::gltf::Accessor::ComponentType::UnsignedInt:
 		return IndexType::UINT32;
 	default:
-		std::cerr << "ERROR: Index type not supported: " <<
+        std::cerr << "ERROR: Index type not supported: " <<
 			static_cast<uint16_t>(t) << std::endl;
 		return IndexType::UNDEFINED;
 	}
 }
 
+/**
+ * This function computes the modelMatrix out of the data given in the gltf file. It also checks, whether a modelMatrix was given.
+ * @param translation possible translation vector (default 0,0,0)
+ * @param scale possible scale vector (default 1,1,1)
+ * @param rotation possible rotation, given in quaternion (default 0,0,0,1)
+ * @param matrix possible modelmatrix (default identity)
+ * @return model Matrix as an array of floats
+ */
 std::array<float, 16> computeModelMatrix(std::array<float, 3> translation, std::array<float, 3> scale, std::array<float, 4> rotation, std::array<float, 16> matrix){
     std::array<float, 16> modelMatrix = {1,0,0,0,
                                          0,1,0,0,
@@ -106,199 +114,10 @@ std::array<float, 16> computeModelMatrix(std::array<float, 3> translation, std::
 
 }
 
-int loadMesh(const std::string &path, Mesh &mesh) {
-	fx::gltf::Document object;
-
-	try {
-		if (path.rfind(".glb", (path.length()-4)) != std::string::npos) {
-			object = fx::gltf::LoadFromBinary(path);
-		} else {
-			object = fx::gltf::LoadFromText(path);
-		}
-	} catch (const std::system_error &err) {
-		print_what(err, path);
-		return 0;
-	} catch (const std::exception &e) {
-		print_what(e, path);
-		return 0;
-	}
-
-	// TODO Temporary restriction: Only one mesh per glTF file allowed
-	// currently. Later, we want to support whole scenes with more than
-	// just meshes.
-	if (object.meshes.size() != 1) return 0;
-
-	fx::gltf::Mesh const &objectMesh = object.meshes[0];
-	// TODO We want to support more than one vertex group per mesh
-	// eventually... right now this is hard-coded to use only the first one
-	// because we only care about the example triangle and cube
-	fx::gltf::Primitive const &objectPrimitive = objectMesh.primitives[0];
-	fx::gltf::Accessor posAccessor;
-	
-	std::vector<VertexAttribute> vertexAttributes;
-	vertexAttributes.reserve(objectPrimitive.attributes.size());
-	
-	for (auto const & attrib : objectPrimitive.attributes) {
-		fx::gltf::Accessor accessor =  object.accessors[attrib.second];
-		VertexAttribute attribute;
-
-		if (attrib.first == "POSITION") {
-			attribute.type = PrimitiveType::POSITION;
-			posAccessor = accessor;
-		} else if (attrib.first == "NORMAL") {
-			attribute.type = PrimitiveType::NORMAL;
-		} else if (attrib.first == "TEXCOORD_0") {
-			attribute.type = PrimitiveType::TEXCOORD_0;
-		} else {
-			return 0;
-		}
-		
-		attribute.offset = object.bufferViews[accessor.bufferView].byteOffset;
-		attribute.length = object.bufferViews[accessor.bufferView].byteLength;
-		attribute.stride = object.bufferViews[accessor.bufferView].byteStride;
-		attribute.componentType = static_cast<ComponentType>(accessor.componentType);
-		
-		if (convertTypeToInt(accessor.type) != 10) {
-			attribute.componentCount = convertTypeToInt(accessor.type);
-		} else {
-			return 0;
-		}
-		
-		vertexAttributes.push_back(attribute);
-	}
-
-	// TODO consider the case where there is no index buffer (not all
-	// meshes have to use indexed rendering)
-	const fx::gltf::Accessor &indexAccessor = object.accessors[objectPrimitive.indices];
-	const fx::gltf::BufferView &indexBufferView = object.bufferViews[indexAccessor.bufferView];
-	const fx::gltf::Buffer &indexBuffer = object.buffers[indexBufferView.buffer];
-	
-	std::vector<uint8_t> indexBufferData;
-	indexBufferData.resize(indexBufferView.byteLength);
-	{
-		const size_t off = indexBufferView.byteOffset;
-		const void *const ptr = ((char*)indexBuffer.data.data()) + off;
-		if (!memcpy(indexBufferData.data(), ptr, indexBufferView.byteLength)) {
-			vkcv_log(LogLevel::ERROR, "Copying index buffer data");
-			return 0;
-		}
-	}
-
-	const fx::gltf::BufferView&	vertexBufferView	= object.bufferViews[posAccessor.bufferView];
-	const fx::gltf::Buffer&		vertexBuffer		= object.buffers[vertexBufferView.buffer];
-	
-	// FIXME: This only works when all vertex attributes are in one buffer
-	std::vector<uint8_t> vertexBufferData;
-	vertexBufferData.resize(vertexBuffer.byteLength);
-	{
-		const size_t off = 0;
-		const void *const ptr = ((char*)vertexBuffer.data.data()) + off;
-		if (!memcpy(vertexBufferData.data(), ptr, vertexBuffer.byteLength)) {
-			vkcv_log(LogLevel::ERROR, "Copying vertex buffer data");
-			return 0;
-		}
-	}
-
-	IndexType indexType;
-	switch(indexAccessor.componentType) {
-	case fx::gltf::Accessor::ComponentType::UnsignedByte:
-		indexType = IndexType::UINT8; break;
-	case fx::gltf::Accessor::ComponentType::UnsignedShort:
-		indexType = IndexType::UINT16; break;
-	case fx::gltf::Accessor::ComponentType::UnsignedInt:
-		indexType = IndexType::UINT32; break;
-	default:
-		vkcv_log(LogLevel::ERROR, "Index type (%u) not supported",
-				 static_cast<uint16_t>(indexAccessor.componentType));
-		return 0;
-	}
-
-	const size_t numVertexGroups = objectMesh.primitives.size();
-	
-	std::vector<VertexGroup> vertexGroups;
-	vertexGroups.reserve(numVertexGroups);
-	
-	vertexGroups.push_back({
-		static_cast<PrimitiveMode>(objectPrimitive.mode),
-		object.accessors[objectPrimitive.indices].count,
-		posAccessor.count,
-		{indexType, indexBufferData},
-		{vertexBufferData, vertexAttributes},
-		{posAccessor.min[0], posAccessor.min[1], posAccessor.min[2]},
-		{posAccessor.max[0], posAccessor.max[1], posAccessor.max[2]},
-		static_cast<uint8_t>(objectPrimitive.material)
-	});
-	
-	std::vector<Material> materials;
-	std::vector<Texture> textures;
-	std::vector<Sampler> samplers;
-
-	std::vector<int> vertexGroupsIndex;
-
-    //glm::mat4 modelMatrix = object.nodes[0].matrix;
-	for(int i = 0; i < numVertexGroups; i++){
-        vertexGroupsIndex.push_back(i);
-	}
-
-
-	mesh = {
-		object.meshes[0].name,
-        object.nodes[0].matrix,
-		vertexGroupsIndex,
-	};
-
-	// FIXME HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK
-	// fail quietly if there is no texture
-	textures.reserve(1);
-	if (object.textures.size()) {
-		const std::string mime_type("image/jpeg");
-		const fx::gltf::Texture &tex = object.textures[0];
-		const fx::gltf::Image &img = object.images[tex.source];
-#ifndef NDEBUG
-		printf("texture name=%s sampler=%u source=%u\n",
-				tex.name.c_str(), tex.sampler, tex.source);
-		printf("image   name=%s uri=%s mime=%s\n", img.name.c_str(),
-				img.uri.c_str(), img.mimeType.c_str());
-#endif
-		
-		size_t pos = path.find_last_of("/");
-		auto dir = path.substr(0, pos);
-		
-		std::string img_uri = dir + "/" + img.uri;
-		int w, h, c;
-		uint8_t *data = stbi_load(img_uri.c_str(), &w, &h, &c, 4);
-		c = 4;	// FIXME hardcoded to always have RGBA channel layout
-		if (!data) {
-			std::cerr << "ERROR loading texture image data.\n";
-			return 0;
-		}
-		const size_t byteLen = w * h * c;
-
-		std::vector<uint8_t> imgdata;
-		imgdata.resize(byteLen);
-		if (!memcpy(imgdata.data(), data, byteLen)) {
-			std::cerr << "ERROR copying texture image data.\n";
-			free(data);
-			return 0;
-		}
-		free(data);
-
-		textures.push_back({
-			0, static_cast<uint8_t>(c),
-			static_cast<uint16_t>(w), static_cast<uint16_t>(h),
-			imgdata
-		});
-	}
-	// FIXME HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK HACK
-	return 1;
-}
-
-
 bool materialHasTexture(const Material *const m, const PBRTextureTarget t)
 {
 	return m->textureMask & bitflag(t);
 }
-
 
 int loadScene(const std::string &path, Scene &scene){
     fx::gltf::Document sceneObjects;
@@ -322,7 +141,6 @@ int loadScene(const std::string &path, Scene &scene){
     // file has to contain at least one mesh
     if (sceneObjects.meshes.size() == 0) return 0;
 
-
     fx::gltf::Accessor posAccessor;
     std::vector<VertexAttribute> vertexAttributes;
     std::vector<Material> materials;
@@ -333,7 +151,6 @@ int loadScene(const std::string &path, Scene &scene){
     int groupCount = 0;
 
     Mesh mesh = {};
-
 
     for(int i = 0; i < sceneObjects.meshes.size(); i++){
         std::vector<int> vertexGroupsIndices;
@@ -388,13 +205,16 @@ int loadScene(const std::string &path, Scene &scene){
                     const size_t off = indexBufferView.byteOffset;
                     const void *const ptr = ((char*)indexBuffer.data.data()) + off;
                     if (!memcpy(indexBufferData.data(), ptr, indexBufferView.byteLength)) {
-                        std::cerr << "ERROR copying index buffer data.\n";
+                        vkcv_log(LogLevel::ERROR, "Copying index buffer data");
                         return 0;
                     }
                 }
 
                 indexType = getIndexType(indexAccessor.componentType);
-                if (indexType == IndexType::UNDEFINED) return 0; // TODO return vkcv::error;
+                if (indexType == IndexType::UNDEFINED){
+                    vkcv_log(LogLevel::ERROR, "Index Type undefined.");
+                    return 0;
+                }
             }
 
             const fx::gltf::BufferView&	vertexBufferView	= sceneObjects.bufferViews[posAccessor.bufferView];
@@ -416,7 +236,7 @@ int loadScene(const std::string &path, Scene &scene){
             {
                 const void *const ptr = ((char*)vertexBuffer.data.data()) + relevantBufferOffset;
                 if (!memcpy(vertexBufferData.data(), ptr, relevantBufferSize)) {
-                    std::cerr << "ERROR copying vertex buffer data.\n";
+                    vkcv_log(LogLevel::ERROR, "Copying vertex buffer data");
                     return 0;
                 }
             }
@@ -474,7 +294,7 @@ int loadScene(const std::string &path, Scene &scene){
             uint8_t *data = stbi_load(img_uri.c_str(), &w, &h, &c, 4);
             c = 4;	// FIXME hardcoded to always have RGBA channel layout
             if (!data) {
-                std::cerr << "ERROR loading texture image data.\n";
+                vkcv_log(LogLevel::ERROR, "Loading texture image data.")
                 return 0;
             }
             const size_t byteLen = w * h * c;
@@ -482,7 +302,7 @@ int loadScene(const std::string &path, Scene &scene){
             std::vector<uint8_t> imgdata;
             imgdata.resize(byteLen);
             if (!memcpy(imgdata.data(), data, byteLen)) {
-                std::cerr << "ERROR copying texture image data.\n";
+                vkcv_log(LogLevel::ERROR, "Copying texture image data")
                 free(data);
                 return 0;
             }
