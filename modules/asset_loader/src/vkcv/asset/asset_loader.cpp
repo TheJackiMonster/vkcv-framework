@@ -8,6 +8,7 @@
 #define STBI_ONLY_PNG
 #include <stb_image.h>
 #include <vkcv/Logger.hpp>
+#include <algorithm>
 
 namespace vkcv::asset {
 
@@ -392,23 +393,37 @@ int loadScene(const std::string &path, Scene &scene){
                     }
                 }
 
-		indexType = getIndexType(indexAccessor.componentType);
-		if (indexType == IndexType::UNDEFINED) return 0; // TODO return vkcv::error;
+                indexType = getIndexType(indexAccessor.componentType);
+                if (indexType == IndexType::UNDEFINED) return 0; // TODO return vkcv::error;
             }
 
             const fx::gltf::BufferView&	vertexBufferView	= sceneObjects.bufferViews[posAccessor.bufferView];
             const fx::gltf::Buffer&		vertexBuffer		= sceneObjects.buffers[vertexBufferView.buffer];
 
+            // only copy relevant part of vertex data
+            uint32_t relevantBufferOffset = std::numeric_limits<uint32_t>::max();
+            uint32_t relevantBufferEnd = 0;
+            for (const auto &attribute : vertexAttributes) {
+                relevantBufferOffset = std::min(attribute.offset, relevantBufferOffset);
+                const uint32_t attributeEnd = attribute.offset + attribute.length;
+                relevantBufferEnd = std::max(relevantBufferEnd, attributeEnd);    // TODO: need to incorporate stride?
+            }
+            const uint32_t relevantBufferSize = relevantBufferEnd - relevantBufferOffset;
+
             // FIXME: This only works when all vertex attributes are in one buffer
             std::vector<uint8_t> vertexBufferData;
-            vertexBufferData.resize(vertexBuffer.byteLength);
+            vertexBufferData.resize(relevantBufferSize);
             {
-                const size_t off = 0;
-                const void *const ptr = ((char*)vertexBuffer.data.data()) + off;
-                if (!memcpy(vertexBufferData.data(), ptr, vertexBuffer.byteLength)) {
+                const void *const ptr = ((char*)vertexBuffer.data.data()) + relevantBufferOffset;
+                if (!memcpy(vertexBufferData.data(), ptr, relevantBufferSize)) {
                     std::cerr << "ERROR copying vertex buffer data.\n";
                     return 0;
                 }
+            }
+
+            // make vertex attributes relative to copied section
+            for (auto &attribute : vertexAttributes) {
+                attribute.offset -= relevantBufferOffset;
             }
 
             const size_t numVertexGroups = objectMesh.primitives.size();

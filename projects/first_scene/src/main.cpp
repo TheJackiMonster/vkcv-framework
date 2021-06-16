@@ -43,7 +43,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::asset::Scene scene;
 
-	const char* path = argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf";
+	const char* path = argc > 1 ? argv[1] : "resources/Cutlery/CutlerySzene.gltf";
 	int result = vkcv::asset::loadScene(path, scene);
 
 	if (result == 1) {
@@ -55,7 +55,7 @@ int main(int argc, const char** argv) {
 	}
 
 	assert(!scene.vertexGroups.empty());
-	std::vector<uint8_t> vBuffers;
+	std::vector<std::vector<uint8_t>> vBuffers;
     std::vector<std::vector<uint8_t>> iBuffers;
 	//vBuffers.reserve(scene.vertexGroups.size());
     //iBuffers.reserve(scene.vertexGroups.size());
@@ -66,20 +66,7 @@ int main(int argc, const char** argv) {
 
     for (int i = 0; i < scene.vertexGroups.size(); i++){
 
-        /*auto vertexBuffer = core.createBuffer<uint8_t>(
-                vkcv::BufferType::VERTEX,
-                scene.vertexGroups[i].vertexBuffer.data.size(),
-                vkcv::BufferMemoryType::DEVICE_LOCAL
-        );
-        vertexBuffer.fill(scene.vertexGroups[i].vertexBuffer.data);*/
-        vBuffers.insert(vBuffers.end(), scene.vertexGroups[i].vertexBuffer.data.begin(),scene.vertexGroups[i].vertexBuffer.data.end());
-
-        /*auto indexBuffer = core.createBuffer<uint8_t>(
-                vkcv::BufferType::INDEX,
-                scene.vertexGroups[i].indexBuffer.data.size(),
-                vkcv::BufferMemoryType::DEVICE_LOCAL
-        );
-        indexBuffer.fill(scene.vertexGroups[i].indexBuffer.data);*/
+        vBuffers.push_back(scene.vertexGroups[i].vertexBuffer.data);
         iBuffers.push_back(scene.vertexGroups[i].indexBuffer.data);
 
         auto& attributes = scene.vertexGroups[i].vertexBuffer.attributes;
@@ -89,12 +76,13 @@ int main(int argc, const char** argv) {
         });
     }
 
-    auto vertexBuffer = core.createBuffer<uint8_t>(
+    std::vector<vkcv::Buffer<uint8_t>> vertexBuffers;
+    for(const vkcv::asset::VertexGroup &group : scene.vertexGroups){
+        vertexBuffers.push_back(core.createBuffer<uint8_t>(
             vkcv::BufferType::VERTEX,
-            vBuffers.size(),
-            vkcv::BufferMemoryType::DEVICE_LOCAL
-    );
-    vertexBuffer.fill(vBuffers);
+            group.vertexBuffer.data.size()));
+        vertexBuffers.back().fill(group.vertexBuffer.data);
+    }
 
 	std::vector<vkcv::Buffer<uint8_t>> indexBuffers;
 	for (const auto& dataBuffer : iBuffers) {
@@ -104,13 +92,15 @@ int main(int argc, const char** argv) {
 		indexBuffers.back().fill(dataBuffer);
 	}
 
-    for (int m = 0; m < scene.vertexGroups.size(); m++){
-        for (int k = 0; k < scene.vertexGroups[m].vertexBuffer.attributes.size(); k++){
-            vAttributes.push_back(scene.vertexGroups[m].vertexBuffer.attributes[k]);
-            vBufferBindings.push_back(vkcv::VertexBufferBinding(scene.vertexGroups[m].vertexBuffer.attributes[k].offset, vertexBuffer.getVulkanHandle()));
+    int vertexBufferIndex = 0;
+    for (const auto &vertexGroup : scene.vertexGroups){
+        for (const auto &attribute : vertexGroup.vertexBuffer.attributes){
+            vAttributes.push_back(attribute);
+            vBufferBindings.push_back(vkcv::VertexBufferBinding(attribute.offset, vertexBuffers[vertexBufferIndex].getVulkanHandle()));
         }
         vertexBufferBindings.push_back(vBufferBindings);
         vBufferBindings.clear();
+        vertexBufferIndex++;
     }
 
 	// an example attachment for passes that output to the window
