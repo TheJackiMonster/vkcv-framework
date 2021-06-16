@@ -7,7 +7,7 @@
 #include <vkcv/shader/GLSLCompiler.hpp>
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "First Mesh";
+	const char* applicationName = "Voxelization";
 
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
