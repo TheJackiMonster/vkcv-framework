@@ -97,7 +97,7 @@ namespace vkcv {
         /**
          * polls all events on the GLFWwindow
          */
-        void pollEvents();
+        static void pollEvents();
 
         /**
          * basic events of the window
