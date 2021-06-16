@@ -35,6 +35,9 @@ int main(int argc, const char** argv) {
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
+	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 30.0f);
+	
+	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
 
 	window.initEvents();
 
