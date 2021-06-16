@@ -37,8 +37,7 @@ build_win10_msvc:
       - $RUN =~ /\bwin.*/i || $RUN =~ /\ball.*/i
   stage: build
   tags: 
-    - win10-msvc
-    - with-cache
+    - win10-msvc-cached
   variables:
     GIT_STRATEGY: none
   timeout: 10m
