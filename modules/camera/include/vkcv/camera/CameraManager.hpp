@@ -91,7 +91,9 @@ namespace vkcv::camera {
         void resizeCallback(int width, int height);
 
         /**
-         * @brief TODO
+         * @brief A callback function for gamepad input events. Currently, inputs are handled only for the first
+         * connected gamepad!
+         * @param gamepadIndex The gamepad index.
          */
         void gamepadCallback(int gamepadIndex);
 	
