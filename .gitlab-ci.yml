@@ -39,19 +39,14 @@ build_win10_msvc:
   tags: 
     - win10-msvc-cached
   variables:
-    GIT_STRATEGY: none
+    # GIT_STRATEGY: clone
+    GIT_SUBMODULE_STRATEGY: recursive
   timeout: 10m
   retry: 0
   script:
     - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
     - .\Launch-VsDevShell.ps1
-    - cd C:\cached\vkcv-framework
-    - ls ~/.ssh/
-    - git fetch
-    - git checkout $CI_COMMIT_SHA
-    - git pull
-    - git submodule init
-    - git submodule update
+    - cd $CI_PROJECT_DIR
     - mkdir debug
     - cd debug
     - cmake -DCMAKE_BUILD_TYPE=Debug ..
