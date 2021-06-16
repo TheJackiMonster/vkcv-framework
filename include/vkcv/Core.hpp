@@ -62,9 +62,6 @@ namespace vkcv
         Context m_Context;
 
         SwapChain                       m_swapchain;
-        std::vector<vk::ImageView>      m_swapchainImageViews;
-        std::vector<vk::Image>          m_swapchainImages;
-		std::vector<vk::ImageLayout>    m_swapchainImageLayouts;
         const Window&                   m_window;
 
         std::unique_ptr<PassManager>            m_PassManager;
@@ -81,9 +78,7 @@ namespace vkcv
 
         std::function<void(int, int)> e_resizeHandle;
 
-        static std::vector<vk::ImageView> createImageViews( Context &context, SwapChain& swapChain);
-
-		void recordSwapchainImageLayoutTransition(vk::CommandBuffer cmdBuffer, vk::ImageLayout newLayout);
+        static std::vector<vk::ImageView> createSwapchainImageViews( Context &context, SwapChain& swapChain);
 
     public:
         /**

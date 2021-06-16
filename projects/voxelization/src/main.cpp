@@ -357,6 +357,16 @@ int main(int argc, const char** argv) {
 	resetVoxelWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(0, voxelImage.getHandle()) };
 	core.writeDescriptorSet(resetVoxelDescriptorSet, resetVoxelWrites);
 
+	// gamma correction compute shader
+	vkcv::ShaderProgram gammaCorrectionProgram;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/gammaCorrection.comp", 
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		gammaCorrectionProgram.addShader(shaderStage, path);
+	});
+	vkcv::DescriptorSetHandle gammaCorrectionDescriptorSet = core.createDescriptorSet(gammaCorrectionProgram.getReflectedDescriptors()[0]);
+	vkcv::PipelineHandle gammaCorrectionPipeline = core.createComputePipeline(gammaCorrectionProgram, 
+		{ core.getDescriptorSet(gammaCorrectionDescriptorSet).layout });
+
 	// prepare descriptor sets for drawcalls
 	std::vector<vkcv::Image> sceneImages;
 	std::vector<vkcv::DescriptorSetHandle> descriptorSets;
@@ -418,7 +428,12 @@ int main(int argc, const char** argv) {
 
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-		
+
+		// update descriptor sets which use swapchain image
+		vkcv::DescriptorWrites gammaCorrectionDescriptorWrites;
+		gammaCorrectionDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(0, swapchainInput) };
+		core.writeDescriptorSet(gammaCorrectionDescriptorSet, gammaCorrectionDescriptorWrites);
+
 		start = end;
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 
@@ -558,6 +573,22 @@ int main(int argc, const char** argv) {
 				{ voxelVisualisationDrawcall },
 				renderTargets);
 		}
+
+		const uint32_t gammaCorrectionLocalGroupSize = 8;
+		const uint32_t gammaCorrectionDispatchCount[3] = {
+			glm::ceil(windowWidth / float(gammaCorrectionLocalGroupSize)),
+			glm::ceil(windowHeight / float(gammaCorrectionLocalGroupSize)),
+			1
+		};
+
+		core.prepareImageForStorage(cmdStream, swapchainInput);
+
+		core.recordComputeDispatchToCmdStream(
+			cmdStream, 
+			gammaCorrectionPipeline, 
+			gammaCorrectionDispatchCount,
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(gammaCorrectionDescriptorSet).vulkanHandle) },
+			vkcv::PushConstantData(nullptr, 0));
 
 		// present and end
 		core.prepareSwapchainImageForPresent(cmdStream);

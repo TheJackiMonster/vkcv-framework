@@ -69,6 +69,8 @@ namespace vkcv {
 		for (uint64_t id = 0; id < m_images.size(); id++) {
 			destroyImageById(id);
 		}
+		for (const auto swapchainImage : m_swapchainImages)
+			m_core->getContext().getDevice().destroy(swapchainImage.m_view);
 	}
 	
 	bool isDepthImageFormat(vk::Format format) {
@@ -210,8 +212,12 @@ namespace vkcv {
 	}
 	
 	vk::Image ImageManager::getVulkanImage(const ImageHandle &handle) const {
+
+		if (handle.isSwapchainImage()) {
+			m_swapchainImages[m_currentSwapchainInputImage].m_handle;
+		}
+
 		const uint64_t id = handle.getId();
-		
 		if (id >= m_images.size()) {
 			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return nullptr;
@@ -223,8 +229,13 @@ namespace vkcv {
 	}
 	
 	vk::DeviceMemory ImageManager::getVulkanDeviceMemory(const ImageHandle &handle) const {
+
+		if (handle.isSwapchainImage()) {
+			vkcv_log(LogLevel::ERROR, "Swapchain image has no memory");
+			return nullptr;
+		}
+
 		const uint64_t id = handle.getId();
-		
 		if (id >= m_images.size()) {
 			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return nullptr;
@@ -236,27 +247,31 @@ namespace vkcv {
 	}
 	
 	vk::ImageView ImageManager::getVulkanImageView(const ImageHandle &handle) const {
-		const uint64_t id = handle.getId();
 		
+		if (handle.isSwapchainImage()) {
+			return m_swapchainImages[m_currentSwapchainInputImage].m_view;
+		}
+
+		const uint64_t id = handle.getId();
 		if (id >= m_images.size()) {
 			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return nullptr;
 		}
 		
-		auto& image = m_images[id];
-		
-		return image.m_view;
+		return m_images[id].m_view;
 	}
 	
 	void ImageManager::switchImageLayoutImmediate(const ImageHandle& handle, vk::ImageLayout newLayout) {
-		const uint64_t id = handle.getId();
+		uint64_t id = handle.getId();
 		
-		if (id >= m_images.size()) {
+		const bool isSwapchainImage = handle.isSwapchainImage();
+
+		if (id >= m_images.size() && !isSwapchainImage) {
 			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return;
 		}
 		
-		auto& image = m_images[id];
+		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
 		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, newLayout);
 		
 		SubmitInfo submitInfo;
@@ -285,13 +300,14 @@ namespace vkcv {
 		vk::CommandBuffer cmdBuffer) {
 
 		const uint64_t id = handle.getId();
+		const bool isSwapchainImage = handle.isSwapchainImage();
 
-		if (id >= m_images.size()) {
+		if (id >= m_images.size() && !isSwapchainImage) {
 			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return;
 		}
 
-		auto& image = m_images[id];
+		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
 		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, newLayout);
 		recordImageBarrier(cmdBuffer, transitionBarrier);
 		image.m_layout = newLayout;
@@ -302,13 +318,14 @@ namespace vkcv {
 		vk::CommandBuffer cmdBuffer) {
 
 		const uint64_t id = handle.getId();
+		const bool isSwapchainImage = handle.isSwapchainImage();
 
-		if (id >= m_images.size()) {
+		if (id >= m_images.size() && !isSwapchainImage) {
 			std::cerr << "Error: ImageManager::recordImageMemoryBarrier invalid handle" << std::endl;
 			return;
 		}
 
-		auto& image = m_images[id];
+		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
 		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, image.m_layout);
 		recordImageBarrier(cmdBuffer, transitionBarrier);
 	}
@@ -329,6 +346,11 @@ namespace vkcv {
 	{
 		const uint64_t id = handle.getId();
 		
+		if (handle.isSwapchainImage()) {
+			vkcv_log(LogLevel::ERROR, "Swapchain image cannot be filled");
+			return;
+		}
+
 		if (id >= m_images.size()) {
 			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return;
@@ -402,39 +424,42 @@ namespace vkcv {
 	
 	uint32_t ImageManager::getImageWidth(const ImageHandle &handle) const {
 		const uint64_t id = handle.getId();
-		
-		if (id >= m_images.size()) {
+		const bool isSwapchainImage = handle.isSwapchainImage();
+
+		if (id >= m_images.size() && !isSwapchainImage) {
 			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return 0;
 		}
 		
-		auto& image = m_images[id];
+		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
 		
 		return image.m_width;
 	}
 	
 	uint32_t ImageManager::getImageHeight(const ImageHandle &handle) const {
 		const uint64_t id = handle.getId();
+		const bool isSwapchainImage = handle.isSwapchainImage();
 		
-		if (id >= m_images.size()) {
+		if (id >= m_images.size() && !isSwapchainImage) {
 			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return 0;
 		}
 		
-		auto& image = m_images[id];
+		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
 		
 		return image.m_height;
 	}
 	
 	uint32_t ImageManager::getImageDepth(const ImageHandle &handle) const {
 		const uint64_t id = handle.getId();
-		
-		if (id >= m_images.size()) {
+		const bool isSwapchainImage = handle.isSwapchainImage();
+
+		if (id >= m_images.size() && !isSwapchainImage) {
 			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return 0;
 		}
 		
-		auto& image = m_images[id];
+		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
 		
 		return image.m_depth;
 	}
@@ -469,13 +494,32 @@ namespace vkcv {
 	vk::Format ImageManager::getImageFormat(const ImageHandle& handle) const {
 
 		const uint64_t id = handle.getId();
+		const bool isSwapchainFormat = handle.isSwapchainImage();
 
-		if (id >= m_images.size()) {
+		if (id >= m_images.size() && !isSwapchainFormat) {
 			vkcv_log(LogLevel::ERROR, "Invalid handle");
 			return vk::Format::eUndefined;
 		}
 
-		return m_images[id].m_format;
+		return isSwapchainFormat ? m_swapchainImages[m_currentSwapchainInputImage].m_format : m_images[id].m_format;
+	}
+
+	void ImageManager::setCurrentSwapchainImageIndex(int index) {
+		m_currentSwapchainInputImage = index;
+	}
+
+	void ImageManager::setSwapchainImages(const std::vector<vk::Image>& images, std::vector<vk::ImageView> views, 
+		uint32_t width, uint32_t height, vk::Format format) {
+
+		// destroy old views
+		for (auto image : m_swapchainImages)
+			m_core->getContext().getDevice().destroyImageView(image.m_view);
+
+		assert(images.size() == views.size());
+		m_swapchainImages.clear();
+		for (int i = 0; i < images.size(); i++) {
+			m_swapchainImages.push_back(Image(images[i], nullptr, views[i], width, height, 1, format, 1, 1));
+		}
 	}
 
 }
