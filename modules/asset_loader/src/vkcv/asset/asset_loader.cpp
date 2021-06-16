@@ -330,13 +330,13 @@ int loadScene(const std::string &path, Scene &scene){
     std::vector<Sampler> samplers;
     std::vector<Mesh> meshes;
     std::vector<VertexGroup> vertexGroups;
-    std::vector<int> vertexGroupsIndex;
     int groupCount = 0;
 
     Mesh mesh = {};
 
 
     for(int i = 0; i < sceneObjects.meshes.size(); i++){
+        std::vector<int> vertexGroupsIndices;
         fx::gltf::Mesh const &objectMesh = sceneObjects.meshes[i];
 
         for(int j = 0; j < objectMesh.primitives.size(); j++){
@@ -440,12 +440,12 @@ int loadScene(const std::string &path, Scene &scene){
                 static_cast<uint8_t>(objectPrimitive.material)
             });
 
+            vertexGroupsIndices.push_back(groupCount);
             groupCount++;
-            vertexGroupsIndex.push_back(groupCount);
         }
 
         mesh.name = sceneObjects.meshes[i].name;
-        mesh.vertexGroups = vertexGroupsIndex;
+        mesh.vertexGroups = vertexGroupsIndices;
 
         meshes.push_back(mesh);
     }

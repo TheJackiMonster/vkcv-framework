@@ -180,11 +180,14 @@ int main(int argc, const char** argv) {
 	}
 
 	std::vector<glm::mat4> modelMatrices;
-	modelMatrices.clear();
-	for(int m = 0; m < scene.meshes.size(); m++){
-	    modelMatrices.push_back(arrayTo4x4Matrix(scene.meshes[m].modelMatrix));
+	modelMatrices.resize(scene.vertexGroups.size(), glm::mat4(1.f));
+	for (const auto &mesh : scene.meshes) {
+		const glm::mat4 m = arrayTo4x4Matrix(mesh.modelMatrix);
+		for (const auto &vertexGroupIndex : mesh.vertexGroups) {
+			modelMatrices[vertexGroupIndex] = m;
+		}
 	}
-    std::vector<glm::mat4> mvp;
+	std::vector<glm::mat4> mvp;
 
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
