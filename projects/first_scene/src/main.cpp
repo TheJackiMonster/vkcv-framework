@@ -4,6 +4,7 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
+#include <vkcv/Logger.hpp>
 
 glm::mat4 arrayTo4x4Matrix(std::array<float,16> array){
     glm::mat4 matrix;
@@ -43,7 +44,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::asset::Scene scene;
 
-	const char* path = argc > 1 ? argv[1] : "resources/Cutlery/CutlerySzene.gltf";
+	const char* path = argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf";
 	int result = vkcv::asset::loadScene(path, scene);
 
 	if (result == 1) {
@@ -57,8 +58,6 @@ int main(int argc, const char** argv) {
 	assert(!scene.vertexGroups.empty());
 	std::vector<std::vector<uint8_t>> vBuffers;
     std::vector<std::vector<uint8_t>> iBuffers;
-	//vBuffers.reserve(scene.vertexGroups.size());
-    //iBuffers.reserve(scene.vertexGroups.size());
 
     std::vector<vkcv::VertexBufferBinding> vBufferBindings;
     std::vector<std::vector<vkcv::VertexBufferBinding>> vertexBufferBindings;
@@ -132,7 +131,37 @@ int main(int argc, const char** argv) {
 
 	uint32_t setID = 0;
 	std::vector<vkcv::DescriptorBinding> descriptorBindings = { sceneShaderProgram.getReflectedDescriptors()[setID] };
-	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+
+    vkcv::SamplerHandle sampler = core.createSampler(
+        vkcv::SamplerFilterType::LINEAR,
+        vkcv::SamplerFilterType::LINEAR,
+        vkcv::SamplerMipmapMode::LINEAR,
+        vkcv::SamplerAddressMode::REPEAT
+    );
+
+    std::vector<vkcv::Image> sceneImages;
+    std::vector<vkcv::DescriptorSetHandle> descriptorSets;
+    for (const auto& vertexGroup : scene.vertexGroups) {
+        descriptorSets.push_back(core.createDescriptorSet(descriptorBindings));
+
+        const auto &material = scene.materials[vertexGroup.materialIndex];
+
+        int baseColorIndex = material.baseColor;
+        if (baseColorIndex < 0) {
+            vkcv_log(vkcv::LogLevel::WARNING ,"Material lacks base color");
+            baseColorIndex = 0;
+        }
+
+        vkcv::asset::Texture &sceneTexture = scene.textures[baseColorIndex];
+
+        sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, sceneTexture.w, sceneTexture.h));
+        sceneImages.back().fill(sceneTexture.data.data());
+
+        vkcv::DescriptorWrites setWrites;
+        setWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(0, sceneImages.back().getHandle()) };
+        setWrites.samplerWrites = { vkcv::SamplerDescriptorWrite(1, sampler) };
+        core.writeDescriptorSet(descriptorSets.back(), setWrites);
+    }
 
 	const vkcv::PipelineConfig scenePipelineDefinition(
 		sceneShaderProgram,
@@ -140,7 +169,7 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
 		scenePass,
 		vAttributes,
-		{ core.getDescriptorSet(descriptorSet).layout },
+		{ core.getDescriptorSet(descriptorSets[0]).layout },
 		true);
 	vkcv::PipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
 	
@@ -148,34 +177,17 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
-	
-	// FIXME There should be a test here to make sure there is at least 1
-	// texture in the scene.
-	vkcv::asset::Texture &tex = scene.textures[0];
-	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
-	texture.fill(tex.data.data());
-
-	vkcv::SamplerHandle sampler = core.createSampler(
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::REPEAT
-	);
-
-	vkcv::DescriptorWrites setWrites;
-	setWrites.sampledImageWrites    = { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
-	setWrites.samplerWrites         = { vkcv::SamplerDescriptorWrite(1, sampler) };
-	core.writeDescriptorSet(descriptorSet, setWrites);
 
 	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
     std::vector<vkcv::DrawcallInfo> drawcalls;
+	for(int i = 0; i < scene.vertexGroups.size(); i++){
+        vkcv::Mesh renderMesh(vertexBufferBindings[i], indexBuffers[i].getVulkanHandle(), scene.vertexGroups[i].numIndices);
 
-	for(int l = 0; l < scene.vertexGroups.size(); l++){
-        vkcv::Mesh renderMesh(vertexBufferBindings[l], indexBuffers[l].getVulkanHandle(), scene.vertexGroups[l].numIndices);
+        vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSets[i]).vulkanHandle);
+
 	    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}));
 	}
 
