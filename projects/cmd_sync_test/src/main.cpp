@@ -271,9 +271,18 @@ int main(int argc, const char** argv) {
 	const size_t voxelCount = voxelResolution * voxelResolution * voxelResolution;
 
 	vkcv::ShaderProgram voxelVisualisationShader;
-	voxelVisualisationShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelVisualisation_vert.spv");
-	voxelVisualisationShader.addShader(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelVisualisation_geom.spv");
-	voxelVisualisationShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelVisualisation_frag.spv");
+	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelVisualisation.vert",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		voxelVisualisationShader.addShader(shaderStage, path);
+	});
+	compiler.compile(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelVisualisation.geom",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		voxelVisualisationShader.addShader(shaderStage, path);
+	});
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelVisualisation.frag",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		voxelVisualisationShader.addShader(shaderStage, path);
+	});
 
 	const std::vector<vkcv::DescriptorBinding> voxelVisualisationDescriptorBindings = { voxelVisualisationShader.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle voxelVisualisationDescriptorSet = core.createDescriptorSet(voxelVisualisationDescriptorBindings);
