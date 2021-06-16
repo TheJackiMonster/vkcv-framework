@@ -39,7 +39,6 @@ build_win10_msvc:
   tags: 
     - win10-msvc-cached
   variables:
-    # GIT_STRATEGY: clone
     GIT_SUBMODULE_STRATEGY: recursive
   timeout: 10m
   retry: 0
