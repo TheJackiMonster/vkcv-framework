@@ -287,12 +287,6 @@ int loadScene(const std::string &path, Scene &scene){
         for(int k = 0; k < sceneObjects.textures.size(); k++){
             const fx::gltf::Texture &tex = sceneObjects.textures[k];
             const fx::gltf::Image &img = sceneObjects.images[tex.source];
-#ifndef NDEBUG
-            printf("texture name=%s sampler=%u source=%u\n",
-                   tex.name.c_str(), tex.sampler, tex.source);
-            printf("image   name=%s uri=%s mime=%s\n", img.name.c_str(),
-                   img.uri.c_str(), img.mimeType.c_str());
-#endif
             std::string img_uri = dir + "/" + img.uri;
             int w, h, c;
             uint8_t *data = stbi_load(img_uri.c_str(), &w, &h, &c, 4);
@@ -358,8 +352,6 @@ int loadScene(const std::string &path, Scene &scene){
                }
 
             });
-            printf("baseColor index=%d normal=%d metallic factor=%f\n",
-                   materials[l].baseColor, materials[l].normal, materials[l].metallicFactor);
         }
     }
 

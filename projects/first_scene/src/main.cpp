@@ -29,7 +29,6 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-	//vkcv::CameraManager cameraManager(window, static_cast<float>(window.getWidth()), static_cast<float>(window.getHeight()));
 	vkcv::camera::CameraManager cameraManager(window);
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
@@ -107,7 +106,6 @@ int main(int argc, const char** argv) {
 		vertexBufferIndex++;
 	}
 
-	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
@@ -131,8 +129,6 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram sceneShaderProgram{};
 	sceneShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
 	sceneShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
-	//sceneShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
-	//sceneShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
 
 	const std::vector<vkcv::VertexAttachment> vertexAttachments = sceneShaderProgram.getVertexAttachments();
 	std::vector<vkcv::VertexBinding> bindings;
