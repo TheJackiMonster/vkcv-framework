@@ -4,6 +4,7 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
+#include <vkcv/shader/GLSLCompiler.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
@@ -104,12 +105,20 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	vkcv::ShaderProgram firstMeshProgram{};
-    firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
-    firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
+	vkcv::shader::GLSLCompiler compiler;
 
-    const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
-    
+	vkcv::ShaderProgram firstMeshProgram;
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"), 
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		firstMeshProgram.addShader(shaderStage, path);
+	});
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		firstMeshProgram.addShader(shaderStage, path);
+	});
+
+	const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
+
     std::vector<vkcv::VertexBinding> bindings;
     for (size_t i = 0; i < vertexAttachments.size(); i++) {
 		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
@@ -162,8 +171,14 @@ int main(int argc, const char** argv) {
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
 	vkcv::ShaderProgram shadowShader;
-	shadowShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/shadow_vert.spv");
-	shadowShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/shadow_frag.spv");
+	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/shadow.vert",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		shadowShader.addShader(shaderStage, path);
+	});
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/shadow.frag",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		shadowShader.addShader(shaderStage, path);
+	});
 
 	const vk::Format shadowMapFormat = vk::Format::eD16Unorm;
 	const std::vector<vkcv::AttachmentDescription> shadowAttachments = {
@@ -211,9 +226,18 @@ int main(int argc, const char** argv) {
 	vkcv::Image voxelizationDummyRenderTarget = core.createImage(voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, true);
 
 	vkcv::ShaderProgram voxelizationShader;
-	voxelizationShader.addShader(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelization_vert.spv");
-	voxelizationShader.addShader(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelization_geom.spv");
-	voxelizationShader.addShader(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelization_frag.spv");
+	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelization.vert",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		voxelizationShader.addShader(shaderStage, path);
+	});
+	compiler.compile(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelization.geom",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		voxelizationShader.addShader(shaderStage, path);
+	});
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelization.frag",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		voxelizationShader.addShader(shaderStage, path);
+	});
 
 	vkcv::PassConfig voxelizationPassConfig({
 		vkcv::AttachmentDescription(vkcv::AttachmentOperation::DONT_CARE, vkcv::AttachmentOperation::DONT_CARE, voxelizationDummyFormat)});
@@ -312,7 +336,10 @@ int main(int argc, const char** argv) {
 	});
 
 	vkcv::ShaderProgram resetVoxelShader;
-	resetVoxelShader.addShader(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelReset_comp.spv");
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelReset.comp",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		resetVoxelShader.addShader(shaderStage, path);
+	});
 
 	vkcv::DescriptorSetHandle resetVoxelDescriptorSet = core.createDescriptorSet(resetVoxelShader.getReflectedDescriptors()[0]);
 	vkcv::PipelineHandle resetVoxelPipeline = core.createComputePipeline(
