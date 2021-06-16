@@ -55,11 +55,12 @@ namespace vkcv {
 
         glfwSetScrollCallback(m_window, Window::onMouseScrollEvent);
 
+        glfwSetJoystickCallback(nullptr);   // use this before to avoid crashing
         glfwSetJoystickUserPointer(GLFW_JOYSTICK_1, this);
     }
 
     void Window::pollEvents() {
-        onGamepadEvent(GLFW_JOYSTICK_1, this);
+        onGamepadEvent(GLFW_JOYSTICK_1);
         glfwPollEvents();
     }
 
@@ -103,7 +104,8 @@ namespace vkcv {
         }
     }
 
-    void Window::onGamepadEvent(int gamepadIndex, Window *window) {
+    void Window::onGamepadEvent(int gamepadIndex) {
+        auto window = static_cast<Window *>(glfwGetJoystickUserPointer(gamepadIndex));
         if (glfwJoystickPresent(gamepadIndex)) {
             window->e_gamepad(gamepadIndex);
         }
