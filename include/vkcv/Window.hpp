@@ -66,9 +66,10 @@ namespace vkcv {
         static void onKeyEvent(GLFWwindow *callbackWindow, int key, int scancode, int action, int mods);
 
         /**
-         * @brief TODO
+         * @brief A callback function for gamepad input events.
+         * @param gamepadIndex The gamepad index.
          */
-        static void onGamepadEvent(int gamepadIndex, Window *window);
+        static void onGamepadEvent(int gamepadIndex);
 
     public:
         /**
