@@ -43,7 +43,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::asset::Scene scene;
 
-	const char* path = argc > 1 ? argv[1] : "resources/Cutlery/cutlerySzene.gltf";
+	const char* path = argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf";
 	int result = vkcv::asset::loadScene(path, scene);
 
 	if (result == 1) {
@@ -56,7 +56,7 @@ int main(int argc, const char** argv) {
 
 	assert(!scene.vertexGroups.empty());
 	std::vector<uint8_t> vBuffers;
-    std::vector<uint8_t> iBuffers;
+    std::vector<std::vector<uint8_t>> iBuffers;
 	//vBuffers.reserve(scene.vertexGroups.size());
     //iBuffers.reserve(scene.vertexGroups.size());
 
@@ -80,7 +80,7 @@ int main(int argc, const char** argv) {
                 vkcv::BufferMemoryType::DEVICE_LOCAL
         );
         indexBuffer.fill(scene.vertexGroups[i].indexBuffer.data);*/
-        iBuffers.insert(iBuffers.end(), scene.vertexGroups[i].indexBuffer.data.begin(),scene.vertexGroups[i].indexBuffer.data.end());
+        iBuffers.push_back(scene.vertexGroups[i].indexBuffer.data);
 
         auto& attributes = scene.vertexGroups[i].vertexBuffer.attributes;
 
@@ -96,12 +96,13 @@ int main(int argc, const char** argv) {
     );
     vertexBuffer.fill(vBuffers);
 
-    auto indexBuffer = core.createBuffer<uint8_t>(
-            vkcv::BufferType::INDEX,
-            iBuffers.size(),
-            vkcv::BufferMemoryType::DEVICE_LOCAL
-    );
-    indexBuffer.fill(iBuffers);
+	std::vector<vkcv::Buffer<uint8_t>> indexBuffers;
+	for (const auto& dataBuffer : iBuffers) {
+		indexBuffers.push_back(core.createBuffer<uint8_t>(
+			vkcv::BufferType::INDEX,
+			dataBuffer.size()));
+		indexBuffers.back().fill(dataBuffer);
+	}
 
     for (int m = 0; m < scene.vertexGroups.size(); m++){
         for (int k = 0; k < scene.vertexGroups[m].vertexBuffer.attributes.size(); k++){
@@ -184,7 +185,7 @@ int main(int argc, const char** argv) {
     std::vector<vkcv::DrawcallInfo> drawcalls;
 
 	for(int l = 0; l < scene.vertexGroups.size(); l++){
-        vkcv::Mesh renderMesh(vertexBufferBindings[l], indexBuffer.getVulkanHandle(), scene.vertexGroups[l].numIndices);
+        vkcv::Mesh renderMesh(vertexBufferBindings[l], indexBuffers[l].getVulkanHandle(), scene.vertexGroups[l].numIndices);
 	    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}));
 	}
 
