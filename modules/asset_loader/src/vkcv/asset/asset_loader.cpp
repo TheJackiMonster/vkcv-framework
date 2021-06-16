@@ -365,7 +365,7 @@ int loadScene(const std::string &path, Scene &scene){
                 attribute.offset = sceneObjects.bufferViews[accessor.bufferView].byteOffset;
                 attribute.length = sceneObjects.bufferViews[accessor.bufferView].byteLength;
                 attribute.stride = sceneObjects.bufferViews[accessor.bufferView].byteStride;
-		attribute.componentType = static_cast<ComponentType>(accessor.componentType);
+		        attribute.componentType = static_cast<ComponentType>(accessor.componentType);
 
                 if (convertTypeToInt(accessor.type) != 10) {
                     attribute.componentCount = convertTypeToInt(accessor.type);

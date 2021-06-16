@@ -31,7 +31,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::asset::Scene mesh;
 
-	const char* path = argc > 1 ? argv[1] : "resources/Szene/Szene.gltf";
+	const char* path = argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf";
 	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
