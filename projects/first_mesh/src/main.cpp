@@ -31,7 +31,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::asset::Scene mesh;
 
-	const char* path = argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf";
+	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
 	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
@@ -45,19 +45,19 @@ int main(int argc, const char** argv) {
 	assert(!mesh.vertexGroups.empty());
 	auto vertexBuffer = core.createBuffer<uint8_t>(
 			vkcv::BufferType::VERTEX,
-			mesh.vertexGroups[2].vertexBuffer.data.size(),
+			mesh.vertexGroups[0].vertexBuffer.data.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL
 	);
 	
-	vertexBuffer.fill(mesh.vertexGroups[2].vertexBuffer.data);
+	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
 
 	auto indexBuffer = core.createBuffer<uint8_t>(
 			vkcv::BufferType::INDEX,
-			mesh.vertexGroups[2].indexBuffer.data.size(),
+			mesh.vertexGroups[0].indexBuffer.data.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL
 	);
 	
-	indexBuffer.fill(mesh.vertexGroups[2].indexBuffer.data);
+	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
 
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
@@ -84,7 +84,7 @@ int main(int argc, const char** argv) {
     firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
     firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 	
-	auto& attributes = mesh.vertexGroups[2].vertexBuffer.attributes;
+	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 	
 	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
@@ -120,7 +120,7 @@ int main(int argc, const char** argv) {
 	
 	// FIXME There should be a test here to make sure there is at least 1
 	// texture in the mesh.
-	vkcv::asset::Texture &tex = mesh.textures[2];
+	vkcv::asset::Texture &tex = mesh.textures[0];
 	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
 	texture.fill(tex.data.data());
 
@@ -145,7 +145,7 @@ int main(int argc, const char** argv) {
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-	const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[2].numIndices);
+	const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
 
 	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage });

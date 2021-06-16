@@ -29,7 +29,12 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-	vkcv::CameraManager cameraManager(window, static_cast<float>(window.getWidth()), static_cast<float>(window.getHeight()));
+	//vkcv::CameraManager cameraManager(window, static_cast<float>(window.getWidth()), static_cast<float>(window.getHeight()));
+	vkcv::camera::CameraManager cameraManager(window);
+	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+
+	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
 
 	window.initEvents();
 
@@ -57,31 +62,31 @@ int main(int argc, const char** argv) {
 
 	assert(!scene.vertexGroups.empty());
 	std::vector<std::vector<uint8_t>> vBuffers;
-    std::vector<std::vector<uint8_t>> iBuffers;
+	std::vector<std::vector<uint8_t>> iBuffers;
 
-    std::vector<vkcv::VertexBufferBinding> vBufferBindings;
-    std::vector<std::vector<vkcv::VertexBufferBinding>> vertexBufferBindings;
-    std::vector<vkcv::VertexAttribute> vAttributes;
+	std::vector<vkcv::VertexBufferBinding> vBufferBindings;
+	std::vector<std::vector<vkcv::VertexBufferBinding>> vertexBufferBindings;
+	std::vector<vkcv::asset::VertexAttribute> vAttributes;
 
-    for (int i = 0; i < scene.vertexGroups.size(); i++){
+	for (int i = 0; i < scene.vertexGroups.size(); i++) {
 
-        vBuffers.push_back(scene.vertexGroups[i].vertexBuffer.data);
-        iBuffers.push_back(scene.vertexGroups[i].indexBuffer.data);
+		vBuffers.push_back(scene.vertexGroups[i].vertexBuffer.data);
+		iBuffers.push_back(scene.vertexGroups[i].indexBuffer.data);
 
-        auto& attributes = scene.vertexGroups[i].vertexBuffer.attributes;
+		auto& attributes = scene.vertexGroups[i].vertexBuffer.attributes;
 
-        std::sort(attributes.begin(), attributes.end(), [](const vkcv::VertexAttribute& x, const vkcv::VertexAttribute& y) {
-            return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-        });
-    }
+		std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
+			return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
+			});
+	}
 
-    std::vector<vkcv::Buffer<uint8_t>> vertexBuffers;
-    for(const vkcv::asset::VertexGroup &group : scene.vertexGroups){
-        vertexBuffers.push_back(core.createBuffer<uint8_t>(
-            vkcv::BufferType::VERTEX,
-            group.vertexBuffer.data.size()));
-        vertexBuffers.back().fill(group.vertexBuffer.data);
-    }
+	std::vector<vkcv::Buffer<uint8_t>> vertexBuffers;
+	for (const vkcv::asset::VertexGroup& group : scene.vertexGroups) {
+		vertexBuffers.push_back(core.createBuffer<uint8_t>(
+			vkcv::BufferType::VERTEX,
+			group.vertexBuffer.data.size()));
+		vertexBuffers.back().fill(group.vertexBuffer.data);
+	}
 
 	std::vector<vkcv::Buffer<uint8_t>> indexBuffers;
 	for (const auto& dataBuffer : iBuffers) {
@@ -91,16 +96,16 @@ int main(int argc, const char** argv) {
 		indexBuffers.back().fill(dataBuffer);
 	}
 
-    int vertexBufferIndex = 0;
-    for (const auto &vertexGroup : scene.vertexGroups){
-        for (const auto &attribute : vertexGroup.vertexBuffer.attributes){
-            vAttributes.push_back(attribute);
-            vBufferBindings.push_back(vkcv::VertexBufferBinding(attribute.offset, vertexBuffers[vertexBufferIndex].getVulkanHandle()));
-        }
-        vertexBufferBindings.push_back(vBufferBindings);
-        vBufferBindings.clear();
-        vertexBufferIndex++;
-    }
+	int vertexBufferIndex = 0;
+	for (const auto& vertexGroup : scene.vertexGroups) {
+		for (const auto& attribute : vertexGroup.vertexBuffer.attributes) {
+			vAttributes.push_back(attribute);
+			vBufferBindings.push_back(vkcv::VertexBufferBinding(attribute.offset, vertexBuffers[vertexBufferIndex].getVulkanHandle()));
+		}
+		vertexBufferBindings.push_back(vBufferBindings);
+		vBufferBindings.clear();
+		vertexBufferIndex++;
+	}
 
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
@@ -108,11 +113,11 @@ int main(int argc, const char** argv) {
 		vkcv::AttachmentOperation::CLEAR,
 		core.getSwapchainImageFormat()
 	);
-	
+
 	const vkcv::AttachmentDescription depth_attachment(
-			vkcv::AttachmentOperation::STORE,
-			vkcv::AttachmentOperation::CLEAR,
-			vk::Format::eD32Sfloat
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::CLEAR,
+		vk::Format::eD32Sfloat
 	);
 
 	vkcv::PassConfig scenePassDefinition({ present_color_attachment, depth_attachment });
@@ -125,53 +130,62 @@ int main(int argc, const char** argv) {
 
 	vkcv::ShaderProgram sceneShaderProgram{};
 	sceneShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
-    sceneShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
-    sceneShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
-    sceneShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
+	sceneShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
+	//sceneShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
+	//sceneShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
+
+	const std::vector<vkcv::VertexAttachment> vertexAttachments = sceneShaderProgram.getVertexAttachments();
+	std::vector<vkcv::VertexBinding> bindings;
+	for (size_t i = 0; i < vertexAttachments.size(); i++) {
+		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+	}
+
+	const vkcv::VertexLayout sceneLayout(bindings);
 
 	uint32_t setID = 0;
+
 	std::vector<vkcv::DescriptorBinding> descriptorBindings = { sceneShaderProgram.getReflectedDescriptors()[setID] };
 
-    vkcv::SamplerHandle sampler = core.createSampler(
-        vkcv::SamplerFilterType::LINEAR,
-        vkcv::SamplerFilterType::LINEAR,
-        vkcv::SamplerMipmapMode::LINEAR,
-        vkcv::SamplerAddressMode::REPEAT
-    );
+	vkcv::SamplerHandle sampler = core.createSampler(
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerMipmapMode::LINEAR,
+		vkcv::SamplerAddressMode::REPEAT
+	);
 
-    std::vector<vkcv::Image> sceneImages;
-    std::vector<vkcv::DescriptorSetHandle> descriptorSets;
-    for (const auto& vertexGroup : scene.vertexGroups) {
-        descriptorSets.push_back(core.createDescriptorSet(descriptorBindings));
+	std::vector<vkcv::Image> sceneImages;
+	std::vector<vkcv::DescriptorSetHandle> descriptorSets;
+	for (const auto& vertexGroup : scene.vertexGroups) {
+		descriptorSets.push_back(core.createDescriptorSet(descriptorBindings));
 
-        const auto &material = scene.materials[vertexGroup.materialIndex];
+		const auto& material = scene.materials[vertexGroup.materialIndex];
 
-        int baseColorIndex = material.baseColor;
-        if (baseColorIndex < 0) {
-            vkcv_log(vkcv::LogLevel::WARNING ,"Material lacks base color");
-            baseColorIndex = 0;
-        }
+		int baseColorIndex = material.baseColor;
+		if (baseColorIndex < 0) {
+			vkcv_log(vkcv::LogLevel::WARNING, "Material lacks base color");
+			baseColorIndex = 0;
+		}
 
-        vkcv::asset::Texture &sceneTexture = scene.textures[baseColorIndex];
+		vkcv::asset::Texture& sceneTexture = scene.textures[baseColorIndex];
 
-        sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, sceneTexture.w, sceneTexture.h));
-        sceneImages.back().fill(sceneTexture.data.data());
+		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, sceneTexture.w, sceneTexture.h));
+		sceneImages.back().fill(sceneTexture.data.data());
 
-        vkcv::DescriptorWrites setWrites;
-        setWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(0, sceneImages.back().getHandle()) };
-        setWrites.samplerWrites = { vkcv::SamplerDescriptorWrite(1, sampler) };
-        core.writeDescriptorSet(descriptorSets.back(), setWrites);
-    }
+		vkcv::DescriptorWrites setWrites;
+		setWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(0, sceneImages.back().getHandle()) };
+		setWrites.samplerWrites = { vkcv::SamplerDescriptorWrite(1, sampler) };
+		core.writeDescriptorSet(descriptorSets.back(), setWrites);
+	}
 
-	const vkcv::PipelineConfig scenePipelineDefinition(
+	const vkcv::PipelineConfig scenePipelineDefsinition{
 		sceneShaderProgram,
-        UINT32_MAX,
-        UINT32_MAX,
+		UINT32_MAX,
+		UINT32_MAX,
 		scenePass,
-		vAttributes,
+		{sceneLayout},
 		{ core.getDescriptorSet(descriptorSets[0]).layout },
-		true);
-	vkcv::PipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
+		true };
+	vkcv::PipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefsinition);
 	
 	if (!scenePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
@@ -223,8 +237,8 @@ int main(int argc, const char** argv) {
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = end - start;
 		start = end;
-		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
-		const glm::mat4 vp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		glm::mat4 vp = cameraManager.getActiveCamera().getMVP();
 
 		mvp.clear();
         for (const auto& m : modelMatrices) {
