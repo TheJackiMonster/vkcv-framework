@@ -29,10 +29,10 @@ int main(int argc, const char** argv) {
 		{ "VK_KHR_swapchain" }
 	);
 
-	vkcv::asset::Mesh mesh;
+	vkcv::asset::Scene mesh;
 
 	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
-	int result = vkcv::asset::loadMesh(path, mesh);
+	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
 		std::cout << "Mesh loading successful!" << std::endl;
@@ -118,8 +118,11 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, mesh.texture_hack.w, mesh.texture_hack.h);
-	texture.fill(mesh.texture_hack.img);
+	// FIXME There should be a test here to make sure there is at least 1
+	// texture in the mesh.
+	vkcv::asset::Texture &tex = mesh.textures[0];
+	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
+	texture.fill(tex.data.data());
 
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
@@ -129,9 +132,9 @@ int main(int argc, const char** argv) {
 	);
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
 	vkcv::DescriptorWrites setWrites;
 	setWrites.sampledImageWrites	= { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
@@ -195,7 +198,6 @@ int main(int argc, const char** argv) {
 			renderTargets);
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-
 		core.endFrame();
 	}
 	

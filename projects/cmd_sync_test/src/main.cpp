@@ -39,10 +39,10 @@ int main(int argc, const char** argv) {
 		{ "VK_KHR_swapchain" }
 	);
 
-	vkcv::asset::Mesh mesh;
+	vkcv::asset::Scene mesh;
 
 	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
-	int result = vkcv::asset::loadMesh(path, mesh);
+	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
 		std::cout << "Mesh loading successful!" << std::endl;
@@ -137,8 +137,11 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, mesh.texture_hack.w, mesh.texture_hack.h);
-	texture.fill(mesh.texture_hack.img);
+	//vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, mesh.texture_hack.w, mesh.texture_hack.h);
+	//texture.fill(mesh.texture_hack.img);
+    vkcv::asset::Texture &tex = mesh.textures[0];
+    vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
+    texture.fill(tex.data.data());
 
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
