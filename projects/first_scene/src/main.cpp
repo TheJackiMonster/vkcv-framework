@@ -225,10 +225,6 @@ int main(int argc, const char** argv) {
             mvp.push_back(vp * m);
         }
 
-        //vkcv::PushConstantData pushConstantData((void*)mainPassMatrices.data(), 2 * sizeof(glm::mat4));
-
-		//std::vector<glm::mat4> pushConstantDataVector(drawcalls.size(), mvp);
-
 		vkcv::PushConstantData pushConstantData((void*)mvp.data(), sizeof(glm::mat4));
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
