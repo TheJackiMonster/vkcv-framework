@@ -12,7 +12,8 @@ enum class PrimitiveType : uint32_t {
 	UNDEFINED = 0,
 	POSITION = 1,
 	NORMAL = 2,
-	TEXCOORD_0 = 3
+	TEXCOORD_0 = 3,
+	TEXCOORD_1 = 4
 };
 
 /* These integer values are used the same way in OpenGL, Vulkan and glTF. This

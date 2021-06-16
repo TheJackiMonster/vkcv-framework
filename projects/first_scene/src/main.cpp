@@ -43,7 +43,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::asset::Scene scene;
 
-	const char* path = argc > 1 ? argv[1] : "resources/Szene/Szene.gltf";
+	const char* path = argc > 1 ? argv[1] : "resources/Cutlery/cutlerySzene.gltf";
 	int result = vkcv::asset::loadScene(path, scene);
 
 	if (result == 1) {
@@ -160,7 +160,7 @@ int main(int argc, const char** argv) {
 	
 	// FIXME There should be a test here to make sure there is at least 1
 	// texture in the scene.
-	vkcv::asset::Texture &tex = scene.textures[2];
+	vkcv::asset::Texture &tex = scene.textures[0];
 	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
 	texture.fill(tex.data.data());
 

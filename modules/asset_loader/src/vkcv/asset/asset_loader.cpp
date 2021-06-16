@@ -354,6 +354,8 @@ int loadScene(const std::string &path, Scene &scene){
                     attribute.type = PrimitiveType::NORMAL;
                 } else if (attrib.first == "TEXCOORD_0") {
                     attribute.type = PrimitiveType::TEXCOORD_0;
+                } else if (attrib.first == "TEXCOORD_1") {
+                    attribute.type = PrimitiveType::TEXCOORD_1;
                 } else {
                     return 0;
                 }
