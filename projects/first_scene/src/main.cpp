@@ -235,7 +235,8 @@ int main(int argc, const char** argv) {
 		}
   
 		auto end = std::chrono::system_clock::now();
-		auto deltatime = end - start;
+		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		
 		start = end;
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 		glm::mat4 vp = cameraManager.getActiveCamera().getMVP();
