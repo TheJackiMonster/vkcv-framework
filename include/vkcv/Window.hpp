@@ -61,6 +61,13 @@ namespace vkcv {
          * @param[in] mods Bit field describing which [modifier keys](@ref mods) were held down.
          */
         static void onKeyEvent(GLFWwindow *callbackWindow, int key, int scancode, int action, int mods);
+	
+        /**
+         * char callback for any typed character
+         * @param[in] window The window that received the event
+         * @param[in] c The character that got typed
+         */
+		static void onCharEvent(GLFWwindow *callbackWindow, unsigned int c);
 
     public:
         /**
@@ -98,6 +105,7 @@ namespace vkcv {
         event< double, double > e_mouseScroll;
         event< int, int > e_resize;
         event< int, int, int, int > e_key;
+        event< unsigned int > e_char;
 
         /**
          * returns the current window

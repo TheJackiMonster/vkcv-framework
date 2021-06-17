@@ -14,7 +14,13 @@ namespace vkcv::camera {
         m_lastY = static_cast<float>(window.getHeight()) / 2.0f;
     }
 
-    CameraManager::~CameraManager() {}
+    CameraManager::~CameraManager() {
+    	m_window.e_key.remove(m_keyHandle);
+		m_window.e_mouseMove.remove(m_mouseMoveHandle);
+		m_window.e_mouseScroll.remove(m_mouseScrollHandle);
+		m_window.e_mouseButton.remove(m_mouseButtonHandle);
+		m_window.e_resize.remove(m_resizeHandle);
+    }
 
     void CameraManager::bindCameraToEvents() {
         m_keyHandle = m_window.e_key.add( [&](int key, int scancode, int action, int mods) { this->keyCallback(key, scancode, action, mods); });

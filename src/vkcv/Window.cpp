@@ -58,6 +58,8 @@ namespace vkcv {
         glfwSetKeyCallback(m_window, Window::onKeyEvent);
 
         glfwSetScrollCallback(m_window, Window::onMouseScrollEvent);
+	
+		glfwSetCharCallback(m_window, Window::onCharEvent);
     }
 
     void Window::pollEvents() {
@@ -65,7 +67,6 @@ namespace vkcv {
     }
 
     void Window::onMouseButtonEvent(GLFWwindow *callbackWindow, int button, int action, int mods) {
-
         auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
 
         if (window != nullptr) {
@@ -74,7 +75,6 @@ namespace vkcv {
     }
 
     void Window::onMouseMoveEvent(GLFWwindow *callbackWindow, double x, double y) {
-
         auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
 
         if (window != nullptr) {
@@ -91,7 +91,6 @@ namespace vkcv {
     }
 
     void Window::onResize(GLFWwindow *callbackWindow, int width, int height) {
-
         auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
 
         if (window != nullptr) {
@@ -100,12 +99,19 @@ namespace vkcv {
     }
 
     void Window::onKeyEvent(GLFWwindow *callbackWindow, int key, int scancode, int action, int mods) {
-
         auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
 
         if (window != nullptr) {
             window->e_key(key, scancode, action, mods);
         }
+    }
+    
+    void Window::onCharEvent(GLFWwindow *callbackWindow, unsigned int c) {
+		auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+	
+		if (window != nullptr) {
+			window->e_char(c);
+		}
     }
 
     bool Window::isWindowOpen() const {

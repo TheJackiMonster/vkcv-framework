@@ -30,7 +30,7 @@ int main(int argc, const char** argv) {
 		{ "VK_KHR_swapchain" }
 	);
 	
-	vkcv::gui::GUI gui = vkcv::gui::GUI::create(core, window);
+	vkcv::gui::GUI gui (core, window);
 
 	const auto& context = core.getContext();
 	const vk::Instance& instance = context.getInstance();

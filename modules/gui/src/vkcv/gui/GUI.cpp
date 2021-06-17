@@ -15,15 +15,32 @@ namespace vkcv::gui {
 		vkcv_log(LogLevel::ERROR, "ImGui has a problem with Vulkan! (%s)", vk::to_string(result).c_str());
 	}
 	
-	GUI::GUI(GLFWwindow* window, Core& core) :
+	GUI::GUI(Core& core, Window& window) :
+	m_window(window),
 	m_core(core),
-	m_context(core.getContext()),
+	m_context(m_core.getContext()),
 	m_gui_context(nullptr) {
 		IMGUI_CHECKVERSION();
 		
 		m_gui_context = ImGui::CreateContext();
 		
-		ImGui_ImplGlfw_InitForVulkan(window, false);
+		ImGui_ImplGlfw_InitForVulkan(m_window.getWindow(), false);
+		
+		f_mouseButton = m_window.e_mouseButton.add([&](int button, int action, int mods) {
+			ImGui_ImplGlfw_MouseButtonCallback(m_window.getWindow(), button, action, mods);
+		});
+		
+		f_mouseScroll = m_window.e_mouseScroll.add([&](double xoffset, double yoffset) {
+			ImGui_ImplGlfw_ScrollCallback(m_window.getWindow(), xoffset, yoffset);
+		});
+		
+		f_key = m_window.e_key.add([&](int key, int scancode, int action, int mods) {
+			ImGui_ImplGlfw_KeyCallback(m_window.getWindow(), key, scancode, action, mods);
+		});
+		
+		f_char = m_window.e_char.add([&](unsigned int c) {
+			ImGui_ImplGlfw_CharCallback(m_window.getWindow(), c);
+		});
 		
 		vk::DescriptorPoolSize pool_sizes[] = {
 				vk::DescriptorPoolSize(vk::DescriptorType::eSampler, 1000),
@@ -49,7 +66,7 @@ namespace vkcv::gui {
 		m_descriptor_pool = m_context.getDevice().createDescriptorPool(descriptorPoolCreateInfo);
 		
 		const vk::PhysicalDevice& physicalDevice = m_context.getPhysicalDevice();
-		const Swapchain& swapchain = core.getSwapchain();
+		const Swapchain& swapchain = m_core.getSwapchain();
 		
 		const uint32_t graphicsQueueFamilyIndex = (
 				m_context.getQueueManager().getGraphicsQueues()[0].familyIndex
@@ -124,7 +141,7 @@ namespace vkcv::gui {
 		
 		const SubmitInfo submitInfo { QueueType::Graphics, {}, {} };
 		
-		core.recordAndSubmitCommands(submitInfo, [](const vk::CommandBuffer& commandBuffer) {
+		m_core.recordAndSubmitCommands(submitInfo, [](const vk::CommandBuffer& commandBuffer) {
 			ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
 		}, []() {
 			ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -143,13 +160,14 @@ namespace vkcv::gui {
 		
 		ImGui_ImplGlfw_Shutdown();
 		
+		m_window.e_mouseButton.remove(f_mouseButton);
+		m_window.e_mouseScroll.remove(f_mouseScroll);
+		m_window.e_key.remove(f_key);
+		m_window.e_char.remove(f_char);
+		
 		if (m_gui_context) {
 			ImGui::DestroyContext(m_gui_context);
 		}
-	}
-	
-	GUI GUI::create(Core &core, Window& window) {
-		return GUI(window.getWindow(), core);
 	}
 	
 	void GUI::beginGUI() {

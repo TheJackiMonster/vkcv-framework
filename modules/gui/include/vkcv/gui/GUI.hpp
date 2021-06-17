@@ -11,7 +11,7 @@ namespace vkcv::gui {
 
 	class GUI final {
 	private:
-		GLFWwindow* m_window;
+		Window& m_window;
 		Core& m_core;
 		
 		const Context& m_context;
@@ -21,12 +21,21 @@ namespace vkcv::gui {
 		vk::DescriptorPool m_descriptor_pool;
 		vk::RenderPass m_render_pass;
 		
-		GUI(GLFWwindow* window, Core& core);
+		event_handle<int,int,int> f_mouseButton;
+		event_handle<double,double> f_mouseScroll;
+		event_handle<int,int,int,int> f_key;
+		event_handle<unsigned int> f_char;
 		
 	public:
-		virtual ~GUI();
+		GUI(Core& core, Window& window);
 		
-		static GUI create(Core& core, Window& window);
+		GUI(const GUI& other) = delete;
+		GUI(GUI&& other) = delete;
+		
+		GUI& operator=(const GUI& other) = delete;
+		GUI& operator=(GUI&& other) = delete;
+		
+		virtual ~GUI();
 		
 		void beginGUI();
 		

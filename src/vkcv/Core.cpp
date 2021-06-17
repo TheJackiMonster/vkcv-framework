@@ -80,8 +80,8 @@ namespace vkcv
 		m_CommandStreamManager->init(this);
 
 		m_ImageManager->m_core = this;
-
-		e_resizeHandle = window.e_resize.add( [&](int width, int height) {
+		
+		e_resizeHandle = m_window.e_resize.add( [&](int width, int height) {
 			m_swapchain.signalSwapchainRecreation();
 		});
 
@@ -90,6 +90,8 @@ namespace vkcv
 	}
 
 	Core::~Core() noexcept {
+    	m_window.e_resize.remove(e_resizeHandle);
+    	
 		m_Context.getDevice().waitIdle();
 		for (auto image : m_swapchainImageViews) {
 			m_Context.m_Device.destroyImageView(image);

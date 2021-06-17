@@ -66,7 +66,7 @@ namespace vkcv
         std::vector<vk::ImageView>      m_swapchainImageViews;
         std::vector<vk::Image>          m_swapchainImages;
 		std::vector<vk::ImageLayout>    m_swapchainImageLayouts;
-        const Window&                   m_window;
+        Window&                   		m_window;
 
         std::unique_ptr<PassManager>            m_PassManager;
         std::unique_ptr<PipelineManager>        m_PipelineManager;
@@ -79,8 +79,8 @@ namespace vkcv
 		CommandResources    m_CommandResources;
 		SyncResources       m_SyncResources;
 		uint32_t            m_currentSwapchainImageIndex;
-
-        std::function<void(int, int)> e_resizeHandle;
+	
+		event_handle<int,int> e_resizeHandle;
 
         static std::vector<vk::ImageView> createImageViews( Context &context, Swapchain& swapChain);
 
