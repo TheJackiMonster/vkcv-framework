@@ -16,7 +16,7 @@ layout( push_constant ) uniform constants{
 
 void main()	{
 	gl_Position = mvp * vec4(inPosition, 1.0);
-	passNormal  = inNormal;
+	passNormal  = mat3(model) * inNormal;    // assuming no weird stuff like shearing or non-uniform scaling
     passUV      = inUV;
     passPos     = (model * vec4(inPosition, 1)).xyz;
 }

@@ -360,7 +360,7 @@ int main(int argc, const char** argv) {
 		vulkanCorrectionMatrix[3][2] = 0.5;
 		projectionLight = vulkanCorrectionMatrix * projectionLight;
 
-		const glm::mat4 viewLight = glm::lookAt(glm::vec3(0), -lightInfo.direction, glm::vec3(0, -1, 0));
+		const glm::mat4 viewLight = glm::lookAt(glm::vec3(0), lightInfo.direction, glm::vec3(0, -1, 0));
 
 		lightInfo.lightMatrix = projectionLight * viewLight;
 		lightBuffer.fill({ lightInfo });
