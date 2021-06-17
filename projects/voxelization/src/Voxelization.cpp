@@ -59,7 +59,7 @@ vkcv::ShaderProgram loadVoxelBufferToImageShader() {
 }
 
 const uint32_t voxelResolution = 128;
-const size_t voxelCount = voxelResolution * voxelResolution * voxelResolution;
+uint32_t voxelCount = voxelResolution * voxelResolution * voxelResolution;
 const vk::Format voxelizationDummyFormat = vk::Format::eR8Unorm;
 
 Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies) 
@@ -225,7 +225,7 @@ void Voxelization::voxelizeMeshes(
 		m_voxelResetPipe,
 		resetVoxelDispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_voxelResetDescriptorSet).vulkanHandle) },
-		vkcv::PushConstantData(nullptr, 0));
+		vkcv::PushConstantData(&voxelCount, sizeof(voxelCount)));
 	m_corePtr->recordBufferMemoryBarrier(cmdStream, m_voxelBuffer.getHandle());
 
 	// voxelization
