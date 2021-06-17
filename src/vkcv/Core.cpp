@@ -501,4 +501,10 @@ namespace vkcv
 			m_ImageManager->recordImageMemoryBarrier(image, cmdBuffer);
 		}, nullptr);
 	}
+
+	void Core::recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer) {
+		recordCommandsToStream(cmdStream, [buffer, this](const vk::CommandBuffer cmdBuffer) {
+			m_BufferManager->recordBufferMemoryBarrier(buffer, cmdBuffer);
+		}, nullptr);
+	}
 }

@@ -276,5 +276,6 @@ namespace vkcv
 		void prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image);
 		void prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image);
 		void recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image);
-    };
+		void recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer);
+	};
 }

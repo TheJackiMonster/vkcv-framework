@@ -25,7 +25,13 @@ public:
 private:
 	vkcv::Core* m_corePtr;
 
-	vkcv::Image                 m_voxelImage;
+	struct VoxelBufferContent{
+		uint32_t isFilled;
+	};
+
+	vkcv::Image                         m_voxelImage;
+    vkcv::Buffer<VoxelBufferContent>    m_voxelBuffer;
+
 	vkcv::Image                 m_dummyRenderTarget;
 	vkcv::PassHandle            m_voxelizationPass;
 	vkcv::PipelineHandle        m_voxelizationPipe;
@@ -33,6 +39,9 @@ private:
 
 	vkcv::PipelineHandle        m_voxelResetPipe;
 	vkcv::DescriptorSetHandle   m_voxelResetDescriptorSet;
+
+	vkcv::PipelineHandle        m_bufferToImagePipe;
+	vkcv::DescriptorSetHandle   m_bufferToImageDescriptorSet;
 
 	vkcv::PassHandle            m_visualisationPass;
 	vkcv::PipelineHandle        m_visualisationPipe;

@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#include "voxelInfo.inc"
+#include "voxel.inc"
 
 layout(location = 0) out float passCubeHalf;
 
