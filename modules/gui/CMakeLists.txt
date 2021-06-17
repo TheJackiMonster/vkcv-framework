@@ -10,8 +10,8 @@ set(vkcv_gui_include ${PROJECT_SOURCE_DIR}/include)
 
 # Add source and header files to the module
 set(vkcv_gui_sources
-		${vkcv_gui_include}/vkcv/gui/GUIWindow.hpp
-		${vkcv_gui_source}/vkcv/gui/GUIWindow.cpp
+		${vkcv_gui_include}/vkcv/gui/GUI.hpp
+		${vkcv_gui_source}/vkcv/gui/GUI.cpp
 		)
 
 # Setup some path variables to load libraries

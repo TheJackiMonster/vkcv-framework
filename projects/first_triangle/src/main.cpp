@@ -5,6 +5,7 @@
 #include <chrono>
 
 #include <vkcv/shader/GLSLCompiler.hpp>
+#include <vkcv/gui/GUI.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Triangle";
@@ -28,6 +29,8 @@ int main(int argc, const char** argv) {
 		{},
 		{ "VK_KHR_swapchain" }
 	);
+	
+	vkcv::gui::GUI gui = vkcv::gui::GUI::create(core, window);
 
 	const auto& context = core.getContext();
 	const vk::Instance& instance = context.getInstance();
@@ -215,6 +218,14 @@ int main(int argc, const char** argv) {
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
+		
+		gui.beginGUI();
+		
+		ImGui::Begin("Hello world");
+		ImGui::Text("This is a test!");
+		ImGui::End();
+		
+		gui.endGUI();
 	    
 	    core.endFrame();
 	}

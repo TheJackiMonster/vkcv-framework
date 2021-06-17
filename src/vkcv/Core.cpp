@@ -236,7 +236,6 @@ namespace vkcv
 			attachmentsViews.push_back(targetHandle);
 		}
 		
-		vk::Framebuffer framebuffer = nullptr;
         const vk::FramebufferCreateInfo createInfo(
             {},
             renderpass,
@@ -244,16 +243,21 @@ namespace vkcv
             attachmentsViews.data(),
             width,
             height,
-            1);
-        if(m_Context.m_Device.createFramebuffer(&createInfo, nullptr, &framebuffer) != vk::Result::eSuccess)
-        {
+            1
+		);
+		
+		vk::Framebuffer framebuffer = m_Context.m_Device.createFramebuffer(createInfo);
+        
+        if (!framebuffer) {
 			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
             return;
         }
 
-        vk::Viewport dynamicViewport(0.0f, 0.0f,
-            static_cast<float>(width), static_cast<float>(height),
-            0.0f, 1.0f);
+        vk::Viewport dynamicViewport(
+        		0.0f, 0.0f,
+            	static_cast<float>(width), static_cast<float>(height),
+            0.0f, 1.0f
+		);
 
         vk::Rect2D dynamicScissor({0, 0}, {width, height});
 
@@ -353,15 +357,17 @@ namespace vkcv
 		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
 
 		const auto& queueManager = m_Context.getQueueManager();
-		std::array<vk::Semaphore, 2> waitSemaphores{ 
-			m_SyncResources.renderFinished, 
-			m_SyncResources.swapchainImageAcquired };
+		std::array<vk::Semaphore, 2> waitSemaphores{
+			m_SyncResources.renderFinished,
+			m_SyncResources.swapchainImageAcquired
+		};
 
 		const vk::SwapchainKHR& swapchain = m_swapchain.getSwapchain();
 		const vk::PresentInfoKHR presentInfo(
 			waitSemaphores,
 			swapchain,
-			m_currentSwapchainImageIndex);
+			m_currentSwapchainImageIndex
+		);
 		
 		vk::Result result;
 		
@@ -390,11 +396,19 @@ namespace vkcv
 		beginCommandBuffer(cmdBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 		record(cmdBuffer);
 		cmdBuffer.end();
-
-		const vk::Fence waitFence = createFence(device);
+		
+		vk::Fence waitFence;
+		
+		if (!submitInfo.fence) {
+			waitFence = createFence(device);
+		}
+		
 		submitCommandBufferToQueue(queue.handle, cmdBuffer, waitFence, submitInfo.waitSemaphores, submitInfo.signalSemaphores);
 		waitForFence(device, waitFence);
-		device.destroyFence(waitFence);
+		
+		if (!submitInfo.fence) {
+			device.destroyFence(waitFence);
+		}
 		
 		device.freeCommandBuffers(cmdPool, cmdBuffer);
 		
@@ -507,4 +521,9 @@ namespace vkcv
 			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eShaderReadOnlyOptimal, cmdBuffer);
 		}, nullptr);
 	}
+	
+	const vk::ImageView& Core::getSwapchainImageView() const {
+    	return m_swapchainImageViews[m_currentSwapchainImageIndex];
+    }
+	
 }

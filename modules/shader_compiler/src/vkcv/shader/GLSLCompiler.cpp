@@ -167,12 +167,13 @@ namespace vkcv::shader {
 		}
 		
 		std::streamsize fileSize = file.tellg();
-		std::vector<char> buffer (fileSize);
+		std::vector<char> buffer (fileSize + 1);
 		
 		file.seekg(0);
 		file.read(buffer.data(), fileSize);
 		file.close();
 		
+		buffer[fileSize] = '\0';
 		return buffer;
 	}
 	

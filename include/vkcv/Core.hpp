@@ -41,6 +41,7 @@ namespace vkcv
 		QueueType queueType;
 		std::vector<vk::Semaphore> waitSemaphores;
 		std::vector<vk::Semaphore> signalSemaphores;
+		vk::Fence fence;
 	};
 
     class Core final
@@ -280,5 +281,8 @@ namespace vkcv
 		void submitCommandStream(const CommandStreamHandle handle);
 		void prepareSwapchainImageForPresent(const CommandStreamHandle handle);
 		void prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image);
+		
+		const vk::ImageView& getSwapchainImageView() const;
+		
     };
 }
