@@ -6,7 +6,7 @@
 
 layout(location = 0) in vec3 passPos;
 
-layout(set=0, binding=0) buffer voxelizationBuffer{
+layout(set=0, binding=0, std430) buffer voxelizationBuffer{
     uint isFilled[];
 };
 
@@ -32,5 +32,7 @@ void main()	{
         return;
     }
     uint flatIndex = flattenVoxelUVToIndex(UV, voxelImageSize);
-    isFilled[flatIndex] = 1;
+    
+    vec3 color = vec3(1, 1, 0);
+    isFilled[flatIndex] = packVoxelInfo(color);
 }

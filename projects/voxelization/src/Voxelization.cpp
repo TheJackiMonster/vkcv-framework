@@ -65,7 +65,7 @@ const vk::Format voxelizationDummyFormat = vk::Format::eR8Unorm;
 Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies) 
 	:
 	m_corePtr(corePtr), 
-	m_voxelImage(m_corePtr->createImage(vk::Format::eR8Unorm, voxelResolution, voxelResolution, voxelResolution, true)),
+	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true)),
 	m_dummyRenderTarget(m_corePtr->createImage(voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, true)),
 	m_voxelInfoBuffer(m_corePtr->createBuffer<VoxelizationInfo>(vkcv::BufferType::UNIFORM, 1)),
 	m_visualisationIndexBuffer(m_corePtr->createBuffer<uint16_t>(vkcv::BufferType::INDEX, voxelCount)),

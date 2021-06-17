@@ -9,95 +9,96 @@ layout( push_constant ) uniform constants{
 };
 
 layout(location = 0) in float passCubeHalf[1];
+layout(location = 1) in vec3 passColorToGeom[1];
 
-layout(location = 0) out vec3 passColor;
+
+layout(location = 0) out vec3 passColorToFrag;
 
 void main()	{
     float cubeHalf = passCubeHalf[0];
     // right
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1, 1, 1), 1);
-    passColor = vec3(1, 0, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1, 1, -1), 1);
-    passColor = vec3(1, 0, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1, -1, 1), 1);
-    passColor = vec3(1, 0, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1, -1, -1), 1);
-    passColor = vec3(1, 0, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     EndPrimitive();
     // left
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1, 1, 1), 1);
-    passColor = vec3(1, 0, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1, 1, -1), 1);
-    passColor = vec3(1, 0, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1, -1, 1), 1);
-    passColor = vec3(1, 0, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1, -1, -1), 1);
-    passColor = vec3(1, 0, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     EndPrimitive();
     // back
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1,   1, -1), 1);
-    passColor = vec3(0, 0, 1);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();                                                                  
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1,  -1, -1), 1);
-    passColor = vec3(0, 0, 1);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();                                                                  
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1,  1, -1), 1);
-    passColor = vec3(0, 0, 1);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();                                                                  
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1, -1, -1), 1);
-    passColor = vec3(0, 0, 1);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     EndPrimitive();
     // front
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1,   1, 1), 1);
-    passColor = vec3(0, 0, 1);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();                                                                  
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1,  -1, 1), 1);
-    passColor = vec3(0, 0, 1);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();                                                                  
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1,  1, 1), 1);
-    passColor = vec3(0, 0, 1);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();                                                                  
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1, -1, 1), 1);
-    passColor = vec3(0, 0, 1);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     EndPrimitive();
     // bot
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1,  1,  1), 1);
-    passColor = vec3(0, 1, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex(); 
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1,  1, -1), 1);
-    passColor = vec3(0, 1, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1, 1,  1), 1);
-    passColor = vec3(0, 1, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();  
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1, 1, -1), 1);
-    passColor = vec3(0, 1, 0);
-    passColor = vec3(0, 1, 0);
+    passColorToFrag = passColorToGeom[0];
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     EndPrimitive();
     // top
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1,  -1,  1), 1);
-    passColor = vec3(0, 1, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();   
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(1,  -1, -1), 1);
-    passColor = vec3(0, 1, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();  
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1, -1,  1), 1);
-    passColor = vec3(0, 1, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();   
     gl_Position = viewProjection * vec4(gl_in[0].gl_Position.xyz + cubeHalf * vec3(-1, -1, -1), 1);
-    passColor = vec3(0, 1, 0);
-    passColor = vec3(0, 1, 0);
+    passColorToFrag = passColorToGeom[0];
     EmitVertex();
     EndPrimitive();
 }
