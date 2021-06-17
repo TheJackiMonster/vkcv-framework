@@ -409,6 +409,20 @@ int main(int argc, const char** argv) {
 		}
 	}
 
+	// prepare drawcalls
+	std::vector<vkcv::DrawcallInfo> drawcalls;
+	std::vector<vkcv::DrawcallInfo> shadowDrawcalls;
+	std::vector<vkcv::DrawcallInfo> voxelizationDrawcalls;
+	for (int i = 0; i < scene.vertexGroups.size(); i++) {
+		vkcv::Mesh mesh(vertexBufferBindings[i], indexBuffers[i].getVulkanHandle(), scene.vertexGroups[i].numIndices);
+
+		vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSets[i]).vulkanHandle);
+
+		drawcalls.push_back(vkcv::DrawcallInfo(mesh, { descriptorUsage }));
+		shadowDrawcalls.push_back(vkcv::DrawcallInfo(mesh, {}));
+		voxelizationDrawcalls.push_back(vkcv::DrawcallInfo(mesh, { voxelizationDescriptorUsage }));
+	}
+
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
 	while (window.isWindowOpen()) {
@@ -485,19 +499,6 @@ int main(int argc, const char** argv) {
 
 		const glm::mat4 voxelizationView = glm::translate(glm::mat4(1.f), -voxelizationInfo.offset);
 		const glm::mat4 voxelizationViewProjection = voxelizationProjection * voxelizationView;
-
-		std::vector<vkcv::DrawcallInfo> drawcalls;
-		std::vector<vkcv::DrawcallInfo> shadowDrawcalls;
-		std::vector<vkcv::DrawcallInfo> voxelizationDrawcalls;
-		for (int i = 0; i < scene.vertexGroups.size(); i++) {
-			vkcv::Mesh mesh(vertexBufferBindings[i], indexBuffers[i].getVulkanHandle(), scene.vertexGroups[i].numIndices);
-
-			vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSets[i]).vulkanHandle);
-
-			drawcalls.push_back(vkcv::DrawcallInfo(mesh, { descriptorUsage }));
-			shadowDrawcalls.push_back(vkcv::DrawcallInfo(mesh, {}));
-			voxelizationDrawcalls.push_back(vkcv::DrawcallInfo(mesh, { voxelizationDescriptorUsage }));
-		}
 
 		mainPassMatrices.clear();
 		mvpLight.clear();
