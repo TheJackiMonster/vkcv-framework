@@ -19,3 +19,6 @@
 [submodule "modules/shader_compiler/lib/glslang"]
 	path = modules/shader_compiler/lib/glslang
 	url = https://github.com/KhronosGroup/glslang.git
+[submodule "modules/gui/lib/imgui"]
+	path = modules/gui/lib/imgui
+	url = https://github.com/ocornut/imgui.git
