@@ -46,7 +46,6 @@ private:
 
 	vkcv::PassHandle            m_visualisationPass;
 	vkcv::PipelineHandle        m_visualisationPipe;
-	vkcv::Buffer<uint16_t>      m_visualisationIndexBuffer;
 
 	vkcv::DescriptorSetHandle   m_visualisationDescriptorSet;
 

@@ -58,7 +58,7 @@ vkcv::ShaderProgram loadVoxelBufferToImageShader() {
 	return shader;
 }
 
-const uint32_t voxelResolution = 32;
+const uint32_t voxelResolution = 128;
 const size_t voxelCount = voxelResolution * voxelResolution * voxelResolution;
 const vk::Format voxelizationDummyFormat = vk::Format::eR8Unorm;
 
@@ -68,7 +68,6 @@ Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies
 	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true)),
 	m_dummyRenderTarget(m_corePtr->createImage(voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, true)),
 	m_voxelInfoBuffer(m_corePtr->createBuffer<VoxelizationInfo>(vkcv::BufferType::UNIFORM, 1)),
-	m_visualisationIndexBuffer(m_corePtr->createBuffer<uint16_t>(vkcv::BufferType::INDEX, voxelCount)),
 	m_voxelBuffer(m_corePtr->createBuffer<VoxelBufferContent>(vkcv::BufferType::STORAGE, voxelCount)){
 
 	const vkcv::ShaderProgram voxelizationShader = loadVoxelizationShader();
@@ -143,7 +142,6 @@ Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies
 	for (int i = 0; i < voxelCount; i++) {
 		voxelIndexData.push_back(i);
 	}
-	m_visualisationIndexBuffer.fill(voxelIndexData);
 
 	vkcv::DescriptorWrites voxelVisualisationDescriptorWrite;
 	voxelVisualisationDescriptorWrite.storageImageWrites = 
@@ -274,7 +272,7 @@ void Voxelization::renderVoxelVisualisation(
 	const vkcv::PushConstantData voxelVisualisationPushConstantData((void*)&viewProjectin, sizeof(glm::mat4));
 
 	const auto drawcall = vkcv::DrawcallInfo(
-		vkcv::Mesh({}, m_visualisationIndexBuffer.getVulkanHandle(), voxelCount),
+		vkcv::Mesh({}, nullptr, voxelCount),
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle) });
 
 	m_corePtr->recordDrawcallsToCmdStream(
