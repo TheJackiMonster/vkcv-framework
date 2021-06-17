@@ -27,6 +27,12 @@ namespace vkcv::gui {
 		event_handle<unsigned int> f_char;
 		
 	public:
+		/**
+		 * Constructor of a new instance of ImGui management
+		 *
+		 * @param core Valid #Core instance of the framework
+		 * @param window Valid #Window instance of the framework
+		 */
 		GUI(Core& core, Window& window);
 		
 		GUI(const GUI& other) = delete;
@@ -35,10 +41,20 @@ namespace vkcv::gui {
 		GUI& operator=(const GUI& other) = delete;
 		GUI& operator=(GUI&& other) = delete;
 		
+		/**
+		 * Destructor of a #GUI instance
+		 */
 		virtual ~GUI();
 		
+		/**
+		 * Sets up a new frame for ImGui to draw
+		 */
 		void beginGUI();
 		
+		/**
+		 * Ends a frame for ImGui, renders it and draws it onto
+		 * the currently active swapchain image of the core (ready to present).
+		 */
 		void endGUI();
 		
 	};
