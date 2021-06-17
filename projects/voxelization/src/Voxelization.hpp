@@ -12,10 +12,11 @@ public:
 	Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies);
 
 	void voxelizeMeshes(
-		vkcv::CommandStreamHandle       cmdStream, 
-		const glm::vec3&                cameraPosition, 
-		const std::vector<vkcv::Mesh>&  meshes,
-		const std::vector<glm::mat4>&   modelMatrices);
+		vkcv::CommandStreamHandle                       cmdStream, 
+		const glm::vec3&                                cameraPosition, 
+		const std::vector<vkcv::Mesh>&                  meshes,
+		const std::vector<glm::mat4>&                   modelMatrices,
+		const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets);
 
 	void renderVoxelVisualisation(
 		vkcv::CommandStreamHandle               cmdStream,

@@ -3,11 +3,13 @@
 #extension GL_GOOGLE_include_directive : enable
 
 #include "voxel.inc"
+#include "perMeshResources.inc"
 
-layout(location = 0) in vec3 passPos;
+layout(location = 0) in     vec3 passPos;
+layout(location = 1) out    vec2 passUV;
 
 layout(set=0, binding=0, std430) buffer voxelizationBuffer{
-    uint isFilled[];
+    uint packedVoxelData[];
 };
 
 layout(set=0, binding=1) uniform voxelizationInfo{
@@ -33,6 +35,6 @@ void main()	{
     }
     uint flatIndex = flattenVoxelUVToIndex(UV, voxelImageSize);
     
-    vec3 color = vec3(1, 1, 0);
-    isFilled[flatIndex] = packVoxelInfo(color);
+    vec3 color = texture(sampler2D(albedoTexture, textureSampler), passUV).rgb;
+    atomicMax(packedVoxelData[flatIndex], packVoxelInfo(color));
 }

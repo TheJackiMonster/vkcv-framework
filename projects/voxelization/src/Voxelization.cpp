@@ -83,13 +83,18 @@ Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies
 	{ voxelizationShader.getReflectedDescriptors()[0] };
 	m_voxelizationDescriptorSet = m_corePtr->createDescriptorSet(voxelizationDescriptorBindings);
 
+	vkcv::DescriptorSetHandle dummyPerMeshDescriptorSet =
+		m_corePtr->createDescriptorSet({ voxelizationShader.getReflectedDescriptors()[1] });
+
 	const vkcv::PipelineConfig voxelizationPipeConfig{
 		voxelizationShader,
 		voxelResolution,
 		voxelResolution,
 		m_voxelizationPass,
 		dependencies.vertexLayout,
-		{ m_corePtr->getDescriptorSet(m_voxelizationDescriptorSet).layout },
+		{ 
+			m_corePtr->getDescriptorSet(m_voxelizationDescriptorSet).layout,
+			m_corePtr->getDescriptorSet(dummyPerMeshDescriptorSet).layout},
 		false,
 		true };
 	m_voxelizationPipe = m_corePtr->createGraphicsPipeline(voxelizationPipeConfig);
@@ -175,10 +180,11 @@ Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies
 }
 
 void Voxelization::voxelizeMeshes(
-	vkcv::CommandStreamHandle cmdStream, 
-	const glm::vec3& cameraPosition, 
-	const std::vector<vkcv::Mesh>& meshes,
-	const std::vector<glm::mat4>& modelMatrices) {
+	vkcv::CommandStreamHandle                       cmdStream, 
+	const glm::vec3&                                cameraPosition, 
+	const std::vector<vkcv::Mesh>&                  meshes,
+	const std::vector<glm::mat4>&                   modelMatrices,
+	const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets) {
 
 	VoxelizationInfo voxelizationInfo;
 	voxelizationInfo.extent = m_voxelExtent;
@@ -226,10 +232,13 @@ void Voxelization::voxelizeMeshes(
 
 	// voxelization
 	std::vector<vkcv::DrawcallInfo> drawcalls;
-	for (const auto& mesh : meshes) {
+	for (int i = 0; i < meshes.size(); i++) {
 		drawcalls.push_back(vkcv::DrawcallInfo(
-			mesh, 
-			{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_voxelizationDescriptorSet).vulkanHandle) }));
+			meshes[i], 
+			{ 
+				vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_voxelizationDescriptorSet).vulkanHandle),
+				vkcv::DescriptorSetUsage(1, m_corePtr->getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) 
+			}));
 	}
 
 	m_corePtr->recordDrawcallsToCmdStream(

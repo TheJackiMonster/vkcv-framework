@@ -135,15 +135,76 @@ int main(int argc, const char** argv) {
 
 	const std::vector<vkcv::VertexAttachment> vertexAttachments = forwardProgram.getVertexAttachments();
 
-    std::vector<vkcv::VertexBinding> vertexBindings;
-    for (size_t i = 0; i < vertexAttachments.size(); i++) {
+	std::vector<vkcv::VertexBinding> vertexBindings;
+	for (size_t i = 0; i < vertexAttachments.size(); i++) {
 		vertexBindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
-    }
-    
-    const vkcv::VertexLayout vertexLayout (vertexBindings);
+	}
+	const vkcv::VertexLayout vertexLayout (vertexBindings);
 
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = { forwardProgram.getReflectedDescriptors()[0] };
-	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+	// shadow map
+	vkcv::SamplerHandle shadowSampler = core.createSampler(
+		vkcv::SamplerFilterType::NEAREST,
+		vkcv::SamplerFilterType::NEAREST,
+		vkcv::SamplerMipmapMode::NEAREST,
+		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
+	);
+	const vk::Format shadowMapFormat = vk::Format::eD16Unorm;
+	const uint32_t shadowMapResolution = 1024;
+	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1);
+
+	// light info buffer
+	struct LightInfo {
+		glm::vec3 direction;
+		float padding;
+		glm::mat4 lightMatrix;
+	};
+	LightInfo lightInfo;
+	vkcv::Buffer lightBuffer = core.createBuffer<LightInfo>(vkcv::BufferType::UNIFORM, sizeof(glm::vec3));
+
+	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = 
+		core.createDescriptorSet({ forwardProgram.getReflectedDescriptors()[0] });
+
+	vkcv::DescriptorWrites forwardDescriptorWrites;
+	forwardDescriptorWrites.uniformBufferWrites = { vkcv::UniformBufferDescriptorWrite(0, lightBuffer.getHandle()) };
+	forwardDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(1, shadowMap.getHandle()) };
+	forwardDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(2, shadowSampler) };
+	core.writeDescriptorSet(forwardShadingDescriptorSet, forwardDescriptorWrites);
+
+	vkcv::SamplerHandle colorSampler = core.createSampler(
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerMipmapMode::LINEAR,
+		vkcv::SamplerAddressMode::REPEAT
+	);
+
+	// prepare per mesh descriptor sets
+	std::vector<vkcv::DescriptorSetHandle> perMeshDescriptorSets;
+	std::vector<vkcv::Image> sceneImages;
+	for (const auto& vertexGroup : scene.vertexGroups) {
+		perMeshDescriptorSets.push_back(core.createDescriptorSet(forwardProgram.getReflectedDescriptors()[1]));
+
+		const auto& material = scene.materials[vertexGroup.materialIndex];
+
+		int baseColorIndex = material.baseColor;
+		if (baseColorIndex < 0) {
+			vkcv_log(vkcv::LogLevel::WARNING, "Material lacks base color");
+			baseColorIndex = 0;
+		}
+
+		vkcv::asset::Texture& sceneTexture = scene.textures[baseColorIndex];
+
+		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, sceneTexture.w, sceneTexture.h));
+		sceneImages.back().fill(sceneTexture.data.data());
+
+		vkcv::DescriptorWrites setWrites;
+		setWrites.sampledImageWrites = {
+			vkcv::SampledImageDescriptorWrite(0, sceneImages.back().getHandle())
+		};
+		setWrites.samplerWrites = {
+			vkcv::SamplerDescriptorWrite(1, colorSampler),
+		};
+		core.writeDescriptorSet(perMeshDescriptorSets.back(), setWrites);
+	}
 
 	const vkcv::PipelineConfig forwardPipelineConfig {
 		forwardProgram,
@@ -151,7 +212,8 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		forwardPass,
 		vertexLayout,
-		{ core.getDescriptorSet(descriptorSet).layout },
+		{	core.getDescriptorSet(forwardShadingDescriptorSet).layout, 
+			core.getDescriptorSet(perMeshDescriptorSets[0]).layout },
 		true
 	};
 	
@@ -161,20 +223,6 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
-	
-	vkcv::SamplerHandle colorSampler = core.createSampler(
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::REPEAT
-	);
-
-	vkcv::SamplerHandle shadowSampler = core.createSampler(
-		vkcv::SamplerFilterType::NEAREST,
-		vkcv::SamplerFilterType::NEAREST,
-		vkcv::SamplerMipmapMode::NEAREST,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
-	);
 
 	vkcv::ImageHandle depthBuffer = core.createImage(depthBufferFormat, windowWidth, windowHeight).getHandle();
 	vkcv::ImageHandle colorBuffer = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, true, true).getHandle();
@@ -191,37 +239,21 @@ int main(int argc, const char** argv) {
 		shadowShader.addShader(shaderStage, path);
 	});
 
-	const vk::Format shadowMapFormat = vk::Format::eD16Unorm;
 	const std::vector<vkcv::AttachmentDescription> shadowAttachments = {
 		vkcv::AttachmentDescription(vkcv::AttachmentOperation::STORE, vkcv::AttachmentOperation::CLEAR, shadowMapFormat)
 	};
 	const vkcv::PassConfig shadowPassConfig(shadowAttachments);
 	const vkcv::PassHandle shadowPass = core.createPass(shadowPassConfig);
-
-	const uint32_t shadowMapResolution = 1024;
-	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1);
-	const vkcv::PipelineConfig shadowPipeConfig {
-		shadowShader, 
-		shadowMapResolution, 
-		shadowMapResolution, 
+	const vkcv::PipelineConfig shadowPipeConfig{
+		shadowShader,
+		shadowMapResolution,
+		shadowMapResolution,
 		shadowPass,
 		vertexLayout,
 		{},
 		false
 	};
-	
 	const vkcv::PipelineHandle shadowPipe = core.createGraphicsPipeline(shadowPipeConfig);
-
-	struct LightInfo {
-		glm::vec3 direction;
-		float padding;
-		glm::mat4 lightMatrix;
-	};
-	LightInfo lightInfo;
-	vkcv::Buffer lightBuffer = core.createBuffer<LightInfo>(vkcv::BufferType::UNIFORM, sizeof(glm::vec3));
-
-	
-	const vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 
 	std::vector<std::array<glm::mat4, 2>> mainPassMatrices;
 	std::vector<glm::mat4> mvpLight;
@@ -242,38 +274,6 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle gammaCorrectionDescriptorSet = core.createDescriptorSet(gammaCorrectionProgram.getReflectedDescriptors()[0]);
 	vkcv::PipelineHandle gammaCorrectionPipeline = core.createComputePipeline(gammaCorrectionProgram, 
 		{ core.getDescriptorSet(gammaCorrectionDescriptorSet).layout });
-
-	// prepare descriptor sets for drawcalls
-	std::vector<vkcv::Image> sceneImages;
-	std::vector<vkcv::DescriptorSetHandle> descriptorSets;
-	for (const auto& vertexGroup : scene.vertexGroups) {
-		descriptorSets.push_back(core.createDescriptorSet(descriptorBindings));
-
-		const auto& material = scene.materials[vertexGroup.materialIndex];
-
-		int baseColorIndex = material.baseColor;
-		if (baseColorIndex < 0) {
-			vkcv_log(vkcv::LogLevel::WARNING, "Material lacks base color");
-			baseColorIndex = 0;
-		}
-
-		vkcv::asset::Texture& sceneTexture = scene.textures[baseColorIndex];
-
-		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, sceneTexture.w, sceneTexture.h));
-		sceneImages.back().fill(sceneTexture.data.data());
-
-		vkcv::DescriptorWrites setWrites;
-		setWrites.sampledImageWrites = {
-			vkcv::SampledImageDescriptorWrite(0, sceneImages.back().getHandle()),
-			vkcv::SampledImageDescriptorWrite(3, shadowMap.getHandle())
-		};
-		setWrites.samplerWrites = {
-			vkcv::SamplerDescriptorWrite(1, colorSampler),
-			vkcv::SamplerDescriptorWrite(4, shadowSampler),
-		};
-		setWrites.uniformBufferWrites = { vkcv::UniformBufferDescriptorWrite(2, lightBuffer.getHandle()) };
-		core.writeDescriptorSet(descriptorSets.back(), setWrites);
-	}
 
 	// model matrices per mesh
 	std::vector<glm::mat4> modelMatrices;
@@ -298,9 +298,10 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DrawcallInfo> drawcalls;
 	std::vector<vkcv::DrawcallInfo> shadowDrawcalls;
 	for (int i = 0; i < meshes.size(); i++) {
-		vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSets[i]).vulkanHandle);
 
-		drawcalls.push_back(vkcv::DrawcallInfo(meshes[i], { descriptorUsage }));
+		drawcalls.push_back(vkcv::DrawcallInfo(meshes[i], { 
+			vkcv::DescriptorSetUsage(0, core.getDescriptorSet(forwardShadingDescriptorSet).vulkanHandle),
+			vkcv::DescriptorSetUsage(1, core.getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) }));
 		shadowDrawcalls.push_back(vkcv::DrawcallInfo(meshes[i], {}));
 	}
 
@@ -395,7 +396,8 @@ int main(int argc, const char** argv) {
 			cmdStream, 
 			cameraManager.getActiveCamera().getPosition(), 
 			meshes, 
-			modelMatrices);
+			modelMatrices,
+			perMeshDescriptorSets);
 
 		// main pass
 		core.recordDrawcallsToCmdStream(
