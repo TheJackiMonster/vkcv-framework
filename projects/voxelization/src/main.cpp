@@ -103,10 +103,11 @@ int main(int argc, const char** argv) {
 		vertexBufferIndex++;
 	}
 
-	const vkcv::AttachmentDescription present_color_attachment(
+	const vk::Format colorBufferFormat = vk::Format::eB10G11R11UfloatPack32;
+	const vkcv::AttachmentDescription color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchainImageFormat()
+		colorBufferFormat
 	);
 	
 	const vk::Format depthBufferFormat = vk::Format::eD32Sfloat;
@@ -116,7 +117,7 @@ int main(int argc, const char** argv) {
 		depthBufferFormat
 	);
 
-	vkcv::PassConfig forwardPassDefinition({ present_color_attachment, depth_attachment });
+	vkcv::PassConfig forwardPassDefinition({ color_attachment, depth_attachment });
 	vkcv::PassHandle forwardPass = core.createPass(forwardPassDefinition);
 
 	vkcv::shader::GLSLCompiler compiler;
@@ -174,7 +175,8 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
 	);
 
-	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
+	vkcv::ImageHandle depthBuffer = core.createImage(depthBufferFormat, windowWidth, windowHeight).getHandle();
+	vkcv::ImageHandle colorBuffer = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, true, true).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -288,7 +290,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription voxelVisualisationColorAttachments(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::LOAD,
-		core.getSwapchainImageFormat()
+		colorBufferFormat
 	);
 
 	const vkcv::AttachmentDescription voxelVisualisationDepthAttachments(
@@ -435,6 +437,7 @@ int main(int argc, const char** argv) {
 
 		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
 			depthBuffer = core.createImage(depthBufferFormat, swapchainWidth, swapchainHeight).getHandle();
+			colorBuffer = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, true, true).getHandle();
 
 			windowWidth = swapchainWidth;
 			windowHeight = swapchainHeight;
@@ -445,7 +448,9 @@ int main(int argc, const char** argv) {
 
 		// update descriptor sets which use swapchain image
 		vkcv::DescriptorWrites gammaCorrectionDescriptorWrites;
-		gammaCorrectionDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(0, swapchainInput) };
+		gammaCorrectionDescriptorWrites.storageImageWrites = {
+			vkcv::StorageImageDescriptorWrite(0, colorBuffer),
+			vkcv::StorageImageDescriptorWrite(1, swapchainInput) };
 		core.writeDescriptorSet(gammaCorrectionDescriptorSet, gammaCorrectionDescriptorWrites);
 
 		start = end;
@@ -510,7 +515,7 @@ int main(int argc, const char** argv) {
 		}
 
 		vkcv::PushConstantData pushConstantData((void*)mainPassMatrices.data(), 2 * sizeof(glm::mat4));
-		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
+		const std::vector<vkcv::ImageHandle> renderTargets = { colorBuffer, depthBuffer };
 
 		const vkcv::PushConstantData shadowPushConstantData((void*)mvpLight.data(), sizeof(glm::mat4));
 		const vkcv::PushConstantData voxelizationPushConstantData((void*)voxelizationMatrices.data(), 2 * sizeof(glm::mat4));
@@ -583,6 +588,7 @@ int main(int argc, const char** argv) {
 		};
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
+		core.prepareImageForStorage(cmdStream, colorBuffer);
 
 		core.recordComputeDispatchToCmdStream(
 			cmdStream, 
