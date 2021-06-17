@@ -60,15 +60,16 @@ Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies
 	m_voxelInfoBuffer(m_corePtr->createBuffer<VoxelizationInfo>(vkcv::BufferType::UNIFORM, 1)),
 	m_visualisationIndexBuffer(m_corePtr->createBuffer<uint16_t>(vkcv::BufferType::INDEX, voxelCount)) {
 
-	assert(corePtr);
-
 	const vkcv::ShaderProgram voxelizationShader = loadVoxelizationShader();
 
-	vkcv::PassConfig voxelizationPassConfig({
-		vkcv::AttachmentDescription(vkcv::AttachmentOperation::DONT_CARE, vkcv::AttachmentOperation::DONT_CARE, voxelizationDummyFormat) });
+	const vkcv::PassConfig voxelizationPassConfig({vkcv::AttachmentDescription(
+		vkcv::AttachmentOperation::DONT_CARE, 
+		vkcv::AttachmentOperation::DONT_CARE, 
+		voxelizationDummyFormat) });
 	m_voxelizationPass = m_corePtr->createPass(voxelizationPassConfig);
 
-	std::vector<vkcv::DescriptorBinding> voxelizationDescriptorBindings = { voxelizationShader.getReflectedDescriptors()[0] };
+	std::vector<vkcv::DescriptorBinding> voxelizationDescriptorBindings = 
+	{ voxelizationShader.getReflectedDescriptors()[0] };
 	m_voxelizationDescriptorSet = m_corePtr->createDescriptorSet(voxelizationDescriptorBindings);
 
 	const vkcv::PipelineConfig voxelizationPipeConfig{
@@ -76,7 +77,7 @@ Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies
 		voxelResolution,
 		voxelResolution,
 		m_voxelizationPass,
-        dependencies.vertexLayout,
+		dependencies.vertexLayout,
 		{ m_corePtr->getDescriptorSet(m_voxelizationDescriptorSet).layout },
 		false,
 		true };
@@ -89,7 +90,8 @@ Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies
 
 	vkcv::ShaderProgram voxelVisualisationShader = loadVoxelVisualisationShader();
 
-	const std::vector<vkcv::DescriptorBinding> voxelVisualisationDescriptorBindings = { voxelVisualisationShader.getReflectedDescriptors()[0] };
+	const std::vector<vkcv::DescriptorBinding> voxelVisualisationDescriptorBindings = 
+		{ voxelVisualisationShader.getReflectedDescriptors()[0] };
 	m_visualisationDescriptorSet = m_corePtr->createDescriptorSet(voxelVisualisationDescriptorBindings);
 
 	const vkcv::AttachmentDescription voxelVisualisationColorAttachments(
@@ -104,7 +106,8 @@ Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies
 		dependencies.depthBufferFormat
 	);
 
-	vkcv::PassConfig voxelVisualisationPassDefinition({ voxelVisualisationColorAttachments, voxelVisualisationDepthAttachments });
+	vkcv::PassConfig voxelVisualisationPassDefinition(
+		{ voxelVisualisationColorAttachments, voxelVisualisationDepthAttachments });
 	m_visualisationPass = m_corePtr->createPass(voxelVisualisationPassDefinition);
 
 	const vkcv::PipelineConfig voxelVisualisationPipeConfig{
@@ -126,8 +129,10 @@ Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies
 	m_visualisationIndexBuffer.fill(voxelIndexData);
 
 	vkcv::DescriptorWrites voxelVisualisationDescriptorWrite;
-	voxelVisualisationDescriptorWrite.storageImageWrites = { vkcv::StorageImageDescriptorWrite(0,  m_voxelImage.getHandle()) };
-	voxelVisualisationDescriptorWrite.uniformBufferWrites = { vkcv::UniformBufferDescriptorWrite(1, m_voxelInfoBuffer.getHandle()) };
+	voxelVisualisationDescriptorWrite.storageImageWrites = 
+	{ vkcv::StorageImageDescriptorWrite(0,  m_voxelImage.getHandle()) };
+	voxelVisualisationDescriptorWrite.uniformBufferWrites = 
+	{ vkcv::UniformBufferDescriptorWrite(1, m_voxelInfoBuffer.getHandle()) };
 	m_corePtr->writeDescriptorSet(m_visualisationDescriptorSet, voxelVisualisationDescriptorWrite);
 
 	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle);
@@ -150,17 +155,16 @@ void Voxelization::voxelizeMeshes(
 	const std::vector<vkcv::Mesh>& meshes,
 	const std::vector<glm::mat4>& modelMatrices) {
 
-	const float voxelizationExtent = 20.f;
 	VoxelizationInfo voxelizationInfo;
-	voxelizationInfo.extent = voxelizationExtent;
+	voxelizationInfo.extent = m_voxelExtent;
 
 	// move voxel offset with camera in voxel sized steps
-	const float voxelSize = voxelizationExtent / voxelResolution;
+	const float voxelSize = m_voxelExtent / voxelResolution;
 	voxelizationInfo.offset = glm::floor(cameraPosition / voxelSize) * voxelSize;
 
 	m_voxelInfoBuffer.fill({ voxelizationInfo });
 
-	const float voxelizationHalfExtent = 0.5f * voxelizationExtent;
+	const float voxelizationHalfExtent = 0.5f * m_voxelExtent;
 	const glm::mat4 voxelizationProjection = glm::ortho(
 		-voxelizationHalfExtent,
 		voxelizationHalfExtent,
