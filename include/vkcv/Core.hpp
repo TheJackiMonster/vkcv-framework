@@ -63,9 +63,6 @@ namespace vkcv
         Context m_Context;
 
         Swapchain                       m_swapchain;
-        std::vector<vk::ImageView>      m_swapchainImageViews;
-        std::vector<vk::Image>          m_swapchainImages;
-		std::vector<vk::ImageLayout>    m_swapchainImageLayouts;
         Window&                   		m_window;
 
         std::unique_ptr<PassManager>            m_PassManager;
@@ -79,12 +76,10 @@ namespace vkcv
 		CommandResources    m_CommandResources;
 		SyncResources       m_SyncResources;
 		uint32_t            m_currentSwapchainImageIndex;
-	
+
 		event_handle<int,int> e_resizeHandle;
 
-        static std::vector<vk::ImageView> createImageViews( Context &context, Swapchain& swapChain);
-
-		void recordSwapchainImageLayoutTransition(vk::CommandBuffer cmdBuffer, vk::ImageLayout newLayout);
+        static std::vector<vk::ImageView> createSwapchainImageViews( Context &context, Swapchain& swapChain);
 
     public:
         /**
@@ -220,7 +215,7 @@ namespace vkcv
          * @return Image-Object
          */
         [[nodiscard]]
-        Image createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth = 1);
+        Image createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth = 1, bool supportStorage = false, bool supportColorAttachment = false);
 
         /** TODO:
          *   @param setDescriptions
@@ -281,6 +276,9 @@ namespace vkcv
 		void submitCommandStream(const CommandStreamHandle handle);
 		void prepareSwapchainImageForPresent(const CommandStreamHandle handle);
 		void prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image);
+		void prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image);
+		void recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image);
+		void recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer);
 		
 		const vk::ImageView& getSwapchainImageView() const;
 		

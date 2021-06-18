@@ -137,8 +137,9 @@ int main(int argc, const char** argv) {
 		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
 	vkcv::DescriptorWrites setWrites;
-	setWrites.sampledImageWrites    = { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
-	setWrites.samplerWrites         = { vkcv::SamplerDescriptorWrite(1, sampler) };
+	setWrites.sampledImageWrites	= { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
+	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
+
 	core.writeDescriptorSet(descriptorSet, setWrites);
 
 	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();

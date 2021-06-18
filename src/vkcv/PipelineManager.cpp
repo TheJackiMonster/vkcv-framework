@@ -42,6 +42,15 @@ namespace vkcv
 		}
 	}
 
+    vk::PrimitiveTopology primitiveTopologyToVulkanPrimitiveTopology(const PrimitiveTopology topology) {
+        switch (topology) {
+        case(PrimitiveTopology::PointList):     return vk::PrimitiveTopology::ePointList;
+        case(PrimitiveTopology::LineList):      return vk::PrimitiveTopology::eLineList;
+        case(PrimitiveTopology::TriangleList):  return vk::PrimitiveTopology::eTriangleList;
+        default: std::cout << "Error: Unknown primitive topology type" << std::endl; return vk::PrimitiveTopology::eTriangleList;
+        }
+    }
+
     PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, PassManager& passManager)
     {
 		const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
@@ -124,9 +133,9 @@ namespace vkcv
 
         // input assembly state
         vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
-                {},
-                vk::PrimitiveTopology::eTriangleList,
-                false
+            {},
+            primitiveTopologyToVulkanPrimitiveTopology(config.m_PrimitiveTopology),
+            false
         );
 
         // viewport state
@@ -148,6 +157,14 @@ namespace vkcv
                 0.f,
                 1.f
         );
+        vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterization;
+        if (config.m_UseConservativeRasterization) {
+            conservativeRasterization = vk::PipelineRasterizationConservativeStateCreateInfoEXT(
+                {}, 
+                vk::ConservativeRasterizationModeEXT::eOverestimate,
+                0.f);
+            pipelineRasterizationStateCreateInfo.pNext = &conservativeRasterization;
+        }
 
         // multisample state
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
@@ -238,6 +255,20 @@ namespace vkcv
 
         // graphics pipeline create
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = { pipelineVertexShaderStageInfo, pipelineFragmentShaderStageInfo };
+
+		const char *geometryShaderName = "main";	// outside of if to make sure it stays in scope
+		vk::ShaderModule geometryModule;
+		if (config.m_ShaderProgram.existsShader(ShaderStage::GEOMETRY)) {
+			const vkcv::Shader geometryShader = config.m_ShaderProgram.getShader(ShaderStage::GEOMETRY);
+			const auto& geometryCode = geometryShader.shaderCode;
+			const vk::ShaderModuleCreateInfo geometryModuleInfo({}, geometryCode.size(), reinterpret_cast<const uint32_t*>(geometryCode.data()));
+			if (m_Device.createShaderModule(&geometryModuleInfo, nullptr, &geometryModule) != vk::Result::eSuccess) {
+				return PipelineHandle();
+			}
+			vk::PipelineShaderStageCreateInfo geometryStage({}, vk::ShaderStageFlagBits::eGeometry, geometryModule, geometryShaderName);
+			shaderStages.push_back(geometryStage);
+		}
+
         const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
                 {},
                 static_cast<uint32_t>(shaderStages.size()),
@@ -263,11 +294,18 @@ namespace vkcv
         {
             m_Device.destroy(vertexModule);
             m_Device.destroy(fragmentModule);
+            if (geometryModule) {
+                m_Device.destroy(geometryModule);
+            }
+            m_Device.destroy();
             return PipelineHandle();
         }
 
         m_Device.destroy(vertexModule);
         m_Device.destroy(fragmentModule);
+        if (geometryModule) {
+            m_Device.destroy(geometryModule);
+        }
         
         const uint64_t id = m_Pipelines.size();
         m_Pipelines.push_back({ vkPipeline, vkPipelineLayout, config });

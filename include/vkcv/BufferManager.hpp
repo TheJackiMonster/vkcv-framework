@@ -132,6 +132,9 @@ namespace vkcv
 		 */
 		void unmapBuffer(const BufferHandle& handle);
 		
+		void recordBufferMemoryBarrier(
+			const BufferHandle& handle,
+			vk::CommandBuffer cmdBuffer);
 	};
 	
 }

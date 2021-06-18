@@ -197,11 +197,13 @@ namespace vkcv::gui {
 		const Swapchain& swapchain = m_core.getSwapchain();
 		const auto extent = swapchain.getExtent();
 		
+		const vk::ImageView swapchainImageView = m_core.getSwapchainImageView();
+
 		const vk::FramebufferCreateInfo framebufferCreateInfo (
 				vk::FramebufferCreateFlags(),
 				m_render_pass,
 				1,
-				&m_core.getSwapchainImageView(),
+				&swapchainImageView,
 				extent.width,
 				extent.height,
 				1
