@@ -443,7 +443,7 @@ namespace vkcv {
 		const auto& device = m_core->getContext().getDevice();
 
 		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Transfer;
+		submitInfo.queueType = QueueType::Graphics;
 
 		if (handle.isSwapchainImage()) {
 			vkcv_log(vkcv::LogLevel::ERROR, "You cannot generate a mip chain for the swapchain, what are you smoking?");
