@@ -280,7 +280,7 @@ namespace vkcv
 		void recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image);
 		void recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer);
 		
-		const vk::ImageView& getSwapchainImageView() const;
+		vk::ImageView getSwapchainImageView() const;
 		
     };
 }

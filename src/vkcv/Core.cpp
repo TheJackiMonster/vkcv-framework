@@ -524,7 +524,7 @@ namespace vkcv
 		}, nullptr);
 	}
 	
-	const vk::ImageView& Core::getSwapchainImageView() const {
+	vk::ImageView Core::getSwapchainImageView() const {
     	return m_ImageManager->getVulkanImageView(vkcv::ImageHandle::createSwapchainImageHandle());
     }
 	
