@@ -151,7 +151,7 @@ int main(int argc, const char** argv) {
 	);
 	const vk::Format shadowMapFormat = vk::Format::eD16Unorm;
 	const uint32_t shadowMapResolution = 1024;
-	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1, false);
+	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution);
 
 	// light info buffer
 	struct LightInfo {
@@ -196,6 +196,8 @@ int main(int argc, const char** argv) {
 
 		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, sceneTexture.w, sceneTexture.h));
 		sceneImages.back().fill(sceneTexture.data.data());
+		sceneImages.back().generateMipChainImmediate();
+        sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		vkcv::DescriptorWrites setWrites;
 		setWrites.sampledImageWrites = {
@@ -225,7 +227,7 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	vkcv::ImageHandle depthBuffer = core.createImage(depthBufferFormat, windowWidth, windowHeight, 1, false).getHandle();
+	vkcv::ImageHandle depthBuffer = core.createImage(depthBufferFormat, windowWidth, windowHeight).getHandle();
 	vkcv::ImageHandle colorBuffer = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
@@ -323,7 +325,7 @@ int main(int argc, const char** argv) {
 		}
 
 		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
-			depthBuffer = core.createImage(depthBufferFormat, swapchainWidth, swapchainHeight, 1, false).getHandle();
+			depthBuffer = core.createImage(depthBufferFormat, swapchainWidth, swapchainHeight).getHandle();
 			colorBuffer = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, false, true, true).getHandle();
 
 			windowWidth = swapchainWidth;

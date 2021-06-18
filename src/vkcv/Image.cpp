@@ -60,6 +60,10 @@ namespace vkcv{
 	void Image::fill(void *data, size_t size) {
 		m_manager->fillImage(m_handle, data, size);
 	}
+
+	void Image::generateMipChainImmediate() {
+		m_manager->generateImageMipChainImmediate(m_handle);
+	}
 	
 	Image::Image(ImageManager* manager, const ImageHandle& handle) :
 		m_manager(manager),

@@ -159,7 +159,7 @@ namespace vkcv {
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Transfer;
 		
-		core->recordAndSubmitCommands(
+		core->recordAndSubmitCommandsImmediate(
 				submitInfo,
 				[&info, &mapped_size](const vk::CommandBuffer& commandBuffer) {
 					const vk::BufferCopy region (

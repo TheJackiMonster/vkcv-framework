@@ -36,6 +36,7 @@ namespace vkcv {
 		void switchLayout(vk::ImageLayout newLayout);
 		
 		void fill(void* data, size_t size = SIZE_MAX);
+		void generateMipChainImmediate();
 	private:
 		ImageManager* const m_manager;
 		const ImageHandle   m_handle;

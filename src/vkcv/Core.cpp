@@ -375,7 +375,7 @@ namespace vkcv
 		}
 	}
 	
-	void Core::recordAndSubmitCommands(
+	void Core::recordAndSubmitCommandsImmediate(
 		const SubmitInfo &submitInfo, 
 		const RecordCommandFunction &record, 
 		const FinishCommandFunction &finish)
@@ -390,18 +390,12 @@ namespace vkcv
 		record(cmdBuffer);
 		cmdBuffer.end();
 		
-		vk::Fence waitFence;
-		
-		if (!submitInfo.fence) {
-			waitFence = createFence(device);
-		}
-		
+		vk::Fence waitFence = createFence(device);
+
 		submitCommandBufferToQueue(queue.handle, cmdBuffer, waitFence, submitInfo.waitSemaphores, submitInfo.signalSemaphores);
 		waitForFence(device, waitFence);
 		
-		if (!submitInfo.fence) {
-			device.destroyFence(waitFence);
-		}
+		device.destroyFence(waitFence);
 		
 		device.freeCommandBuffers(cmdPool, cmdBuffer);
 		

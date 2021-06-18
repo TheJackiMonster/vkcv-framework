@@ -100,6 +100,7 @@ namespace vkcv {
 			vk::CommandBuffer cmdBuffer);
 
 		void fillImage(const ImageHandle& handle, void* data, size_t size);
+		void generateImageMipChainImmediate(const ImageHandle& handle);
 		
 		[[nodiscard]]
 		uint32_t getImageWidth(const ImageHandle& handle) const;
