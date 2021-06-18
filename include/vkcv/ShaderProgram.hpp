@@ -8,23 +8,15 @@
 #include <unordered_map>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 #include <filesystem>
 #include <vulkan/vulkan.hpp>
 #include <spirv_cross.hpp>
-#include "vkcv/VertexLayout.hpp"
+#include "VertexLayout.hpp"
+#include "ShaderStage.hpp"
+#include "DescriptorConfig.hpp"
 
 namespace vkcv {
-
-    enum class ShaderStage
-    {
-        VERTEX,
-        TESS_CONTROL,
-        TESS_EVAL,
-        GEOMETRY,
-        FRAGMENT,
-        COMPUTE,
-        ALL
-    };
 
     struct Shader
     {
@@ -56,15 +48,24 @@ namespace vkcv {
 
         bool existsShader(ShaderStage shaderStage) const;
 
-        void reflectShader(ShaderStage shaderStage);
-
-        const VertexLayout &getVertexLayout() const;
+        const std::vector<VertexAttachment> &getVertexAttachments() const;
 		size_t getPushConstantSize() const;
 
+        const std::vector<std::vector<DescriptorBinding>>& getReflectedDescriptors() const;
+
 	private:
+	    /**
+	     * Called after successfully adding a shader to the program.
+	     * Fills vertex input attachments and descriptor sets (if present).
+	     * @param shaderStage the stage to reflect data from
+	     */
+        void reflectShader(ShaderStage shaderStage);
+
         std::unordered_map<ShaderStage, Shader> m_Shaders;
 
-        VertexLayout m_VertexLayout;
+        // contains all vertex input attachments used in the vertex buffer
+        std::vector<VertexAttachment> m_VertexAttachments;
+        std::vector<std::vector<DescriptorBinding>> m_DescriptorSets;
 		size_t m_pushConstantSize = 0;
 	};
 }

@@ -8,7 +8,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "vkcv/Context.hpp"
-#include "vkcv/SwapChain.hpp"
+#include "vkcv/Swapchain.hpp"
 #include "vkcv/Window.hpp"
 #include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
@@ -41,6 +41,7 @@ namespace vkcv
 		QueueType queueType;
 		std::vector<vk::Semaphore> waitSemaphores;
 		std::vector<vk::Semaphore> signalSemaphores;
+		vk::Fence fence;
 	};
 
     class Core final
@@ -52,7 +53,7 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, Window &window, const SwapChain& swapChain,  std::vector<vk::ImageView> imageViews,
+        Core(Context &&context, Window &window, const Swapchain& swapChain,  std::vector<vk::ImageView> imageViews,
 			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
@@ -61,11 +62,11 @@ namespace vkcv
 
         Context m_Context;
 
-        SwapChain                       m_swapchain;
+        Swapchain                       m_swapchain;
         std::vector<vk::ImageView>      m_swapchainImageViews;
         std::vector<vk::Image>          m_swapchainImages;
 		std::vector<vk::ImageLayout>    m_swapchainImageLayouts;
-        const Window&                   m_window;
+        Window&                   		m_window;
 
         std::unique_ptr<PassManager>            m_PassManager;
         std::unique_ptr<PipelineManager>        m_PipelineManager;
@@ -78,10 +79,10 @@ namespace vkcv
 		CommandResources    m_CommandResources;
 		SyncResources       m_SyncResources;
 		uint32_t            m_currentSwapchainImageIndex;
+	
+		event_handle<int,int> e_resizeHandle;
 
-        std::function<void(int, int)> e_resizeHandle;
-
-        static std::vector<vk::ImageView> createImageViews( Context &context, SwapChain& swapChain);
+        static std::vector<vk::ImageView> createImageViews( Context &context, Swapchain& swapChain);
 
 		void recordSwapchainImageLayoutTransition(vk::CommandBuffer cmdBuffer, vk::ImageLayout newLayout);
 
@@ -123,6 +124,9 @@ namespace vkcv
 
         [[nodiscard]]
         const Context &getContext() const;
+        
+        [[nodiscard]]
+        const Swapchain& getSwapchain() const;
 
         /**
              * Creates a #Core with given @p applicationName and @p applicationVersion for your application.
@@ -156,6 +160,19 @@ namespace vkcv
          */
         [[nodiscard]]
         PipelineHandle createGraphicsPipeline(const PipelineConfig &config);
+
+        /**
+         * Creates a basic vulkan compute pipeline using @p shader program and returns it using the @p handle.
+         * Fixed Functions for pipeline are set with standard values.
+         *
+         * @param shader program that hold the compiles compute shader
+         * @param handle a handle to return the created vulkan handle
+         * @return True if pipeline creation was successful, False if not
+         */
+        [[nodiscard]]
+        PipelineHandle createComputePipeline(
+            const ShaderProgram &config, 
+            const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
 
         /**
          * Creates a basic vulkan render pass using @p config from the render pass config class and returns it using the @p handle.
@@ -211,7 +228,7 @@ namespace vkcv
          */
         [[nodiscard]]
         DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &bindings);
-		void writeResourceDescription(DescriptorSetHandle handle, size_t setIndex, const DescriptorWrites& writes);
+		void writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites& writes);
 
 		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
 
@@ -228,12 +245,17 @@ namespace vkcv
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets);
 
+		void recordComputeDispatchToCmdStream(
+			CommandStreamHandle cmdStream,
+			PipelineHandle computePipeline,
+			const uint32_t dispatchCount[3],
+			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
+			const PushConstantData& pushConstantData);
+
 		/**
 		 * @brief end recording and present image
 		*/
 		void endFrame();
-
-		vk::Format getSwapchainImageFormat();
 
 		/**
 		 * Submit a command buffer to any queue of selected type. The recording can be customized by a
@@ -259,5 +281,8 @@ namespace vkcv
 		void submitCommandStream(const CommandStreamHandle handle);
 		void prepareSwapchainImageForPresent(const CommandStreamHandle handle);
 		void prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image);
+		
+		const vk::ImageView& getSwapchainImageView() const;
+		
     };
 }

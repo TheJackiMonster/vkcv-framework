@@ -29,15 +29,18 @@ set(vkcv_sources
 
 		${vkcv_source}/vkcv/ImageManager.hpp
 		${vkcv_source}/vkcv/ImageManager.cpp
+		
+		${vkcv_include}/vkcv/Logger.hpp
 
-		${vkcv_include}/vkcv/SwapChain.hpp
-		${vkcv_source}/vkcv/SwapChain.cpp
-
+		${vkcv_include}/vkcv/Swapchain.hpp
+		${vkcv_source}/vkcv/Swapchain.cpp
+		
+		${vkcv_include}/vkcv/ShaderStage.hpp
+		
 		${vkcv_include}/vkcv/ShaderProgram.hpp
 		${vkcv_source}/vkcv/ShaderProgram.cpp
 
 		${vkcv_include}/vkcv/PipelineConfig.hpp
-		${vkcv_source}/vkcv/PipelineConfig.cpp
 
 		${vkcv_source}/vkcv/PipelineManager.hpp
 		${vkcv_source}/vkcv/PipelineManager.cpp
