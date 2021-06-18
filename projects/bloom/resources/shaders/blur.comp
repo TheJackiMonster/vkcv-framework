@@ -1,17 +1,37 @@
-# version 450
-layout(local_size_x = 8, local_size_y = 8) in;
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
 
-layout(set=0, binding=0) uniform texture2D  offscreenAttachment;
-layout(set=0, binding=1) uniform sampler    offscreenSampler;
-layout(r11f_g11f_b10f, set=0, binding=2) uniform writeonly image2D  blurAttachment;
+layout(set=0, binding=0) uniform texture2D                          inImage;
+layout(set=0, binding=1) uniform sampler                            inImageSampler;
+layout(set=0, binding=2, r11f_g11f_b10f) uniform writeonly image2D  outImage;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
 
 void main()
 {
-    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
-    vec2 uv = vec2(pixel_coords) / imageSize(blurAttachment);
+    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(outImage)))){
+        return;
+    }
 
-    // TODO: BLUR
+    const int kernel_size = 10;
+    const float kernel_weight = (2 * kernel_size + 1) * (2 * kernel_size + 1);
 
+    ivec2 pixel_coord   = ivec2(gl_GlobalInvocationID.xy);
+    vec2  pixel_size    = vec2(1.0f) / textureSize(sampler2D(inImage, inImageSampler), 0);
+    vec2  UV            = pixel_coord.xy * pixel_size;
 
-    imageStore(blurAttachment, pixel_coords, vec4(1.0, 0.0 ,0.0, 0.0));
+    vec4 sampled_color = vec4(0.0f);
+
+    for(int i = -kernel_size; i <= kernel_size; i++)
+    {
+        for(int j = -kernel_size; j <= kernel_size; j++)
+        {
+            vec2 sample_coord = UV + vec2(j, i) * pixel_size + 0.5f * pixel_size * sign(vec2(j, i));
+            sampled_color.rgb += texture(sampler2D(inImage, inImageSampler), sample_coord).rgb;
+        }
+    }
+    sampled_color /= kernel_weight;
+
+    imageStore(outImage, pixel_coord, sampled_color);
 }

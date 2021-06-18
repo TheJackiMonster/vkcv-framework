@@ -1,0 +1,29 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(set=0, binding=0) uniform texture2D                          blurImage;
+layout(set=0, binding=1) uniform sampler                            linearSampler;
+layout(set=0, binding=2, r11f_g11f_b10f) uniform image2D            colorBuffer;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+
+void main()
+{
+    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(colorBuffer)))){
+        return;
+    }
+
+    ivec2 pixel_coord   = ivec2(gl_GlobalInvocationID.xy);
+    vec2  pixel_size    = vec2(1.0f) / textureSize(sampler2D(blurImage, linearSampler), 0);
+    vec2  UV            = pixel_coord.xy * pixel_size;
+
+    vec4 composite_color = vec4(0.0f);
+
+    vec3 blur_color = texture(sampler2D(blurImage, linearSampler), UV).rgb;
+    vec3 main_color = imageLoad(colorBuffer, pixel_coord).rgb;
+
+    composite_color.rgb = mix(main_color, blur_color, 0.1f);
+
+    imageStore(colorBuffer, pixel_coord, composite_color);
+}
