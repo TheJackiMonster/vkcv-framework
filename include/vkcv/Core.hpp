@@ -41,7 +41,6 @@ namespace vkcv
 		QueueType queueType;
 		std::vector<vk::Semaphore> waitSemaphores;
 		std::vector<vk::Semaphore> signalSemaphores;
-		vk::Fence fence;
 	};
 
     class Core final
@@ -215,7 +214,14 @@ namespace vkcv
          * @return Image-Object
          */
         [[nodiscard]]
-        Image createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth = 1, bool supportStorage = false, bool supportColorAttachment = false);
+        Image createImage(
+			vk::Format  format,
+			uint32_t    width,
+			uint32_t    height,
+			uint32_t    depth = 1,
+			bool        createMipChain = false,
+			bool        supportStorage = false,
+			bool        supportColorAttachment = false);
 
         /** TODO:
          *   @param setDescriptions
@@ -261,7 +267,7 @@ namespace vkcv
 		 * @param record Record-command-function
 		 * @param finish Finish-command-function or nullptr
 		 */
-		void recordAndSubmitCommands(
+		void recordAndSubmitCommandsImmediate(
 			const SubmitInfo            &submitInfo, 
 			const RecordCommandFunction &record, 
 			const FinishCommandFunction &finish);

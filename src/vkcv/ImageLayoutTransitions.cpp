@@ -15,7 +15,7 @@ namespace vkcv {
 		vk::ImageSubresourceRange imageSubresourceRange(
 			aspectFlags,
 			0,
-			image.m_levels,
+			image.m_viewPerMip.size(),
 			0,
 			image.m_layers
 		);
