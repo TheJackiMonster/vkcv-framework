@@ -415,8 +415,8 @@ int main(int argc, const char** argv) {
 
 		const uint32_t gammaCorrectionLocalGroupSize = 8;
 		const uint32_t gammaCorrectionDispatchCount[3] = {
-			glm::ceil(windowWidth / float(gammaCorrectionLocalGroupSize)),
-			glm::ceil(windowHeight / float(gammaCorrectionLocalGroupSize)),
+			static_cast<uint32_t>(glm::ceil(windowWidth / static_cast<float>(gammaCorrectionLocalGroupSize))),
+			static_cast<uint32_t>(glm::ceil(windowHeight / static_cast<float>(gammaCorrectionLocalGroupSize))),
 			1
 		};
 
