@@ -7,8 +7,7 @@ namespace vkcv
 
     PipelineManager::PipelineManager(vk::Device device) noexcept :
     m_Device{device},
-    m_Pipelines{},
-    m_Configs{}
+    m_Pipelines{}
     {}
 
     PipelineManager::~PipelineManager() noexcept
@@ -271,8 +270,7 @@ namespace vkcv
         m_Device.destroy(fragmentModule);
         
         const uint64_t id = m_Pipelines.size();
-        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout });
-        m_Configs.push_back(config);
+        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout, config });
         return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }
 
@@ -320,10 +318,17 @@ namespace vkcv
 		}
     }
 
-    const PipelineConfig &PipelineManager::getPipelineConfig(const PipelineHandle &handle) const
+    const PipelineConfig& PipelineManager::getPipelineConfig(const PipelineHandle &handle) const
     {
         const uint64_t id = handle.getId();
-        return m_Configs.at(id);
+        
+        if (id >= m_Pipelines.size()) {
+        	static PipelineConfig dummyConfig;
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
+			return dummyConfig;
+        }
+        
+        return m_Pipelines[id].m_config;
     }
 
     PipelineHandle PipelineManager::createComputePipeline(
@@ -373,7 +378,7 @@ namespace vkcv
         m_Device.destroy(computeModule);
 
         const uint64_t id = m_Pipelines.size();
-        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout });
+        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout, PipelineConfig() });
 
         return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }

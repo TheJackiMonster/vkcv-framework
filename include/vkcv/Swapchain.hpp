@@ -7,8 +7,9 @@
 
 namespace vkcv
 {
-    class SwapChain final {
+    class Swapchain final {
     private:
+    	friend class Core;
 
         struct Surface
         {
@@ -21,10 +22,10 @@ namespace vkcv
         Surface m_Surface;
 
         vk::SwapchainKHR m_Swapchain;
-        vk::Format m_SwapchainFormat;
-        vk::ColorSpaceKHR m_SwapchainColorSpace;
-        vk::PresentModeKHR m_SwapchainPresentMode;
-		uint32_t m_SwapchainImageCount;
+        vk::Format m_Format;
+        vk::ColorSpaceKHR m_ColorSpace;
+        vk::PresentModeKHR m_PresentMode;
+		uint32_t m_ImageCount;
 	
 		vk::Extent2D m_Extent;
 	
@@ -39,16 +40,36 @@ namespace vkcv
          * @param format
          */
          // TODO:
-        SwapChain(const Surface &surface,
+        Swapchain(const Surface &surface,
                   vk::SwapchainKHR swapchain,
                   vk::Format format,
                   vk::ColorSpaceKHR colorSpace,
                   vk::PresentModeKHR presentMode,
                   uint32_t imageCount,
 				  vk::Extent2D extent) noexcept;
+	
+		/**
+		 * TODO
+		 *
+		 * @return
+		 */
+		bool shouldUpdateSwapchain() const;
+	
+		/**
+		 * TODO
+		 *
+		 * context
+		 * window
+		 */
+		void updateSwapchain(const Context &context, const Window &window);
+	
+		/**
+		 *
+		 */
+		void signalSwapchainRecreation();
 
     public:
-    	SwapChain(const SwapChain& other);
+    	Swapchain(const Swapchain& other);
 
         /**
          * @return The swapchain linked with the #SwapChain class
@@ -69,7 +90,7 @@ namespace vkcv
          * @return gets the chosen swapchain format
          */
         [[nodiscard]]
-        vk::Format getSwapchainFormat() const;
+        vk::Format getFormat() const;
 
         /**
          * creates a swap chain object out of the given window and the given context
@@ -77,37 +98,17 @@ namespace vkcv
          * @param context of the application
          * @return returns an object of swapChain
          */
-        static SwapChain create(const Window &window, const Context &context);
+        static Swapchain create(const Window &window, const Context &context);
 
         /**
          * Destructor of SwapChain
          */
-        virtual ~SwapChain();
+        virtual ~Swapchain();
 
 		/**
 		 * @return number of images in swapchain
 		*/
-		uint32_t getImageCount();
-		
-		/**
-		 * TODO
-		 *
-		 * @return
-		 */
-		bool shouldUpdateSwapchain() const;
-
-		/**
-		 * TODO
-		 *
-		 * context
-		 * window
-		 */
-		void updateSwapchain(const Context &context, const Window &window);
-		
-		/**
-		 *
-		 */
-        void signalSwapchainRecreation();
+		uint32_t getImageCount() const;
 	
         /**
          * TODO

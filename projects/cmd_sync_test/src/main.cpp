@@ -18,9 +18,15 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
-	cameraManager.getCamera().setPosition(glm::vec3(0.f, 0.f, 3.f));
-	cameraManager.getCamera().setNearFar(0.1, 30);
+    vkcv::camera::CameraManager cameraManager(window);
+    uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+    uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+    
+    cameraManager.getCamera(camIndex).setPosition(glm::vec3(0.f, 0.f, 3.f));
+    cameraManager.getCamera(camIndex).setNearFar(0.1f, 30.0f);
+	cameraManager.getCamera(camIndex).setYaw(180.0f);
+	
+	cameraManager.getCamera(camIndex2).setNearFar(0.1f, 30.0f);
 
 	window.initEvents();
 
@@ -33,10 +39,10 @@ int main(int argc, const char** argv) {
 		{ "VK_KHR_swapchain" }
 	);
 
-	vkcv::asset::Mesh mesh;
+	vkcv::asset::Scene mesh;
 
 	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
-	int result = vkcv::asset::loadMesh(path, mesh);
+	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
 		std::cout << "Mesh loading successful!" << std::endl;
@@ -80,7 +86,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchainImageFormat()
+		core.getSwapchain().getFormat()
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment(
@@ -113,14 +119,16 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
-	const vkcv::PipelineConfig firstMeshPipelineConfig(
+	const vkcv::PipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,
 		windowWidth,
 		windowHeight,
         firstMeshPass,
-        {firstMeshLayout},
+        firstMeshLayout,
 		{ core.getDescriptorSet(descriptorSet).layout },
-		true);
+		true
+	};
+	
 	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
 	
 	if (!firstMeshPipeline) {
@@ -128,8 +136,11 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, mesh.texture_hack.w, mesh.texture_hack.h);
-	texture.fill(mesh.texture_hack.img);
+	//vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, mesh.texture_hack.w, mesh.texture_hack.h);
+	//texture.fill(mesh.texture_hack.img);
+    vkcv::asset::Texture &tex = mesh.textures[0];
+    vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
+    texture.fill(tex.data.data());
 
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
@@ -186,14 +197,16 @@ int main(int argc, const char** argv) {
 
 	const uint32_t shadowMapResolution = 1024;
 	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1);
-	const vkcv::PipelineConfig shadowPipeConfig(
+	const vkcv::PipelineConfig shadowPipeConfig {
 		shadowShader, 
 		shadowMapResolution, 
 		shadowMapResolution, 
 		shadowPass,
-        {firstMeshLayout},
-		{}, 
-		false);
+        firstMeshLayout,
+		{},
+		false
+	};
+	
 	const vkcv::PipelineHandle shadowPipe = core.createGraphicsPipeline(shadowPipeConfig);
 
 	struct LightInfo {
@@ -233,10 +246,13 @@ int main(int argc, const char** argv) {
 		
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		
 		start = end;
-		cameraManager.getCamera().updateView(deltatime.count() * 0.000001);
+		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 
-		const float sunTheta = std::chrono::duration_cast<std::chrono::milliseconds>(end - appStartTime).count() * 0.001f;
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - appStartTime);
+		
+		const float sunTheta = 0.001f * static_cast<float>(duration.count());
 		lightInfo.direction = glm::normalize(glm::vec3(std::cos(sunTheta), 1, std::sin(sunTheta)));
 
 		const float shadowProjectionSize = 5.f;
@@ -258,7 +274,7 @@ int main(int argc, const char** argv) {
 		lightInfo.lightMatrix = projectionLight * viewLight;
 		lightBuffer.fill({ lightInfo });
 
-		const glm::mat4 viewProjectionCamera = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();
 
 		mainPassMatrices.clear();
 		mvpLight.clear();

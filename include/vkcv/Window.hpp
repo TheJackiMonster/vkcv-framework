@@ -13,16 +13,19 @@ struct GLFWwindow;
 
 namespace vkcv {
 
-    class Window final {
-    private:
-        GLFWwindow *m_window;
-
-        /**
+    class Window {
+	protected:
+		GLFWwindow *m_window;
+	
+		/**
          *
          * @param GLFWwindow of the class
          */
-        explicit Window(GLFWwindow *window);
-
+		explicit Window(GLFWwindow *window);
+		
+		static GLFWwindow* createGLFWWindow(const char *windowTitle, int width, int height, bool resizable);
+		
+    private:
         /**
          * mouse callback for moving the mouse on the screen
          * @param[in] window The window that received the event.
@@ -58,6 +61,13 @@ namespace vkcv {
          * @param[in] mods Bit field describing which [modifier keys](@ref mods) were held down.
          */
         static void onKeyEvent(GLFWwindow *callbackWindow, int key, int scancode, int action, int mods);
+	
+        /**
+         * char callback for any typed character
+         * @param[in] window The window that received the event
+         * @param[in] c The character that got typed
+         */
+		static void onCharEvent(GLFWwindow *callbackWindow, unsigned int c);
 
     public:
         /**
@@ -95,6 +105,7 @@ namespace vkcv {
         event< double, double > e_mouseScroll;
         event< int, int > e_resize;
         event< int, int, int, int > e_key;
+        event< unsigned int > e_char;
 
         /**
          * returns the current window
