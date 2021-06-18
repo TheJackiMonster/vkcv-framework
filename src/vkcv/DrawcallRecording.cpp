@@ -23,8 +23,6 @@ namespace vkcv {
                 nullptr);
         }
 
-        cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
-
         const size_t drawcallPushConstantOffset = drawcallIndex * pushConstantData.sizePerDrawcall;
         // char* cast because void* does not support pointer arithmetic
         const void* drawcallPushConstantData = drawcallPushConstantOffset + (char*)pushConstantData.data;
@@ -36,6 +34,12 @@ namespace vkcv {
             pushConstantData.sizePerDrawcall,
             drawcallPushConstantData);
 
-        cmdBuffer.drawIndexed(drawcall.mesh.indexCount, 1, 0, 0, {});
+        if (drawcall.mesh.indexBuffer) {
+            cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
+            cmdBuffer.drawIndexed(drawcall.mesh.indexCount, 1, 0, 0, {});
+        }
+        else {
+            cmdBuffer.draw(drawcall.mesh.indexCount, 1, 0, 0, {});
+        }
     }
 }

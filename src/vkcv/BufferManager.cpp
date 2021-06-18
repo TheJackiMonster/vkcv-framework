@@ -5,6 +5,7 @@
 
 #include "vkcv/BufferManager.hpp"
 #include "vkcv/Core.hpp"
+#include <vkcv/Logger.hpp>
 
 namespace vkcv {
 	
@@ -333,6 +334,35 @@ namespace vkcv {
 			device.destroyBuffer(buffer.m_handle);
 			buffer.m_handle = nullptr;
 		}
+	}
+
+	void BufferManager ::recordBufferMemoryBarrier(const BufferHandle& handle, vk::CommandBuffer cmdBuffer) {
+
+		const uint64_t id = handle.getId();
+
+		if (id >= m_buffers.size()) {
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid buffer handle");
+			return;
+		}
+
+		auto& buffer = m_buffers[id];
+		
+		vk::BufferMemoryBarrier memoryBarrier(
+			vk::AccessFlagBits::eMemoryWrite, 
+			vk::AccessFlagBits::eMemoryRead,
+			0,
+			0,
+			buffer.m_handle,
+			0,
+			buffer.m_size);
+
+		cmdBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTopOfPipe,
+			vk::PipelineStageFlagBits::eBottomOfPipe,
+			{},
+			nullptr,
+			memoryBarrier,
+			nullptr);
 	}
 
 }

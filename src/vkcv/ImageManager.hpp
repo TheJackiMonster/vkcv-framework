@@ -41,6 +41,8 @@ namespace vkcv {
 				vk::Format          format,
 				uint32_t            layers,
 				uint32_t            levels);
+
+			Image();
 		};
 	private:
 		
@@ -48,6 +50,8 @@ namespace vkcv {
 		BufferManager& m_bufferManager;
 		
 		std::vector<Image> m_images;
+		std::vector<Image> m_swapchainImages;
+		int m_currentSwapchainInputImage;
 		
 		ImageManager(BufferManager& bufferManager) noexcept;
 		
@@ -67,7 +71,7 @@ namespace vkcv {
 		ImageManager& operator=(ImageManager&& other) = delete;
 		ImageManager& operator=(const ImageManager& other) = delete;
 		
-		ImageHandle createImage(uint32_t width, uint32_t height, uint32_t depth, vk::Format format);
+		ImageHandle createImage(uint32_t width, uint32_t height, uint32_t depth, vk::Format format, bool supportStorage, bool supportColorAttachment);
 		
 		ImageHandle createSwapchainImage();
 		
@@ -86,6 +90,10 @@ namespace vkcv {
 			vk::ImageLayout newLayout, 
 			vk::CommandBuffer cmdBuffer);
 
+		void recordImageMemoryBarrier(
+			const ImageHandle& handle,
+			vk::CommandBuffer cmdBuffer);
+
 		void fillImage(const ImageHandle& handle, void* data, size_t size);
 		
 		[[nodiscard]]
@@ -99,5 +107,10 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		vk::Format getImageFormat(const ImageHandle& handle) const;
+
+		void setCurrentSwapchainImageIndex(int index);
+		void setSwapchainImages(const std::vector<vk::Image>& images, std::vector<vk::ImageView> views,
+			uint32_t width, uint32_t height, vk::Format format);
+
 	};
 }

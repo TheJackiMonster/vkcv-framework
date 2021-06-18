@@ -13,6 +13,8 @@
 
 namespace vkcv {
 
+    enum class PrimitiveTopology{PointList, LineList, TriangleList };
+
     struct PipelineConfig {
         ShaderProgram                         m_ShaderProgram;
         uint32_t                              m_Width;
@@ -21,7 +23,8 @@ namespace vkcv {
         VertexLayout                          m_VertexLayout;
         std::vector<vk::DescriptorSetLayout>  m_DescriptorLayouts;
         bool                                  m_UseDynamicViewport;
-
+        bool                                  m_UseConservativeRasterization = false;
+        PrimitiveTopology                     m_PrimitiveTopology = PrimitiveTopology::TriangleList;
     };
 
 }

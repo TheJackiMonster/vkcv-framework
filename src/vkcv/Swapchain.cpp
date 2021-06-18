@@ -186,7 +186,7 @@ namespace vkcv
                 chosenSurfaceFormat.colorSpace,   // imageColorSpace
                 chosenExtent,   // imageExtent
                 1,  // imageArrayLayers TODO: should we only allow non-stereoscopic applications? yes -> 1, no -> ? "must be greater than 0, less or equal to maxImageArrayLayers"
-                vk::ImageUsageFlagBits::eColorAttachment,  // imageUsage TODO: what attachments? only color? depth?
+                vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,  // imageUsage TODO: what attachments? only color? depth?
                 vk::SharingMode::eExclusive,    // imageSharingMode TODO: which sharing mode? "VK_SHARING_MODE_EXCLUSIV access exclusive to a single queue family, better performance", "VK_SHARING_MODE_CONCURRENT access from multiple queues"
                 0,  // queueFamilyIndexCount, the number of queue families having access to the image(s) of the swapchain when imageSharingMode is VK_SHARING_MODE_CONCURRENT
                 nullptr,    // pQueueFamilyIndices, the pointer to an array of queue family indices having access to the images(s) of the swapchain when imageSharingMode is VK_SHARING_MODE_CONCURRENT
@@ -227,7 +227,7 @@ namespace vkcv
 				m_ColorSpace,
 				extent2D,
 				1,
-				vk::ImageUsageFlagBits::eColorAttachment,
+				vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
 				vk::SharingMode::eExclusive,
 				0,
 				nullptr,

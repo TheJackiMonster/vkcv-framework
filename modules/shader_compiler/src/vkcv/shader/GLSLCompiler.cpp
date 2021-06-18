@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <glslang/SPIRV/GlslangToSpv.h>
+#include <glslang/StandAlone/DirStackFileIncluder.h>
 
 #include <vkcv/Logger.hpp>
 
@@ -217,12 +218,26 @@ namespace vkcv::shader {
 		
 		TBuiltInResource resources = {};
 		initResources(resources);
+
+		const auto messages = (EShMessages)(
+			EShMsgSpvRules |
+			EShMsgVulkanRules
+			);
+
+		std::string preprocessedGLSL;
+
+		DirStackFileIncluder includer;
+		includer.pushExternalLocalDirectory(shaderPath.parent_path().string());
+
+		if (!shader.preprocess(&resources, 100, ENoProfile, false, false, messages, &preprocessedGLSL, includer)) {
+			vkcv_log(LogLevel::ERROR, "Shader parsing failed {\n%s\n%s\n} (%s)",
+				shader.getInfoLog(), shader.getInfoDebugLog(), shaderPath.string().c_str());
+			return;
+		}
 		
-		const auto messages = (EShMessages) (
-				EShMsgSpvRules |
-				EShMsgVulkanRules
-		);
-		
+		const char* preprocessedCString = preprocessedGLSL.c_str();
+		shader.setStrings(&preprocessedCString, 1);
+
 		if (!shader.parse(&resources, 100, false, messages)) {
 			vkcv_log(LogLevel::ERROR, "Shader parsing failed {\n%s\n%s\n} (%s)",
 					 shader.getInfoLog(), shader.getInfoDebugLog(), shaderPath.string().c_str());
