@@ -178,26 +178,25 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
-	// prepare per mesh descriptor sets
-	std::vector<vkcv::DescriptorSetHandle> perMeshDescriptorSets;
+	// create descriptor sets
+	std::vector<vkcv::DescriptorSetHandle> materialDescriptorSets;
 	std::vector<vkcv::Image> sceneImages;
-	for (const auto& vertexGroup : scene.vertexGroups) {
-		perMeshDescriptorSets.push_back(core.createDescriptorSet(forwardProgram.getReflectedDescriptors()[1]));
 
-		const auto& material = scene.materials[vertexGroup.materialIndex];
-
+	for (const auto& material : scene.materials) {
 		int baseColorIndex = material.baseColor;
 		if (baseColorIndex < 0) {
 			vkcv_log(vkcv::LogLevel::WARNING, "Material lacks base color");
 			baseColorIndex = 0;
 		}
 
+		materialDescriptorSets.push_back(core.createDescriptorSet(forwardProgram.getReflectedDescriptors()[1]));
+
 		vkcv::asset::Texture& sceneTexture = scene.textures[baseColorIndex];
 
 		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, sceneTexture.w, sceneTexture.h, 1, true));
 		sceneImages.back().fill(sceneTexture.data.data());
 		sceneImages.back().generateMipChainImmediate();
-        sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		vkcv::DescriptorWrites setWrites;
 		setWrites.sampledImageWrites = {
@@ -206,7 +205,12 @@ int main(int argc, const char** argv) {
 		setWrites.samplerWrites = {
 			vkcv::SamplerDescriptorWrite(1, colorSampler),
 		};
-		core.writeDescriptorSet(perMeshDescriptorSets.back(), setWrites);
+		core.writeDescriptorSet(materialDescriptorSets.back(), setWrites);
+	}
+
+	std::vector<vkcv::DescriptorSetHandle> perMeshDescriptorSets;
+	for (const auto& vertexGroup : scene.vertexGroups) {
+		perMeshDescriptorSets.push_back(materialDescriptorSets[vertexGroup.materialIndex]);
 	}
 
 	const vkcv::PipelineConfig forwardPipelineConfig {
