@@ -442,9 +442,30 @@ namespace vkcv
 		return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode);
 	}
 
-	Image Core::createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth, bool supportStorage, bool supportColorAttachment)
+	Image Core::createImage(
+		vk::Format  format,
+		uint32_t    width,
+		uint32_t    height,
+		uint32_t    depth,
+		bool        createMipChain,
+		bool        supportStorage,
+		bool        supportColorAttachment)
 	{
-    	return Image::create(m_ImageManager.get(), format, width, height, depth, supportStorage, supportColorAttachment);
+
+		uint32_t mipCount = 1;
+		if (createMipChain) {
+			mipCount = 1 + (uint32_t)std::floor(std::log2(std::max(width, std::max(height, depth))));
+		}
+
+		return Image::create(
+			m_ImageManager.get(), 
+			format,
+			width,
+			height,
+			depth,
+			mipCount,
+			supportStorage,
+			supportColorAttachment);
 	}
 
     DescriptorSetHandle Core::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)

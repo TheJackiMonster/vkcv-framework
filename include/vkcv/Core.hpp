@@ -215,7 +215,14 @@ namespace vkcv
          * @return Image-Object
          */
         [[nodiscard]]
-        Image createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth = 1, bool supportStorage = false, bool supportColorAttachment = false);
+        Image createImage(
+			vk::Format  format,
+			uint32_t    width,
+			uint32_t    height,
+			uint32_t    depth = 1,
+			bool        createMipChain = true,
+			bool        supportStorage = false,
+			bool        supportColorAttachment = false);
 
         /** TODO:
          *   @param setDescriptions

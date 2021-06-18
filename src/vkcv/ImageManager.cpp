@@ -13,25 +13,23 @@
 namespace vkcv {
 
 	ImageManager::Image::Image(
-		vk::Image           handle,
-		vk::DeviceMemory    memory,
-		vk::ImageView       view,
-		uint32_t            width,
-		uint32_t            height,
-		uint32_t            depth,
-		vk::Format          format,
-		uint32_t            layers,
-		uint32_t            levels)
+		vk::Image                   handle,
+		vk::DeviceMemory            memory,
+		std::vector<vk::ImageView>  views,
+		uint32_t                    width,
+		uint32_t                    height,
+		uint32_t                    depth,
+		vk::Format                  format,
+		uint32_t                    layers)
 		:
 		m_handle(handle),
 		m_memory(memory),
-		m_view(view),
+        m_viewPerMip(views),
 		m_width(width),
 		m_height(height),
 		m_depth(depth),
 		m_format(format),
-		m_layers(layers),
-		m_levels(levels)
+		m_layers(layers)
 	{}
 
 	/**
@@ -69,8 +67,11 @@ namespace vkcv {
 		for (uint64_t id = 0; id < m_images.size(); id++) {
 			destroyImageById(id);
 		}
-		for (const auto swapchainImage : m_swapchainImages)
-			m_core->getContext().getDevice().destroy(swapchainImage.m_view);
+		for (const auto swapchainImage : m_swapchainImages) {
+			for (const auto view : swapchainImage.m_viewPerMip) {
+				m_core->getContext().getDevice().destroy(view);
+			}
+		}
 	}
 	
 	bool isDepthImageFormat(vk::Format format) {
@@ -83,7 +84,14 @@ namespace vkcv {
 		}
 	}
 
-	ImageHandle ImageManager::createImage(uint32_t width, uint32_t height, uint32_t depth, vk::Format format, bool supportStorage, bool supportColorAttachment)
+	ImageHandle ImageManager::createImage(
+		uint32_t    width, 
+		uint32_t    height, 
+		uint32_t    depth, 
+		vk::Format  format, 
+		uint32_t    mipCount,
+		bool        supportStorage, 
+		bool        supportColorAttachment)
 	{
 		const vk::PhysicalDevice& physicalDevice = m_core->getContext().getPhysicalDevice();
 		
@@ -135,11 +143,9 @@ namespace vkcv {
 			imageTiling = vk::ImageTiling::eLinear;
 		}
 		
-		const vk::ImageFormatProperties imageFormatProperties = physicalDevice.getImageFormatProperties(
-				format, imageType, imageTiling, imageUsageFlags
-		);
+		const vk::ImageFormatProperties imageFormatProperties = 
+			physicalDevice.getImageFormatProperties(format, imageType, imageTiling, imageUsageFlags);
 		
-		const uint32_t mipLevels = std::min<uint32_t>(1, imageFormatProperties.maxMipLevels);
 		const uint32_t arrayLayers = std::min<uint32_t>(1, imageFormatProperties.maxArrayLayers);
 		
 		const vk::ImageCreateInfo imageCreateInfo(
@@ -147,7 +153,7 @@ namespace vkcv {
 			imageType,
 			format,
 			vk::Extent3D(width, height, depth),
-			mipLevels,
+			mipCount,
 			arrayLayers,
 			vk::SampleCountFlagBits::e1,
 			imageTiling,
@@ -180,30 +186,33 @@ namespace vkcv {
 			aspectFlags = vk::ImageAspectFlagBits::eColor;
 		}
 		
-		const vk::ImageViewCreateInfo imageViewCreateInfo (
+		std::vector<vk::ImageView> views;
+		for (int mip = 0; mip < mipCount; mip++) {
+			const vk::ImageViewCreateInfo imageViewCreateInfo(
 				{},
 				image,
 				imageViewType,
 				format,
 				vk::ComponentMapping(
-						vk::ComponentSwizzle::eIdentity,
-						vk::ComponentSwizzle::eIdentity,
-						vk::ComponentSwizzle::eIdentity,
-						vk::ComponentSwizzle::eIdentity
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity
 				),
 				vk::ImageSubresourceRange(
-						aspectFlags,
-						0,
-						mipLevels,
-						0,
-						arrayLayers
+					aspectFlags,
+					mip,
+					1,
+					0,
+					arrayLayers
 				)
-		);
-		
-		vk::ImageView view = device.createImageView(imageViewCreateInfo);
+			);
+
+			views.push_back(device.createImageView(imageViewCreateInfo));
+		}
 		
 		const uint64_t id = m_images.size();
-		m_images.push_back(Image(image, memory, view, width, height, depth, format, arrayLayers, mipLevels));
+		m_images.push_back(Image(image, memory, views, width, height, depth, format, arrayLayers));
 		return ImageHandle(id, [&](uint64_t id) { destroyImageById(id); });
 	}
 	
@@ -246,10 +255,10 @@ namespace vkcv {
 		return image.m_memory;
 	}
 	
-	vk::ImageView ImageManager::getVulkanImageView(const ImageHandle &handle) const {
+	vk::ImageView ImageManager::getVulkanImageView(const ImageHandle &handle, const size_t mipLevel) const {
 		
 		if (handle.isSwapchainImage()) {
-			return m_swapchainImages[m_currentSwapchainInputImage].m_view;
+			return m_swapchainImages[m_currentSwapchainInputImage].m_viewPerMip[0];
 		}
 
 		const uint64_t id = handle.getId();
@@ -258,7 +267,14 @@ namespace vkcv {
 			return nullptr;
 		}
 		
-		return m_images[id].m_view;
+		const auto& image = m_images[id];
+
+		if (mipLevel >= m_images.size()) {
+			vkcv_log(LogLevel::ERROR, "Image does not have requested mipLevel");
+			return nullptr;
+		}
+
+		return image.m_viewPerMip[mipLevel];
 	}
 	
 	void ImageManager::switchImageLayoutImmediate(const ImageHandle& handle, vk::ImageLayout newLayout) {
@@ -475,9 +491,11 @@ namespace vkcv {
 
 		const vk::Device& device = m_core->getContext().getDevice();
 		
-		if (image.m_view) {
-			device.destroyImageView(image.m_view);
-			image.m_view = nullptr;
+		for (auto& view : image.m_viewPerMip) {
+			if (view) {
+				device.destroyImageView(view);
+				view = nullptr;
+			}
 		}
 
 		if (image.m_memory) {
@@ -512,13 +530,16 @@ namespace vkcv {
 		uint32_t width, uint32_t height, vk::Format format) {
 
 		// destroy old views
-		for (auto image : m_swapchainImages)
-			m_core->getContext().getDevice().destroyImageView(image.m_view);
+		for (auto image : m_swapchainImages) {
+			for (const auto& view : image.m_viewPerMip) {
+				m_core->getContext().getDevice().destroyImageView(view);
+			}
+		}
 
 		assert(images.size() == views.size());
 		m_swapchainImages.clear();
 		for (int i = 0; i < images.size(); i++) {
-			m_swapchainImages.push_back(Image(images[i], nullptr, views[i], width, height, 1, format, 1, 1));
+			m_swapchainImages.push_back(Image(images[i], nullptr, { views[i] }, width, height, 1, format, 1));
 		}
 	}
 
