@@ -338,7 +338,7 @@ int main(int argc, const char** argv) {
 		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
 			depthBuffer = core.createImage(depthBufferFormat, swapchainWidth, swapchainHeight).getHandle();
 			colorBuffer = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, true, true).getHandle();
-            blurBuffer  = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, true, false).getHandle();
+            blurBuffer  = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, true, false).getHandle();
 
 			windowWidth = swapchainWidth;
 			windowHeight = swapchainHeight;
