@@ -35,6 +35,9 @@ void main()	{
     }
     uint flatIndex = flattenVoxelUVToIndex(UV, voxelImageSize);
     
-    vec3 color = texture(sampler2D(albedoTexture, textureSampler), passUV).rgb;
+    // for some reason the automatic mip level here does not work
+    // biasing does not work either
+    // as a workaround a fixed, high mip level is chosen
+    vec3 color = textureLod(sampler2D(albedoTexture, textureSampler), passUV, 10.f).rgb;
     atomicMax(packedVoxelData[flatIndex], packVoxelInfo(color));
 }
