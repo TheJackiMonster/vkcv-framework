@@ -194,7 +194,7 @@ int main(int argc, const char** argv) {
 
 		vkcv::asset::Texture& sceneTexture = scene.textures[baseColorIndex];
 
-		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, sceneTexture.w, sceneTexture.h));
+		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, sceneTexture.w, sceneTexture.h, 1, true));
 		sceneImages.back().fill(sceneTexture.data.data());
 		sceneImages.back().generateMipChainImmediate();
         sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
