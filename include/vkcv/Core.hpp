@@ -8,7 +8,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "vkcv/Context.hpp"
-#include "vkcv/SwapChain.hpp"
+#include "vkcv/Swapchain.hpp"
 #include "vkcv/Window.hpp"
 #include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
@@ -41,6 +41,7 @@ namespace vkcv
 		QueueType queueType;
 		std::vector<vk::Semaphore> waitSemaphores;
 		std::vector<vk::Semaphore> signalSemaphores;
+		vk::Fence fence;
 	};
 
     class Core final
@@ -52,7 +53,7 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, Window &window, const SwapChain& swapChain,  std::vector<vk::ImageView> imageViews,
+        Core(Context &&context, Window &window, const Swapchain& swapChain,  std::vector<vk::ImageView> imageViews,
 			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
@@ -61,8 +62,8 @@ namespace vkcv
 
         Context m_Context;
 
-        SwapChain                       m_swapchain;
-        const Window&                   m_window;
+        Swapchain                       m_swapchain;
+        Window&                   		m_window;
 
         std::unique_ptr<PassManager>            m_PassManager;
         std::unique_ptr<PipelineManager>        m_PipelineManager;
@@ -76,9 +77,9 @@ namespace vkcv
 		SyncResources       m_SyncResources;
 		uint32_t            m_currentSwapchainImageIndex;
 
-        std::function<void(int, int)> e_resizeHandle;
+		event_handle<int,int> e_resizeHandle;
 
-        static std::vector<vk::ImageView> createSwapchainImageViews( Context &context, SwapChain& swapChain);
+        static std::vector<vk::ImageView> createSwapchainImageViews( Context &context, Swapchain& swapChain);
 
     public:
         /**
@@ -118,6 +119,9 @@ namespace vkcv
 
         [[nodiscard]]
         const Context &getContext() const;
+        
+        [[nodiscard]]
+        const Swapchain& getSwapchain() const;
 
         /**
              * Creates a #Core with given @p applicationName and @p applicationVersion for your application.
@@ -248,8 +252,6 @@ namespace vkcv
 		*/
 		void endFrame();
 
-		vk::Format getSwapchainImageFormat();
-
 		/**
 		 * Submit a command buffer to any queue of selected type. The recording can be customized by a
 		 * custom record-command-function. If the command submission has finished, an optional finish-function
@@ -277,5 +279,8 @@ namespace vkcv
 		void prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image);
 		void recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image);
 		void recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer);
-	};
+		
+		const vk::ImageView& getSwapchainImageView() const;
+		
+    };
 }

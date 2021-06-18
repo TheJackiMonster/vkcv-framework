@@ -7,6 +7,7 @@
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/Logger.hpp>
 #include "Voxelization.hpp"
+#include <glm/glm.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";

@@ -35,7 +35,7 @@ namespace vkcv
         		deviceExtensions
 		);
 
-        SwapChain swapChain = SwapChain::create(window, context);
+        Swapchain swapChain = Swapchain::create(window, context);
 
 		 std::vector<vk::ImageView> swapchainImageViews = createSwapchainImageViews( context, swapChain);
 
@@ -53,8 +53,12 @@ namespace vkcv
     {
         return m_Context;
     }
+    
+    const Swapchain& Core::getSwapchain() const {
+    	return m_swapchain;
+    }
 
-    Core::Core(Context &&context, Window &window, const SwapChain& swapChain,  std::vector<vk::ImageView> swapchainImageViews,
+    Core::Core(Context &&context, Window &window, const Swapchain& swapChain,  std::vector<vk::ImageView> swapchainImageViews,
         const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
             m_Context(std::move(context)),
             m_window(window),
@@ -74,8 +78,8 @@ namespace vkcv
 		m_CommandStreamManager->init(this);
 
 		m_ImageManager->m_core = this;
-
-		e_resizeHandle = window.e_resize.add( [&](int width, int height) {
+		
+		e_resizeHandle = m_window.e_resize.add( [&](int width, int height) {
 			m_swapchain.signalSwapchainRecreation();
 		});
 
@@ -85,10 +89,12 @@ namespace vkcv
 			swapchainImageViews, 
 			swapChain.getExtent().width,
 			swapChain.getExtent().height,
-			swapChain.getSwapchainFormat());
+			swapChain.getFormat());
 	}
 
 	Core::~Core() noexcept {
+    	m_window.e_resize.remove(e_resizeHandle);
+    	
 		m_Context.getDevice().waitIdle();
 
 		destroyCommandResources(m_Context.getDevice(), m_CommandResources);
@@ -150,7 +156,7 @@ namespace vkcv
 			const auto swapchainViews = createSwapchainImageViews(m_Context, m_swapchain);
 			const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
 
-			m_ImageManager->setSwapchainImages(swapchainImages, swapchainViews, width, height, m_swapchain.getSwapchainFormat());
+			m_ImageManager->setSwapchainImages(swapchainImages, swapchainViews, width, height, m_swapchain.getFormat());
 		}
 		
     	if (acquireSwapchainImage() != Result::SUCCESS) {
@@ -223,7 +229,6 @@ namespace vkcv
 			attachmentsViews.push_back(targetHandle);
 		}
 		
-		vk::Framebuffer framebuffer = nullptr;
         const vk::FramebufferCreateInfo createInfo(
             {},
             renderpass,
@@ -231,16 +236,21 @@ namespace vkcv
             attachmentsViews.data(),
             width,
             height,
-            1);
-        if(m_Context.m_Device.createFramebuffer(&createInfo, nullptr, &framebuffer) != vk::Result::eSuccess)
-        {
+            1
+		);
+		
+		vk::Framebuffer framebuffer = m_Context.m_Device.createFramebuffer(createInfo);
+        
+        if (!framebuffer) {
 			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
             return;
         }
 
-        vk::Viewport dynamicViewport(0.0f, 0.0f,
-            static_cast<float>(width), static_cast<float>(height),
-            0.0f, 1.0f);
+        vk::Viewport dynamicViewport(
+        		0.0f, 0.0f,
+            	static_cast<float>(width), static_cast<float>(height),
+            0.0f, 1.0f
+		);
 
         vk::Rect2D dynamicScissor({0, 0}, {width, height});
 
@@ -340,15 +350,17 @@ namespace vkcv
 		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
 
 		const auto& queueManager = m_Context.getQueueManager();
-		std::array<vk::Semaphore, 2> waitSemaphores{ 
-			m_SyncResources.renderFinished, 
-			m_SyncResources.swapchainImageAcquired };
+		std::array<vk::Semaphore, 2> waitSemaphores{
+			m_SyncResources.renderFinished,
+			m_SyncResources.swapchainImageAcquired
+		};
 
 		const vk::SwapchainKHR& swapchain = m_swapchain.getSwapchain();
 		const vk::PresentInfoKHR presentInfo(
 			waitSemaphores,
 			swapchain,
-			m_currentSwapchainImageIndex);
+			m_currentSwapchainImageIndex
+		);
 		
 		vk::Result result;
 		
@@ -361,10 +373,6 @@ namespace vkcv
 		if (result != vk::Result::eSuccess) {
 			vkcv_log(LogLevel::ERROR, "Swapchain present failed (%s)", vk::to_string(result).c_str());
 		}
-	}
-
-	vk::Format Core::getSwapchainImageFormat() {
-		return m_swapchain.getSwapchainFormat();
 	}
 	
 	void Core::recordAndSubmitCommands(
@@ -381,11 +389,19 @@ namespace vkcv
 		beginCommandBuffer(cmdBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 		record(cmdBuffer);
 		cmdBuffer.end();
-
-		const vk::Fence waitFence = createFence(device);
+		
+		vk::Fence waitFence;
+		
+		if (!submitInfo.fence) {
+			waitFence = createFence(device);
+		}
+		
 		submitCommandBufferToQueue(queue.handle, cmdBuffer, waitFence, submitInfo.waitSemaphores, submitInfo.signalSemaphores);
 		waitForFence(device, waitFence);
-		device.destroyFence(waitFence);
+		
+		if (!submitInfo.fence) {
+			device.destroyFence(waitFence);
+		}
 		
 		device.freeCommandBuffers(cmdPool, cmdBuffer);
 		
@@ -449,7 +465,7 @@ namespace vkcv
 		return m_DescriptorManager->getDescriptorSet(handle);
 	}
 
-    std::vector<vk::ImageView> Core::createSwapchainImageViews( Context &context, SwapChain& swapChain){
+    std::vector<vk::ImageView> Core::createSwapchainImageViews( Context &context, Swapchain& swapChain){
         std::vector<vk::ImageView> imageViews;
         std::vector<vk::Image> swapChainImages = context.getDevice().getSwapchainImagesKHR(swapChain.getSwapchain());
         imageViews.reserve( swapChainImages.size() );
@@ -468,7 +484,7 @@ namespace vkcv
                     vk::ImageViewCreateFlags(),
                     image,
                     vk::ImageViewType::e2D,
-                    swapChain.getSwapchainFormat(),
+                    swapChain.getFormat(),
                     componentMapping,
                     subResourceRange);
 
@@ -507,4 +523,9 @@ namespace vkcv
 			m_BufferManager->recordBufferMemoryBarrier(buffer, cmdBuffer);
 		}, nullptr);
 	}
+	
+	const vk::ImageView& Core::getSwapchainImageView() const {
+    	return m_ImageManager->getVulkanImageView(vkcv::ImageHandle::createSwapchainImageHandle());
+    }
+	
 }

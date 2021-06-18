@@ -29,9 +29,6 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		uint32_t getDepth() const;
-		
-		[[nodiscard]]
-		vk::ImageLayout getLayout() const;
 
 		[[nodiscard]]
 		vkcv::ImageHandle getHandle() const;

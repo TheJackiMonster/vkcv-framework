@@ -1,4 +1,4 @@
-#include <vkcv/SwapChain.hpp>
+#include <vkcv/Swapchain.hpp>
 #include <utility>
 
 #define GLFW_INCLUDE_VULKAN
@@ -27,44 +27,44 @@ namespace vkcv
         return vk::SurfaceKHR(surface);
     }
 
-    SwapChain::SwapChain(const Surface &surface,
+    Swapchain::Swapchain(const Surface &surface,
                          vk::SwapchainKHR swapchain,
                          vk::Format format,
                          vk::ColorSpaceKHR colorSpace,
                          vk::PresentModeKHR presentMode,
                          uint32_t imageCount,
 						 vk::Extent2D extent) noexcept :
-    m_Surface(surface),
-    m_Swapchain(swapchain),
-    m_SwapchainFormat(format),
-    m_SwapchainColorSpace(colorSpace),
-    m_SwapchainPresentMode(presentMode),
-    m_SwapchainImageCount(imageCount),
-	m_Extent(extent),
-    m_RecreationRequired(false)
+			m_Surface(surface),
+			m_Swapchain(swapchain),
+			m_Format(format),
+			m_ColorSpace(colorSpace),
+			m_PresentMode(presentMode),
+			m_ImageCount(imageCount),
+			m_Extent(extent),
+			m_RecreationRequired(false)
     {}
     
-    SwapChain::SwapChain(const SwapChain &other) :
+    Swapchain::Swapchain(const Swapchain &other) :
 			m_Surface(other.m_Surface),
 			m_Swapchain(other.m_Swapchain),
-			m_SwapchainFormat(other.m_SwapchainFormat),
-			m_SwapchainColorSpace(other.m_SwapchainColorSpace),
-			m_SwapchainPresentMode(other.m_SwapchainPresentMode),
-			m_SwapchainImageCount(other.m_SwapchainImageCount),
+			m_Format(other.m_Format),
+			m_ColorSpace(other.m_ColorSpace),
+			m_PresentMode(other.m_PresentMode),
+			m_ImageCount(other.m_ImageCount),
 			m_Extent(other.m_Extent),
 			m_RecreationRequired(other.m_RecreationRequired.load())
 	{}
 
-    const vk::SwapchainKHR& SwapChain::getSwapchain() const {
+    const vk::SwapchainKHR& Swapchain::getSwapchain() const {
         return m_Swapchain;
     }
 
-    vk::SurfaceKHR SwapChain::getSurface() const {
+    vk::SurfaceKHR Swapchain::getSurface() const {
         return m_Surface.handle;
     }
 
-    vk::Format SwapChain::getSwapchainFormat() const{
-        return m_SwapchainFormat;
+    vk::Format Swapchain::getFormat() const{
+        return m_Format;
     }
 
     /**
@@ -162,7 +162,7 @@ namespace vkcv
      * @param context that keeps instance, physicalDevice and a device.
      * @return swapchain
      */
-    SwapChain SwapChain::create(const Window &window, const Context &context) {
+    Swapchain Swapchain::create(const Window &window, const Context &context) {
         const vk::Instance& instance = context.getInstance();
         const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
         const vk::Device& device = context.getDevice();
@@ -199,7 +199,7 @@ namespace vkcv
 
         vk::SwapchainKHR swapchain = device.createSwapchainKHR(swapchainCreateInfo);
 
-        return SwapChain(surface,
+        return Swapchain(surface,
                          swapchain,
                          chosenSurfaceFormat.format,
                          chosenSurfaceFormat.colorSpace,
@@ -208,11 +208,11 @@ namespace vkcv
 						 chosenExtent);
     }
     
-    bool SwapChain::shouldUpdateSwapchain() const {
+    bool Swapchain::shouldUpdateSwapchain() const {
     	return m_RecreationRequired;
     }
     
-    void SwapChain::updateSwapchain(const Context &context, const Window &window) {
+    void Swapchain::updateSwapchain(const Context &context, const Window &window) {
     	if (!m_RecreationRequired.exchange(false))
     		return;
     	
@@ -222,9 +222,9 @@ namespace vkcv
 		vk::SwapchainCreateInfoKHR swapchainCreateInfo(
 				vk::SwapchainCreateFlagsKHR(),
 				m_Surface.handle,
-				m_SwapchainImageCount,
-				m_SwapchainFormat,
-				m_SwapchainColorSpace,
+				m_ImageCount,
+				m_Format,
+				m_ColorSpace,
 				extent2D,
 				1,
 				vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
@@ -233,7 +233,7 @@ namespace vkcv
 				nullptr,
 				vk::SurfaceTransformFlagBitsKHR::eIdentity,
 				vk::CompositeAlphaFlagBitsKHR::eOpaque,
-				m_SwapchainPresentMode,
+				m_PresentMode,
 				true,
 				oldSwapchain
 		);
@@ -244,19 +244,19 @@ namespace vkcv
 		m_Extent = extent2D;
     }
 
-    void SwapChain::signalSwapchainRecreation() {
+    void Swapchain::signalSwapchainRecreation() {
 		m_RecreationRequired = true;
     }
     
-    const vk::Extent2D& SwapChain::getExtent() const {
+    const vk::Extent2D& Swapchain::getExtent() const {
     	return m_Extent;
     }
 
-    SwapChain::~SwapChain() {
+    Swapchain::~Swapchain() {
         // needs to be destroyed by creator
     }
 
-	uint32_t SwapChain::getImageCount() {
-		return m_SwapchainImageCount;
+	uint32_t Swapchain::getImageCount() const {
+		return m_ImageCount;
 	}
 }
