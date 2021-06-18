@@ -468,7 +468,7 @@ namespace vkcv {
 			uint32_t srcDepth   = image.m_depth;
 
 			auto half = [](uint32_t in) {
-				return std::max(in / 2, (uint32_t)1);
+				return std::max<uint32_t>(in / 2, 1);
 			};
 
 			uint32_t dstWidth   = half(image.m_width);
@@ -498,6 +498,8 @@ namespace vkcv {
 				dstWidth    = half(dstWidth);
 				dstHeight   = half(dstHeight);
 				dstDepth    = half(dstDepth);
+				
+				recordImageMemoryBarrier(handle, cmdBuffer);
 			}
 		};
 
