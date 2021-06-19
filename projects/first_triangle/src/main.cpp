@@ -19,8 +19,6 @@ int main(int argc, const char** argv) {
 		false
 	);
 
-	window.initEvents();
-	
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,

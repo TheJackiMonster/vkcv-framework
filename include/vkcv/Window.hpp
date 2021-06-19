@@ -7,6 +7,7 @@
 
 #define NOMINMAX
 #include <algorithm>
+
 #include "Event.hpp"
 
 struct GLFWwindow;
@@ -22,8 +23,6 @@ namespace vkcv {
          * @param GLFWwindow of the class
          */
 		explicit Window(GLFWwindow *window);
-		
-		static GLFWwindow* createGLFWWindow(const char *windowTitle, int width, int height, bool resizable);
 		
     private:
         /**
@@ -98,11 +97,6 @@ namespace vkcv {
          */
         [[nodiscard]]
         bool isWindowOpen() const;
-
-        /**
-         * binds windowEvents to lambda events
-         */
-        void initEvents();
 
         /**
          * polls all events on the GLFWwindow

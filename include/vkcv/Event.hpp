@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <mutex>
 
 namespace vkcv {
 	
@@ -26,6 +27,7 @@ namespace vkcv {
     private:
         std::vector< event_function<T...> > m_functions;
         uint32_t m_id_counter;
+        std::mutex m_mutex;
 
     public:
 
@@ -34,9 +36,13 @@ namespace vkcv {
          * @param arguments of the given function
          */
         void operator()(T... arguments) {
+			lock();
+
             for (auto &function : this->m_functions) {
 				function.callback(arguments...);
-            }
+			}
+            
+            unlock();
         }
 
         /**
@@ -63,6 +69,20 @@ namespace vkcv {
 					}),
                     this->m_functions.end()
             );
+        }
+        
+        /**
+         * locks the event so its function handles won't be called
+         */
+        void lock() {
+        	m_mutex.lock();
+        }
+	
+		/**
+		* unlocks the event so its function handles can be called after locking
+		*/
+        void unlock() {
+        	m_mutex.unlock();
         }
 
         event() = default;
