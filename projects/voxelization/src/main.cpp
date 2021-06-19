@@ -330,6 +330,7 @@ int main(int argc, const char** argv) {
 
 	glm::vec2 lightAngles(90.f, 0.f);
 	int voxelVisualisationMip = 0;
+	float voxelizationExtent = 20.f;
 
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
@@ -413,6 +414,7 @@ int main(int argc, const char** argv) {
 			{ shadowMap.getHandle() });
 		core.prepareImageForSampling(cmdStream, shadowMap.getHandle());
 
+		voxelization.setVoxelExtent(voxelizationExtent);
 		voxelization.voxelizeMeshes(
 			cmdStream, 
 			cameraManager.getActiveCamera().getPosition(), 
@@ -460,7 +462,9 @@ int main(int argc, const char** argv) {
 		ImGui::DragFloat2("Light angles",   &lightAngles.x);
 		ImGui::ColorEdit3("Sun color",      &lightInfo.sunColor.x);
 		ImGui::DragFloat("Sun strength",    &lightInfo.sunStrength);
-		ImGui::SliderInt("Visualisation mip", &voxelVisualisationMip, 0, 7);
+		ImGui::Checkbox("Draw voxel visualisation", &renderVoxelVis);
+		ImGui::SliderInt("Visualisation mip",       &voxelVisualisationMip, 0, 7);
+		ImGui::DragFloat("Voxelization extent",     &voxelizationExtent, 1.f, 0.f);
 		voxelVisualisationMip = std::max(voxelVisualisationMip, 0);
 		ImGui::End();
 

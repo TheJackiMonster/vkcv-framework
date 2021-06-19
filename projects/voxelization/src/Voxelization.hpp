@@ -29,6 +29,8 @@ public:
 		const std::vector<vkcv::ImageHandle>&   renderTargets,
 		uint32_t                                mipLevel);
 
+	void setVoxelExtent(float extent);
+
 private:
 	vkcv::Core* m_corePtr;
 
@@ -61,5 +63,5 @@ private:
 	};
 	vkcv::Buffer<VoxelizationInfo> m_voxelInfoBuffer;
 
-	const float m_voxelExtent = 20.f;
+	float m_voxelExtent = 20.f;
 };

@@ -302,3 +302,7 @@ void Voxelization::renderVoxelVisualisation(
 		{ drawcall },
 		renderTargets);
 }
+
+void Voxelization::setVoxelExtent(float extent) {
+	m_voxelExtent = extent;
+}
