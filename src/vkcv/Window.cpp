@@ -119,7 +119,8 @@ namespace vkcv {
 
     void Window::onGamepadEvent(int gamepadIndex) {
         auto window = static_cast<Window *>(glfwGetJoystickUserPointer(gamepadIndex));
-        if (glfwJoystickPresent(gamepadIndex)) {
+
+        if ( window != nullptr && glfwJoystickPresent(gamepadIndex)) {
             window->e_gamepad(gamepadIndex);
         }
     }

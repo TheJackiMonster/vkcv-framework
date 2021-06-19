@@ -20,6 +20,7 @@ namespace vkcv::camera {
 		m_window.e_mouseScroll.remove(m_mouseScrollHandle);
 		m_window.e_mouseButton.remove(m_mouseButtonHandle);
 		m_window.e_resize.remove(m_resizeHandle);
+		m_window.e_gamepad.remove(m_gamepadHandle);
     }
 
     void CameraManager::bindCameraToEvents() {
