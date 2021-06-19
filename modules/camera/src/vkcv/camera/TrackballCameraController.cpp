@@ -1,5 +1,6 @@
 #include "vkcv/camera/TrackballCameraController.hpp"
 #include <GLFW/glfw3.h>
+#include <math.h>
 
 namespace vkcv::camera {
 
@@ -102,20 +103,20 @@ namespace vkcv::camera {
         glfwGetGamepadState(gamepadIndex, &gamepadState);
 
         float sensitivity = 0.025f;
-        double threshold = 0.03;    // todo: needs further investigation!
+        double threshold = 0.1;    // todo: needs further investigation!
 
         // handle rotations
         double stickRightX = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
         double stickRightY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
-        if ((std::less<double>{}(stickRightX, -threshold) || std::greater<double>{}(stickRightX, threshold))
-            && (std::less<double>{}(stickRightY, -threshold) || std::greater<double>{}(stickRightY, threshold))) {
-            panView(stickRightX * sensitivity, stickRightY * sensitivity, camera);
-        }
+        
+        double rightXVal = glm::clamp((abs(stickRightX)-threshold), 0.0, 1.0) * std::copysign(1.0, stickRightX);
+        double rightYVal = glm::clamp((abs(stickRightY)-threshold), 0.0, 1.0) * std::copysign(1.0, stickRightY);
+        panView(rightXVal * sensitivity, rightYVal * sensitivity, camera);
 
         // handle translation
         double stickLeftY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);
-        if (std::less<double>{}(stickLeftY, -threshold) || std::greater<double>{}(stickLeftY, threshold)) {
-            updateRadius(-stickLeftY * sensitivity, camera);
-        }
+        double leftYVal = glm::clamp((abs(stickLeftY)-threshold), 0.0, 1.0) * std::copysign(1.0, stickLeftY);
+        updateRadius(-leftYVal * sensitivity, camera);
+        
     }
 }
