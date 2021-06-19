@@ -140,10 +140,12 @@ namespace vkcv::camera {
         // handle rotations
         double stickRightX = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
         double stickRightY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
-        if ((std::less<double>{}(stickRightX, -threshold) || std::greater<double>{}(stickRightX, threshold))
-            && (std::less<double>{}(stickRightY, -threshold) || std::greater<double>{}(stickRightY, threshold))) {
-            panView(stickRightX * sensitivity, stickRightY * sensitivity, camera);
-        }
+
+        double rightXVal = glm::clamp(std::abs(stickRightX) - threshold, 0.0, 1.0)
+                * copysign(1.0, stickRightX) * sensitivity;
+        double rightYVal = glm::clamp(std::abs(stickRightY) - threshold, 0.0, 1.0)
+                * copysign(1.0, stickRightY) * sensitivity;
+        panView(rightXVal, rightYVal, camera);
 
         // handle zooming
         double zoom = static_cast<double>((gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER]
@@ -155,18 +157,10 @@ namespace vkcv::camera {
         m_gamepadY = gamepadState.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER] - gamepadState.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER];
         float stickLeftX = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
         float stickLeftY = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
-        if (std::less<float>{}(stickLeftY, -threshold) || std::greater<float>{}(stickLeftY, threshold)) {
-            m_gamepadZ = -stickLeftY;
-        }
-        else {
-            m_gamepadZ = 0.0f;
-        }
-        if (std::less<float>{}(stickLeftX, -threshold) || std::greater<float>{}(stickLeftX, threshold)) {
-            m_gamepadX = -stickLeftX;
-        }
-        else {
-            m_gamepadX = 0.0f;
-        }
+        m_gamepadZ = glm::clamp(std::abs(stickLeftY) - threshold, 0.0, 1.0)
+                     * -copysign(1.0, stickLeftY);
+        m_gamepadX = glm::clamp(std::abs(stickLeftX) - threshold, 0.0, 1.0)
+                     * -copysign(1.0, stickLeftX);
     }
 
 
