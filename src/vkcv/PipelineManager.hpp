@@ -14,11 +14,11 @@ namespace vkcv
     	struct Pipeline {
 			vk::Pipeline m_handle;
 			vk::PipelineLayout m_layout;
+			PipelineConfig m_config;
     	};
     	
         vk::Device m_Device;
         std::vector<Pipeline> m_Pipelines;
-        std::vector<PipelineConfig> m_Configs;
         
         void destroyPipelineById(uint64_t id);
 

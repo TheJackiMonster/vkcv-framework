@@ -4,7 +4,7 @@
 
 namespace vkcv::camera {
 
-    CameraManager::CameraManager(Window &window, float width, float height)
+    CameraManager::CameraManager(Window& window)
     : m_window(window)
     {
         bindCameraToEvents();
@@ -14,7 +14,13 @@ namespace vkcv::camera {
         m_inputDelayTimer = glfwGetTime() + 0.2;
     }
 
-    CameraManager::~CameraManager() {}
+    CameraManager::~CameraManager() {
+    	m_window.e_key.remove(m_keyHandle);
+		m_window.e_mouseMove.remove(m_mouseMoveHandle);
+		m_window.e_mouseScroll.remove(m_mouseScrollHandle);
+		m_window.e_mouseButton.remove(m_mouseButtonHandle);
+		m_window.e_resize.remove(m_resizeHandle);
+    }
 
     void CameraManager::bindCameraToEvents() {
         m_keyHandle = m_window.e_key.add( [&](int key, int scancode, int action, int mods) { this->keyCallback(key, scancode, action, mods); });
@@ -106,8 +112,10 @@ namespace vkcv::camera {
     }
 	
 	uint32_t CameraManager::addCamera(ControllerType controllerType) {
+    	const float ratio = static_cast<float>(m_window.getWidth()) / static_cast<float>(m_window.getHeight());
+    	
         Camera camera;
-        camera.setPerspective(glm::radians(60.0f), static_cast<float>(m_window.getWidth()) / static_cast<float>(m_window.getHeight()), 0.1f, 10.0f);
+        camera.setPerspective(glm::radians(60.0f), ratio, 0.1f, 10.0f);
         return addCamera(controllerType, camera);
     }
     

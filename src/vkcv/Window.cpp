@@ -23,22 +23,25 @@ namespace vkcv {
             glfwTerminate();
         }
     }
+	
+    GLFWwindow* Window::createGLFWWindow(const char *windowTitle, int width, int height, bool resizable) {
+		if(s_WindowCount == 0) {
+			glfwInit();
+		}
+	
+		s_WindowCount++;
+	
+		width = std::max(width, 1);
+		height = std::max(height, 1);
+	
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
+		
+		return glfwCreateWindow(width, height, windowTitle, nullptr, nullptr);
+    }
 
     Window Window::create( const char *windowTitle, int width, int height, bool resizable) {
-        if(s_WindowCount == 0) {
-            glfwInit();
-        }
-        s_WindowCount++;
-
-        width = std::max(width, 1);
-        height = std::max(height, 1);
-
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
-        GLFWwindow *window;
-        window = glfwCreateWindow(width, height, windowTitle, nullptr, nullptr);
-
-        return Window(window);
+        return Window(createGLFWWindow(windowTitle, width, height, resizable));
     }
 
     void Window::initEvents() {
@@ -54,6 +57,8 @@ namespace vkcv {
         glfwSetKeyCallback(m_window, Window::onKeyEvent);
 
         glfwSetScrollCallback(m_window, Window::onMouseScrollEvent);
+	
+		glfwSetCharCallback(m_window, Window::onCharEvent);
 
         glfwSetJoystickCallback(nullptr);   // use this before to avoid crashing
         glfwSetJoystickUserPointer(GLFW_JOYSTICK_1, this);
@@ -102,6 +107,14 @@ namespace vkcv {
         if (window != nullptr) {
             window->e_key(key, scancode, action, mods);
         }
+    }
+    
+    void Window::onCharEvent(GLFWwindow *callbackWindow, unsigned int c) {
+		auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+	
+		if (window != nullptr) {
+			window->e_char(c);
+		}
     }
 
     void Window::onGamepadEvent(int gamepadIndex) {
