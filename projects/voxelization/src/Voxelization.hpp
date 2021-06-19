@@ -9,7 +9,12 @@ public:
 		vk::Format          colorBufferFormat;
 		vk::Format          depthBufferFormat;
 	};
-	Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies, vkcv::BufferHandle lightInfoBuffer);
+	Voxelization(
+		vkcv::Core*         corePtr, 
+		const Dependencies& dependencies, 
+		vkcv::BufferHandle  lightInfoBuffer,
+		vkcv::ImageHandle   shadowMap,
+		vkcv::SamplerHandle shadowSampler);
 
 	void voxelizeMeshes(
 		vkcv::CommandStreamHandle                       cmdStream, 

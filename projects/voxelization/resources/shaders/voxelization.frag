@@ -5,6 +5,7 @@
 #include "voxel.inc"
 #include "perMeshResources.inc"
 #include "lightInfo.inc"
+#include "shadowMapping.inc"
 
 layout(location = 0) in vec3 passPos;
 layout(location = 1) in vec2 passUV;
@@ -23,6 +24,9 @@ layout(set=0, binding=2, r8) uniform image3D voxelImage;
 layout(set=0, binding=3) uniform sunBuffer {
     LightInfo lightInfo;
 };
+
+layout(set=0, binding=4) uniform texture2D  shadowMap;
+layout(set=0, binding=5) uniform sampler    shadowMapSampler;
 
 vec3 worldToVoxelCoordinates(vec3 world, VoxelInfo info){
     return (world - info.offset) / info.extent + 0.5f;
@@ -45,7 +49,9 @@ void main()	{
     
     vec3 N      = normalize(passN);
     float NoL   = clamp(dot(N, lightInfo.L), 0, 1);
-    vec3 color  = albedo * NoL;
+    vec3 sun    = lightInfo.sunStrength * lightInfo.sunColor * NoL * shadowTest(passPos, lightInfo, shadowMap, shadowMapSampler);
+    vec3 color  = albedo * sun;
+    color = albedo * sun;
     
     atomicMax(packedVoxelData[flatIndex], packVoxelInfo(color));
 }

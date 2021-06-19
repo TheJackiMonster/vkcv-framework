@@ -62,7 +62,12 @@ const uint32_t voxelResolution = 128;
 uint32_t voxelCount = voxelResolution * voxelResolution * voxelResolution;
 const vk::Format voxelizationDummyFormat = vk::Format::eR8Unorm;
 
-Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies, vkcv::BufferHandle lightInfoBuffer)
+Voxelization::Voxelization(
+	vkcv::Core* corePtr,
+	const Dependencies& dependencies,
+	vkcv::BufferHandle  lightInfoBuffer,
+	vkcv::ImageHandle   shadowMap,
+	vkcv::SamplerHandle shadowSampler)
 	:
 	m_corePtr(corePtr), 
 	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, false, true)),
@@ -104,6 +109,8 @@ Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies
 		vkcv::UniformBufferDescriptorWrite(1, m_voxelInfoBuffer.getHandle()),
 		vkcv::UniformBufferDescriptorWrite(3, lightInfoBuffer)
 	};
+	voxelizationDescriptorWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(4, shadowMap) };
+	voxelizationDescriptorWrites.samplerWrites      = { vkcv::SamplerDescriptorWrite(5, shadowSampler) };
 	voxelizationDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(2, m_voxelImage.getHandle()) };
 	m_corePtr->writeDescriptorSet(m_voxelizationDescriptorSet, voxelizationDescriptorWrites);
 
