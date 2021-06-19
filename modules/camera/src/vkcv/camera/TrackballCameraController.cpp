@@ -103,7 +103,7 @@ namespace vkcv::camera {
         glfwGetGamepadState(gamepadIndex, &gamepadState);
 
         float sensitivity = 0.025f;
-        double threshold = 0.1;    // todo: needs further investigation!
+        double threshold = 0.10f;    // todo: needs further investigation!
 
         // handle rotations
         double stickRightX = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
