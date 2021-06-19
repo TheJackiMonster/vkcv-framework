@@ -26,7 +26,8 @@ public:
 	void renderVoxelVisualisation(
 		vkcv::CommandStreamHandle               cmdStream,
 		const glm::mat4&                        viewProjectin,
-		const std::vector<vkcv::ImageHandle>&   renderTargets);
+		const std::vector<vkcv::ImageHandle>&   renderTargets,
+		uint32_t                                mipLevel);
 
 private:
 	vkcv::Core* m_corePtr;

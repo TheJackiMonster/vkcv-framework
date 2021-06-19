@@ -34,7 +34,7 @@ namespace vkcv {
 		vkcv::ImageHandle getHandle() const;
 
 		[[nodiscard]]
-		uint32_t getMipCount();
+		uint32_t getMipCount() const;
 
 		void switchLayout(vk::ImageLayout newLayout);
 		

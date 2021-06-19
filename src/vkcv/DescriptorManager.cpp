@@ -128,7 +128,7 @@ namespace vkcv
 		for (const auto& write : writes.storageImageWrites) {
 			const vk::DescriptorImageInfo imageInfo(
 				nullptr,
-				imageManager.getVulkanImageView(write.image),
+				imageManager.getVulkanImageView(write.image, write.mipLevel),
 				vk::ImageLayout::eGeneral
 			);
 			

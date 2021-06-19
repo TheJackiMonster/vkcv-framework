@@ -1,6 +1,7 @@
 #include "Voxelization.hpp"
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
 
 vkcv::ShaderProgram loadVoxelizationShader() {
 	vkcv::shader::GLSLCompiler compiler;
@@ -153,13 +154,6 @@ Voxelization::Voxelization(
 		voxelIndexData.push_back(i);
 	}
 
-	vkcv::DescriptorWrites voxelVisualisationDescriptorWrite;
-	voxelVisualisationDescriptorWrite.storageImageWrites = 
-	{ vkcv::StorageImageDescriptorWrite(0, m_voxelImage.getHandle()) };
-	voxelVisualisationDescriptorWrite.uniformBufferWrites = 
-	{ vkcv::UniformBufferDescriptorWrite(1, m_voxelInfoBuffer.getHandle()) };
-	m_corePtr->writeDescriptorSet(m_visualisationDescriptorSet, voxelVisualisationDescriptorWrite);
-
 	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle);
 
 	vkcv::ShaderProgram resetVoxelShader = loadVoxelResetShader();
@@ -277,14 +271,27 @@ void Voxelization::voxelizeMeshes(
 }
 
 void Voxelization::renderVoxelVisualisation(
-	vkcv::CommandStreamHandle cmdStream, 
-	const glm::mat4& viewProjectin,
-	const std::vector<vkcv::ImageHandle>& renderTargets) {
+	vkcv::CommandStreamHandle               cmdStream, 
+	const glm::mat4&                        viewProjectin,
+	const std::vector<vkcv::ImageHandle>&   renderTargets,
+	uint32_t                                mipLevel) {
 
 	const vkcv::PushConstantData voxelVisualisationPushConstantData((void*)&viewProjectin, sizeof(glm::mat4));
 
+	mipLevel = std::clamp(mipLevel, (uint32_t)0, m_voxelImage.getMipCount()-1);
+
+	// write descriptor set
+	vkcv::DescriptorWrites voxelVisualisationDescriptorWrite;
+	voxelVisualisationDescriptorWrite.storageImageWrites =
+	{ vkcv::StorageImageDescriptorWrite(0, m_voxelImage.getHandle(), mipLevel) };
+	voxelVisualisationDescriptorWrite.uniformBufferWrites =
+	{ vkcv::UniformBufferDescriptorWrite(1, m_voxelInfoBuffer.getHandle()) };
+	m_corePtr->writeDescriptorSet(m_visualisationDescriptorSet, voxelVisualisationDescriptorWrite);
+
+	uint32_t drawVoxelCount = voxelCount / exp2(mipLevel);
+
 	const auto drawcall = vkcv::DrawcallInfo(
-		vkcv::Mesh({}, nullptr, voxelCount),
+		vkcv::Mesh({}, nullptr, drawVoxelCount),
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle) });
 
 	m_corePtr->recordDrawcallsToCmdStream(

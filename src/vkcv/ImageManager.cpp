@@ -605,6 +605,22 @@ namespace vkcv {
 		return isSwapchainFormat ? m_swapchainImages[m_currentSwapchainInputImage].m_format : m_images[id].m_format;
 	}
 
+	uint32_t ImageManager::getImageMipCount(const ImageHandle& handle) const {
+		const uint64_t id = handle.getId();
+		const bool isSwapchainFormat = handle.isSwapchainImage();
+
+		if (handle.isSwapchainImage()) {
+			return 1;
+		}
+
+		if (id >= m_images.size()) {
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
+			return 0;
+		}
+
+		return m_images[id].m_viewPerMip.size();
+	}
+
 	void ImageManager::setCurrentSwapchainImageIndex(int index) {
 		m_currentSwapchainInputImage = index;
 	}

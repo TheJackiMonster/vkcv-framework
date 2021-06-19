@@ -117,6 +117,9 @@ namespace vkcv {
 		[[nodiscard]]
 		vk::Format getImageFormat(const ImageHandle& handle) const;
 
+		[[nodiscard]]
+		uint32_t getImageMipCount(const ImageHandle& handle) const;
+
 		void setCurrentSwapchainImageIndex(int index);
 		void setSwapchainImages(const std::vector<vk::Image>& images, std::vector<vk::ImageView> views,
 			uint32_t width, uint32_t height, vk::Format format);

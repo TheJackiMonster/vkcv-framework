@@ -329,6 +329,7 @@ int main(int argc, const char** argv) {
 	vkcv::gui::GUI gui(core, window);
 
 	glm::vec2 lightAngles(90.f, 0.f);
+	int voxelVisualisationMip = 0;
 
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
@@ -429,7 +430,7 @@ int main(int argc, const char** argv) {
 			renderTargets);
 
 		if (renderVoxelVis) {
-			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets);
+			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets, voxelVisualisationMip);
 		}
 
 		const uint32_t tonemappingLocalGroupSize = 8;
@@ -459,6 +460,8 @@ int main(int argc, const char** argv) {
 		ImGui::DragFloat2("Light angles",   &lightAngles.x);
 		ImGui::ColorEdit3("Sun color",      &lightInfo.sunColor.x);
 		ImGui::DragFloat("Sun strength",    &lightInfo.sunStrength);
+		ImGui::SliderInt("Visualisation mip", &voxelVisualisationMip, 0, 7);
+		voxelVisualisationMip = std::max(voxelVisualisationMip, 0);
 		ImGui::End();
 
 		gui.endGUI();
