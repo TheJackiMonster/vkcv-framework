@@ -83,7 +83,7 @@ namespace vkcv::camera {
         GLFWgamepadstate gamepadState;
         glfwGetGamepadState(gamepadIndex, &gamepadState);
 
-        double time = glfwGetTime();
+        double time = glfwGetTime(); // TODO: Should time be a member variable?
         if (time - m_inputDelayTimer > 0.2) {
             int switchDirection = gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] - gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT];
             m_activeCameraIndex += switchDirection;
@@ -107,7 +107,7 @@ namespace vkcv::camera {
 	
 	uint32_t CameraManager::addCamera(ControllerType controllerType) {
         Camera camera;
-        camera.setPerspective(glm::radians(60.0f), m_window.getWidth() / m_window.getHeight(), 0.1f, 10.0f);
+        camera.setPerspective(glm::radians(60.0f), static_cast<float>(m_window.getWidth()) / static_cast<float>(m_window.getHeight()), 0.1f, 10.0f);
         return addCamera(controllerType, camera);
     }
     
