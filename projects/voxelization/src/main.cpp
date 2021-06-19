@@ -319,7 +319,7 @@ int main(int argc, const char** argv) {
 	voxelDependencies.colorBufferFormat = colorBufferFormat;
 	voxelDependencies.depthBufferFormat = depthBufferFormat;
 	voxelDependencies.vertexLayout = vertexLayout;
-	Voxelization voxelization(&core, voxelDependencies);
+	Voxelization voxelization(&core, voxelDependencies, lightBuffer.getHandle());
 
 	vkcv::gui::GUI gui(core, window);
 

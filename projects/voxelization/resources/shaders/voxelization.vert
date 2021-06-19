@@ -7,6 +7,7 @@ layout(location = 2) in vec2 inUV;
 
 layout(location = 0) out vec3 passPos;
 layout(location = 1) out vec2 passUV;
+layout(location = 2) out vec3 passN;
 
 layout( push_constant ) uniform constants{
     mat4 mvp;
@@ -17,4 +18,5 @@ void main()	{
 	gl_Position = mvp * vec4(inPosition, 1.0);
     passPos     = (model * vec4(inPosition, 1)).xyz;
     passUV      = inUV;
+    passN       = inNormal;
 }
