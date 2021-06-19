@@ -93,7 +93,8 @@ namespace vkcv::camera {
             else if (std::less<int>{}(m_activeCameraIndex, 0)) {
                 m_activeCameraIndex = m_cameras.size() - 1;
             }
-            m_inputDelayTimer = time;
+            uint32_t triggered = abs(switchDirection);
+            m_inputDelayTimer = (1-triggered)*m_inputDelayTimer + triggered * time; // Only reset timer, if dpad was pressed - is this cheaper than if-clause?
         }
 
         getActiveController().gamepadCallback(gamepadIndex, getActiveCamera());     // handle camera rotation, translation
