@@ -438,6 +438,60 @@ namespace vkcv {
 		);
 	}
 
+	void ImageManager::recordImageMipGenerationToCmdBuffer(vk::CommandBuffer cmdBuffer, const ImageHandle& handle) {
+
+		const auto id = handle.getId();
+		if (id >= m_images.size()) {
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid image handle");
+			return;
+		}
+
+		auto& image = m_images[id];
+		recordImageLayoutTransition(handle, vk::ImageLayout::eGeneral, cmdBuffer);
+
+		vk::ImageAspectFlags aspectMask = isDepthImageFormat(image.m_format) ?
+			vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
+
+		uint32_t srcWidth = image.m_width;
+		uint32_t srcHeight = image.m_height;
+		uint32_t srcDepth = image.m_depth;
+
+		auto half = [](uint32_t in) {
+			return std::max<uint32_t>(in / 2, 1);
+		};
+
+		uint32_t dstWidth = half(srcWidth);
+		uint32_t dstHeight = half(srcHeight);
+		uint32_t dstDepth = half(srcDepth);
+
+		for (uint32_t srcMip = 0; srcMip < image.m_viewPerMip.size() - 1; srcMip++) {
+			uint32_t dstMip = srcMip + 1;
+			vk::ImageBlit region(
+				vk::ImageSubresourceLayers(aspectMask, srcMip, 0, 1),
+				{ vk::Offset3D(0, 0, 0), vk::Offset3D(srcWidth, srcHeight, srcDepth) },
+				vk::ImageSubresourceLayers(aspectMask, dstMip, 0, 1),
+				{ vk::Offset3D(0, 0, 0), vk::Offset3D(dstWidth, dstHeight, dstDepth) });
+
+			cmdBuffer.blitImage(
+				image.m_handle,
+				vk::ImageLayout::eGeneral,
+				image.m_handle,
+				vk::ImageLayout::eGeneral,
+				region,
+				vk::Filter::eLinear);
+
+			srcWidth = dstWidth;
+			srcHeight = dstHeight;
+			srcDepth = dstDepth;
+
+			dstWidth = half(dstWidth);
+			dstHeight = half(dstHeight);
+			dstDepth = half(dstDepth);
+
+			recordImageMemoryBarrier(handle, cmdBuffer);
+		}
+	}
+
 	void ImageManager::generateImageMipChainImmediate(const ImageHandle& handle) {
 
 		const auto& device = m_core->getContext().getDevice();
@@ -450,60 +504,21 @@ namespace vkcv {
 			return;
 		}
 
-		const auto id = handle.getId();
-		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid image handle");
-			return;
-		}
-		auto& image = m_images[id];
-		switchImageLayoutImmediate(handle, vk::ImageLayout::eGeneral);
-
-		const auto record = [&image, this, handle](const vk::CommandBuffer cmdBuffer) {
-
-			vk::ImageAspectFlags aspectMask = isDepthImageFormat(image.m_format) ?
-				vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
-
-			uint32_t srcWidth   = image.m_width;
-			uint32_t srcHeight  = image.m_height;
-			uint32_t srcDepth   = image.m_depth;
-
-			auto half = [](uint32_t in) {
-				return std::max<uint32_t>(in / 2, 1);
-			};
-
-			uint32_t dstWidth   = half(image.m_width);
-			uint32_t dstHeight  = half(image.m_height);
-			uint32_t dstDepth   = half(image.m_depth);
-
-			for (uint32_t srcMip = 0; srcMip < image.m_viewPerMip.size() - 1; srcMip++) {
-				uint32_t dstMip = srcMip + 1;
-				vk::ImageBlit region(
-					vk::ImageSubresourceLayers(aspectMask, srcMip, 0, 1),
-					{ vk::Offset3D(0, 0, 0), vk::Offset3D(srcWidth, srcHeight, srcDepth) },
-					vk::ImageSubresourceLayers(aspectMask, dstMip, 0, 1),
-					{ vk::Offset3D(0, 0, 0), vk::Offset3D(dstWidth, dstHeight, dstDepth) });
-
-				cmdBuffer.blitImage(
-					image.m_handle,
-					vk::ImageLayout::eGeneral,
-					image.m_handle,
-					vk::ImageLayout::eGeneral,
-					region,
-					vk::Filter::eLinear);
-
-				srcWidth    = dstWidth;
-				srcHeight   = dstHeight;
-				srcDepth    = dstDepth;
-
-				dstWidth    = half(dstWidth);
-				dstHeight   = half(dstHeight);
-				dstDepth    = half(dstDepth);
-				
-				recordImageMemoryBarrier(handle, cmdBuffer);
-			}
+		const auto record = [this, handle](const vk::CommandBuffer cmdBuffer) {
+			recordImageMipGenerationToCmdBuffer(cmdBuffer, handle);
 		};
 
 		m_core->recordAndSubmitCommandsImmediate(submitInfo, record, nullptr);
+	}
+
+	void ImageManager::recordImageMipChainGenerationToCmdStream(
+		const vkcv::CommandStreamHandle& cmdStream,
+		const ImageHandle& handle) {
+
+		const auto record = [this, handle](const vk::CommandBuffer cmdBuffer) {
+			recordImageMipGenerationToCmdBuffer(cmdBuffer, handle);
+		};
+		m_core->recordCommandsToStream(cmdStream, record, nullptr);
 	}
 
 	uint32_t ImageManager::getImageWidth(const ImageHandle &handle) const {

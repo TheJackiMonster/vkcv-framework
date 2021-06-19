@@ -32,11 +32,15 @@ namespace vkcv {
 
 		[[nodiscard]]
 		vkcv::ImageHandle getHandle() const;
-		
+
+		[[nodiscard]]
+		uint32_t getMipCount();
+
 		void switchLayout(vk::ImageLayout newLayout);
 		
 		void fill(void* data, size_t size = SIZE_MAX);
 		void generateMipChainImmediate();
+		void recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream);
 	private:
 		ImageManager* const m_manager;
 		const ImageHandle   m_handle;

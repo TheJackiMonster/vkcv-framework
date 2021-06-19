@@ -70,7 +70,7 @@ Voxelization::Voxelization(
 	vkcv::SamplerHandle shadowSampler)
 	:
 	m_corePtr(corePtr), 
-	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, false, true)),
+	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
 	m_dummyRenderTarget(m_corePtr->createImage(voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, false, true)),
 	m_voxelInfoBuffer(m_corePtr->createBuffer<VoxelizationInfo>(vkcv::BufferType::UNIFORM, 1)),
 	m_voxelBuffer(m_corePtr->createBuffer<VoxelBufferContent>(vkcv::BufferType::STORAGE, voxelCount)){
@@ -272,6 +272,8 @@ void Voxelization::voxelizeMeshes(
 		vkcv::PushConstantData(nullptr, 0));
 
 	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImage.getHandle());
+
+	m_voxelImage.recordMipChainGeneration(cmdStream);
 }
 
 void Voxelization::renderVoxelVisualisation(

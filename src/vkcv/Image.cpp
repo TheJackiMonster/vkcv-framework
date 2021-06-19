@@ -64,6 +64,10 @@ namespace vkcv{
 	void Image::generateMipChainImmediate() {
 		m_manager->generateImageMipChainImmediate(m_handle);
 	}
+
+	void Image::recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream) {
+		m_manager->recordImageMipChainGenerationToCmdStream(cmdStream, m_handle);
+	}
 	
 	Image::Image(ImageManager* manager, const ImageHandle& handle) :
 		m_manager(manager),
