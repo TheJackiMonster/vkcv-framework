@@ -13,8 +13,8 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";
 
-	uint32_t windowWidth = 800;
-	uint32_t windowHeight = 600;
+	uint32_t windowWidth = 1280;
+	uint32_t windowHeight = 720;
 	
 	vkcv::Window window = vkcv::Window::create(
 		applicationName,
@@ -156,9 +156,11 @@ int main(int argc, const char** argv) {
 
 	// light info buffer
 	struct LightInfo {
-		glm::vec3 direction;
-		float padding;
-		glm::mat4 lightMatrix;
+		glm::vec3   direction;
+		float       padding;
+		glm::vec3   sunColor    = glm::vec3(1.f);
+		float       sunStrength = 1.f;
+		glm::mat4   lightMatrix;
 	};
 	LightInfo lightInfo;
 	vkcv::Buffer lightBuffer = core.createBuffer<LightInfo>(vkcv::BufferType::UNIFORM, sizeof(glm::vec3));
@@ -449,7 +451,9 @@ int main(int argc, const char** argv) {
 		gui.beginGUI();
 
 		ImGui::Begin("Settings");
-		ImGui::DragFloat2("Light angles", &lightAngles.x);
+		ImGui::DragFloat2("Light angles",   &lightAngles.x);
+		ImGui::ColorEdit3("Sun color",      &lightInfo.sunColor.x);
+		ImGui::DragFloat("Sun strength",    &lightInfo.sunStrength);
 		ImGui::End();
 
 		gui.endGUI();

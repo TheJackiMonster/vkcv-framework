@@ -11,7 +11,9 @@ layout(location = 2) in vec3 passPos;
 layout(location = 0) out vec3 outColor;
 
 layout(set=0, binding=0) uniform sunBuffer {
-    vec3 L; float padding;
+    vec3 L;             float padding;
+    vec3 sunColor;      
+    float sunStrength;
     mat4 lightMatrix;
 };
 layout(set=0, binding=1) uniform texture2D  shadowMap;
@@ -35,11 +37,10 @@ float shadowTest(vec3 worldPos){
 }
 
 void main()	{
-    vec3 N = normalize(passNormal);
-    vec3 sunColor = vec3(1);
-    vec3 sun = sunColor * clamp(dot(N, L), 0, 1);
-    sun *= shadowTest(passPos);
-    vec3 ambient = vec3(0.1);
-    vec3 albedo = texture(sampler2D(albedoTexture, textureSampler), passUV).rgb;
-	outColor = albedo * (sun + ambient);
+    vec3 N          = normalize(passNormal);
+    vec3 sun        = sunStrength * sunColor * clamp(dot(N, L), 0, 1);
+    sun             *= shadowTest(passPos);
+    vec3 ambient    = vec3(0.1);
+    vec3 albedo     = texture(sampler2D(albedoTexture, textureSampler), passUV).rgb;
+	outColor        = albedo * (sun + ambient);
 }
