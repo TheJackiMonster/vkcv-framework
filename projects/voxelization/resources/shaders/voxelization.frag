@@ -6,9 +6,9 @@
 #include "perMeshResources.inc"
 #include "lightInfo.inc"
 
-layout(location = 0) in     vec3 passPos;
-layout(location = 1) out    vec2 passUV;
-layout(location = 2) in     vec3 passN;
+layout(location = 0) in vec3 passPos;
+layout(location = 1) in vec2 passUV;
+layout(location = 2) in vec3 passN;
 
 layout(set=0, binding=0, std430) buffer voxelizationBuffer{
     uint packedVoxelData[];
@@ -40,11 +40,8 @@ void main()	{
         return;
     }
     uint flatIndex = flattenVoxelUVToIndex(UV, voxelImageSize);
-    
-    // for some reason the automatic mip level here does not work
-    // biasing does not work either
-    // as a workaround a fixed, high mip level is chosen
-    vec3 albedo = textureLod(sampler2D(albedoTexture, textureSampler), passUV, 10.f).rgb;
+
+    vec3 albedo = texture(sampler2D(albedoTexture, textureSampler), passUV).rgb;
     
     vec3 N      = normalize(passN);
     float NoL   = clamp(dot(N, lightInfo.L), 0, 1);
