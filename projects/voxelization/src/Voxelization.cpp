@@ -1,6 +1,7 @@
 #include "Voxelization.hpp"
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
 
 vkcv::ShaderProgram loadVoxelizationShader() {
 	vkcv::shader::GLSLCompiler compiler;
@@ -62,10 +63,15 @@ const uint32_t voxelResolution = 128;
 uint32_t voxelCount = voxelResolution * voxelResolution * voxelResolution;
 const vk::Format voxelizationDummyFormat = vk::Format::eR8Unorm;
 
-Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies) 
+Voxelization::Voxelization(
+	vkcv::Core* corePtr,
+	const Dependencies& dependencies,
+	vkcv::BufferHandle  lightInfoBuffer,
+	vkcv::ImageHandle   shadowMap,
+	vkcv::SamplerHandle shadowSampler)
 	:
 	m_corePtr(corePtr), 
-	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, false, true)),
+	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
 	m_dummyRenderTarget(m_corePtr->createImage(voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, false, true)),
 	m_voxelInfoBuffer(m_corePtr->createBuffer<VoxelizationInfo>(vkcv::BufferType::UNIFORM, 1)),
 	m_voxelBuffer(m_corePtr->createBuffer<VoxelBufferContent>(vkcv::BufferType::STORAGE, voxelCount)){
@@ -100,7 +106,12 @@ Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies
 
 	vkcv::DescriptorWrites voxelizationDescriptorWrites;
 	voxelizationDescriptorWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
-	voxelizationDescriptorWrites.uniformBufferWrites = { vkcv::UniformBufferDescriptorWrite(1, m_voxelInfoBuffer.getHandle()) };
+	voxelizationDescriptorWrites.uniformBufferWrites = { 
+		vkcv::UniformBufferDescriptorWrite(1, m_voxelInfoBuffer.getHandle()),
+		vkcv::UniformBufferDescriptorWrite(3, lightInfoBuffer)
+	};
+	voxelizationDescriptorWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(4, shadowMap) };
+	voxelizationDescriptorWrites.samplerWrites      = { vkcv::SamplerDescriptorWrite(5, shadowSampler) };
 	voxelizationDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(2, m_voxelImage.getHandle()) };
 	m_corePtr->writeDescriptorSet(m_voxelizationDescriptorSet, voxelizationDescriptorWrites);
 
@@ -142,13 +153,6 @@ Voxelization::Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies
 	for (int i = 0; i < voxelCount; i++) {
 		voxelIndexData.push_back(i);
 	}
-
-	vkcv::DescriptorWrites voxelVisualisationDescriptorWrite;
-	voxelVisualisationDescriptorWrite.storageImageWrites = 
-	{ vkcv::StorageImageDescriptorWrite(0, m_voxelImage.getHandle()) };
-	voxelVisualisationDescriptorWrite.uniformBufferWrites = 
-	{ vkcv::UniformBufferDescriptorWrite(1, m_voxelInfoBuffer.getHandle()) };
-	m_corePtr->writeDescriptorSet(m_visualisationDescriptorSet, voxelVisualisationDescriptorWrite);
 
 	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle);
 
@@ -262,17 +266,32 @@ void Voxelization::voxelizeMeshes(
 		vkcv::PushConstantData(nullptr, 0));
 
 	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImage.getHandle());
+
+	m_voxelImage.recordMipChainGeneration(cmdStream);
 }
 
 void Voxelization::renderVoxelVisualisation(
-	vkcv::CommandStreamHandle cmdStream, 
-	const glm::mat4& viewProjectin,
-	const std::vector<vkcv::ImageHandle>& renderTargets) {
+	vkcv::CommandStreamHandle               cmdStream, 
+	const glm::mat4&                        viewProjectin,
+	const std::vector<vkcv::ImageHandle>&   renderTargets,
+	uint32_t                                mipLevel) {
 
 	const vkcv::PushConstantData voxelVisualisationPushConstantData((void*)&viewProjectin, sizeof(glm::mat4));
 
+	mipLevel = std::clamp(mipLevel, (uint32_t)0, m_voxelImage.getMipCount()-1);
+
+	// write descriptor set
+	vkcv::DescriptorWrites voxelVisualisationDescriptorWrite;
+	voxelVisualisationDescriptorWrite.storageImageWrites =
+	{ vkcv::StorageImageDescriptorWrite(0, m_voxelImage.getHandle(), mipLevel) };
+	voxelVisualisationDescriptorWrite.uniformBufferWrites =
+	{ vkcv::UniformBufferDescriptorWrite(1, m_voxelInfoBuffer.getHandle()) };
+	m_corePtr->writeDescriptorSet(m_visualisationDescriptorSet, voxelVisualisationDescriptorWrite);
+
+	uint32_t drawVoxelCount = voxelCount / exp2(mipLevel);
+
 	const auto drawcall = vkcv::DrawcallInfo(
-		vkcv::Mesh({}, nullptr, voxelCount),
+		vkcv::Mesh({}, nullptr, drawVoxelCount),
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle) });
 
 	m_corePtr->recordDrawcallsToCmdStream(
@@ -282,4 +301,8 @@ void Voxelization::renderVoxelVisualisation(
 		voxelVisualisationPushConstantData,
 		{ drawcall },
 		renderTargets);
+}
+
+void Voxelization::setVoxelExtent(float extent) {
+	m_voxelExtent = extent;
 }

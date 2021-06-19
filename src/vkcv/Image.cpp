@@ -56,13 +56,21 @@ namespace vkcv{
 	vkcv::ImageHandle Image::getHandle() const {
 		return m_handle;
 	}
-	
+
+	uint32_t Image::getMipCount() const {
+		return m_manager->getImageMipCount(m_handle);
+	}
+
 	void Image::fill(void *data, size_t size) {
 		m_manager->fillImage(m_handle, data, size);
 	}
 
 	void Image::generateMipChainImmediate() {
 		m_manager->generateImageMipChainImmediate(m_handle);
+	}
+
+	void Image::recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream) {
+		m_manager->recordImageMipChainGenerationToCmdStream(cmdStream, m_handle);
 	}
 	
 	Image::Image(ImageManager* manager, const ImageHandle& handle) :

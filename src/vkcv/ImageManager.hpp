@@ -60,7 +60,9 @@ namespace vkcv {
 		 * @param id Image handle id
 		 */
 		void destroyImageById(uint64_t id);
-		
+
+		void recordImageMipGenerationToCmdBuffer(vk::CommandBuffer cmdBuffer, const ImageHandle& handle);
+
 	public:
 		~ImageManager() noexcept;
 		ImageManager(ImageManager&& other) = delete;
@@ -101,6 +103,7 @@ namespace vkcv {
 
 		void fillImage(const ImageHandle& handle, void* data, size_t size);
 		void generateImageMipChainImmediate(const ImageHandle& handle);
+		void recordImageMipChainGenerationToCmdStream(const vkcv::CommandStreamHandle& cmdStream, const ImageHandle& handle);
 		
 		[[nodiscard]]
 		uint32_t getImageWidth(const ImageHandle& handle) const;
@@ -113,6 +116,9 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		vk::Format getImageFormat(const ImageHandle& handle) const;
+
+		[[nodiscard]]
+		uint32_t getImageMipCount(const ImageHandle& handle) const;
 
 		void setCurrentSwapchainImageIndex(int index);
 		void setSwapchainImages(const std::vector<vk::Image>& images, std::vector<vk::ImageView> views,
