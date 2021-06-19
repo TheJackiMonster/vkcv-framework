@@ -8,6 +8,7 @@
 #include <vkcv/Logger.hpp>
 #include "Voxelization.hpp"
 #include <glm/glm.hpp>
+#include "vkcv/gui/GUI.hpp"
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";
@@ -318,6 +319,10 @@ int main(int argc, const char** argv) {
 	voxelDependencies.vertexLayout = vertexLayout;
 	Voxelization voxelization(&core, voxelDependencies);
 
+	vkcv::gui::GUI gui(core, window);
+
+	glm::vec2 lightAngles(90.f, 0.f);
+
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
 	while (window.isWindowOpen()) {
@@ -349,10 +354,11 @@ int main(int argc, const char** argv) {
 		start = end;
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - appStartTime);
-		
-		const float sunTheta = 0.001f * static_cast<float>(duration.count());
-		lightInfo.direction = glm::normalize(glm::vec3(std::cos(sunTheta), 1, std::sin(sunTheta)));
+		glm::vec2 lightAngleRadian = glm::radians(lightAngles);
+		lightInfo.direction = glm::normalize(glm::vec3(
+			std::cos(lightAngleRadian.x) * std::cos(lightAngleRadian.y),
+			std::sin(lightAngleRadian.x),
+			std::cos(lightAngleRadian.x) * std::sin(lightAngleRadian.y)));
 
 		const float shadowProjectionSize = 20.f;
 		glm::mat4 projectionLight = glm::ortho(
@@ -439,6 +445,14 @@ int main(int argc, const char** argv) {
 		// present and end
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
+
+		gui.beginGUI();
+
+		ImGui::Begin("Settings");
+		ImGui::DragFloat2("Light angles", &lightAngles.x);
+		ImGui::End();
+
+		gui.endGUI();
 
 		core.endFrame();
 	}
