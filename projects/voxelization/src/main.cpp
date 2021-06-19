@@ -159,7 +159,7 @@ int main(int argc, const char** argv) {
 		glm::vec3   direction;
 		float       padding;
 		glm::vec3   sunColor    = glm::vec3(1.f);
-		float       sunStrength = 1.f;
+		float       sunStrength = 8.f;
 		glm::mat4   lightMatrix;
 	};
 	LightInfo lightInfo;
@@ -275,15 +275,15 @@ int main(int argc, const char** argv) {
 		}
 	});
 
-	// gamma correction compute shader
-	vkcv::ShaderProgram gammaCorrectionProgram;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/gammaCorrection.comp", 
+	// tonemapping compute shader
+	vkcv::ShaderProgram tonemappingProgram;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/tonemapping.comp", 
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		gammaCorrectionProgram.addShader(shaderStage, path);
+		tonemappingProgram.addShader(shaderStage, path);
 	});
-	vkcv::DescriptorSetHandle gammaCorrectionDescriptorSet = core.createDescriptorSet(gammaCorrectionProgram.getReflectedDescriptors()[0]);
-	vkcv::PipelineHandle gammaCorrectionPipeline = core.createComputePipeline(gammaCorrectionProgram, 
-		{ core.getDescriptorSet(gammaCorrectionDescriptorSet).layout });
+	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(tonemappingProgram.getReflectedDescriptors()[0]);
+	vkcv::PipelineHandle tonemappingPipeline = core.createComputePipeline(tonemappingProgram,
+		{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
 
 	// model matrices per mesh
 	std::vector<glm::mat4> modelMatrices;
@@ -347,11 +347,11 @@ int main(int argc, const char** argv) {
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
 		// update descriptor sets which use swapchain image
-		vkcv::DescriptorWrites gammaCorrectionDescriptorWrites;
-		gammaCorrectionDescriptorWrites.storageImageWrites = {
+		vkcv::DescriptorWrites tonemappingDescriptorWrites;
+		tonemappingDescriptorWrites.storageImageWrites = {
 			vkcv::StorageImageDescriptorWrite(0, colorBuffer),
 			vkcv::StorageImageDescriptorWrite(1, swapchainInput) };
-		core.writeDescriptorSet(gammaCorrectionDescriptorSet, gammaCorrectionDescriptorWrites);
+		core.writeDescriptorSet(tonemappingDescriptorSet, tonemappingDescriptorWrites);
 
 		start = end;
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
@@ -427,10 +427,10 @@ int main(int argc, const char** argv) {
 			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets);
 		}
 
-		const uint32_t gammaCorrectionLocalGroupSize = 8;
-		const uint32_t gammaCorrectionDispatchCount[3] = {
-			static_cast<uint32_t>(glm::ceil(windowWidth / static_cast<float>(gammaCorrectionLocalGroupSize))),
-			static_cast<uint32_t>(glm::ceil(windowHeight / static_cast<float>(gammaCorrectionLocalGroupSize))),
+		const uint32_t tonemappingLocalGroupSize = 8;
+		const uint32_t tonemappingDispatchCount[3] = {
+			static_cast<uint32_t>(glm::ceil(windowWidth / static_cast<float>(tonemappingLocalGroupSize))),
+			static_cast<uint32_t>(glm::ceil(windowHeight / static_cast<float>(tonemappingLocalGroupSize))),
 			1
 		};
 
@@ -439,9 +439,9 @@ int main(int argc, const char** argv) {
 
 		core.recordComputeDispatchToCmdStream(
 			cmdStream, 
-			gammaCorrectionPipeline, 
-			gammaCorrectionDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(gammaCorrectionDescriptorSet).vulkanHandle) },
+			tonemappingPipeline, 
+			tonemappingDispatchCount,
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptorSet).vulkanHandle) },
 			vkcv::PushConstantData(nullptr, 0));
 
 		// present and end

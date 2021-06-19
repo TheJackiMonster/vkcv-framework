@@ -40,7 +40,7 @@ void main()	{
     vec3 N          = normalize(passNormal);
     vec3 sun        = sunStrength * sunColor * clamp(dot(N, L), 0, 1);
     sun             *= shadowTest(passPos);
-    vec3 ambient    = vec3(0.1);
+    vec3 ambient    = vec3(0.05);
     vec3 albedo     = texture(sampler2D(albedoTexture, textureSampler), passUV).rgb;
 	outColor        = albedo * (sun + ambient);
 }
