@@ -223,8 +223,8 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::ImageHandle depthBuffer       = core.createImage(depthBufferFormat, windowWidth, windowHeight).getHandle();
-	vkcv::ImageHandle colorBuffer       = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, true, true).getHandle();
-	vkcv::ImageHandle blurBuffer        = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, true, false).getHandle();
+	vkcv::ImageHandle colorBuffer       = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
+	vkcv::Image blurBuffer              = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, true, true, false);
 	vkcv::SamplerHandle linearSampler   = core.createSampler(vkcv::SamplerFilterType::LINEAR,
                                                              vkcv::SamplerFilterType::LINEAR,
                                                              vkcv::SamplerMipmapMode::LINEAR,
@@ -279,9 +279,31 @@ int main(int argc, const char** argv) {
                      {
                          blurProgram.addShader(shaderStage, path);
                      });
-	vkcv::DescriptorSetHandle blurDescriptorSet = core.createDescriptorSet(blurProgram.getReflectedDescriptors()[0]);
+	// create descriptor sets for each mip level
+	std::vector<vkcv::DescriptorSetHandle> blurDescriptorSets;
+	for(uint32_t mipLevel = 0; mipLevel < blurBuffer.getMipCount(); mipLevel++)
+    {
+	    blurDescriptorSets.push_back(core.createDescriptorSet(blurProgram.getReflectedDescriptors()[0]));
+    }
 	vkcv::PipelineHandle blurPipeline = core.createComputePipeline(blurProgram,
-                                                                   { core.getDescriptorSet(blurDescriptorSet).layout });
+                                                                   { core.getDescriptorSet(blurDescriptorSets[0]).layout });
+
+	// upsample compute shader
+    vkcv::ShaderProgram upsampleProgram;
+    compiler.compile(vkcv::ShaderStage::COMPUTE,
+                     "resources/shaders/upsample.comp",
+                     [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path)
+                     {
+                         upsampleProgram.addShader(shaderStage, path);
+                     });
+    // create descriptor sets for each mip level
+    std::vector<vkcv::DescriptorSetHandle> upsampleDescriptorSets;
+    for(uint32_t mipLevel = 0; mipLevel < blurBuffer.getMipCount(); mipLevel++)
+    {
+        upsampleDescriptorSets.push_back(core.createDescriptorSet(upsampleProgram.getReflectedDescriptors()[0]));
+    }
+    vkcv::PipelineHandle upsamplePipeline = core.createComputePipeline(upsampleProgram,
+                                                                   { core.getDescriptorSet(upsampleDescriptorSets[0]).layout });
 
     // bloom composite shader
     vkcv::ShaderProgram compositeBloomProgram;
@@ -338,7 +360,7 @@ int main(int argc, const char** argv) {
 		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
 			depthBuffer = core.createImage(depthBufferFormat, swapchainWidth, swapchainHeight).getHandle();
 			colorBuffer = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, true, true).getHandle();
-            blurBuffer  = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, true, false).getHandle();
+            //blurBuffer  = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, true, false).getHandle();
 
 			windowWidth = swapchainWidth;
 			windowHeight = swapchainHeight;
@@ -348,18 +370,11 @@ int main(int argc, const char** argv) {
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
 		// update descriptor sets which use swapchain image
-        // blur
-        vkcv::DescriptorWrites blurDescriptorWrites;
-        blurDescriptorWrites.sampledImageWrites = {vkcv::SampledImageDescriptorWrite(0, colorBuffer)};
-        blurDescriptorWrites.samplerWrites      = {vkcv::SamplerDescriptorWrite(1, linearSampler)};
-        blurDescriptorWrites.storageImageWrites = {vkcv::StorageImageDescriptorWrite(2, blurBuffer) };
-        core.writeDescriptorSet(blurDescriptorSet, blurDescriptorWrites);
-
         // composite bloom
         vkcv::DescriptorWrites compositeBloomDescriptorWrites;
-        compositeBloomDescriptorWrites.sampledImageWrites = {vkcv::SampledImageDescriptorWrite(0, blurBuffer)};
+        compositeBloomDescriptorWrites.sampledImageWrites = {vkcv::SampledImageDescriptorWrite(0, blurBuffer.getHandle())};
         compositeBloomDescriptorWrites.samplerWrites = {vkcv::SamplerDescriptorWrite(1, linearSampler)};
-        compositeBloomDescriptorWrites.storageImageWrites = {vkcv::StorageImageDescriptorWrite(2, colorBuffer)};
+        compositeBloomDescriptorWrites.storageImageWrites = {vkcv::StorageImageDescriptorWrite(2, colorBuffer, 0)};
         core.writeDescriptorSet(compositeBloomDescriptorSet, compositeBloomDescriptorWrites);
 
         // gamma correction
@@ -431,26 +446,117 @@ int main(int argc, const char** argv) {
 			drawcalls,
 			renderTargets);
 
-		const uint32_t gammaCorrectionLocalGroupSize = 8;
-		const uint32_t gammaCorrectionDispatchCount[3] = {
-			static_cast<uint32_t>(glm::ceil(windowWidth / static_cast<float>(gammaCorrectionLocalGroupSize))),
-			static_cast<uint32_t>(glm::ceil(windowHeight / static_cast<float>(gammaCorrectionLocalGroupSize))),
-			1
+
+
+        auto windowWidthByLocalGroup  = static_cast<float>(windowWidth)  / 8.0f;
+        auto windowHeightByLocalGroup = static_cast<float>(windowHeight) / 8.0f;
+
+		uint32_t initialBlurDispatchCount[3] = {
+                static_cast<uint32_t>(glm::ceil(windowWidthByLocalGroup)),
+                static_cast<uint32_t>(glm::ceil(windowHeightByLocalGroup)),
+                1
 		};
-
-		core.prepareImageForSampling(cmdStream, colorBuffer);
-		core.prepareImageForStorage(cmdStream, blurBuffer);
-
 		// blur dispatch
-		core.recordComputeDispatchToCmdStream(
-		        cmdStream,
-		        blurPipeline,
-		        gammaCorrectionDispatchCount,
-                {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(blurDescriptorSet).vulkanHandle)},
+        core.prepareImageForSampling(cmdStream, colorBuffer);
+        core.prepareImageForStorage(cmdStream, blurBuffer.getHandle());
+        // blur dispatch of original color attachment
+        vkcv::DescriptorWrites firstBlurDescriptorWrites;
+        firstBlurDescriptorWrites.sampledImageWrites = {vkcv::SampledImageDescriptorWrite(0, colorBuffer)};
+        firstBlurDescriptorWrites.samplerWrites      = {vkcv::SamplerDescriptorWrite(1, linearSampler)};
+        firstBlurDescriptorWrites.storageImageWrites = {vkcv::StorageImageDescriptorWrite(2, blurBuffer.getHandle(), 0) };
+        core.writeDescriptorSet(blurDescriptorSets[0], firstBlurDescriptorWrites);
+        core.recordComputeDispatchToCmdStream(
+                cmdStream,
+                blurPipeline,
+                initialBlurDispatchCount,
+                {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(blurDescriptorSets[0]).vulkanHandle)},
                 vkcv::PushConstantData(nullptr, 0));
 
+        // blur dispatches of blur buffer's mip maps
+		for(uint32_t mipLevel = 1; mipLevel < blurBuffer.getMipCount(); mipLevel++)
+        {
+            // mip descriptor writes
+            vkcv::DescriptorWrites mipBlurDescriptorWrites;
+            mipBlurDescriptorWrites.sampledImageWrites = {vkcv::SampledImageDescriptorWrite(0, blurBuffer.getHandle(), mipLevel - 1, true)};
+            mipBlurDescriptorWrites.samplerWrites      = {vkcv::SamplerDescriptorWrite(1, linearSampler)};
+            mipBlurDescriptorWrites.storageImageWrites = {vkcv::StorageImageDescriptorWrite(2, blurBuffer.getHandle(), mipLevel) };
+            core.writeDescriptorSet(blurDescriptorSets[mipLevel], mipBlurDescriptorWrites);
+
+            // mip dispatch calculation
+            windowWidthByLocalGroup /= 2.0f;
+            windowHeightByLocalGroup /= 2.0f;
+
+            uint32_t mipBlurDispatchCount[3] = {
+                    static_cast<uint32_t>(glm::ceil(windowWidthByLocalGroup)),
+                    static_cast<uint32_t>(glm::ceil(windowHeightByLocalGroup)),
+                    1
+            };
+
+            if(mipBlurDispatchCount[0] == 0)
+                mipBlurDispatchCount[0] = 1;
+            if(mipBlurDispatchCount[1] == 0)
+                mipBlurDispatchCount[1] = 1;
+
+            // mip blur dispatch
+            core.recordComputeDispatchToCmdStream(
+                    cmdStream,
+                    blurPipeline,
+                    mipBlurDispatchCount,
+                    {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(blurDescriptorSets[mipLevel]).vulkanHandle)},
+                    vkcv::PushConstantData(nullptr, 0));
+
+            // image barrier between mips
+            core.recordImageMemoryBarrier(cmdStream, blurBuffer.getHandle());
+        }
+
+		// upsample dispatch
+
+		uint32_t upsampleMipLevels = std::min(blurBuffer.getMipCount(), static_cast<uint32_t>(5));
+
+		// upsample dispatch for each mip map
+		for(uint32_t mipLevel = upsampleMipLevels; mipLevel > 0; mipLevel--)
+        {
+            // mip descriptor writes
+            vkcv::DescriptorWrites mipUpsampleDescriptorWrites;
+            mipUpsampleDescriptorWrites.sampledImageWrites = {vkcv::SampledImageDescriptorWrite(0, blurBuffer.getHandle(), mipLevel, true)};
+            mipUpsampleDescriptorWrites.samplerWrites      = {vkcv::SamplerDescriptorWrite(1, linearSampler)};
+            mipUpsampleDescriptorWrites.storageImageWrites = {vkcv::StorageImageDescriptorWrite(2, blurBuffer.getHandle(), mipLevel - 1) };
+            core.writeDescriptorSet(upsampleDescriptorSets[mipLevel], mipUpsampleDescriptorWrites);
+
+            auto mipDivisor = glm::pow(2.0f, static_cast<float>(mipLevel) - 1.0f);
+
+            auto upsampleDispatchWidth  = static_cast<float>(windowWidth) / mipDivisor;
+            auto upsampleDispatchHeight = static_cast<float>(windowHeight) / mipDivisor;
+
+            upsampleDispatchWidth /= 8.0f;
+            upsampleDispatchHeight /= 8.0f;
+
+            const uint32_t upsampleDispatchCount[3] = {
+                    static_cast<uint32_t>(glm::ceil(upsampleDispatchWidth)),
+                    static_cast<uint32_t>(glm::ceil(upsampleDispatchHeight)),
+                    1
+            };
+
+            core.recordComputeDispatchToCmdStream(
+                    cmdStream,
+                    upsamplePipeline,
+                    upsampleDispatchCount,
+                    {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(upsampleDescriptorSets[mipLevel]).vulkanHandle)},
+                    vkcv::PushConstantData(nullptr, 0)
+                    );
+            // image barrier between mips
+            core.recordImageMemoryBarrier(cmdStream, blurBuffer.getHandle());
+        }
+
 		core.prepareImageForStorage(cmdStream, colorBuffer);
-		core.prepareImageForSampling(cmdStream, blurBuffer);
+		core.prepareImageForSampling(cmdStream, blurBuffer.getHandle());
+
+        const uint32_t gammaCorrectionLocalGroupSize = 8;
+        const uint32_t gammaCorrectionDispatchCount[3] = {
+                static_cast<uint32_t>(glm::ceil(static_cast<float>(windowWidth) / static_cast<float>(gammaCorrectionLocalGroupSize))),
+                static_cast<uint32_t>(glm::ceil(static_cast<float>(windowHeight) / static_cast<float>(gammaCorrectionLocalGroupSize))),
+                1
+        };
 
 		// bloom composite dispatch
         core.recordComputeDispatchToCmdStream(cmdStream,

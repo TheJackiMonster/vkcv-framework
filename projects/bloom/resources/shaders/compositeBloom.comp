@@ -23,7 +23,7 @@ void main()
     vec3 blur_color = texture(sampler2D(blurImage, linearSampler), UV).rgb;
     vec3 main_color = imageLoad(colorBuffer, pixel_coord).rgb;
 
-    composite_color.rgb = mix(main_color, blur_color, 0.1f);
+    composite_color.rgb = mix(main_color, blur_color, 0.25f);
 
     imageStore(colorBuffer, pixel_coord, composite_color);
 }
