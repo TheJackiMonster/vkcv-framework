@@ -159,7 +159,7 @@ int main(int argc, const char** argv) {
 		glm::vec3   direction;
 		float       padding;
 		glm::vec3   sunColor    = glm::vec3(1.f);
-		float       sunStrength = 8.f;
+		float       sunStrength = 15.f;
 		glm::mat4   lightMatrix;
 	};
 	LightInfo lightInfo;
@@ -168,8 +168,12 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = 
 		core.createDescriptorSet({ forwardProgram.getReflectedDescriptors()[0] });
 
+	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
+
 	vkcv::DescriptorWrites forwardDescriptorWrites;
-	forwardDescriptorWrites.uniformBufferWrites = { vkcv::UniformBufferDescriptorWrite(0, lightBuffer.getHandle()) };
+	forwardDescriptorWrites.uniformBufferWrites = { 
+		vkcv::UniformBufferDescriptorWrite(0, lightBuffer.getHandle()),
+		vkcv::UniformBufferDescriptorWrite(3, cameraPosBuffer.getHandle()) };
 	forwardDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(1, shadowMap.getHandle()) };
 	forwardDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(2, shadowSampler) };
 	core.writeDescriptorSet(forwardShadingDescriptorSet, forwardDescriptorWrites);
@@ -393,6 +397,7 @@ int main(int argc, const char** argv) {
 
 		start = end;
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		cameraPosBuffer.fill({ cameraManager.getActiveCamera().getPosition() });
 
 		glm::vec2 lightAngleRadian = glm::radians(lightAngles);
 		lightInfo.direction = glm::normalize(glm::vec3(
