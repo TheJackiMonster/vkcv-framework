@@ -23,7 +23,7 @@ namespace vkcv {
 		glfwSetScrollCallback(m_window, Window::onMouseScrollEvent);
 		glfwSetCharCallback(m_window, Window::onCharEvent);
 	
-		glfwSetJoystickCallback(nullptr);
+		glfwSetJoystickCallback(Window::onGamepadConnection);
 		glfwSetJoystickUserPointer(GLFW_JOYSTICK_1, this);
     }
 
@@ -125,6 +125,16 @@ namespace vkcv {
 		if (window != nullptr) {
 			window->e_char(c);
 		}
+    }
+
+    void Window::onGamepadConnection(int gamepadIndex, int gamepadEvent) {
+        if (gamepadEvent == GLFW_CONNECTED) {
+            auto window = static_cast<Window *>(glfwGetWindowUserPointer(s_Windows[0]));    // todo check for correct window
+
+            if (window != nullptr) {
+                glfwSetJoystickUserPointer(gamepadIndex, window);
+            }
+        }
     }
 
     void Window::onGamepadEvent(int gamepadIndex) {
