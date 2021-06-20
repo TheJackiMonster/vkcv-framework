@@ -55,11 +55,62 @@ enum class PrimitiveMode : uint8_t {
 /** The indices in the index buffer can be of different bit width. */
 enum class IndexType : uint8_t { UNDEFINED=0, UINT8=1, UINT16=2, UINT32=3 };
 
+/* NOTE: glTF defines samplers based on OpenGL, which can not be
+ * directly translated to Vulkan. The vkcv::asset::Sampler struct defined here
+ * adheres to the Vulkan spec, having alerady translated the flags from glTF to
+ * Vulkan. All values here can directly be passed to VkSamplerCreateInfo.
+ * If the glTF doesn't define samplers, we use the defaults defined by fx-gltf.
+ * The following are details about the glTF/OpenGL to Vulkan translation.
+ * magFilter (VkFilter?):
+ * 	GL_NEAREST -> VK_FILTER_NEAREST
+ * 	GL_LINEAR -> VK_FILTER_LINEAR
+ * minFilter (VkFilter?):
+ * mipmapMode (VkSamplerMipmapMode?):
+ * Vulkans minFilter and mipmapMode combined correspond to OpenGLs
+ * GL_minFilter_MIPMAP_mipmapMode:
+ * 	GL_NEAREST_MIPMAP_NEAREST:
+ * 		minFilter=VK_FILTER_NEAREST
+ * 		mipmapMode=VK_SAMPLER_MIPMAP_MODE_NEAREST
+ * 	GL_LINEAR_MIPMAP_NEAREST:
+ * 		minFilter=VK_FILTER_LINEAR
+ * 		mipmapMode=VK_SAMPLER_MIPMAP_MODE_NEAREST
+ * 	GL_NEAREST_MIPMAP_LINEAR:
+ * 		minFilter=VK_FILTER_NEAREST
+ * 		mipmapMode=VK_SAMPLER_MIPMAP_MODE_LINEAR
+ * 	GL_LINEAR_MIPMAP_LINEAR:
+ * 		minFilter=VK_FILTER_LINEAR
+ * 		mipmapMode=VK_SAMPLER_MIPMAP_MODE_LINEAR
+ * The modes of GL_LINEAR and GL_NEAREST have to be emulated using
+ * mipmapMode=VK_SAMPLER_MIPMAP_MODE_NEAREST with specific minLOD and maxLOD:
+ * 	GL_LINEAR:
+ * 		minFilter=VK_FILTER_LINEAR
+ * 		mipmapMode=VK_SAMPLER_MIPMAP_MODE_NEAREST
+ * 		minLOD=0, maxLOD=0.25
+ * 	GL_NEAREST:
+ * 		minFilter=VK_FILTER_NEAREST
+ * 		mipmapMode=VK_SAMPLER_MIPMAP_MODE_NEAREST
+ * 		minLOD=0, maxLOD=0.25
+ * Setting maxLOD=0 causes magnification to always be performed (using
+ * the defined magFilter), this may be valid if the min- and magFilter
+ * are equal, otherwise it won't be the expected behaviour from OpenGL
+ * and glTF; instead using maxLod=0.25 allows the minFilter to be
+ * performed while still always rounding to the base level.
+ * With other modes, minLOD and maxLOD default to:
+ * 	minLOD=0
+ * 	maxLOD=VK_LOD_CLAMP_NONE
+ * wrapping:
+ * gltf has wrapS, wrapT with {clampToEdge, MirroredRepeat, Repeat} while
+ * Vulkan has addressModeU, addressModeV, addressModeW with values
+ * VK_SAMPLER_ADDRESS_MODE_{REPEAT,MIRRORED_REPEAT,CLAMP_TO_EDGE,
+ * 			    CAMP_TO_BORDER,MIRROR_CLAMP_TO_EDGE}
+ * Translation from glTF to Vulkan is straight forward for the 3 existing
+ * modes, default is repeat, the other modes aren't available.
+ * */
 typedef struct {
-	// TODO define struct for samplers (low priority)
-	// NOTE: glTF defines samplers based on OpenGL, which can not be
-	// directly translated to Vulkan. Specifically, OpenGL (and glTF)
-	// define a different set of Min/Mag-filters than Vulkan.
+	int minFilter, magFilter;
+	int mipmapMode;
+	float minLOD, maxLOD;
+	int addressModeU, addressModeV, addressModeW;
 } Sampler;
 
 /** struct for defining the loaded texture */
