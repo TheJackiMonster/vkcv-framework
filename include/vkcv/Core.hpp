@@ -222,6 +222,11 @@ namespace vkcv
         [[nodiscard]]
         Image createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth = 1);
 
+        [[nodiscard]]
+        const uint32_t getImageWidth(ImageHandle imageHandle);
+        [[nodiscard]]
+        const uint32_t getImageHeight(ImageHandle imageHandle);
+
         /** TODO:
          *   @param setDescriptions
          *   @return

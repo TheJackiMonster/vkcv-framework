@@ -456,6 +456,16 @@ namespace vkcv
     	return Image::create(m_ImageManager.get(), format, width, height, depth);
 	}
 
+	const uint32_t Core::getImageWidth(ImageHandle imageHandle)
+	{
+		return m_ImageManager->getImageWidth(imageHandle);
+	}
+
+	const uint32_t Core::getImageHeight(ImageHandle imageHandle)
+	{
+		return m_ImageManager->getImageHeight(imageHandle);
+	}
+
     DescriptorSetHandle Core::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
     {
         return m_DescriptorManager->createDescriptorSet(bindings);

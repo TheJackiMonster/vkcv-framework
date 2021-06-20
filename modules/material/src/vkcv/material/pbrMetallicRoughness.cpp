@@ -40,16 +40,41 @@ namespace vkcv::material
         SamplerHandle& metRoughSmp)
     {
         //Test if Images and samplers valid, if not use default
-        if (colorImg) {
-            //TODO
+        uint32_t width  = core->getImageWidth(colorImg); //use colorImg size as default
+        uint32_t height = core->getImageHeight(colorImg);
+        uint32_t n = width * height;
+        struct vec3 {
+            float x, y, z;
+        };
+        struct vec4 {
+            float x, y, z, a;
+        }; 
+
+        if (!colorImg) {
+            width = core->getImageWidth(metRoughImg); // if colorImg has no size
+            height = core->getImageHeight(metRoughImg);
+            n = width * height;
+            vkcv::Image defaultColor = core->createImage(vk::Format::eR8G8B8A8Srgb, width, height);
+            std::vector<vec4> colorData(n);
+            std::fill(colorData.begin(), colorData.end(), vec4{ 228, 51 , 255, 1 });
+            defaultColor.fill(colorData.data());
+            colorImg = defaultColor.getHandle();
         }
-        if (normalImg) {
-            //TODO
+        if (!normalImg || (core->getImageWidth(normalImg)!=width)|| (core->getImageHeight(normalImg) != height)) {
+            vkcv::Image defaultNormal = core->createImage(vk::Format::eR8G8B8A8Srgb, width, height);
+            std::vector<vec4> normalData(n);
+            std::fill(normalData.begin(), normalData.end(), vec4{ 228, 51 , 255, 1 });
+            defaultNormal.fill(normalData.data());
+            normalImg = defaultNormal.getHandle();
         }
-        if (metRoughImg) {
-            //TODO
+        if (!metRoughImg || (core->getImageWidth(metRoughImg) != width) || (core->getImageHeight(metRoughImg) != height)) {
+            vkcv::Image defaultRough = core->createImage(vk::Format::eR8G8B8A8Srgb, width, height);
+            std::vector<vec4> roughData(n);
+            std::fill(roughData.begin(), roughData.end(), vec4{ 228, 51 , 255, 1 });
+            defaultRough.fill(roughData.data());
+            metRoughImg = defaultRough.getHandle();
         }
-        if (colorSmp) {            
+        if (!colorSmp) {            
             colorSmp = core->createSampler(
                 vkcv::SamplerFilterType::LINEAR,
                 vkcv::SamplerFilterType::LINEAR,
@@ -57,7 +82,7 @@ namespace vkcv::material
                 vkcv::SamplerAddressMode::REPEAT
             );            
         }
-        if (normalSmp) {            
+        if (!normalSmp) {            
             normalSmp = core->createSampler(
                 vkcv::SamplerFilterType::LINEAR,
                 vkcv::SamplerFilterType::LINEAR,
@@ -65,7 +90,7 @@ namespace vkcv::material
                 vkcv::SamplerAddressMode::REPEAT
             );            
         }
-        if (metRoughSmp) {
+        if (!metRoughSmp) {
             metRoughSmp = core->createSampler(
                 vkcv::SamplerFilterType::LINEAR,
                 vkcv::SamplerFilterType::LINEAR,
@@ -87,7 +112,7 @@ namespace vkcv::material
             vkcv::SamplerDescriptorWrite(1, colorSmp),
             vkcv::SamplerDescriptorWrite(3, normalSmp),
             vkcv::SamplerDescriptorWrite(5, metRoughSmp) };
-        core->writeResourceDescription(descriptorSetHandle, 0, setWrites);
+        core->writeDescriptorSet(descriptorSetHandle, setWrites);
 
         return PBRMaterial(colorImg, colorSmp, normalImg, normalSmp, metRoughImg, metRoughSmp, descriptorSetHandle);        
     }
