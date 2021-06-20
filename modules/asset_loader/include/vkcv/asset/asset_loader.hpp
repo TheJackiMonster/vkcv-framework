@@ -114,7 +114,8 @@ enum class PrimitiveType : uint32_t {
     POSITION = 1,
     NORMAL = 2,
     TEXCOORD_0 = 3,
-    TEXCOORD_1 = 4
+    TEXCOORD_1 = 4,
+    TANGENT = 5
 };
 
 /** These integer values are used the same way in OpenGL, Vulkan and glTF. This
