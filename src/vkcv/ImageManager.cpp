@@ -352,8 +352,10 @@ namespace vkcv {
 				return 1;
 			case vk::Format::eR8G8B8A8Srgb:
 				return 4;
+			case vk::Format::eR8G8B8A8Unorm:
+				return 4;
 			default:
-				std::cerr << "Check format instead of guessing, please!" << std::endl;
+				std::cerr << "Unknown image format" << std::endl;
 				return 4;
 		}
 	}

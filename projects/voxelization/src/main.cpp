@@ -217,14 +217,14 @@ int main(int argc, const char** argv) {
 		const vkcv::ImageHandle albedoHandle = sceneImages.back().getHandle();
 
 		// normal texture
-		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, normalTexture.w, normalTexture.h, 1, true));
+		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Unorm, normalTexture.w, normalTexture.h, 1, true));
 		sceneImages.back().fill(normalTexture.data.data());
 		sceneImages.back().generateMipChainImmediate();
 		sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 		const vkcv::ImageHandle normalHandle = sceneImages.back().getHandle();
 
 		// specular texture
-		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, specularTexture.w, specularTexture.h, 1, true));
+		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Unorm, specularTexture.w, specularTexture.h, 1, true));
 		sceneImages.back().fill(specularTexture.data.data());
 		sceneImages.back().generateMipChainImmediate();
 		sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
