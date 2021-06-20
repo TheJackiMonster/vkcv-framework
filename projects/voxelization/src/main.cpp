@@ -8,12 +8,13 @@
 #include <vkcv/Logger.hpp>
 #include "Voxelization.hpp"
 #include <glm/glm.hpp>
+#include "vkcv/gui/GUI.hpp"
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";
 
-	uint32_t windowWidth = 800;
-	uint32_t windowHeight = 600;
+	uint32_t windowWidth = 1280;
+	uint32_t windowHeight = 720;
 	
 	vkcv::Window window = vkcv::Window::create(
 		applicationName,
@@ -151,13 +152,15 @@ int main(int argc, const char** argv) {
 	);
 	const vk::Format shadowMapFormat = vk::Format::eD16Unorm;
 	const uint32_t shadowMapResolution = 1024;
-	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1);
+	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution);
 
 	// light info buffer
 	struct LightInfo {
-		glm::vec3 direction;
-		float padding;
-		glm::mat4 lightMatrix;
+		glm::vec3   direction;
+		float       padding;
+		glm::vec3   sunColor    = glm::vec3(1.f);
+		float       sunStrength = 8.f;
+		glm::mat4   lightMatrix;
 	};
 	LightInfo lightInfo;
 	vkcv::Buffer lightBuffer = core.createBuffer<LightInfo>(vkcv::BufferType::UNIFORM, sizeof(glm::vec3));
@@ -178,24 +181,25 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
-	// prepare per mesh descriptor sets
-	std::vector<vkcv::DescriptorSetHandle> perMeshDescriptorSets;
+	// create descriptor sets
+	std::vector<vkcv::DescriptorSetHandle> materialDescriptorSets;
 	std::vector<vkcv::Image> sceneImages;
-	for (const auto& vertexGroup : scene.vertexGroups) {
-		perMeshDescriptorSets.push_back(core.createDescriptorSet(forwardProgram.getReflectedDescriptors()[1]));
 
-		const auto& material = scene.materials[vertexGroup.materialIndex];
-
+	for (const auto& material : scene.materials) {
 		int baseColorIndex = material.baseColor;
 		if (baseColorIndex < 0) {
 			vkcv_log(vkcv::LogLevel::WARNING, "Material lacks base color");
 			baseColorIndex = 0;
 		}
 
+		materialDescriptorSets.push_back(core.createDescriptorSet(forwardProgram.getReflectedDescriptors()[1]));
+
 		vkcv::asset::Texture& sceneTexture = scene.textures[baseColorIndex];
 
-		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, sceneTexture.w, sceneTexture.h));
+		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, sceneTexture.w, sceneTexture.h, 1, true));
 		sceneImages.back().fill(sceneTexture.data.data());
+		sceneImages.back().generateMipChainImmediate();
+		sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		vkcv::DescriptorWrites setWrites;
 		setWrites.sampledImageWrites = {
@@ -204,7 +208,12 @@ int main(int argc, const char** argv) {
 		setWrites.samplerWrites = {
 			vkcv::SamplerDescriptorWrite(1, colorSampler),
 		};
-		core.writeDescriptorSet(perMeshDescriptorSets.back(), setWrites);
+		core.writeDescriptorSet(materialDescriptorSets.back(), setWrites);
+	}
+
+	std::vector<vkcv::DescriptorSetHandle> perMeshDescriptorSets;
+	for (const auto& vertexGroup : scene.vertexGroups) {
+		perMeshDescriptorSets.push_back(materialDescriptorSets[vertexGroup.materialIndex]);
 	}
 
 	const vkcv::PipelineConfig forwardPipelineConfig {
@@ -226,7 +235,7 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::ImageHandle depthBuffer = core.createImage(depthBufferFormat, windowWidth, windowHeight).getHandle();
-	vkcv::ImageHandle colorBuffer = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, true, true).getHandle();
+	vkcv::ImageHandle colorBuffer = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -266,15 +275,15 @@ int main(int argc, const char** argv) {
 		}
 	});
 
-	// gamma correction compute shader
-	vkcv::ShaderProgram gammaCorrectionProgram;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/gammaCorrection.comp", 
+	// tonemapping compute shader
+	vkcv::ShaderProgram tonemappingProgram;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/tonemapping.comp", 
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		gammaCorrectionProgram.addShader(shaderStage, path);
+		tonemappingProgram.addShader(shaderStage, path);
 	});
-	vkcv::DescriptorSetHandle gammaCorrectionDescriptorSet = core.createDescriptorSet(gammaCorrectionProgram.getReflectedDescriptors()[0]);
-	vkcv::PipelineHandle gammaCorrectionPipeline = core.createComputePipeline(gammaCorrectionProgram, 
-		{ core.getDescriptorSet(gammaCorrectionDescriptorSet).layout });
+	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(tonemappingProgram.getReflectedDescriptors()[0]);
+	vkcv::PipelineHandle tonemappingPipeline = core.createComputePipeline(tonemappingProgram,
+		{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
 
 	// model matrices per mesh
 	std::vector<glm::mat4> modelMatrices;
@@ -310,7 +319,18 @@ int main(int argc, const char** argv) {
 	voxelDependencies.colorBufferFormat = colorBufferFormat;
 	voxelDependencies.depthBufferFormat = depthBufferFormat;
 	voxelDependencies.vertexLayout = vertexLayout;
-	Voxelization voxelization(&core, voxelDependencies);
+	Voxelization voxelization(
+		&core,
+		voxelDependencies,
+		lightBuffer.getHandle(),
+		shadowMap.getHandle(),
+		shadowSampler);
+
+	vkcv::gui::GUI gui(core, window);
+
+	glm::vec2 lightAngles(90.f, 0.f);
+	int voxelVisualisationMip = 0;
+	float voxelizationExtent = 20.f;
 
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
@@ -324,7 +344,7 @@ int main(int argc, const char** argv) {
 
 		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
 			depthBuffer = core.createImage(depthBufferFormat, swapchainWidth, swapchainHeight).getHandle();
-			colorBuffer = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, true, true).getHandle();
+			colorBuffer = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, false, true, true).getHandle();
 
 			windowWidth = swapchainWidth;
 			windowHeight = swapchainHeight;
@@ -334,19 +354,20 @@ int main(int argc, const char** argv) {
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
 		// update descriptor sets which use swapchain image
-		vkcv::DescriptorWrites gammaCorrectionDescriptorWrites;
-		gammaCorrectionDescriptorWrites.storageImageWrites = {
+		vkcv::DescriptorWrites tonemappingDescriptorWrites;
+		tonemappingDescriptorWrites.storageImageWrites = {
 			vkcv::StorageImageDescriptorWrite(0, colorBuffer),
 			vkcv::StorageImageDescriptorWrite(1, swapchainInput) };
-		core.writeDescriptorSet(gammaCorrectionDescriptorSet, gammaCorrectionDescriptorWrites);
+		core.writeDescriptorSet(tonemappingDescriptorSet, tonemappingDescriptorWrites);
 
 		start = end;
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - appStartTime);
-		
-		const float sunTheta = 0.001f * static_cast<float>(duration.count());
-		lightInfo.direction = glm::normalize(glm::vec3(std::cos(sunTheta), 1, std::sin(sunTheta)));
+		glm::vec2 lightAngleRadian = glm::radians(lightAngles);
+		lightInfo.direction = glm::normalize(glm::vec3(
+			std::cos(lightAngleRadian.x) * std::cos(lightAngleRadian.y),
+			std::sin(lightAngleRadian.x),
+			std::cos(lightAngleRadian.x) * std::sin(lightAngleRadian.y)));
 
 		const float shadowProjectionSize = 20.f;
 		glm::mat4 projectionLight = glm::ortho(
@@ -393,6 +414,7 @@ int main(int argc, const char** argv) {
 			{ shadowMap.getHandle() });
 		core.prepareImageForSampling(cmdStream, shadowMap.getHandle());
 
+		voxelization.setVoxelExtent(voxelizationExtent);
 		voxelization.voxelizeMeshes(
 			cmdStream, 
 			cameraManager.getActiveCamera().getPosition(), 
@@ -410,13 +432,13 @@ int main(int argc, const char** argv) {
 			renderTargets);
 
 		if (renderVoxelVis) {
-			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets);
+			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets, voxelVisualisationMip);
 		}
 
-		const uint32_t gammaCorrectionLocalGroupSize = 8;
-		const uint32_t gammaCorrectionDispatchCount[3] = {
-			static_cast<uint32_t>(glm::ceil(windowWidth / static_cast<float>(gammaCorrectionLocalGroupSize))),
-			static_cast<uint32_t>(glm::ceil(windowHeight / static_cast<float>(gammaCorrectionLocalGroupSize))),
+		const uint32_t tonemappingLocalGroupSize = 8;
+		const uint32_t tonemappingDispatchCount[3] = {
+			static_cast<uint32_t>(glm::ceil(windowWidth / static_cast<float>(tonemappingLocalGroupSize))),
+			static_cast<uint32_t>(glm::ceil(windowHeight / static_cast<float>(tonemappingLocalGroupSize))),
 			1
 		};
 
@@ -425,14 +447,28 @@ int main(int argc, const char** argv) {
 
 		core.recordComputeDispatchToCmdStream(
 			cmdStream, 
-			gammaCorrectionPipeline, 
-			gammaCorrectionDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(gammaCorrectionDescriptorSet).vulkanHandle) },
+			tonemappingPipeline, 
+			tonemappingDispatchCount,
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptorSet).vulkanHandle) },
 			vkcv::PushConstantData(nullptr, 0));
 
 		// present and end
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
+
+		gui.beginGUI();
+
+		ImGui::Begin("Settings");
+		ImGui::DragFloat2("Light angles",   &lightAngles.x);
+		ImGui::ColorEdit3("Sun color",      &lightInfo.sunColor.x);
+		ImGui::DragFloat("Sun strength",    &lightInfo.sunStrength);
+		ImGui::Checkbox("Draw voxel visualisation", &renderVoxelVis);
+		ImGui::SliderInt("Visualisation mip",       &voxelVisualisationMip, 0, 7);
+		ImGui::DragFloat("Voxelization extent",     &voxelizationExtent, 1.f, 0.f);
+		voxelVisualisationMip = std::max(voxelVisualisationMip, 0);
+		ImGui::End();
+
+		gui.endGUI();
 
 		core.endFrame();
 	}

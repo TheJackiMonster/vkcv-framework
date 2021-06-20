@@ -10,9 +10,11 @@ namespace vkcv {
 	};
 
 	struct StorageImageDescriptorWrite {
-		inline StorageImageDescriptorWrite(uint32_t binding, ImageHandle image) : binding(binding), image(image) {};
+		inline StorageImageDescriptorWrite(uint32_t binding, ImageHandle image, uint32_t mipLevel = 0) 
+			: binding(binding), image(image), mipLevel(mipLevel) {};
 		uint32_t	binding;
 		ImageHandle	image;
+		uint32_t	mipLevel;
 	};
 
 	struct UniformBufferDescriptorWrite {

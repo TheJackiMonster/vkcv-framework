@@ -123,6 +123,8 @@ int main(int argc, const char** argv) {
 	vkcv::asset::Texture &tex = mesh.textures[0];
 	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
 	texture.fill(tex.data.data());
+	texture.generateMipChainImmediate();
+	texture.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
@@ -142,7 +144,7 @@ int main(int argc, const char** argv) {
 
 	core.writeDescriptorSet(descriptorSet, setWrites);
 
-	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
+	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 

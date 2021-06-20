@@ -9,7 +9,12 @@ public:
 		vk::Format          colorBufferFormat;
 		vk::Format          depthBufferFormat;
 	};
-	Voxelization(vkcv::Core* corePtr, const Dependencies& dependencies);
+	Voxelization(
+		vkcv::Core*         corePtr, 
+		const Dependencies& dependencies, 
+		vkcv::BufferHandle  lightInfoBuffer,
+		vkcv::ImageHandle   shadowMap,
+		vkcv::SamplerHandle shadowSampler);
 
 	void voxelizeMeshes(
 		vkcv::CommandStreamHandle                       cmdStream, 
@@ -21,7 +26,10 @@ public:
 	void renderVoxelVisualisation(
 		vkcv::CommandStreamHandle               cmdStream,
 		const glm::mat4&                        viewProjectin,
-		const std::vector<vkcv::ImageHandle>&   renderTargets);
+		const std::vector<vkcv::ImageHandle>&   renderTargets,
+		uint32_t                                mipLevel);
+
+	void setVoxelExtent(float extent);
 
 private:
 	vkcv::Core* m_corePtr;
@@ -55,5 +63,5 @@ private:
 	};
 	vkcv::Buffer<VoxelizationInfo> m_voxelInfoBuffer;
 
-	const float m_voxelExtent = 20.f;
+	float m_voxelExtent = 20.f;
 };

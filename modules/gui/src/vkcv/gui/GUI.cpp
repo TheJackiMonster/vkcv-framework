@@ -141,7 +141,7 @@ namespace vkcv::gui {
 		
 		const SubmitInfo submitInfo { QueueType::Graphics, {}, {} };
 		
-		m_core.recordAndSubmitCommands(submitInfo, [](const vk::CommandBuffer& commandBuffer) {
+		m_core.recordAndSubmitCommandsImmediate(submitInfo, [](const vk::CommandBuffer& commandBuffer) {
 			ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
 		}, []() {
 			ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -214,7 +214,7 @@ namespace vkcv::gui {
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
 		
-		m_core.recordAndSubmitCommands(submitInfo, [&](const vk::CommandBuffer& commandBuffer) {
+		m_core.recordAndSubmitCommandsImmediate(submitInfo, [&](const vk::CommandBuffer& commandBuffer) {
 			const vk::Rect2D renderArea (
 					vk::Offset2D(0, 0),
 					extent
