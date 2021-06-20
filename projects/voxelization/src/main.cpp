@@ -186,24 +186,55 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::Image> sceneImages;
 
 	for (const auto& material : scene.materials) {
-		int baseColorIndex = material.baseColor;
-		if (baseColorIndex < 0) {
-			vkcv_log(vkcv::LogLevel::WARNING, "Material lacks base color");
-			baseColorIndex = 0;
+		int albedoIndex     = material.baseColor;
+		int normalIndex     = material.normal;
+		int specularIndex   = material.metalRough;
+
+		if (albedoIndex < 0) {
+			vkcv_log(vkcv::LogLevel::WARNING, "Material lacks albedo");
+			albedoIndex = 0;
+		}
+		if (normalIndex < 0) {
+			vkcv_log(vkcv::LogLevel::WARNING, "Material lacks normal");
+			normalIndex = 0;
+		}
+		if (specularIndex < 0) {
+			vkcv_log(vkcv::LogLevel::WARNING, "Material lacks specular");
+			specularIndex = 0;
 		}
 
 		materialDescriptorSets.push_back(core.createDescriptorSet(forwardProgram.getReflectedDescriptors()[1]));
 
-		vkcv::asset::Texture& sceneTexture = scene.textures[baseColorIndex];
+		vkcv::asset::Texture& albedoTexture     = scene.textures[albedoIndex];
+		vkcv::asset::Texture& normalTexture     = scene.textures[normalIndex];
+		vkcv::asset::Texture& specularTexture   = scene.textures[specularIndex];
 
-		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, sceneTexture.w, sceneTexture.h, 1, true));
-		sceneImages.back().fill(sceneTexture.data.data());
+		// albedo texture
+		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, albedoTexture.w, albedoTexture.h, 1, true));
+		sceneImages.back().fill(albedoTexture.data.data());
 		sceneImages.back().generateMipChainImmediate();
 		sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		const vkcv::ImageHandle albedoHandle = sceneImages.back().getHandle();
+
+		// normal texture
+		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, normalTexture.w, normalTexture.h, 1, true));
+		sceneImages.back().fill(normalTexture.data.data());
+		sceneImages.back().generateMipChainImmediate();
+		sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		const vkcv::ImageHandle normalHandle = sceneImages.back().getHandle();
+
+		// specular texture
+		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, specularTexture.w, specularTexture.h, 1, true));
+		sceneImages.back().fill(specularTexture.data.data());
+		sceneImages.back().generateMipChainImmediate();
+		sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		const vkcv::ImageHandle specularHandle = sceneImages.back().getHandle();
 
 		vkcv::DescriptorWrites setWrites;
 		setWrites.sampledImageWrites = {
-			vkcv::SampledImageDescriptorWrite(0, sceneImages.back().getHandle())
+			vkcv::SampledImageDescriptorWrite(0, albedoHandle),
+			vkcv::SampledImageDescriptorWrite(2, normalHandle),
+			vkcv::SampledImageDescriptorWrite(3, specularHandle)
 		};
 		setWrites.samplerWrites = {
 			vkcv::SamplerDescriptorWrite(1, colorSampler),
