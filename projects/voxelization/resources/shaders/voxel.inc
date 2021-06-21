@@ -124,7 +124,7 @@ vec3 voxelConeTrace(vec3 direction, vec3 startPosition, float coneAngleRadian, t
     float maxMip        = float(log2(voxelResolution));
     float maxStableMip  = 4;    // must be the same as in Voxelization::voxelizeMeshes
     maxMip              = min(maxMip, maxStableMip);
-    float d             = 0.75 * sqrt(3 * pow(voxelSize, 2));
+    float d             = 2 * sqrt(3 * pow(voxelSize, 2));
     vec3 color          = vec3(0);
     float a             = 0;
     
