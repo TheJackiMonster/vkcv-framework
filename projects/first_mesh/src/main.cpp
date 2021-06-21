@@ -4,6 +4,8 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
+#include <string>
+#include <vkcv/Utils.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
@@ -31,8 +33,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::asset::Scene mesh;
 
-	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
-	int result = vkcv::asset::loadScene(path, mesh);
+	int result = vkcv::asset::loadScene(utils::absolutePath("resources/cube/cube.gltf"), mesh);
 
 	if (result == 1) {
 		std::cout << "Mesh loading successful!" << std::endl;
@@ -81,8 +82,8 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::ShaderProgram firstMeshProgram{};
-    firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
-    firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
+    firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path(utils::absolutePath("resources/shaders/vert.spv"))); 
+    firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path(utils::absolutePath("resources/shaders/frag.spv")));
 	
 	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 	
