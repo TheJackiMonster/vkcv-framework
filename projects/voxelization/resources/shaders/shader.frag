@@ -47,7 +47,7 @@ vec3 cookTorrance(vec3 f0, float r, vec3 N, vec3 V, vec3 L){
 }
 
 float roughnessToConeAngle(float r){
-    return mix(degreeToRadian(10), degreeToRadian(90), r);
+    return mix(degreeToRadian(20), degreeToRadian(90), r);
 }
 
 void main()	{
@@ -96,6 +96,7 @@ void main()	{
     float reflectionConeAngle   = degreeToRadian(roughnessToConeAngle(r));
     vec3 offsetTraceStart       = passPos + N_geo * 0.1f;
     vec3 specularTrace          = voxelConeTrace(R, offsetTraceStart, reflectionConeAngle, voxelTexture, voxelSampler, voxelInfo);
+    specularTrace               *= clamp(dot(N, R), 0, 1);
     vec3 reflectionBRDF         = cookTorrance(f0, r, N, V, R);
     
 	outColor = 
