@@ -78,6 +78,9 @@ set(vkcv_sources
         
         ${vkcv_include}/vkcv/CommandStreamManager.hpp
         ${vkcv_source}/vkcv/CommandStreamManager.cpp
+
+		${vkcv_include}/vkcv/Utils.hpp
+        ${vkcv_source}/vkcv/Utils.cpp
         
         ${vkcv_include}/vkcv/CommandRecordingFunctionTypes.hpp
 )
