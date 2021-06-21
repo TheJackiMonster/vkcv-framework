@@ -6,6 +6,17 @@ layout(set=0, binding=1, rgba8)             uniform image2D outImage;
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
+// from: https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+vec3 ACESFilm(vec3 x)
+{
+    float a = 2.51f;
+    float b = 0.03f;
+    float c = 2.43f;
+    float d = 0.59f;
+    float e = 0.14f;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0, 1);
+}
+
 void main(){
 
     if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(inImage)))){
@@ -13,7 +24,7 @@ void main(){
     }
     ivec2 uv            = ivec2(gl_GlobalInvocationID.xy);
     vec3 linearColor    = imageLoad(inImage, uv).rgb;
-    vec3 tonemapped     = linearColor / (linearColor + 1); // reinhard tonemapping
+    vec3 tonemapped     = ACESFilm(linearColor);
     vec3 gammaCorrected = pow(tonemapped, vec3(1.f / 2.2f));
     imageStore(outImage, uv, vec4(gammaCorrected, 0.f));
 }

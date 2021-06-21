@@ -159,7 +159,7 @@ int main(int argc, const char** argv) {
 		glm::vec3   direction;
 		float       padding;
 		glm::vec3   sunColor    = glm::vec3(1.f);
-		float       sunStrength = 15.f;
+		float       sunStrength = 20.f;
 		glm::mat4   lightMatrix;
 	};
 	LightInfo lightInfo;
