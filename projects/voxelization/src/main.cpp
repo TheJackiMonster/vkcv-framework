@@ -168,16 +168,6 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = 
 		core.createDescriptorSet({ forwardProgram.getReflectedDescriptors()[0] });
 
-	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
-
-	vkcv::DescriptorWrites forwardDescriptorWrites;
-	forwardDescriptorWrites.uniformBufferWrites = { 
-		vkcv::UniformBufferDescriptorWrite(0, lightBuffer.getHandle()),
-		vkcv::UniformBufferDescriptorWrite(3, cameraPosBuffer.getHandle()) };
-	forwardDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(1, shadowMap.getHandle()) };
-	forwardDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(2, shadowSampler) };
-	core.writeDescriptorSet(forwardShadingDescriptorSet, forwardDescriptorWrites);
-
 	vkcv::SamplerHandle colorSampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerFilterType::LINEAR,
@@ -251,7 +241,7 @@ int main(int argc, const char** argv) {
 		perMeshDescriptorSets.push_back(materialDescriptorSets[vertexGroup.materialIndex]);
 	}
 
-	const vkcv::PipelineConfig forwardPipelineConfig {
+	vkcv::PipelineConfig forwardPipelineConfig {
 		forwardProgram,
 		windowWidth,
 		windowHeight,
@@ -361,11 +351,33 @@ int main(int argc, const char** argv) {
 		shadowMap.getHandle(),
 		shadowSampler);
 
+	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
+
+	vkcv::SamplerHandle voxelSampler = core.createSampler(
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerMipmapMode::LINEAR,
+		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
+
+	// write forward pass descriptor set
+	vkcv::DescriptorWrites forwardDescriptorWrites;
+	forwardDescriptorWrites.uniformBufferWrites = {
+		vkcv::UniformBufferDescriptorWrite(0, lightBuffer.getHandle()),
+		vkcv::UniformBufferDescriptorWrite(3, cameraPosBuffer.getHandle()),
+		vkcv::UniformBufferDescriptorWrite(6, voxelization.getVoxelInfoBufferHandle()) };
+	forwardDescriptorWrites.sampledImageWrites = {
+		vkcv::SampledImageDescriptorWrite(1, shadowMap.getHandle()),
+		vkcv::SampledImageDescriptorWrite(4, voxelization.getVoxelImageHandle()) };
+	forwardDescriptorWrites.samplerWrites = { 
+		vkcv::SamplerDescriptorWrite(2, shadowSampler),
+		vkcv::SamplerDescriptorWrite(5, voxelSampler) };
+	core.writeDescriptorSet(forwardShadingDescriptorSet, forwardDescriptorWrites);
+
 	vkcv::gui::GUI gui(core, window);
 
 	glm::vec2 lightAngles(90.f, 0.f);
 	int voxelVisualisationMip = 0;
-	float voxelizationExtent = 20.f;
+	float voxelizationExtent = 30.f;
 
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
@@ -454,6 +466,7 @@ int main(int argc, const char** argv) {
 		voxelization.voxelizeMeshes(
 			cmdStream, 
 			cameraManager.getActiveCamera().getPosition(), 
+			cameraManager.getActiveCamera().getFront(),
 			meshes, 
 			modelMatrices,
 			perMeshDescriptorSets);
@@ -501,7 +514,28 @@ int main(int argc, const char** argv) {
 		ImGui::Checkbox("Draw voxel visualisation", &renderVoxelVis);
 		ImGui::SliderInt("Visualisation mip",       &voxelVisualisationMip, 0, 7);
 		ImGui::DragFloat("Voxelization extent",     &voxelizationExtent, 1.f, 0.f);
+		voxelizationExtent = std::max(voxelizationExtent, 1.f);
 		voxelVisualisationMip = std::max(voxelVisualisationMip, 0);
+
+		if (ImGui::Button("Reload forward pass")) {
+
+			vkcv::ShaderProgram newForwardProgram;
+			compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+				[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+				newForwardProgram.addShader(shaderStage, path);
+			});
+			compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+				[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+				newForwardProgram.addShader(shaderStage, path);
+			});
+			forwardPipelineConfig.m_ShaderProgram = newForwardProgram;
+			vkcv::PipelineHandle newPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
+
+			if (newPipeline) {
+				forwardPipeline = newPipeline;
+			}
+		}
+
 		ImGui::End();
 
 		gui.endGUI();

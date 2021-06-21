@@ -5,6 +5,8 @@
 #include "perMeshResources.inc"
 #include "lightInfo.inc"
 #include "shadowMapping.inc"
+#include "brdf.inc"
+#include "voxel.inc"
 
 layout(location = 0) in vec3 passNormal;
 layout(location = 1) in vec2 passUV;
@@ -23,31 +25,51 @@ layout(set=0, binding=3) uniform cameraBuffer {
     vec3 cameraPos;
 };
 
-const float pi = 3.1415; 
+layout(set=0, binding=4) uniform texture3D  voxelTexture;
+layout(set=0, binding=5) uniform sampler    voxelSampler;
 
-vec3 lambertBRDF(vec3 albedo){
-    return albedo / pi;
-}
+layout(set=0, binding=6) uniform VoxelInfoBuffer{
+    VoxelInfo voxelInfo;
+};
 
-vec3 fresnelSchlick(float cosTheta, vec3 f0){
-    return f0 + (vec3(1) - f0) * pow(1 - cosTheta, 5);
-}
+vec3 voxelConeTrace(texture3D voxelTexture, sampler voxelSampler, vec3 direction, vec3 startPosition, float coneAngleRadian){
 
-float GGXDistribution(float r, float NoH){
-    float r2    = r * r;
-    float denom = pi * pow(NoH * NoH * (r2 - 1) + 1, 2);
-    return r2 / max(denom, 0.000001);
-}
-
-float GGXSmithShadowingPart(float r, float cosTheta){
-    float nom   = cosTheta * 2;
-    float r2    = r * r;
-    float denom = cosTheta + sqrt(r2 + (1 - r2) * cosTheta * cosTheta);
-    return nom / max(denom, 0.000001);
-}
-
-float GGXSmithShadowing(float r, float NoV, float NoL){
-    return GGXSmithShadowingPart(r, NoV) * GGXSmithShadowingPart(r, NoL);
+    int voxelResolution =  textureSize(sampler3D(voxelTexture, voxelSampler), 0).x;
+    float voxelSize     = voxelInfo.extent / voxelResolution;
+    float maxMip        = float(log2(voxelResolution));
+    float maxStableMip  = 4;    // must be the same as in Voxelization::voxelizeMeshes
+    maxMip              = min(maxMip, maxStableMip);
+    float d             = sqrt(3 * pow(voxelSize, 2));
+    vec3 color          = vec3(0);
+    float a             = 0;
+    
+    float coneAngleHalf = coneAngleRadian * 0.5f;
+    
+    int maxSamples = 16;
+    for(int i = 0; i < maxSamples; i++){
+        
+        vec3 samplePos      = startPosition + d * direction;
+        vec3 sampleUV       = worldToVoxelCoordinates(samplePos, voxelInfo);
+        
+        if(a >= 0.95 || any(lessThan(sampleUV, vec3(0))) || any(greaterThan(sampleUV, vec3(1)))){
+            break;
+        }
+        
+        float coneDiameter  = 2 * tan(coneAngleHalf) * d;
+        float mip           = log2(coneDiameter / voxelSize);
+        mip                 = min(mip, maxMip);
+    
+        vec4 voxelSample    = textureLod(sampler3D(voxelTexture, voxelSampler), sampleUV , mip);
+        
+        color               += (1 - a) * voxelSample.rgb;
+        voxelSample.a       = pow(voxelSample.a, 0.6);
+        a                   += (1 - a) * voxelSample.a;
+        
+        d                   += coneDiameter;
+        samplePos           = startPosition + d * direction;
+        sampleUV            = worldToVoxelCoordinates(samplePos, voxelInfo);
+    }
+    return color;
 }
 
 void main()	{
@@ -86,11 +108,31 @@ void main()	{
     
     vec3 sun        = lightInfo.sunStrength * lightInfo.sunColor * NoL;
     sun             *= shadowTest(passPos, lightInfo, shadowMap, shadowMapSampler);
-    vec3 ambient    = vec3(0.05);
     
     vec3 F_in       = fresnelSchlick(NoL, f0);
     vec3 F_out      = fresnelSchlick(NoV, f0);
     vec3 diffuse    = lambertBRDF(albedo) * (1 - F_in) * (1 - F_out);
     
-	outColor        = (diffuse + specular) * sun + lambertBRDF(albedo) * ambient;
+    vec3 up         = N_geo.y >= 0.99 ? vec3(1, 0, 0) : vec3(0, 1, 0);
+    vec3 right      = normalize(cross(up, N));
+    up              = cross(N, right); 
+    mat3 toSurface  = mat3(right, up, N);
+    
+    float coneAngle = 60.f / 180.f * pi;
+    vec3 diffuseTrace = vec3(0);
+    {
+        vec3 sampleDirection    = toSurface * vec3(0, 0, 1);
+        float weight            = pi / 4.f;
+        diffuseTrace            += weight * voxelConeTrace(voxelTexture, voxelSampler, sampleDirection, passPos, coneAngle);
+    }
+    for(int i = 0; i < 6;i++){
+        float theta             = 2 * pi / i;
+        float phi               = pi / 3;   // 60 degrees
+        vec3 sampleDirection    = toSurface * vec3(cos(theta) * sin(phi), sin(theta) * sin(phi), cos(phi));
+        float weight            = pi * (3.f / 4.f) / i;
+        diffuseTrace            += voxelConeTrace(voxelTexture, voxelSampler, sampleDirection, passPos, coneAngle);
+    }
+    
+	outColor = (diffuse + specular) * sun + diffuse * diffuseTrace;
+    //outColor = diffuseTrace;
 }

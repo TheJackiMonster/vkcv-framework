@@ -182,8 +182,9 @@ Voxelization::Voxelization(
 }
 
 void Voxelization::voxelizeMeshes(
-	vkcv::CommandStreamHandle                       cmdStream, 
-	const glm::vec3&                                cameraPosition, 
+	vkcv::CommandStreamHandle                       cmdStream,
+	const glm::vec3&                                cameraPosition,
+	const glm::vec3&                                cameraLookDirection,
 	const std::vector<vkcv::Mesh>&                  meshes,
 	const std::vector<glm::mat4>&                   modelMatrices,
 	const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets) {
@@ -192,8 +193,12 @@ void Voxelization::voxelizeMeshes(
 	voxelizationInfo.extent = m_voxelExtent;
 
 	// move voxel offset with camera in voxel sized steps
-	const float voxelSize = m_voxelExtent / voxelResolution;
-	voxelizationInfo.offset = glm::floor(cameraPosition / voxelSize) * voxelSize;
+	const float voxelSize       = m_voxelExtent / voxelResolution;
+	const int   maxStableMip    = 4;	// must be the same as in voxelConeTrace shader function
+	const float snapSize        = voxelSize * exp2(maxStableMip);
+
+	const glm::vec3 voxelVolumeCenter   = cameraPosition + (1.f / 3.f) * m_voxelExtent * cameraLookDirection;
+	voxelizationInfo.offset             = glm::floor(voxelVolumeCenter / snapSize) * snapSize;
 
 	m_voxelInfoBuffer.fill({ voxelizationInfo });
 
@@ -268,6 +273,7 @@ void Voxelization::voxelizeMeshes(
 	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImage.getHandle());
 
 	m_voxelImage.recordMipChainGeneration(cmdStream);
+	m_corePtr->prepareImageForSampling(cmdStream, m_voxelImage.getHandle());
 }
 
 void Voxelization::renderVoxelVisualisation(
@@ -294,6 +300,7 @@ void Voxelization::renderVoxelVisualisation(
 		vkcv::Mesh({}, nullptr, drawVoxelCount),
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle) });
 
+	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImage.getHandle());
 	m_corePtr->recordDrawcallsToCmdStream(
 		cmdStream,
 		m_visualisationPass,
@@ -305,4 +312,12 @@ void Voxelization::renderVoxelVisualisation(
 
 void Voxelization::setVoxelExtent(float extent) {
 	m_voxelExtent = extent;
+}
+
+vkcv::ImageHandle Voxelization::getVoxelImageHandle() const {
+	return m_voxelImage.getHandle();
+}
+
+vkcv::BufferHandle Voxelization::getVoxelInfoBufferHandle() const {
+	return m_voxelInfoBuffer.getHandle();
 }

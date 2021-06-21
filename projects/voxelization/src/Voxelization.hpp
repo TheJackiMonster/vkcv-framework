@@ -17,8 +17,9 @@ public:
 		vkcv::SamplerHandle shadowSampler);
 
 	void voxelizeMeshes(
-		vkcv::CommandStreamHandle                       cmdStream, 
-		const glm::vec3&                                cameraPosition, 
+		vkcv::CommandStreamHandle                       cmdStream,
+		const glm::vec3&                                cameraPosition,
+		const glm::vec3&                                cameraLookDirection,
 		const std::vector<vkcv::Mesh>&                  meshes,
 		const std::vector<glm::mat4>&                   modelMatrices,
 		const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets);
@@ -30,6 +31,9 @@ public:
 		uint32_t                                mipLevel);
 
 	void setVoxelExtent(float extent);
+
+	vkcv::ImageHandle getVoxelImageHandle() const;
+	vkcv::BufferHandle getVoxelInfoBufferHandle() const;
 
 private:
 	vkcv::Core* m_corePtr;
@@ -63,5 +67,5 @@ private:
 	};
 	vkcv::Buffer<VoxelizationInfo> m_voxelInfoBuffer;
 
-	float m_voxelExtent = 20.f;
+	float m_voxelExtent = 30.f;
 };

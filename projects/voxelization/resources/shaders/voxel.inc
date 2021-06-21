@@ -7,6 +7,14 @@ uint flattenVoxelUVToIndex(ivec3 UV, ivec3 voxelImageSize){
     return UV.x + UV.y * voxelImageSize.x + UV.z *  voxelImageSize.x*  voxelImageSize.y;
 }
 
+vec3 worldToVoxelCoordinates(vec3 world, VoxelInfo info){
+    return (world - info.offset) / info.extent + 0.5f;
+}
+
+ivec3 voxelCoordinatesToUV(vec3 voxelCoordinates, ivec3 voxelImageResolution){
+    return ivec3(voxelCoordinates * voxelImageResolution);
+}
+
 // packed voxel data: 
 // 1 bit opacity
 // 7 bit exposure

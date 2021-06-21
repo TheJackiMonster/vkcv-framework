@@ -6,6 +6,7 @@
 #include "perMeshResources.inc"
 #include "lightInfo.inc"
 #include "shadowMapping.inc"
+#include "brdf.inc"
 
 layout(location = 0) in vec3 passPos;
 layout(location = 1) in vec2 passUV;
@@ -28,14 +29,6 @@ layout(set=0, binding=3) uniform sunBuffer {
 layout(set=0, binding=4) uniform texture2D  shadowMap;
 layout(set=0, binding=5) uniform sampler    shadowMapSampler;
 
-vec3 worldToVoxelCoordinates(vec3 world, VoxelInfo info){
-    return (world - info.offset) / info.extent + 0.5f;
-}
-
-ivec3 voxelCoordinatesToUV(vec3 voxelCoordinates, ivec3 voxelImageResolution){
-    return ivec3(voxelCoordinates * voxelImageResolution);
-}
-
 void main()	{
     vec3 voxelCoordinates = worldToVoxelCoordinates(passPos, voxelInfo);
     ivec3 voxelImageSize = imageSize(voxelImage);
@@ -51,7 +44,7 @@ void main()	{
     float NoL   = clamp(dot(N, lightInfo.L), 0, 1);
     vec3 sun    = lightInfo.sunStrength * lightInfo.sunColor * NoL * shadowTest(passPos, lightInfo, shadowMap, shadowMapSampler);
     vec3 color  = albedo * sun;
-    color = albedo * sun;
+    color       = lambertBRDF(albedo) * sun;
     
     atomicMax(packedVoxelData[flatIndex], packVoxelInfo(color));
 }
