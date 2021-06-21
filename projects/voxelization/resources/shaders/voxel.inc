@@ -147,7 +147,6 @@ vec3 voxelConeTrace(vec3 direction, vec3 startPosition, float coneAngleRadian, t
         vec4 voxelSample    = textureLod(sampler3D(voxelTexture, voxelSampler), sampleUV , mip);
         
         color               += (1 - a) * voxelSample.rgb;
-        voxelSample.a       = pow(voxelSample.a, 0.6);
         a                   += (1 - a) * voxelSample.a;
         
         float minStepSize   = 0.15;
