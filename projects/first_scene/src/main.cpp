@@ -59,7 +59,7 @@ int main(int argc, const char** argv) {
 	}
 	else {
 		std::cout << "Mesh loading failed: " << result << std::endl;
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	assert(!scene.vertexGroups.empty());

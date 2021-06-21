@@ -313,7 +313,7 @@ int loadScene(const std::string &path, Scene &scene){
             }
 
             const size_t numVertexGroups = objectMesh.primitives.size();
-            vertexGroups.reserve(numVertexGroups);
+            vertexGroups.reserve(numVertexGroups);	// FIXME this is a bug
 
             vertexGroups.push_back({
                 static_cast<PrimitiveMode>(objectPrimitive.mode),
@@ -349,6 +349,8 @@ int loadScene(const std::string &path, Scene &scene){
         for(int k = 0; k < sceneObjects.textures.size(); k++){
             const fx::gltf::Texture &tex = sceneObjects.textures[k];
             const fx::gltf::Image &img = sceneObjects.images[tex.source];
+	    // TODO Image objects in glTF can have a URI _or_ a bufferView and
+	    // a mimeType; but here we are assuming to always find a URI.
             std::string img_uri = dir + "/" + img.uri;
             int w, h, c;
             uint8_t *data = stbi_load(img_uri.c_str(), &w, &h, &c, 4);
@@ -391,7 +393,7 @@ int loadScene(const std::string &path, Scene &scene){
 	    // materials textureMask like this:
 	    // 		mat.textureMask |= bitflag(asset::normal);
             materials.push_back({
-               0,
+               0,	// TODO
                material.pbrMetallicRoughness.baseColorTexture.index,
                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                material.normalTexture.index,
