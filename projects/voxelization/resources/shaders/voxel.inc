@@ -124,7 +124,7 @@ vec3 voxelConeTrace(vec3 direction, vec3 startPosition, float coneAngleRadian, t
     float maxMip        = float(log2(voxelResolution));
     float maxStableMip  = 4;    // must be the same as in Voxelization::voxelizeMeshes
     maxMip              = min(maxMip, maxStableMip);
-    float d             = 2 * sqrt(3 * pow(voxelSize, 2));
+    float d             = 0.75 * sqrt(3 * pow(voxelSize, 2));
     vec3 color          = vec3(0);
     float a             = 0;
     
@@ -173,9 +173,9 @@ vec3 diffuseVoxelTraceHemisphere(mat3 toSurface, vec3 position, texture3D voxelT
         float theta             = 2 * pi / i;
         float phi               = pi / 3;   // 60 degrees
         vec3 sampleDirection    = toSurface * vec3(cos(theta) * sin(phi), sin(theta) * sin(phi), cos(phi));
-        float weight            = pi * (3.f / 4.f) / i;
+        float weight            = pi * (3.f / 4.f) / 6;
         vec3 trace              = voxelConeTrace(sampleDirection, position, coneAngle, voxelTexture, voxelSampler, voxelInfo);
-        diffuseTrace            += trace;
+        diffuseTrace            += weight * trace;
     }
     return diffuseTrace;
 }
