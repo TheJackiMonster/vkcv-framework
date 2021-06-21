@@ -16,7 +16,19 @@ layout(std430, binding = 0) coherent buffer buffer_inParticle
     Particle inParticle[];
 };
 
+layout( push_constant ) uniform constants{
+    vec3 respawnPos;
+    float deltaTime;
+};
+
 void main() {
     uint id = gl_GlobalInvocationID.x;
-    inParticle[id].position = inParticle[id].position + vec3(0.f,0.01f,0.f);
+    inParticle[id].lifeTime -= deltaTime;
+    if(inParticle[id].lifeTime < 0.f)
+    {
+        inParticle[id].lifeTime = 3.f;
+        inParticle[id].position = respawnPos;
+    }
+
+    inParticle[id].position = (inParticle[id].position + deltaTime * inParticle[id].velocity);
 }

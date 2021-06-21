@@ -14,6 +14,8 @@ public:
     void setRespawnPos( const glm::vec3 respawnPos );
     void setRdmLifeTime( const glm::vec2 lifeTime );
     void setRdmVelocity( glm::vec3 minVelocity, glm::vec3 maxVelocity );
+    const glm::vec3 getRespawnPos() const;
+
 private:
 
     void addParticle( const Particle particle );

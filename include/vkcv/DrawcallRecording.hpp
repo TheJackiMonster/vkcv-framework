@@ -37,11 +37,12 @@ namespace vkcv {
     };
 
     struct DrawcallInfo {
-        inline DrawcallInfo(const Mesh& mesh, const std::vector<DescriptorSetUsage>& descriptorSets)
-            : mesh(mesh), descriptorSets(descriptorSets) {}
+        inline DrawcallInfo(const Mesh& mesh, const std::vector<DescriptorSetUsage>& descriptorSets, const uint32_t instanceCount)
+            : mesh(mesh), descriptorSets(descriptorSets), instanceCount(instanceCount){}
 
         Mesh                            mesh;
         std::vector<DescriptorSetUsage> descriptorSets;
+        uint32_t                        instanceCount;
     };
 
     void recordDrawcall(

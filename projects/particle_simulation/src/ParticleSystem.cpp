@@ -54,3 +54,7 @@ void ParticleSystem::setRdmVelocity( glm::vec3 minVelocity, glm::vec3 maxVelocit
     m_rdmVel[1] = std::uniform_real_distribution<float> (minVelocity.y,maxVelocity.y);
     m_rdmVel[2] = std::uniform_real_distribution<float> (minVelocity.z,maxVelocity.z);
 }
+
+const glm::vec3 ParticleSystem::getRespawnPos() const{
+    return m_respawnPos;
+}

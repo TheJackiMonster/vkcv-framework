@@ -36,7 +36,7 @@ namespace vkcv {
 
         if (drawcall.mesh.indexBuffer) {
             cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
-            cmdBuffer.drawIndexed(drawcall.mesh.indexCount, 1, 0, 0, {});
+            cmdBuffer.drawIndexed(drawcall.mesh.indexCount, drawcall.instanceCount, 0, 0, {});
         }
         else {
             cmdBuffer.draw(drawcall.mesh.indexCount, 1, 0, 0, {});

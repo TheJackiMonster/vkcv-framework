@@ -120,9 +120,9 @@ int main(int argc, const char **argv) {
             1
     );
 
-    glm::vec3 minVelocity = glm::vec3(-0.0f,-0.0f,0.f);
-    glm::vec3 maxVelocity = glm::vec3(0.0f,0.0f,0.f);
-    glm::vec2 lifeTime = glm::vec2(0.f,5.f);
+    glm::vec3 minVelocity = glm::vec3(-0.1f,-0.1f,0.f);
+    glm::vec3 maxVelocity = glm::vec3(0.1f,0.1f,0.f);
+    glm::vec2 lifeTime = glm::vec2(0.f,2.f);
     ParticleSystem particleSystem = ParticleSystem( 100 , minVelocity, maxVelocity, lifeTime);
 
     vkcv::Buffer<Particle> particleBuffer = core.createBuffer<Particle>(
@@ -164,6 +164,7 @@ int main(int argc, const char **argv) {
 
     window.e_mouseMove.add([&](double offsetX, double offsetY) {
         pos = glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY));
+//        std::cout << offsetX << " , " << offsetY << std::endl;
         // borders are assumed to be 0.5
         //pos = glm::vec2((pos.x -0.5f * static_cast<float>(window.getWidth()))/static_cast<float>(window.getWidth()), (pos.y -0.5f * static_cast<float>(window.getHeight()))/static_cast<float>(window.getHeight()));
         //borders are assumed to be 1
@@ -173,11 +174,11 @@ int main(int argc, const char **argv) {
         glm::vec4 row2 = glm::row(cameraManager.getCamera(0).getView(), 1);
         glm::vec4 row3 = glm::row(cameraManager.getCamera(0).getView(), 2);
         glm::vec4 camera_pos = glm::column(cameraManager.getCamera(0).getView(), 3);
-        std::cout << "row1: " << row1.x << ", " << row1.y << ", " << row1.z << std::endl;
-        std::cout << "row2: " << row2.x << ", " << row2.y << ", " << row2.z << std::endl;
-        std::cout << "row3: " << row3.x << ", " << row3.y << ", " << row3.z << std::endl;
-        std::cout << "camerapos: " << camera_pos.x << ", " << camera_pos.y << ", " << camera_pos.z << std::endl;
-        std::cout << "camerapos: " << camera_pos.x << ", " << camera_pos.y << ", " << camera_pos.z << std::endl;
+//        std::cout << "row1: " << row1.x << ", " << row1.y << ", " << row1.z << std::endl;
+//        std::cout << "row2: " << row2.x << ", " << row2.y << ", " << row2.z << std::endl;
+//        std::cout << "row3: " << row3.x << ", " << row3.y << ", " << row3.z << std::endl;
+//        std::cout << "camerapos: " << camera_pos.x << ", " << camera_pos.y << ", " << camera_pos.z << std::endl;
+//        std::cout << "camerapos: " << camera_pos.x << ", " << camera_pos.y << ", " << camera_pos.z << std::endl;
         //glm::vec4 view_axis = glm::row(cameraManager.getCamera().getView(), 2);
         // std::cout << "view_axis: " << view_axis.x << ", " << view_axis.y << ", " << view_axis.z << std::endl;
         //std::cout << "Front: " << cameraManager.getCamera().getFront().x << ", " << cameraManager.getCamera().getFront().z << ", " << cameraManager.getCamera().getFront().z << std::endl;
@@ -186,15 +187,12 @@ int main(int argc, const char **argv) {
         tempPosition = viewmat * glm::vec4(spawnPosition, 1.0f);
         spawnPosition = glm::vec3(tempPosition.x, tempPosition.y, tempPosition.z);
         particleSystem.setRespawnPos(glm::vec3(-spawnPosition.x, -spawnPosition.y, spawnPosition.z));
-        std::cout << "respawn pos: " << spawnPosition.x << ", " << spawnPosition.y << ", " << spawnPosition.z << std::endl;
+//        std::cout << "respawn pos: " << spawnPosition.x << ", " << spawnPosition.y << ", " << spawnPosition.z << std::endl;
     });
 
     std::vector<glm::mat4> modelMatrices;
     std::vector<vkcv::DrawcallInfo> drawcalls;
-    for (auto particle :  particleSystem.getParticles()) {
-        modelMatrices.push_back(glm::translate(glm::mat4(1.f), particle.getPosition()));
-        drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}));
-    }
+    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}, particleSystem.getParticles().size()));
 
     auto start = std::chrono::system_clock::now();
 
@@ -215,41 +213,36 @@ int main(int argc, const char **argv) {
         }
 
         color.fill(&colorData);
-
-
         position.fill(&pos);
+
         auto end = std::chrono::system_clock::now();
-        auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        float deltatime = 0.000001 * static_cast<float>( std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() );
         start = end;
-        particleSystem.updateParticles(0.000001 * static_cast<float>(deltatime.count()));
+        particleSystem.updateParticles(deltatime);
 
-        modelMatrices.clear();
-        for (Particle particle :  particleSystem.getParticles()) {
-            modelMatrices.push_back(glm::translate(glm::mat4(1.f), particle.getPosition()));
-        }
-
-        cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+        cameraManager.update(deltatime);
         std::vector<glm::mat4> mvp;
         mvp.clear();
-        for (const auto &m : modelMatrices) {
-            mvp.push_back(m * cameraManager.getActiveCamera().getMVP());
-        }
+        mvp.push_back( cameraManager.getCamera(0).getMVP());
 
-        vkcv::PushConstantData pushConstantData((void *) mvp.data(), sizeof(glm::mat4));
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
+        glm::vec4 pushData = glm::vec4(particleSystem.getRespawnPos(),deltatime);
+
+        vkcv::PushConstantData pushConstantDataCompute( &pushData, sizeof(glm::vec4));
         uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(particleSystem.getParticles().size()/64.f)),1,1};
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline,
                                               computeDispatchCount,
                                               {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet).vulkanHandle)},
-                                               vkcv::PushConstantData(nullptr, 0));
+                                              pushConstantDataCompute);
 
+        vkcv::PushConstantData pushConstantDataDraw((void *) mvp.data(), sizeof(glm::mat4));
         core.recordDrawcallsToCmdStream(
                 cmdStream,
                 particlePass,
                 particlePipeline,
-                pushConstantData,
+                pushConstantDataDraw,
                 {drawcalls},
                 {swapchainInput});
         core.prepareSwapchainImageForPresent(cmdStream);
