@@ -15,6 +15,12 @@ namespace vkcv {
             : m_window(window) {
 		glfwSetWindowUserPointer(m_window, this);
 	
+		this->e_mouseButton.lock();
+		this->e_mouseMove.lock();
+		this->e_resize.lock();
+		this->e_key.lock();
+		this->e_mouseScroll.lock();
+	
 		// combine Callbacks with Events
 		glfwSetMouseButtonCallback(m_window, Window::onMouseButtonEvent);
 		glfwSetCursorPosCallback(m_window, Window::onMouseMoveEvent);
