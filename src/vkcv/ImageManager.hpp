@@ -18,29 +18,29 @@ namespace vkcv {
 	public:
 		struct Image
 		{
-			vk::Image           m_handle;
-			vk::DeviceMemory    m_memory;
-			vk::ImageView       m_view;
-			uint32_t            m_width = 0;
-			uint32_t            m_height = 0;
-			uint32_t            m_depth = 0;
-			vk::Format          m_format;
-			uint32_t            m_layers = 1;
-			uint32_t            m_levels = 1;
-			vk::ImageLayout     m_layout = vk::ImageLayout::eUndefined;
+			vk::Image                   m_handle;
+			vk::DeviceMemory            m_memory;
+			std::vector<vk::ImageView>  m_viewPerMip;
+			uint32_t                    m_width     = 0;
+			uint32_t                    m_height    = 0;
+			uint32_t                    m_depth     = 0;
+			vk::Format                  m_format;
+			uint32_t                    m_layers    = 1;
+			vk::ImageLayout             m_layout    = vk::ImageLayout::eUndefined;
 		private:
 			// struct is public so utility functions can access members, but only ImageManager can create Image
 			friend ImageManager;
 			Image(
-				vk::Image           handle,
-				vk::DeviceMemory    memory,
-				vk::ImageView       view,
-				uint32_t            width,
-				uint32_t            height,
-				uint32_t            depth,
-				vk::Format          format,
-				uint32_t            layers,
-				uint32_t            levels);
+				vk::Image                   handle,
+				vk::DeviceMemory            memory,
+				std::vector<vk::ImageView>  views,
+				uint32_t                    width,
+				uint32_t                    height,
+				uint32_t                    depth,
+				vk::Format                  format,
+				uint32_t                    layers);
+
+			Image();
 		};
 	private:
 		
@@ -48,6 +48,8 @@ namespace vkcv {
 		BufferManager& m_bufferManager;
 		
 		std::vector<Image> m_images;
+		std::vector<Image> m_swapchainImages;
+		int m_currentSwapchainInputImage;
 		
 		ImageManager(BufferManager& bufferManager) noexcept;
 		
@@ -67,7 +69,14 @@ namespace vkcv {
 		ImageManager& operator=(ImageManager&& other) = delete;
 		ImageManager& operator=(const ImageManager& other) = delete;
 		
-		ImageHandle createImage(uint32_t width, uint32_t height, uint32_t depth, vk::Format format);
+		ImageHandle createImage(
+			uint32_t    width, 
+			uint32_t    height, 
+			uint32_t    depth, 
+			vk::Format  format, 
+			uint32_t    mipCount,
+			bool        supportStorage, 
+			bool        supportColorAttachment);
 		
 		ImageHandle createSwapchainImage();
 		
@@ -78,7 +87,7 @@ namespace vkcv {
 		vk::DeviceMemory getVulkanDeviceMemory(const ImageHandle& handle) const;
 		
 		[[nodiscard]]
-		vk::ImageView getVulkanImageView(const ImageHandle& handle) const;
+		vk::ImageView getVulkanImageView(const ImageHandle& handle, const size_t mipLevel = 0) const;
 
 		void switchImageLayoutImmediate(const ImageHandle& handle, vk::ImageLayout newLayout);
 		void recordImageLayoutTransition(
@@ -86,7 +95,12 @@ namespace vkcv {
 			vk::ImageLayout newLayout, 
 			vk::CommandBuffer cmdBuffer);
 
+		void recordImageMemoryBarrier(
+			const ImageHandle& handle,
+			vk::CommandBuffer cmdBuffer);
+
 		void fillImage(const ImageHandle& handle, void* data, size_t size);
+		void generateImageMipChainImmediate(const ImageHandle& handle);
 		
 		[[nodiscard]]
 		uint32_t getImageWidth(const ImageHandle& handle) const;
@@ -99,5 +113,10 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		vk::Format getImageFormat(const ImageHandle& handle) const;
+
+		void setCurrentSwapchainImageIndex(int index);
+		void setSwapchainImages(const std::vector<vk::Image>& images, std::vector<vk::ImageView> views,
+			uint32_t width, uint32_t height, vk::Format format);
+
 	};
 }

@@ -41,14 +41,14 @@ if (vkcv_build_debug)
 	endif()
 endif()
 
+# configure everything to use the required dependencies
+include(${vkcv_config}/Libraries.cmake)
+
 # add modules as targets
 add_subdirectory(modules)
 
 # add source files for compilation
 include(${vkcv_config}/Sources.cmake)
-
-# configure everything to use the required dependencies
-include(${vkcv_config}/Libraries.cmake)
 
 message("-- Libraries: [ ${vkcv_libraries} ]")
 message("-- Flags: [ ${vkcv_flags} ]")

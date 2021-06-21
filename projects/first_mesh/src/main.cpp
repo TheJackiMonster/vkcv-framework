@@ -18,10 +18,6 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-	vkcv::CameraManager cameraManager(window, static_cast<float>(window.getWidth()), static_cast<float>(window.getHeight()));
-
-	window.initEvents();
-
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
@@ -31,10 +27,10 @@ int main(int argc, const char** argv) {
 		{ "VK_KHR_swapchain" }
 	);
 
-	vkcv::asset::Mesh mesh;
+	vkcv::asset::Scene mesh;
 
 	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
-	int result = vkcv::asset::loadMesh(path, mesh);
+	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
 		std::cout << "Mesh loading successful!" << std::endl;
@@ -65,7 +61,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchainImageFormat()
+		core.getSwapchain().getFormat()
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment(
@@ -105,14 +101,15 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[setID] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
-	const vkcv::PipelineConfig firstMeshPipelineConfig(
+	const vkcv::PipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,
         UINT32_MAX,
         UINT32_MAX,
         firstMeshPass,
         {firstMeshLayout},
 		{ core.getDescriptorSet(descriptorSet).layout },
-		true);
+		true
+	};
 	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
 	
 	if (!firstMeshPipeline) {
@@ -120,8 +117,13 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, mesh.texture_hack.w, mesh.texture_hack.h);
-	texture.fill(mesh.texture_hack.img);
+	// FIXME There should be a test here to make sure there is at least 1
+	// texture in the mesh.
+	vkcv::asset::Texture &tex = mesh.textures[0];
+	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
+	texture.fill(tex.data.data());
+	texture.generateMipChainImmediate();
+	texture.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
@@ -131,16 +133,17 @@ int main(int argc, const char** argv) {
 	);
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
 	vkcv::DescriptorWrites setWrites;
-	setWrites.sampledImageWrites    = { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
-	setWrites.samplerWrites         = { vkcv::SamplerDescriptorWrite(1, sampler) };
+	setWrites.sampledImageWrites	= { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
+	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
+
 	core.writeDescriptorSet(descriptorSet, setWrites);
 
-	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
+	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -149,9 +152,16 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage });
 
-	auto start = std::chrono::system_clock::now();
+    vkcv::camera::CameraManager cameraManager(window);
+    uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	
+	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
+
+    auto start = std::chrono::system_clock::now();
+    
 	while (window.isWindowOpen()) {
-        vkcv::Window::pollEvents();
+        window.pollEvents();
 		
 		if(window.getHeight() == 0 || window.getWidth() == 0)
 			continue;
@@ -169,10 +179,11 @@ int main(int argc, const char** argv) {
 		}
   
 		auto end = std::chrono::system_clock::now();
-		auto deltatime = end - start;
+		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		
 		start = end;
-		cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
-		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
+		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+        glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 
 		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
 
@@ -188,7 +199,6 @@ int main(int argc, const char** argv) {
 			renderTargets);
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-
 		core.endFrame();
 	}
 	
