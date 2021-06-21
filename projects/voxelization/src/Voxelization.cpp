@@ -236,7 +236,7 @@ void Voxelization::voxelizeMeshes(
 			{ 
 				vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_voxelizationDescriptorSet).vulkanHandle),
 				vkcv::DescriptorSetUsage(1, m_corePtr->getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) 
-			}));
+			},1));
 	}
 
 	m_corePtr->recordDrawcallsToCmdStream(
@@ -273,7 +273,7 @@ void Voxelization::renderVoxelVisualisation(
 
 	const auto drawcall = vkcv::DrawcallInfo(
 		vkcv::Mesh({}, nullptr, voxelCount),
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle) });
+		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle) },1);
 
 	m_corePtr->recordDrawcallsToCmdStream(
 		cmdStream,

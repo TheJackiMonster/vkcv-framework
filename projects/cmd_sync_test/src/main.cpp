@@ -175,8 +175,8 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DrawcallInfo> shadowDrawcalls;
 	for (const auto& position : instancePositions) {
 		modelMatrices.push_back(glm::translate(glm::mat4(1.f), position));
-		drawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, { descriptorUsage }));
-		shadowDrawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, {}));
+		drawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, { descriptorUsage },1));
+		shadowDrawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, {},1));
 	}
 
 	modelMatrices.back() *= glm::scale(glm::mat4(1.f), glm::vec3(10.f, 1.f, 10.f));

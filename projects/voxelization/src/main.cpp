@@ -302,8 +302,8 @@ int main(int argc, const char** argv) {
 
 		drawcalls.push_back(vkcv::DrawcallInfo(meshes[i], { 
 			vkcv::DescriptorSetUsage(0, core.getDescriptorSet(forwardShadingDescriptorSet).vulkanHandle),
-			vkcv::DescriptorSetUsage(1, core.getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) }));
-		shadowDrawcalls.push_back(vkcv::DrawcallInfo(meshes[i], {}));
+			vkcv::DescriptorSetUsage(1, core.getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) },1));
+		shadowDrawcalls.push_back(vkcv::DrawcallInfo(meshes[i], {},1));
 	}
 
 	Voxelization::Dependencies voxelDependencies;

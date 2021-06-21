@@ -150,7 +150,7 @@ int main(int argc, const char** argv) {
 	const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
 
 	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
-	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage });
+	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage },1);
 
     vkcv::camera::CameraManager cameraManager(window);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);

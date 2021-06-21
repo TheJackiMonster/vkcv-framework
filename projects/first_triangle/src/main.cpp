@@ -167,7 +167,7 @@ int main(int argc, const char** argv) {
 	vkcv::ImageHandle swapchainImageHandle = vkcv::ImageHandle::createSwapchainImageHandle();
 
 	const vkcv::Mesh renderMesh({}, triangleIndexBuffer.getVulkanHandle(), 3);
-	vkcv::DrawcallInfo drawcall(renderMesh, {});
+	vkcv::DrawcallInfo drawcall(renderMesh, {},1);
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
