@@ -10,6 +10,8 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
 
+	utils::setBinaryDir(argv[0]);
+
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
 

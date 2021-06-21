@@ -1,12 +1,19 @@
 #include <vkcv/Utils.hpp>
-#include <boost/dll.hpp>
+#include <filesystem>
 
 namespace utils {
-    
+
+    std::string g_binaryDir;
+
     std::string absolutePath(std::string path) {
-        boost::filesystem::path root = boost::dll::program_location().parent_path();
-        boost::filesystem::path relative(path);
-        boost::filesystem::path fullpath = root / relative;
+        std::filesystem::path relative(path);
+        std::filesystem::path fullpath = g_binaryDir / relative;
         return fullpath.string();
+    }
+
+    void setBinaryDir(const char* argv0) {
+        std::filesystem::path binaryPath(argv0);
+        std::filesystem::path binaryDir = binaryPath.parent_path();
+        utils::g_binaryDir = binaryDir.string();
     }
 }
