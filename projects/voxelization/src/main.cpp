@@ -340,6 +340,12 @@ int main(int argc, const char** argv) {
 		shadowDrawcalls.push_back(vkcv::DrawcallInfo(meshes[i], {}));
 	}
 
+	vkcv::SamplerHandle voxelSampler = core.createSampler(
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerMipmapMode::LINEAR,
+		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
+
 	Voxelization::Dependencies voxelDependencies;
 	voxelDependencies.colorBufferFormat = colorBufferFormat;
 	voxelDependencies.depthBufferFormat = depthBufferFormat;
@@ -349,15 +355,10 @@ int main(int argc, const char** argv) {
 		voxelDependencies,
 		lightBuffer.getHandle(),
 		shadowMap.getHandle(),
-		shadowSampler);
+		shadowSampler,
+		voxelSampler);
 
 	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
-
-	vkcv::SamplerHandle voxelSampler = core.createSampler(
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
 
 	// write forward pass descriptor set
 	vkcv::DescriptorWrites forwardDescriptorWrites;

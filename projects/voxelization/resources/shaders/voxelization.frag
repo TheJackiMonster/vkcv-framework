@@ -13,7 +13,7 @@ layout(location = 1) in vec2 passUV;
 layout(location = 2) in vec3 passN;
 
 layout(set=0, binding=0, std430) buffer voxelizationBuffer{
-    uint packedVoxelData[];
+    PackedVoxelData packedVoxelData[];
 };
 
 layout(set=0, binding=1) uniform voxelizationInfo{
@@ -46,5 +46,7 @@ void main()	{
     vec3 color  = albedo * sun;
     color       = lambertBRDF(albedo) * sun;
     
-    atomicMax(packedVoxelData[flatIndex], packVoxelInfo(color));
+    atomicMax(packedVoxelData[flatIndex].color, packVoxelColor(color));
+    atomicMax(packedVoxelData[flatIndex].normal, packVoxelNormal(N));
+    atomicMax(packedVoxelData[flatIndex].albedo, packVoxelAlbedo(albedo));
 }

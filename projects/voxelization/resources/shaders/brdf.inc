@@ -1,3 +1,6 @@
+#ifndef BRDF_INC
+#define BRDF_INC
+
 const float pi = 3.1415; 
 
 vec3 lambertBRDF(vec3 albedo){
@@ -24,3 +27,5 @@ float GGXSmithShadowingPart(float r, float cosTheta){
 float GGXSmithShadowing(float r, float NoV, float NoL){
     return GGXSmithShadowingPart(r, NoV) * GGXSmithShadowingPart(r, NoL);
 }
+
+#endif // #ifndef BRDF_INC

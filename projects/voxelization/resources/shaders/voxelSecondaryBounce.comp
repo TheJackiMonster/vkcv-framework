@@ -1,0 +1,46 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+#include "voxel.inc"
+#include "brdf.inc"
+
+layout(set=0, binding=0, std430) buffer voxelBuffer{
+    PackedVoxelData packedVoxelData[];
+};
+layout(set=0, binding=1) uniform texture3D          voxelImageIn;
+layout(set=0, binding=2) uniform sampler            voxelSampler;
+layout(set=0, binding=3, rgba16f) uniform image3D   voxelImageOut;
+layout(set=0, binding=4) uniform voxelizationInfo{
+    VoxelInfo voxelInfo;
+};
+
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+
+void main(){
+
+    ivec3 voxelImageSize = imageSize(voxelImageOut);
+    if(any(greaterThanEqual(gl_GlobalInvocationID, voxelImageSize))){
+        return;
+    }
+    ivec3 UV = ivec3(gl_GlobalInvocationID);
+    
+    vec4 color = texelFetch(sampler3D(voxelImageIn, voxelSampler), UV, 0);
+    
+    if(color.a > 0){
+        uint flatIndex  = flattenVoxelUVToIndex(UV, voxelImageSize);
+        vec3 N          = unpackVoxelNormal(packedVoxelData[flatIndex].normal);
+        
+        float halfVoxelSize = voxelInfo.extent / float(voxelImageSize.x) * 0.5f;
+        vec3 pos            = voxelCoordinatesToWorldPosition(UV, voxelImageSize.x, voxelInfo, halfVoxelSize);
+        
+        vec3 up         = N.y >= 0.99 ? vec3(1, 0, 0) : vec3(0, 1, 0);
+        vec3 right      = normalize(cross(up, N));
+        up              = cross(N, right); 
+        mat3 toSurface  = mat3(right, up, N);
+    
+        vec3 secondaryBounce    = diffuseVoxelTraceHemisphere(toSurface, pos, voxelImageIn, voxelSampler, voxelInfo);
+        vec3 albedo             = unpackVoxelAlbedo(packedVoxelData[flatIndex].albedo);
+        color.rgb               += lambertBRDF(albedo) * secondaryBounce;
+    }
+    
+    imageStore(voxelImageOut, UV, color);
+}

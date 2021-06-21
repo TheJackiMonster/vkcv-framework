@@ -32,51 +32,6 @@ layout(set=0, binding=6) uniform VoxelInfoBuffer{
     VoxelInfo voxelInfo;
 };
 
-vec3 voxelConeTrace(texture3D voxelTexture, sampler voxelSampler, vec3 direction, vec3 startPosition, float coneAngleRadian){
-
-    int voxelResolution =  textureSize(sampler3D(voxelTexture, voxelSampler), 0).x;
-    float voxelSize     = voxelInfo.extent / voxelResolution;
-    float maxMip        = float(log2(voxelResolution));
-    float maxStableMip  = 4;    // must be the same as in Voxelization::voxelizeMeshes
-    maxMip              = min(maxMip, maxStableMip);
-    float d             = 2 * sqrt(3 * pow(voxelSize, 2));
-    vec3 color          = vec3(0);
-    float a             = 0;
-    
-    float coneAngleHalf = coneAngleRadian * 0.5f;
-    
-    int maxSamples = 128;
-    for(int i = 0; i < maxSamples; i++){
-        
-        vec3 samplePos      = startPosition + d * direction;
-        vec3 sampleUV       = worldToVoxelCoordinates(samplePos, voxelInfo);
-        
-        if(a >= 0.95 || any(lessThan(sampleUV, vec3(0))) || any(greaterThan(sampleUV, vec3(1)))){
-            break;
-        }
-        
-        float coneDiameter  = 2 * tan(coneAngleHalf) * d;
-        float mip           = log2(coneDiameter / voxelSize);
-        mip                 = min(mip, maxMip);
-    
-        vec4 voxelSample    = textureLod(sampler3D(voxelTexture, voxelSampler), sampleUV , mip);
-        
-        color               += (1 - a) * voxelSample.rgb;
-        voxelSample.a       = pow(voxelSample.a, 0.6);
-        a                   += (1 - a) * voxelSample.a;
-        
-        float minStepSize   = 0.15;
-        d                   += max(coneDiameter, minStepSize);
-        samplePos           = startPosition + d * direction;
-        sampleUV            = worldToVoxelCoordinates(samplePos, voxelInfo);
-    }
-    return color;
-}
-
-float degreeToRadian(float d){
-    return d / 180.f * pi;
-}
-
 vec3 cookTorrance(vec3 f0, float r, vec3 N, vec3 V, vec3 L){
     
     vec3 H  = normalize(L + V);
@@ -135,26 +90,12 @@ void main()	{
     up              = cross(N, right); 
     mat3 toSurface  = mat3(right, up, N);
     
-    float coneAngle = degreeToRadian(60.f);
-    vec3 diffuseTrace = vec3(0);
-    {
-        vec3 sampleDirection    = toSurface * vec3(0, 0, 1);
-        float weight            = pi / 4.f;
-        diffuseTrace            += weight * voxelConeTrace(voxelTexture, voxelSampler, sampleDirection, passPos, coneAngle);
-    }
-    for(int i = 0; i < 6;i++){
-        float theta             = 2 * pi / i;
-        float phi               = pi / 3;   // 60 degrees
-        vec3 sampleDirection    = toSurface * vec3(cos(theta) * sin(phi), sin(theta) * sin(phi), cos(phi));
-        float weight            = pi * (3.f / 4.f) / i;
-        vec3 trace              = voxelConeTrace(voxelTexture, voxelSampler, sampleDirection, passPos, coneAngle);
-        diffuseTrace            += trace * (1 - fresnelSchlick(NoV, f0)) * (1 - fresnelSchlick(cos(phi), f0));
-    }
+    vec3 diffuseTrace = diffuseVoxelTraceHemisphere(toSurface, passPos, voxelTexture, voxelSampler, voxelInfo);
     
     vec3 R                      = reflect(-V, N);
     float reflectionConeAngle   = degreeToRadian(roughnessToConeAngle(r));
     vec3 offsetTraceStart       = passPos + N_geo * 0.1f;
-    vec3 specularTrace          = voxelConeTrace(voxelTexture, voxelSampler, R, offsetTraceStart, reflectionConeAngle);
+    vec3 specularTrace          = voxelConeTrace(R, offsetTraceStart, reflectionConeAngle, voxelTexture, voxelSampler, voxelInfo);
     vec3 reflectionBRDF         = cookTorrance(f0, r, N, V, R);
     
 	outColor = 
