@@ -149,7 +149,7 @@ vec3 voxelConeTrace(vec3 direction, vec3 startPosition, float coneAngleRadian, t
         color               += (1 - a) * voxelSample.rgb;
         a                   += (1 - a) * voxelSample.a;
         
-        float minStepSize   = 0.5f;
+        float minStepSize   = 1.5f;
         d                   += max(coneDiameter, minStepSize);
         samplePos           = startPosition + d * direction;
         sampleUV            = worldToVoxelCoordinates(samplePos, voxelInfo);

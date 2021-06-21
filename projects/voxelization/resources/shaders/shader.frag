@@ -46,8 +46,8 @@ vec3 cookTorrance(vec3 f0, float r, vec3 N, vec3 V, vec3 L){
     return (F * D * G) / max(4 * NoV * NoL, 0.000001);
 }
 
-float roughnessToConeAngle(float r){
-    return mix(degreeToRadian(20), degreeToRadian(90), r);
+float roughnessToConeAngleDegree(float r){
+    return mix(degreeToRadian(3), degreeToRadian(60), r);
 }
 
 // from: "Next Generation Post Processing in Call Of Duty Advanced Warfare" slide page 123
@@ -99,7 +99,7 @@ void main()	{
     vec3 diffuseTrace = diffuseVoxelTraceHemisphere(toSurface, passPos, voxelTexture, voxelSampler, voxelInfo);
     
     vec3 R                      = reflect(-V, N);
-    float reflectionConeAngle   = degreeToRadian(roughnessToConeAngle(r));
+    float reflectionConeAngle   = roughnessToConeAngleDegree(r);
     vec3 offsetTraceStart       = passPos + N_geo * 0.1f;
     offsetTraceStart            += R * interleavedGradientNoise(gl_FragCoord.xy) * 0.5;
     vec3 specularTrace          = voxelConeTrace(R, offsetTraceStart, reflectionConeAngle, voxelTexture, voxelSampler, voxelInfo);
