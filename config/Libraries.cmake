@@ -17,6 +17,7 @@ set(vkcv_config_msg " - Library: ")
 include(${vkcv_config_lib}/GLFW.cmake)    # glfw-x11 / glfw-wayland					# libglfw3-dev
 include(${vkcv_config_lib}/Vulkan.cmake)  # vulkan-intel / vulkan-radeon / nvidia	# libvulkan-dev
 include(${vkcv_config_lib}/SPIRV_Cross.cmake)  # SPIRV-Cross	                    # libspirv_cross_c_shared
+include(${vkcv_config_lib}/Boost.cmake)  # Boost
 
 # cleanup of compiler flags
 if (vkcv_flags)
