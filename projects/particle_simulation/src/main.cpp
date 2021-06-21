@@ -5,9 +5,10 @@
 #include <chrono>
 #include "ParticleSystem.hpp"
 #include <random>
+#include <glm/gtc/matrix_access.hpp>
 
-int main(int argc, const char** argv) {
-    const char* applicationName = "Particlesystem";
+int main(int argc, const char **argv) {
+    const char *applicationName = "Particlesystem";
 
     uint32_t windowWidth = 800;
     uint32_t windowHeight = 600;
@@ -27,13 +28,14 @@ int main(int argc, const char** argv) {
             window,
             applicationName,
             VK_MAKE_VERSION(0, 0, 1),
-            { vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
+            {vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
             {},
-            { "VK_KHR_swapchain" }
+            {"VK_KHR_swapchain"}
     );
 
-    auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
-    uint16_t indices[3] = { 0, 1, 2 };
+    auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3,
+                                                           vkcv::BufferMemoryType::DEVICE_LOCAL);
+    uint16_t indices[3] = {0, 1, 2};
     particleIndexBuffer.fill(&indices[0], sizeof(indices));
 
 
@@ -44,7 +46,7 @@ int main(int argc, const char** argv) {
             core.getSwapchainImageFormat());
 
 
-    vkcv::PassConfig particlePassDefinition({ present_color_attachment });
+    vkcv::PassConfig particlePassDefinition({present_color_attachment});
     vkcv::PassHandle particlePass = core.createPass(particlePassDefinition);
 
     vkcv::PassConfig computePassDefinition({});
@@ -73,7 +75,8 @@ int main(int argc, const char** argv) {
     particleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
     particleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
 
-    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(particleShaderProgram.getReflectedDescriptors()[0]);
+    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(
+            particleShaderProgram.getReflectedDescriptors()[0]);
 
     vkcv::Buffer<glm::vec3> vertexBuffer = core.createBuffer<glm::vec3>(
             vkcv::BufferType::VERTEX,
@@ -86,7 +89,7 @@ int main(int argc, const char** argv) {
 
     std::vector<vkcv::VertexBinding> bindings;
     for (size_t i = 0; i < vertexAttachments.size(); i++) {
-        bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+        bindings.push_back(vkcv::VertexBinding(i, {vertexAttachments[i]}));
     }
 
     const vkcv::VertexLayout particleLayout(bindings);
@@ -97,12 +100,12 @@ int main(int argc, const char** argv) {
             UINT32_MAX,
             particlePass,
             {particleLayout},
-            { core.getDescriptorSet(descriptorSet).layout },
+            {core.getDescriptorSet(descriptorSet).layout},
             true);
 
-    const std::vector<glm::vec3> vertices = {glm::vec3(-0.02, 0.02, 0),
-                                             glm::vec3( 0.02, 0.02, 0),
-                                             glm::vec3(0, -0.02, 0)};
+    const std::vector<glm::vec3> vertices = {glm::vec3(-0.005, 0.005, 0),
+                                             glm::vec3(0.005, 0.005, 0),
+                                             glm::vec3(0, -0.005, 0)};
 
     vertexBuffer.fill(vertices);
 
@@ -113,7 +116,7 @@ int main(int argc, const char** argv) {
     vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
             vkcv::BufferType::UNIFORM,
             1
-            );
+    );
 
     vkcv::Buffer<glm::vec2> position = core.createBuffer<glm::vec2>(
             vkcv::BufferType::UNIFORM,
@@ -150,27 +153,65 @@ int main(int argc, const char** argv) {
 
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(), particleIndexBuffer.getCount());
-    vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+    const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(),
+                                particleIndexBuffer.getCount());
+    vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+    //vkcv::DrawcallInfo drawcalls(renderMesh, {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle)});
 
-    glm::vec2 pos = glm::vec2(1.f);
+    std::uniform_real_distribution<float> rdmVel(-0.1f, 0.1f);
+    std::default_random_engine rdmEngine;
 
-    window.e_mouseMove.add([&]( double offsetX, double offsetY) {
+    ParticleSystem particleSystem;
+    particleSystem.setMaxLifeTime(3.f);
+    glm::vec3 vel0 = glm::vec3(rdmVel(rdmEngine), rdmVel(rdmEngine), 0.0f);
+    glm::vec3 vel1 = glm::vec3(rdmVel(rdmEngine), rdmVel(rdmEngine), 0.0f);
+    glm::vec3 vel2 = glm::vec3(rdmVel(rdmEngine), rdmVel(rdmEngine), 0.0f);
+    particleSystem.addParticles({
+                                        Particle(glm::vec3(0.f, 1.f, 0.0f), vel0, 1.f),
+                                        Particle(glm::vec3(0.2f, 0.1f, 0.0f), vel1, 1.5f),
+                                        Particle(glm::vec3(0.15f, 0.f, 0.0f), vel2, 2.f),
+                                        Particle(glm::vec3(-0.15f, 0.1f, 0.0f), vel2, 2.5f),
+                                        Particle(glm::vec3(0.25f, 0.f, 0.0f), vel2, 3.f),
+                                        Particle(glm::vec3(-0.15f, 0.2f, 0.0f), vel2, 3.5f)});
+
+    glm::vec2 pos = glm::vec2(0.f);
+    glm::vec3 spawnPosition = glm::vec3(0.f);
+    glm::vec4 tempPosition = glm::vec4(0.f);
+
+    window.e_mouseMove.add([&](double offsetX, double offsetY) {
         pos = glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY));
+        // borders are assumed to be 0.5
+        //pos = glm::vec2((pos.x -0.5f * static_cast<float>(window.getWidth()))/static_cast<float>(window.getWidth()), (pos.y -0.5f * static_cast<float>(window.getHeight()))/static_cast<float>(window.getHeight()));
+        //borders are assumed to be 1
+        pos.x = (2 * pos.x - static_cast<float>(window.getWidth())) / static_cast<float>(window.getWidth());
+        pos.y = (2 * pos.y - static_cast<float>(window.getHeight())) / static_cast<float>(window.getHeight());
+        glm::vec4 camera_pos = glm::column(cameraManager.getCamera().getView(), 3);
+        std::cout << "camerapos: " << camera_pos.x << ", " << camera_pos.y << ", " << camera_pos.z << std::endl;
+        //glm::vec4 view_axis = glm::row(cameraManager.getCamera().getView(), 2);
+        // std::cout << "view_axis: " << view_axis.x << ", " << view_axis.y << ", " << view_axis.z << std::endl;
+        //std::cout << "Front: " << cameraManager.getCamera().getFront().x << ", " << cameraManager.getCamera().getFront().z << ", " << cameraManager.getCamera().getFront().z << std::endl;
+        glm::mat4 viewmat = cameraManager.getCamera().getView();
+        spawnPosition = glm::vec3(pos.x, pos.y, 0.f);
+        tempPosition = glm::inverse(viewmat) * glm::vec4(spawnPosition, 1.0f);
+        spawnPosition = glm::vec3(tempPosition.x, tempPosition.y, tempPosition.z);
+        particleSystem.setRespawnPos(glm::vec3(-spawnPosition.x, -spawnPosition.y, -spawnPosition.z));
+        std::cout << "respawn pos: " << spawnPosition.x << ", " << spawnPosition.y << ", " << spawnPosition.z << std::endl;
     });
 
     std::vector<glm::mat4> modelMatrices;
     std::vector<vkcv::DrawcallInfo> drawcalls;
-    for(auto particle :  particleSystem.getParticles()) {
+    for (auto particle :  particleSystem.getParticles()) {
+        modelMatrices.push_back(glm::translate(glm::mat4(1.f), particle.getPosition()));
         drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}));
     }
 
     auto start = std::chrono::system_clock::now();
 
-    glm::vec4 colorData = glm::vec4(1.0f,1.0f,0.0f,1.0f);
+    glm::vec4 colorData = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+    cameraManager.getCamera().setPosition(glm::vec3(0.f, 0.f, 0.f));
+    std::cout << "FRONT: " << cameraManager.getCamera().getFront().x << ", " << cameraManager.getCamera().getFront().y << ", " << cameraManager.getCamera().getFront().z << std::endl;
 
-    while (window.isWindowOpen())
-    {
+    while (window.isWindowOpen()) {
         window.pollEvents();
 
         uint32_t swapchainWidth, swapchainHeight;
@@ -180,25 +221,26 @@ int main(int argc, const char** argv) {
 
         color.fill(&colorData);
 
+
         position.fill(&pos);
         auto end = std::chrono::system_clock::now();
         float deltatime = std::chrono::duration<float>(end - start).count();
         start = end;
-        particleSystem.updateParticles( deltatime );
+        particleSystem.updateParticles(deltatime);
 
         modelMatrices.clear();
-        for(Particle particle :  particleSystem.getParticles()) {
+        for (Particle particle :  particleSystem.getParticles()) {
             modelMatrices.push_back(glm::translate(glm::mat4(1.f), particle.getPosition()));
         }
 
         cameraManager.getCamera().updateView(deltatime);
         std::vector<glm::mat4> mvp;
         mvp.clear();
-        for(const auto& m : modelMatrices){
+        for (const auto &m : modelMatrices) {
             mvp.push_back(m * cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView());
         }
 
-        vkcv::PushConstantData pushConstantData((void*)mvp.data(), sizeof(glm::mat4));
+        vkcv::PushConstantData pushConstantData((void *) mvp.data(), sizeof(glm::mat4));
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
         uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(particleSystem.getParticles().size()/64.f)),1,1};
