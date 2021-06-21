@@ -3,6 +3,7 @@
 #include <string.h>	// memcpy(3)
 #include <stdlib.h>	// calloc(3)
 #include <fx/gltf.h>
+#include <vulkan/vulkan.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG
 #define STBI_ONLY_PNG
@@ -123,6 +124,67 @@ bool materialHasTexture(const Material *const m, const PBRTextureTarget t)
 	return m->textureMask & bitflag(t);
 }
 
+int translateSamplerMode(const fx::gltf::Sampler::WrappingMode mode)
+{
+	switch (mode) {
+	case fx::gltf::Sampler::WrappingMode::ClampToEdge:
+		return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	case fx::gltf::Sampler::WrappingMode::MirroredRepeat:
+		return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+	case fx::gltf::Sampler::WrappingMode::Repeat:
+	default:
+		return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	}
+}
+
+int translateSampler(const fx::gltf::Sampler &src, vkcv::asset::Sampler &dst)
+{
+	dst.minLOD = 0;
+	dst.maxLOD = VK_LOD_CLAMP_NONE;
+
+	switch (src.minFilter) {
+	case fx::gltf::Sampler::MinFilter::None:
+	case fx::gltf::Sampler::MinFilter::Nearest:
+		dst.minFilter = VK_FILTER_NEAREST;
+		dst.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		dst.maxLOD = 0.25;
+	case fx::gltf::Sampler::MinFilter::Linear:
+		dst.minFilter = VK_FILTER_LINEAR;
+		dst.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		dst.maxLOD = 0.25;
+	case fx::gltf::Sampler::MinFilter::NearestMipMapNearest:
+		dst.minFilter = VK_FILTER_NEAREST;
+		dst.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	case fx::gltf::Sampler::MinFilter::LinearMipMapNearest:
+		dst.minFilter = VK_FILTER_LINEAR;
+		dst.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	case fx::gltf::Sampler::MinFilter::NearestMipMapLinear:
+		dst.minFilter = VK_FILTER_NEAREST;
+		dst.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	case fx::gltf::Sampler::MinFilter::LinearMipMapLinear:
+		dst.minFilter = VK_FILTER_LINEAR;
+		dst.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	}
+
+	switch (src.magFilter) {
+	case fx::gltf::Sampler::MagFilter::None:
+	case fx::gltf::Sampler::MagFilter::Nearest:
+		dst.magFilter = VK_FILTER_NEAREST;
+	case fx::gltf::Sampler::MagFilter::Linear:
+		dst.magFilter = VK_FILTER_LINEAR;
+	}
+
+	dst.addressModeU = translateSamplerMode(src.wrapS);
+	dst.addressModeV = translateSamplerMode(src.wrapT);
+	// XXX What's a good heuristic for W?
+	if (src.wrapS == src.wrapT)
+		dst.addressModeW = dst.addressModeU;
+	else
+		dst.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+	return 1;	// TODO return vkcv::success
+}
+
 int loadScene(const std::string &path, Scene &scene){
     fx::gltf::Document sceneObjects;
 
@@ -221,8 +283,8 @@ int loadScene(const std::string &path, Scene &scene){
                 }
             }
 
-            const fx::gltf::BufferView&	vertexBufferView	= sceneObjects.bufferViews[posAccessor.bufferView];
-            const fx::gltf::Buffer&		vertexBuffer		= sceneObjects.buffers[vertexBufferView.buffer];
+            const fx::gltf::BufferView&	vertexBufferView = sceneObjects.bufferViews[posAccessor.bufferView];
+            const fx::gltf::Buffer& vertexBuffer = sceneObjects.buffers[vertexBufferView.buffer];
 
             // only copy relevant part of vertex data
             uint32_t relevantBufferOffset = std::numeric_limits<uint32_t>::max();
@@ -307,7 +369,7 @@ int loadScene(const std::string &path, Scene &scene){
             free(data);
 
             textures.push_back({
-                0,
+                tex.sampler,
                 static_cast<uint8_t>(c),
                 static_cast<uint16_t>(w),
                 static_cast<uint16_t>(h),
@@ -350,9 +412,16 @@ int loadScene(const std::string &path, Scene &scene){
                    material.emissiveFactor[1],
                    material.emissiveFactor[2]
                }
-
             });
         }
+    }
+
+    samplers.reserve(sceneObjects.samplers.size());
+    for (const auto &it : sceneObjects.samplers) {
+	    samplers.push_back({});
+	    auto &sampler = samplers.back();
+	    if (translateSampler(it, sampler) != 1)	// TODO use vkcv::success
+		    return 0;	// TODO use vkcv::error
     }
 
     scene = {
