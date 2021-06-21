@@ -197,8 +197,9 @@ void Voxelization::voxelizeMeshes(
 	const int   maxStableMip    = 4;	// must be the same as in voxelConeTrace shader function
 	const float snapSize        = voxelSize * exp2(maxStableMip);
 
-	const glm::vec3 voxelVolumeCenter   = cameraPosition + (1.f / 3.f) * m_voxelExtent * cameraLookDirection;
-	voxelizationInfo.offset             = glm::floor(voxelVolumeCenter / snapSize) * snapSize;
+	glm::vec3 voxelVolumeCenter = cameraPosition + (1.f / 3.f) * m_voxelExtent * cameraLookDirection;
+	voxelVolumeCenter.y         = cameraPosition.y;
+	voxelizationInfo.offset     = glm::floor(voxelVolumeCenter / snapSize) * snapSize;
 
 	m_voxelInfoBuffer.fill({ voxelizationInfo });
 

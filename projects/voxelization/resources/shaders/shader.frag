@@ -39,13 +39,13 @@ vec3 voxelConeTrace(texture3D voxelTexture, sampler voxelSampler, vec3 direction
     float maxMip        = float(log2(voxelResolution));
     float maxStableMip  = 4;    // must be the same as in Voxelization::voxelizeMeshes
     maxMip              = min(maxMip, maxStableMip);
-    float d             = sqrt(3 * pow(voxelSize, 2));
+    float d             = 2 * sqrt(3 * pow(voxelSize, 2));
     vec3 color          = vec3(0);
     float a             = 0;
     
     float coneAngleHalf = coneAngleRadian * 0.5f;
     
-    int maxSamples = 16;
+    int maxSamples = 128;
     for(int i = 0; i < maxSamples; i++){
         
         vec3 samplePos      = startPosition + d * direction;
@@ -65,11 +65,34 @@ vec3 voxelConeTrace(texture3D voxelTexture, sampler voxelSampler, vec3 direction
         voxelSample.a       = pow(voxelSample.a, 0.6);
         a                   += (1 - a) * voxelSample.a;
         
-        d                   += coneDiameter;
+        float minStepSize   = 0.15;
+        d                   += max(coneDiameter, minStepSize);
         samplePos           = startPosition + d * direction;
         sampleUV            = worldToVoxelCoordinates(samplePos, voxelInfo);
     }
     return color;
+}
+
+float degreeToRadian(float d){
+    return d / 180.f * pi;
+}
+
+vec3 cookTorrance(vec3 f0, float r, vec3 N, vec3 V, vec3 L){
+    
+    vec3 H  = normalize(L + V);
+    
+    float NoH = clamp(dot(N, H), 0, 1);
+    float NoL = clamp(dot(N, L), 0, 1);
+    float NoV = clamp(dot(N, V), 0, 1);
+    
+    vec3    F           = fresnelSchlick(NoH, f0);
+    float   D           = GGXDistribution(r, NoH);
+    float   G           = GGXSmithShadowing(r, NoV, NoL);
+    return (F * D * G) / max(4 * NoV * NoL, 0.000001);
+}
+
+float roughnessToConeAngle(float r){
+    return mix(degreeToRadian(10), degreeToRadian(90), r);
 }
 
 void main()	{
@@ -79,12 +102,11 @@ void main()	{
     vec3 specularTexel  = texture(sampler2D(specularTexture, textureSampler), passUV).rgb;
     
     float r             = specularTexel.g;
-    r                   *= r;   // remapping roughness for perceptual linearity
     
     float metal         = specularTexel.b;
     vec3 albedo         = mix(albedoTexel, vec3(0), metal);
     vec3 f0_dielectric  = vec3(0.04f);
-    vec3 f0             = mix(f0_dielectric, albedo, metal);
+    vec3 f0             = mix(f0_dielectric, albedoTexel, metal);
     
     vec3 T      = normalize(passTangent.xyz);
     vec3 N_geo  = normalize(passNormal);
@@ -95,16 +117,11 @@ void main()	{
     vec3 N  = TBN * normalTexel;
     vec3 L  = lightInfo.L;
     vec3 V  = normalize(cameraPos - passPos);
-    vec3 H  = normalize(L + V);
     
-    float NoH = clamp(dot(N, H), 0, 1);
-    float NoL = clamp(dot(N, L), 0, 1);
+    float NoL = clamp(dot(N, L), 0, 1);    
     float NoV = clamp(dot(N, V), 0, 1);
     
-    vec3 F          = fresnelSchlick(NoH, f0);
-    float D         = GGXDistribution(r, NoH);
-    float G         = GGXSmithShadowing(r, NoV, NoL);
-    vec3 specular   = (F * D * G) / max(4 * NoV * NoL, 0.000001);
+    vec3 sunSpecular = cookTorrance(f0, r, N, V, L);
     
     vec3 sun        = lightInfo.sunStrength * lightInfo.sunColor * NoL;
     sun             *= shadowTest(passPos, lightInfo, shadowMap, shadowMapSampler);
@@ -118,7 +135,7 @@ void main()	{
     up              = cross(N, right); 
     mat3 toSurface  = mat3(right, up, N);
     
-    float coneAngle = 60.f / 180.f * pi;
+    float coneAngle = degreeToRadian(60.f);
     vec3 diffuseTrace = vec3(0);
     {
         vec3 sampleDirection    = toSurface * vec3(0, 0, 1);
@@ -130,9 +147,18 @@ void main()	{
         float phi               = pi / 3;   // 60 degrees
         vec3 sampleDirection    = toSurface * vec3(cos(theta) * sin(phi), sin(theta) * sin(phi), cos(phi));
         float weight            = pi * (3.f / 4.f) / i;
-        diffuseTrace            += voxelConeTrace(voxelTexture, voxelSampler, sampleDirection, passPos, coneAngle);
+        vec3 trace              = voxelConeTrace(voxelTexture, voxelSampler, sampleDirection, passPos, coneAngle);
+        diffuseTrace            += trace * (1 - fresnelSchlick(NoV, f0)) * (1 - fresnelSchlick(cos(phi), f0));
     }
     
-	outColor = (diffuse + specular) * sun + diffuse * diffuseTrace;
-    //outColor = diffuseTrace;
+    vec3 R                      = reflect(-V, N);
+    float reflectionConeAngle   = degreeToRadian(roughnessToConeAngle(r));
+    vec3 offsetTraceStart       = passPos + N_geo * 0.1f;
+    vec3 specularTrace          = voxelConeTrace(voxelTexture, voxelSampler, R, offsetTraceStart, reflectionConeAngle);
+    vec3 reflectionBRDF         = cookTorrance(f0, r, N, V, R);
+    
+	outColor = 
+        (diffuse + sunSpecular) * sun + 
+        lambertBRDF(albedo) * diffuseTrace + 
+        reflectionBRDF * specularTrace;
 }
