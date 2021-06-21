@@ -50,6 +50,12 @@ float roughnessToConeAngle(float r){
     return mix(degreeToRadian(20), degreeToRadian(90), r);
 }
 
+// from: "Next Generation Post Processing in Call Of Duty Advanced Warfare" slide page 123
+float interleavedGradientNoise(vec2 uv){
+    vec3 magic = vec3(0.06711056, 0.00583715, 62.9829189);
+    return fract(magic.z * fract(dot(uv, magic.xy)));
+}
+
 void main()	{
 
     vec3 albedoTexel    = texture(sampler2D(albedoTexture, textureSampler), passUV).rgb;
@@ -95,6 +101,7 @@ void main()	{
     vec3 R                      = reflect(-V, N);
     float reflectionConeAngle   = degreeToRadian(roughnessToConeAngle(r));
     vec3 offsetTraceStart       = passPos + N_geo * 0.1f;
+    offsetTraceStart            += R * interleavedGradientNoise(gl_FragCoord.xy) * 0.5;
     vec3 specularTrace          = voxelConeTrace(R, offsetTraceStart, reflectionConeAngle, voxelTexture, voxelSampler, voxelInfo);
     specularTrace               *= clamp(dot(N, R), 0, 1);
     vec3 reflectionBRDF         = cookTorrance(f0, r, N, V, R);

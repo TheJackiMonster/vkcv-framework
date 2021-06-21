@@ -130,7 +130,7 @@ vec3 voxelConeTrace(vec3 direction, vec3 startPosition, float coneAngleRadian, t
     
     float coneAngleHalf = coneAngleRadian * 0.5f;
     
-    int maxSamples = 128;
+    int maxSamples = 16;
     for(int i = 0; i < maxSamples; i++){
         
         vec3 samplePos      = startPosition + d * direction;
@@ -149,7 +149,7 @@ vec3 voxelConeTrace(vec3 direction, vec3 startPosition, float coneAngleRadian, t
         color               += (1 - a) * voxelSample.rgb;
         a                   += (1 - a) * voxelSample.a;
         
-        float minStepSize   = 0.15;
+        float minStepSize   = 0.5f;
         d                   += max(coneDiameter, minStepSize);
         samplePos           = startPosition + d * direction;
         sampleUV            = worldToVoxelCoordinates(samplePos, voxelInfo);
