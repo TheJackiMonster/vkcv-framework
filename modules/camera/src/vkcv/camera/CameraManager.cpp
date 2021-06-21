@@ -84,7 +84,6 @@ namespace vkcv::camera {
         }
     }
 
-    // todo: fix event catch speed
     void CameraManager::gamepadCallback(int gamepadIndex) {
         // handle camera switching
         GLFWgamepadstate gamepadState;

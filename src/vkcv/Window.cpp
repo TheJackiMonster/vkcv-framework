@@ -28,9 +28,6 @@ namespace vkcv {
 		glfwSetKeyCallback(m_window, Window::onKeyEvent);
 		glfwSetScrollCallback(m_window, Window::onMouseScrollEvent);
 		glfwSetCharCallback(m_window, Window::onCharEvent);
-	
-		glfwSetJoystickCallback(Window::onGamepadConnection);
-		glfwSetJoystickUserPointer(GLFW_JOYSTICK_1, this);
     }
 
     Window::~Window() {
@@ -60,8 +57,7 @@ namespace vkcv {
     }
 
     void Window::pollEvents() {
-		onGamepadEvent(GLFW_JOYSTICK_1);
-    	
+
     	for (auto glfwWindow : s_Windows) {
 			auto window = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
 			
@@ -70,9 +66,11 @@ namespace vkcv {
 			window->e_resize.unlock();
 			window->e_key.unlock();
 			window->e_mouseScroll.unlock();
+			window->e_gamepad.unlock();
     	}
 
         glfwPollEvents();
+        onGamepadEvent(GLFW_JOYSTICK_1);
 	
 		for (auto glfwWindow : s_Windows) {
 			auto window = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
@@ -82,6 +80,7 @@ namespace vkcv {
 			window->e_resize.lock();
 			window->e_key.lock();
 			window->e_mouseScroll.lock();
+			window->e_gamepad.lock();
 		}
     }
 
@@ -133,20 +132,14 @@ namespace vkcv {
 		}
     }
 
-    void Window::onGamepadConnection(int gamepadIndex, int gamepadEvent) {
-        if (gamepadEvent == GLFW_CONNECTED) {
-            auto window = static_cast<Window *>(glfwGetWindowUserPointer(s_Windows[0]));    // todo check for correct window
-
-            if (window != nullptr) {
-                glfwSetJoystickUserPointer(gamepadIndex, window);
-            }
-        }
-    }
-
     void Window::onGamepadEvent(int gamepadIndex) {
-        auto window = static_cast<Window *>(glfwGetJoystickUserPointer(gamepadIndex));
+        int activeWindowIndex = std::find_if(s_Windows.begin(),
+                                             s_Windows.end(),
+                                             [](GLFWwindow* window){return glfwGetWindowAttrib(window, GLFW_FOCUSED);})
+                                - s_Windows.begin();
+        auto window = static_cast<Window *>(glfwGetWindowUserPointer(s_Windows[activeWindowIndex]));
 
-        if ( window != nullptr && glfwJoystickPresent(gamepadIndex)) {
+        if (window != nullptr && glfwJoystickPresent(gamepadIndex)) {
             window->e_gamepad(gamepadIndex);
         }
     }
