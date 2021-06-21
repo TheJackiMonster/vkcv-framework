@@ -122,8 +122,8 @@ int main(int argc, const char **argv) {
 
     glm::vec3 minVelocity = glm::vec3(-0.1f,-0.1f,0.f);
     glm::vec3 maxVelocity = glm::vec3(0.1f,0.1f,0.f);
-    glm::vec2 lifeTime = glm::vec2(0.f,2.f);
-    ParticleSystem particleSystem = ParticleSystem( 100 , minVelocity, maxVelocity, lifeTime);
+    glm::vec2 lifeTime = glm::vec2(0.f,5.f);
+    ParticleSystem particleSystem = ParticleSystem( 1000 , minVelocity, maxVelocity, lifeTime);
 
     vkcv::Buffer<Particle> particleBuffer = core.createBuffer<Particle>(
             vkcv::BufferType::STORAGE,
@@ -186,7 +186,7 @@ int main(int argc, const char **argv) {
         spawnPosition = glm::vec3(pos.x, pos.y, 0.f);
         tempPosition = viewmat * glm::vec4(spawnPosition, 1.0f);
         spawnPosition = glm::vec3(tempPosition.x, tempPosition.y, tempPosition.z);
-        particleSystem.setRespawnPos(glm::vec3(-spawnPosition.x, -spawnPosition.y, spawnPosition.z));
+        particleSystem.setRespawnPos(glm::vec3(-spawnPosition.x, spawnPosition.y, spawnPosition.z));
 //        std::cout << "respawn pos: " << spawnPosition.x << ", " << spawnPosition.y << ", " << spawnPosition.z << std::endl;
     });
 
