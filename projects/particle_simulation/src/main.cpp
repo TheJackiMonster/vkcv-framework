@@ -19,10 +19,7 @@ int main(int argc, const char **argv) {
             true
     );
 
-    vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
-    cameraManager.getCamera().setNearFar(0.000000001f, 10.f);
-
-    window.initEvents();
+    vkcv::camera::CameraManager cameraManager(window);
 
     vkcv::Core core = vkcv::Core::create(
             window,
@@ -43,7 +40,7 @@ int main(int argc, const char **argv) {
     const vkcv::AttachmentDescription present_color_attachment(
             vkcv::AttachmentOperation::STORE,
             vkcv::AttachmentOperation::CLEAR,
-            core.getSwapchainImageFormat());
+            core.getSwapchain().getFormat());
 
 
     vkcv::PassConfig particlePassDefinition({present_color_attachment});
@@ -94,14 +91,14 @@ int main(int argc, const char **argv) {
 
     const vkcv::VertexLayout particleLayout(bindings);
 
-    const vkcv::PipelineConfig particlePipelineDefinition(
+    const vkcv::PipelineConfig particlePipelineDefinition{
             particleShaderProgram,
             UINT32_MAX,
             UINT32_MAX,
             particlePass,
             {particleLayout},
             {core.getDescriptorSet(descriptorSet).layout},
-            true);
+            true};
 
     const std::vector<glm::vec3> vertices = {glm::vec3(-0.005, 0.005, 0),
                                              glm::vec3(0.005, 0.005, 0),
@@ -170,18 +167,25 @@ int main(int argc, const char **argv) {
         // borders are assumed to be 0.5
         //pos = glm::vec2((pos.x -0.5f * static_cast<float>(window.getWidth()))/static_cast<float>(window.getWidth()), (pos.y -0.5f * static_cast<float>(window.getHeight()))/static_cast<float>(window.getHeight()));
         //borders are assumed to be 1
-        pos.x = (2 * pos.x - static_cast<float>(window.getWidth())) / static_cast<float>(window.getWidth());
-        pos.y = (2 * pos.y - static_cast<float>(window.getHeight())) / static_cast<float>(window.getHeight());
-        glm::vec4 camera_pos = glm::column(cameraManager.getCamera().getView(), 3);
+        pos.x = (-2 * pos.x + static_cast<float>(window.getWidth())) / static_cast<float>(window.getWidth());
+        pos.y = (-2 * pos.y + static_cast<float>(window.getHeight())) / static_cast<float>(window.getHeight());
+        glm::vec4 row1 = glm::row(cameraManager.getCamera(0).getView(), 0);
+        glm::vec4 row2 = glm::row(cameraManager.getCamera(0).getView(), 1);
+        glm::vec4 row3 = glm::row(cameraManager.getCamera(0).getView(), 2);
+        glm::vec4 camera_pos = glm::column(cameraManager.getCamera(0).getView(), 3);
+        std::cout << "row1: " << row1.x << ", " << row1.y << ", " << row1.z << std::endl;
+        std::cout << "row2: " << row2.x << ", " << row2.y << ", " << row2.z << std::endl;
+        std::cout << "row3: " << row3.x << ", " << row3.y << ", " << row3.z << std::endl;
+        std::cout << "camerapos: " << camera_pos.x << ", " << camera_pos.y << ", " << camera_pos.z << std::endl;
         std::cout << "camerapos: " << camera_pos.x << ", " << camera_pos.y << ", " << camera_pos.z << std::endl;
         //glm::vec4 view_axis = glm::row(cameraManager.getCamera().getView(), 2);
         // std::cout << "view_axis: " << view_axis.x << ", " << view_axis.y << ", " << view_axis.z << std::endl;
         //std::cout << "Front: " << cameraManager.getCamera().getFront().x << ", " << cameraManager.getCamera().getFront().z << ", " << cameraManager.getCamera().getFront().z << std::endl;
-        glm::mat4 viewmat = cameraManager.getCamera().getView();
+        glm::mat4 viewmat = cameraManager.getCamera(0).getView();
         spawnPosition = glm::vec3(pos.x, pos.y, 0.f);
-        tempPosition = glm::inverse(viewmat) * glm::vec4(spawnPosition, 1.0f);
+        tempPosition = viewmat * glm::vec4(spawnPosition, 1.0f);
         spawnPosition = glm::vec3(tempPosition.x, tempPosition.y, tempPosition.z);
-        particleSystem.setRespawnPos(glm::vec3(-spawnPosition.x, -spawnPosition.y, -spawnPosition.z));
+        particleSystem.setRespawnPos(glm::vec3(-spawnPosition.x, -spawnPosition.y, spawnPosition.z));
         std::cout << "respawn pos: " << spawnPosition.x << ", " << spawnPosition.y << ", " << spawnPosition.z << std::endl;
     });
 
@@ -195,8 +199,12 @@ int main(int argc, const char **argv) {
     auto start = std::chrono::system_clock::now();
 
     glm::vec4 colorData = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
-    cameraManager.getCamera().setPosition(glm::vec3(0.f, 0.f, 0.f));
-    std::cout << "FRONT: " << cameraManager.getCamera().getFront().x << ", " << cameraManager.getCamera().getFront().y << ", " << cameraManager.getCamera().getFront().z << std::endl;
+    uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+    uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+
+    cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
+    cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
 
     while (window.isWindowOpen()) {
         window.pollEvents();
@@ -211,20 +219,20 @@ int main(int argc, const char **argv) {
 
         position.fill(&pos);
         auto end = std::chrono::system_clock::now();
-        float deltatime = std::chrono::duration<float>(end - start).count();
+        auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         start = end;
-        particleSystem.updateParticles(deltatime);
+        particleSystem.updateParticles(0.000001 * static_cast<float>(deltatime.count()));
 
         modelMatrices.clear();
         for (Particle particle :  particleSystem.getParticles()) {
             modelMatrices.push_back(glm::translate(glm::mat4(1.f), particle.getPosition()));
         }
 
-        cameraManager.getCamera().updateView(deltatime);
+        cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         std::vector<glm::mat4> mvp;
         mvp.clear();
         for (const auto &m : modelMatrices) {
-            mvp.push_back(m * cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView());
+            mvp.push_back(m * cameraManager.getActiveCamera().getMVP());
         }
 
         vkcv::PushConstantData pushConstantData((void *) mvp.data(), sizeof(glm::mat4));
