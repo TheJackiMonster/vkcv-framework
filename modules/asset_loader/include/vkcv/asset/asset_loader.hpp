@@ -158,10 +158,16 @@ enum class PBRTextureTarget {
  * contact with bit-level operations. */
 #define bitflag(ENUM) (0x1u << ((unsigned)(ENUM)))
 
-/** To signal that a certain texture target is active in a Material struct, its
+/**
+ * To signal that a certain texture target is active in a Material struct, its
  * bit is set in the textureMask. You can use this function to check that:
  * Material mat = ...;
- * if (materialHasTexture(&mat, baseColor)) {...} */
+ * if (materialHasTexture(&mat, baseColor)) {...}
+ * @param m The material to query
+ * @param t The target to query for
+ * @return Boolean to signal whether the texture target is active in the
+ * material.
+ */
 bool materialHasTexture(const Material *const m, const PBRTextureTarget t);
 
 /** With these enums, 0 is reserved to signal uninitialized or invalid data. */
