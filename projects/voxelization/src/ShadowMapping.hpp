@@ -1,5 +1,6 @@
 #pragma once
 #include <vkcv/core.hpp>
+#include <vkcv/camera/Camera.hpp>
 
 #define GLM_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_LEFT_HANDED
@@ -24,7 +25,8 @@ public:
 		const glm::vec3&                    lightColor,
 		const float                         lightStrength,
 		const std::vector<vkcv::Mesh>&      meshes,
-		const std::vector<glm::mat4>&       modelMatrices);
+		const std::vector<glm::mat4>&       modelMatrices,
+		const vkcv::camera::Camera&         camera);
 
 	vkcv::ImageHandle   getShadowMap();
 	vkcv::SamplerHandle getShadowSampler();

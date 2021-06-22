@@ -374,7 +374,8 @@ int main(int argc, const char** argv) {
 			lightColor,
 			lightStrength,
 			meshes,
-			modelMatrices);
+			modelMatrices,
+			cameraManager.getActiveCamera());
 
 		// voxelization
 		voxelization.setVoxelExtent(voxelizationExtent);

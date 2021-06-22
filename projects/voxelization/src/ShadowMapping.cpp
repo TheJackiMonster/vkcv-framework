@@ -30,7 +30,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	};
 	const vkcv::PassConfig shadowPassConfig(shadowAttachments);
 	m_shadowMapPass = corePtr->createPass(shadowPassConfig);
-	const vkcv::PipelineConfig shadowPipeConfig{
+	vkcv::PipelineConfig shadowPipeConfig{
 		shadowShader,
 		shadowMapResolution,
 		shadowMapResolution,
@@ -39,6 +39,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 		{},
 		false
 	};
+	shadowPipeConfig.m_EnableDepthClamping = true;
 	m_shadowMapPipe = corePtr->createGraphicsPipeline(shadowPipeConfig);
 
 	// shadow map
@@ -56,7 +57,8 @@ void ShadowMapping::recordShadowMapRendering(
 	const glm::vec3&                    lightColor,
 	const float                         lightStrength,
 	const std::vector<vkcv::Mesh>&      meshes,
-	const std::vector<glm::mat4>&       modelMatrices) {
+	const std::vector<glm::mat4>&       modelMatrices,
+	const vkcv::camera::Camera&         camera) {
 
 	LightInfo lightInfo;
 	lightInfo.sunColor      = lightColor;

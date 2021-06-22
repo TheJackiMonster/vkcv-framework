@@ -146,7 +146,7 @@ namespace vkcv
         // rasterization state
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
                 {},
-                false,
+                config.m_EnableDepthClamping,
                 false,
                 vk::PolygonMode::eFill,
                 vk::CullModeFlagBits::eNone,

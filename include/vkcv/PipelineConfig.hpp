@@ -25,6 +25,7 @@ namespace vkcv {
         bool                                  m_UseDynamicViewport;
         bool                                  m_UseConservativeRasterization = false;
         PrimitiveTopology                     m_PrimitiveTopology = PrimitiveTopology::TriangleList;
+        bool                                  m_EnableDepthClamping = false;
     };
 
 }
