@@ -72,6 +72,55 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &type)
 }
 
 /**
+ * This function fills the array of vertex attributes of a vkcv::asset::Mesh
+ * object based on the description of attributes for a fx::gltf::Primitive.
+ * @param src The description of attribute objects from the fx-gltf library
+ * @param dst The array of vertex attributes stored in an asset::Mesh object
+ * @return return code
+ */
+int getVertexAttributes(const fx::gltf::Attributes &src,
+		const fx::gltf::Document &gltf,
+		std::vector<VertexAttribute> &dst)
+{
+	dst.clear();
+	dst.reserve(src.size());
+	for (const auto &attrib : src) {
+		const fx::gltf::Accessor &accessor = gltf.accessors[attrib.second];
+
+		dst.push_back({});
+		VertexAttribute &att = dst.back();
+		if (attrib.first == "POSITION") {
+			att.type = PrimitiveType::POSITION;
+		} else if (attrib.first == "NORMAL") {
+			att.type = PrimitiveType::NORMAL;
+		} else if (attrib.first == "TANGENT") {
+			att.type = PrimitiveType::TANGENT;
+		} else if (attrib.first == "TEXCOORD_0") {
+			att.type = PrimitiveType::TEXCOORD_0;
+		} else if (attrib.first == "TEXCOORD_1") {
+			att.type = PrimitiveType::TEXCOORD_1;
+		} else if (attrib.first == "COLOR0") {
+			att.type = PrimitiveType::COLOR_0;
+		} else if (attrib.first == "JOINTS_0") {
+			att.type = PrimitiveType::JOINTS_0;
+		} else if (attrib.first == "WEIGHTS_0") {
+			att.type = PrimitiveType::WEIGHTS_0;
+		} else {
+			att.type = PrimitiveType::UNDEFINED;
+			return ASSET_ERROR;
+		}
+		const fx::gltf::BufferView &buf = gltf.bufferViews[accessor.bufferView];
+		att.offset = buf.byteOffset;
+		att.length = buf.byteLength;
+		att.stride = buf.byteStride;
+		att.componentType = static_cast<ComponentType>(accessor.componentType);
+		if ((att.componentCount = getCompCount(accessor.type) == ASSET_ERROR))
+			return ASSET_ERROR;
+	}
+	return ASSET_SUCCESS;
+}
+
+/**
  * This function computes the modelMatrix out of the data given in the gltf file. It also checks, whether a modelMatrix was given.
  * @param translation possible translation vector (default 0,0,0)
  * @param scale possible scale vector (default 1,1,1)
@@ -205,6 +254,10 @@ int loadScene(const std::string &path, Scene &scene){
     // file has to contain at least one mesh
     if (sceneObjects.meshes.size() == 0) return ASSET_ERROR;
 
+    // TODO finding the accessor for the position attribute should be done
+    // differently... it's needed to get the vertex buffer view for each mesh
+    // which is only needed to get the vertex buffer for that mesh... none of
+    // this is a good solution.
     fx::gltf::Accessor posAccessor;
     std::vector<VertexAttribute> vertexAttributes;
     std::vector<Material> materials;
@@ -225,33 +278,16 @@ int loadScene(const std::string &path, Scene &scene){
             vertexAttributes.clear();
             vertexAttributes.reserve(objectPrimitive.attributes.size());
 
+	    if (getVertexAttributes(objectPrimitive.attributes, sceneObjects,
+				    vertexAttributes) != ASSET_SUCCESS) {
+		    vkcv_log(LogLevel::ERROR, "Failed to get vertex attributes");
+		    return ASSET_ERROR;
+	    }
+	    // FIXME Part of the not-so-good solution for finding the vertex
+	    // buffer... see comment above declaration of posAccessor
             for (auto const & attrib : objectPrimitive.attributes) {
-
                 fx::gltf::Accessor accessor =  sceneObjects.accessors[attrib.second];
-                VertexAttribute attribute;
-
-                if (attrib.first == "POSITION") {
-                    attribute.type = PrimitiveType::POSITION;
-                    posAccessor = accessor;
-                } else if (attrib.first == "NORMAL") {
-                    attribute.type = PrimitiveType::NORMAL;
-                } else if (attrib.first == "TEXCOORD_0") {
-                    attribute.type = PrimitiveType::TEXCOORD_0;
-                } else if (attrib.first == "TEXCOORD_1") {
-                    attribute.type = PrimitiveType::TEXCOORD_1;
-                } else {
-                    return ASSET_ERROR;
-                }
-
-                attribute.offset = sceneObjects.bufferViews[accessor.bufferView].byteOffset;
-                attribute.length = sceneObjects.bufferViews[accessor.bufferView].byteLength;
-                attribute.stride = sceneObjects.bufferViews[accessor.bufferView].byteStride;
-		        attribute.componentType = static_cast<ComponentType>(accessor.componentType);
-
-		if ((attribute.componentCount = getCompCount(accessor.type) == ASSET_ERROR))
-			return ASSET_ERROR;
-
-                vertexAttributes.push_back(attribute);
+                if (attrib.first == "POSITION") posAccessor = accessor;
             }
 
             IndexType indexType;

@@ -170,13 +170,10 @@ enum class PBRTextureTarget {
  */
 bool materialHasTexture(const Material *const m, const PBRTextureTarget t);
 
-/** With these enums, 0 is reserved to signal uninitialized or invalid data. */
+/* With these enums, 0 is reserved to signal uninitialized or invalid data. */
 enum class PrimitiveType : uint32_t {
-    UNDEFINED = 0,
-    POSITION = 1,
-    NORMAL = 2,
-    TEXCOORD_0 = 3,
-    TEXCOORD_1 = 4
+    UNDEFINED = 0, POSITION = 1, NORMAL, TANGENT, TEXCOORD_0, TEXCOORD_1,
+    COLOR_0, JOINTS_0, WEIGHTS_0
 };
 
 /** These integer values are used the same way in OpenGL, Vulkan and glTF. This
