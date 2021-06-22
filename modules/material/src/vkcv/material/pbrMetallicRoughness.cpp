@@ -43,16 +43,22 @@ namespace vkcv::material
 
     std::vector<DescriptorBinding> PBRMaterial::getDescriptorBindings() noexcept
     {
-        return {{DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT},
-                {DescriptorType::SAMPLER      , 1, ShaderStage::FRAGMENT},
-                {DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT},
-                {DescriptorType::SAMPLER      , 1, ShaderStage::FRAGMENT},
-                {DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT},
-                {DescriptorType::SAMPLER      , 1, ShaderStage::FRAGMENT},
-                {DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT},
-                {DescriptorType::SAMPLER      , 1, ShaderStage::FRAGMENT},
-                {DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT},
-                {DescriptorType::SAMPLER      , 1, ShaderStage::FRAGMENT}};
+		static std::vector<DescriptorBinding> bindings;
+		
+		if (bindings.empty()) {
+			bindings.emplace_back(0, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(1, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(2, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(3, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(4, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(5, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(6, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(7, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(8, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(9, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+		}
+    	
+        return bindings;
     }
 
     PBRMaterial PBRMaterial::create(
