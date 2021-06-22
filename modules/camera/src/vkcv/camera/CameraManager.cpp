@@ -33,8 +33,10 @@ namespace vkcv::camera {
     }
 
     void CameraManager::resizeCallback(int width, int height) {
-        for (size_t i = 0; i < m_cameras.size(); i++) {
-            getCamera(i).setRatio(static_cast<float>(width) / static_cast<float>(height));;
+        if (glfwGetWindowAttrib(m_window.getWindow(), GLFW_ICONIFIED) == GLFW_FALSE) {
+            for (size_t i = 0; i < m_cameras.size(); i++) {
+                getCamera(i).setRatio(static_cast<float>(width) / static_cast<float>(height));;
+            }
         }
     }
 
@@ -182,7 +184,9 @@ namespace vkcv::camera {
     }
 
     void CameraManager::update(double deltaTime) {
-		getActiveController().updateCamera(deltaTime, getActiveCamera());
+        if (glfwGetWindowAttrib(m_window.getWindow(), GLFW_FOCUSED) == GLFW_TRUE) {
+            getActiveController().updateCamera(deltaTime, getActiveCamera());
+        }
 	}
 	
 }
