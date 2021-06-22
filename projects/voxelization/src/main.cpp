@@ -325,10 +325,11 @@ int main(int argc, const char** argv) {
 
 	vkcv::gui::GUI gui(core, window);
 
-	glm::vec2   lightAnglesDegree   = glm::vec2(90.f, 0.f);
-	glm::vec3   lightColor          = glm::vec3(1);
-	float       lightStrength       = 25.f;
-    float       maxShadowDistance   = 30.f;
+	glm::vec2   lightAnglesDegree       = glm::vec2(90.f, 0.f);
+	glm::vec3   lightColor              = glm::vec3(1);
+	float       lightStrength           = 25.f;
+	float       maxShadowDistance       = 30.f;
+	float       shadowExponentialWarp   = 60.f;
 
 	int     voxelVisualisationMip   = 0;
 	float   voxelizationExtent      = 30.f;
@@ -377,6 +378,7 @@ int main(int argc, const char** argv) {
 			lightColor,
 			lightStrength,
 			maxShadowDistance,
+			shadowExponentialWarp,
 			meshes,
 			modelMatrices,
 			cameraManager.getActiveCamera(),
@@ -444,6 +446,7 @@ int main(int argc, const char** argv) {
 		ImGui::DragFloat("Sun strength",            &lightStrength);
 		ImGui::DragFloat("Max shadow distance",     &maxShadowDistance);
 		maxShadowDistance = std::max(maxShadowDistance, 1.f);
+		ImGui::DragFloat("Shadow exponential warp", &shadowExponentialWarp);
 
 		ImGui::Checkbox("Draw voxel visualisation", &renderVoxelVis);
 		ImGui::SliderInt("Visualisation mip",       &voxelVisualisationMip, 0, 7);

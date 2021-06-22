@@ -1,3 +1,8 @@
+#ifndef SHADOW_MAPPING_INC
+#define SHADOW_MAPPING_INC
+
+#include "lightInfo.inc"
+
 float shadowTest(vec3 worldPos, LightInfo lightInfo, texture2D shadowMap, sampler shadowMapSampler){
     vec4 lightPos = lightInfo.lightMatrix * vec4(worldPos, 1);
     lightPos /= lightPos.w;
@@ -9,8 +14,9 @@ float shadowTest(vec3 worldPos, LightInfo lightInfo, texture2D shadowMap, sample
     
     lightPos.z = clamp(lightPos.z, 0, 1);
     
+    // using exponential shadow mapping
     float shadowMapSample = texture(sampler2D(shadowMap, shadowMapSampler), lightPos.xy).r;
-    float bias = 0.01f;
-    shadowMapSample += bias;
-    return shadowMapSample < lightPos.z ? 0 : 1;
+    return clamp(exp(-lightInfo.exponentialWarp * lightPos.z) * shadowMapSample, 0, 1);
 }
+
+#endif // #ifndef SHADOW_MAPPING_INC
