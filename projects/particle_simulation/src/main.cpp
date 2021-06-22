@@ -201,8 +201,8 @@ int main(int argc, const char **argv) {
     uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 
     cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
-    cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-    cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
+    cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
+    cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
     while (window.isWindowOpen()) {
         window.pollEvents();
@@ -218,19 +218,19 @@ int main(int argc, const char **argv) {
         auto end = std::chrono::system_clock::now();
         float deltatime = 0.000001 * static_cast<float>( std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() );
         start = end;
-        particleSystem.updateParticles(deltatime);
+//        particleSystem.updateParticles(deltatime);
 
         cameraManager.update(deltatime);
         std::vector<glm::mat4> mvp;
         mvp.clear();
-        mvp.push_back( cameraManager.getCamera(0).getMVP());
+        mvp.push_back( cameraManager.getCamera(1).getMVP());
 
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
         glm::vec4 pushData = glm::vec4(particleSystem.getRespawnPos(),deltatime);
 
         vkcv::PushConstantData pushConstantDataCompute( &pushData, sizeof(glm::vec4));
-        uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(particleSystem.getParticles().size()/64.f)),1,1};
+        uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(particleSystem.getParticles().size()/256.f)),1,1};
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline,
                                               computeDispatchCount,
