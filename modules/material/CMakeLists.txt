@@ -20,10 +20,10 @@ set(vkcv_material_sources
 add_library(vkcv_material STATIC ${vkcv_material_sources})
 
 # link the required libraries to the module
-target_link_libraries(vkcv_material vkcv)
+target_link_libraries(vkcv_material vkcv ${vkcv_libraries})
 
 # including headers of dependencies and the VkCV framework
-target_include_directories(vkcv_material SYSTEM BEFORE PRIVATE ${vkcv_include})
+target_include_directories(vkcv_material SYSTEM BEFORE PRIVATE ${vkcv_include} ${vkcv_includes})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_material BEFORE PUBLIC ${vkcv_material_include})
