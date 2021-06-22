@@ -9,6 +9,7 @@
 #include "Voxelization.hpp"
 #include <glm/glm.hpp>
 #include "vkcv/gui/GUI.hpp"
+#include "ShadowMapping.hpp"
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";
@@ -143,28 +144,6 @@ int main(int argc, const char** argv) {
 	}
 	const vkcv::VertexLayout vertexLayout (vertexBindings);
 
-	// shadow map
-	vkcv::SamplerHandle shadowSampler = core.createSampler(
-		vkcv::SamplerFilterType::NEAREST,
-		vkcv::SamplerFilterType::NEAREST,
-		vkcv::SamplerMipmapMode::NEAREST,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
-	);
-	const vk::Format shadowMapFormat = vk::Format::eD16Unorm;
-	const uint32_t shadowMapResolution = 1024;
-	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution);
-
-	// light info buffer
-	struct LightInfo {
-		glm::vec3   direction;
-		float       padding;
-		glm::vec3   sunColor    = glm::vec3(1.f);
-		float       sunStrength = 20.f;
-		glm::mat4   lightMatrix;
-	};
-	LightInfo lightInfo;
-	vkcv::Buffer lightBuffer = core.createBuffer<LightInfo>(vkcv::BufferType::UNIFORM, sizeof(glm::vec3));
-
 	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = 
 		core.createDescriptorSet({ forwardProgram.getReflectedDescriptors()[0] });
 
@@ -264,35 +243,6 @@ int main(int argc, const char** argv) {
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-	vkcv::ShaderProgram shadowShader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/shadow.vert",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		shadowShader.addShader(shaderStage, path);
-	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/shadow.frag",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		shadowShader.addShader(shaderStage, path);
-	});
-
-	const std::vector<vkcv::AttachmentDescription> shadowAttachments = {
-		vkcv::AttachmentDescription(vkcv::AttachmentOperation::STORE, vkcv::AttachmentOperation::CLEAR, shadowMapFormat)
-	};
-	const vkcv::PassConfig shadowPassConfig(shadowAttachments);
-	const vkcv::PassHandle shadowPass = core.createPass(shadowPassConfig);
-	const vkcv::PipelineConfig shadowPipeConfig{
-		shadowShader,
-		shadowMapResolution,
-		shadowMapResolution,
-		shadowPass,
-		vertexLayout,
-		{},
-		false
-	};
-	const vkcv::PipelineHandle shadowPipe = core.createGraphicsPipeline(shadowPipeConfig);
-
-	std::vector<std::array<glm::mat4, 2>> mainPassMatrices;
-	std::vector<glm::mat4> mvpLight;
-
 	bool renderVoxelVis = false;
 	window.e_key.add([&renderVoxelVis](int key ,int scancode, int action, int mods) {
 		if (key == GLFW_KEY_V && action == GLFW_PRESS) {
@@ -306,8 +256,10 @@ int main(int argc, const char** argv) {
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		tonemappingProgram.addShader(shaderStage, path);
 	});
-	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(tonemappingProgram.getReflectedDescriptors()[0]);
-	vkcv::PipelineHandle tonemappingPipeline = core.createComputePipeline(tonemappingProgram,
+	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(
+		tonemappingProgram.getReflectedDescriptors()[0]);
+	vkcv::PipelineHandle tonemappingPipeline = core.createComputePipeline(
+		tonemappingProgram,
 		{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
 
 	// model matrices per mesh
@@ -320,24 +272,19 @@ int main(int argc, const char** argv) {
 		}
 	}
 
-	// prepare drawcalls
+	// prepare meshes
 	std::vector<vkcv::Mesh> meshes;
 	for (int i = 0; i < scene.vertexGroups.size(); i++) {
-		vkcv::Mesh mesh(
-			vertexBufferBindings[i], 
-			indexBuffers[i].getVulkanHandle(), 
-			scene.vertexGroups[i].numIndices);
+		vkcv::Mesh mesh(vertexBufferBindings[i], indexBuffers[i].getVulkanHandle(), scene.vertexGroups[i].numIndices);
 		meshes.push_back(mesh);
 	}
 
 	std::vector<vkcv::DrawcallInfo> drawcalls;
-	std::vector<vkcv::DrawcallInfo> shadowDrawcalls;
 	for (int i = 0; i < meshes.size(); i++) {
 
 		drawcalls.push_back(vkcv::DrawcallInfo(meshes[i], { 
 			vkcv::DescriptorSetUsage(0, core.getDescriptorSet(forwardShadingDescriptorSet).vulkanHandle),
 			vkcv::DescriptorSetUsage(1, core.getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) }));
-		shadowDrawcalls.push_back(vkcv::DrawcallInfo(meshes[i], {}));
 	}
 
 	vkcv::SamplerHandle voxelSampler = core.createSampler(
@@ -346,6 +293,8 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerMipmapMode::LINEAR,
 		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
 
+	ShadowMapping shadowMapping(&core, vertexLayout);
+
 	Voxelization::Dependencies voxelDependencies;
 	voxelDependencies.colorBufferFormat = colorBufferFormat;
 	voxelDependencies.depthBufferFormat = depthBufferFormat;
@@ -353,9 +302,9 @@ int main(int argc, const char** argv) {
 	Voxelization voxelization(
 		&core,
 		voxelDependencies,
-		lightBuffer.getHandle(),
-		shadowMap.getHandle(),
-		shadowSampler,
+		shadowMapping.getLightInfoBuffer(),
+		shadowMapping.getShadowMap(),
+		shadowMapping.getShadowSampler(),
 		voxelSampler);
 
 	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
@@ -363,22 +312,25 @@ int main(int argc, const char** argv) {
 	// write forward pass descriptor set
 	vkcv::DescriptorWrites forwardDescriptorWrites;
 	forwardDescriptorWrites.uniformBufferWrites = {
-		vkcv::UniformBufferDescriptorWrite(0, lightBuffer.getHandle()),
+		vkcv::UniformBufferDescriptorWrite(0, shadowMapping.getLightInfoBuffer()),
 		vkcv::UniformBufferDescriptorWrite(3, cameraPosBuffer.getHandle()),
 		vkcv::UniformBufferDescriptorWrite(6, voxelization.getVoxelInfoBufferHandle()) };
 	forwardDescriptorWrites.sampledImageWrites = {
-		vkcv::SampledImageDescriptorWrite(1, shadowMap.getHandle()),
+		vkcv::SampledImageDescriptorWrite(1, shadowMapping.getShadowMap()),
 		vkcv::SampledImageDescriptorWrite(4, voxelization.getVoxelImageHandle()) };
 	forwardDescriptorWrites.samplerWrites = { 
-		vkcv::SamplerDescriptorWrite(2, shadowSampler),
+		vkcv::SamplerDescriptorWrite(2, shadowMapping.getShadowSampler()),
 		vkcv::SamplerDescriptorWrite(5, voxelSampler) };
 	core.writeDescriptorSet(forwardShadingDescriptorSet, forwardDescriptorWrites);
 
 	vkcv::gui::GUI gui(core, window);
 
-	glm::vec2 lightAngles(90.f, 0.f);
-	int voxelVisualisationMip = 0;
-	float voxelizationExtent = 30.f;
+	glm::vec2   lightAnglesDegree   = glm::vec2(90.f, 0.f);
+	glm::vec3   lightColor          = glm::vec3(1);
+	float       lightStrength       = 25.f;
+
+	int     voxelVisualisationMip   = 0;
+	float   voxelizationExtent      = 30.f;
 
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
@@ -412,57 +364,19 @@ int main(int argc, const char** argv) {
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 		cameraPosBuffer.fill({ cameraManager.getActiveCamera().getPosition() });
 
-		glm::vec2 lightAngleRadian = glm::radians(lightAngles);
-		lightInfo.direction = glm::normalize(glm::vec3(
-			std::cos(lightAngleRadian.x) * std::cos(lightAngleRadian.y),
-			std::sin(lightAngleRadian.x),
-			std::cos(lightAngleRadian.x) * std::sin(lightAngleRadian.y)));
-
-		const float shadowProjectionSize = 20.f;
-		glm::mat4 projectionLight = glm::ortho(
-			-shadowProjectionSize,
-			shadowProjectionSize,
-			-shadowProjectionSize,
-			shadowProjectionSize,
-			-shadowProjectionSize,
-			shadowProjectionSize);
-
-		glm::mat4 vulkanCorrectionMatrix(1.f);
-		vulkanCorrectionMatrix[2][2] = 0.5;
-		vulkanCorrectionMatrix[3][2] = 0.5;
-		projectionLight = vulkanCorrectionMatrix * projectionLight;
-
-		const glm::mat4 viewLight = glm::lookAt(glm::vec3(0), -lightInfo.direction, glm::vec3(0, -1, 0));
-
-		lightInfo.lightMatrix = projectionLight * viewLight;
-		lightBuffer.fill({ lightInfo });
-
-		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();
-
-		mainPassMatrices.clear();
-		mvpLight.clear();
-		for (const auto& m : modelMatrices) {
-			mainPassMatrices.push_back({ viewProjectionCamera * m, m });
-			mvpLight.push_back(lightInfo.lightMatrix * m);
-		}
-
-		vkcv::PushConstantData pushConstantData((void*)mainPassMatrices.data(), 2 * sizeof(glm::mat4));
-		const std::vector<vkcv::ImageHandle> renderTargets = { colorBuffer, depthBuffer };
-
-		const vkcv::PushConstantData shadowPushConstantData((void*)mvpLight.data(), sizeof(glm::mat4));
-
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
 		// shadow map
-		core.recordDrawcallsToCmdStream(
+		glm::vec2 lightAngleRadian = glm::radians(lightAnglesDegree);
+		shadowMapping.recordShadowMapRendering(
 			cmdStream,
-			shadowPass,
-			shadowPipe,
-			shadowPushConstantData,
-			shadowDrawcalls,
-			{ shadowMap.getHandle() });
-		core.prepareImageForSampling(cmdStream, shadowMap.getHandle());
+			lightAngleRadian,
+			lightColor,
+			lightStrength,
+			meshes,
+			modelMatrices);
 
+		// voxelization
 		voxelization.setVoxelExtent(voxelizationExtent);
 		voxelization.voxelizeMeshes(
 			cmdStream, 
@@ -473,10 +387,20 @@ int main(int argc, const char** argv) {
 			perMeshDescriptorSets);
 
 		// main pass
+		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();
+
+		std::vector<std::array<glm::mat4, 2>> mainPassMatrices;
+		for (const auto& m : modelMatrices) {
+			mainPassMatrices.push_back({ viewProjectionCamera * m, m });
+		}
+
+		const vkcv::PushConstantData            pushConstantData((void*)mainPassMatrices.data(), 2 * sizeof(glm::mat4));
+		const std::vector<vkcv::ImageHandle>    renderTargets = { colorBuffer, depthBuffer };
+
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-            forwardPass,
-            forwardPipeline,
+			forwardPass,
+			forwardPipeline,
 			pushConstantData,
 			drawcalls,
 			renderTargets);
@@ -506,12 +430,13 @@ int main(int argc, const char** argv) {
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
 
+		// draw UI
 		gui.beginGUI();
 
 		ImGui::Begin("Settings");
-		ImGui::DragFloat2("Light angles",   &lightAngles.x);
-		ImGui::ColorEdit3("Sun color",      &lightInfo.sunColor.x);
-		ImGui::DragFloat("Sun strength",    &lightInfo.sunStrength);
+		ImGui::DragFloat2("Light angles",           &lightAnglesDegree.x);
+		ImGui::ColorEdit3("Sun color",              &lightColor.x);
+		ImGui::DragFloat("Sun strength",            &lightStrength);
 		ImGui::Checkbox("Draw voxel visualisation", &renderVoxelVis);
 		ImGui::SliderInt("Visualisation mip",       &voxelVisualisationMip, 0, 7);
 		ImGui::DragFloat("Voxelization extent",     &voxelizationExtent, 1.f, 0.f);

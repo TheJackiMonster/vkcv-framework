@@ -13,7 +13,9 @@ add_executable(voxelization src/main.cpp)
 
 target_sources(voxelization PRIVATE
     src/Voxelization.hpp
-    src/Voxelization.cpp)
+    src/Voxelization.cpp
+    src/ShadowMapping.hpp
+    src/ShadowMapping.cpp)
 
 # this should fix the execution path to load local files from the project (for MSVC)
 if(MSVC)
