@@ -11,15 +11,17 @@ namespace vkcv {
 
 	static std::vector<GLFWwindow*> s_Windows;
 
-    Window::Window(GLFWwindow *window)
-            : m_window(window) {
+    Window::Window(GLFWwindow *window) :
+    m_window(window),
+	e_mouseButton(true),
+	e_mouseMove(true),
+	e_mouseScroll(true),
+	e_resize(true),
+	e_key(true),
+	e_char(true),
+	e_gamepad(true)
+    {
 		glfwSetWindowUserPointer(m_window, this);
-	
-		this->e_mouseButton.lock();
-		this->e_mouseMove.lock();
-		this->e_resize.lock();
-		this->e_key.lock();
-		this->e_mouseScroll.lock();
 	
 		// combine Callbacks with Events
 		glfwSetMouseButtonCallback(m_window, Window::onMouseButtonEvent);
@@ -63,9 +65,10 @@ namespace vkcv {
 			
 			window->e_mouseButton.unlock();
 			window->e_mouseMove.unlock();
+			window->e_mouseScroll.unlock();
 			window->e_resize.unlock();
 			window->e_key.unlock();
-			window->e_mouseScroll.unlock();
+			window->e_char.unlock();
 			window->e_gamepad.unlock();
     	}
 
@@ -77,9 +80,10 @@ namespace vkcv {
 		
 			window->e_mouseButton.lock();
 			window->e_mouseMove.lock();
+			window->e_mouseScroll.lock();
 			window->e_resize.lock();
 			window->e_key.lock();
-			window->e_mouseScroll.lock();
+			window->e_char.lock();
 			window->e_gamepad.lock();
 		}
     }

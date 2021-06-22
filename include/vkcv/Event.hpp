@@ -27,7 +27,7 @@ namespace vkcv {
     private:
         std::vector< event_function<T...> > m_functions;
         uint32_t m_id_counter;
-        std::mutex m_mutex;
+		std::mutex m_mutex;
 
     public:
 
@@ -75,17 +75,21 @@ namespace vkcv {
          * locks the event so its function handles won't be called
          */
         void lock() {
-        	m_mutex.lock();
+			m_mutex.lock();
         }
 	
 		/**
 		* unlocks the event so its function handles can be called after locking
 		*/
         void unlock() {
-        	m_mutex.unlock();
+			m_mutex.unlock();
         }
 
-        event() = default;
+        explicit event(bool locked = false) {
+        	if (locked) {
+        		lock();
+        	}
+        }
 
         event(const event &other) = delete;
 
