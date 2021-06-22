@@ -149,6 +149,7 @@ namespace vkcv {
                                              s_Windows.end(),
                                              [](GLFWwindow* window){return glfwGetWindowAttrib(window, GLFW_FOCUSED);})
                                 - s_Windows.begin();
+        activeWindowIndex *= (activeWindowIndex < s_Windows.size());    // fixes index getting out of bounds (e.g. if there is no focused window)
         auto window = static_cast<Window *>(glfwGetWindowUserPointer(s_Windows[activeWindowIndex]));
 
         if (window != nullptr && glfwJoystickPresent(gamepadIndex)) {
