@@ -328,6 +328,7 @@ int main(int argc, const char** argv) {
 	glm::vec2   lightAnglesDegree   = glm::vec2(90.f, 0.f);
 	glm::vec3   lightColor          = glm::vec3(1);
 	float       lightStrength       = 25.f;
+    float       maxShadowDistance   = 30.f;
 
 	int     voxelVisualisationMip   = 0;
 	float   voxelizationExtent      = 30.f;
@@ -366,6 +367,8 @@ int main(int argc, const char** argv) {
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
+		voxelization.updateVoxelOffset(cameraManager.getActiveCamera());
+
 		// shadow map
 		glm::vec2 lightAngleRadian = glm::radians(lightAnglesDegree);
 		shadowMapping.recordShadowMapRendering(
@@ -373,16 +376,17 @@ int main(int argc, const char** argv) {
 			lightAngleRadian,
 			lightColor,
 			lightStrength,
+			maxShadowDistance,
 			meshes,
 			modelMatrices,
-			cameraManager.getActiveCamera());
+			cameraManager.getActiveCamera(),
+			voxelization.getVoxelOffset(),
+			voxelization.getVoxelExtent());
 
 		// voxelization
 		voxelization.setVoxelExtent(voxelizationExtent);
 		voxelization.voxelizeMeshes(
-			cmdStream, 
-			cameraManager.getActiveCamera().getPosition(), 
-			cameraManager.getActiveCamera().getFront(),
+			cmdStream,
 			meshes, 
 			modelMatrices,
 			perMeshDescriptorSets);
@@ -438,6 +442,9 @@ int main(int argc, const char** argv) {
 		ImGui::DragFloat2("Light angles",           &lightAnglesDegree.x);
 		ImGui::ColorEdit3("Sun color",              &lightColor.x);
 		ImGui::DragFloat("Sun strength",            &lightStrength);
+		ImGui::DragFloat("Max shadow distance",     &maxShadowDistance);
+		maxShadowDistance = std::max(maxShadowDistance, 1.f);
+
 		ImGui::Checkbox("Draw voxel visualisation", &renderVoxelVis);
 		ImGui::SliderInt("Visualisation mip",       &voxelVisualisationMip, 0, 7);
 		ImGui::DragFloat("Voxelization extent",     &voxelizationExtent, 1.f, 0.f);

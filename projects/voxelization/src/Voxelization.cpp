@@ -69,9 +69,10 @@ vkcv::ShaderProgram loadSecondaryBounceShader() {
 	return shader;
 }
 
-const uint32_t voxelResolution = 128;
-uint32_t voxelCount = voxelResolution * voxelResolution * voxelResolution;
-const vk::Format voxelizationDummyFormat = vk::Format::eR8Unorm;
+const uint32_t      voxelResolution = 128;
+uint32_t            voxelCount = voxelResolution * voxelResolution * voxelResolution;
+const vk::Format    voxelizationDummyFormat = vk::Format::eR8Unorm;
+const int           maxStableMip = 4;	// must be the same as in voxelConeTrace shader function
 
 Voxelization::Voxelization(
 	vkcv::Core* corePtr,
@@ -211,27 +212,13 @@ Voxelization::Voxelization(
 
 void Voxelization::voxelizeMeshes(
 	vkcv::CommandStreamHandle                       cmdStream,
-	const glm::vec3&                                cameraPosition,
-	const glm::vec3&                                cameraLookDirection,
 	const std::vector<vkcv::Mesh>&                  meshes,
 	const std::vector<glm::mat4>&                   modelMatrices,
 	const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets) {
 
-	VoxelizationInfo voxelizationInfo;
-	voxelizationInfo.extent = m_voxelExtent;
+	m_voxelInfoBuffer.fill({ m_voxelInfo });
 
-	// move voxel offset with camera in voxel sized steps
-	const float voxelSize       = m_voxelExtent / voxelResolution;
-	const int   maxStableMip    = 4;	// must be the same as in voxelConeTrace shader function
-	const float snapSize        = voxelSize * exp2(maxStableMip);
-
-	glm::vec3 voxelVolumeCenter = cameraPosition + (1.f / 3.f) * m_voxelExtent * cameraLookDirection;
-	voxelVolumeCenter.y         = cameraPosition.y;
-	voxelizationInfo.offset     = glm::floor(voxelVolumeCenter / snapSize) * snapSize;
-
-	m_voxelInfoBuffer.fill({ voxelizationInfo });
-
-	const float voxelizationHalfExtent = 0.5f * m_voxelExtent;
+	const float voxelizationHalfExtent = 0.5f * m_voxelInfo.extent;
 	const glm::mat4 voxelizationProjection = glm::ortho(
 		-voxelizationHalfExtent,
 		voxelizationHalfExtent,
@@ -240,7 +227,7 @@ void Voxelization::voxelizeMeshes(
 		-voxelizationHalfExtent,
 		voxelizationHalfExtent);
 
-	const glm::mat4 voxelizationView = glm::translate(glm::mat4(1.f), -voxelizationInfo.offset);
+	const glm::mat4 voxelizationView = glm::translate(glm::mat4(1.f), -m_voxelInfo.offset);
 	const glm::mat4 voxelizationViewProjection = voxelizationProjection * voxelizationView;
 
 	std::vector<std::array<glm::mat4, 2>> voxelizationMatrices;
@@ -357,8 +344,19 @@ void Voxelization::renderVoxelVisualisation(
 		renderTargets);
 }
 
+void Voxelization::updateVoxelOffset(const vkcv::camera::Camera& camera) {
+
+	// move voxel offset with camera in voxel sized steps
+	const float voxelSize   = m_voxelInfo.extent / voxelResolution;
+	const float snapSize    = voxelSize * exp2(maxStableMip);
+
+	glm::vec3 voxelVolumeCenter = camera.getPosition() + (1.f / 3.f) * m_voxelInfo.extent * glm::normalize(camera.getFront());
+	voxelVolumeCenter.y         = camera.getPosition().y;
+	m_voxelInfo.offset          = glm::floor(voxelVolumeCenter / snapSize) * snapSize;
+}
+
 void Voxelization::setVoxelExtent(float extent) {
-	m_voxelExtent = extent;
+	m_voxelInfo.extent = extent;
 }
 
 vkcv::ImageHandle Voxelization::getVoxelImageHandle() const {
@@ -367,4 +365,12 @@ vkcv::ImageHandle Voxelization::getVoxelImageHandle() const {
 
 vkcv::BufferHandle Voxelization::getVoxelInfoBufferHandle() const {
 	return m_voxelInfoBuffer.getHandle();
+}
+
+glm::vec3 Voxelization::getVoxelOffset() const{
+	return m_voxelInfo.offset;
+}
+
+float Voxelization::getVoxelExtent() const {
+	return m_voxelInfo.extent;
 }

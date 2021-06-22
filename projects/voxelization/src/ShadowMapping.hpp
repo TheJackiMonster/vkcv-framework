@@ -24,9 +24,12 @@ public:
 		const glm::vec2&                    lightAngleRadian,
 		const glm::vec3&                    lightColor,
 		const float                         lightStrength,
+		float                               maxShadowDistance,
 		const std::vector<vkcv::Mesh>&      meshes,
 		const std::vector<glm::mat4>&       modelMatrices,
-		const vkcv::camera::Camera&         camera);
+		const vkcv::camera::Camera&         camera,
+		const glm::vec3&                    voxelVolumeOffset,
+		float                               voxelVolumeExtent);
 
 	vkcv::ImageHandle   getShadowMap();
 	vkcv::SamplerHandle getShadowSampler();

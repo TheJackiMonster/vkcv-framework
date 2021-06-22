@@ -15,8 +15,96 @@ vkcv::ShaderProgram loadShadowShader() {
 	return shader;
 }
 
+glm::mat4 computeShadowViewProjectionMatrix(
+	const glm::vec3&            lightDirection, 
+	const vkcv::camera::Camera& camera, 
+	float                       maxShadowDistance,
+	const glm::vec3&            voxelVolumeOffset,
+	float                       voxelVolumeExtent) {
+
+	const glm::vec3 cameraPos   = camera.getPosition();
+	const glm::vec3 forward     = glm::normalize(camera.getFront());
+	glm::vec3 up                = glm::normalize(camera.getUp());
+	const glm::vec3 right       = glm::normalize(glm::cross(forward, up));
+	up = glm::cross(right, forward);
+
+	const float fov         = camera.getFov();
+	const float aspectRatio = camera.getRatio();
+
+	float near;
+	float far;
+	camera.getNearFar(near, far);
+	far = std::min(maxShadowDistance, far);
+
+	const glm::vec3 nearCenter  = cameraPos + forward * near;
+	const float nearUp          = near * tan(fov * 0.5);
+	const float nearRight       = nearUp * aspectRatio;
+	
+	const glm::vec3 farCenter   = cameraPos + forward * far;
+	const float farUp           = far * tan(fov * 0.5);
+	const float farRight        = farUp * aspectRatio;
+
+	std::array<glm::vec3, 8> viewFrustumCorners = {
+		nearCenter + right * nearRight + nearUp * up,
+		nearCenter + right * nearRight - nearUp * up,
+		nearCenter - right * nearRight + nearUp * up,
+		nearCenter - right * nearRight - nearUp * up,
+
+		farCenter + right * farRight + farUp * up,
+		farCenter + right * farRight - farUp * up,
+		farCenter - right * farRight + farUp * up,
+		farCenter - right * farRight - farUp * up
+	};
+
+	std::array<glm::vec3, 8> voxelVolumeCorners = {
+		voxelVolumeOffset + voxelVolumeExtent * glm::vec3(1, 1, 1),
+		voxelVolumeOffset + voxelVolumeExtent * glm::vec3(1, 1, -1),
+		voxelVolumeOffset + voxelVolumeExtent * glm::vec3(1, -1, 1),
+		voxelVolumeOffset + voxelVolumeExtent * glm::vec3(1, -1, -1),
+
+		voxelVolumeOffset + voxelVolumeExtent * glm::vec3(-1, 1, 1),
+		voxelVolumeOffset + voxelVolumeExtent * glm::vec3(-1, 1, -1),
+		voxelVolumeOffset + voxelVolumeExtent * glm::vec3(-1, -1, 1),
+		voxelVolumeOffset + voxelVolumeExtent * glm::vec3(-1, -1, -1),
+	};
+
+	glm::vec3 minView(std::numeric_limits<float>::max());
+	glm::vec3 maxView(std::numeric_limits<float>::lowest());
+
+	const glm::mat4 view = glm::lookAt(glm::vec3(0), -lightDirection, glm::vec3(0, -1, 0));
+
+	auto getMinMaxView = [&](std::array<glm::vec3, 8> points) {
+		for (const glm::vec3& p : points) {
+			const auto& pView = glm::vec3(view * glm::vec4(p, 1));
+			minView = glm::min(minView, pView);
+			maxView = glm::max(maxView, pView);
+		}
+	};
+
+	getMinMaxView(viewFrustumCorners);
+	getMinMaxView(voxelVolumeCorners);
+
+	glm::vec3 scale  = glm::vec3(2) / (maxView - minView);
+	glm::vec3 offset = -0.5f * (maxView + minView) * scale;
+
+	glm::mat4 crop(1);
+	crop[0][0] = scale.x;
+	crop[1][1] = scale.y;
+	crop[2][2] = scale.z;
+
+	crop[3][0] = offset.x;
+	crop[3][1] = offset.y;
+	crop[3][2] = offset.z;
+
+	glm::mat4 vulkanCorrectionMatrix(1.f);
+	vulkanCorrectionMatrix[2][2] = 0.5;
+	vulkanCorrectionMatrix[3][2] = 0.5;
+
+	return vulkanCorrectionMatrix * crop * view;
+}
+
 const vk::Format    shadowMapFormat     = vk::Format::eD16Unorm;
-const uint32_t      shadowMapResolution = 1024;
+const uint32_t      shadowMapResolution = 2048;
 
 ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vertexLayout) : 
 	m_corePtr(corePtr),
@@ -55,10 +143,13 @@ void ShadowMapping::recordShadowMapRendering(
 	const vkcv::CommandStreamHandle&    cmdStream, 
 	const glm::vec2&                    lightAngleRadian,
 	const glm::vec3&                    lightColor,
-	const float                         lightStrength,
+	float                               lightStrength,
+	float                               maxShadowDistance,
 	const std::vector<vkcv::Mesh>&      meshes,
 	const std::vector<glm::mat4>&       modelMatrices,
-	const vkcv::camera::Camera&         camera) {
+	const vkcv::camera::Camera&         camera,
+	const glm::vec3&                    voxelVolumeOffset,
+	float                               voxelVolumeExtent) {
 
 	LightInfo lightInfo;
 	lightInfo.sunColor      = lightColor;
@@ -68,23 +159,12 @@ void ShadowMapping::recordShadowMapRendering(
 		std::sin(lightAngleRadian.x),
 		std::cos(lightAngleRadian.x) * std::sin(lightAngleRadian.y)));
 
-	const float shadowProjectionSize = 20.f;
-	glm::mat4 projectionLight = glm::ortho(
-		-shadowProjectionSize,
-		shadowProjectionSize,
-		-shadowProjectionSize,
-		shadowProjectionSize,
-		-shadowProjectionSize,
-		shadowProjectionSize);
-
-	glm::mat4 vulkanCorrectionMatrix(1.f);
-	vulkanCorrectionMatrix[2][2] = 0.5;
-	vulkanCorrectionMatrix[3][2] = 0.5;
-	projectionLight = vulkanCorrectionMatrix * projectionLight;
-
-	const glm::mat4 viewLight = glm::lookAt(glm::vec3(0), lightInfo.direction, glm::vec3(0, -1, 0));
-
-	lightInfo.lightMatrix = projectionLight * viewLight;
+	lightInfo.lightMatrix = computeShadowViewProjectionMatrix(
+		lightInfo.direction,
+		camera,
+		maxShadowDistance,
+		voxelVolumeOffset,
+		voxelVolumeExtent);
 	m_lightInfoBuffer.fill({ lightInfo });
 
 	std::vector<glm::mat4> mvpLight;

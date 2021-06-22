@@ -1,6 +1,7 @@
 #pragma once
 #include <vkcv/Core.hpp>
 #include <glm/glm.hpp>
+#include <vkcv/camera/Camera.hpp>
 
 class Voxelization{
 public:
@@ -19,8 +20,6 @@ public:
 
 	void voxelizeMeshes(
 		vkcv::CommandStreamHandle                       cmdStream,
-		const glm::vec3&                                cameraPosition,
-		const glm::vec3&                                cameraLookDirection,
 		const std::vector<vkcv::Mesh>&                  meshes,
 		const std::vector<glm::mat4>&                   modelMatrices,
 		const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets);
@@ -31,10 +30,14 @@ public:
 		const std::vector<vkcv::ImageHandle>&   renderTargets,
 		uint32_t                                mipLevel);
 
+	void updateVoxelOffset(const vkcv::camera::Camera& camera);
 	void setVoxelExtent(float extent);
 
-	vkcv::ImageHandle getVoxelImageHandle() const;
-	vkcv::BufferHandle getVoxelInfoBufferHandle() const;
+	vkcv::ImageHandle   getVoxelImageHandle() const;
+	vkcv::BufferHandle  getVoxelInfoBufferHandle() const;
+
+	glm::vec3   getVoxelOffset() const;
+	float       getVoxelExtent() const;
 
 private:
 	vkcv::Core* m_corePtr;
@@ -74,5 +77,5 @@ private:
 	};
 	vkcv::Buffer<VoxelizationInfo> m_voxelInfoBuffer;
 
-	float m_voxelExtent = 30.f;
+	VoxelizationInfo m_voxelInfo;
 };
