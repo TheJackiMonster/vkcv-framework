@@ -189,8 +189,8 @@ typedef struct {
     uint32_t offset;			// offset in bytes
     uint32_t length;			// length of ... in bytes
     uint32_t stride;			// stride in bytes
-    ComponentType componentType;		// eg. 5126 for float
-    uint8_t  componentCount;	// eg. 3 for vec3
+    ComponentType componentType;	// eg. 5126 for float
+    uint8_t  componentCount;		// eg. 3 for vec3
 } VertexAttribute;
 
 /** This struct represents one (possibly the only) part of a mesh. There is

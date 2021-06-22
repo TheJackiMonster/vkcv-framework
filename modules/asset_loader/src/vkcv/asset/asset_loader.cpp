@@ -50,13 +50,17 @@ void print_what (const std::exception& e, const std::string &path) {
 	}
 }
 
-/** Translate the component type used in the index accessor of fx-gltf to our
+/**
+ * Translate the component type used in the index accessor of fx-gltf to our
  * enum for index type. The reason we have defined an incompatible enum that
  * needs translation is that only a subset of component types is valid for
- * indices and we want to catch these incompatibilities here. */
-enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &t)
+ * indices and we want to catch these incompatibilities here.
+ * @param t The component type
+ * @return enum representation
+ */
+enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &type)
 {
-	switch (t) {
+	switch (type) {
 	case fx::gltf::Accessor::ComponentType::UnsignedByte:
 		return IndexType::UINT8;
 	case fx::gltf::Accessor::ComponentType::UnsignedShort:
@@ -64,8 +68,6 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &t)
 	case fx::gltf::Accessor::ComponentType::UnsignedInt:
 		return IndexType::UINT32;
 	default:
-        std::cerr << "ERROR: Index type not supported: " <<
-			static_cast<uint16_t>(t) << std::endl;
 		return IndexType::UNDEFINED;
 	}
 }
@@ -272,7 +274,7 @@ int loadScene(const std::string &path, Scene &scene){
 
                 indexType = getIndexType(indexAccessor.componentType);
                 if (indexType == IndexType::UNDEFINED){
-                    vkcv_log(LogLevel::ERROR, "Index Type undefined.");
+                    vkcv_log(LogLevel::ERROR, "Index Type undefined or not supported.");
                     return ASSET_ERROR;
                 }
             }
