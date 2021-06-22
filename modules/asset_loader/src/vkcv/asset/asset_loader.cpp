@@ -182,7 +182,7 @@ int translateSampler(const fx::gltf::Sampler &src, vkcv::asset::Sampler &dst)
 	else
 		dst.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
-	return 1;	// TODO return vkcv::success
+	return ASSET_SUCCESS;
 }
 
 int loadScene(const std::string &path, Scene &scene){
@@ -196,16 +196,16 @@ int loadScene(const std::string &path, Scene &scene){
         }
     } catch (const std::system_error &err) {
         print_what(err, path);
-        return 0;
+        return ASSET_ERROR;
     } catch (const std::exception &e) {
         print_what(e, path);
-        return 0;
+        return ASSET_ERROR;
     }
     size_t pos = path.find_last_of("/");
     auto dir = path.substr(0, pos);
 
     // file has to contain at least one mesh
-    if (sceneObjects.meshes.size() == 0) return 0;
+    if (sceneObjects.meshes.size() == 0) return ASSET_ERROR;
 
     fx::gltf::Accessor posAccessor;
     std::vector<VertexAttribute> vertexAttributes;
@@ -242,7 +242,7 @@ int loadScene(const std::string &path, Scene &scene){
                 } else if (attrib.first == "TEXCOORD_1") {
                     attribute.type = PrimitiveType::TEXCOORD_1;
                 } else {
-                    return 0;
+                    return ASSET_ERROR;
                 }
 
                 attribute.offset = sceneObjects.bufferViews[accessor.bufferView].byteOffset;
@@ -253,7 +253,7 @@ int loadScene(const std::string &path, Scene &scene){
                 if (convertTypeToInt(accessor.type) != 10) {
                     attribute.componentCount = convertTypeToInt(accessor.type);
                 } else {
-                    return 0;
+                    return ASSET_ERROR;
                 }
 
                 vertexAttributes.push_back(attribute);
@@ -272,14 +272,14 @@ int loadScene(const std::string &path, Scene &scene){
                     const void *const ptr = ((char*)indexBuffer.data.data()) + off;
                     if (!memcpy(indexBufferData.data(), ptr, indexBufferView.byteLength)) {
                         vkcv_log(LogLevel::ERROR, "Copying index buffer data");
-                        return 0;
+                        return ASSET_ERROR;
                     }
                 }
 
                 indexType = getIndexType(indexAccessor.componentType);
                 if (indexType == IndexType::UNDEFINED){
                     vkcv_log(LogLevel::ERROR, "Index Type undefined.");
-                    return 0;
+                    return ASSET_ERROR;
                 }
             }
 
@@ -303,7 +303,7 @@ int loadScene(const std::string &path, Scene &scene){
                 const void *const ptr = ((char*)vertexBuffer.data.data()) + relevantBufferOffset;
                 if (!memcpy(vertexBufferData.data(), ptr, relevantBufferSize)) {
                     vkcv_log(LogLevel::ERROR, "Copying vertex buffer data");
-                    return 0;
+                    return ASSET_ERROR;
                 }
             }
 
@@ -357,7 +357,7 @@ int loadScene(const std::string &path, Scene &scene){
             c = 4;	// FIXME hardcoded to always have RGBA channel layout
             if (!data) {
                 vkcv_log(LogLevel::ERROR, "Loading texture image data.")
-                return 0;
+                return ASSET_ERROR;
             }
             const size_t byteLen = w * h * c;
 
@@ -366,7 +366,7 @@ int loadScene(const std::string &path, Scene &scene){
             if (!memcpy(imgdata.data(), data, byteLen)) {
                 vkcv_log(LogLevel::ERROR, "Copying texture image data")
                 free(data);
-                return 0;
+                return ASSET_ERROR;
             }
             free(data);
 
@@ -422,8 +422,8 @@ int loadScene(const std::string &path, Scene &scene){
     for (const auto &it : sceneObjects.samplers) {
 	    samplers.push_back({});
 	    auto &sampler = samplers.back();
-	    if (translateSampler(it, sampler) != 1)	// TODO use vkcv::success
-		    return 0;	// TODO use vkcv::error
+	    if (translateSampler(it, sampler) != ASSET_SUCCESS)
+		    return ASSET_ERROR;
     }
 
     scene = {
@@ -434,7 +434,7 @@ int loadScene(const std::string &path, Scene &scene){
             samplers
     };
 
-    return 1;
+    return ASSET_SUCCESS;
 }
 
 }

@@ -45,6 +45,11 @@
 
 namespace vkcv::asset {
 
+/* These return codes are limited to the asset loader module. If unified return
+ * codes are defined for the vkcv framework, these will be used instead. */
+#define ASSET_ERROR 0
+#define ASSET_SUCCESS 1
+
 /** This enum matches modes in fx-gltf, the library returns a standard mode
  * (TRIANGLES) if no mode is given in the file. */
 enum class PrimitiveMode : uint8_t {
