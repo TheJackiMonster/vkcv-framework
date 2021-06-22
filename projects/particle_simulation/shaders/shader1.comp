@@ -56,7 +56,7 @@ void main() {
 
     for(int i = 0; i < n; i++)
     {
-        pos += deltaTime * deltaTime * normalize(max(2 - distance(pos,gravityPoint[i]),0.1) * gravityPoint[i] - pos);
+        vel += deltaTime * deltaTime * deltaTime * normalize(max(2 - distance(pos,gravityPoint[i]),0.1) * gravityPoint[i] - pos);
     }
 
 //    vec3 delta = respawnPos - pos;

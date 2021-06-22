@@ -122,8 +122,8 @@ int main(int argc, const char **argv) {
 
     glm::vec3 minVelocity = glm::vec3(-0.1f,-0.1f,0.f);
     glm::vec3 maxVelocity = glm::vec3(0.1f,0.1f,0.f);
-    glm::vec2 lifeTime = glm::vec2(0.f,5.f);
-    ParticleSystem particleSystem = ParticleSystem( 1000 , minVelocity, maxVelocity, lifeTime);
+    glm::vec2 lifeTime = glm::vec2(-1.f,8.f);
+    ParticleSystem particleSystem = ParticleSystem( 10000 , minVelocity, maxVelocity, lifeTime);
 
     vkcv::Buffer<Particle> particleBuffer = core.createBuffer<Particle>(
             vkcv::BufferType::STORAGE,
@@ -154,9 +154,6 @@ int main(int argc, const char **argv) {
                                 particleIndexBuffer.getCount());
     vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
     //vkcv::DrawcallInfo drawcalls(renderMesh, {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle)});
-
-    std::uniform_real_distribution<float> rdmVel(-0.1f, 0.1f);
-    std::default_random_engine rdmEngine;
 
     glm::vec2 pos = glm::vec2(0.f);
     glm::vec3 spawnPosition = glm::vec3(0.f);
