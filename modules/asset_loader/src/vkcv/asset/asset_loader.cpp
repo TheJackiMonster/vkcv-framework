@@ -14,17 +14,13 @@
 namespace vkcv::asset {
 
 /**
-* convert the accessor type from the fx-gltf library to an unsigned int
-* @param type
-* @return unsigned integer representation
-*/
-// TODO Return proper error code (we need to define those as macros or enums,
-// will discuss during the next core meeting if that should happen on the scope
-// of the vkcv framework or just this module)
-uint8_t convertTypeToInt(const fx::gltf::Accessor::Type type) {
+ * Computes the component count for an accessor type of the fx-gltf library.
+ * @param type The accessor type
+ * @return An unsigned integer count
+ */
+// TODO add cases for matrices (or maybe change the type in the struct itself)
+uint8_t getCompCount(const fx::gltf::Accessor::Type type) {
 	switch (type) {
-	case fx::gltf::Accessor::Type::None :
-		return 0;
 	case fx::gltf::Accessor::Type::Scalar :
 		return 1;
 	case fx::gltf::Accessor::Type::Vec2 :
@@ -33,7 +29,8 @@ uint8_t convertTypeToInt(const fx::gltf::Accessor::Type type) {
 		return 3;
 	case fx::gltf::Accessor::Type::Vec4 :
 		return 4;
-	default: return 10; // TODO add cases for matrices (or maybe change the type in the struct itself)
+	case fx::gltf::Accessor::Type::None :
+	default: return ASSET_ERROR;
 	}
 }
 
@@ -250,11 +247,8 @@ int loadScene(const std::string &path, Scene &scene){
                 attribute.stride = sceneObjects.bufferViews[accessor.bufferView].byteStride;
 		        attribute.componentType = static_cast<ComponentType>(accessor.componentType);
 
-                if (convertTypeToInt(accessor.type) != 10) {
-                    attribute.componentCount = convertTypeToInt(accessor.type);
-                } else {
-                    return ASSET_ERROR;
-                }
+		if ((attribute.componentCount = getCompCount(accessor.type) == ASSET_ERROR))
+			return ASSET_ERROR;
 
                 vertexAttributes.push_back(attribute);
             }
