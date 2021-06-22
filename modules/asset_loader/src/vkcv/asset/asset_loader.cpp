@@ -14,6 +14,21 @@
 namespace vkcv::asset {
 
 /**
+ * This function unrolls nested exceptions via recursion and prints them
+ * @param e error code
+ * @param path path to file that is responsible for error
+ */
+void recurseExceptionPrint(const std::exception& e, const std::string &path)
+{
+	vkcv_log(LogLevel::ERROR, "Loading file %s: %s", path.c_str(), e.what());
+	try {
+		std::rethrow_if_nested(e);
+	} catch (const std::exception& nested) {
+		recurseExceptionPrint(nested, path);
+	}
+}
+
+/**
  * Computes the component count for an accessor type of the fx-gltf library.
  * @param type The accessor type
  * @return An unsigned integer count
@@ -31,22 +46,6 @@ uint8_t getCompCount(const fx::gltf::Accessor::Type type) {
 		return 4;
 	case fx::gltf::Accessor::Type::None :
 	default: return ASSET_ERROR;
-	}
-}
-
-/**
- * This function unrolls nested exceptions via recursion and prints them
- * @param e error code
- * @param path path to file that is responsible for error
- */
-void print_what (const std::exception& e, const std::string &path) {
-	vkcv_log(LogLevel::ERROR, "Loading file %s: %s",
-			 path.c_str(), e.what());
-	
-	try {
-		std::rethrow_if_nested(e);
-	} catch (const std::exception& nested) {
-		print_what(nested, path);
 	}
 }
 
@@ -194,10 +193,10 @@ int loadScene(const std::string &path, Scene &scene){
             sceneObjects = fx::gltf::LoadFromText(path);
         }
     } catch (const std::system_error &err) {
-        print_what(err, path);
+        recurseExceptionPrint(err, path);
         return ASSET_ERROR;
     } catch (const std::exception &e) {
-        print_what(e, path);
+        recurseExceptionPrint(e, path);
         return ASSET_ERROR;
     }
     size_t pos = path.find_last_of("/");
