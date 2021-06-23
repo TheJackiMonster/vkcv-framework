@@ -25,6 +25,16 @@ vkcv::ShaderProgram loadDepthToMomentsShader() {
 	return shader;
 }
 
+vkcv::ShaderProgram loadShadowBlurShader() {
+	vkcv::ShaderProgram shader;
+	vkcv::shader::GLSLCompiler compiler;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/shadowBlur.comp",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		shader.addShader(shaderStage, path);
+	});
+	return shader;
+}
+
 glm::mat4 computeShadowViewProjectionMatrix(
 	const glm::vec3&            lightDirection, 
 	const vkcv::camera::Camera& camera, 
@@ -121,6 +131,7 @@ const vkcv::Multisampling   msaa                    = vkcv::Multisampling::MSAA4
 ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vertexLayout) : 
 	m_corePtr(corePtr),
 	m_shadowMap(corePtr->createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1, false, true)),
+	m_shadowMapIntermediate(corePtr->createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1, false, true)),
 	m_shadowMapDepth(corePtr->createImage(shadowMapDepthFormat, shadowMapResolution, shadowMapResolution, 1, false, false, false, msaa)),
 	m_lightInfoBuffer(corePtr->createBuffer<LightInfo>(vkcv::BufferType::UNIFORM, sizeof(glm::vec3))){
 
@@ -162,8 +173,19 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	vkcv::DescriptorWrites depthToMomentDescriptorWrites;
 	depthToMomentDescriptorWrites.sampledImageWrites    = { vkcv::SampledImageDescriptorWrite(0, m_shadowMapDepth.getHandle()) };
 	depthToMomentDescriptorWrites.samplerWrites         = { vkcv::SamplerDescriptorWrite(1, m_shadowSampler) };
-	depthToMomentDescriptorWrites.storageImageWrites    = { vkcv::StorageImageDescriptorWrite(2, m_shadowMap.getHandle()) };
+	depthToMomentDescriptorWrites.storageImageWrites    = { vkcv::StorageImageDescriptorWrite(2, m_shadowMapIntermediate.getHandle()) };
 	corePtr->writeDescriptorSet(m_depthToMomentsDescriptorSet, depthToMomentDescriptorWrites);
+
+	// shadow blur
+	vkcv::ShaderProgram shadowBlurShader    = loadShadowBlurShader();
+	m_shadowBlurDescriptorSet               = corePtr->createDescriptorSet(shadowBlurShader.getReflectedDescriptors()[0]);
+	m_shadowBlurPipe                        = corePtr->createComputePipeline(shadowBlurShader, { corePtr->getDescriptorSet(m_shadowBlurDescriptorSet).layout });
+
+	vkcv::DescriptorWrites shadowBlurDescriptorWrites;
+	shadowBlurDescriptorWrites.sampledImageWrites   = { vkcv::SampledImageDescriptorWrite(0, m_shadowMapIntermediate.getHandle()) };
+	shadowBlurDescriptorWrites.samplerWrites        = { vkcv::SamplerDescriptorWrite(1, m_shadowSampler) };
+	shadowBlurDescriptorWrites.storageImageWrites   = { vkcv::StorageImageDescriptorWrite(2, m_shadowMap.getHandle()) };
+	corePtr->writeDescriptorSet(m_shadowBlurDescriptorSet, shadowBlurDescriptorWrites);
 }
 
 void ShadowMapping::recordShadowMapRendering(
@@ -172,8 +194,6 @@ void ShadowMapping::recordShadowMapRendering(
 	const glm::vec3&                    lightColor,
 	float                               lightStrength,
 	float                               maxShadowDistance,
-	float                               exponentialWarpPositive,
-	float                               exponentialWarpNegative,
 	const std::vector<vkcv::Mesh>&      meshes,
 	const std::vector<glm::mat4>&       modelMatrices,
 	const vkcv::camera::Camera&         camera,
@@ -187,8 +207,6 @@ void ShadowMapping::recordShadowMapRendering(
 		std::cos(lightAngleRadian.x) * std::cos(lightAngleRadian.y),
 		std::sin(lightAngleRadian.x),
 		std::cos(lightAngleRadian.x) * std::sin(lightAngleRadian.y)));
-	lightInfo.exponentialWarpPositive = exponentialWarpPositive;
-	lightInfo.exponentialWarpNegative = exponentialWarpNegative;
 
 	lightInfo.lightMatrix = computeShadowViewProjectionMatrix(
 		lightInfo.direction,
@@ -226,13 +244,23 @@ void ShadowMapping::recordShadowMapRendering(
 
 	const uint32_t msaaSampleCount = msaaToSampleCount(msaa);
 
-	m_corePtr->prepareImageForStorage(cmdStream, m_shadowMap.getHandle());
+	m_corePtr->prepareImageForStorage(cmdStream, m_shadowMapIntermediate.getHandle());
 	m_corePtr->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_depthToMomentsPipe,
 		dispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_depthToMomentsDescriptorSet).vulkanHandle) },
 		vkcv::PushConstantData((void*)&msaaSampleCount, sizeof(msaaSampleCount)));
+	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMapIntermediate.getHandle());
+
+	// blur
+	m_corePtr->prepareImageForStorage(cmdStream, m_shadowMap.getHandle());
+	m_corePtr->recordComputeDispatchToCmdStream(
+		cmdStream,
+		m_shadowBlurPipe,
+		dispatchCount,
+		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_shadowBlurDescriptorSet).vulkanHandle) },
+		vkcv::PushConstantData(nullptr, 0));
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMap.getHandle());
 }
 

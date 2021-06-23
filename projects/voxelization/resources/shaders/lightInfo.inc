@@ -6,7 +6,6 @@ struct LightInfo{
     vec3 sunColor;      
     float sunStrength;
     mat4 lightMatrix;
-    vec2 warps;
 };
 
 #endif // #ifndef LIGHT_INFO_INC

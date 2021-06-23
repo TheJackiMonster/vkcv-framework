@@ -13,8 +13,6 @@ struct LightInfo {
 	glm::vec3   sunColor;
 	float       sunStrength;
 	glm::mat4   lightMatrix;
-	float       exponentialWarpPositive;
-	float       exponentialWarpNegative;
 };
 
 class ShadowMapping {
@@ -27,8 +25,6 @@ public:
 		const glm::vec3&                    lightColor,
 		float                               lightStrength,
 		float                               maxShadowDistance,
-		float                               exponentialWarp,
-		float                               exponentialWarpNegative,
 		const std::vector<vkcv::Mesh>&      meshes,
 		const std::vector<glm::mat4>&       modelMatrices,
 		const vkcv::camera::Camera&         camera,
@@ -43,6 +39,7 @@ private:
 	vkcv::Core* m_corePtr;
 
 	vkcv::Image                 m_shadowMap;
+	vkcv::Image                 m_shadowMapIntermediate;
 	vkcv::Image                 m_shadowMapDepth;
 	vkcv::SamplerHandle         m_shadowSampler;
 	vkcv::Buffer<LightInfo>     m_lightInfoBuffer;
@@ -52,4 +49,7 @@ private:
 
 	vkcv::PipelineHandle        m_depthToMomentsPipe;
 	vkcv::DescriptorSetHandle   m_depthToMomentsDescriptorSet;
+
+	vkcv::PipelineHandle        m_shadowBlurPipe;
+	vkcv::DescriptorSetHandle   m_shadowBlurDescriptorSet;
 };
