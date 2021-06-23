@@ -276,6 +276,24 @@ int main(int argc, const char** argv) {
 		tonemappingProgram,
 		{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
 
+	// resolve compute shader
+	vkcv::ShaderProgram resolveProgram;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/msaa4XResolve.comp",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		resolveProgram.addShader(shaderStage, path);
+	});
+	vkcv::DescriptorSetHandle resolveDescriptorSet = core.createDescriptorSet(
+		resolveProgram.getReflectedDescriptors()[0]);
+	vkcv::PipelineHandle resolvePipeline = core.createComputePipeline(
+		resolveProgram,
+		{ core.getDescriptorSet(resolveDescriptorSet).layout });
+
+	vkcv::SamplerHandle resolveSampler = core.createSampler(
+		vkcv::SamplerFilterType::NEAREST,
+		vkcv::SamplerFilterType::NEAREST,
+		vkcv::SamplerMipmapMode::NEAREST,
+		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
+
 	// model matrices per mesh
 	std::vector<glm::mat4> modelMatrices;
 	modelMatrices.resize(scene.vertexGroups.size(), glm::mat4(1.f));
@@ -349,6 +367,8 @@ int main(int argc, const char** argv) {
 	int     voxelVisualisationMip   = 0;
 	float   voxelizationExtent      = 30.f;
 
+	bool msaaCustomResolve = true;
+
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
 	while (window.isWindowOpen()) {
@@ -383,6 +403,13 @@ int main(int argc, const char** argv) {
 			vkcv::StorageImageDescriptorWrite(0, resolvedColorBuffer),
 			vkcv::StorageImageDescriptorWrite(1, swapchainInput) };
 		core.writeDescriptorSet(tonemappingDescriptorSet, tonemappingDescriptorWrites);
+
+		// update resolve descriptor, color images could be changed
+		vkcv::DescriptorWrites resolveDescriptorWrites;
+		resolveDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(0, colorBuffer) };
+		resolveDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(1, resolveSampler) };
+		resolveDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, resolvedColorBuffer) };
+		core.writeDescriptorSet(resolveDescriptorSet, resolveDescriptorWrites);
 
 		start = end;
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
@@ -439,16 +466,33 @@ int main(int argc, const char** argv) {
 			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets, voxelVisualisationMip);
 		}
 
-		if (usingMsaa) {
-			core.resolveMSAAImage(cmdStream, colorBuffer, resolvedColorBuffer);
-		}
-
-		const uint32_t tonemappingLocalGroupSize = 8;
-		const uint32_t tonemappingDispatchCount[3] = {
-			static_cast<uint32_t>(glm::ceil(windowWidth / static_cast<float>(tonemappingLocalGroupSize))),
-			static_cast<uint32_t>(glm::ceil(windowHeight / static_cast<float>(tonemappingLocalGroupSize))),
+		const uint32_t fullscreenLocalGroupSize = 8;
+		const uint32_t fulsscreenDispatchCount[3] = {
+			static_cast<uint32_t>(glm::ceil(windowWidth  / static_cast<float>(fullscreenLocalGroupSize))),
+			static_cast<uint32_t>(glm::ceil(windowHeight / static_cast<float>(fullscreenLocalGroupSize))),
 			1
 		};
+
+		if (usingMsaa) {
+			if (msaaCustomResolve) {
+
+				core.prepareImageForSampling(cmdStream, colorBuffer);
+				core.prepareImageForStorage(cmdStream, resolvedColorBuffer);
+
+				assert(msaa == vkcv::Multisampling::MSAA4X);	// shaders is written for msaa 4x
+				core.recordComputeDispatchToCmdStream(
+					cmdStream,
+					resolvePipeline,
+					fulsscreenDispatchCount,
+					{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(resolveDescriptorSet).vulkanHandle) },
+					vkcv::PushConstantData(nullptr, 0));
+
+				core.recordImageMemoryBarrier(cmdStream, resolvedColorBuffer);
+			}
+			else {
+				core.resolveMSAAImage(cmdStream, colorBuffer, resolvedColorBuffer);
+			}
+		}
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 		core.prepareImageForStorage(cmdStream, resolvedColorBuffer);
@@ -456,7 +500,7 @@ int main(int argc, const char** argv) {
 		core.recordComputeDispatchToCmdStream(
 			cmdStream, 
 			tonemappingPipeline, 
-			tonemappingDispatchCount,
+			fulsscreenDispatchCount,
 			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptorSet).vulkanHandle) },
 			vkcv::PushConstantData(nullptr, 0));
 
@@ -468,6 +512,9 @@ int main(int argc, const char** argv) {
 		gui.beginGUI();
 
 		ImGui::Begin("Settings");
+
+		ImGui::Checkbox("MSAA custom resolve", &msaaCustomResolve);
+
 		ImGui::DragFloat2("Light angles",           &lightAnglesDegree.x);
 		ImGui::ColorEdit3("Sun color",              &lightColor.x);
 		ImGui::DragFloat("Sun strength",            &lightStrength);
