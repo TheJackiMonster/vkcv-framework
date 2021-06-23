@@ -12,6 +12,7 @@ namespace vkcv::camera {
         m_lastX = static_cast<float>(window.getWidth()) / 2.0f;
         m_lastY = static_cast<float>(window.getHeight()) / 2.0f;
         m_inputDelayTimer = glfwGetTime() + 0.2;
+        m_frameTime = 0;
     }
 
     CameraManager::~CameraManager() {
