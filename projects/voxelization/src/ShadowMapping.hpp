@@ -42,12 +42,14 @@ public:
 private:
 	vkcv::Core* m_corePtr;
 
-	vkcv::Image             m_shadowMap;
-	vkcv::Image             m_shadowMapDepth;
-	vkcv::SamplerHandle     m_shadowSampler;
-	vkcv::Buffer<LightInfo> m_lightInfoBuffer;
-	vkcv::DescriptorSetHandle m_shadowDescriptorSet;
+	vkcv::Image                 m_shadowMap;
+	vkcv::Image                 m_shadowMapDepth;
+	vkcv::SamplerHandle         m_shadowSampler;
+	vkcv::Buffer<LightInfo>     m_lightInfoBuffer;
 
-	vkcv::PassHandle        m_shadowMapPass;
-	vkcv::PipelineHandle    m_shadowMapPipe;
+	vkcv::PassHandle            m_shadowMapPass;
+	vkcv::PipelineHandle        m_shadowMapPipe;
+
+	vkcv::PipelineHandle        m_depthToMomentsPipe;
+	vkcv::DescriptorSetHandle   m_depthToMomentsDescriptorSet;
 };
