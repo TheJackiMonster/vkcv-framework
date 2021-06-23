@@ -150,7 +150,7 @@ namespace vkcv::camera {
         // handle zooming
         double zoom = static_cast<double>((gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER]
                 - gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER])
-                * sensitivity * 0.5);
+                * sensitivity * frametime);
         changeFov(zoom, camera);
 
         // handle translation
