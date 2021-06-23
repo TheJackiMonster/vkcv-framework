@@ -1,6 +1,5 @@
 #include "vkcv/camera/TrackballCameraController.hpp"
 #include <GLFW/glfw3.h>
-#include <math.h>
 
 namespace vkcv::camera {
 
