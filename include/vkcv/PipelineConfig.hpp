@@ -15,6 +15,7 @@
 namespace vkcv {
 
     enum class PrimitiveTopology{PointList, LineList, TriangleList };
+	enum class CullMode{ None, Front, Back };
 
     struct PipelineConfig {
         ShaderProgram                           m_ShaderProgram;
@@ -28,6 +29,7 @@ namespace vkcv {
         PrimitiveTopology                       m_PrimitiveTopology = PrimitiveTopology::TriangleList;
         bool                                    m_EnableDepthClamping = false;
         Multisampling                           m_multisampling = Multisampling::None;
+        CullMode                                m_culling = CullMode::None;
     };
 
 }

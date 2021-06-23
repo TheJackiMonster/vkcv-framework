@@ -232,8 +232,8 @@ int main(int argc, const char** argv) {
 			core.getDescriptorSet(perMeshDescriptorSets[0]).layout },
 		true
 	};
-
-	forwardPipelineConfig.m_multisampling = msaa;
+    forwardPipelineConfig.m_culling         = vkcv::CullMode::Back;
+	forwardPipelineConfig.m_multisampling   = msaa;
 	
 	vkcv::PipelineHandle forwardPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
 	

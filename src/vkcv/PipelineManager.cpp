@@ -143,13 +143,21 @@ namespace vkcv
         vk::Rect2D scissor({ 0,0 }, { config.m_Width, config.m_Height });
         vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
 
+        vk::CullModeFlags cullMode;
+        switch (config.m_culling) {
+            case CullMode::None:    cullMode = vk::CullModeFlagBits::eNone;     break;
+            case CullMode::Front:   cullMode = vk::CullModeFlagBits::eFront;    break;
+            case CullMode::Back:    cullMode = vk::CullModeFlagBits::eBack;     break;
+            default: throw("Lets tilt Tobi LOLOLOL");   // I hope you review the code well
+        }
+
         // rasterization state
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
                 {},
                 config.m_EnableDepthClamping,
                 false,
                 vk::PolygonMode::eFill,
-                vk::CullModeFlagBits::eNone,
+                cullMode,
                 vk::FrontFace::eCounterClockwise,
                 false,
                 0.f,
