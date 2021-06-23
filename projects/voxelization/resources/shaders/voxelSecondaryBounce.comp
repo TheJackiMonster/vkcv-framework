@@ -32,7 +32,7 @@ void main(){
         float halfVoxelSize = voxelInfo.extent / float(voxelImageSize.x) * 0.5f;
         vec3 pos            = voxelCoordinatesToWorldPosition(UV, voxelImageSize.x, voxelInfo, halfVoxelSize);
         
-        vec3 up         = N.y >= 0.99 ? vec3(1, 0, 0) : vec3(0, 1, 0);
+        vec3 up         = abs(N.y) >= 0.99 ? vec3(1, 0, 0) : vec3(0, 1, 0);
         vec3 right      = normalize(cross(up, N));
         up              = cross(N, right); 
         mat3 toSurface  = mat3(right, up, N);

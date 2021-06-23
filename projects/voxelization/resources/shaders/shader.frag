@@ -91,7 +91,7 @@ void main()	{
     vec3 F_out      = fresnelSchlick(NoV, f0);
     vec3 diffuse    = lambertBRDF(albedo) * (1 - F_in) * (1 - F_out);
     
-    vec3 up         = N_geo.y >= 0.99 ? vec3(1, 0, 0) : vec3(0, 1, 0);
+    vec3 up         = abs(N_geo.y) >= 0.99 ? vec3(1, 0, 0) : vec3(0, 1, 0);
     vec3 right      = normalize(cross(up, N));
     up              = cross(N, right); 
     mat3 toSurface  = mat3(right, up, N);
