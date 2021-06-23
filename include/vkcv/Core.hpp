@@ -215,13 +215,14 @@ namespace vkcv
          */
         [[nodiscard]]
         Image createImage(
-			vk::Format  format,
-			uint32_t    width,
-			uint32_t    height,
-			uint32_t    depth = 1,
-			bool        createMipChain = false,
-			bool        supportStorage = false,
-			bool        supportColorAttachment = false);
+			vk::Format      format,
+			uint32_t        width,
+			uint32_t        height,
+			uint32_t        depth = 1,
+			bool            createMipChain = false,
+			bool            supportStorage = false,
+			bool            supportColorAttachment = false,
+			Multisampling   multisampling = Multisampling::None);
 
         /** TODO:
          *   @param setDescriptions
@@ -285,7 +286,8 @@ namespace vkcv
 		void prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image);
 		void recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image);
 		void recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer);
-		
+		void resolveMSAAImage(CommandStreamHandle cmdStream, ImageHandle src, ImageHandle dst);
+
 		vk::ImageView getSwapchainImageView() const;
 		
     };

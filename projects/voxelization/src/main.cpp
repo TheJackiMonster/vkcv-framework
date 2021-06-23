@@ -16,6 +16,8 @@ int main(int argc, const char** argv) {
 
 	uint32_t windowWidth = 1280;
 	uint32_t windowHeight = 720;
+	const vkcv::Multisampling   msaa        = vkcv::Multisampling::MSAA4X;
+	const bool                  usingMsaa   = msaa != vkcv::Multisampling::None;
 	
 	vkcv::Window window = vkcv::Window::create(
 		applicationName,
@@ -121,7 +123,7 @@ int main(int argc, const char** argv) {
 		depthBufferFormat
 	);
 
-	vkcv::PassConfig forwardPassDefinition({ color_attachment, depth_attachment });
+	vkcv::PassConfig forwardPassDefinition({ color_attachment, depth_attachment }, msaa);
 	vkcv::PassHandle forwardPass = core.createPass(forwardPassDefinition);
 
 	vkcv::shader::GLSLCompiler compiler;
@@ -230,6 +232,8 @@ int main(int argc, const char** argv) {
 			core.getDescriptorSet(perMeshDescriptorSets[0]).layout },
 		true
 	};
+
+	forwardPipelineConfig.m_multisampling = msaa;
 	
 	vkcv::PipelineHandle forwardPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
 	
@@ -238,8 +242,18 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	vkcv::ImageHandle depthBuffer = core.createImage(depthBufferFormat, windowWidth, windowHeight).getHandle();
-	vkcv::ImageHandle colorBuffer = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
+	vkcv::ImageHandle depthBuffer           = core.createImage(depthBufferFormat, windowWidth, windowHeight, 1, false, false, false, msaa).getHandle();
+
+    const bool colorBufferRequiresStorage   = !usingMsaa;
+	vkcv::ImageHandle colorBuffer           = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, colorBufferRequiresStorage, true, msaa).getHandle();
+
+	vkcv::ImageHandle resolvedColorBuffer;
+	if (msaa != vkcv::Multisampling::None) {
+		resolvedColorBuffer = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
+	}
+	else {
+		resolvedColorBuffer = colorBuffer;
+	}
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -346,8 +360,15 @@ int main(int argc, const char** argv) {
 		}
 
 		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
-			depthBuffer = core.createImage(depthBufferFormat, swapchainWidth, swapchainHeight).getHandle();
-			colorBuffer = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, false, true, true).getHandle();
+			depthBuffer         = core.createImage(depthBufferFormat, swapchainWidth, swapchainHeight, 1, false, false, false, msaa).getHandle();
+			colorBuffer         = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, false, colorBufferRequiresStorage, true, msaa).getHandle();
+
+			if (usingMsaa) {
+				resolvedColorBuffer = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, false, true, true).getHandle();
+			}
+			else {
+				resolvedColorBuffer = colorBuffer;
+			}
 
 			windowWidth = swapchainWidth;
 			windowHeight = swapchainHeight;
@@ -359,7 +380,7 @@ int main(int argc, const char** argv) {
 		// update descriptor sets which use swapchain image
 		vkcv::DescriptorWrites tonemappingDescriptorWrites;
 		tonemappingDescriptorWrites.storageImageWrites = {
-			vkcv::StorageImageDescriptorWrite(0, colorBuffer),
+			vkcv::StorageImageDescriptorWrite(0, resolvedColorBuffer),
 			vkcv::StorageImageDescriptorWrite(1, swapchainInput) };
 		core.writeDescriptorSet(tonemappingDescriptorSet, tonemappingDescriptorWrites);
 
@@ -418,6 +439,10 @@ int main(int argc, const char** argv) {
 			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets, voxelVisualisationMip);
 		}
 
+		if (usingMsaa) {
+			core.resolveMSAAImage(cmdStream, colorBuffer, resolvedColorBuffer);
+		}
+
 		const uint32_t tonemappingLocalGroupSize = 8;
 		const uint32_t tonemappingDispatchCount[3] = {
 			static_cast<uint32_t>(glm::ceil(windowWidth / static_cast<float>(tonemappingLocalGroupSize))),
@@ -426,7 +451,7 @@ int main(int argc, const char** argv) {
 		};
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
-		core.prepareImageForStorage(cmdStream, colorBuffer);
+		core.prepareImageForStorage(cmdStream, resolvedColorBuffer);
 
 		core.recordComputeDispatchToCmdStream(
 			cmdStream, 

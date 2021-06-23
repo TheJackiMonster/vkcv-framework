@@ -169,7 +169,7 @@ namespace vkcv
         // multisample state
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
                 {},
-                vk::SampleCountFlagBits::e1,
+                msaaToVkSampleCountFlag(config.m_multisampling),
                 false,
                 0.f,
                 nullptr,

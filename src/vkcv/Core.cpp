@@ -116,7 +116,6 @@ namespace vkcv
         return m_PipelineManager->createComputePipeline(shaderProgram, descriptorSetLayouts);
     }
 
-
     PassHandle Core::createPass(const PassConfig &config)
     {
         return m_PassManager->createPass(config);
@@ -437,13 +436,14 @@ namespace vkcv
 	}
 
 	Image Core::createImage(
-		vk::Format  format,
-		uint32_t    width,
-		uint32_t    height,
-		uint32_t    depth,
-		bool        createMipChain,
-		bool        supportStorage,
-		bool        supportColorAttachment)
+		vk::Format      format,
+		uint32_t        width,
+		uint32_t        height,
+		uint32_t        depth,
+		bool            createMipChain,
+		bool            supportStorage,
+		bool            supportColorAttachment,
+		Multisampling   multisampling)
 	{
 
 		uint32_t mipCount = 1;
@@ -459,7 +459,8 @@ namespace vkcv
 			depth,
 			mipCount,
 			supportStorage,
-			supportColorAttachment);
+			supportColorAttachment,
+			multisampling);
 	}
 
     DescriptorSetHandle Core::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
@@ -539,6 +540,12 @@ namespace vkcv
 		}, nullptr);
 	}
 	
+	void Core::resolveMSAAImage(CommandStreamHandle cmdStream, ImageHandle src, ImageHandle dst) {
+		recordCommandsToStream(cmdStream, [src, dst, this](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordMSAAResolve(cmdBuffer, src, dst);
+		}, nullptr);
+	}
+
 	vk::ImageView Core::getSwapchainImageView() const {
     	return m_ImageManager->getVulkanImageView(vkcv::ImageHandle::createSwapchainImageHandle());
     }

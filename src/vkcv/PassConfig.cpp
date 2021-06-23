@@ -13,7 +13,7 @@ namespace vkcv
 	format(format)
     {};
 
-    PassConfig::PassConfig(std::vector<AttachmentDescription> attachments) noexcept :
-    attachments{std::move(attachments)}
+    PassConfig::PassConfig(std::vector<AttachmentDescription> attachments, Multisampling msaa) noexcept :
+    attachments{std::move(attachments) }, msaa(msaa)
     {}
 }
