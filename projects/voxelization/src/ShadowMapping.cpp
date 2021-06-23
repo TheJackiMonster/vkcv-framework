@@ -103,7 +103,7 @@ glm::mat4 computeShadowViewProjectionMatrix(
 	return vulkanCorrectionMatrix * crop * view;
 }
 
-const vk::Format    shadowMapFormat      = vk::Format::eR32G32B32A32Sfloat;
+const vk::Format    shadowMapFormat      = vk::Format::eR16G16B16A16Sfloat;
 const vk::Format    shadowMapDepthFormat = vk::Format::eD16Unorm;
 const uint32_t      shadowMapResolution  = 2048;
 

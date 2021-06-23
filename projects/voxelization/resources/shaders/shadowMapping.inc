@@ -38,6 +38,27 @@ float ComputeMSMShadowIntensity(vec4 _4Moments, float FragmentDepth, float Depth
     return clamp(Switch[2]+Switch[3]*Quotient, 0, 1);
 }
 
+vec4 quantizeMoments(vec4 moments){
+    mat4 T = mat4(
+        -2.07224649f,     13.7948857237f,   0.105877704f,   9.7924062118f,
+         32.23703778f,   -59.4683975703f, -1.9077466311f, -33.7652110555f,
+        -68.571074599f,   82.0359750338f,  9.3496555107f,  47.9456096605f,
+         39.3703274134f, -35.364903257f,  -6.6543490743f, -23.9728048165f);
+    vec4 quantized = T * moments;
+    quantized[0] += 0.0359558848;
+    return quantized;
+}
+
+vec4 unquantizeMoments(vec4 moments){
+    moments[0] -= 0.0359558848;
+    mat4 T = mat4(
+        0.2227744146f,  0.1549679261f,  0.1451988946f,  0.163127443f,
+        0.0771972861f,  0.1394629426f,  0.2120202157f,  0.2591432266f,
+        0.7926986636f,  0.7963415838f,  0.7258694464f,  0.6539092497f,
+        0.0319417555f,  -0.1722823173f, -0.2758014811f, -0.3376131734f);
+    return T * moments;
+}
+
 float shadowTest(vec3 worldPos, LightInfo lightInfo, texture2D shadowMap, sampler shadowMapSampler){
     vec4 lightPos = lightInfo.lightMatrix * vec4(worldPos, 1);
     lightPos /= lightPos.w;
@@ -47,12 +68,14 @@ float shadowTest(vec3 worldPos, LightInfo lightInfo, texture2D shadowMap, sample
         return 1;
     }
     
-    lightPos.z          = clamp(lightPos.z, 0, 1);
+    lightPos.z = clamp(lightPos.z, 0, 1);
 
-    vec4 shadowMapSample    = texture(sampler2D(shadowMap, shadowMapSampler), lightPos.xy);
+    vec4 shadowMapSample = texture(sampler2D(shadowMap, shadowMapSampler), lightPos.xy);
     
-    float depthBias     = 0.f;
-    float momentBias    = 0.000002;
+    shadowMapSample = unquantizeMoments(shadowMapSample);
+    
+    float depthBias     = 0.0f;
+    float momentBias    = 0.00003;
     
     return 1-ComputeMSMShadowIntensity(shadowMapSample, lightPos.z, depthBias, momentBias);
 }

@@ -110,4 +110,5 @@ void main()	{
         (diffuse + sunSpecular) * sun + 
         lambertBRDF(albedo) * diffuseTrace + 
         reflectionBRDF * specularTrace;
+        outColor = sun;
 }

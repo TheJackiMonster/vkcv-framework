@@ -3,6 +3,7 @@
 #extension GL_GOOGLE_include_directive : enable
 
 #include "lightInfo.inc"
+#include "shadowMapping.inc"
 
 layout(set=0, binding=0) uniform LightInfoBuffer {
     LightInfo lightInfo;
@@ -16,4 +17,6 @@ void main()	{
     float z         = passPos.z / passPos.w;
     float z2        = z*z;   
     outMoments      = vec4(z, z2, z2*z, z2*z2);
+        
+    outMoments = quantizeMoments(outMoments);
 }
