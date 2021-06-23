@@ -13,7 +13,8 @@ struct LightInfo {
 	glm::vec3   sunColor;
 	float       sunStrength;
 	glm::mat4   lightMatrix;
-    float       exponentialWarp;
+	float       exponentialWarpPositive;
+	float       exponentialWarpNegative;
 };
 
 class ShadowMapping {
@@ -27,6 +28,7 @@ public:
 		float                               lightStrength,
 		float                               maxShadowDistance,
 		float                               exponentialWarp,
+		float                               exponentialWarpNegative,
 		const std::vector<vkcv::Mesh>&      meshes,
 		const std::vector<glm::mat4>&       modelMatrices,
 		const vkcv::camera::Camera&         camera,

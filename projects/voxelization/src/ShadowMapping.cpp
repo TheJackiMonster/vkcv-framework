@@ -103,7 +103,7 @@ glm::mat4 computeShadowViewProjectionMatrix(
 	return vulkanCorrectionMatrix * crop * view;
 }
 
-const vk::Format    shadowMapFormat      = vk::Format::eR32Sfloat;
+const vk::Format    shadowMapFormat      = vk::Format::eR32G32B32A32Sfloat;
 const vk::Format    shadowMapDepthFormat = vk::Format::eD16Unorm;
 const uint32_t      shadowMapResolution  = 2048;
 
@@ -156,7 +156,8 @@ void ShadowMapping::recordShadowMapRendering(
 	const glm::vec3&                    lightColor,
 	float                               lightStrength,
 	float                               maxShadowDistance,
-	float                               exponentialWarp,
+	float                               exponentialWarpPositive,
+	float                               exponentialWarpNegative,
 	const std::vector<vkcv::Mesh>&      meshes,
 	const std::vector<glm::mat4>&       modelMatrices,
 	const vkcv::camera::Camera&         camera,
@@ -170,7 +171,8 @@ void ShadowMapping::recordShadowMapRendering(
 		std::cos(lightAngleRadian.x) * std::cos(lightAngleRadian.y),
 		std::sin(lightAngleRadian.x),
 		std::cos(lightAngleRadian.x) * std::sin(lightAngleRadian.y)));
-	lightInfo.exponentialWarp = exponentialWarp;
+	lightInfo.exponentialWarpPositive = exponentialWarpPositive;
+	lightInfo.exponentialWarpNegative = exponentialWarpNegative;
 
 	lightInfo.lightMatrix = computeShadowViewProjectionMatrix(
 		lightInfo.direction,
