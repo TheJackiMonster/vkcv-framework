@@ -154,9 +154,10 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 		{},
 		false
 	};
-	shadowPipeConfig.m_multisampling = msaa;
-	shadowPipeConfig.m_EnableDepthClamping = true;
-	m_shadowMapPipe = corePtr->createGraphicsPipeline(shadowPipeConfig);
+	shadowPipeConfig.m_multisampling        = msaa;
+	shadowPipeConfig.m_EnableDepthClamping  = true;
+    shadowPipeConfig.m_culling              = vkcv::CullMode::Front;
+	m_shadowMapPipe                         = corePtr->createGraphicsPipeline(shadowPipeConfig);
 
 	m_shadowSampler = corePtr->createSampler(
 		vkcv::SamplerFilterType::LINEAR,
