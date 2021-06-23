@@ -100,7 +100,7 @@ namespace vkcv::camera {
          * @param gamepadIndex The gamepad index.
          * @param camera The camera object.
          */
-        void gamepadCallback(int gamepadIndex, Camera &camera);
+        void gamepadCallback(int gamepadIndex, Camera &camera, double frametime);
     };
 
 }

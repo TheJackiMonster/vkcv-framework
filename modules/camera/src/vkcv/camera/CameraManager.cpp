@@ -105,7 +105,7 @@ namespace vkcv::camera {
             m_inputDelayTimer = (1-triggered)*m_inputDelayTimer + triggered * time; // Only reset timer, if dpad was pressed - is this cheaper than if-clause?
         }
 
-        getActiveController().gamepadCallback(gamepadIndex, getActiveCamera());     // handle camera rotation, translation
+        getActiveController().gamepadCallback(gamepadIndex, getActiveCamera(), m_frameTime);     // handle camera rotation, translation
     }
 
     CameraController& CameraManager::getActiveController() {
@@ -184,6 +184,7 @@ namespace vkcv::camera {
     }
 
     void CameraManager::update(double deltaTime) {
+        m_frameTime = deltaTime;
         if (glfwGetWindowAttrib(m_window.getWindow(), GLFW_FOCUSED) == GLFW_TRUE) {
             getActiveController().updateCamera(deltaTime, getActiveCamera());
         }

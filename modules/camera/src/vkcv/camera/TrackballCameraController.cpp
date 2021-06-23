@@ -98,11 +98,11 @@ namespace vkcv::camera {
         }
     }
 
-    void TrackballCameraController::gamepadCallback(int gamepadIndex, Camera &camera) {
+    void TrackballCameraController::gamepadCallback(int gamepadIndex, Camera &camera, double frametime) {
         GLFWgamepadstate gamepadState;
         glfwGetGamepadState(gamepadIndex, &gamepadState);
 
-        float sensitivity = 0.025f;
+        float sensitivity = 100.0f;
         double threshold = 0.1;    // todo: needs further investigation!
 
         // handle rotations
@@ -111,7 +111,7 @@ namespace vkcv::camera {
         
         double rightXVal = glm::clamp((abs(stickRightX)-threshold), 0.0, 1.0) * std::copysign(1.0, stickRightX);
         double rightYVal = glm::clamp((abs(stickRightY)-threshold), 0.0, 1.0) * std::copysign(1.0, stickRightY);
-        panView(rightXVal * sensitivity, rightYVal * sensitivity, camera);
+        panView(rightXVal * sensitivity, rightYVal * sensitivity * frametime, camera);
 
         // handle translation
         double stickLeftY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);

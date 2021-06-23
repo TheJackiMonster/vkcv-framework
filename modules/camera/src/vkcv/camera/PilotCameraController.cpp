@@ -130,11 +130,11 @@ namespace vkcv::camera {
         }
     }
 
-    void PilotCameraController::gamepadCallback(int gamepadIndex, Camera &camera) {
+    void PilotCameraController::gamepadCallback(int gamepadIndex, Camera &camera, double frametime) {
         GLFWgamepadstate gamepadState;
         glfwGetGamepadState(gamepadIndex, &gamepadState);
 
-        float sensitivity = 0.05f;
+        float sensitivity = 100.0f;
         double threshold = 0.1;    // todo: needs further investigation!
 
         // handle rotations
@@ -142,9 +142,9 @@ namespace vkcv::camera {
         double stickRightY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
 
         double rightXVal = glm::clamp(std::abs(stickRightX) - threshold, 0.0, 1.0)
-                * copysign(1.0, stickRightX) * sensitivity;
+                * copysign(1.0, stickRightX) * sensitivity * frametime;
         double rightYVal = glm::clamp(std::abs(stickRightY) - threshold, 0.0, 1.0)
-                * copysign(1.0, stickRightY) * sensitivity;
+                * copysign(1.0, stickRightY) * sensitivity * frametime;
         panView(rightXVal, rightYVal, camera);
 
         // handle zooming

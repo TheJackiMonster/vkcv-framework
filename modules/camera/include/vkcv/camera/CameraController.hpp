@@ -65,7 +65,7 @@ namespace vkcv::camera {
          * @param gamepadIndex The gamepad index.
          * @param camera The camera object.
          */
-        virtual void gamepadCallback(int gamepadIndex, Camera &camera) = 0;
+        virtual void gamepadCallback(int gamepadIndex, Camera &camera, double frametime) = 0;
     };
 
 }
