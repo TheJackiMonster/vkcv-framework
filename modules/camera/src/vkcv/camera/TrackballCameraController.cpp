@@ -109,14 +109,17 @@ namespace vkcv::camera {
         double stickRightX = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
         double stickRightY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
         
-        double rightXVal = glm::clamp((abs(stickRightX)-threshold), 0.0, 1.0) * std::copysign(1.0, stickRightX);
-        double rightYVal = glm::clamp((abs(stickRightY)-threshold), 0.0, 1.0) * std::copysign(1.0, stickRightY);
-        panView(rightXVal * sensitivity, rightYVal * sensitivity * frametime, camera);
+        double rightXVal = glm::clamp((abs(stickRightX)-threshold), 0.0, 1.0)
+                * std::copysign(1.0, stickRightX) * sensitivity * frametime;
+        double rightYVal = glm::clamp((abs(stickRightY)-threshold), 0.0, 1.0)
+                * std::copysign(1.0, stickRightY) * sensitivity * frametime;
+        panView(rightXVal, rightYVal, camera);
 
         // handle translation
         double stickLeftY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);
-        double leftYVal = glm::clamp((abs(stickLeftY)-threshold), 0.0, 1.0) * std::copysign(1.0, stickLeftY);
-        updateRadius(-leftYVal * sensitivity, camera);
+        double leftYVal = glm::clamp((abs(stickLeftY)-threshold), 0.0, 1.0)
+                * std::copysign(1.0, stickLeftY) * sensitivity * frametime;
+        updateRadius(-leftYVal, camera);
         
     }
 }
