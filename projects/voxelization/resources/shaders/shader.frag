@@ -85,7 +85,11 @@ void main()	{
     vec3 sunSpecular = cookTorrance(f0, r, N, V, L);
     
     vec3 sun        = lightInfo.sunStrength * lightInfo.sunColor * NoL;
-    sun             *= shadowTest(passPos, lightInfo, shadowMap, shadowMapSampler);
+    
+    float   noise           = 2 * pi * interleavedGradientNoise(gl_FragCoord.xy);
+    vec2    shadowOffset    = vec2(sin(noise), cos(noise)) * 0.00008;
+    float   shadow          = shadowTest(passPos, lightInfo, shadowMap, shadowMapSampler, shadowOffset);
+    sun                     *= shadow;
     
     vec3 F_in       = fresnelSchlick(NoL, f0);
     vec3 F_out      = fresnelSchlick(NoV, f0);
@@ -110,5 +114,4 @@ void main()	{
         (diffuse + sunSpecular) * sun + 
         lambertBRDF(albedo) * diffuseTrace + 
         reflectionBRDF * specularTrace;
-        outColor = sun;
 }

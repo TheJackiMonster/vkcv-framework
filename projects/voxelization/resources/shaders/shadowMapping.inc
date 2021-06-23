@@ -59,10 +59,11 @@ vec4 unquantizeMoments(vec4 moments){
     return T * moments;
 }
 
-float shadowTest(vec3 worldPos, LightInfo lightInfo, texture2D shadowMap, sampler shadowMapSampler){
+float shadowTest(vec3 worldPos, LightInfo lightInfo, texture2D shadowMap, sampler shadowMapSampler, vec2 offset){
     vec4 lightPos = lightInfo.lightMatrix * vec4(worldPos, 1);
     lightPos /= lightPos.w;
     lightPos.xy = lightPos.xy * 0.5 + 0.5;
+    lightPos.xy += offset;
     
     if(any(lessThan(lightPos.xy, vec2(0))) || any(greaterThan(lightPos.xy, vec2(1)))){
         return 1;
@@ -75,7 +76,7 @@ float shadowTest(vec3 worldPos, LightInfo lightInfo, texture2D shadowMap, sample
     shadowMapSample = unquantizeMoments(shadowMapSample);
     
     float depthBias     = 0.f;
-    float momentBias    = 0.00003;
+    float momentBias    = 0.00005;
     
     return 1-ComputeMSMShadowIntensity(shadowMapSample, lightPos.z, depthBias, momentBias);
 }

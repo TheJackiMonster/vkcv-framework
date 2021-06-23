@@ -80,7 +80,8 @@ Voxelization::Voxelization(
 	vkcv::BufferHandle  lightInfoBuffer,
 	vkcv::ImageHandle   shadowMap,
 	vkcv::SamplerHandle shadowSampler,
-	vkcv::SamplerHandle voxelSampler)
+	vkcv::SamplerHandle voxelSampler,
+	vkcv::Multisampling msaa)
 	:
 	m_corePtr(corePtr), 
 	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
@@ -148,9 +149,10 @@ Voxelization::Voxelization(
 
 	vkcv::PassConfig voxelVisualisationPassDefinition(
 		{ voxelVisualisationColorAttachments, voxelVisualisationDepthAttachments });
+	voxelVisualisationPassDefinition.msaa = msaa;
 	m_visualisationPass = m_corePtr->createPass(voxelVisualisationPassDefinition);
 
-	const vkcv::PipelineConfig voxelVisualisationPipeConfig{
+	vkcv::PipelineConfig voxelVisualisationPipeConfig{
 		voxelVisualisationShader,
 		0,
 		0,
@@ -160,6 +162,7 @@ Voxelization::Voxelization(
 		true,
 		false,
 		vkcv::PrimitiveTopology::PointList };	// points are extended to cubes in the geometry shader
+	voxelVisualisationPipeConfig.m_multisampling = msaa;
 	m_visualisationPipe = m_corePtr->createGraphicsPipeline(voxelVisualisationPipeConfig);
 
 	std::vector<uint16_t> voxelIndexData;

@@ -42,7 +42,7 @@ void main()	{
     
     vec3 N      = normalize(passN);
     float NoL   = clamp(dot(N, lightInfo.L), 0, 1);
-    vec3 sun    = lightInfo.sunStrength * lightInfo.sunColor * NoL * shadowTest(passPos, lightInfo, shadowMap, shadowMapSampler);
+    vec3 sun    = lightInfo.sunStrength * lightInfo.sunColor * NoL * shadowTest(passPos, lightInfo, shadowMap, shadowMapSampler, vec2(0));
     vec3 color  = albedo * sun;
     color       = lambertBRDF(albedo) * sun;
     

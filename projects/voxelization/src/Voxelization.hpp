@@ -16,7 +16,8 @@ public:
 		vkcv::BufferHandle  lightInfoBuffer,
 		vkcv::ImageHandle   shadowMap,
 		vkcv::SamplerHandle shadowSampler,
-		vkcv::SamplerHandle voxelSampler);
+		vkcv::SamplerHandle voxelSampler,
+		vkcv::Multisampling msaa);
 
 	void voxelizeMeshes(
 		vkcv::CommandStreamHandle                       cmdStream,

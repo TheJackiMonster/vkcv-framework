@@ -337,7 +337,8 @@ int main(int argc, const char** argv) {
 		shadowMapping.getLightInfoBuffer(),
 		shadowMapping.getShadowMap(),
 		shadowMapping.getShadowSampler(),
-		voxelSampler);
+		voxelSampler,
+		msaa);
 
 	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
 
