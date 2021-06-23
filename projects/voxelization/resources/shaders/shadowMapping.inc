@@ -74,7 +74,7 @@ float shadowTest(vec3 worldPos, LightInfo lightInfo, texture2D shadowMap, sample
     
     shadowMapSample = unquantizeMoments(shadowMapSample);
     
-    float depthBias     = 0.0f;
+    float depthBias     = 0.f;
     float momentBias    = 0.00003;
     
     return 1-ComputeMSMShadowIntensity(shadowMapSample, lightPos.z, depthBias, momentBias);
