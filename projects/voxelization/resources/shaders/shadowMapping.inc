@@ -35,7 +35,7 @@ float ComputeMSMShadowIntensity(vec4 _4Moments, float FragmentDepth, float Depth
     	vec4(0.0));
     float Quotient=(Switch[0]*z[2]-b[0]*(Switch[0]+z[2])+b[1])
                   /((z[2]-Switch[1])*(z[0]-z[1]));
-    return clamp(Switch[2]+Switch[3]*Quotient, 0, 1);
+    return 1-clamp(Switch[2]+Switch[3]*Quotient, 0, 1);
 }
 
 vec4 quantizeMoments(vec4 moments){
@@ -59,6 +59,16 @@ vec4 unquantizeMoments(vec4 moments){
     return T * moments;
 }
 
+float rescaleRange(float a, float b, float v)
+{
+    return clamp((v - a) / (b - a), 0, 1);
+}
+
+float reduceLightBleeding(float shadow, float amount)
+{
+   return rescaleRange(amount, 1.0f, shadow);
+}
+
 float shadowTest(vec3 worldPos, LightInfo lightInfo, texture2D shadowMap, sampler shadowMapSampler, vec2 offset){
     vec4 lightPos = lightInfo.lightMatrix * vec4(worldPos, 1);
     lightPos /= lightPos.w;
@@ -78,7 +88,8 @@ float shadowTest(vec3 worldPos, LightInfo lightInfo, texture2D shadowMap, sample
     float depthBias     = 0.f;
     float momentBias    = 0.00005;
     
-    return 1-ComputeMSMShadowIntensity(shadowMapSample, lightPos.z, depthBias, momentBias);
+    float shadow = ComputeMSMShadowIntensity(shadowMapSample, lightPos.z, depthBias, momentBias);
+    return reduceLightBleeding(shadow, 0.1f);
 }
 
 #endif // #ifndef SHADOW_MAPPING_INC
