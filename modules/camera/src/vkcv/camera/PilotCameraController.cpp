@@ -39,24 +39,19 @@ namespace vkcv::camera {
     }
 
     void PilotCameraController::panView(double xOffset, double yOffset, Camera &camera) {
+        // update only if there is (valid) input
+        if (xOffset == 0.0 && yOffset == 0.0) {
+            return;
+        }
+
         // handle yaw rotation
-        float yaw = camera.getYaw() + xOffset;
-        if (yaw < -180.0f) {
-            yaw += 360.0f;
-        }
-        else if (yaw > 180.0f) {
-            yaw -= 360.0f;
-        }
+        float yaw = camera.getYaw() + static_cast<float>(xOffset);
+        yaw += 360.0f * (yaw < -180.0f) - 360.0f * (yaw > 180.0f);
         camera.setYaw(yaw);
 
         // handle pitch rotation
-        float pitch = camera.getPitch() - yOffset;
-        if (pitch > 89.0f) {
-            pitch = 89.0f;
-        }
-        if (pitch < -89.0f) {
-            pitch = -89.0f;
-        }
+        float pitch = camera.getPitch() - static_cast<float>(yOffset);
+        pitch = glm::clamp(pitch, -89.0f, 89.0f);
         camera.setPitch(pitch);
     }
     

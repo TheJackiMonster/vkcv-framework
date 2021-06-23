@@ -12,33 +12,23 @@ namespace vkcv::camera {
     }
 
     void TrackballCameraController::setRadius(const float radius) {
-        if (radius < 0.1f) {
-            m_radius = 0.1f;
-        }
-        else {
-            m_radius = radius;
-        }
+        m_radius = 0.1f * (radius < 0.1f) + radius * (1 - (radius < 0.1f));
     }
 
     void TrackballCameraController::panView(double xOffset, double yOffset, Camera &camera) {
+        // update only if there is (valid) input
+        if (xOffset == 0.0 && yOffset == 0.0) {
+            return;
+        }
+
         // handle yaw rotation
-        float yaw = camera.getYaw() + xOffset * m_cameraSpeed;
-        if (yaw < 0.0f) {
-            yaw += 360.0f;
-        }
-        else if (yaw > 360.0f) {
-            yaw -= 360.0f;
-        }
+        float yaw = camera.getYaw() + static_cast<float>(xOffset) * m_cameraSpeed;
+        yaw += 360.0f * (yaw < 0.0f) - 360.0f * (yaw > 360.0f);
         camera.setYaw(yaw);
 
         // handle pitch rotation
-        float pitch = camera.getPitch() + yOffset * m_cameraSpeed;
-        if (pitch < 0.0f) {
-            pitch += 360.0f;
-        }
-        else if (pitch > 360.0f) {
-            pitch -= 360.0f;
-        }
+        float pitch = camera.getPitch() + static_cast<float>(yOffset) * m_cameraSpeed;
+        pitch += 360.0f * (pitch < 0.0f) - 360.0f * (pitch > 360.0f);
         camera.setPitch(pitch);
     }
 
