@@ -32,10 +32,15 @@ namespace vkcv::camera {
     }
 
     void TrackballCameraController::updateRadius(double offset, Camera &camera) {
+        // update only if there is (valid) input
+        if (offset == 0.0) {
+            return;
+        }
+
         glm::vec3 cameraPosition = camera.getPosition();
         glm::vec3 cameraCenter = camera.getCenter();
         float radius = glm::length(cameraCenter - cameraPosition);  // get current camera radius
-        setRadius(radius - offset * m_scrollSensitivity);
+        setRadius(radius - static_cast<float>(offset) * m_scrollSensitivity);
     }
 
     void TrackballCameraController::updateCamera(double deltaTime, Camera &camera) {
@@ -109,6 +114,5 @@ namespace vkcv::camera {
         double leftYVal = glm::clamp((abs(stickLeftY)-threshold), 0.0, 1.0)
                 * std::copysign(1.0, stickLeftY) * sensitivity * frametime;
         updateRadius(-leftYVal, camera);
-        
     }
 }

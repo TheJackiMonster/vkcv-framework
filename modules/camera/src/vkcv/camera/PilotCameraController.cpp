@@ -25,6 +25,11 @@ namespace vkcv::camera {
     }
 
     void PilotCameraController::changeFov(double offset, Camera &camera){
+        // update only if there is (valid) input
+        if (offset == 0.0) {
+            return;
+        }
+
         float fov = camera.getFov();
         float fov_range = m_fov_max - m_fov_min;
         float fov_stepsize = glm::radians(fov_range) / static_cast<float>(m_fov_nsteps);
