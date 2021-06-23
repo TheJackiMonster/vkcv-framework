@@ -130,7 +130,7 @@ const vkcv::Multisampling   msaa                    = vkcv::Multisampling::MSAA4
 
 ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vertexLayout) : 
 	m_corePtr(corePtr),
-	m_shadowMap(corePtr->createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1, false, true)),
+	m_shadowMap(corePtr->createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1, true, true)),
 	m_shadowMapIntermediate(corePtr->createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1, false, true)),
 	m_shadowMapDepth(corePtr->createImage(shadowMapDepthFormat, shadowMapResolution, shadowMapResolution, 1, false, false, false, msaa)),
 	m_lightInfoBuffer(corePtr->createBuffer<LightInfo>(vkcv::BufferType::UNIFORM, sizeof(glm::vec3))){
@@ -161,7 +161,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	m_shadowSampler = corePtr->createSampler(
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::NEAREST,
+		vkcv::SamplerMipmapMode::LINEAR,
 		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
 	);
 
@@ -261,6 +261,7 @@ void ShadowMapping::recordShadowMapRendering(
 		dispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_shadowBlurDescriptorSet).vulkanHandle) },
 		vkcv::PushConstantData(nullptr, 0));
+	m_shadowMap.recordMipChainGeneration(cmdStream);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMap.getHandle());
 }
 

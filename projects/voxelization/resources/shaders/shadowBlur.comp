@@ -16,7 +16,7 @@ void main(){
     }
     ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
     
-    int blurRadius  = 0;
+    int blurRadius  = 5;
     int minOffset   = -(blurRadius-1) / 2;
     int maxOffset   = -minOffset;
     
