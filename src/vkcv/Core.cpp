@@ -136,6 +136,8 @@ namespace vkcv
 			);
 		} catch (vk::OutOfDateKHRError e) {
 			result = vk::Result::eErrorOutOfDateKHR;
+		} catch (vk::DeviceLostError e) {
+			result = vk::Result::eErrorDeviceLost;
 		}
 		
 		if (result != vk::Result::eSuccess) {
@@ -367,6 +369,8 @@ namespace vkcv
 			result = queueManager.getPresentQueue().handle.presentKHR(presentInfo);
 		} catch (vk::OutOfDateKHRError e) {
 			result = vk::Result::eErrorOutOfDateKHR;
+		} catch (vk::DeviceLostError e) {
+			result = vk::Result::eErrorDeviceLost;
 		}
 		
 		if (result != vk::Result::eSuccess) {

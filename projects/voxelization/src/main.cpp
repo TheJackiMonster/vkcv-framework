@@ -331,7 +331,7 @@ int main(int argc, const char** argv) {
 	skyPipeConfig.m_Width               = windowWidth;
 	skyPipeConfig.m_Height              = windowHeight;
 	skyPipeConfig.m_PassHandle          = skyPass;
-	skyPipeConfig.m_VertexLayout        = vkcv::VertexLayout({});
+	skyPipeConfig.m_VertexLayout        = vkcv::VertexLayout();
 	skyPipeConfig.m_DescriptorLayouts   = {};
 	skyPipeConfig.m_UseDynamicViewport  = true;
     skyPipeConfig.m_multisampling       = msaa;
@@ -346,7 +346,7 @@ int main(int argc, const char** argv) {
 	vkcv::ImageHandle colorBuffer           = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, colorBufferRequiresStorage, true, msaa).getHandle();
 
 	vkcv::ImageHandle resolvedColorBuffer;
-	if (msaa != vkcv::Multisampling::None) {
+	if (usingMsaa) {
 		resolvedColorBuffer = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
 	}
 	else {

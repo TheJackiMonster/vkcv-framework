@@ -102,9 +102,17 @@ namespace vkcv {
 		vk::ImageUsageFlags imageUsageFlags = (
 				vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc
 		);
+		
+		vk::ImageTiling imageTiling = vk::ImageTiling::eOptimal;
+		
 		if (supportStorage) {
 			imageUsageFlags |= vk::ImageUsageFlagBits::eStorage;
+			
+			if (formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eStorageImage) {
+				imageTiling = vk::ImageTiling::eLinear;
+			}
 		}
+		
 		if (supportColorAttachment) {
 			imageUsageFlags |= vk::ImageUsageFlagBits::eColorAttachment;
 		}
@@ -134,8 +142,6 @@ namespace vkcv {
 			imageType = vk::ImageType::e2D;
 			imageViewType = vk::ImageViewType::e2D;
 		}
-		
-		vk::ImageTiling imageTiling = vk::ImageTiling::eOptimal;
 		
 		if (!formatProperties.optimalTilingFeatures) {
 			if (!formatProperties.linearTilingFeatures)
