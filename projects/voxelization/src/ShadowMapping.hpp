@@ -50,6 +50,9 @@ private:
 	vkcv::PipelineHandle        m_depthToMomentsPipe;
 	vkcv::DescriptorSetHandle   m_depthToMomentsDescriptorSet;
 
-	vkcv::PipelineHandle        m_shadowBlurPipe;
-	vkcv::DescriptorSetHandle   m_shadowBlurDescriptorSet;
+	vkcv::PipelineHandle        m_shadowBlurXPipe;
+	vkcv::DescriptorSetHandle   m_shadowBlurXDescriptorSet;
+
+	vkcv::PipelineHandle        m_shadowBlurYPipe;
+	vkcv::DescriptorSetHandle   m_shadowBlurYDescriptorSet;
 };
