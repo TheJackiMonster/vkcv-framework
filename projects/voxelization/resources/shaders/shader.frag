@@ -87,7 +87,7 @@ void main()	{
     vec3 sun        = lightInfo.sunStrength * lightInfo.sunColor * NoL;
     
     float   noise           = 2 * pi * interleavedGradientNoise(gl_FragCoord.xy);
-    vec2    shadowOffset    = vec2(sin(noise), cos(noise)) * 0.00008;
+    vec2    shadowOffset    = 0.05f * vec2(sin(noise), cos(noise)) / textureSize(sampler2D(shadowMap, shadowMapSampler), 0);
     float   shadow          = shadowTest(passPos, lightInfo, shadowMap, shadowMapSampler, shadowOffset);
     sun                     *= shadow;
     

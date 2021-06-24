@@ -125,7 +125,7 @@ glm::mat4 computeShadowViewProjectionMatrix(
 
 const vk::Format            shadowMapFormat         = vk::Format::eR32G32B32A32Sfloat;
 const vk::Format            shadowMapDepthFormat    = vk::Format::eD32Sfloat;
-const uint32_t              shadowMapResolution     = 1024;
+const uint32_t              shadowMapResolution     = 2048;
 const vkcv::Multisampling   msaa                    = vkcv::Multisampling::MSAA8X;
 
 ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vertexLayout) : 
@@ -156,7 +156,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	};
 	shadowPipeConfig.m_multisampling        = msaa;
 	shadowPipeConfig.m_EnableDepthClamping  = true;
-    shadowPipeConfig.m_culling              = vkcv::CullMode::Front;
+	shadowPipeConfig.m_culling              = vkcv::CullMode::Front;
 	m_shadowMapPipe                         = corePtr->createGraphicsPipeline(shadowPipeConfig);
 
 	m_shadowSampler = corePtr->createSampler(
