@@ -57,6 +57,17 @@ float interleavedGradientNoise(vec2 uv){
     return fract(magic.z * fract(dot(uv, magic.xy)));
 }
 
+// from: https://www.unrealengine.com/en-US/blog/physically-based-shading-on-mobile
+vec3 EnvBRDFApprox(vec3 SpecularColor, float Roughness, float NoV )
+{
+	const vec4 c0 = { -1, -0.0275, -0.572, 0.022 };
+	const vec4 c1 = { 1, 0.0425, 1.04, -0.04 };
+	vec4 r = Roughness * c0 + c1;
+	float a004 = min( r.x * r.x, exp2( -9.28 * NoV ) ) * r.x + r.y;
+	vec2 AB = vec2( -1.04, 1.04 ) * a004 + r.zw;
+	return SpecularColor * AB.x + AB.y;
+}
+
 void main()	{
 
     vec3 albedoTexel    = texture(sampler2D(albedoTexture, textureSampler), passUV).rgb;
@@ -81,11 +92,10 @@ void main()	{
     vec3 V  = normalize(cameraPos - passPos);
     
     float NoL = clamp(dot(N, L), 0, 1);    
-    float NoV = clamp(dot(N, V), 0, 1);
+    float NoV = clamp(abs(dot(N, V)), 0, 1);
     
-    vec3 sunSpecular = cookTorrance(f0, r, N, V, L);
-    
-    vec3 sun        = lightInfo.sunStrength * lightInfo.sunColor * NoL;
+    vec3 sunSpecular    = cookTorrance(f0, r, N, V, L);
+    vec3 sun            = lightInfo.sunStrength * lightInfo.sunColor * NoL;
     
     float   noise           = 2 * pi * interleavedGradientNoise(gl_FragCoord.xy);
     vec2    shadowOffset    = 0.05f * vec2(sin(noise), cos(noise)) / textureSize(sampler2D(shadowMap, shadowMapSampler), 0);
@@ -109,7 +119,7 @@ void main()	{
     offsetTraceStart            += R * interleavedGradientNoise(gl_FragCoord.xy) * 0.5;
     vec3 specularTrace          = voxelConeTrace(R, offsetTraceStart, reflectionConeAngle, voxelTexture, voxelSampler, voxelInfo);
     specularTrace               *= clamp(dot(N, R), 0, 1);
-    vec3 reflectionBRDF         = cookTorrance(f0, r, N, V, R);
+    vec3 reflectionBRDF         = EnvBRDFApprox(f0, r, NoV); 
     
 	outColor = 
         (diffuse + sunSpecular) * sun + 
