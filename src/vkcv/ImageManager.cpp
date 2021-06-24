@@ -108,7 +108,7 @@ namespace vkcv {
 		if (supportStorage) {
 			imageUsageFlags |= vk::ImageUsageFlagBits::eStorage;
 			
-			if (formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eStorageImage) {
+			if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eStorageImage)) {
 				imageTiling = vk::ImageTiling::eLinear;
 			}
 		}
