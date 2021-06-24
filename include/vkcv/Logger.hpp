@@ -37,6 +37,10 @@ namespace vkcv {
 #define VKCV_DEBUG_MESSAGE_LEN 1024
 #endif
 
+#ifdef MINGW_HAS_SECURE_API
+#undef MINGW_HAS_SECURE_API
+#endif
+
 #ifdef _MSC_VER
 #define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
