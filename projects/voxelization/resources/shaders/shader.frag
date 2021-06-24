@@ -40,11 +40,11 @@ vec3 cookTorrance(vec3 f0, float r, vec3 N, vec3 V, vec3 L){
     float NoL = clamp(dot(N, L), 0, 1);
     float NoV = clamp(abs(dot(N, V)), 0, 1);    // abs to account for wrong visibility caused by normal mapping
     
-    vec3    F           = fresnelSchlick(NoH, f0);
-    float   D           = GGXDistribution(r, NoH);
-    float   G           = GGXSmithShadowing(r, NoV, NoL);
+    vec3    F = fresnelSchlick(NoH, f0);
+    float   D = GGXDistribution(r, NoH);
+    float   G = GGXSmithShadowing(r, NoV, NoL);
     
-    return (F * D * G) / max(4 * NoV * NoL, 0.000001);
+    return (F * D * G) / max(4 * NoV * NoL, 0.00001);
 }
 
 float roughnessToConeAngleDegree(float r){
@@ -75,8 +75,8 @@ void main()	{
     vec3 B      = cross(N_geo, T) * passTangent.w;
     mat3 TBN    = mat3(T, B, N_geo);
     normalTexel = normalTexel * 2 - 1;
-    
-    vec3 N  = TBN * normalTexel;
+
+    vec3 N  = normalize(TBN * normalTexel);
     vec3 L  = lightInfo.L;
     vec3 V  = normalize(cameraPos - passPos);
     
