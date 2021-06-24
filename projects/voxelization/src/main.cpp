@@ -118,11 +118,12 @@ int main(int argc, const char** argv) {
 	
 	const vk::Format depthBufferFormat = vk::Format::eD32Sfloat;
 	const vkcv::AttachmentDescription depth_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
+		vkcv::AttachmentOperation::DONT_CARE,
+		vkcv::AttachmentOperation::LOAD,
 		depthBufferFormat
 	);
-
+	
+	// forward shading config
 	vkcv::PassConfig forwardPassDefinition({ color_attachment, depth_attachment }, msaa);
 	vkcv::PassHandle forwardPass = core.createPass(forwardPassDefinition);
 
@@ -149,6 +150,48 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = 
 		core.createDescriptorSet({ forwardProgram.getReflectedDescriptors()[0] });
 
+	// depth prepass config
+	vkcv::ShaderProgram depthPrepassShader;
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/depthPrepass.vert"),
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		depthPrepassShader.addShader(shaderStage, path);
+	});
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/depthPrepass.frag"),
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		depthPrepassShader.addShader(shaderStage, path);
+	});
+
+	const std::vector<vkcv::VertexAttachment> prepassVertexAttachments = depthPrepassShader.getVertexAttachments();
+
+	std::vector<vkcv::VertexBinding> prepassVertexBindings;
+	for (size_t i = 0; i < prepassVertexAttachments.size(); i++) {
+		prepassVertexBindings.push_back(vkcv::VertexBinding(i, { prepassVertexAttachments[i] }));
+	}
+	const vkcv::VertexLayout prepassVertexLayout(prepassVertexBindings);
+
+	const vkcv::AttachmentDescription prepassAttachment(
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::CLEAR,
+		depthBufferFormat);
+
+	vkcv::PassConfig prepassPassDefinition({ prepassAttachment }, msaa);
+	vkcv::PassHandle prepassPass = core.createPass(prepassPassDefinition);
+
+	vkcv::PipelineConfig prepassPipelineConfig{
+		depthPrepassShader,
+		windowWidth,
+		windowHeight,
+		prepassPass,
+		vertexLayout,
+		{},
+		true};
+	prepassPipelineConfig.m_culling         = vkcv::CullMode::Back;
+	prepassPipelineConfig.m_multisampling   = msaa;
+	prepassPipelineConfig.m_depthTest       = vkcv::DepthTest::LessEqual;
+
+	vkcv::PipelineHandle prepassPipeline = core.createGraphicsPipeline(prepassPipelineConfig);
+
+	// create descriptor sets
 	vkcv::SamplerHandle colorSampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerFilterType::LINEAR,
@@ -156,7 +199,6 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
-	// create descriptor sets
 	std::vector<vkcv::DescriptorSetHandle> materialDescriptorSets;
 	std::vector<vkcv::Image> sceneImages;
 
@@ -234,6 +276,8 @@ int main(int argc, const char** argv) {
 	};
     forwardPipelineConfig.m_culling         = vkcv::CullMode::Back;
 	forwardPipelineConfig.m_multisampling   = msaa;
+	forwardPipelineConfig.m_depthTest       = vkcv::DepthTest::Equal;
+	forwardPipelineConfig.m_depthWrite      = false;
 	
 	vkcv::PipelineHandle forwardPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
 	
@@ -312,11 +356,13 @@ int main(int argc, const char** argv) {
 	}
 
 	std::vector<vkcv::DrawcallInfo> drawcalls;
+	std::vector<vkcv::DrawcallInfo> prepassDrawcalls;
 	for (int i = 0; i < meshes.size(); i++) {
 
 		drawcalls.push_back(vkcv::DrawcallInfo(meshes[i], { 
 			vkcv::DescriptorSetUsage(0, core.getDescriptorSet(forwardShadingDescriptorSet).vulkanHandle),
 			vkcv::DescriptorSetUsage(1, core.getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) }));
+		prepassDrawcalls.push_back(vkcv::DrawcallInfo(meshes[i], {}));
 	}
 
 	vkcv::SamplerHandle voxelSampler = core.createSampler(
@@ -440,9 +486,26 @@ int main(int argc, const char** argv) {
 			modelMatrices,
 			perMeshDescriptorSets);
 
-		// main pass
+		// depth prepass
 		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();
 
+		std::vector<glm::mat4> prepassMatrices;
+		for (const auto& m : modelMatrices) {
+			prepassMatrices.push_back(viewProjectionCamera * m);
+		}
+
+		const vkcv::PushConstantData            prepassPushConstantData((void*)prepassMatrices.data(), sizeof(glm::mat4));
+		const std::vector<vkcv::ImageHandle>    prepassRenderTargets = { depthBuffer };
+
+		core.recordDrawcallsToCmdStream(
+			cmdStream,
+			prepassPass,
+			prepassPipeline,
+			prepassPushConstantData,
+			prepassDrawcalls,
+			prepassRenderTargets);
+
+		// main pass
 		std::vector<std::array<glm::mat4, 2>> mainPassMatrices;
 		for (const auto& m : modelMatrices) {
 			mainPassMatrices.push_back({ viewProjectionCamera * m, m });

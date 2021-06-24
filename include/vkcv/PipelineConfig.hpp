@@ -16,6 +16,7 @@ namespace vkcv {
 
     enum class PrimitiveTopology{PointList, LineList, TriangleList };
 	enum class CullMode{ None, Front, Back };
+    enum class DepthTest { None, Less, LessEqual, Greater, GreatherEqual, Equal };
 
     struct PipelineConfig {
         ShaderProgram                           m_ShaderProgram;
@@ -25,11 +26,13 @@ namespace vkcv {
         VertexLayout                            m_VertexLayout;
         std::vector<vk::DescriptorSetLayout>    m_DescriptorLayouts;
         bool                                    m_UseDynamicViewport;
-        bool                                    m_UseConservativeRasterization = false;
-        PrimitiveTopology                       m_PrimitiveTopology = PrimitiveTopology::TriangleList;
-        bool                                    m_EnableDepthClamping = false;
-        Multisampling                           m_multisampling = Multisampling::None;
-        CullMode                                m_culling = CullMode::None;
+        bool                                    m_UseConservativeRasterization  = false;
+        PrimitiveTopology                       m_PrimitiveTopology             = PrimitiveTopology::TriangleList;
+        bool                                    m_EnableDepthClamping           = false;
+        Multisampling                           m_multisampling                 = Multisampling::None;
+        CullMode                                m_culling                       = CullMode::None;
+        DepthTest                               m_depthTest                     = DepthTest::LessEqual;
+        bool                                    m_depthWrite              = true;
     };
 
 }
