@@ -115,6 +115,10 @@ glm::mat4 computeShadowViewProjectionMatrix(
 	getMinMaxView(voxelVolumeCorners);
 
 	glm::vec3 scale  = glm::vec3(2) / (maxView - minView);
+
+	// rotationaly invariant to avoid swimming when moving camera
+	scale = glm::vec3(glm::max(glm::max(scale.x, scale.y), scale.z));
+
 	glm::vec3 offset = -0.5f * (maxView + minView) * scale;
 
 	glm::mat4 crop(1);
