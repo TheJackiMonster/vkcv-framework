@@ -81,7 +81,12 @@ namespace vkcv {
     	}
 
         glfwPollEvents();
-        onGamepadEvent(GLFW_JOYSTICK_1);
+    	
+    	for (int gamepadIndex = GLFW_JOYSTICK_1; gamepadIndex <= GLFW_JOYSTICK_LAST; gamepadIndex++) {
+    		if (glfwJoystickPresent(gamepadIndex)) {
+				onGamepadEvent(gamepadIndex);
+			}
+		}
 	
 		for (auto glfwWindow : s_Windows) {
 			auto window = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
@@ -152,7 +157,7 @@ namespace vkcv {
         activeWindowIndex *= (activeWindowIndex < s_Windows.size());    // fixes index getting out of bounds (e.g. if there is no focused window)
         auto window = static_cast<Window *>(glfwGetWindowUserPointer(s_Windows[activeWindowIndex]));
 
-        if (window != nullptr && glfwJoystickPresent(gamepadIndex)) {
+        if (window != nullptr) {
             window->e_gamepad(gamepadIndex);
         }
     }
