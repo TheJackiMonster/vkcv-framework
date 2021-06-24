@@ -286,6 +286,52 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
+	// sky
+	struct SkySettings {
+		glm::vec3   color;
+		float       strength;
+	};
+	SkySettings skySettings;
+	skySettings.color       = glm::vec3(0.15, 0.65, 1);
+	skySettings.strength    = 5;
+
+	const vkcv::AttachmentDescription skyColorAttachment(
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::LOAD,
+		colorBufferFormat);
+
+	const vkcv::AttachmentDescription skyDepthAttachments(
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::LOAD,
+		depthBufferFormat);
+
+	vkcv::PassConfig skyPassConfig({ skyColorAttachment, skyDepthAttachments }, msaa);
+	vkcv::PassHandle skyPass = core.createPass(skyPassConfig);
+
+	vkcv::ShaderProgram skyShader;
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/sky.vert"),
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		skyShader.addShader(shaderStage, path);
+	});
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/sky.frag"),
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		skyShader.addShader(shaderStage, path);
+	});
+
+	vkcv::PipelineConfig skyPipeConfig;
+	skyPipeConfig.m_ShaderProgram       = skyShader;
+	skyPipeConfig.m_Width               = windowWidth;
+	skyPipeConfig.m_Height              = windowHeight;
+	skyPipeConfig.m_PassHandle          = skyPass;
+	skyPipeConfig.m_VertexLayout        = vkcv::VertexLayout({});
+	skyPipeConfig.m_DescriptorLayouts   = {};
+	skyPipeConfig.m_UseDynamicViewport  = true;
+    skyPipeConfig.m_multisampling       = msaa;
+    skyPipeConfig.m_depthWrite          = false;
+
+	vkcv::PipelineHandle skyPipe = core.createGraphicsPipeline(skyPipeConfig);
+
+	// render targets
 	vkcv::ImageHandle depthBuffer           = core.createImage(depthBufferFormat, windowWidth, windowHeight, 1, false, false, false, msaa).getHandle();
 
     const bool colorBufferRequiresStorage   = !usingMsaa;
@@ -526,6 +572,15 @@ int main(int argc, const char** argv) {
 			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets, voxelVisualisationMip);
 		}
 
+		// sky
+		core.recordDrawcallsToCmdStream(
+			cmdStream,
+			skyPass,
+			skyPipe,
+			vkcv::PushConstantData((void*)&skySettings, sizeof(skySettings)),
+			{ vkcv::DrawcallInfo(vkcv::Mesh({}, nullptr, 3), {}) },
+			renderTargets);
+
 		const uint32_t fullscreenLocalGroupSize = 8;
 		const uint32_t fulsscreenDispatchCount[3] = {
 			static_cast<uint32_t>(glm::ceil(windowWidth  / static_cast<float>(fullscreenLocalGroupSize))),
@@ -580,6 +635,9 @@ int main(int argc, const char** argv) {
 		ImGui::DragFloat("Sun strength",            &lightStrength);
 		ImGui::DragFloat("Max shadow distance",     &maxShadowDistance);
 		maxShadowDistance = std::max(maxShadowDistance, 1.f);
+
+		ImGui::ColorEdit3("Sky color",      &skySettings.color.x);
+		ImGui::DragFloat("Sky strength",    &skySettings.strength, 0.1);
 
 		ImGui::Checkbox("Draw voxel visualisation", &renderVoxelVis);
 		ImGui::SliderInt("Visualisation mip",       &voxelVisualisationMip, 0, 7);

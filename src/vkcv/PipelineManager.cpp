@@ -221,14 +221,18 @@ namespace vkcv
                 { 1.f,1.f,1.f,1.f }
         );
 
-		const size_t matrixPushConstantSize = config.m_ShaderProgram.getPushConstantSize();
-		const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, matrixPushConstantSize);
+		const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
+		const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, pushConstantSize);
 
         // pipeline layout
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
 			{},
 			(config.m_DescriptorLayouts),
 			(pushConstantRange));
+		if (pushConstantSize == 0) {
+			pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+		}
+
 
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
