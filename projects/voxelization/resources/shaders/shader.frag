@@ -68,6 +68,35 @@ vec3 EnvBRDFApprox(vec3 SpecularColor, float Roughness, float NoV )
 	return SpecularColor * AB.x + AB.y;
 }
 
+float isotropicPhase(){
+    return 1 / pi;
+}
+
+vec3 volumetricLighting(vec3 colorIn, vec3 V, vec3 pos, float d){
+    vec3 color      = colorIn;
+    
+    int sampleCount = 48;
+    float stepSize  = d / sampleCount;
+    
+    vec3 scatteringCoefficient = vec3(0.005);
+    vec3 absorptionCoefficient = vec3(0.01);
+    vec3 extinctionCoefficient = scatteringCoefficient + absorptionCoefficient;
+    
+    float noiseScale    = 0.1;
+    pos                 += V * noiseScale * interleavedGradientNoise(gl_FragCoord.xy);
+    
+    for(int i = 0; i < sampleCount; i++){
+        vec3    samplePoint = pos + V * i * stepSize;
+        float   phase       = isotropicPhase();
+        vec3    light       = lightInfo.sunColor * lightInfo.sunStrength;
+        float   shadow      = shadowTest(samplePoint, lightInfo, shadowMap, shadowMapSampler, vec2(0));
+        light               *= shadow;
+        color               += phase * light * scatteringCoefficient * stepSize;
+        color               *= exp(-stepSize * extinctionCoefficient);
+    }
+    return color;
+}
+
 void main()	{
 
     vec3 albedoTexel    = texture(sampler2D(albedoTexture, textureSampler), passUV).rgb;
@@ -125,4 +154,7 @@ void main()	{
         (diffuse + sunSpecular) * sun + 
         lambertBRDF(albedo) * diffuseTrace + 
         reflectionBRDF * specularTrace;
+        
+    float d     = distance(cameraPos, passPos);
+    outColor    = volumetricLighting(outColor, V, passPos, d);
 }
