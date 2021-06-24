@@ -14,14 +14,14 @@ vec3 fresnelSchlick(float cosTheta, vec3 f0){
 float GGXDistribution(float r, float NoH){
     float r2    = r * r;
     float denom = pi * pow(NoH * NoH * (r2 - 1) + 1, 2);
-    return r2 / max(denom, 0.000001);
+    return r2 / max(denom, 0.00001);
 }
 
 float GGXSmithShadowingPart(float r, float cosTheta){
     float nom   = cosTheta * 2;
     float r2    = r * r;
     float denom = cosTheta + sqrt(r2 + (1 - r2) * cosTheta * cosTheta);
-    return nom / max(denom, 0.000001);
+    return nom / max(denom, 0.00001);
 }
 
 float GGXSmithShadowing(float r, float NoV, float NoL){
