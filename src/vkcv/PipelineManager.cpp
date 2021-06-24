@@ -193,7 +193,7 @@ namespace vkcv
                 false,
                 0.f,
                 nullptr,
-                false,
+                config.m_alphaToCoverage,
                 false
         );
 
