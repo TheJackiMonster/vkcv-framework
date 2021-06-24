@@ -81,6 +81,7 @@ vec3 volumetricLighting(vec3 colorIn, vec3 V, vec3 pos, float d){
     vec3 scatteringCoefficient = vec3(0.005);
     vec3 absorptionCoefficient = vec3(0.01);
     vec3 extinctionCoefficient = scatteringCoefficient + absorptionCoefficient;
+    vec3 ambientLight          = vec3(0.2);
     
     float noiseScale    = 0.1;
     pos                 += V * noiseScale * interleavedGradientNoise(gl_FragCoord.xy);
@@ -91,6 +92,8 @@ vec3 volumetricLighting(vec3 colorIn, vec3 V, vec3 pos, float d){
         vec3    light       = lightInfo.sunColor * lightInfo.sunStrength;
         float   shadow      = shadowTest(samplePoint, lightInfo, shadowMap, shadowMapSampler, vec2(0));
         light               *= shadow;
+        light               += ambientLight;
+        
         color               += phase * light * scatteringCoefficient * stepSize;
         color               *= exp(-stepSize * extinctionCoefficient);
     }
