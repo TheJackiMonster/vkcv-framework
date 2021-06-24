@@ -260,8 +260,8 @@ void ShadowMapping::recordShadowMapRendering(
 
 	// depth to moments
 	uint32_t dispatchCount[3];
-	dispatchCount[0] = (uint32_t)std::ceilf(shadowMapResolution / 8.f);
-	dispatchCount[1] = (uint32_t)std::ceilf(shadowMapResolution / 8.f);
+	dispatchCount[0] = static_cast<uint32_t>(std::ceil(shadowMapResolution / 8.f));
+	dispatchCount[1] = static_cast<uint32_t>(std::ceil(shadowMapResolution / 8.f));
 	dispatchCount[2] = 1;
 
 	const uint32_t msaaSampleCount = msaaToSampleCount(msaa);
