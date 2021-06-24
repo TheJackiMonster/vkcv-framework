@@ -32,7 +32,8 @@ namespace vkcv {
         Multisampling                           m_multisampling                 = Multisampling::None;
         CullMode                                m_culling                       = CullMode::None;
         DepthTest                               m_depthTest                     = DepthTest::LessEqual;
-        bool                                    m_depthWrite              = true;
+        bool                                    m_depthWrite                    = true;
+        bool                                    m_alphaToCoverage               = false;
     };
 
 }

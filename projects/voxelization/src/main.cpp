@@ -263,9 +263,10 @@ int main(int argc, const char** argv) {
 			core.getDescriptorSet(prepassDescriptorSet).layout,
 			core.getDescriptorSet(perMeshDescriptorSets[0]).layout },
 		true };
-	prepassPipelineConfig.m_culling = vkcv::CullMode::Back;
-	prepassPipelineConfig.m_multisampling = msaa;
-	prepassPipelineConfig.m_depthTest = vkcv::DepthTest::LessEqual;
+	prepassPipelineConfig.m_culling         = vkcv::CullMode::Back;
+	prepassPipelineConfig.m_multisampling   = msaa;
+	prepassPipelineConfig.m_depthTest       = vkcv::DepthTest::LessEqual;
+	prepassPipelineConfig.m_alphaToCoverage = true;
 
 	vkcv::PipelineHandle prepassPipeline = core.createGraphicsPipeline(prepassPipelineConfig);
 
