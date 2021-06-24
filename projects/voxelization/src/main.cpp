@@ -177,20 +177,6 @@ int main(int argc, const char** argv) {
 	vkcv::PassConfig prepassPassDefinition({ prepassAttachment }, msaa);
 	vkcv::PassHandle prepassPass = core.createPass(prepassPassDefinition);
 
-	vkcv::PipelineConfig prepassPipelineConfig{
-		depthPrepassShader,
-		windowWidth,
-		windowHeight,
-		prepassPass,
-		vertexLayout,
-		{},
-		true};
-	prepassPipelineConfig.m_culling         = vkcv::CullMode::Back;
-	prepassPipelineConfig.m_multisampling   = msaa;
-	prepassPipelineConfig.m_depthTest       = vkcv::DepthTest::LessEqual;
-
-	vkcv::PipelineHandle prepassPipeline = core.createGraphicsPipeline(prepassPipelineConfig);
-
 	// create descriptor sets
 	vkcv::SamplerHandle colorSampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
@@ -264,13 +250,34 @@ int main(int argc, const char** argv) {
 		perMeshDescriptorSets.push_back(materialDescriptorSets[vertexGroup.materialIndex]);
 	}
 
+	// prepass pipeline
+	vkcv::DescriptorSetHandle prepassDescriptorSet = core.createDescriptorSet(std::vector<vkcv::DescriptorBinding>());
+
+	vkcv::PipelineConfig prepassPipelineConfig{
+		depthPrepassShader,
+		windowWidth,
+		windowHeight,
+		prepassPass,
+		vertexLayout,
+		{ 
+			core.getDescriptorSet(prepassDescriptorSet).layout,
+			core.getDescriptorSet(perMeshDescriptorSets[0]).layout },
+		true };
+	prepassPipelineConfig.m_culling = vkcv::CullMode::Back;
+	prepassPipelineConfig.m_multisampling = msaa;
+	prepassPipelineConfig.m_depthTest = vkcv::DepthTest::LessEqual;
+
+	vkcv::PipelineHandle prepassPipeline = core.createGraphicsPipeline(prepassPipelineConfig);
+
+	// forward pipeline
 	vkcv::PipelineConfig forwardPipelineConfig {
 		forwardProgram,
 		windowWidth,
 		windowHeight,
 		forwardPass,
 		vertexLayout,
-		{	core.getDescriptorSet(forwardShadingDescriptorSet).layout, 
+		{	
+			core.getDescriptorSet(forwardShadingDescriptorSet).layout, 
 			core.getDescriptorSet(perMeshDescriptorSets[0]).layout },
 		true
 	};
@@ -408,7 +415,9 @@ int main(int argc, const char** argv) {
 		drawcalls.push_back(vkcv::DrawcallInfo(meshes[i], { 
 			vkcv::DescriptorSetUsage(0, core.getDescriptorSet(forwardShadingDescriptorSet).vulkanHandle),
 			vkcv::DescriptorSetUsage(1, core.getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) }));
-		prepassDrawcalls.push_back(vkcv::DrawcallInfo(meshes[i], {}));
+		prepassDrawcalls.push_back(vkcv::DrawcallInfo(meshes[i], {
+			vkcv::DescriptorSetUsage(0, core.getDescriptorSet(prepassDescriptorSet).vulkanHandle),
+			vkcv::DescriptorSetUsage(1, core.getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) }));
 	}
 
 	vkcv::SamplerHandle voxelSampler = core.createSampler(
