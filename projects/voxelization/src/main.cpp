@@ -363,6 +363,13 @@ int main(int argc, const char** argv) {
 		}
 	});
 
+	bool renderUI = true;
+	window.e_key.add([&renderUI](int key, int scancode, int action, int mods) {
+		if (key == GLFW_KEY_I && action == GLFW_PRESS) {
+			renderUI = !renderUI;
+		}
+	});
+
 	// tonemapping compute shader
 	vkcv::ShaderProgram tonemappingProgram;
 	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/tonemapping.comp", 
@@ -663,66 +670,67 @@ int main(int argc, const char** argv) {
 		// draw UI
 		gui.beginGUI();
 
-		ImGui::Begin("Settings");
+		if (renderUI) {
+			ImGui::Begin("Settings");
 
-		ImGui::Checkbox("MSAA custom resolve", &msaaCustomResolve);
+			ImGui::Checkbox("MSAA custom resolve", &msaaCustomResolve);
 
-		ImGui::DragFloat2("Light angles",           &lightAnglesDegree.x);
-		ImGui::ColorEdit3("Sun color",              &lightColor.x);
-		ImGui::DragFloat("Sun strength",            &lightStrength);
-		ImGui::DragFloat("Max shadow distance",     &maxShadowDistance);
-		maxShadowDistance = std::max(maxShadowDistance, 1.f);
+			ImGui::DragFloat2("Light angles", &lightAnglesDegree.x);
+			ImGui::ColorEdit3("Sun color", &lightColor.x);
+			ImGui::DragFloat("Sun strength", &lightStrength);
+			ImGui::DragFloat("Max shadow distance", &maxShadowDistance);
+			maxShadowDistance = std::max(maxShadowDistance, 1.f);
 
-		ImGui::ColorEdit3("Sky color",      &skySettings.color.x);
-		ImGui::DragFloat("Sky strength",    &skySettings.strength, 0.1);
+			ImGui::ColorEdit3("Sky color", &skySettings.color.x);
+			ImGui::DragFloat("Sky strength", &skySettings.strength, 0.1);
 
-		ImGui::Checkbox("Draw voxel visualisation", &renderVoxelVis);
-		ImGui::SliderInt("Visualisation mip",       &voxelVisualisationMip, 0, 7);
-		ImGui::DragFloat("Voxelization extent",     &voxelizationExtent, 1.f, 0.f);
-		voxelizationExtent = std::max(voxelizationExtent, 1.f);
-		voxelVisualisationMip = std::max(voxelVisualisationMip, 0);
+			ImGui::Checkbox("Draw voxel visualisation", &renderVoxelVis);
+			ImGui::SliderInt("Visualisation mip", &voxelVisualisationMip, 0, 7);
+			ImGui::DragFloat("Voxelization extent", &voxelizationExtent, 1.f, 0.f);
+			voxelizationExtent = std::max(voxelizationExtent, 1.f);
+			voxelVisualisationMip = std::max(voxelVisualisationMip, 0);
 
-		ImGui::ColorEdit3("Scattering color", &scatteringColor.x);
-		ImGui::DragFloat("Scattering density", &scatteringDensity, 0.0001);
-		ImGui::ColorEdit3("Absorption color", &absorptionColor.x);
-		ImGui::DragFloat("Absorption density", &absorptionDensity, 0.0001);
-		ImGui::DragFloat("Volumetric ambient", &volumetricAmbient, 0.002);
+			ImGui::ColorEdit3("Scattering color", &scatteringColor.x);
+			ImGui::DragFloat("Scattering density", &scatteringDensity, 0.0001);
+			ImGui::ColorEdit3("Absorption color", &absorptionColor.x);
+			ImGui::DragFloat("Absorption density", &absorptionDensity, 0.0001);
+			ImGui::DragFloat("Volumetric ambient", &volumetricAmbient, 0.002);
 
-		if (ImGui::Button("Reload forward pass")) {
+			if (ImGui::Button("Reload forward pass")) {
 
-			vkcv::ShaderProgram newForwardProgram;
-			compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
-				[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-				newForwardProgram.addShader(shaderStage, path);
-			});
-			compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
-				[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-				newForwardProgram.addShader(shaderStage, path);
-			});
-			forwardPipelineConfig.m_ShaderProgram = newForwardProgram;
-			vkcv::PipelineHandle newPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
+				vkcv::ShaderProgram newForwardProgram;
+				compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+					newForwardProgram.addShader(shaderStage, path);
+				});
+				compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+					newForwardProgram.addShader(shaderStage, path);
+				});
+				forwardPipelineConfig.m_ShaderProgram = newForwardProgram;
+				vkcv::PipelineHandle newPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
 
-			if (newPipeline) {
-				forwardPipeline = newPipeline;
+				if (newPipeline) {
+					forwardPipeline = newPipeline;
+				}
 			}
-		}
-		if (ImGui::Button("Reload tonemapping")) {
+			if (ImGui::Button("Reload tonemapping")) {
 
-			vkcv::ShaderProgram newProgram;
-			compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("resources/shaders/tonemapping.comp"),
-				[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-				newProgram.addShader(shaderStage, path);
-			});
-			vkcv::PipelineHandle newPipeline = core.createComputePipeline(
-				newProgram, 
-				{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
+				vkcv::ShaderProgram newProgram;
+				compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("resources/shaders/tonemapping.comp"),
+					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+					newProgram.addShader(shaderStage, path);
+				});
+				vkcv::PipelineHandle newPipeline = core.createComputePipeline(
+					newProgram,
+					{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
 
-			if (newPipeline) {
-				tonemappingPipeline = newPipeline;
+				if (newPipeline) {
+					tonemappingPipeline = newPipeline;
+				}
 			}
+			ImGui::End();
 		}
-
-		ImGui::End();
 
 		gui.endGUI();
 
