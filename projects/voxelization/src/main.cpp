@@ -483,7 +483,7 @@ int main(int argc, const char** argv) {
 	float       maxShadowDistance               = 30.f;
 
 	int     voxelVisualisationMip   = 0;
-	float   voxelizationExtent      = 30.f;
+	float   voxelizationExtent      = 35.f;
 
 	bool msaaCustomResolve = true;
 
