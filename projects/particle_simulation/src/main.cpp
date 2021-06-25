@@ -240,6 +240,8 @@ int main(int argc, const char **argv) {
                                               {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet).vulkanHandle)},
                                               pushConstantDataCompute);
 
+        core.recordBufferMemoryBarrier(cmdStream, particleBuffer.getHandle());
+
         vkcv::PushConstantData pushConstantDataDraw((void *) mvp.data(), sizeof(glm::mat4));
         core.recordDrawcallsToCmdStream(
                 cmdStream,
