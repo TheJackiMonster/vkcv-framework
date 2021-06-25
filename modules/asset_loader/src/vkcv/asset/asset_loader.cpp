@@ -298,6 +298,7 @@ int loadScene(const std::string &path, Scene &scene){
         recurseExceptionPrint(e, path);
         return ASSET_ERROR;
     }
+    // TODO use std::filesystem::path instead of std::string for path/uri?
     size_t pos = path.find_last_of("/");
     auto dir = path.substr(0, pos);
 
@@ -309,6 +310,8 @@ int loadScene(const std::string &path, Scene &scene){
     // which is only needed to get the vertex buffer for that mesh... none of
     // this is a good solution.
     fx::gltf::Accessor posAccessor;
+    // TODO vertexAttributes are per-VertexGroup and should not be in the top
+    // most scope of this function next to arrays stored per-Scene...
     std::vector<VertexAttribute> vertexAttributes;
     std::vector<Material> materials;
     std::vector<Texture> textures;
