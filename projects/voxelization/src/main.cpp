@@ -444,12 +444,21 @@ int main(int argc, const char** argv) {
 
 	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
 
+	struct VolumetricSettings {
+		glm::vec3   scatteringCoefficient;
+		float       ambientLight;
+		glm::vec3   absorptionCoefficient;
+	};
+	vkcv::Buffer<VolumetricSettings> volumetricSettingsBuffer
+		= core.createBuffer<VolumetricSettings>(vkcv::BufferType::UNIFORM ,1);
+
 	// write forward pass descriptor set
 	vkcv::DescriptorWrites forwardDescriptorWrites;
 	forwardDescriptorWrites.uniformBufferWrites = {
 		vkcv::UniformBufferDescriptorWrite(0, shadowMapping.getLightInfoBuffer()),
 		vkcv::UniformBufferDescriptorWrite(3, cameraPosBuffer.getHandle()),
-		vkcv::UniformBufferDescriptorWrite(6, voxelization.getVoxelInfoBufferHandle()) };
+		vkcv::UniformBufferDescriptorWrite(6, voxelization.getVoxelInfoBufferHandle()),
+		vkcv::UniformBufferDescriptorWrite(7, volumetricSettingsBuffer.getHandle())};
 	forwardDescriptorWrites.sampledImageWrites = {
 		vkcv::SampledImageDescriptorWrite(1, shadowMapping.getShadowMap()),
 		vkcv::SampledImageDescriptorWrite(4, voxelization.getVoxelImageHandle()) };
@@ -469,6 +478,12 @@ int main(int argc, const char** argv) {
 	float   voxelizationExtent      = 30.f;
 
 	bool msaaCustomResolve = true;
+
+	glm::vec3   scatteringColor     = glm::vec3(1);
+	float       scatteringDensity   = 0.001;
+	glm::vec3   absorptionColor     = glm::vec3(1);
+	float       absorptionDensity   = 0.001;
+	float       volumetricAmbient   = 0.2;
 
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
@@ -567,6 +582,12 @@ int main(int argc, const char** argv) {
 			mainPassMatrices.push_back({ viewProjectionCamera * m, m });
 		}
 
+		VolumetricSettings volumeSettings;
+		volumeSettings.scatteringCoefficient    = scatteringColor * scatteringDensity;
+		volumeSettings.absorptionCoefficient    = absorptionColor * absorptionDensity;
+		volumeSettings.ambientLight             = volumetricAmbient;
+		volumetricSettingsBuffer.fill({ volumeSettings });
+
 		const vkcv::PushConstantData            pushConstantData((void*)mainPassMatrices.data(), 2 * sizeof(glm::mat4));
 		const std::vector<vkcv::ImageHandle>    renderTargets = { colorBuffer, depthBuffer };
 
@@ -654,6 +675,12 @@ int main(int argc, const char** argv) {
 		ImGui::DragFloat("Voxelization extent",     &voxelizationExtent, 1.f, 0.f);
 		voxelizationExtent = std::max(voxelizationExtent, 1.f);
 		voxelVisualisationMip = std::max(voxelVisualisationMip, 0);
+
+		ImGui::ColorEdit3("Scattering color", &scatteringColor.x);
+		ImGui::DragFloat("Scattering density", &scatteringDensity, 0.0001);
+		ImGui::ColorEdit3("Absorption color", &absorptionColor.x);
+		ImGui::DragFloat("Absorption density", &absorptionDensity, 0.0001);
+		ImGui::DragFloat("Volumetric ambient", &volumetricAmbient, 0.002);
 
 		if (ImGui::Button("Reload forward pass")) {
 
