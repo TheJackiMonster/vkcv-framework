@@ -6,6 +6,7 @@
 #include "ParticleSystem.hpp"
 #include <random>
 #include <glm/gtc/matrix_access.hpp>
+#include <time.h>
 
 int main(int argc, const char **argv) {
     const char *applicationName = "Particlesystem";
@@ -120,10 +121,10 @@ int main(int argc, const char **argv) {
             1
     );
 
-    glm::vec3 minVelocity = glm::vec3(-0.1f,-0.1f,0.f);
-    glm::vec3 maxVelocity = glm::vec3(0.1f,0.1f,0.f);
+    glm::vec3 minVelocity = glm::vec3(-0.1f,-0.1f,-0.1f);
+    glm::vec3 maxVelocity = glm::vec3(0.1f,0.1f,0.1f);
     glm::vec2 lifeTime = glm::vec2(-1.f,8.f);
-    ParticleSystem particleSystem = ParticleSystem( 10000 , minVelocity, maxVelocity, lifeTime);
+    ParticleSystem particleSystem = ParticleSystem( 100000 , minVelocity, maxVelocity, lifeTime);
 
     vkcv::Buffer<Particle> particleBuffer = core.createBuffer<Particle>(
             vkcv::BufferType::STORAGE,
@@ -181,7 +182,7 @@ int main(int argc, const char **argv) {
         //std::cout << "Front: " << cameraManager.getCamera().getFront().x << ", " << cameraManager.getCamera().getFront().z << ", " << cameraManager.getCamera().getFront().z << std::endl;
         glm::mat4 viewmat = cameraManager.getCamera(0).getView();
         spawnPosition = glm::vec3(pos.x, pos.y, 0.f);
-        tempPosition = viewmat * glm::vec4(spawnPosition, 1.0f);
+        tempPosition = glm::vec4(spawnPosition, 1.0f);
         spawnPosition = glm::vec3(tempPosition.x, tempPosition.y, tempPosition.z);
         particleSystem.setRespawnPos(glm::vec3(-spawnPosition.x, spawnPosition.y, spawnPosition.z));
 //        std::cout << "respawn pos: " << spawnPosition.x << ", " << spawnPosition.y << ", " << spawnPosition.z << std::endl;
@@ -201,6 +202,7 @@ int main(int argc, const char **argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
+    srand((unsigned)time(NULL));
     while (window.isWindowOpen()) {
         window.pollEvents();
 
@@ -223,10 +225,11 @@ int main(int argc, const char **argv) {
         mvp.push_back( cameraManager.getCamera(1).getMVP());
 
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+        float random = static_cast<float> (rand()) / (static_cast<float> (RAND_MAX/2.5f));
+        std::cout << random << std::endl;
+        glm::vec2 pushData = glm::vec2(deltatime, random);
 
-        glm::vec4 pushData = glm::vec4(particleSystem.getRespawnPos(),deltatime);
-
-        vkcv::PushConstantData pushConstantDataCompute( &pushData, sizeof(glm::vec4));
+        vkcv::PushConstantData pushConstantDataCompute( &pushData, sizeof(glm::vec2));
         uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(particleSystem.getParticles().size()/256.f)),1,1};
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline,

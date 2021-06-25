@@ -17,8 +17,8 @@ layout(std430, binding = 0) coherent buffer buffer_inParticle
 };
 
 layout( push_constant ) uniform constants{
-    vec3 respawnPos;
     float deltaTime;
+    float rand;
 };
 
 vec3 attraction(vec3 pos, vec3 attractPos)
@@ -64,8 +64,9 @@ void main() {
 //    vel += repulsion(pos, respawnPos) * 0.05;
 
 
-    if((pos.x < -1.0) || (pos.x > 1.0) || (pos.y < -1.0) || (pos.y > 1.0)|| (pos.z < -1.0) || (pos.z > 1.0))
-        vel = (-vel * 0.1) + attraction(pos, respawnPos) * 12;
+    //if((pos.x < -1.0) || (pos.x > 1.0) || (pos.y < -1.0) || (pos.y > 1.0)|| (pos.z < -1.0) || (pos.z > 1.0))
+    if((pos.x < -1.0) || (pos.x > 1.0))
+        vel = (-vel * 0.1);
 
     pos += normalize(vel) * deltaTime;
     inParticle[id].position = pos;
