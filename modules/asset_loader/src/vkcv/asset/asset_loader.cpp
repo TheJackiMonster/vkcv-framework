@@ -72,8 +72,58 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &type)
 }
 
 /**
- * This function fills the array of vertex attributes of a vkcv::asset::Mesh
- * object based on the description of attributes for a fx::gltf::Primitive.
+ * This function loads all the textures of a Scene described by the texture-
+ * and image- array of an fx::gltf::Document.
+ * @param tex_src The array of textures from a fx::gltf::Document
+ * @param img_src The array of images from a fx::gltf::Document
+ * @param dir	  The path of directory in which the glTF file is located
+ * @param dst	  The array from the vkcv::Scene to write the textures to
+ * @return	  ASSET_SUCCESS or ASSET_ERROR
+ */
+int loadTextures(const std::vector<fx::gltf::Texture> &tex_src,
+		const std::vector<fx::gltf::Image> &img_src,
+		const std::string &dir, std::vector<Texture> &dst)
+{
+	dst.clear();
+	dst.reserve(tex_src.size());
+	for (int i = 0; i < tex_src.size(); i++) {
+		// TODO Image objects in glTF can have a URI _or_ a bufferView
+		// and a mimeType; but here we are always assuming a URI.
+		std::string uri = dir + "/" + img_src[tex_src[i].source].uri;
+
+		int w, h, c;
+		uint8_t *data = stbi_load(uri.c_str(), &w, &h, &c, 4);
+		c = 4;	// FIXME hardcoded to always have RGBA channel layout
+		if (!data) {
+			vkcv_log(LogLevel::ERROR, "Failed to load image data from %s",
+					uri.c_str());
+			return ASSET_ERROR;
+		}
+
+		const size_t nbytes = w * h * c;
+		std::vector<uint8_t> imgdata;
+		imgdata.resize(nbytes);
+		if (!memcpy(imgdata.data(), data, nbytes)) {
+			vkcv_log(LogLevel::ERROR, "Failed to copy texture data");
+			free(data);
+			return ASSET_ERROR;
+		}
+		free(data);
+
+		dst.push_back({
+			tex_src[i].sampler,
+			static_cast<uint8_t>(c),
+			static_cast<uint16_t>(w), static_cast<uint16_t>(h),
+			imgdata
+		});
+	}
+	return ASSET_SUCCESS;
+}
+
+/**
+ * This function fills the array of vertex attributes of a VertexGroup (usually
+ * part of a vkcv::asset::Mesh) object based on the description of attributes
+ * for a fx::gltf::Primitive.
  * @param src The description of attribute objects from the fx-gltf library
  * @param dst The array of vertex attributes stored in an asset::Mesh object
  * @return return code
@@ -374,42 +424,10 @@ int loadScene(const std::string &path, Scene &scene){
                                                                             sceneObjects.nodes[m].matrix);
     }
 
-    if (sceneObjects.textures.size() > 0){
-        textures.reserve(sceneObjects.textures.size());
-
-        for(int k = 0; k < sceneObjects.textures.size(); k++){
-            const fx::gltf::Texture &tex = sceneObjects.textures[k];
-            const fx::gltf::Image &img = sceneObjects.images[tex.source];
-	    // TODO Image objects in glTF can have a URI _or_ a bufferView and
-	    // a mimeType; but here we are assuming to always find a URI.
-            std::string img_uri = dir + "/" + img.uri;
-            int w, h, c;
-            uint8_t *data = stbi_load(img_uri.c_str(), &w, &h, &c, 4);
-            c = 4;	// FIXME hardcoded to always have RGBA channel layout
-            if (!data) {
-                vkcv_log(LogLevel::ERROR, "Loading texture image data.")
-                return ASSET_ERROR;
-            }
-            const size_t byteLen = w * h * c;
-
-            std::vector<uint8_t> imgdata;
-            imgdata.resize(byteLen);
-            if (!memcpy(imgdata.data(), data, byteLen)) {
-                vkcv_log(LogLevel::ERROR, "Copying texture image data")
-                free(data);
-                return ASSET_ERROR;
-            }
-            free(data);
-
-            textures.push_back({
-                tex.sampler,
-                static_cast<uint8_t>(c),
-                static_cast<uint16_t>(w),
-                static_cast<uint16_t>(h),
-                imgdata
-            });
-
-        }
+    if (loadTextures(sceneObjects.textures, sceneObjects.images, dir, textures) != ASSET_SUCCESS) {
+	    size_t missing = sceneObjects.textures.size() - textures.size();
+	    vkcv_log(LogLevel::ERROR, "Failed to get %lu textures from glTF source '%s'",
+			    missing, path.c_str());
     }
 
     if (sceneObjects.materials.size() > 0){
