@@ -309,14 +309,6 @@ int loadScene(const std::string &path, Scene &scene){
     // file has to contain at least one mesh
     if (sceneObjects.meshes.size() == 0) return ASSET_ERROR;
 
-    // TODO finding the accessor for the position attribute should be done
-    // differently... it's needed to get the vertex buffer view for each mesh
-    // which is only needed to get the vertex buffer for that mesh... none of
-    // this is a good solution.
-    fx::gltf::Accessor posAccessor;
-    // TODO vertexAttributes are per-VertexGroup and should not be in the top
-    // most scope of this function next to arrays stored per-Scene...
-    std::vector<VertexAttribute> vertexAttributes;
     std::vector<Material> materials;
     std::vector<Texture> textures;
     std::vector<Sampler> samplers;
@@ -324,15 +316,13 @@ int loadScene(const std::string &path, Scene &scene){
     std::vector<VertexGroup> vertexGroups;
     int groupCount = 0;
 
-    Mesh mesh = {};
-
     for(int i = 0; i < sceneObjects.meshes.size(); i++){
         std::vector<int> vertexGroupsIndices;
         fx::gltf::Mesh const &objectMesh = sceneObjects.meshes[i];
 
         for(int j = 0; j < objectMesh.primitives.size(); j++){
             fx::gltf::Primitive const &objectPrimitive = objectMesh.primitives[j];
-            vertexAttributes.clear();
+	    std::vector<VertexAttribute> vertexAttributes;
             vertexAttributes.reserve(objectPrimitive.attributes.size());
 
 	    if (createVertexAttributes(objectPrimitive.attributes,
@@ -343,12 +333,19 @@ int loadScene(const std::string &path, Scene &scene){
 		    vkcv_log(LogLevel::ERROR, "Failed to get vertex attributes");
 		    return ASSET_ERROR;
 	    }
-	    // FIXME Part of the not-so-good solution for finding the vertex
-	    // buffer... see comment above declaration of posAccessor
-            for (auto const & attrib : objectPrimitive.attributes) {
-                fx::gltf::Accessor accessor =  sceneObjects.accessors[attrib.second];
-                if (attrib.first == "POSITION") posAccessor = accessor;
-            }
+
+	    // The accessor for the position attribute is used for
+	    // 1) getting the vertex buffer view which is only needed to get
+	    //    the vertex buffer
+	    // 2) getting the vertex count for the VertexGroup
+	    // 3) getting the min/max of the bounding box for the VertexGroup
+	    fx::gltf::Accessor posAccessor;
+	    for (auto const & attrib : objectPrimitive.attributes) {
+		    if (attrib.first == "POSITION") {
+			    posAccessor = sceneObjects.accessors[attrib.second];
+			    break;
+		    }
+	    }
 
             IndexType indexType;
             std::vector<uint8_t> indexBufferData = {};
@@ -421,6 +418,7 @@ int loadScene(const std::string &path, Scene &scene){
             groupCount++;
         }
 
+	Mesh mesh = {};
         mesh.name = sceneObjects.meshes[i].name;
         mesh.vertexGroups = vertexGroupsIndices;
 
