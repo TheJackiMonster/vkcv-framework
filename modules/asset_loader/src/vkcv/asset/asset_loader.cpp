@@ -81,7 +81,7 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &type)
  * @return	  ASSET_ERROR if at least one texture could not be constructed
  * 		  properly, otherwise ASSET_SUCCESS
  */
-int loadTextures(const std::vector<fx::gltf::Texture> &tex_src,
+int createTextures(const std::vector<fx::gltf::Texture> &tex_src,
 		const std::vector<fx::gltf::Image> &img_src,
 		const std::string &dir, std::vector<Texture> &dst)
 {
@@ -131,14 +131,15 @@ int loadTextures(const std::vector<fx::gltf::Texture> &tex_src,
  * @return	ASSET_ERROR when at least one VertexAttribute could not be
  * 		constructed properly, otherwise ASSET_SUCCESS
  */
-int getVertexAttributes(const fx::gltf::Attributes &src,
-		const fx::gltf::Document &gltf,
+int createVertexAttributes(const fx::gltf::Attributes &src,
+		const std::vector<fx::gltf::Accessor> &accessors,
+		const std::vector<fx::gltf::BufferView> &bufferViews,
 		std::vector<VertexAttribute> &dst)
 {
 	dst.clear();
 	dst.reserve(src.size());
 	for (const auto &attrib : src) {
-		const fx::gltf::Accessor &accessor = gltf.accessors[attrib.second];
+		const fx::gltf::Accessor &accessor = accessors[attrib.second];
 
 		dst.push_back({});
 		VertexAttribute &att = dst.back();
@@ -162,7 +163,7 @@ int getVertexAttributes(const fx::gltf::Attributes &src,
 			att.type = PrimitiveType::UNDEFINED;
 			return ASSET_ERROR;
 		}
-		const fx::gltf::BufferView &buf = gltf.bufferViews[accessor.bufferView];
+		const fx::gltf::BufferView &buf = bufferViews[accessor.bufferView];
 		att.offset = buf.byteOffset;
 		att.length = buf.byteLength;
 		att.stride = buf.byteStride;
@@ -334,8 +335,11 @@ int loadScene(const std::string &path, Scene &scene){
             vertexAttributes.clear();
             vertexAttributes.reserve(objectPrimitive.attributes.size());
 
-	    if (getVertexAttributes(objectPrimitive.attributes, sceneObjects,
-				    vertexAttributes) != ASSET_SUCCESS) {
+	    if (createVertexAttributes(objectPrimitive.attributes,
+				    sceneObjects.accessors,
+				    sceneObjects.bufferViews,
+				    vertexAttributes)
+			    != ASSET_SUCCESS) {
 		    vkcv_log(LogLevel::ERROR, "Failed to get vertex attributes");
 		    return ASSET_ERROR;
 	    }
@@ -430,7 +434,7 @@ int loadScene(const std::string &path, Scene &scene){
                                                                             sceneObjects.nodes[m].matrix);
     }
 
-    if (loadTextures(sceneObjects.textures, sceneObjects.images, dir, textures) != ASSET_SUCCESS) {
+    if (createTextures(sceneObjects.textures, sceneObjects.images, dir, textures) != ASSET_SUCCESS) {
 	    size_t missing = sceneObjects.textures.size() - textures.size();
 	    vkcv_log(LogLevel::ERROR, "Failed to get %lu textures from glTF source '%s'",
 			    missing, path.c_str());
