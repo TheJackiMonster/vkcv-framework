@@ -10,8 +10,8 @@ else()
         
         list(APPEND vkcv_camera_libraries glm)
         
-        list(APPEND vkcv_camera_defines GLM_DEPTH_ZERO_TO_ONE=1)
-        list(APPEND vkcv_camera_defines GLM_FORCE_LEFT_HANDED=1)
+        list(APPEND vkcv_camera_defines GLM_DEPTH_ZERO_TO_ONE)
+        list(APPEND vkcv_camera_defines GLM_FORCE_LEFT_HANDED)
     else()
         message(WARNING "GLM is required..! Update the submodules!")
     endif ()
