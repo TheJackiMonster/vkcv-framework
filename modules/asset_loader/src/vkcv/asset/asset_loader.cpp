@@ -15,8 +15,8 @@ namespace vkcv::asset {
 
 /**
  * This function unrolls nested exceptions via recursion and prints them
- * @param e error code
- * @param path path to file that is responsible for error
+ * @param e	The exception being thrown
+ * @param path	The path to the file that was responsible for the exception
  */
 void recurseExceptionPrint(const std::exception& e, const std::string &path)
 {
@@ -30,8 +30,8 @@ void recurseExceptionPrint(const std::exception& e, const std::string &path)
 
 /**
  * Computes the component count for an accessor type of the fx-gltf library.
- * @param type The accessor type
- * @return An unsigned integer count
+ * @param type	The accessor type
+ * @return	An unsigned integer count
  */
 // TODO add cases for matrices (or maybe change the type in the struct itself)
 uint8_t getCompCount(const fx::gltf::Accessor::Type type) {
@@ -54,8 +54,8 @@ uint8_t getCompCount(const fx::gltf::Accessor::Type type) {
  * enum for index type. The reason we have defined an incompatible enum that
  * needs translation is that only a subset of component types is valid for
  * indices and we want to catch these incompatibilities here.
- * @param t The component type
- * @return enum representation
+ * @param t	The component type
+ * @return 	The vkcv::IndexType enum representation
  */
 enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &type)
 {
@@ -78,7 +78,8 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &type)
  * @param img_src The array of images from a fx::gltf::Document
  * @param dir	  The path of directory in which the glTF file is located
  * @param dst	  The array from the vkcv::Scene to write the textures to
- * @return	  ASSET_SUCCESS or ASSET_ERROR
+ * @return	  ASSET_ERROR if at least one texture could not be constructed
+ * 		  properly, otherwise ASSET_SUCCESS
  */
 int loadTextures(const std::vector<fx::gltf::Texture> &tex_src,
 		const std::vector<fx::gltf::Image> &img_src,
@@ -124,9 +125,11 @@ int loadTextures(const std::vector<fx::gltf::Texture> &tex_src,
  * This function fills the array of vertex attributes of a VertexGroup (usually
  * part of a vkcv::asset::Mesh) object based on the description of attributes
  * for a fx::gltf::Primitive.
- * @param src The description of attribute objects from the fx-gltf library
- * @param dst The array of vertex attributes stored in an asset::Mesh object
- * @return return code
+ * @param src	The description of attribute objects from the fx-gltf library
+ * @param gltf	The main glTF document
+ * @param dst	The array of vertex attributes stored in an asset::Mesh object
+ * @return	ASSET_ERROR when at least one VertexAttribute could not be
+ * 		constructed properly, otherwise ASSET_SUCCESS
  */
 int getVertexAttributes(const fx::gltf::Attributes &src,
 		const fx::gltf::Document &gltf,
