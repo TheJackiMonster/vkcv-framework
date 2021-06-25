@@ -293,7 +293,6 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DrawcallInfo> drawcalls;
 	std::vector<vkcv::DrawcallInfo> shadowDrawcalls;
 	for (int i = 0; i < meshes.size(); i++) {
-
 		drawcalls.push_back(vkcv::DrawcallInfo(meshes[i], { 
 			vkcv::DescriptorSetUsage(0, core.getDescriptorSet(forwardShadingDescriptorSet).vulkanHandle),
 			vkcv::DescriptorSetUsage(1, core.getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) }));
@@ -395,6 +394,7 @@ int main(int argc, const char** argv) {
         baf.execWholePipeline(cmdStream, colorBuffer);
 
         core.prepareImageForStorage(cmdStream, swapchainInput);
+        
         // gamma correction descriptor write
         vkcv::DescriptorWrites gammaCorrectionDescriptorWrites;
         gammaCorrectionDescriptorWrites.storageImageWrites = {

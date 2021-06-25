@@ -30,7 +30,7 @@ BloomAndFlares::BloomAndFlares(
                      });
     for(uint32_t mipLevel = 0; mipLevel < m_Blur.getMipCount(); mipLevel++)
     {
-        m_DownsampleDescSets.push_back(
+		m_DownsampleDescSets.push_back(
                 p_Core->createDescriptorSet(dsProg.getReflectedDescriptors()[0]));
     }
     m_DownsamplePipe = p_Core->createComputePipeline(
@@ -109,7 +109,7 @@ void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStre
     // downsample dispatches of blur buffer's mip maps
     float mipDispatchCountX = dispatchCountX;
     float mipDispatchCountY = dispatchCountY;
-    for(uint32_t mipLevel = 1; mipLevel < m_Blur.getMipCount(); mipLevel++)
+    for(uint32_t mipLevel = 1; mipLevel < m_DownsampleDescSets.size(); mipLevel++)
     {
         // mip descriptor writes
         vkcv::DescriptorWrites mipDescriptorWrites;
@@ -151,7 +151,10 @@ void BloomAndFlares::execUpsamplePipe(const vkcv::CommandStreamHandle &cmdStream
     // upsample dispatch
     p_Core->prepareImageForStorage(cmdStream, m_Blur.getHandle());
 
-    uint32_t upsampleMipLevels = std::min(m_Blur.getMipCount(), static_cast<uint32_t>(5));
+    const uint32_t upsampleMipLevels = std::min(
+    		static_cast<uint32_t>(m_UpsampleDescSets.size() - 1),
+    		static_cast<uint32_t>(5)
+	);
 
     // upsample dispatch for each mip map
     for(uint32_t mipLevel = upsampleMipLevels; mipLevel > 0; mipLevel--)
