@@ -226,7 +226,7 @@ int main(int argc, const char **argv) {
         cameraManager.update(deltatime);
         std::vector<glm::mat4> mvp;
         mvp.clear();
-        mvp.push_back( cameraManager.getCamera(1).getMVP());
+        mvp.push_back( cameraManager.getActiveCamera().getMVP());
 
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
         float random = rdm(rdmEngine);
