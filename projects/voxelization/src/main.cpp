@@ -486,9 +486,9 @@ int main(int argc, const char** argv) {
 	bool msaaCustomResolve = true;
 
 	glm::vec3   scatteringColor     = glm::vec3(1);
-	float       scatteringDensity   = 0.001;
+	float       scatteringDensity   = 0.005;
 	glm::vec3   absorptionColor     = glm::vec3(1);
-	float       absorptionDensity   = 0.001;
+	float       absorptionDensity   = 0.005;
 	float       volumetricAmbient   = 0.2;
 
 	auto start = std::chrono::system_clock::now();

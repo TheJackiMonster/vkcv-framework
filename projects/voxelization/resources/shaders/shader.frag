@@ -76,7 +76,7 @@ vec3 EnvBRDFApprox(vec3 SpecularColor, float Roughness, float NoV )
 }
 
 float isotropicPhase(){
-    return 1 / pi;
+    return 1 / (4 * pi);
 }
 
 vec3 volumetricLighting(vec3 colorIn, vec3 V, vec3 pos, float d){
