@@ -1,6 +1,6 @@
 #pragma once
 
-#include <iostream>
+#include <stdio.h>
 
 namespace vkcv {
 	
@@ -35,10 +35,6 @@ namespace vkcv {
 #ifndef NDEBUG
 #ifndef VKCV_DEBUG_MESSAGE_LEN
 #define VKCV_DEBUG_MESSAGE_LEN 1024
-#endif
-
-#ifdef MINGW_HAS_SECURE_API
-#undef MINGW_HAS_SECURE_API
 #endif
 
 #ifdef _MSC_VER
