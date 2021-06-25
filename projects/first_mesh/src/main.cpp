@@ -18,8 +18,6 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-	window.initEvents();
-
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
@@ -162,7 +160,7 @@ int main(int argc, const char** argv) {
     auto start = std::chrono::system_clock::now();
     
 	while (window.isWindowOpen()) {
-        vkcv::Window::pollEvents();
+        window.pollEvents();
 		
 		if(window.getHeight() == 0 || window.getWidth() == 0)
 			continue;
