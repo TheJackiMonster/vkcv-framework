@@ -14,7 +14,6 @@ void main()
         return;
     }
 
-
     ivec2 pixel_coord   = ivec2(gl_GlobalInvocationID.xy);
     vec2  pixel_size    = vec2(1.0f) / imageSize(outBlurImage);
     vec2  UV            = pixel_coord.xy * pixel_size;
