@@ -95,6 +95,13 @@ namespace vkcv::camera {
          */
         void mouseButtonCallback(int button, int action, int mods, Camera &camera);
 
+        /**
+         * @brief A callback function for gamepad input events.
+         * @param gamepadIndex The gamepad index.
+         * @param camera The camera object.
+         * @param frametime The current frametime.
+         */
+        void gamepadCallback(int gamepadIndex, Camera &camera, double frametime);
     };
 
 }
