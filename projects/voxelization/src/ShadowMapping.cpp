@@ -1,10 +1,10 @@
 #include "ShadowMapping.hpp"
 #include <vkcv/shader/GLSLCompiler.hpp>
 
-const vk::Format            shadowMapFormat = vk::Format::eR32G32B32A32Sfloat;
-const vk::Format            shadowMapDepthFormat = vk::Format::eD32Sfloat;
-const uint32_t              shadowMapResolution = 2048;
-const vkcv::Multisampling   msaa = vkcv::Multisampling::MSAA8X;
+const vk::Format            shadowMapFormat         = vk::Format::eR16G16B16A16Unorm;
+const vk::Format            shadowMapDepthFormat    = vk::Format::eD32Sfloat;
+const uint32_t              shadowMapResolution     = 2048;
+const vkcv::Multisampling   msaa                    = vkcv::Multisampling::MSAA8X;
 
 vkcv::ShaderProgram loadShadowShader() {
 	vkcv::ShaderProgram shader;
