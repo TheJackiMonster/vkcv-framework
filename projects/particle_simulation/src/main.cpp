@@ -56,8 +56,11 @@ int main(int argc, const char **argv) {
         return EXIT_FAILURE;
     }
 
+    // use space or use water
+    bool useSpace = true;
+
     vkcv::ShaderProgram computeShaderProgram{};
-    computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path("shaders/comp_space.spv"));
+    computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path(useSpace? "shaders/comp_space.spv" : "shaders/comp_water.spv"));
 
     vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
 
@@ -71,7 +74,7 @@ int main(int argc, const char **argv) {
 
     vkcv::ShaderProgram particleShaderProgram{};
     particleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
-    particleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag_space.spv"));
+    particleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path( useSpace? "shaders/frag_space.spv" : "shaders/frag_water.spv"));
 
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(
             particleShaderProgram.getReflectedDescriptors()[0]);
