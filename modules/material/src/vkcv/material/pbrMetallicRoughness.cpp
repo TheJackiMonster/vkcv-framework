@@ -81,47 +81,34 @@ namespace vkcv::material
         vec3 emissiveFactor)
     {
         //Test if Images and samplers valid, if not use default
-        uint32_t width  = core->getImageWidth(colorImg); //use colorImg size as default
-        uint32_t height = core->getImageHeight(colorImg);
-        uint32_t n = width * height;
-       
-
-        if (!colorImg) {
-            width = core->getImageWidth(metRoughImg); // if colorImg has no size
-            height = core->getImageHeight(metRoughImg);
-            n = width * height;
-            vkcv::Image defaultColor = core->createImage(vk::Format::eR8G8B8A8Srgb, width, height);
-            std::vector<vec4> colorData(n);
-            std::fill(colorData.begin(), colorData.end(), vec4{ 228, 51 , 255, 1 });
-            defaultColor.fill(colorData.data());
+         if (!colorImg) {
+            vkcv::Image defaultColor = core->createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
+            vec4 colorData{ 228, 51, 255,1 };
+            defaultColor.fill(&colorData);
             colorImg = defaultColor.getHandle();
         }
-        if (!normalImg || (core->getImageWidth(normalImg)!=width)|| (core->getImageHeight(normalImg) != height)) {
-            vkcv::Image defaultNormal = core->createImage(vk::Format::eR8G8B8A8Srgb, width, height);
-            std::vector<vec4> normalData(n);
-            std::fill(normalData.begin(), normalData.end(), vec4{ 228, 51 , 255, 1 });
-            defaultNormal.fill(normalData.data());
+        if (!normalImg) {
+            vkcv::Image defaultNormal = core->createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
+            vec4 normalData{ 0, 0, 1,0 };
+            defaultNormal.fill(&normalData);
             normalImg = defaultNormal.getHandle();
         }
-        if (!metRoughImg || (core->getImageWidth(metRoughImg) != width) || (core->getImageHeight(metRoughImg) != height)) {
-            vkcv::Image defaultRough = core->createImage(vk::Format::eR8G8B8A8Srgb, width, height);
-            std::vector<vec4> roughData(n);
-            std::fill(roughData.begin(), roughData.end(), vec4{ 228, 51 , 255, 1 });
-            defaultRough.fill(roughData.data());
+        if (!metRoughImg) {
+            vkcv::Image defaultRough = core->createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
+            vec4 roughData{ 228, 51, 255,1 };
+            defaultRough.fill(&roughData);
             metRoughImg = defaultRough.getHandle();
         }
-        if (!occlusionImg || (core->getImageWidth(occlusionImg) != width) || (core->getImageHeight(occlusionImg) != height)) {
-            vkcv::Image defaultOcclusion = core->createImage(vk::Format::eR8G8B8A8Srgb, width, height);
-            std::vector<vec4> occlusionData(n);
-            std::fill(occlusionData.begin(), occlusionData.end(), vec4{ 228, 51 , 255, 1 });
-            defaultOcclusion.fill(occlusionData.data());
+        if (!occlusionImg) {
+            vkcv::Image defaultOcclusion = core->createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
+            vec4 occlusionData{ 228, 51, 255,1 };
+            defaultOcclusion.fill(&occlusionData);
             occlusionImg = defaultOcclusion.getHandle();
         }
-        if (!emissiveImg || (core->getImageWidth(emissiveImg) != width) || (core->getImageHeight(emissiveImg) != height)) {
-            vkcv::Image defaultEmissive = core->createImage(vk::Format::eR8G8B8A8Srgb, width, height);
-            std::vector<vec4> emissiveData(n);
-            std::fill(emissiveData.begin(), emissiveData.end(), vec4{ 228, 51 , 255, 1 });
-            defaultEmissive.fill(emissiveData.data());
+        if (!emissiveImg) {
+            vkcv::Image defaultEmissive = core->createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
+            vec4 emissiveData{ 0, 0, 0,1 };
+            defaultEmissive.fill(&emissiveData);
             emissiveImg = defaultEmissive.getHandle();
         }
         if (!colorSmp) {            
