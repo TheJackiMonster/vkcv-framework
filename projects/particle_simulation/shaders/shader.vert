@@ -23,6 +23,7 @@ layout( push_constant ) uniform constants{
     mat4 projection;
 };
 
+layout(location = 0) out vec2 passTriangleCoordinates;
 layout(location = 1) out vec3 passVelocity;
 layout(location = 2) out float passlifeTime;
 
@@ -36,5 +37,9 @@ void main()
     // by adding the triangle position in view space the mesh is always camera facing
     positionView.xyz += particle;
     // multiply with projection matrix for final position
-	gl_Position =   projection * positionView;
+	gl_Position = projection * positionView;
+    
+    // 0.01 corresponds to vertex position size in main
+    float normalizationDivider  = 0.01;
+    passTriangleCoordinates     = particle.xy / normalizationDivider;
 }

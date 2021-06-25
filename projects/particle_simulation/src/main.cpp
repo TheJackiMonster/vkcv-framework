@@ -95,7 +95,7 @@ int main(int argc, const char **argv) {
 
     const vkcv::VertexLayout particleLayout(bindings);
 
-    const vkcv::PipelineConfig particlePipelineDefinition{
+    vkcv::PipelineConfig particlePipelineDefinition{
             particleShaderProgram,
             UINT32_MAX,
             UINT32_MAX,
@@ -103,10 +103,11 @@ int main(int argc, const char **argv) {
             {particleLayout},
             {core.getDescriptorSet(descriptorSet).layout},
             true};
+    particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 
-    const std::vector<glm::vec3> vertices = {glm::vec3(-0.005, 0.005, 0),
-                                             glm::vec3(0.005, 0.005, 0),
-                                             glm::vec3(0, -0.005, 0)};
+    const std::vector<glm::vec3> vertices = {glm::vec3(-0.01, 0.01, 0),
+                                             glm::vec3(0.01, 0.01, 0),
+                                             glm::vec3(0, -0.01, 0)};
 
     vertexBuffer.fill(vertices);
 

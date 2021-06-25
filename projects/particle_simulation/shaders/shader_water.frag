@@ -1,6 +1,10 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
+#extension GL_GOOGLE_include_directive : enable
 
+#include "particleShading.inc"
+
+layout(location = 0) in vec2 passTriangleCoordinates;
 layout(location = 1) in vec3 passVelocity;
 layout(location = 2) in float passlifeTime;
 
@@ -22,4 +26,9 @@ void main()
 	float(passlifeTime < 2 && passlifeTime > 1) * vec4(0.3, 0.7,1,0) +
 	float(passlifeTime >= 2 && passlifeTime < 4.f) * vec4(0.5,0.9,1,0) +
 	float(passlifeTime >= 4.f) * vec4(0.9,1,1,0);
+    
+    // make the triangle look like a circle
+   outColor *= circleFactor(passTriangleCoordinates);
+   // full color is achieved by additively blending many particles
+   outColor *= 0.5; 
 }

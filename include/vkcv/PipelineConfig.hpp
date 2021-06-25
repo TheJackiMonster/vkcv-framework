@@ -15,6 +15,10 @@ namespace vkcv {
 
     enum class PrimitiveTopology{PointList, LineList, TriangleList };
 
+    // add more as needed
+    // alternatively we could expose the blend factors directly
+    enum class BlendMode{ None, Additive };
+
     struct PipelineConfig {
         ShaderProgram                         m_ShaderProgram;
         uint32_t                              m_Width;
@@ -25,6 +29,7 @@ namespace vkcv {
         bool                                  m_UseDynamicViewport;
         bool                                  m_UseConservativeRasterization = false;
         PrimitiveTopology                     m_PrimitiveTopology = PrimitiveTopology::TriangleList;
+        BlendMode                             m_blendMode = BlendMode::None;
     };
 
 }

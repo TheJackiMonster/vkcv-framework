@@ -182,8 +182,11 @@ namespace vkcv
                                                VK_COLOR_COMPONENT_G_BIT |
                                                VK_COLOR_COMPONENT_B_BIT |
                                                VK_COLOR_COMPONENT_A_BIT);
+
+        // currently set to additive, if not disabled
+        // BlendFactors must be set as soon as additional BlendModes are added
         vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
-                false,
+                config.m_blendMode != BlendMode::None,
                 vk::BlendFactor::eOne,
                 vk::BlendFactor::eOne,
                 vk::BlendOp::eAdd,
