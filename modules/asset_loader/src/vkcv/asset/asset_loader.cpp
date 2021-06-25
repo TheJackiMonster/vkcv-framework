@@ -88,8 +88,12 @@ int createTextures(const std::vector<fx::gltf::Texture> &tex_src,
 	dst.clear();
 	dst.reserve(tex_src.size());
 	for (int i = 0; i < tex_src.size(); i++) {
-		// TODO Image objects in glTF can have a URI _or_ a bufferView
-		// and a mimeType; but here we are always assuming a URI.
+		// TODO Image objects in glTF can have
+		// 1) a URI
+		// 2) a bufferView and a mimeType
+		// to describe where/how to load the data, but here we are
+		// always assuming a URI. In order to load files where images
+		// have no URI, we need to handle the second case as well here.
 		std::string uri = dir + "/" + img_src[tex_src[i].source].uri;
 
 		int w, h, c;
@@ -220,11 +224,15 @@ std::array<float, 16> computeModelMatrix(std::array<float, 3> translation, std::
 
 }
 
+/* TODO Should probably be a member function of vkcv::asset::Material */
 bool materialHasTexture(const Material *const m, const PBRTextureTarget t)
 {
 	return m->textureMask & bitflag(t);
 }
 
+/**
+ * TODO document
+ */
 int translateSamplerMode(const fx::gltf::Sampler::WrappingMode mode)
 {
 	switch (mode) {
@@ -238,6 +246,11 @@ int translateSamplerMode(const fx::gltf::Sampler::WrappingMode mode)
 	}
 }
 
+/**
+ * TODO document
+ * Most of the documenting comment above the struct {...} Sampler definition in
+ * the header could be moved here.
+ */
 int translateSampler(const fx::gltf::Sampler &src, vkcv::asset::Sampler &dst)
 {
 	dst.minLOD = 0;
@@ -277,11 +290,10 @@ int translateSampler(const fx::gltf::Sampler &src, vkcv::asset::Sampler &dst)
 
 	dst.addressModeU = translateSamplerMode(src.wrapS);
 	dst.addressModeV = translateSamplerMode(src.wrapT);
-	// XXX What's a good heuristic for W?
-	if (src.wrapS == src.wrapT)
-		dst.addressModeW = dst.addressModeU;
-	else
-		dst.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	// TODO There is no information about wrapping for a third axis in
+	// glTF...  what's a good heuristic we can use to set addressModeW?
+	// The following hardocded solution is only a temporary hack.
+	dst.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
 	return ASSET_SUCCESS;
 }
@@ -302,7 +314,9 @@ int loadScene(const std::string &path, Scene &scene){
         recurseExceptionPrint(e, path);
         return ASSET_ERROR;
     }
-    // TODO use std::filesystem::path instead of std::string for path/uri?
+    // TODO use std::filesystem::path instead of std::string for path/uri.
+    // Using simple strings and assuming the path separator symbol to be "/" is
+    // not safe across different operating systems.
     size_t pos = path.find_last_of("/");
     auto dir = path.substr(0, pos);
 
@@ -320,6 +334,8 @@ int loadScene(const std::string &path, Scene &scene){
         std::vector<int> vertexGroupsIndices;
         fx::gltf::Mesh const &objectMesh = sceneObjects.meshes[i];
 
+	// TODO This loop should be moved to its own function just like the
+	// code for loading textures and getting vertex attributes.
         for(int j = 0; j < objectMesh.primitives.size(); j++){
             fx::gltf::Primitive const &objectPrimitive = objectMesh.primitives[j];
 	    std::vector<VertexAttribute> vertexAttributes;
@@ -400,8 +416,10 @@ int loadScene(const std::string &path, Scene &scene){
                 attribute.offset -= relevantBufferOffset;
             }
 
+	    // FIXME This does the same in each iteration of the loop and
+	    // should be moved outside the loop
             const size_t numVertexGroups = objectMesh.primitives.size();
-            vertexGroups.reserve(numVertexGroups);	// FIXME this is a bug
+            vertexGroups.reserve(numVertexGroups);
 
             vertexGroups.push_back({
                 static_cast<PrimitiveMode>(objectPrimitive.mode),
@@ -425,6 +443,11 @@ int loadScene(const std::string &path, Scene &scene){
         meshes.push_back(mesh);
     }
 
+    // TODO Are we sure that every node has a mesh defined? What if there is a
+    // node with just a Camera? Will it have a default value for the mesh index
+    // like 0? In that case we'd overwrite the model matrix of the mesh at
+    // Scene.meshes[0].modelMatrix...
+    // I'm not 100% certain, but this looks wrong to me, please double-check!
     for(int m = 0; m < sceneObjects.nodes.size(); m++) {
         meshes[sceneObjects.nodes[m].mesh].modelMatrix = computeModelMatrix(sceneObjects.nodes[m].translation,
                                                                             sceneObjects.nodes[m].scale,
@@ -438,19 +461,28 @@ int loadScene(const std::string &path, Scene &scene){
 			    missing, path.c_str());
     }
 
+    // TODO creating the materials should be moved to its own function just
+    // like with textures, vertex groups and vertex attributes before
     if (sceneObjects.materials.size() > 0){
         materials.reserve(sceneObjects.materials.size());
 
         for (int l = 0; l < sceneObjects.materials.size(); l++){
             fx::gltf::Material material = sceneObjects.materials[l];
-	    // TODO I think we shouldn't set the index for a texture target if
-	    // it isn't defined. So we need to test first if there is a normal
-	    // texture before assigning material.normalTexture.index.
-	    // About the bitmask: If a normal texture is there, modify the
-	    // materials textureMask like this:
-	    // 		mat.textureMask |= bitflag(asset::normal);
+	    // TODO When constructing the the vkcv::asset::Material  we need to
+	    // test what kind of texture targets it has and then define the
+	    // textureMask for it.
+	    // Also, what does the fx::gltf::Material do with indices of
+	    // texture targets that don't exist? Maybe we shouldn't set the
+	    // index for eb. the normalTexture if there is no normal texture...
+	    // It may be a good idea to create an extra function for creating a
+	    // material and adding it to the materials array instead of trying
+	    // to fit it all into one push_back({...}) call.
+	    //
+	    // Example for using the bitmask: If a normal texture is there,
+	    // modify the materials textureMask like this:
+	    //     mat.textureMask |= bitflag(asset::PBRTextureTarget::normal);
             materials.push_back({
-               0,	// TODO
+               0,	// TODO set this mask
                material.pbrMetallicRoughness.baseColorTexture.index,
                material.pbrMetallicRoughness.metallicRoughnessTexture.index,
                material.normalTexture.index,
