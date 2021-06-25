@@ -1,4 +1,7 @@
 #version 440
+#extension GL_GOOGLE_include_directive : enable
+
+#include "luma.inc"
 
 layout(set=0, binding=0)        uniform texture2D   inTexture;
 layout(set=0, binding=1)        uniform sampler     textureSampler;
@@ -78,6 +81,44 @@ vec2 computeDistortedUV(vec2 uv, float aspectRatio){
     return uv + toCenter * (r2*k1 + r2*r2*k2); 
 }
 
+float computeLocalContrast(vec2 uv){
+    float lumaMin = 100;
+    float lumaMax = 0;
+    
+    vec2 pixelSize = vec2(1) / textureSize(sampler2D(inTexture, textureSampler), 0);
+    
+    for(int x = -1; x <= 1; x++){
+        for(int y = -1; y <= 1; y++){
+            vec3 c = texture(sampler2D(inTexture, textureSampler), uv + vec2(x, y) * pixelSize).rgb;
+            float luma  = computeLuma(c);
+            lumaMin     = min(lumaMin, luma);
+            lumaMax     = max(lumaMax, luma);
+        }
+    }
+    
+    return lumaMax - lumaMin;
+}
+
+vec3 computeChromaticAberrationScale(vec2 uv){
+    float   localContrast   = computeLocalContrast(uv);
+    vec3    colorScales     = vec3(-1, 0, 1);
+    float   aberrationScale = 0.004;
+    vec3    maxScaleFactors = colorScales * aberrationScale;
+    float   factor          = clamp(localContrast, 0, 1);
+    return mix(vec3(0), maxScaleFactors, factor);
+}
+
+vec3 sampleColorChromaticAberration(vec2 uv){
+    vec2 toCenter       = (vec2(0.5) - uv);
+    
+    vec3 scaleFactors = computeChromaticAberrationScale(uv);
+    
+    float r = texture(sampler2D(inTexture, textureSampler), uv + toCenter * scaleFactors.r).r;
+    float g = texture(sampler2D(inTexture, textureSampler), uv + toCenter * scaleFactors.g).g;
+    float b = texture(sampler2D(inTexture, textureSampler), uv + toCenter * scaleFactors.b).b;
+    return vec3(r, g, b);
+}
+
 void main(){
 
     if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(outImage)))){
@@ -88,7 +129,7 @@ void main(){
     vec2    uv          = vec2(coord) / textureRes;
     float   aspectRatio = float(textureRes.x) / textureRes.y;
     uv                  = computeDistortedUV(uv, aspectRatio);
-    vec3 linearColor    = texture(sampler2D(inTexture, textureSampler), uv).rgb;
+    vec3 linearColor    = sampleColorChromaticAberration(uv);
     vec3 tonemapped     = ACESFilm(linearColor);
     tonemapped          = applyGrain(coord, tonemapped);
     
