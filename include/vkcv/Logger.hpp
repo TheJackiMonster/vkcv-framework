@@ -45,12 +45,12 @@ namespace vkcv {
   char output_message [             \
     VKCV_DEBUG_MESSAGE_LEN          \
   ];                                \
-  std::snprintf(                    \
+  snprintf(                         \
     output_message,                 \
     VKCV_DEBUG_MESSAGE_LEN,         \
     __VA_ARGS__                     \
   );                                \
-  std::fprintf(                     \
+  fprintf(                          \
     getLogOutput(level),            \
     "[%s]: %s [%s, line %d: %s]\n", \
   	vkcv::getLogName(level),        \
