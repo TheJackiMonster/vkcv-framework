@@ -645,12 +645,15 @@ int main(int argc, const char** argv) {
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 		core.prepareImageForStorage(cmdStream, resolvedColorBuffer);
 
+		auto timeSinceStart = std::chrono::duration_cast<std::chrono::microseconds>(end - appStartTime);
+		float timeF         = static_cast<float>(timeSinceStart.count()) * 0.01;
+
 		core.recordComputeDispatchToCmdStream(
 			cmdStream, 
 			tonemappingPipeline, 
 			fulsscreenDispatchCount,
 			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptorSet).vulkanHandle) },
-			vkcv::PushConstantData(nullptr, 0));
+			vkcv::PushConstantData(&timeF, sizeof(timeF)));
 
 		// present and end
 		core.prepareSwapchainImageForPresent(cmdStream);
@@ -700,6 +703,21 @@ int main(int argc, const char** argv) {
 
 			if (newPipeline) {
 				forwardPipeline = newPipeline;
+			}
+		}
+		if (ImGui::Button("Reload tonemapping")) {
+
+			vkcv::ShaderProgram newProgram;
+			compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("resources/shaders/tonemapping.comp"),
+				[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+				newProgram.addShader(shaderStage, path);
+			});
+			vkcv::PipelineHandle newPipeline = core.createComputePipeline(
+				newProgram, 
+				{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
+
+			if (newPipeline) {
+				tonemappingPipeline = newPipeline;
 			}
 		}
 

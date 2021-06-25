@@ -3,8 +3,11 @@
 layout(set=0, binding=0, r11f_g11f_b10f)    uniform image2D inImage;
 layout(set=0, binding=1, rgba8)             uniform image2D outImage;
 
-
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout( push_constant ) uniform constants{
+    float time;
+};
 
 // from: https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
 vec3 ACESFilm(vec3 x)
@@ -17,6 +20,55 @@ vec3 ACESFilm(vec3 x)
     return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0, 1);
 }
 
+// From Dave Hoskins: https://www.shadertoy.com/view/4djSRW.
+float hash(vec3 p3){
+    p3 = fract(p3 * 0.1031);
+    p3 += dot(p3,p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+// From iq: https://www.shadertoy.com/view/4sfGzS.
+float noise(vec3 x){
+    vec3 i = floor(x);
+    vec3 f = fract(x);
+    f = f*f*(3.0-2.0*f);
+    return mix(mix(mix(hash(i+vec3(0, 0, 0)), 
+                       hash(i+vec3(1, 0, 0)),f.x),
+                   mix(hash(i+vec3(0, 1, 0)), 
+                       hash(i+vec3(1, 1, 0)),f.x),f.y),
+               mix(mix(hash(i+vec3(0, 0, 1)), 
+                       hash(i+vec3(1, 0, 1)),f.x),
+                   mix(hash(i+vec3(0, 1, 1)), 
+                       hash(i+vec3(1, 1, 1)),f.x),f.y),f.z);
+}
+
+// From: https://www.shadertoy.com/view/3sGSWVF
+// Slightly high-passed continuous value-noise.
+float grainSource(vec3 x, float strength, float pitch){
+    float center = noise(x);
+	float v1 = center - noise(vec3( 1, 0, 0)/pitch + x) + 0.5;
+	float v2 = center - noise(vec3( 0, 1, 0)/pitch + x) + 0.5;
+	float v3 = center - noise(vec3(-1, 0, 0)/pitch + x) + 0.5;
+	float v4 = center - noise(vec3( 0,-1, 0)/pitch + x) + 0.5;
+    
+	float total = (v1 + v2 + v3 + v4) / 4.0;
+	return mix(1, 0.5 + total, strength);
+}
+
+vec3 applyGrain(ivec2 uv, vec3 c){
+    float grainLift     = 0.6;
+    float grainStrength = 0.4;
+    float grainTimeFactor = 0.1;
+    
+    float timeColorOffset = 1.2;
+    vec3 grain = vec3(
+        grainSource(vec3(uv, floor(grainTimeFactor*time)),                   grainStrength, grainLift),
+        grainSource(vec3(uv, floor(grainTimeFactor*time + timeColorOffset)), grainStrength, grainLift),
+        grainSource(vec3(uv, floor(grainTimeFactor*time - timeColorOffset)), grainStrength, grainLift));
+    
+    return c * grain;
+}
+
 void main(){
 
     if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(inImage)))){
@@ -25,6 +77,8 @@ void main(){
     ivec2 uv            = ivec2(gl_GlobalInvocationID.xy);
     vec3 linearColor    = imageLoad(inImage, uv).rgb;
     vec3 tonemapped     = ACESFilm(linearColor);
+    tonemapped          = applyGrain(uv, tonemapped);
+    
     vec3 gammaCorrected = pow(tonemapped, vec3(1.f / 2.2f));
     imageStore(outImage, uv, vec4(gammaCorrected, 0.f));
 }
