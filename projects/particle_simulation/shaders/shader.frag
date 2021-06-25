@@ -17,10 +17,8 @@ layout(set=0,binding=1) uniform uPosition{
 void main()
 {
 	vec2 mouse = vec2(Position.position.x, Position.position.y);
-		outColor = float(distance(gl_FragCoord.xy, vec2(400,300)) <= 30) * vec4(1,1,1,0) +
-				  float(distance(gl_FragCoord.xy, vec2(400,300)) > 30) *
-				   (float(passlifeTime < 1) * vec4(1,1,0,0) +
+		outColor = float(passlifeTime < 1) * vec4(1,1,0,0) +
 				   float(passlifeTime < 2 && passlifeTime > 1) * vec4(1,passlifeTime * 0.5,0,0) +
 				   float(passlifeTime >= 2 && passlifeTime < 2.5f) * vec4(passlifeTime * 0.5,passlifeTime * 0.5,0,0) +
-				   float(passlifeTime >= 2.5f) * vec4(1,0,0,0));
+				   float(passlifeTime >= 2.5f) * vec4(1,0,0,0);
 }

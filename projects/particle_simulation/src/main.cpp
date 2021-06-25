@@ -202,7 +202,8 @@ int main(int argc, const char **argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
-    srand((unsigned)time(NULL));
+    std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
+    std::default_random_engine rdmEngine;
     while (window.isWindowOpen()) {
         window.pollEvents();
 
@@ -225,8 +226,7 @@ int main(int argc, const char **argv) {
         mvp.push_back( cameraManager.getCamera(1).getMVP());
 
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
-        float random = static_cast<float> (rand()) / (static_cast<float> (RAND_MAX/2.5f));
-        std::cout << random << std::endl;
+        float random = rdm(rdmEngine);
         glm::vec2 pushData = glm::vec2(deltatime, random);
 
         vkcv::PushConstantData pushConstantDataCompute( &pushData, sizeof(glm::vec2));
