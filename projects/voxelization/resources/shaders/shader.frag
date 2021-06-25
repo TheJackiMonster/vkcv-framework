@@ -82,19 +82,22 @@ float isotropicPhase(){
 vec3 volumetricLighting(vec3 colorIn, vec3 V, vec3 pos, float d){
     vec3 color      = colorIn;
     
-    int sampleCount = 48;
+    int sampleCount = 20;
     float stepSize  = d / sampleCount;
     
     vec3 extinctionCoefficient = scatteringCoefficient + absorptionCoefficient;
     
-    float noiseScale    = 0.1;
+    float   noise           = 2 * pi * interleavedGradientNoise(gl_FragCoord.xy);
+    vec2    shadowOffset    = 3.f * vec2(sin(noise), cos(noise)) / textureSize(sampler2D(shadowMap, shadowMapSampler), 0);
+    
+    float noiseScale    = 0.1f;
     pos                 += V * noiseScale * interleavedGradientNoise(gl_FragCoord.xy);
     
     for(int i = 0; i < sampleCount; i++){
         vec3    samplePoint = pos + V * i * stepSize;
         float   phase       = isotropicPhase();
         vec3    light       = lightInfo.sunColor * lightInfo.sunStrength;
-        float   shadow      = shadowTest(samplePoint, lightInfo, shadowMap, shadowMapSampler, vec2(0));
+        float   shadow      = shadowTest(samplePoint, lightInfo, shadowMap, shadowMapSampler, shadowOffset);
         light               *= shadow;
         light               += volumetricAmbientLight;
         
