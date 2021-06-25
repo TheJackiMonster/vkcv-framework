@@ -1,6 +1,11 @@
 #include "ShadowMapping.hpp"
 #include <vkcv/shader/GLSLCompiler.hpp>
 
+const vk::Format            shadowMapFormat = vk::Format::eR32G32B32A32Sfloat;
+const vk::Format            shadowMapDepthFormat = vk::Format::eD32Sfloat;
+const uint32_t              shadowMapResolution = 2048;
+const vkcv::Multisampling   msaa = vkcv::Multisampling::MSAA8X;
+
 vkcv::ShaderProgram loadShadowShader() {
 	vkcv::ShaderProgram shader;
 	vkcv::shader::GLSLCompiler compiler;
@@ -114,12 +119,19 @@ glm::mat4 computeShadowViewProjectionMatrix(
 	getMinMaxView(viewFrustumCorners);
 	getMinMaxView(voxelVolumeCorners);
 
-	glm::vec3 scale  = glm::vec3(2) / (maxView - minView);
-
-	// rotationaly invariant to avoid swimming when moving camera
-	scale = glm::vec3(glm::max(glm::max(scale.x, scale.y), scale.z));
+	// rotationaly invariant to avoid shadow  swimming when moving camera
+	// could potentially be wasteful, but guarantees stability, regardless of camera and voxel volume
+	 glm::vec3 scale = glm::vec3(1.f / glm::max(far, voxelVolumeExtent));
 
 	glm::vec3 offset = -0.5f * (maxView + minView) * scale;
+
+	// snap to texel to avoid shadow swimming when moving
+	glm::vec2 offset2D = glm::vec2(offset);
+	glm::vec2 frustumExtent2D = glm::vec2(1) / glm::vec2(scale);
+	glm::vec2 texelSize = glm::vec2(frustumExtent2D / static_cast<float>(shadowMapResolution));
+	offset2D = glm::ceil(offset2D / texelSize) * texelSize;
+	offset.x = offset2D.x;
+	offset.y = offset2D.y;
 
 	glm::mat4 crop(1);
 	crop[0][0] = scale.x;
@@ -136,11 +148,6 @@ glm::mat4 computeShadowViewProjectionMatrix(
 
 	return vulkanCorrectionMatrix * crop * view;
 }
-
-const vk::Format            shadowMapFormat         = vk::Format::eR32G32B32A32Sfloat;
-const vk::Format            shadowMapDepthFormat    = vk::Format::eD32Sfloat;
-const uint32_t              shadowMapResolution     = 2048;
-const vkcv::Multisampling   msaa                    = vkcv::Multisampling::MSAA8X;
 
 ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vertexLayout) : 
 	m_corePtr(corePtr),
