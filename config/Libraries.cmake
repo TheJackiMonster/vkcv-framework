@@ -10,6 +10,8 @@ if(NOT WIN32)
 	list(APPEND vkcv_flags -fopenmp)
 endif()
 
+list(APPEND vkcv_definitions _USE_MATH_DEFINES)
+
 # some formatted printing
 set(vkcv_config_msg " - Library: ")
 
