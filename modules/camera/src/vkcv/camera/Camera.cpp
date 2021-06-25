@@ -38,8 +38,15 @@ namespace vkcv::camera {
 		m_view = view;
 	}
 
+    const glm::mat4 y_correction(
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, -1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    );
+
     const glm::mat4& Camera::getProjection() const {
-        return m_projection;
+        return y_correction * m_projection;
     }
 
     void Camera::setProjection(const glm::mat4& projection) {
@@ -47,13 +54,6 @@ namespace vkcv::camera {
     }
 
     glm::mat4 Camera::getMVP() const {
-		const glm::mat4 y_correction (
-				1.0f,  0.0f,  0.0f,  0.0f,
-				0.0f, -1.0f,  0.0f,  0.0f,
-				0.0f,  0.0f,  1.0f,  0.0f,
-				0.0f,  0.0f,  0.0f,  1.0f
-		);
-    	
         return y_correction * m_projection * m_view;
     }
 

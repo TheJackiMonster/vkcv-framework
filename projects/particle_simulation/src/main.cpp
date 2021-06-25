@@ -224,9 +224,11 @@ int main(int argc, const char **argv) {
 //        particleSystem.updateParticles(deltatime);
 
         cameraManager.update(deltatime);
-        std::vector<glm::mat4> mvp;
-        mvp.clear();
-        mvp.push_back( cameraManager.getActiveCamera().getMVP());
+
+        // split view and projection to allow for easy billboarding in shader
+        glm::mat4 renderingMatrices[2];
+        renderingMatrices[0] = cameraManager.getActiveCamera().getView();
+        renderingMatrices[1] = cameraManager.getActiveCamera().getProjection();
 
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
         float random = rdm(rdmEngine);
@@ -242,7 +244,7 @@ int main(int argc, const char **argv) {
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer.getHandle());
 
-        vkcv::PushConstantData pushConstantDataDraw((void *) mvp.data(), sizeof(glm::mat4));
+        vkcv::PushConstantData pushConstantDataDraw((void *) &renderingMatrices[0], 2 * sizeof(glm::mat4));
         core.recordDrawcallsToCmdStream(
                 cmdStream,
                 particlePass,
