@@ -36,4 +36,4 @@ target_include_directories(vkcv_camera SYSTEM BEFORE PRIVATE ${vkcv_camera_inclu
 # add the own include directory for public headers
 target_include_directories(vkcv_camera BEFORE PUBLIC ${vkcv_camera_include} ${vkcv_camera_includes})
 
-target_compile_definitions(vkcv_camera PUBLIC ${vkcv_camera_defines})
+target_compile_definitions(vkcv_camera PUBLIC ${vkcv_camera_definitions})
