@@ -40,8 +40,7 @@ namespace vkcv::material
 
     public:
         PBRMaterial() = delete;
-       
-
+        
         const ImageHandle   m_ColorTexture;
         const SamplerHandle m_ColorSampler;
 
@@ -58,12 +57,12 @@ namespace vkcv::material
         const SamplerHandle m_EmissiveSampler;
 
         //
-        vec4 m_BaseColorFactor;
-        float m_MetallicFactor;
-        float m_RoughnessFactor;
-        float m_NormalScale;
-        float m_OcclusionStrength;
-        vec3 m_EmissiveFactor;
+        const vec4 m_BaseColorFactor;
+		const float m_MetallicFactor;
+		const float m_RoughnessFactor;
+		const float m_NormalScale;
+		const float m_OcclusionStrength;
+		const vec3 m_EmissiveFactor;
 
         /*
         * Returns the material's necessary descriptor bindings which serves as its descriptor layout
