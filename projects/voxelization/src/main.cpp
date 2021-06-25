@@ -118,7 +118,7 @@ int main(int argc, const char** argv) {
 	
 	const vk::Format depthBufferFormat = vk::Format::eD32Sfloat;
 	const vkcv::AttachmentDescription depth_attachment(
-		vkcv::AttachmentOperation::DONT_CARE,
+		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::LOAD,
 		depthBufferFormat
 	);
@@ -334,8 +334,8 @@ int main(int argc, const char** argv) {
 	skyPipeConfig.m_VertexLayout        = vkcv::VertexLayout();
 	skyPipeConfig.m_DescriptorLayouts   = {};
 	skyPipeConfig.m_UseDynamicViewport  = true;
-    skyPipeConfig.m_multisampling       = msaa;
-    skyPipeConfig.m_depthWrite          = false;
+	skyPipeConfig.m_multisampling       = msaa;
+	skyPipeConfig.m_depthWrite          = false;
 
 	vkcv::PipelineHandle skyPipe = core.createGraphicsPipeline(skyPipeConfig);
 
@@ -575,6 +575,8 @@ int main(int argc, const char** argv) {
 			prepassPushConstantData,
 			prepassDrawcalls,
 			prepassRenderTargets);
+
+		core.recordImageMemoryBarrier(cmdStream, depthBuffer);
 
 		// main pass
 		std::vector<std::array<glm::mat4, 2>> mainPassMatrices;
