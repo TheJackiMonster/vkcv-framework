@@ -1,8 +1,6 @@
 
 find_package(glfw3 QUIET)
 
-list(APPEND vkcv_definitions GLFW_INCLUDE_VULKAN)
-
 if (glfw3_FOUND)
     list(APPEND vkcv_libraries glfw)
 
