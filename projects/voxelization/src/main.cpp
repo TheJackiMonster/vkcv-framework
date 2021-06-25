@@ -26,12 +26,12 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-    vkcv::camera::CameraManager cameraManager(window);
-    uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-    uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	vkcv::camera::CameraManager cameraManager(window);
+	uint32_t camIndex  = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 
-    cameraManager.getCamera(camIndex).setPosition(glm::vec3(0.f, 0.f, 3.f));
-    cameraManager.getCamera(camIndex).setNearFar(0.1f, 30.0f);
+	cameraManager.getCamera(camIndex).setPosition(glm::vec3(0.f, 0.f, 3.f));
+	cameraManager.getCamera(camIndex).setNearFar(0.1f, 30.0f);
 	cameraManager.getCamera(camIndex).setYaw(180.0f);
 	cameraManager.getCamera(camIndex).setFov(glm::radians(37.8));	// fov of a 35mm lens
 	
@@ -523,9 +523,10 @@ int main(int argc, const char** argv) {
 
 		// update descriptor sets which use swapchain image
 		vkcv::DescriptorWrites tonemappingDescriptorWrites;
-		tonemappingDescriptorWrites.storageImageWrites = {
-			vkcv::StorageImageDescriptorWrite(0, resolvedColorBuffer),
-			vkcv::StorageImageDescriptorWrite(1, swapchainInput) };
+		tonemappingDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(0, resolvedColorBuffer) };
+		tonemappingDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(1, colorSampler) };
+		tonemappingDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, swapchainInput) };
+
 		core.writeDescriptorSet(tonemappingDescriptorSet, tonemappingDescriptorWrites);
 
 		// update resolve descriptor, color images could be changed
@@ -651,7 +652,7 @@ int main(int argc, const char** argv) {
 		}
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
-		core.prepareImageForStorage(cmdStream, resolvedColorBuffer);
+		core.prepareImageForSampling(cmdStream, resolvedColorBuffer);
 
 		auto timeSinceStart = std::chrono::duration_cast<std::chrono::microseconds>(end - appStartTime);
 		float timeF         = static_cast<float>(timeSinceStart.count()) * 0.01;

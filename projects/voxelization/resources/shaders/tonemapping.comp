@@ -1,7 +1,8 @@
 #version 440
 
-layout(set=0, binding=0, r11f_g11f_b10f)    uniform image2D inImage;
-layout(set=0, binding=1, rgba8)             uniform image2D outImage;
+layout(set=0, binding=0)        uniform texture2D   inTexture;
+layout(set=0, binding=1)        uniform sampler     textureSampler;
+layout(set=0, binding=2, rgba8) uniform image2D     outImage;
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -69,16 +70,28 @@ vec3 applyGrain(ivec2 uv, vec3 c){
     return c * grain;
 }
 
+vec2 computeDistortedUV(vec2 uv, float aspectRatio){
+    vec2    toCenter    = vec2(vec2(0.5) - uv);
+    float   r2          = dot(toCenter, toCenter);
+    float   k1          = 0.15f;
+    float   k2          = 0.2f;
+    return uv + toCenter * (r2*k1 + r2*r2*k2); 
+}
+
 void main(){
 
-    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(inImage)))){
+    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(outImage)))){
         return;
     }
-    ivec2 uv            = ivec2(gl_GlobalInvocationID.xy);
-    vec3 linearColor    = imageLoad(inImage, uv).rgb;
+    ivec2   textureRes  = textureSize(sampler2D(inTexture, textureSampler), 0);
+    ivec2   coord       = ivec2(gl_GlobalInvocationID.xy);
+    vec2    uv          = vec2(coord) / textureRes;
+    float   aspectRatio = float(textureRes.x) / textureRes.y;
+    uv                  = computeDistortedUV(uv, aspectRatio);
+    vec3 linearColor    = texture(sampler2D(inTexture, textureSampler), uv).rgb;
     vec3 tonemapped     = ACESFilm(linearColor);
-    tonemapped          = applyGrain(uv, tonemapped);
+    tonemapped          = applyGrain(coord, tonemapped);
     
     vec3 gammaCorrected = pow(tonemapped, vec3(1.f / 2.2f));
-    imageStore(outImage, uv, vec4(gammaCorrected, 0.f));
+    imageStore(outImage, coord, vec4(gammaCorrected, 0.f));
 }
