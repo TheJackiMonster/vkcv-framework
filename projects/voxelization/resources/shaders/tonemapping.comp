@@ -11,8 +11,9 @@ void main(){
     if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(inImage)))){
         return;
     }
-    ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
-    vec3 linearColor = imageLoad(inImage, uv).rgb;
-    vec3 gammaCorrected = pow(linearColor, vec3(1.f / 2.2f));
+    ivec2 uv            = ivec2(gl_GlobalInvocationID.xy);
+    vec3 linearColor    = imageLoad(inImage, uv).rgb;
+    vec3 tonemapped     = linearColor / (linearColor + 1); // reinhard tonemapping
+    vec3 gammaCorrected = pow(tonemapped, vec3(1.f / 2.2f));
     imageStore(outImage, uv, vec4(gammaCorrected, 0.f));
 }

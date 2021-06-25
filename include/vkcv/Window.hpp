@@ -75,13 +75,6 @@ namespace vkcv {
 		static void onCharEvent(GLFWwindow *callbackWindow, unsigned int c);
 
         /**
-         * @brief A callback function for handling gamepad re-connection.
-         * @param gamepadIndex The gamepad index.
-         * @param gamepadEvent The gamepad connection event.
-         */
-        static void onGamepadConnection(int gamepadIndex, int gamepadEvent);
-
-        /**
          * @brief A callback function for gamepad input events.
          * @param gamepadIndex The gamepad index.
          */

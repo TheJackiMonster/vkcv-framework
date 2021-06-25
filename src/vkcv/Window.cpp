@@ -11,15 +11,17 @@ namespace vkcv {
 
 	static std::vector<GLFWwindow*> s_Windows;
 
-    Window::Window(GLFWwindow *window)
-            : m_window(window) {
+    Window::Window(GLFWwindow *window) :
+    m_window(window),
+	e_mouseButton(true),
+	e_mouseMove(true),
+	e_mouseScroll(true),
+	e_resize(true),
+	e_key(true),
+	e_char(true),
+	e_gamepad(true)
+    {
 		glfwSetWindowUserPointer(m_window, this);
-	
-		this->e_mouseButton.lock();
-		this->e_mouseMove.lock();
-		this->e_resize.lock();
-		this->e_key.lock();
-		this->e_mouseScroll.lock();
 	
 		// combine Callbacks with Events
 		glfwSetMouseButtonCallback(m_window, Window::onMouseButtonEvent);
@@ -28,12 +30,17 @@ namespace vkcv {
 		glfwSetKeyCallback(m_window, Window::onKeyEvent);
 		glfwSetScrollCallback(m_window, Window::onMouseScrollEvent);
 		glfwSetCharCallback(m_window, Window::onCharEvent);
-	
-		glfwSetJoystickCallback(Window::onGamepadConnection);
-		glfwSetJoystickUserPointer(GLFW_JOYSTICK_1, this);
     }
 
     Window::~Window() {
+        Window::e_mouseButton.unlock();
+        Window::e_mouseMove.unlock();
+        Window::e_mouseScroll.unlock();
+        Window::e_resize.unlock();
+        Window::e_key.unlock();
+        Window::e_char.unlock();
+        Window::e_gamepad.unlock();
+
 		s_Windows.erase(std::find(s_Windows.begin(), s_Windows.end(), m_window));
         glfwDestroyWindow(m_window);
 
@@ -60,28 +67,37 @@ namespace vkcv {
     }
 
     void Window::pollEvents() {
-		onGamepadEvent(GLFW_JOYSTICK_1);
-    	
+
     	for (auto glfwWindow : s_Windows) {
 			auto window = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
 			
 			window->e_mouseButton.unlock();
 			window->e_mouseMove.unlock();
+			window->e_mouseScroll.unlock();
 			window->e_resize.unlock();
 			window->e_key.unlock();
-			window->e_mouseScroll.unlock();
+			window->e_char.unlock();
+			window->e_gamepad.unlock();
     	}
 
         glfwPollEvents();
+    	
+    	for (int gamepadIndex = GLFW_JOYSTICK_1; gamepadIndex <= GLFW_JOYSTICK_LAST; gamepadIndex++) {
+    		if (glfwJoystickPresent(gamepadIndex)) {
+				onGamepadEvent(gamepadIndex);
+			}
+		}
 	
 		for (auto glfwWindow : s_Windows) {
 			auto window = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
 		
 			window->e_mouseButton.lock();
 			window->e_mouseMove.lock();
+			window->e_mouseScroll.lock();
 			window->e_resize.lock();
 			window->e_key.lock();
-			window->e_mouseScroll.lock();
+			window->e_char.lock();
+			window->e_gamepad.lock();
 		}
     }
 
@@ -133,20 +149,15 @@ namespace vkcv {
 		}
     }
 
-    void Window::onGamepadConnection(int gamepadIndex, int gamepadEvent) {
-        if (gamepadEvent == GLFW_CONNECTED) {
-            auto window = static_cast<Window *>(glfwGetWindowUserPointer(s_Windows[0]));    // todo check for correct window
-
-            if (window != nullptr) {
-                glfwSetJoystickUserPointer(gamepadIndex, window);
-            }
-        }
-    }
-
     void Window::onGamepadEvent(int gamepadIndex) {
-        auto window = static_cast<Window *>(glfwGetJoystickUserPointer(gamepadIndex));
+        int activeWindowIndex = std::find_if(s_Windows.begin(),
+                                             s_Windows.end(),
+                                             [](GLFWwindow* window){return glfwGetWindowAttrib(window, GLFW_FOCUSED);})
+                                - s_Windows.begin();
+        activeWindowIndex *= (activeWindowIndex < s_Windows.size());    // fixes index getting out of bounds (e.g. if there is no focused window)
+        auto window = static_cast<Window *>(glfwGetWindowUserPointer(s_Windows[activeWindowIndex]));
 
-        if ( window != nullptr && glfwJoystickPresent(gamepadIndex)) {
+        if (window != nullptr) {
             window->e_gamepad(gamepadIndex);
         }
     }

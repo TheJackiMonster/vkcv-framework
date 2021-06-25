@@ -12,6 +12,7 @@ namespace vkcv::camera {
         m_lastX = static_cast<float>(window.getWidth()) / 2.0f;
         m_lastY = static_cast<float>(window.getHeight()) / 2.0f;
         m_inputDelayTimer = glfwGetTime() + 0.2;
+        m_frameTime = 0;
     }
 
     CameraManager::~CameraManager() {
@@ -33,8 +34,10 @@ namespace vkcv::camera {
     }
 
     void CameraManager::resizeCallback(int width, int height) {
-        for (size_t i = 0; i < m_cameras.size(); i++) {
-            getCamera(i).setRatio(static_cast<float>(width) / static_cast<float>(height));;
+        if (glfwGetWindowAttrib(m_window.getWindow(), GLFW_ICONIFIED) == GLFW_FALSE) {
+            for (size_t i = 0; i < m_cameras.size(); i++) {
+                getCamera(i).setRatio(static_cast<float>(width) / static_cast<float>(height));;
+            }
         }
     }
 
@@ -84,7 +87,6 @@ namespace vkcv::camera {
         }
     }
 
-    // todo: fix event catch speed
     void CameraManager::gamepadCallback(int gamepadIndex) {
         // handle camera switching
         GLFWgamepadstate gamepadState;
@@ -104,7 +106,7 @@ namespace vkcv::camera {
             m_inputDelayTimer = (1-triggered)*m_inputDelayTimer + triggered * time; // Only reset timer, if dpad was pressed - is this cheaper than if-clause?
         }
 
-        getActiveController().gamepadCallback(gamepadIndex, getActiveCamera());     // handle camera rotation, translation
+        getActiveController().gamepadCallback(gamepadIndex, getActiveCamera(), m_frameTime);     // handle camera rotation, translation
     }
 
     CameraController& CameraManager::getActiveController() {
@@ -183,7 +185,10 @@ namespace vkcv::camera {
     }
 
     void CameraManager::update(double deltaTime) {
-		getActiveController().updateCamera(deltaTime, getActiveCamera());
+        m_frameTime = deltaTime;
+        if (glfwGetWindowAttrib(m_window.getWindow(), GLFW_FOCUSED) == GLFW_TRUE) {
+            getActiveController().updateCamera(deltaTime, getActiveCamera());
+        }
 	}
 	
 }

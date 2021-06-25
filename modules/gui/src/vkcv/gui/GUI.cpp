@@ -73,13 +73,13 @@ namespace vkcv::gui {
 		);
 		
 		ImGui_ImplVulkan_InitInfo init_info = {};
-		init_info.Instance = m_context.getInstance();
-		init_info.PhysicalDevice = m_context.getPhysicalDevice();
-		init_info.Device = m_context.getDevice();
+		init_info.Instance = static_cast<VkInstance>(m_context.getInstance());
+		init_info.PhysicalDevice = static_cast<VkPhysicalDevice>(m_context.getPhysicalDevice());
+		init_info.Device = static_cast<VkDevice>(m_context.getDevice());
 		init_info.QueueFamily = graphicsQueueFamilyIndex;
-		init_info.Queue = m_context.getQueueManager().getGraphicsQueues()[0].handle;
-		init_info.PipelineCache = nullptr;
-		init_info.DescriptorPool = m_descriptor_pool;
+		init_info.Queue = static_cast<VkQueue>(m_context.getQueueManager().getGraphicsQueues()[0].handle);
+		init_info.PipelineCache = 0;
+		init_info.DescriptorPool = static_cast<VkDescriptorPool>(m_descriptor_pool);
 		init_info.Allocator = nullptr;
 		init_info.MinImageCount = swapchain.getImageCount();
 		init_info.ImageCount = swapchain.getImageCount();
@@ -137,12 +137,12 @@ namespace vkcv::gui {
 		
 		m_render_pass = m_context.getDevice().createRenderPass(passCreateInfo);
 		
-		ImGui_ImplVulkan_Init(&init_info, m_render_pass);
+		ImGui_ImplVulkan_Init(&init_info, static_cast<VkRenderPass>(m_render_pass));
 		
 		const SubmitInfo submitInfo { QueueType::Graphics, {}, {} };
 		
 		m_core.recordAndSubmitCommandsImmediate(submitInfo, [](const vk::CommandBuffer& commandBuffer) {
-			ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
+			ImGui_ImplVulkan_CreateFontsTexture(static_cast<VkCommandBuffer>(commandBuffer));
 		}, []() {
 			ImGui_ImplVulkan_DestroyFontUploadObjects();
 		});
@@ -230,7 +230,7 @@ namespace vkcv::gui {
 			
 			commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 			
-			ImGui_ImplVulkan_RenderDrawData(drawData, commandBuffer);
+			ImGui_ImplVulkan_RenderDrawData(drawData, static_cast<VkCommandBuffer>(commandBuffer));
 			
 			commandBuffer.endRenderPass();
 		}, [&]() {

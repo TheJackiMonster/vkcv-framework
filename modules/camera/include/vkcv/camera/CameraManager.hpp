@@ -44,6 +44,7 @@ namespace vkcv::camera {
         double m_lastY;
 
         double m_inputDelayTimer;
+        double m_frameTime;
 
         /**
          * @brief Binds the camera object to the window event handles.

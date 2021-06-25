@@ -25,6 +25,11 @@ namespace vkcv::camera {
     }
 
     void PilotCameraController::changeFov(double offset, Camera &camera){
+        // update only if there is (valid) input
+        if (offset == 0.0) {
+            return;
+        }
+
         float fov = camera.getFov();
         float fov_range = m_fov_max - m_fov_min;
         float fov_stepsize = glm::radians(fov_range) / static_cast<float>(m_fov_nsteps);
@@ -39,24 +44,19 @@ namespace vkcv::camera {
     }
 
     void PilotCameraController::panView(double xOffset, double yOffset, Camera &camera) {
+        // update only if there is (valid) input
+        if (xOffset == 0.0 && yOffset == 0.0) {
+            return;
+        }
+
         // handle yaw rotation
-        float yaw = camera.getYaw() + xOffset;
-        if (yaw < -180.0f) {
-            yaw += 360.0f;
-        }
-        else if (yaw > 180.0f) {
-            yaw -= 360.0f;
-        }
+        float yaw = camera.getYaw() + static_cast<float>(xOffset);
+        yaw += 360.0f * (yaw < -180.0f) - 360.0f * (yaw > 180.0f);
         camera.setYaw(yaw);
 
         // handle pitch rotation
-        float pitch = camera.getPitch() - yOffset;
-        if (pitch > 89.0f) {
-            pitch = 89.0f;
-        }
-        if (pitch < -89.0f) {
-            pitch = -89.0f;
-        }
+        float pitch = camera.getPitch() - static_cast<float>(yOffset);
+        pitch = glm::clamp(pitch, -89.0f, 89.0f);
         camera.setPitch(pitch);
     }
     
@@ -130,27 +130,27 @@ namespace vkcv::camera {
         }
     }
 
-    void PilotCameraController::gamepadCallback(int gamepadIndex, Camera &camera) {
+    void PilotCameraController::gamepadCallback(int gamepadIndex, Camera &camera, double frametime) {
         GLFWgamepadstate gamepadState;
         glfwGetGamepadState(gamepadIndex, &gamepadState);
 
-        float sensitivity = 0.05f;
-        double threshold = 0.1;    // todo: needs further investigation!
+        float sensitivity = 100.0f;
+        double threshold = 0.1;
 
         // handle rotations
         double stickRightX = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
         double stickRightY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
 
         double rightXVal = glm::clamp(std::abs(stickRightX) - threshold, 0.0, 1.0)
-                * copysign(1.0, stickRightX) * sensitivity;
+                * copysign(1.0, stickRightX) * sensitivity * frametime;
         double rightYVal = glm::clamp(std::abs(stickRightY) - threshold, 0.0, 1.0)
-                * copysign(1.0, stickRightY) * sensitivity;
+                * copysign(1.0, stickRightY) * sensitivity * frametime;
         panView(rightXVal, rightYVal, camera);
 
         // handle zooming
         double zoom = static_cast<double>((gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER]
                 - gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER])
-                * sensitivity * 0.5);
+                * sensitivity * frametime);
         changeFov(zoom, camera);
 
         // handle translation
