@@ -20,6 +20,8 @@ if (EXISTS "${vkcv_gui_lib_path}/imgui")
 	list(APPEND vkcv_imgui_includes ${vkcv_gui_lib}/imgui/backend)
 	
 	list(APPEND vkcv_gui_include ${vkcv_gui_lib})
+	
+	list(APPEND vkcv_gui_defines IMGUI_DISABLE_WIN32_FUNCTIONS=1)
 else()
 	message(WARNING "IMGUI is required..! Update the submodules!")
 endif ()

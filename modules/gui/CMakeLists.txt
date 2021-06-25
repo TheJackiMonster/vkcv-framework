@@ -32,3 +32,5 @@ target_include_directories(vkcv_gui SYSTEM BEFORE PRIVATE ${vkcv_gui_includes} $
 
 # add the own include directory for public headers
 target_include_directories(vkcv_gui BEFORE PUBLIC ${vkcv_gui_include} ${vkcv_imgui_includes})
+
+target_compile_definitions(vkcv_gui PUBLIC ${vkcv_gui_defines})
