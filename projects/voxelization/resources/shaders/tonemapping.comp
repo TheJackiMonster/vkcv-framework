@@ -74,11 +74,22 @@ vec3 applyGrain(ivec2 uv, vec3 c){
 }
 
 vec2 computeDistortedUV(vec2 uv, float aspectRatio){
-    vec2    toCenter    = vec2(vec2(0.5) - uv);
-    float   r2          = dot(toCenter, toCenter);
-    float   k1          = 0.15f;
-    float   k2          = 0.2f;
-    return uv + toCenter * (r2*k1 + r2*r2*k2); 
+    uv          = uv * 2 - 1;
+    float   r2  = dot(uv, uv);
+    float   k1  = 0.02f;
+    
+    float maxR2     = dot(vec2(1), vec2(1));
+    float maxFactor = maxR2 * k1;
+    
+    // correction only needed for pincushion distortion
+    maxFactor       = min(maxFactor, 0);
+    
+    uv /= 1 + r2*k1;
+    
+    // correction to avoid going out of [-1, 1] range when using barrel distortion 
+    uv *= 1 + maxFactor;
+    
+    return uv * 0.5 + 0.5;
 }
 
 float computeLocalContrast(vec2 uv){
