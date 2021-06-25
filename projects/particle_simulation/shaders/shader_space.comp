@@ -68,6 +68,6 @@ void main() {
 
     pos += normalize(vel) * deltaTime;
     inParticle[id].position = pos;
-
+    float rand1 = rand;
     inParticle[id].velocity = vel;
 }

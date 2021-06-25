@@ -57,7 +57,7 @@ int main(int argc, const char **argv) {
     }
 
     vkcv::ShaderProgram computeShaderProgram{};
-    computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path("shaders/comp1.spv"));
+    computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path("shaders/comp_space.spv"));
 
     vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
 
@@ -71,7 +71,7 @@ int main(int argc, const char **argv) {
 
     vkcv::ShaderProgram particleShaderProgram{};
     particleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
-    particleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
+    particleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag_space.spv"));
 
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(
             particleShaderProgram.getReflectedDescriptors()[0]);
