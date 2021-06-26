@@ -40,4 +40,7 @@ void main()
     
     // make the triangle look like a circle
    outColor *= circleFactor(passTriangleCoordinates);
+   
+   // fade out particle shortly before it dies
+   outColor *= clamp(passlifeTime * 2, 0, 1);
 }
