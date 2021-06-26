@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 #include "vkcv/gui/GUI.hpp"
 #include "ShadowMapping.hpp"
+#include "BloomAndFlares.hpp"
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";
@@ -448,6 +449,8 @@ int main(int argc, const char** argv) {
 		voxelSampler,
 		msaa);
 
+	BloomAndFlares bloomFlares(&core, colorBufferFormat, windowWidth, windowHeight);
+
 	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
 
 	struct VolumetricSettings {
@@ -514,6 +517,8 @@ int main(int argc, const char** argv) {
 
 			windowWidth = swapchainWidth;
 			windowHeight = swapchainHeight;
+
+			bloomFlares.updateImageDimensions(windowWidth, windowHeight);
 		}
 
 		auto end = std::chrono::system_clock::now();
@@ -648,6 +653,8 @@ int main(int argc, const char** argv) {
 				core.resolveMSAAImage(cmdStream, colorBuffer, resolvedColorBuffer);
 			}
 		}
+
+		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer);
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 		core.prepareImageForSampling(cmdStream, resolvedColorBuffer);
