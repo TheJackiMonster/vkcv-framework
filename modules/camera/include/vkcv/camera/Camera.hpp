@@ -77,7 +77,7 @@ namespace vkcv::camera {
          * @brief Gets the current projection of the camera
          * @return The current projection matrix
          */
-        const glm::mat4& getProjection() const;
+        glm::mat4 getProjection() const;
 
         /**
          * @brief Gets the model-view-projection matrix of the camera with y-axis-correction applied
