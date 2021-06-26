@@ -59,7 +59,7 @@ int main(int argc, const char **argv) {
     }
 
     // use space or use water
-    bool useSpace = false;
+    bool useSpace = true;
 
     vkcv::shader::GLSLCompiler compiler;
     vkcv::ShaderProgram computeShaderProgram{};
