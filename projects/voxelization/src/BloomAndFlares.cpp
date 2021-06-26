@@ -114,7 +114,7 @@ void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStre
     // downsample dispatches of blur buffer's mip maps
     float mipDispatchCountX = dispatchCountX;
     float mipDispatchCountY = dispatchCountY;
-    for(uint32_t mipLevel = 1; mipLevel < m_DownsampleDescSets.size(); mipLevel++)
+    for(uint32_t mipLevel = 1; mipLevel < std::min((uint32_t)m_DownsampleDescSets.size(), m_Blur.getMipCount()); mipLevel++)
     {
         // mip descriptor writes
         vkcv::DescriptorWrites mipDescriptorWrites;
