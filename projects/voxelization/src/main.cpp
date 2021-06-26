@@ -654,7 +654,7 @@ int main(int argc, const char** argv) {
 			}
 		}
 
-		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer);
+		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer, windowWidth, windowHeight);
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 		core.prepareImageForSampling(cmdStream, resolvedColorBuffer);

@@ -16,7 +16,7 @@ void main()
     }
 
     ivec2 pixel_coord   = ivec2(gl_GlobalInvocationID.xy);
-    vec2  pixel_size    = vec2(1.0f) / textureSize(sampler2D(blurImage, linearSampler), 0);
+    vec2  pixel_size    = vec2(1.0f) / imageSize(colorBuffer);
     vec2  UV            = pixel_coord.xy * pixel_size;
 
     vec4 composite_color = vec4(0.0f);

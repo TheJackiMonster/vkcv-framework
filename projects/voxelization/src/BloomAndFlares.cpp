@@ -9,14 +9,14 @@ BloomAndFlares::BloomAndFlares(
 
         p_Core(p_Core),
         m_ColorBufferFormat(colorBufferFormat),
-        m_Width(width),
-        m_Height(height),
+        m_Width(width / 2),
+        m_Height(height / 2),
         m_LinearSampler(p_Core->createSampler(vkcv::SamplerFilterType::LINEAR,
                                               vkcv::SamplerFilterType::LINEAR,
                                               vkcv::SamplerMipmapMode::LINEAR,
                                               vkcv::SamplerAddressMode::CLAMP_TO_EDGE)),
-        m_Blur(p_Core->createImage(colorBufferFormat, width, height, 1, true, true, false)),
-        m_LensFeatures(p_Core->createImage(colorBufferFormat, width, height, 1, true, true, false))
+        m_Blur(p_Core->createImage(colorBufferFormat, m_Width, m_Height, 1, true, true, false)),
+        m_LensFeatures(p_Core->createImage(colorBufferFormat, m_Width, m_Height, 1, true, true, false))
 {
     vkcv::shader::GLSLCompiler compiler;
 
@@ -264,8 +264,8 @@ void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStr
     }
 }
 
-void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStream,
-                                       const vkcv::ImageHandle &colorAttachment)
+void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStream, const vkcv::ImageHandle& colorAttachment,
+    const uint32_t attachmentWidth, const uint32_t attachmentHeight)
 {
     p_Core->prepareImageForSampling(cmdStream, m_Blur.getHandle());
     p_Core->prepareImageForSampling(cmdStream, m_LensFeatures.getHandle());
@@ -279,8 +279,8 @@ void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStrea
     compositeWrites.storageImageWrites = {vkcv::StorageImageDescriptorWrite(3, colorAttachment)};
     p_Core->writeDescriptorSet(m_CompositeDescSet, compositeWrites);
 
-    float dispatchCountX = static_cast<float>(m_Width)  / 8.0f;
-    float dispatchCountY = static_cast<float>(m_Height) / 8.0f;
+    float dispatchCountX = static_cast<float>(attachmentWidth)  / 8.0f;
+    float dispatchCountY = static_cast<float>(attachmentHeight) / 8.0f;
 
     uint32_t compositeDispatchCount[3] = {
             static_cast<uint32_t>(glm::ceil(dispatchCountX)),
@@ -297,19 +297,19 @@ void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStrea
             vkcv::PushConstantData(nullptr, 0));
 }
 
-void BloomAndFlares::execWholePipeline(const vkcv::CommandStreamHandle &cmdStream,
-                                       const vkcv::ImageHandle &colorAttachment)
+void BloomAndFlares::execWholePipeline(const vkcv::CommandStreamHandle &cmdStream, const vkcv::ImageHandle &colorAttachment, 
+    const uint32_t attachmentWidth, const uint32_t attachmentHeight)
 {
     execDownsamplePipe(cmdStream, colorAttachment);
     execUpsamplePipe(cmdStream);
     execLensFeaturePipe(cmdStream);
-    execCompositePipe(cmdStream, colorAttachment);
+    execCompositePipe(cmdStream, colorAttachment, attachmentWidth, attachmentHeight);
 }
 
 void BloomAndFlares::updateImageDimensions(uint32_t width, uint32_t height)
 {
-    m_Width  = width;
-    m_Height = height;
+    m_Width  = width / 2;
+    m_Height = height / 2;
 
     p_Core->getContext().getDevice().waitIdle();
     m_Blur = p_Core->createImage(m_ColorBufferFormat, m_Width, m_Height, 1, true, true, false);
