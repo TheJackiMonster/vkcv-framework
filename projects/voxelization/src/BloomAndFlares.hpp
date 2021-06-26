@@ -27,7 +27,7 @@ private:
     vkcv::Image m_LensFeatures;
 
     vkcv::Image m_radialLut;
-
+    vkcv::Image m_lensDirt;
 
     vkcv::PipelineHandle                     m_DownsamplePipe;
     std::vector<vkcv::DescriptorSetHandle>   m_DownsampleDescSets; // per mip desc set

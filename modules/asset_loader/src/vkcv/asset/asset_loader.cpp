@@ -368,7 +368,7 @@ int loadScene(const std::string &path, Scene &scene){
 
 TextureData loadTexture(const std::filesystem::path& path) {
     TextureData texture;
-    uint8_t* data = stbi_load("resources/RadialLut.png", &texture.width, &texture.height, &texture.componentCount, 4);
+    uint8_t* data = stbi_load(path.string().c_str(), &texture.width, &texture.height, &texture.componentCount, 4);
     texture.data.resize(texture.width * texture.height * 4);
     memcpy(texture.data.data(), data, texture.data.size());
     return texture;

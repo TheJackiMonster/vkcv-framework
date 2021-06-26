@@ -2,6 +2,13 @@
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 
+vkcv::Image loadLenseDirtTexture(vkcv::Core* corePtr) {
+    const auto texture = vkcv::asset::loadTexture("resources/lensDirt.jpg");
+    vkcv::Image image = corePtr->createImage(vk::Format::eR8G8B8A8Unorm, texture.width, texture.height);
+    image.fill((void*)texture.data.data(), texture.data.size());
+    return image;
+}
+
 BloomAndFlares::BloomAndFlares(
         vkcv::Core *p_Core,
         vk::Format colorBufferFormat,
@@ -22,7 +29,8 @@ BloomAndFlares::BloomAndFlares(
             vkcv::SamplerAddressMode::REPEAT)),
         m_Blur(p_Core->createImage(colorBufferFormat, m_Width, m_Height, 1, true, true, false)),
         m_LensFeatures(p_Core->createImage(colorBufferFormat, m_Width, m_Height, 1, true, true, false)),
-        m_radialLut(p_Core->createImage(vk::Format::eR8G8B8A8Unorm, 128, 10, 1))
+        m_radialLut(p_Core->createImage(vk::Format::eR8G8B8A8Unorm, 128, 10, 1)),
+        m_lensDirt(loadLenseDirtTexture(p_Core))
 {
     vkcv::shader::GLSLCompiler compiler;
 
@@ -286,7 +294,8 @@ void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStrea
     vkcv::DescriptorWrites compositeWrites;
     compositeWrites.sampledImageWrites = {vkcv::SampledImageDescriptorWrite(0, m_Blur.getHandle()),
                                           vkcv::SampledImageDescriptorWrite(1, m_LensFeatures.getHandle()),
-                                          vkcv::SampledImageDescriptorWrite(4, m_radialLut.getHandle()) };
+                                          vkcv::SampledImageDescriptorWrite(4, m_radialLut.getHandle()),
+                                          vkcv::SampledImageDescriptorWrite(6, m_lensDirt.getHandle()) };
     compositeWrites.samplerWrites = {vkcv::SamplerDescriptorWrite(2, m_LinearSampler),
                                      vkcv::SamplerDescriptorWrite(5, m_RadialLutSampler) };
     compositeWrites.storageImageWrites = {vkcv::StorageImageDescriptorWrite(3, colorAttachment)};

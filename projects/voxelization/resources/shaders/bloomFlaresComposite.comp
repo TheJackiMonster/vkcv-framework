@@ -7,6 +7,7 @@ layout(set=0, binding=2) uniform sampler                            linearSample
 layout(set=0, binding=3, r11f_g11f_b10f) uniform image2D            colorBuffer;
 layout(set=0, binding=4) uniform texture2D                          radialLUT;
 layout(set=0, binding=5) uniform sampler                            radialLUTSampler;
+layout(set=0, binding=6) uniform texture2D                          dirtTexture;
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -31,6 +32,19 @@ float starburst(vec2 uv){
     return mix(1, burst, falloff);
 }
 
+float getLensDirtWeight(vec2 uv){
+    vec2    targetTextureRes    = imageSize(colorBuffer);
+    float   targetAspectRatio   = targetTextureRes.x / targetTextureRes.y;
+    
+    vec2    dirtTextureRes    = textureSize(sampler2D(dirtTexture, linearSampler), 0);
+    float   dirtAspectRatio   = dirtTextureRes.x / dirtTextureRes.y;
+    
+    uv.x                        *= targetAspectRatio / dirtAspectRatio;
+    float   dirt                = texture(sampler2D(dirtTexture, radialLUTSampler), uv).r;
+    float   dirtStrength        = 0.75;
+    return mix(1, dirt, dirtStrength);
+}
+
 void main()
 {
     if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(colorBuffer)))){
@@ -53,7 +67,11 @@ void main()
     float main_weight = 1 - (bloom_weight + lens_weight);
 
     lens_color *= starburst(UV);
-
+    
+    float lensDirtWeight = getLensDirtWeight(UV);
+    bloom_weight        *= lensDirtWeight;
+    lens_weight         *= lensDirtWeight;
+    
     composite_color.rgb = blur_color * bloom_weight +
                           lens_color * lens_weight  +
                           main_color * main_weight;
