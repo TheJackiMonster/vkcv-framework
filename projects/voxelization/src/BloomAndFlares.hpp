@@ -10,7 +10,7 @@ public:
                    uint32_t height);
 
     void execWholePipeline(const vkcv::CommandStreamHandle &cmdStream, const vkcv::ImageHandle &colorAttachment,
-        const uint32_t attachmentWidth, const uint32_t attachmentHeight);
+        const uint32_t attachmentWidth, const uint32_t attachmentHeight, const glm::vec3& cameraForward);
 
     void updateImageDimensions(uint32_t width, uint32_t height);
 
@@ -22,8 +22,11 @@ private:
     uint32_t m_Height;
 
     vkcv::SamplerHandle m_LinearSampler;
+    vkcv::SamplerHandle m_RadialLutSampler;
     vkcv::Image m_Blur;
     vkcv::Image m_LensFeatures;
+
+    vkcv::Image m_radialLut;
 
 
     vkcv::PipelineHandle                     m_DownsamplePipe;
@@ -43,7 +46,7 @@ private:
     void execUpsamplePipe(const vkcv::CommandStreamHandle &cmdStream);
     void execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStream);
     void execCompositePipe(const vkcv::CommandStreamHandle &cmdStream, const vkcv::ImageHandle &colorAttachment, 
-        const uint32_t attachmentWidth, const uint32_t attachmentHeight);
+        const uint32_t attachmentWidth, const uint32_t attachmentHeight, const glm::vec3& cameraForward);
 };
 
 

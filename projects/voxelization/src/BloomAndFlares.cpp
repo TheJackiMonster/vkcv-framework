@@ -1,5 +1,6 @@
 #include "BloomAndFlares.hpp"
 #include <vkcv/shader/GLSLCompiler.hpp>
+#include <vkcv/asset/asset_loader.hpp>
 
 BloomAndFlares::BloomAndFlares(
         vkcv::Core *p_Core,
@@ -15,8 +16,13 @@ BloomAndFlares::BloomAndFlares(
                                               vkcv::SamplerFilterType::LINEAR,
                                               vkcv::SamplerMipmapMode::LINEAR,
                                               vkcv::SamplerAddressMode::CLAMP_TO_EDGE)),
+        m_RadialLutSampler(p_Core->createSampler(vkcv::SamplerFilterType::LINEAR,
+            vkcv::SamplerFilterType::LINEAR,
+            vkcv::SamplerMipmapMode::LINEAR,
+            vkcv::SamplerAddressMode::REPEAT)),
         m_Blur(p_Core->createImage(colorBufferFormat, m_Width, m_Height, 1, true, true, false)),
-        m_LensFeatures(p_Core->createImage(colorBufferFormat, m_Width, m_Height, 1, true, true, false))
+        m_LensFeatures(p_Core->createImage(colorBufferFormat, m_Width, m_Height, 1, true, true, false)),
+        m_radialLut(p_Core->createImage(vk::Format::eR8G8B8A8Unorm, 128, 10, 1))
 {
     vkcv::shader::GLSLCompiler compiler;
 
@@ -80,6 +86,11 @@ BloomAndFlares::BloomAndFlares(
     m_CompositeDescSet = p_Core->createDescriptorSet(compProg.getReflectedDescriptors()[0]);
     m_CompositePipe = p_Core->createComputePipeline(
             compProg, { p_Core->getDescriptorSet(m_CompositeDescSet).layout });
+
+    // radial LUT
+    const auto texture = vkcv::asset::loadTexture("resources/radialLUT.png");
+
+    m_radialLut.fill((void*)texture.data.data(), texture.data.size());
 }
 
 void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStream,
@@ -265,7 +276,7 @@ void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStr
 }
 
 void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStream, const vkcv::ImageHandle& colorAttachment,
-    const uint32_t attachmentWidth, const uint32_t attachmentHeight)
+    const uint32_t attachmentWidth, const uint32_t attachmentHeight, const glm::vec3& cameraForward)
 {
     p_Core->prepareImageForSampling(cmdStream, m_Blur.getHandle());
     p_Core->prepareImageForSampling(cmdStream, m_LensFeatures.getHandle());
@@ -274,8 +285,10 @@ void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStrea
     // bloom composite descriptor write
     vkcv::DescriptorWrites compositeWrites;
     compositeWrites.sampledImageWrites = {vkcv::SampledImageDescriptorWrite(0, m_Blur.getHandle()),
-                                          vkcv::SampledImageDescriptorWrite(1, m_LensFeatures.getHandle())};
-    compositeWrites.samplerWrites = {vkcv::SamplerDescriptorWrite(2, m_LinearSampler)};
+                                          vkcv::SampledImageDescriptorWrite(1, m_LensFeatures.getHandle()),
+                                          vkcv::SampledImageDescriptorWrite(4, m_radialLut.getHandle()) };
+    compositeWrites.samplerWrites = {vkcv::SamplerDescriptorWrite(2, m_LinearSampler),
+                                     vkcv::SamplerDescriptorWrite(5, m_RadialLutSampler) };
     compositeWrites.storageImageWrites = {vkcv::StorageImageDescriptorWrite(3, colorAttachment)};
     p_Core->writeDescriptorSet(m_CompositeDescSet, compositeWrites);
 
@@ -294,16 +307,16 @@ void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStrea
             m_CompositePipe,
             compositeDispatchCount,
             {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_CompositeDescSet).vulkanHandle)},
-            vkcv::PushConstantData(nullptr, 0));
+            vkcv::PushConstantData((void*)&cameraForward, sizeof(cameraForward)));
 }
 
 void BloomAndFlares::execWholePipeline(const vkcv::CommandStreamHandle &cmdStream, const vkcv::ImageHandle &colorAttachment, 
-    const uint32_t attachmentWidth, const uint32_t attachmentHeight)
+    const uint32_t attachmentWidth, const uint32_t attachmentHeight, const glm::vec3& cameraForward)
 {
     execDownsamplePipe(cmdStream, colorAttachment);
     execUpsamplePipe(cmdStream);
     execLensFeaturePipe(cmdStream);
-    execCompositePipe(cmdStream, colorAttachment, attachmentWidth, attachmentHeight);
+    execCompositePipe(cmdStream, colorAttachment, attachmentWidth, attachmentHeight, cameraForward);
 }
 
 void BloomAndFlares::updateImageDimensions(uint32_t width, uint32_t height)

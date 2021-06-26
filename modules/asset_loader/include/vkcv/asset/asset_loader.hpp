@@ -9,6 +9,7 @@
 #include <vector>
 #include <array>
 #include <cstdint>
+#include <filesystem>
 
 /** These macros define limits of the following structs. Implementations can
  * test against these limits when performing sanity checks. The main constraint
@@ -190,5 +191,12 @@ typedef struct {
  * */
 int loadScene(const std::string &path, Scene &scene);
 
+struct TextureData {
+    int width;
+    int height;
+    int componentCount;
+    std::vector<char*> data;
+};
+TextureData loadTexture(const std::filesystem::path& path);
 
 }

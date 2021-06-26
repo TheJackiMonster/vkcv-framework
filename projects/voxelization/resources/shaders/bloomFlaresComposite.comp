@@ -5,9 +5,31 @@ layout(set=0, binding=0) uniform texture2D                          blurImage;
 layout(set=0, binding=1) uniform texture2D                          lensImage;
 layout(set=0, binding=2) uniform sampler                            linearSampler;
 layout(set=0, binding=3, r11f_g11f_b10f) uniform image2D            colorBuffer;
+layout(set=0, binding=4) uniform texture2D                          radialLUT;
+layout(set=0, binding=5) uniform sampler                            radialLUTSampler;
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
+layout( push_constant ) uniform constants{
+    vec3 cameraForward;
+};
+
+float starburst(vec2 uv){
+    vec2 toCenter   = vec2(0.5) - uv;
+    float d2        = dot(toCenter, toCenter);
+    float falloff   = clamp(pow(d2 * 2, 2.5), 0, 1);
+    
+    float cosTheta  = acos(normalize(toCenter).x) * sign(toCenter.y);
+    cosTheta        *= 4;
+    
+    float thetaOffset   = cameraForward.x + cameraForward.y;
+    thetaOffset         *= 10;
+    cosTheta            += thetaOffset;
+    
+    float burst     = texture(sampler2D(radialLUT, radialLUTSampler), vec2(cosTheta, 0.5)).r;
+    burst           = pow(burst, 2);
+    return mix(1, burst, falloff);
+}
 
 void main()
 {
@@ -30,9 +52,13 @@ void main()
     float lens_weight  = 0.25f;
     float main_weight = 1 - (bloom_weight + lens_weight);
 
+    lens_color *= starburst(UV);
+
     composite_color.rgb = blur_color * bloom_weight +
                           lens_color * lens_weight  +
                           main_color * main_weight;
+                          
+    //composite_color.rgb = vec3(1) * starburst(UV);
 
     imageStore(colorBuffer, pixel_coord, composite_color);
 }

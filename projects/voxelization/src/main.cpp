@@ -451,6 +451,12 @@ int main(int argc, const char** argv) {
 
 	BloomAndFlares bloomFlares(&core, colorBufferFormat, windowWidth, windowHeight);
 
+	window.e_key.add([&](int key, int scancode, int action, int mods) {
+		if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+			bloomFlares = BloomAndFlares(&core, colorBufferFormat, windowWidth, windowHeight);
+		}
+	});
+
 	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
 
 	struct VolumetricSettings {
@@ -654,7 +660,8 @@ int main(int argc, const char** argv) {
 			}
 		}
 
-		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer, windowWidth, windowHeight);
+		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer, windowWidth, windowHeight, 
+			glm::normalize(cameraManager.getActiveCamera().getFront()));
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 		core.prepareImageForSampling(cmdStream, resolvedColorBuffer);

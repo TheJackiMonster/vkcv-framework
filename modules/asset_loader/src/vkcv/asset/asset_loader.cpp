@@ -366,4 +366,12 @@ int loadScene(const std::string &path, Scene &scene){
     return 1;
 }
 
+TextureData loadTexture(const std::filesystem::path& path) {
+    TextureData texture;
+    uint8_t* data = stbi_load("resources/RadialLut.png", &texture.width, &texture.height, &texture.componentCount, 4);
+    texture.data.resize(texture.width * texture.height * 4);
+    memcpy(texture.data.data(), data, texture.data.size());
+    return texture;
+}
+
 }
