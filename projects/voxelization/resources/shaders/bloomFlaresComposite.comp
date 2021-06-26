@@ -41,7 +41,14 @@ float getLensDirtWeight(vec2 uv){
     
     uv.x                        *= targetAspectRatio / dirtAspectRatio;
     float   dirt                = texture(sampler2D(dirtTexture, radialLUTSampler), uv).r;
-    float   dirtStrength        = 0.75;
+    float   dirtStrength        = 0.4f;
+    
+    // manually looked up in gimp, must be adjusted when changing dirt texture
+    float dirtMean = 0.132;
+    // make sure no energy is lost
+    // otherwise bloom is darkened when the dirt increases
+    dirt /= dirtMean;   
+    
     return mix(1, dirt, dirtStrength);
 }
 
@@ -62,8 +69,8 @@ void main()
     vec3 main_color   = imageLoad(colorBuffer, pixel_coord).rgb;
 
     // composite blur and lens features
-    float bloom_weight = 0.15f;
-    float lens_weight  = 0.15f;
+    float bloom_weight = 0.06f;
+    float lens_weight  = 0.02f;
     float main_weight = 1 - (bloom_weight + lens_weight);
 
     lens_color *= starburst(UV);
