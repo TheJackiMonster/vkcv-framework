@@ -16,7 +16,7 @@ BloomAndFlares::BloomAndFlares(
                                               vkcv::SamplerMipmapMode::LINEAR,
                                               vkcv::SamplerAddressMode::CLAMP_TO_EDGE)),
         m_Blur(p_Core->createImage(colorBufferFormat, width, height, 1, true, true, false)),
-        m_LensFeatures(p_Core->createImage(colorBufferFormat, width, height, 1, false, true, false))
+        m_LensFeatures(p_Core->createImage(colorBufferFormat, width, height, 1, true, true, false))
 {
     vkcv::shader::GLSLCompiler compiler;
 
@@ -49,6 +49,11 @@ BloomAndFlares::BloomAndFlares(
         m_UpsampleDescSets.push_back(
                 p_Core->createDescriptorSet(usProg.getReflectedDescriptors()[0]));
     }
+    for (uint32_t mipLevel = 0; mipLevel < m_LensFeatures.getMipCount(); mipLevel++) {
+        m_UpsampleLensFlareDescSets.push_back(
+            p_Core->createDescriptorSet(usProg.getReflectedDescriptors()[0]));
+    }
+
     m_UpsamplePipe = p_Core->createComputePipeline(
             usProg, { p_Core->getDescriptorSet(m_UpsampleDescSets[0]).layout });
 
@@ -197,18 +202,21 @@ void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStr
     p_Core->prepareImageForSampling(cmdStream, m_Blur.getHandle());
     p_Core->prepareImageForStorage(cmdStream, m_LensFeatures.getHandle());
 
+    const uint32_t targetMip = 2;
+    const uint32_t mipLevel = std::min(targetMip, m_LensFeatures.getMipCount());
+
     vkcv::DescriptorWrites lensFeatureWrites;
     lensFeatureWrites.sampledImageWrites = {vkcv::SampledImageDescriptorWrite(0, m_Blur.getHandle(), 0)};
     lensFeatureWrites.samplerWrites = {vkcv::SamplerDescriptorWrite(1, m_LinearSampler)};
-    lensFeatureWrites.storageImageWrites = {vkcv::StorageImageDescriptorWrite(2, m_LensFeatures.getHandle(), 0)};
+    lensFeatureWrites.storageImageWrites = {vkcv::StorageImageDescriptorWrite(2, m_LensFeatures.getHandle(), mipLevel)};
     p_Core->writeDescriptorSet(m_LensFlareDescSet, lensFeatureWrites);
 
     auto dispatchCountX  = static_cast<float>(m_Width)  / 8.0f;
     auto dispatchCountY = static_cast<float>(m_Height) / 8.0f;
     // lens feature generation dispatch
     uint32_t lensFeatureDispatchCount[3] = {
-            static_cast<uint32_t>(glm::ceil(dispatchCountX)),
-            static_cast<uint32_t>(glm::ceil(dispatchCountY)),
+            static_cast<uint32_t>(glm::ceil(dispatchCountX / std::exp2(mipLevel))),
+            static_cast<uint32_t>(glm::ceil(dispatchCountY / std::exp2(mipLevel))),
             1
     };
     p_Core->recordComputeDispatchToCmdStream(
@@ -217,6 +225,43 @@ void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStr
             lensFeatureDispatchCount,
             {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_LensFlareDescSet).vulkanHandle)},
             vkcv::PushConstantData(nullptr, 0));
+
+    // upsample dispatch
+    p_Core->prepareImageForStorage(cmdStream, m_LensFeatures.getHandle());
+
+    // upsample dispatch for each mip map
+    for (uint32_t i = mipLevel; i > 0; i--)
+    {
+        // mip descriptor writes
+        vkcv::DescriptorWrites mipUpsampleWrites;
+        mipUpsampleWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(0, m_LensFeatures.getHandle(), i, true) };
+        mipUpsampleWrites.samplerWrites = { vkcv::SamplerDescriptorWrite(1, m_LinearSampler) };
+        mipUpsampleWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(2, m_LensFeatures.getHandle(), i - 1) };
+        p_Core->writeDescriptorSet(m_UpsampleLensFlareDescSets[i], mipUpsampleWrites);
+
+        auto mipDivisor = glm::pow(2.0f, static_cast<float>(i) - 1.0f);
+
+        auto upsampleDispatchX = static_cast<float>(m_Width) / mipDivisor;
+        auto upsampleDispatchY = static_cast<float>(m_Height) / mipDivisor;
+        upsampleDispatchX /= 8.0f;
+        upsampleDispatchY /= 8.0f;
+
+        const uint32_t upsampleDispatchCount[3] = {
+                static_cast<uint32_t>(glm::ceil(upsampleDispatchX)),
+                static_cast<uint32_t>(glm::ceil(upsampleDispatchY)),
+                1
+        };
+
+        p_Core->recordComputeDispatchToCmdStream(
+            cmdStream,
+            m_UpsamplePipe,
+            upsampleDispatchCount,
+            { vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_UpsampleLensFlareDescSets[i]).vulkanHandle) },
+            vkcv::PushConstantData(nullptr, 0)
+        );
+        // image barrier between mips
+        p_Core->recordImageMemoryBarrier(cmdStream, m_LensFeatures.getHandle());
+    }
 }
 
 void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStream,
@@ -268,7 +313,7 @@ void BloomAndFlares::updateImageDimensions(uint32_t width, uint32_t height)
 
     p_Core->getContext().getDevice().waitIdle();
     m_Blur = p_Core->createImage(m_ColorBufferFormat, m_Width, m_Height, 1, true, true, false);
-    m_LensFeatures = p_Core->createImage(m_ColorBufferFormat, m_Width, m_Height, 1, false, true, false);
+    m_LensFeatures = p_Core->createImage(m_ColorBufferFormat, m_Width, m_Height, 1, true, true, false);
 }
 
 

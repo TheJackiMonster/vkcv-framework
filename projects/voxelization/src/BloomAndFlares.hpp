@@ -30,6 +30,7 @@ private:
 
     vkcv::PipelineHandle                     m_UpsamplePipe;
     std::vector<vkcv::DescriptorSetHandle>   m_UpsampleDescSets;   // per mip desc set
+    std::vector<vkcv::DescriptorSetHandle>   m_UpsampleLensFlareDescSets;   // per mip desc set
 
     vkcv::PipelineHandle                     m_LensFlarePipe;
     vkcv::DescriptorSetHandle                m_LensFlareDescSet;
