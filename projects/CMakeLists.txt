@@ -1,5 +1,6 @@
 
 # Add new projects/examples here:
+add_subdirectory(bloom)
 add_subdirectory(first_triangle)
 add_subdirectory(first_mesh)
 add_subdirectory(first_scene)
