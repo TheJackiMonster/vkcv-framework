@@ -27,6 +27,47 @@ int main(int argc, const char** argv) {
 		true
 	);
 
+	bool    isFullscreen            = false;
+	int     windowedWidthBackup     = windowWidth;
+	int     windowedHeightBackup    = windowHeight;
+	int     windowedPosXBackup;
+	int     windowedPosYBackup;
+    glfwGetWindowPos(window.getWindow(), &windowedPosXBackup, &windowedPosYBackup);
+
+	window.e_key.add([&](int key, int scancode, int action, int mods) {
+		if (key == GLFW_KEY_F11 && action == GLFW_PRESS) {
+			if (isFullscreen) {
+				glfwSetWindowMonitor(
+					window.getWindow(),
+					nullptr,
+					windowedPosXBackup,
+					windowedPosYBackup,
+					windowedWidthBackup,
+					windowedHeightBackup,
+					GLFW_DONT_CARE);
+			}
+			else {
+				windowedWidthBackup     = windowWidth;
+				windowedHeightBackup    = windowHeight;
+
+				glfwGetWindowPos(window.getWindow(), &windowedPosXBackup, &windowedPosYBackup);
+
+				GLFWmonitor*        monitor     = glfwGetPrimaryMonitor();
+				const GLFWvidmode*  videoMode   = glfwGetVideoMode(monitor);
+
+				glfwSetWindowMonitor(
+					window.getWindow(),
+					glfwGetPrimaryMonitor(),
+					0,
+					0,
+					videoMode->width,
+					videoMode->height,
+					videoMode->refreshRate);
+			}
+			isFullscreen = !isFullscreen;
+		}
+	});
+
 	vkcv::camera::CameraManager cameraManager(window);
 	uint32_t camIndex  = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
