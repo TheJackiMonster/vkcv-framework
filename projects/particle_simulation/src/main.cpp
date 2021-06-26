@@ -60,8 +60,11 @@ int main(int argc, const char **argv) {
     // use space or use water
     bool useSpace = true;
 
+    vkcv::shader::GLSLCompiler compiler;
     vkcv::ShaderProgram computeShaderProgram{};
-    computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path(useSpace? "shaders/comp_space.spv" : "shaders/comp_water.spv"));
+    compiler.compile(vkcv::ShaderStage::COMPUTE, useSpace ? "shaders/shader_space.comp" : "shaders/shader_water.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+        computeShaderProgram.addShader(shaderStage, path);
+    });
 
     vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
 
@@ -74,8 +77,12 @@ int main(int argc, const char **argv) {
     const vkcv::VertexLayout computeLayout(computeBindings);
 
     vkcv::ShaderProgram particleShaderProgram{};
-    particleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
-    particleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path( useSpace? "shaders/frag_space.spv" : "shaders/frag_water.spv"));
+    compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/shader.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+        particleShaderProgram.addShader(shaderStage, path);
+    });
+    compiler.compile(vkcv::ShaderStage::FRAGMENT, useSpace ? "shaders/shader_space.frag" : "shaders/shader_water.frag", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+        particleShaderProgram.addShader(shaderStage, path);
+    });
 
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(
             particleShaderProgram.getReflectedDescriptors()[0]);
@@ -210,7 +217,6 @@ int main(int argc, const char **argv) {
     vkcv::Image colorBuffer = core.createImage(colorFormat, windowWidth, windowHeight, 1, false, true, true);
 
     vkcv::ShaderProgram tonemappingShader;
-    vkcv::shader::GLSLCompiler compiler;
     compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/tonemapping.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
         tonemappingShader.addShader(shaderStage, path);
     });
