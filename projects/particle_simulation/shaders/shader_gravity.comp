@@ -1,0 +1,80 @@
+#version 450 core
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(local_size_x = 256) in;
+
+struct Particle
+{
+    vec3 position;
+    float lifeTime;
+    vec3 velocity;
+    float mass;
+    vec3 reset_velocity;
+    float _padding;
+};
+
+layout(std430, binding = 0) coherent buffer buffer_inParticle
+{
+    Particle inParticle[];
+};
+
+layout( push_constant ) uniform constants{
+    float deltaTime;
+    float rand;
+};
+
+const int n = 4;
+vec4 gravityPoint[n] = vec4[n](
+    vec4(-0.8, -0.5,  0.0, 3),
+    vec4(-0.4,  0.5,  0.8, 2),
+    vec4( 0.8,  0.8, -0.3, 4),
+    vec4( 0.5, -0.7, -0.5, 1)
+);
+
+const float G = 6.6743015e-11;
+const float sim_d_factor = 10e11;
+const float sim_g_factor = 10e30;
+const float sim_t_factor = 5;
+const float c = 299792458;
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+    inParticle[id].lifeTime -= deltaTime;
+    vec3 pos = inParticle[id].position;
+    vec3 vel = inParticle[id].velocity;
+    float mass = inParticle[id].mass;
+
+    if(inParticle[id].lifeTime < 0.f)
+    {
+        inParticle[id].lifeTime = 5.f * rand;
+        inParticle[id].mass *= rand;
+
+        pos = vec3(0);
+        vel *= rand;
+    }
+
+    for(int i = 0; i < n; i++)
+    {
+        vec3 d = (gravityPoint[i].xyz - pos) * sim_d_factor;
+        float r = length(d);
+        float g = G * (gravityPoint[i].w * sim_g_factor) / (r * r);
+
+        if (r > 0) {
+            vec3 dvel = (deltaTime * sim_t_factor) * g * (d / r);
+
+            vel = (vel + dvel) / (1.0 + dot(vel, dvel) / (c*c));
+        }
+    }
+
+    pos += vel * (deltaTime * sim_t_factor);
+
+    vec3 a_pos = abs(pos);
+
+    if ((a_pos.x > 2.0) || (a_pos.y > 2.0) || (a_pos.z > 2.0))
+    {
+        inParticle[id].lifeTime *= 0.9;
+    }
+
+    inParticle[id].position = pos;
+    inParticle[id].velocity = vel;
+}

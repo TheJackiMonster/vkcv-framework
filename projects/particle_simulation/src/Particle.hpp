@@ -28,7 +28,7 @@ private:
     glm::vec3 m_position;
     float m_lifeTime;
     glm::vec3 m_velocity;
-    float padding_2 = 0.f;
+    float mass = 1.f;
     glm::vec3 m_reset_velocity;
     float padding_3 = 0.f;
 };
