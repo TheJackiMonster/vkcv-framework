@@ -23,10 +23,10 @@ void main()
 {
 	vec2 mouse = vec2(Position.position.x, Position.position.y);
     
-    vec3 c0 = vec3(1,1,0);
-    vec3 c1 = vec3(1, passlifeTime * 0.5, 0);
-    vec3 c2 = vec3(passlifeTime * 0.5,passlifeTime * 0.5,0);
-    vec3 c3 = vec3(1, 0, 0);
+    vec3 c0 = vec3(1, 1, 0.05);
+    vec3 c1 = vec3(1, passlifeTime * 0.5, 0.05);
+    vec3 c2 = vec3(passlifeTime * 0.5,passlifeTime * 0.5,0.05);
+    vec3 c3 = vec3(1, 0.05, 0.05);
     
     if(passlifeTime  < 1){
         outColor = mix(c0, c1, passlifeTime );
