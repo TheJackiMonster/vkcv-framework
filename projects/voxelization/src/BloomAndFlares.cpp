@@ -96,7 +96,7 @@ BloomAndFlares::BloomAndFlares(
             compProg, { p_Core->getDescriptorSet(m_CompositeDescSet).layout });
 
     // radial LUT
-    const auto texture = vkcv::asset::loadTexture("resources/radialLUT.png");
+    const auto texture = vkcv::asset::loadTexture("resources/RadialLUT.png");
 
     m_radialLut.fill((void*)texture.data.data(), texture.data.size());
 }
