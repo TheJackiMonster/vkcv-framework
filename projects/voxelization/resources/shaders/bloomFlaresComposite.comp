@@ -62,8 +62,8 @@ void main()
     vec3 main_color   = imageLoad(colorBuffer, pixel_coord).rgb;
 
     // composite blur and lens features
-    float bloom_weight = 0.25f;
-    float lens_weight  = 0.25f;
+    float bloom_weight = 0.15f;
+    float lens_weight  = 0.15f;
     float main_weight = 1 - (bloom_weight + lens_weight);
 
     lens_color *= starburst(UV);
