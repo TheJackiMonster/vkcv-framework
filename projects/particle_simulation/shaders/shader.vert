@@ -40,6 +40,6 @@ void main()
 	gl_Position = projection * positionView;
     
     // 0.01 corresponds to vertex position size in main
-    float normalizationDivider  = 0.01;
+    float normalizationDivider  = 0.012;
     passTriangleCoordinates     = particle.xy / normalizationDivider;
 }

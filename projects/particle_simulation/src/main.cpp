@@ -114,9 +114,9 @@ int main(int argc, const char **argv) {
             true};
     particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 
-    const std::vector<glm::vec3> vertices = {glm::vec3(-0.01, 0.01, 0),
-                                             glm::vec3(0.01, 0.01, 0),
-                                             glm::vec3(0, -0.01, 0)};
+    const std::vector<glm::vec3> vertices = {glm::vec3(-0.012, 0.012, 0),
+                                             glm::vec3(0.012, 0.012, 0),
+                                             glm::vec3(0, -0.012, 0)};
 
     vertexBuffer.fill(vertices);
 
