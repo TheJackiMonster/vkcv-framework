@@ -8,7 +8,7 @@ layout(location = 0) in vec2 passTriangleCoordinates;
 layout(location = 1) in vec3 passVelocity;
 layout(location = 2) in float passlifeTime;
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec3 outColor;
 
 layout(set=0, binding=0) uniform uColor {
 	vec4 color;
@@ -22,13 +22,22 @@ void main()
 {
 	float normlt = 1-normalize(passlifeTime);
 	vec2 mouse = vec2(Position.position.x, Position.position.y);
-	outColor =float(passlifeTime < 1) * vec4(0.2,0.5,1,0) +
-	float(passlifeTime < 2 && passlifeTime > 1) * vec4(0.3, 0.7,1,0) +
-	float(passlifeTime >= 2 && passlifeTime < 4.f) * vec4(0.5,0.9,1,0) +
-	float(passlifeTime >= 4.f) * vec4(0.9,1,1,0);
+    
+    vec3 c0 = vec3(0.2,0.5,1);
+    vec3 c1 = vec3(0.3, 0.7,1);
+    vec3 c2 = vec3(0.5,0.9,1);
+    vec3 c3 = vec3(0.9,1,1);
+    
+    if(passlifeTime  < 1){
+        outColor = mix(c0, c1, passlifeTime );
+    }
+    else if(passlifeTime  < 2){
+        outColor = mix(c1, c2, passlifeTime  - 1);
+    }
+    else{
+        outColor = mix(c2, c3, clamp((passlifeTime  - 2) * 0.5, 0, 1));
+    }
     
     // make the triangle look like a circle
    outColor *= circleFactor(passTriangleCoordinates);
-   // full color is achieved by additively blending many particles
-   outColor *= 0.5; 
 }
