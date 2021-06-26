@@ -7,6 +7,7 @@
 #include <random>
 #include <glm/gtc/matrix_access.hpp>
 #include <time.h>
+#include <vkcv/shader/GLSLCompiler.hpp>
 
 int main(int argc, const char **argv) {
     const char *applicationName = "Particlesystem";
@@ -36,12 +37,12 @@ int main(int argc, const char **argv) {
     uint16_t indices[3] = {0, 1, 2};
     particleIndexBuffer.fill(&indices[0], sizeof(indices));
 
-
+    vk::Format colorFormat = vk::Format::eR16G16B16A16Sfloat;
     // an example attachment for passes that output to the window
     const vkcv::AttachmentDescription present_color_attachment(
             vkcv::AttachmentOperation::STORE,
             vkcv::AttachmentOperation::CLEAR,
-            core.getSwapchain().getFormat());
+            colorFormat);
 
 
     vkcv::PassConfig particlePassDefinition({present_color_attachment});
@@ -59,8 +60,11 @@ int main(int argc, const char **argv) {
     // use space or use water
     bool useSpace = true;
 
+    vkcv::shader::GLSLCompiler compiler;
     vkcv::ShaderProgram computeShaderProgram{};
-    computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path(useSpace? "shaders/comp_space.spv" : "shaders/comp_water.spv"));
+    compiler.compile(vkcv::ShaderStage::COMPUTE, useSpace ? "shaders/shader_space.comp" : "shaders/shader_water.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+        computeShaderProgram.addShader(shaderStage, path);
+    });
 
     vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
 
@@ -73,8 +77,12 @@ int main(int argc, const char **argv) {
     const vkcv::VertexLayout computeLayout(computeBindings);
 
     vkcv::ShaderProgram particleShaderProgram{};
-    particleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
-    particleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path( useSpace? "shaders/frag_space.spv" : "shaders/frag_water.spv"));
+    compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/shader.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+        particleShaderProgram.addShader(shaderStage, path);
+    });
+    compiler.compile(vkcv::ShaderStage::FRAGMENT, useSpace ? "shaders/shader_space.frag" : "shaders/shader_water.frag", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+        particleShaderProgram.addShader(shaderStage, path);
+    });
 
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(
             particleShaderProgram.getReflectedDescriptors()[0]);
@@ -208,6 +216,23 @@ int main(int argc, const char **argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
+    vkcv::ImageHandle colorBuffer = core.createImage(colorFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
+    window.e_resize.add([&](int width, int height) {
+        windowWidth = width;
+        windowHeight = height;
+        colorBuffer = core.createImage(colorFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
+    });
+
+    vkcv::ShaderProgram tonemappingShader;
+    compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/tonemapping.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+        tonemappingShader.addShader(shaderStage, path);
+    });
+
+    vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingShader.getReflectedDescriptors()[0]);
+    vkcv::PipelineHandle tonemappingPipe = core.createComputePipeline(
+        tonemappingShader, 
+        { core.getDescriptorSet(tonemappingDescriptor).layout });
+
     std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
     std::default_random_engine rdmEngine;
     while (window.isWindowOpen()) {
@@ -254,7 +279,30 @@ int main(int argc, const char **argv) {
                 particlePipeline,
                 pushConstantDataDraw,
                 {drawcalls},
-                {swapchainInput});
+                { colorBuffer });
+
+        core.prepareImageForStorage(cmdStream, colorBuffer);
+        core.prepareImageForStorage(cmdStream, swapchainInput);
+
+        vkcv::DescriptorWrites tonemappingDescriptorWrites;
+        tonemappingDescriptorWrites.storageImageWrites = {
+            vkcv::StorageImageDescriptorWrite(0, colorBuffer),
+            vkcv::StorageImageDescriptorWrite(1, swapchainInput)
+        };
+        core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
+
+        uint32_t tonemappingDispatchCount[3];
+        tonemappingDispatchCount[0] = std::ceil(windowWidth / 8.f);
+        tonemappingDispatchCount[1] = std::ceil(windowHeight / 8.f);
+        tonemappingDispatchCount[2] = 1;
+
+        core.recordComputeDispatchToCmdStream(
+            cmdStream, 
+            tonemappingPipe, 
+            tonemappingDispatchCount, 
+            {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptor).vulkanHandle) },
+            vkcv::PushConstantData(nullptr, 0));
+
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);
         core.endFrame();
