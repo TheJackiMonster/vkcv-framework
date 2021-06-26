@@ -8,6 +8,7 @@
 #include <glm/gtc/matrix_access.hpp>
 #include <time.h>
 #include <vkcv/shader/GLSLCompiler.hpp>
+#include "BloomAndFlares.hpp"
 
 int main(int argc, const char **argv) {
     const char *applicationName = "Particlesystem";
@@ -215,10 +216,12 @@ int main(int argc, const char **argv) {
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
     vkcv::ImageHandle colorBuffer = core.createImage(colorFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
+    BloomAndFlares bloomAndFlares(&core, colorFormat, windowWidth, windowHeight);
     window.e_resize.add([&](int width, int height) {
         windowWidth = width;
         windowHeight = height;
         colorBuffer = core.createImage(colorFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
+        bloomAndFlares.updateImageDimensions(width, height);
     });
 
     vkcv::ShaderProgram tonemappingShader;
@@ -278,6 +281,8 @@ int main(int argc, const char **argv) {
                 pushConstantDataDraw,
                 {drawcalls},
                 { colorBuffer });
+
+        bloomAndFlares.execWholePipeline(cmdStream, colorBuffer);
 
         core.prepareImageForStorage(cmdStream, colorBuffer);
         core.prepareImageForStorage(cmdStream, swapchainInput);
