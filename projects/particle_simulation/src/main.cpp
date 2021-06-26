@@ -214,7 +214,12 @@ int main(int argc, const char **argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
-    vkcv::Image colorBuffer = core.createImage(colorFormat, windowWidth, windowHeight, 1, false, true, true);
+    vkcv::ImageHandle colorBuffer = core.createImage(colorFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
+    window.e_resize.add([&](int width, int height) {
+        windowWidth = width;
+        windowHeight = height;
+        colorBuffer = core.createImage(colorFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
+    });
 
     vkcv::ShaderProgram tonemappingShader;
     compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/tonemapping.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
@@ -272,14 +277,14 @@ int main(int argc, const char **argv) {
                 particlePipeline,
                 pushConstantDataDraw,
                 {drawcalls},
-                { colorBuffer.getHandle() });
+                { colorBuffer });
 
-        core.prepareImageForStorage(cmdStream, colorBuffer.getHandle());
+        core.prepareImageForStorage(cmdStream, colorBuffer);
         core.prepareImageForStorage(cmdStream, swapchainInput);
 
         vkcv::DescriptorWrites tonemappingDescriptorWrites;
         tonemappingDescriptorWrites.storageImageWrites = {
-            vkcv::StorageImageDescriptorWrite(0, colorBuffer.getHandle()),
+            vkcv::StorageImageDescriptorWrite(0, colorBuffer),
             vkcv::StorageImageDescriptorWrite(1, swapchainInput)
         };
         core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
