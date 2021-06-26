@@ -12,7 +12,7 @@ vec3 sampleColorChromaticAberration(vec2 _uv)
     vec2 toCenter = (vec2(0.5) - _uv);
 
     vec3    colorScales     = vec3(-1, 0, 1);
-    float   aberrationScale = 0.1;
+    float   aberrationScale = 0.15;
     vec3 scaleFactors = colorScales * aberrationScale;
 
     float r = texture(sampler2D(blurBuffer, linearSampler), _uv + toCenter * scaleFactors.r).r;
@@ -26,7 +26,7 @@ vec3 ghost_vectors(vec2 _uv)
 {
     vec2 ghost_vec = (vec2(0.5f) - _uv);
 
-    const uint c_ghost_count = 64;
+    const uint c_ghost_count = 8;
     const float c_ghost_spacing = length(ghost_vec) / c_ghost_count;
 
     ghost_vec *= c_ghost_spacing;
@@ -55,7 +55,7 @@ vec3 halo(vec2 _uv)
 {
     const float c_aspect_ratio = float(imageSize(lensBuffer).x) / float(imageSize(lensBuffer).y);
     const float c_radius = 0.6f;
-    const float c_halo_thickness = 0.1f;
+    const float c_halo_thickness = 0.08f;
 
     vec2 halo_vec = vec2(0.5) - _uv;
     //halo_vec.x /= c_aspect_ratio;
@@ -75,11 +75,7 @@ vec3 halo(vec2 _uv)
         float distance_to_border = c_halo_thickness - distance_to_halo;
         halo_weight = distance_to_border / c_halo_thickness;
 
-        //halo_weight = clamp((halo_weight / 0.4f), 0.0f, 1.0f);
-        halo_weight = pow(halo_weight, 2.0f);
-
-
-        //halo_weight = 1.0f;
+        halo_weight = pow(clamp(halo_weight + 0.1, 0, 1), 2);
     }
 
     return sampleColorChromaticAberration(_uv + halo_vec) * halo_weight;
