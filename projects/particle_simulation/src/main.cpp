@@ -210,7 +210,10 @@ int main(int argc, const char **argv) {
     glm::vec4 colorData = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
     uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
-    
+
+    cameraManager.getCamera(camIndex0).setNearFar(0.1, 30);
+    cameraManager.getCamera(camIndex1).setNearFar(0.1, 30);
+
     cameraManager.setActiveCamera(1);
 
     cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
