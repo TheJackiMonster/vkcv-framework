@@ -42,8 +42,10 @@ namespace vkcv {
 		void generateMipChainImmediate();
 		void recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream);
 	private:
-		ImageManager* const m_manager;
-		const ImageHandle   m_handle;
+	    // TODO: const qualifier removed, very hacky!!!
+	    //  Else you cannot recreate an image. Pls fix.
+		ImageManager*       m_manager;
+		ImageHandle   m_handle;
 
 		Image(ImageManager* manager, const ImageHandle& handle);
 		
