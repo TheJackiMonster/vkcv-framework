@@ -184,9 +184,13 @@ namespace vkcv::camera {
         }
     }
 
+    bool CameraManager::cameraHasController(uint32_t cameraIndex) {
+        return (m_cameraControllerTypes[cameraIndex] != ControllerType::NONE);
+    }
+
     void CameraManager::update(double deltaTime) {
         m_frameTime = deltaTime;
-        if (glfwGetWindowAttrib(m_window.getWindow(), GLFW_FOCUSED) == GLFW_TRUE) {
+        if ((glfwGetWindowAttrib(m_window.getWindow(), GLFW_FOCUSED) == GLFW_TRUE) && cameraHasController(getActiveCameraIndex())) {
             getActiveController().updateCamera(deltaTime, getActiveCamera());
         }
 	}

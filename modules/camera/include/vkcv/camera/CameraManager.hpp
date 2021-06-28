@@ -110,6 +110,15 @@ namespace vkcv::camera {
          */
         CameraController& getActiveController();
 
+        /**
+         * @brief Returns 'true' if the camera has a controller.
+         * 
+         * @param cameraIndex 
+         * @return true 
+         * @return false 
+         */
+        bool CameraManager::cameraHasController(uint32_t cameraIndex);
+
     public:
 
         /**
@@ -184,7 +193,7 @@ namespace vkcv::camera {
          * @throws std::runtime_error If @p cameraIndex is not a valid camera index.
          */
         ControllerType getControllerType(uint32_t cameraIndex);
-
+        
         /**
          * @brief Updates all stored camera controllers in respect to @p deltaTime.
          * @param[in] deltaTime The time that has passed since last update.
