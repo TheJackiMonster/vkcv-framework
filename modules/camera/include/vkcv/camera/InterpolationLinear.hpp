@@ -18,12 +18,30 @@ namespace vkcv::camera {
 
         InterpolationLinear(Camera &camera);
         
+        /**
+         * @brief Add position vector to be approached. The positions are approached in the order in which they where added.
+         * 
+         * @param pos 
+         */
         void addPosition(const glm::vec3& pos);
         
+        /**
+         * @brief Set the Camera object
+         * 
+         * @param camera 
+         */
         void setCamera(Camera camera);
 
+        /**
+         * @brief Resets timer
+         * 
+         */
         void resetTimer();
         
+        /**
+         * @brief Updates the camera with the interpolated position values
+         * 
+         */
         void updateCamera();
     };
 
