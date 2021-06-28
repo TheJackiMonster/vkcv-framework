@@ -17,7 +17,6 @@ namespace vkcv::camera {
         NONE,
         PILOT,
         TRACKBALL,
-        TRACE
     };
 
     /**
