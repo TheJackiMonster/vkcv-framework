@@ -2,6 +2,7 @@
 #include <vkcv/Core.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
+#include <vkcv/camera/InterpolationLinear.hpp>
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
 
@@ -152,10 +153,20 @@ int main(int argc, const char** argv) {
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage });
 
     vkcv::camera::CameraManager cameraManager(window);
-    uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+    uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::NONE);
+	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
+
+	vkcv::camera::InterpolationLinear interp(cameraManager.getCamera(camIndex0));
+
+	interp.addPosition(glm::vec3(5,5,-5));
+	interp.addPosition(glm::vec3(0,5,-5));
+	interp.addPosition(glm::vec3(0,-3,-3));
+	interp.addPosition(glm::vec3(3,0,-6));
+	interp.addPosition(glm::vec3(5,5,5));
+	interp.addPosition(glm::vec3(5,5,-5));
 
     auto start = std::chrono::system_clock::now();
     
@@ -182,6 +193,7 @@ int main(int argc, const char** argv) {
 		
 		start = end;
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		interp.updateCamera();
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 
 		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
