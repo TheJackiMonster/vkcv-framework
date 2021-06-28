@@ -117,7 +117,7 @@ namespace vkcv::camera {
          * @return true 
          * @return false 
          */
-        bool CameraManager::cameraHasController(uint32_t cameraIndex);
+        bool cameraHasController(uint32_t cameraIndex);
 
     public:
 
