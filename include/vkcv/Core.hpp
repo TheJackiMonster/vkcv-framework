@@ -223,6 +223,11 @@ namespace vkcv
 			bool        supportStorage = false,
 			bool        supportColorAttachment = false);
 
+        [[nodiscard]]
+        const uint32_t getImageWidth(ImageHandle imageHandle);
+        [[nodiscard]]
+        const uint32_t getImageHeight(ImageHandle imageHandle);
+
         /** TODO:
          *   @param setDescriptions
          *   @return
