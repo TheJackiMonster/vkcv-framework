@@ -123,7 +123,6 @@ namespace vkcv
 
 	Result Core::acquireSwapchainImage() {
     	uint32_t imageIndex;
-		
     	vk::Result result;
     	
 		try {
@@ -140,9 +139,14 @@ namespace vkcv
 			result = vk::Result::eErrorDeviceLost;
 		}
 		
-		if (result != vk::Result::eSuccess) {
+		if ((result != vk::Result::eSuccess) &&
+			(result != vk::Result::eSuboptimalKHR)) {
 			vkcv_log(LogLevel::ERROR, "%s", vk::to_string(result).c_str());
 			return Result::ERROR;
+		} else
+		if (result == vk::Result::eSuboptimalKHR) {
+			vkcv_log(LogLevel::WARNING, "Acquired image is suboptimal");
+			m_swapchain.signalSwapchainRecreation();
 		}
 		
 		m_currentSwapchainImageIndex = imageIndex;
@@ -373,8 +377,13 @@ namespace vkcv
 			result = vk::Result::eErrorDeviceLost;
 		}
 		
-		if (result != vk::Result::eSuccess) {
-			vkcv_log(LogLevel::ERROR, "Swapchain present failed (%s)", vk::to_string(result).c_str());
+		if ((result != vk::Result::eSuccess) &&
+			(result != vk::Result::eSuboptimalKHR)) {
+			vkcv_log(LogLevel::ERROR, "Swapchain presentation failed (%s)", vk::to_string(result).c_str());
+		} else
+		if (result == vk::Result::eSuboptimalKHR) {
+			vkcv_log(LogLevel::WARNING, "Swapchain presentation is suboptimal");
+			m_swapchain.signalSwapchainRecreation();
 		}
 	}
 	
