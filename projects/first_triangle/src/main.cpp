@@ -4,6 +4,9 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 
+#include <vkcv/shader/GLSLCompiler.hpp>
+#include <vkcv/gui/GUI.hpp>
+
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Triangle";
 
@@ -16,10 +19,6 @@ int main(int argc, const char** argv) {
 		false
 	);
 
-	vkcv::CameraManager cameraManager(window, windowWidth, windowHeight);
-
-	window.initEvents();
-
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
@@ -28,6 +27,8 @@ int main(int argc, const char** argv) {
 		{},
 		{ "VK_KHR_swapchain" }
 	);
+	
+	vkcv::gui::GUI gui (core, window);
 
 	const auto& context = core.getContext();
 	const vk::Instance& instance = context.getInstance();
@@ -79,12 +80,9 @@ int main(int argc, const char** argv) {
 
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentLayout::UNDEFINED,
-		vkcv::AttachmentLayout::COLOR_ATTACHMENT,
-		vkcv::AttachmentLayout::PRESENTATION,
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchainImageFormat());
+		core.getSwapchain().getFormat());
 
 	vkcv::PassConfig trianglePassDefinition({ present_color_attachment });
 	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
@@ -96,27 +94,58 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::ShaderProgram triangleShaderProgram{};
-	triangleShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/vert.spv"));
-	triangleShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/frag.spv"));
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::VERTEX);
-	triangleShaderProgram.reflectShader(vkcv::ShaderStage::FRAGMENT);
+	vkcv::shader::GLSLCompiler compiler;
+	
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/shader.vert"),
+					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		 triangleShaderProgram.addShader(shaderStage, path);
+	});
+	
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/shader.frag"),
+					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		triangleShaderProgram.addShader(shaderStage, path);
+	});
 
-	const vkcv::PipelineConfig trianglePipelineDefinition(
+	const vkcv::PipelineConfig trianglePipelineDefinition {
 		triangleShaderProgram,
-		windowWidth,
-		windowHeight,
+		(uint32_t)windowWidth,
+		(uint32_t)windowHeight,
 		trianglePass,
 		{},
-		{});
+		{},
+		false
+	};
+
 	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
-	
+
 	if (!trianglePipeline)
 	{
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 
-	std::vector<vkcv::VertexBufferBinding> vertexBufferBindings;
+	// Compute Pipeline
+	vkcv::ShaderProgram computeShaderProgram{};
+	computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path("shaders/comp.spv"));
+
+	// take care, assuming shader has exactly one descriptor set
+	vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
+
+	vkcv::PipelineHandle computePipeline = core.createComputePipeline(
+		computeShaderProgram, 
+		{ core.getDescriptorSet(computeDescriptorSet).layout });
+
+	struct ComputeTestBuffer {
+		float test1[10];
+		float test2[10];
+		float test3[10];
+	};
+
+	vkcv::Buffer computeTestBuffer = core.createBuffer<ComputeTestBuffer>(vkcv::BufferType::STORAGE, 1);
+
+	vkcv::DescriptorWrites computeDescriptorWrites;
+	computeDescriptorWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0, computeTestBuffer.getHandle()) };
+	core.writeDescriptorSet(computeDescriptorSet, computeDescriptorWrites);
 
 	/*
 	 * BufferHandle triangleVertices = core.createBuffer(vertices);
@@ -133,29 +162,70 @@ int main(int argc, const char** argv) {
 	 *
 	 * PipelineHandle trianglePipeline = core.CreatePipeline(trianglePipeline);
 	 */
-    auto start = std::chrono::system_clock::now();
+	auto start = std::chrono::system_clock::now();
+
+	vkcv::ImageHandle swapchainImageHandle = vkcv::ImageHandle::createSwapchainImageHandle();
+
+	const vkcv::Mesh renderMesh({}, triangleIndexBuffer.getVulkanHandle(), 3);
+	vkcv::DrawcallInfo drawcall(renderMesh, {});
+
+	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+
+    vkcv::camera::CameraManager cameraManager(window);
+    uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+    uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	
+	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
+    cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
+
 	while (window.isWindowOpen())
 	{
-		core.beginFrame();
         window.pollEvents();
-        auto end = std::chrono::system_clock::now();
-        auto deltatime = end - start;
-        start = end;
-        cameraManager.getCamera().updateView(std::chrono::duration<double>(deltatime).count());
-		const glm::mat4 mvp = cameraManager.getCamera().getProjection() * cameraManager.getCamera().getView();
 
-	    core.renderMesh(
+		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
+		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+			continue;
+		}
+		
+        auto end = std::chrono::system_clock::now();
+        auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        start = end;
+		
+		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+        glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
+
+		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
+		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+
+		core.recordDrawcallsToCmdStream(
+			cmdStream,
 			trianglePass,
 			trianglePipeline,
-			windowWidth,
-			windowHeight,
-			sizeof(mvp),
-			&mvp,
-			vertexBufferBindings,
-			triangleIndexBuffer.getHandle(),
-			3,
-			vkcv::ResourcesHandle(),
-			0);
+			pushConstantData,
+			{ drawcall },
+			{ swapchainInput });
+
+		const uint32_t dispatchSize[3] = { 2, 1, 1 };
+		const float theMeaningOfLife = 42;
+
+		core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			computePipeline,
+			dispatchSize,
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(computeDescriptorSet).vulkanHandle) },
+			vkcv::PushConstantData((void*)&theMeaningOfLife, sizeof(theMeaningOfLife)));
+
+		core.prepareSwapchainImageForPresent(cmdStream);
+		core.submitCommandStream(cmdStream);
+		
+		gui.beginGUI();
+		
+		ImGui::Begin("Hello world");
+		ImGui::Text("This is a test!");
+		ImGui::End();
+		
+		gui.endGUI();
 	    
 	    core.endFrame();
 	}

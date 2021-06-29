@@ -9,8 +9,12 @@
 #include "Handles.hpp"
 
 namespace vkcv {
-	
-	class ImageManager;
+
+    // forward declares
+    class ImageManager;
+
+	bool isDepthFormat(const vk::Format format);
+
 	class Image {
 		friend class Core;
 	public:
@@ -25,28 +29,35 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		uint32_t getDepth() const;
-		
-		[[nodiscard]]
-		vk::ImageLayout getLayout() const;
 
 		[[nodiscard]]
 		vkcv::ImageHandle getHandle() const;
-		
+
+		[[nodiscard]]
+		uint32_t getMipCount() const;
+
 		void switchLayout(vk::ImageLayout newLayout);
 		
 		void fill(void* data, size_t size = SIZE_MAX);
+		void generateMipChainImmediate();
+		void recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream);
 	private:
-		ImageManager* const m_manager;
-		const ImageHandle m_handle;
-		const vk::Format m_format;
-		const uint32_t m_width;
-		const uint32_t m_height;
-		const uint32_t m_depth;
-		vk::ImageLayout m_layout;
+	    // TODO: const qualifier removed, very hacky!!!
+	    //  Else you cannot recreate an image. Pls fix.
+		ImageManager*       m_manager;
+		ImageHandle   m_handle;
 
-		Image(ImageManager* manager, const ImageHandle& handle, vk::Format format, uint32_t width, uint32_t height, uint32_t depth);
+		Image(ImageManager* manager, const ImageHandle& handle);
 		
-		static Image create(ImageManager* manager, vk::Format format, uint32_t width, uint32_t height, uint32_t depth);
+		static Image create(
+			ImageManager* manager,
+			vk::Format format,
+			uint32_t width,
+			uint32_t height,
+			uint32_t depth,
+			uint32_t mipCount,
+			bool supportStorage,
+			bool supportColorAttachment);
 		
 	};
 	

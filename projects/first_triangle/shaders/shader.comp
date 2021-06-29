@@ -1,0 +1,25 @@
+#version 440
+
+layout(std430, binding = 0) buffer testBuffer
+{ 
+    float test1[10];
+    float test2[10];
+    float test3[10];
+};
+
+layout( push_constant ) uniform constants{
+    float pushConstant;
+};
+
+layout(local_size_x = 5) in;
+
+void main(){
+
+    if(gl_GlobalInvocationID.x >= 10){
+        return;
+    }
+
+    test1[gl_GlobalInvocationID.x] = gl_GlobalInvocationID.x;
+    test2[gl_GlobalInvocationID.x] = 69;  // nice!
+    test3[gl_GlobalInvocationID.x] = pushConstant;    
+}

@@ -13,8 +13,10 @@
 #include "SamplerManager.hpp"
 #include "ImageManager.hpp"
 #include "DescriptorManager.hpp"
-#include "Surface.hpp"
 #include "ImageLayoutTransitions.hpp"
+#include "vkcv/CommandStreamManager.hpp"
+#include <cmath>
+#include "vkcv/Logger.hpp"
 
 namespace vkcv
 {
@@ -32,17 +34,465 @@ namespace vkcv
         		instanceExtensions,
         		deviceExtensions
 		);
-	
-		const vk::SurfaceKHR surface = createSurface(
-				window.getWindow(),
-				context.getInstance(),
-				context.getPhysicalDevice()
+
+        Swapchain swapChain = Swapchain::create(window, context);
+
+		 std::vector<vk::ImageView> swapchainImageViews = createSwapchainImageViews( context, swapChain);
+
+        const auto& queueManager = context.getQueueManager();
+        
+		const int						graphicQueueFamilyIndex	= queueManager.getGraphicsQueues()[0].familyIndex;
+		const std::unordered_set<int>	queueFamilySet			= generateQueueFamilyIndexSet(queueManager);
+		const auto						commandResources		= createCommandResources(context.getDevice(), queueFamilySet);
+		const auto						defaultSyncResources	= createSyncResources(context.getDevice());
+
+        return Core(std::move(context) , window, swapChain, swapchainImageViews, commandResources, defaultSyncResources);
+    }
+
+    const Context &Core::getContext() const
+    {
+        return m_Context;
+    }
+    
+    const Swapchain& Core::getSwapchain() const {
+    	return m_swapchain;
+    }
+
+    Core::Core(Context &&context, Window &window, const Swapchain& swapChain,  std::vector<vk::ImageView> swapchainImageViews,
+        const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
+            m_Context(std::move(context)),
+            m_window(window),
+            m_swapchain(swapChain),
+            m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
+            m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
+            m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
+            m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
+            m_SamplerManager(std::unique_ptr<SamplerManager>(new SamplerManager(m_Context.m_Device))),
+            m_ImageManager{std::unique_ptr<ImageManager>(new ImageManager(*m_BufferManager))},
+            m_CommandStreamManager{std::unique_ptr<CommandStreamManager>(new CommandStreamManager)},
+            m_CommandResources(commandResources),
+            m_SyncResources(syncResources)
+	{
+		m_BufferManager->m_core = this;
+		m_BufferManager->init();
+		m_CommandStreamManager->init(this);
+
+		m_ImageManager->m_core = this;
+		
+		e_resizeHandle = m_window.e_resize.add( [&](int width, int height) {
+			m_swapchain.signalSwapchainRecreation();
+		});
+
+		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
+		m_ImageManager->setSwapchainImages(
+			swapchainImages, 
+			swapchainImageViews, 
+			swapChain.getExtent().width,
+			swapChain.getExtent().height,
+			swapChain.getFormat());
+	}
+
+	Core::~Core() noexcept {
+    	m_window.e_resize.remove(e_resizeHandle);
+    	
+		m_Context.getDevice().waitIdle();
+
+		destroyCommandResources(m_Context.getDevice(), m_CommandResources);
+		destroySyncResources(m_Context.getDevice(), m_SyncResources);
+
+		m_Context.m_Device.destroySwapchainKHR(m_swapchain.getSwapchain());
+		m_Context.m_Instance.destroySurfaceKHR(m_swapchain.getSurface());
+	}
+
+    PipelineHandle Core::createGraphicsPipeline(const PipelineConfig &config)
+    {
+        return m_PipelineManager->createPipeline(config, *m_PassManager);
+    }
+
+    PipelineHandle Core::createComputePipeline(
+        const ShaderProgram &shaderProgram, 
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    {
+        return m_PipelineManager->createComputePipeline(shaderProgram, descriptorSetLayouts);
+    }
+
+
+    PassHandle Core::createPass(const PassConfig &config)
+    {
+        return m_PassManager->createPass(config);
+    }
+
+	Result Core::acquireSwapchainImage() {
+    	uint32_t imageIndex;
+		
+    	vk::Result result;
+    	
+		try {
+			result = m_Context.getDevice().acquireNextImageKHR(
+					m_swapchain.getSwapchain(),
+					std::numeric_limits<uint64_t>::max(),
+					m_SyncResources.swapchainImageAcquired,
+					nullptr,
+					&imageIndex, {}
+			);
+		} catch (vk::OutOfDateKHRError e) {
+			result = vk::Result::eErrorOutOfDateKHR;
+		}
+		
+		if (result != vk::Result::eSuccess) {
+			vkcv_log(LogLevel::ERROR, "%s", vk::to_string(result).c_str());
+			return Result::ERROR;
+		}
+		
+		m_currentSwapchainImageIndex = imageIndex;
+		return Result::SUCCESS;
+	}
+
+	bool Core::beginFrame(uint32_t& width, uint32_t& height) {
+		if (m_swapchain.shouldUpdateSwapchain()) {
+			m_Context.getDevice().waitIdle();
+
+			m_swapchain.updateSwapchain(m_Context, m_window);
+			const auto swapchainViews = createSwapchainImageViews(m_Context, m_swapchain);
+			const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
+
+			m_ImageManager->setSwapchainImages(swapchainImages, swapchainViews, width, height, m_swapchain.getFormat());
+		}
+		
+    	if (acquireSwapchainImage() != Result::SUCCESS) {
+			vkcv_log(LogLevel::ERROR, "Acquire failed");
+    		
+    		m_currentSwapchainImageIndex = std::numeric_limits<uint32_t>::max();
+    	}
+		
+		m_Context.getDevice().waitIdle(); // TODO: this is a sin against graphics programming, but its getting late - Alex
+		
+		const auto& extent = m_swapchain.getExtent();
+		
+		width = extent.width;
+		height = extent.height;
+		
+		m_ImageManager->setCurrentSwapchainImageIndex(m_currentSwapchainImageIndex);
+
+		return (m_currentSwapchainImageIndex != std::numeric_limits<uint32_t>::max());
+	}
+
+	void Core::recordDrawcallsToCmdStream(
+		const CommandStreamHandle       cmdStreamHandle,
+		const PassHandle                renderpassHandle, 
+		const PipelineHandle            pipelineHandle, 
+        const PushConstantData          &pushConstantData,
+        const std::vector<DrawcallInfo> &drawcalls,
+		const std::vector<ImageHandle>  &renderTargets) {
+
+		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
+			return;
+		}
+
+		uint32_t width;
+		uint32_t height;
+		if (renderTargets.size() > 0) {
+			const vkcv::ImageHandle firstImage = renderTargets[0];
+			if (firstImage.isSwapchainImage()) {
+				const auto& swapchainExtent = m_swapchain.getExtent();
+				width = swapchainExtent.width;
+				height = swapchainExtent.height;
+			}
+			else {
+				width = m_ImageManager->getImageWidth(firstImage);
+				height = m_ImageManager->getImageHeight(firstImage);
+			}
+		}
+		else {
+			width = 1;
+			height = 1;
+		}
+		// TODO: validate that width/height match for all attachments
+
+		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
+		const PassConfig passConfig = m_PassManager->getPassConfig(renderpassHandle);
+
+		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
+		const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
+		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+
+		std::vector<vk::ImageView> attachmentsViews;
+		for (const ImageHandle handle : renderTargets) {
+			vk::ImageView targetHandle;
+			const auto cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
+
+			targetHandle = m_ImageManager->getVulkanImageView(handle);
+			const bool isDepthImage = isDepthFormat(m_ImageManager->getImageFormat(handle));
+			const vk::ImageLayout targetLayout = 
+				isDepthImage ? vk::ImageLayout::eDepthStencilAttachmentOptimal : vk::ImageLayout::eColorAttachmentOptimal;
+			m_ImageManager->recordImageLayoutTransition(handle, targetLayout, cmdBuffer);
+			attachmentsViews.push_back(targetHandle);
+		}
+		
+        const vk::FramebufferCreateInfo createInfo(
+            {},
+            renderpass,
+            static_cast<uint32_t>(attachmentsViews.size()),
+            attachmentsViews.data(),
+            width,
+            height,
+            1
+		);
+		
+		vk::Framebuffer framebuffer = m_Context.m_Device.createFramebuffer(createInfo);
+        
+        if (!framebuffer) {
+			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
+            return;
+        }
+
+        vk::Viewport dynamicViewport(
+        		0.0f, 0.0f,
+            	static_cast<float>(width), static_cast<float>(height),
+            0.0f, 1.0f
 		);
 
-        SwapChain swapChain = SwapChain::create(window, context, surface);
+        vk::Rect2D dynamicScissor({0, 0}, {width, height});
 
-        std::vector<vk::Image> swapChainImages = context.getDevice().getSwapchainImagesKHR(swapChain.getSwapchain());
+		auto &bufferManager = m_BufferManager;
+
+		SubmitInfo submitInfo;
+		submitInfo.queueType = QueueType::Graphics;
+		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
+
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+            std::vector<vk::ClearValue> clearValues;
+
+            for (const auto& attachment : passConfig.attachments) {
+                if (attachment.load_operation == AttachmentOperation::CLEAR) {
+                    float clear = 0.0f;
+
+                    if (isDepthFormat(attachment.format)) {
+                        clear = 1.0f;
+                    }
+
+                    clearValues.emplace_back(std::array<float, 4>{
+                            clear,
+                            clear,
+                            clear,
+                            1.f
+                    });
+                }
+            }
+
+            const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
+            const vk::SubpassContents subpassContents = {};
+            cmdBuffer.beginRenderPass(beginInfo, subpassContents, {});
+
+            cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
+
+            const PipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+            if(pipeConfig.m_UseDynamicViewport)
+            {
+                cmdBuffer.setViewport(0, 1, &dynamicViewport);
+                cmdBuffer.setScissor(0, 1, &dynamicScissor);
+            }
+
+            for (int i = 0; i < drawcalls.size(); i++) {
+                recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
+            }
+
+            cmdBuffer.endRenderPass();
+        };
+
+        auto finishFunction = [framebuffer, this]()
+        {
+            m_Context.m_Device.destroy(framebuffer);
+        };
+
+		recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
+	}
+
+	void Core::recordComputeDispatchToCmdStream(
+		CommandStreamHandle cmdStreamHandle,
+		PipelineHandle computePipeline,
+		const uint32_t dispatchCount[3],
+		const std::vector<DescriptorSetUsage>& descriptorSetUsages,
+		const PushConstantData& pushConstantData) {
+
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+
+			const auto pipelineLayout = m_PipelineManager->getVkPipelineLayout(computePipeline);
+
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_PipelineManager->getVkPipeline(computePipeline));
+			for (const auto& usage : descriptorSetUsages) {
+				cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eCompute,
+					pipelineLayout,
+					usage.setLocation,
+					{ usage.vulkanHandle },
+					{});
+			}
+			if (pushConstantData.sizePerDrawcall > 0) {
+				cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eCompute,
+					0,
+					pushConstantData.sizePerDrawcall,
+					pushConstantData.data);
+			}
+			cmdBuffer.dispatch(dispatchCount[0], dispatchCount[1], dispatchCount[2]);
+		};
+
+		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);
+	}
+
+	void Core::endFrame() {
+		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
+			return;
+		}
+  
+		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
+
+		const auto& queueManager = m_Context.getQueueManager();
+		std::array<vk::Semaphore, 2> waitSemaphores{
+			m_SyncResources.renderFinished,
+			m_SyncResources.swapchainImageAcquired
+		};
+
+		const vk::SwapchainKHR& swapchain = m_swapchain.getSwapchain();
+		const vk::PresentInfoKHR presentInfo(
+			waitSemaphores,
+			swapchain,
+			m_currentSwapchainImageIndex
+		);
+		
+		vk::Result result;
+		
+		try {
+			result = queueManager.getPresentQueue().handle.presentKHR(presentInfo);
+		} catch (vk::OutOfDateKHRError e) {
+			result = vk::Result::eErrorOutOfDateKHR;
+		}
+		
+		if (result != vk::Result::eSuccess) {
+			vkcv_log(LogLevel::ERROR, "Swapchain present failed (%s)", vk::to_string(result).c_str());
+		}
+	}
+	
+	void Core::recordAndSubmitCommandsImmediate(
+		const SubmitInfo &submitInfo, 
+		const RecordCommandFunction &record, 
+		const FinishCommandFunction &finish)
+	{
+		const vk::Device& device = m_Context.getDevice();
+
+		const vkcv::Queue		queue		= getQueueForSubmit(submitInfo.queueType, m_Context.getQueueManager());
+		const vk::CommandPool	cmdPool		= chooseCmdPool(queue, m_CommandResources);
+		const vk::CommandBuffer	cmdBuffer	= allocateCommandBuffer(device, cmdPool);
+
+		beginCommandBuffer(cmdBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+		record(cmdBuffer);
+		cmdBuffer.end();
+		
+		vk::Fence waitFence = createFence(device);
+
+		submitCommandBufferToQueue(queue.handle, cmdBuffer, waitFence, submitInfo.waitSemaphores, submitInfo.signalSemaphores);
+		waitForFence(device, waitFence);
+		
+		device.destroyFence(waitFence);
+		
+		device.freeCommandBuffers(cmdPool, cmdBuffer);
+		
+		if (finish) {
+			finish();
+		}
+	}
+
+	CommandStreamHandle Core::createCommandStream(QueueType queueType) {
+
+		const vk::Device&       device  = m_Context.getDevice();
+		const vkcv::Queue       queue   = getQueueForSubmit(queueType, m_Context.getQueueManager());
+		const vk::CommandPool   cmdPool = chooseCmdPool(queue, m_CommandResources);
+
+		return m_CommandStreamManager->createCommandStream(queue.handle, cmdPool);
+	}
+
+    void Core::recordCommandsToStream(
+		const CommandStreamHandle   cmdStreamHandle,
+		const RecordCommandFunction &record, 
+		const FinishCommandFunction &finish) {
+
+		m_CommandStreamManager->recordCommandsToStream(cmdStreamHandle, record);
+		if (finish) {
+			m_CommandStreamManager->addFinishCallbackToStream(cmdStreamHandle, finish);
+		}
+	}
+
+	void Core::submitCommandStream(const CommandStreamHandle handle) {
+		std::vector<vk::Semaphore> waitSemaphores;
+		// FIXME: add proper user controllable sync
+		std::vector<vk::Semaphore> signalSemaphores = { m_SyncResources.renderFinished };
+		m_CommandStreamManager->submitCommandStreamSynchronous(handle, waitSemaphores, signalSemaphores);
+	}
+
+	SamplerHandle Core::createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
+									  SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode) {
+		return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode);
+	}
+
+	Image Core::createImage(
+		vk::Format  format,
+		uint32_t    width,
+		uint32_t    height,
+		uint32_t    depth,
+		bool        createMipChain,
+		bool        supportStorage,
+		bool        supportColorAttachment)
+	{
+
+		uint32_t mipCount = 1;
+		if (createMipChain) {
+			mipCount = 1 + (uint32_t)std::floor(std::log2(std::max(width, std::max(height, depth))));
+		}
+
+		return Image::create(
+			m_ImageManager.get(), 
+			format,
+			width,
+			height,
+			depth,
+			mipCount,
+			supportStorage,
+			supportColorAttachment);
+	}
+
+	const uint32_t Core::getImageWidth(ImageHandle imageHandle)
+	{
+		return m_ImageManager->getImageWidth(imageHandle);
+	}
+
+	const uint32_t Core::getImageHeight(ImageHandle imageHandle)
+	{
+		return m_ImageManager->getImageHeight(imageHandle);
+	}
+
+    DescriptorSetHandle Core::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
+    {
+        return m_DescriptorManager->createDescriptorSet(bindings);
+    }
+
+	void Core::writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites &writes) {
+		m_DescriptorManager->writeDescriptorSet(
+			handle,
+			writes, 
+			*m_ImageManager, 
+			*m_BufferManager, 
+			*m_SamplerManager);
+	}
+
+	DescriptorSet Core::getDescriptorSet(const DescriptorSetHandle handle) const {
+		return m_DescriptorManager->getDescriptorSet(handle);
+	}
+
+    std::vector<vk::ImageView> Core::createSwapchainImageViews( Context &context, Swapchain& swapChain){
         std::vector<vk::ImageView> imageViews;
+        std::vector<vk::Image> swapChainImages = context.getDevice().getSwapchainImagesKHR(swapChain.getSwapchain());
         imageViews.reserve( swapChainImages.size() );
         //here can be swizzled with vk::ComponentSwizzle if needed
         vk::ComponentMapping componentMapping(
@@ -59,310 +509,48 @@ namespace vkcv
                     vk::ImageViewCreateFlags(),
                     image,
                     vk::ImageViewType::e2D,
-                    swapChain.getSurfaceFormat().format,
+                    swapChain.getFormat(),
                     componentMapping,
-                    subResourceRange
-            );
+                    subResourceRange);
 
             imageViews.push_back(context.getDevice().createImageView(imageViewCreateInfo));
         }
-
-        const auto& queueManager = context.getQueueManager();
-        
-		const int						graphicQueueFamilyIndex	= queueManager.getGraphicsQueues()[0].familyIndex;
-		const std::unordered_set<int>	queueFamilySet			= generateQueueFamilyIndexSet(queueManager);
-		const auto						commandResources		= createCommandResources(context.getDevice(), queueFamilySet);
-		const auto						defaultSyncResources	= createSyncResources(context.getDevice());
-
-        window.e_resize.add([&](int width, int height){
-            recreateSwapchain(width,height);
-        });
-
-        return Core(std::move(context) , window, swapChain, imageViews, commandResources, defaultSyncResources);
+        return imageViews;
     }
 
-    const Context &Core::getContext() const
-    {
-        return m_Context;
-    }
-
-	Core::Core(Context &&context, Window &window , SwapChain swapChain,  std::vector<vk::ImageView> imageViews,
-		const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
-            m_Context(std::move(context)),
-            m_window(window),
-            m_swapchain(swapChain),
-            m_swapchainImageViews(imageViews),
-            m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
-            m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
-            m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
-			m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
-			m_SamplerManager(std::unique_ptr<SamplerManager>(new SamplerManager(m_Context.m_Device))),
-			m_ImageManager{std::unique_ptr<ImageManager>(new ImageManager(*m_BufferManager))},
-            m_CommandResources(commandResources),
-            m_SyncResources(syncResources)
-	{
-    	m_BufferManager->m_core = this;
-    	m_BufferManager->init();
-    	
-    	m_ImageManager->m_core = this;
+	void Core::prepareSwapchainImageForPresent(const CommandStreamHandle cmdStream) {
+		auto swapchainHandle = ImageHandle::createSwapchainImageHandle();
+		recordCommandsToStream(cmdStream, [swapchainHandle, this](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordImageLayoutTransition(swapchainHandle, vk::ImageLayout::ePresentSrcKHR, cmdBuffer);
+		}, nullptr);
 	}
 
-	Core::~Core() noexcept {
-		m_Context.getDevice().waitIdle();
-		for (auto image : m_swapchainImageViews) {
-			m_Context.m_Device.destroyImageView(image);
-		}
-
-		destroyCommandResources(m_Context.getDevice(), m_CommandResources);
-		destroySyncResources(m_Context.getDevice(), m_SyncResources);
-		destroyTemporaryFramebuffers();
-
-		m_Context.m_Device.destroySwapchainKHR(m_swapchain.getSwapchain());
-		m_Context.m_Instance.destroySurfaceKHR(m_swapchain.getSurface());
+	void Core::prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image) {
+		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eShaderReadOnlyOptimal, cmdBuffer);
+		}, nullptr);
 	}
 
-    PipelineHandle Core::createGraphicsPipeline(const PipelineConfig &config)
-    {
-        return m_PipelineManager->createPipeline(config, *m_PassManager);
-    }
-
-
-    PassHandle Core::createPass(const PassConfig &config)
-    {
-        return m_PassManager->createPass(config);
-    }
-
-	Result Core::acquireSwapchainImage() {
-    	uint32_t imageIndex;
-    	
-		const auto& acquireResult = m_Context.getDevice().acquireNextImageKHR(
-			m_swapchain.getSwapchain(), 
-			std::numeric_limits<uint64_t>::max(), 
-			m_SyncResources.swapchainImageAcquired,
-			nullptr, 
-			&imageIndex, {}
-		);
-		
-		if (acquireResult != vk::Result::eSuccess) {
-			return Result::ERROR;
-		}
-		
-		m_currentSwapchainImageIndex = imageIndex;
-		return Result::SUCCESS;
+	void Core::prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image) {
+		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eGeneral, cmdBuffer);
+		}, nullptr);
 	}
 
-	void Core::destroyTemporaryFramebuffers() {
-		for (const vk::Framebuffer f : m_TemporaryFramebuffers) {
-			m_Context.getDevice().destroyFramebuffer(f);
-		}
-		m_TemporaryFramebuffers.clear();
+	void Core::recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image) {
+		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordImageMemoryBarrier(image, cmdBuffer);
+		}, nullptr);
 	}
 
-	void Core::beginFrame() {
-    	if (acquireSwapchainImage() != Result::SUCCESS) {
-    		return;
-    	}
-		m_Context.getDevice().waitIdle();	// FIMXE: this is a sin against graphics programming, but its getting late - Alex
-		destroyTemporaryFramebuffers();
+	void Core::recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer) {
+		recordCommandsToStream(cmdStream, [buffer, this](const vk::CommandBuffer cmdBuffer) {
+			m_BufferManager->recordBufferMemoryBarrier(buffer, cmdBuffer);
+		}, nullptr);
 	}
 	
-	vk::Framebuffer createFramebuffer(const vk::Device device, const vk::RenderPass& renderpass,
-									  const int width, const int height, const std::vector<vk::ImageView>& attachments) {
-		const vk::FramebufferCreateFlags flags = {};
-		const vk::FramebufferCreateInfo createInfo(flags, renderpass, attachments.size(), attachments.data(), width, height, 1);
-		return device.createFramebuffer(createInfo);
-	}
-
-	void Core::renderMesh(
-		const PassHandle						renderpassHandle, 
-		const PipelineHandle					pipelineHandle, 
-		const int								width, 
-		const int								height, 
-		const size_t							pushConstantSize, 
-		const void								*pushConstantData,
-		const std::vector<VertexBufferBinding>& vertexBufferBindings, 
-		const BufferHandle						indexBuffer, 
-		const size_t							indexCount,
-		const vkcv::ResourcesHandle				resourceHandle,
-		const size_t							resourceDescriptorSetIndex
-		) {
-
-		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
-			return;
-		}
-
-		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
-		const PassConfig passConfig = m_PassManager->getPassConfig(renderpassHandle);
-		
-		ImageHandle depthImage;
-		
-		for (const auto& attachment : passConfig.attachments) {
-			if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
-				depthImage = m_ImageManager->createImage(width, height, 1, attachment.format);
-				break;
-			}
-		}
-		
-		const vk::ImageView imageView	= m_swapchainImageViews[m_currentSwapchainImageIndex];
-		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
-        const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
-		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
-		const vk::Buffer vulkanIndexBuffer	= m_BufferManager->getBuffer(indexBuffer);
-
-		std::vector<vk::ImageView> attachments;
-		attachments.push_back(imageView);
-		
-		if (depthImage) {
-			attachments.push_back(m_ImageManager->getVulkanImageView(depthImage));
-		}
-		
-		const vk::Framebuffer framebuffer = createFramebuffer(
-				m_Context.getDevice(),
-				renderpass,
-				width,
-				height,
-				attachments
-		);
-		
-		m_TemporaryFramebuffers.push_back(framebuffer);
-
-		auto &bufferManager = m_BufferManager;
-
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Graphics;
-		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
-
-		submitCommands(submitInfo, [&](const vk::CommandBuffer& cmdBuffer) {
-			std::vector<vk::ClearValue> clearValues;
-			
-			for (const auto& attachment : passConfig.attachments) {
-				if (attachment.load_operation == AttachmentOperation::CLEAR) {
-					float clear = 0.0f;
-					
-					if (attachment.layout_final == AttachmentLayout::DEPTH_STENCIL_ATTACHMENT) {
-						clear = 1.0f;
-					}
-					
-					clearValues.emplace_back(std::array<float, 4>{
-							clear,
-							clear,
-							clear,
-							1.f
-					});
-				}
-			}
-
-			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
-			const vk::SubpassContents subpassContents = {};
-			cmdBuffer.beginRenderPass(beginInfo, subpassContents, {});
-
-			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
-
-			for (uint32_t i = 0; i < vertexBufferBindings.size(); i++) {
-				const auto &vertexBinding = vertexBufferBindings[i];
-				const auto vertexBuffer = bufferManager->getBuffer(vertexBinding.buffer);
-				cmdBuffer.bindVertexBuffers(i, (vertexBuffer), (vertexBinding.offset));
-			}
-			
-			if (resourceHandle) {
-				const vk::DescriptorSet descriptorSet = m_DescriptorManager->getDescriptorSet(resourceHandle, resourceDescriptorSetIndex);
-				cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, descriptorSet, nullptr);
-			}
-			
-			cmdBuffer.bindIndexBuffer(vulkanIndexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
-			cmdBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eAll, 0, pushConstantSize, pushConstantData);
-			cmdBuffer.drawIndexed(indexCount, 1, 0, 0, {});
-			cmdBuffer.endRenderPass();
-		}, [&]() {
-			m_ImageManager->destroyImage(depthImage);
-		});
-	}
-
-	void Core::endFrame() {
-		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
-			return;
-		}
-  
-		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
-		const vk::Image presentImage = swapchainImages[m_currentSwapchainImageIndex];
-		
-		const auto& queueManager = m_Context.getQueueManager();
-		std::array<vk::Semaphore, 2> waitSemaphores{ 
-			m_SyncResources.renderFinished, 
-			m_SyncResources.swapchainImageAcquired };
-
-		vk::Result presentResult;
-		const vk::SwapchainKHR& swapchain = m_swapchain.getSwapchain();
-		const vk::PresentInfoKHR presentInfo(
-			waitSemaphores,
-			swapchain,
-			m_currentSwapchainImageIndex, 
-			presentResult);
-        queueManager.getPresentQueue().handle.presentKHR(presentInfo);
-		if (presentResult != vk::Result::eSuccess) {
-			std::cout << "Error: swapchain present failed" << std::endl;
-		}
-	}
-
-	vk::Format Core::getSwapchainImageFormat() {
-		return m_swapchain.getSurfaceFormat().format;
-	}
-
-    void Core::recreateSwapchain(int width, int height) {
-        /* boilerplate for #34 */
-        std::cout << "Resized to : " << width << " , " << height << std::endl;
+	vk::ImageView Core::getSwapchainImageView() const {
+    	return m_ImageManager->getVulkanImageView(vkcv::ImageHandle::createSwapchainImageHandle());
     }
 	
-	void Core::submitCommands(const SubmitInfo &submitInfo, const RecordCommandFunction& record, const FinishCommandFunction& finish)
-	{
-		const vk::Device& device = m_Context.getDevice();
-
-		const vkcv::Queue		queue		= getQueueForSubmit(submitInfo.queueType, m_Context.getQueueManager());
-		const vk::CommandPool	cmdPool		= chooseCmdPool(queue, m_CommandResources);
-		const vk::CommandBuffer	cmdBuffer	= allocateCommandBuffer(device, cmdPool);
-
-		beginCommandBuffer(cmdBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-		record(cmdBuffer);
-		cmdBuffer.end();
-
-		const vk::Fence waitFence = createFence(device);
-		submitCommandBufferToQueue(queue.handle, cmdBuffer, waitFence, submitInfo.waitSemaphores, submitInfo.signalSemaphores);
-		waitForFence(device, waitFence);
-		device.destroyFence(waitFence);
-		
-		device.freeCommandBuffers(cmdPool, cmdBuffer);
-		
-		if (finish) {
-			finish();
-		}
-	}
-	
-	SamplerHandle Core::createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
-									  SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode) {
-    	return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode);
-    }
-    
-	Image Core::createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth)
-	{
-    	return Image::create(m_ImageManager.get(), format, width, height, depth);
-	}
-
-    ResourcesHandle Core::createResourceDescription(const std::vector<DescriptorSetConfig> &descriptorSets)
-    {
-        return m_DescriptorManager->createResourceDescription(descriptorSets);
-    }
-
-	void Core::writeResourceDescription(ResourcesHandle handle, size_t setIndex, const DescriptorWrites &writes) {
-		m_DescriptorManager->writeResourceDescription(
-			handle, 
-			setIndex, 
-			writes, 
-			*m_ImageManager, 
-			*m_BufferManager, 
-			*m_SamplerManager);
-	}
-
-	vk::DescriptorSetLayout Core::getDescritorSetLayout(ResourcesHandle handle, size_t setIndex) {
-		return m_DescriptorManager->getDescriptorSetLayout(handle, setIndex);
-	}
 }

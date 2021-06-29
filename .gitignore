@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> develop
 # IDE specific files
 .project
 .cproject
@@ -19,3 +15,6 @@ cmake-build-release/
 *.exe
 *.ilk
 *.pdb
+
+# GUI configuration files
+imgui.ini

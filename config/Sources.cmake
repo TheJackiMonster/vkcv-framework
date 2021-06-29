@@ -29,15 +29,18 @@ set(vkcv_sources
 
 		${vkcv_source}/vkcv/ImageManager.hpp
 		${vkcv_source}/vkcv/ImageManager.cpp
+		
+		${vkcv_include}/vkcv/Logger.hpp
 
-		${vkcv_include}/vkcv/SwapChain.hpp
-		${vkcv_source}/vkcv/SwapChain.cpp
-
+		${vkcv_include}/vkcv/Swapchain.hpp
+		${vkcv_source}/vkcv/Swapchain.cpp
+		
+		${vkcv_include}/vkcv/ShaderStage.hpp
+		
 		${vkcv_include}/vkcv/ShaderProgram.hpp
 		${vkcv_source}/vkcv/ShaderProgram.cpp
 
 		${vkcv_include}/vkcv/PipelineConfig.hpp
-		${vkcv_source}/vkcv/PipelineConfig.cpp
 
 		${vkcv_source}/vkcv/PipelineManager.hpp
 		${vkcv_source}/vkcv/PipelineManager.cpp
@@ -50,10 +53,7 @@ set(vkcv_sources
         
         ${vkcv_include}/vkcv/QueueManager.hpp
         ${vkcv_source}/vkcv/QueueManager.cpp
-        
-        ${vkcv_source}/vkcv/Surface.hpp
-        ${vkcv_source}/vkcv/Surface.cpp
-        
+
         ${vkcv_source}/vkcv/ImageLayoutTransitions.hpp
         ${vkcv_source}/vkcv/ImageLayoutTransitions.cpp
 
@@ -72,4 +72,12 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/SamplerManager.cpp
         
         ${vkcv_include}/vkcv/DescriptorWrites.hpp
+        
+        ${vkcv_include}/vkcv/DrawcallRecording.hpp
+        ${vkcv_source}/vkcv/DrawcallRecording.cpp
+        
+        ${vkcv_include}/vkcv/CommandStreamManager.hpp
+        ${vkcv_source}/vkcv/CommandStreamManager.cpp
+        
+        ${vkcv_include}/vkcv/CommandRecordingFunctionTypes.hpp
 )

@@ -8,7 +8,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "vkcv/Context.hpp"
-#include "vkcv/SwapChain.hpp"
+#include "vkcv/Swapchain.hpp"
 #include "vkcv/Window.hpp"
 #include "vkcv/PassConfig.hpp"
 #include "vkcv/Handles.hpp"
@@ -21,13 +21,12 @@
 #include "vkcv/DescriptorConfig.hpp"
 #include "Sampler.hpp"
 #include "DescriptorWrites.hpp"
+#include "Event.hpp"
+#include "DrawcallRecording.hpp"
+#include "CommandRecordingFunctionTypes.hpp"
 
 namespace vkcv
 {
-	struct VertexBufferBinding {
-		vk::DeviceSize	offset;
-		BufferHandle	buffer;
-	};
 
     // forward declarations
     class PassManager;
@@ -36,15 +35,13 @@ namespace vkcv
     class BufferManager;
     class SamplerManager;
     class ImageManager;
+	class CommandStreamManager;
 
 	struct SubmitInfo {
 		QueueType queueType;
 		std::vector<vk::Semaphore> waitSemaphores;
 		std::vector<vk::Semaphore> signalSemaphores;
 	};
-	
-	typedef std::function<void(const vk::CommandBuffer& cmdBuffer)> RecordCommandFunction;
-	typedef std::function<void(void)> FinishCommandFunction;
 
     class Core final
     {
@@ -55,38 +52,33 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, Window &window, SwapChain swapChain,  std::vector<vk::ImageView> imageViews,
+        Core(Context &&context, Window &window, const Swapchain& swapChain,  std::vector<vk::ImageView> imageViews,
 			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
 
 		Result acquireSwapchainImage();
-		void destroyTemporaryFramebuffers();
 
         Context m_Context;
 
-        SwapChain					m_swapchain;
-        std::vector<vk::ImageView>	m_swapchainImageViews;
-        const Window&				m_window;
+        Swapchain                       m_swapchain;
+        Window&                   		m_window;
 
-        std::unique_ptr<PassManager>		m_PassManager;
-        std::unique_ptr<PipelineManager>	m_PipelineManager;
-        std::unique_ptr<DescriptorManager>	m_DescriptorManager;
-        std::unique_ptr<BufferManager>		m_BufferManager;
-        std::unique_ptr<SamplerManager>		m_SamplerManager;
-        std::unique_ptr<ImageManager>		m_ImageManager;
+        std::unique_ptr<PassManager>            m_PassManager;
+        std::unique_ptr<PipelineManager>        m_PipelineManager;
+        std::unique_ptr<DescriptorManager>      m_DescriptorManager;
+        std::unique_ptr<BufferManager>          m_BufferManager;
+        std::unique_ptr<SamplerManager>         m_SamplerManager;
+        std::unique_ptr<ImageManager>           m_ImageManager;
+        std::unique_ptr<CommandStreamManager>   m_CommandStreamManager;
 
-		CommandResources				m_CommandResources;
-		SyncResources					m_SyncResources;
-		uint32_t						m_currentSwapchainImageIndex;
-		std::vector<vk::Framebuffer>	m_TemporaryFramebuffers;
+		CommandResources    m_CommandResources;
+		SyncResources       m_SyncResources;
+		uint32_t            m_currentSwapchainImageIndex;
 
-        /**
-         * recreates the swapchain
-         * @param[in] width new window width
-         * @param[in] height new window hight
-         */
-        static void recreateSwapchain(int width, int height);
+		event_handle<int,int> e_resizeHandle;
+
+        static std::vector<vk::ImageView> createSwapchainImageViews( Context &context, Swapchain& swapChain);
 
     public:
         /**
@@ -126,6 +118,9 @@ namespace vkcv
 
         [[nodiscard]]
         const Context &getContext() const;
+        
+        [[nodiscard]]
+        const Swapchain& getSwapchain() const;
 
         /**
              * Creates a #Core with given @p applicationName and @p applicationVersion for your application.
@@ -159,6 +154,19 @@ namespace vkcv
          */
         [[nodiscard]]
         PipelineHandle createGraphicsPipeline(const PipelineConfig &config);
+
+        /**
+         * Creates a basic vulkan compute pipeline using @p shader program and returns it using the @p handle.
+         * Fixed Functions for pipeline are set with standard values.
+         *
+         * @param shader program that hold the compiles compute shader
+         * @param handle a handle to return the created vulkan handle
+         * @return True if pipeline creation was successful, False if not
+         */
+        [[nodiscard]]
+        PipelineHandle createComputePipeline(
+            const ShaderProgram &config, 
+            const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
 
         /**
          * Creates a basic vulkan render pass using @p config from the render pass config class and returns it using the @p handle.
@@ -206,45 +214,54 @@ namespace vkcv
          * @return Image-Object
          */
         [[nodiscard]]
-        Image createImage(vk::Format format, uint32_t width, uint32_t height, uint32_t depth = 1);
+        Image createImage(
+			vk::Format  format,
+			uint32_t    width,
+			uint32_t    height,
+			uint32_t    depth = 1,
+			bool        createMipChain = false,
+			bool        supportStorage = false,
+			bool        supportColorAttachment = false);
+
+        [[nodiscard]]
+        const uint32_t getImageWidth(ImageHandle imageHandle);
+        [[nodiscard]]
+        const uint32_t getImageHeight(ImageHandle imageHandle);
 
         /** TODO:
          *   @param setDescriptions
          *   @return
          */
         [[nodiscard]]
-        ResourcesHandle createResourceDescription(const std::vector<DescriptorSetConfig> &descriptorSets);
-		void writeResourceDescription(ResourcesHandle handle, size_t setIndex, const DescriptorWrites& writes);
+        DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &bindings);
+		void writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites& writes);
 
-		vk::DescriptorSetLayout getDescritorSetLayout(ResourcesHandle handle, size_t setIndex);
+		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
 
 		/**
 		 * @brief start recording command buffers and increment frame index
 		*/
-		void beginFrame();
+		bool beginFrame(uint32_t& width, uint32_t& height);
 
-		/**
-		 * @brief render a beautiful triangle
-		*/
-		void renderMesh(
-			const PassHandle						renderpassHandle, 
-			const PipelineHandle					pipelineHandle,
-			const int								width, 
-			const int								height, 
-			const size_t							pushConstantSize, 
-			const void*								pushConstantData, 
-			const std::vector<VertexBufferBinding>	&vertexBufferBindings, 
-			const BufferHandle						indexBuffer, 
-			const size_t							indexCount,
-			const vkcv::ResourcesHandle				resourceHandle,
-			const size_t							resourceDescriptorSetIndex);
+		void recordDrawcallsToCmdStream(
+            const CommandStreamHandle       cmdStreamHandle,
+			const PassHandle                renderpassHandle, 
+			const PipelineHandle            pipelineHandle,
+			const PushConstantData          &pushConstantData,
+			const std::vector<DrawcallInfo> &drawcalls,
+			const std::vector<ImageHandle>  &renderTargets);
+
+		void recordComputeDispatchToCmdStream(
+			CommandStreamHandle cmdStream,
+			PipelineHandle computePipeline,
+			const uint32_t dispatchCount[3],
+			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
+			const PushConstantData& pushConstantData);
 
 		/**
 		 * @brief end recording and present image
 		*/
 		void endFrame();
-
-		vk::Format getSwapchainImageFormat();
 
 		/**
 		 * Submit a command buffer to any queue of selected type. The recording can be customized by a
@@ -255,6 +272,26 @@ namespace vkcv
 		 * @param record Record-command-function
 		 * @param finish Finish-command-function or nullptr
 		 */
-		void submitCommands(const SubmitInfo &submitInfo, const RecordCommandFunction& record, const FinishCommandFunction& finish);
+		void recordAndSubmitCommandsImmediate(
+			const SubmitInfo            &submitInfo, 
+			const RecordCommandFunction &record, 
+			const FinishCommandFunction &finish);
+
+		CommandStreamHandle createCommandStream(QueueType queueType);
+
+		void recordCommandsToStream(
+			const CommandStreamHandle   cmdStreamHandle,
+			const RecordCommandFunction &record,
+			const FinishCommandFunction &finish);
+
+		void submitCommandStream(const CommandStreamHandle handle);
+		void prepareSwapchainImageForPresent(const CommandStreamHandle handle);
+		void prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image);
+		void prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image);
+		void recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image);
+		void recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer);
+		
+		vk::ImageView getSwapchainImageView() const;
+		
     };
 }

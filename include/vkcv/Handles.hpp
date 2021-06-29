@@ -7,31 +7,51 @@
 
 #include <iostream>
 
+#include "Event.hpp"
+
 namespace vkcv
 {
+	
+	typedef typename event_function<uint64_t>::type HandleDestroyFunction;
 	
 	class Handle {
 		friend std::ostream& operator << (std::ostream& out, const Handle& handle);
 		
 	private:
 		uint64_t m_id;
+		uint64_t* m_rc;
+		
+		HandleDestroyFunction m_destroy;
 	
 	protected:
 		Handle();
 		
-		explicit Handle(uint64_t id);
+		explicit Handle(uint64_t id, const HandleDestroyFunction& destroy = nullptr);
 		
+		/**
+		 * Returns the actual handle id of a handle.
+		 *
+		 * @return Handle id
+		 */
 		[[nodiscard]]
 		uint64_t getId() const;
+		
+		/**
+		 * Returns the reference counter of a handle
+		 *
+		 * @return Reference counter
+		 */
+		[[nodiscard]]
+		uint64_t getRC() const;
 	
 	public:
-		virtual ~Handle() = default;
+		virtual ~Handle();
 		
-		Handle(const Handle& other) = default;
-		Handle(Handle&& other) = default;
+		Handle(const Handle& other);
+		Handle(Handle&& other) noexcept;
 		
-		Handle& operator=(const Handle& other) = default;
-		Handle& operator=(Handle&& other) = default;
+		Handle& operator=(const Handle& other);
+		Handle& operator=(Handle&& other) noexcept;
 		
 		explicit operator bool() const;
 		bool operator!() const;
@@ -59,7 +79,7 @@ namespace vkcv
 		using Handle::Handle;
 	};
 	
-	class ResourcesHandle : public Handle {
+	class DescriptorSetHandle : public Handle {
 		friend class DescriptorManager;
 	private:
 		using Handle::Handle;
@@ -73,8 +93,19 @@ namespace vkcv
 
 	class ImageHandle : public Handle {
 		friend class ImageManager;
-	private:
 		using Handle::Handle;
+	public:
+		[[nodiscard]]
+		bool isSwapchainImage() const;
+		
+		static ImageHandle createSwapchainImageHandle(const HandleDestroyFunction& destroy = nullptr);
+		
 	};
+
+    class CommandStreamHandle : public Handle {
+        friend class CommandStreamManager;
+    private:
+        using Handle::Handle;
+    };
 	
 }

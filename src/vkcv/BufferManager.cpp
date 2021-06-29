@@ -5,6 +5,7 @@
 
 #include "vkcv/BufferManager.hpp"
 #include "vkcv/Core.hpp"
+#include <vkcv/Logger.hpp>
 
 namespace vkcv {
 	
@@ -23,7 +24,7 @@ namespace vkcv {
 	
 	BufferManager::~BufferManager() noexcept {
 		for (uint64_t id = 0; id < m_buffers.size(); id++) {
-			destroyBuffer(BufferHandle(id));
+			destroyBufferById(id);
 		}
 	}
 	
@@ -119,7 +120,7 @@ namespace vkcv {
 		
 		const uint64_t id = m_buffers.size();
 		m_buffers.push_back({ buffer, memory, size, nullptr, mappable });
-		return BufferHandle{ id };
+		return BufferHandle(id, [&](uint64_t id) { destroyBufferById(id); });
 	}
 	
 	struct StagingStepInfo {
@@ -158,7 +159,7 @@ namespace vkcv {
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Transfer;
 		
-		core->submitCommands(
+		core->recordAndSubmitCommandsImmediate(
 				submitInfo,
 				[&info, &mapped_size](const vk::CommandBuffer& commandBuffer) {
 					const vk::BufferCopy region (
@@ -315,9 +316,7 @@ namespace vkcv {
 		buffer.m_mapped = nullptr;
 	}
 	
-	void BufferManager::destroyBuffer(const BufferHandle& handle) {
-		const uint64_t id = handle.getId();
-		
+	void BufferManager::destroyBufferById(uint64_t id) {
 		if (id >= m_buffers.size()) {
 			return;
 		}
@@ -335,6 +334,35 @@ namespace vkcv {
 			device.destroyBuffer(buffer.m_handle);
 			buffer.m_handle = nullptr;
 		}
+	}
+
+	void BufferManager ::recordBufferMemoryBarrier(const BufferHandle& handle, vk::CommandBuffer cmdBuffer) {
+
+		const uint64_t id = handle.getId();
+
+		if (id >= m_buffers.size()) {
+			vkcv_log(vkcv::LogLevel::ERROR, "Invalid buffer handle");
+			return;
+		}
+
+		auto& buffer = m_buffers[id];
+		
+		vk::BufferMemoryBarrier memoryBarrier(
+			vk::AccessFlagBits::eMemoryWrite, 
+			vk::AccessFlagBits::eMemoryRead,
+			0,
+			0,
+			buffer.m_handle,
+			0,
+			buffer.m_size);
+
+		cmdBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTopOfPipe,
+			vk::PipelineStageFlagBits::eBottomOfPipe,
+			{},
+			nullptr,
+			memoryBarrier,
+			nullptr);
 	}
 
 }
