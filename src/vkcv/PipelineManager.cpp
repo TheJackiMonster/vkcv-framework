@@ -160,7 +160,7 @@ namespace vkcv
             case CullMode::None:    cullMode = vk::CullModeFlagBits::eNone;     break;
             case CullMode::Front:   cullMode = vk::CullModeFlagBits::eFront;    break;
             case CullMode::Back:    cullMode = vk::CullModeFlagBits::eBack;     break;
-            default: throw("Lets tilt Tobi LOLOLOL");   // I hope you review the code well
+			default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown CullMode"); cullMode = vk::CullModeFlagBits::eNone;
         }
 
         // rasterization state
