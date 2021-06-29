@@ -61,7 +61,7 @@ namespace vkcv{
 		return m_manager->getImageMipCount(m_handle);
 	}
 
-	void Image::fill(void *data, size_t size) {
+	void Image::fill(const void *data, size_t size) {
 		m_manager->fillImage(m_handle, data, size);
 	}
 

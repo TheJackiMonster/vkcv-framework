@@ -358,7 +358,7 @@ namespace vkcv {
 		}
 	}
 	
-	void ImageManager::fillImage(const ImageHandle& handle, void* data, size_t size)
+	void ImageManager::fillImage(const ImageHandle& handle, const void* data, size_t size)
 	{
 		const uint64_t id = handle.getId();
 		

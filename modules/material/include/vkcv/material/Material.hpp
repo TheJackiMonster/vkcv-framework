@@ -43,25 +43,25 @@ namespace vkcv::material {
 		
 		bool operator!() const;
 		
-		static const std::vector<DescriptorBinding>& getPBRDescriptorBindings() noexcept;
+		static const std::vector<DescriptorBinding>& getDescriptorBindings(MaterialType type);
 		
 		static Material createPBR(Core &core,
-								  ImageHandle &colorImg,
-								  SamplerHandle &colorSmp,
-								  ImageHandle &normalImg,
-								  SamplerHandle &normalSmp,
-								  ImageHandle &metRoughImg,
-								  SamplerHandle &metRoughSmp,
-								  ImageHandle &occlusionImg,
-								  SamplerHandle &occlusionSmp,
-								  ImageHandle &emissiveImg,
-								  SamplerHandle &emissiveSmp,
-								  float baseColorFactor [4],
+								  const ImageHandle &colorImg,
+								  const SamplerHandle &colorSmp,
+								  const ImageHandle &normalImg,
+								  const SamplerHandle &normalSmp,
+								  const ImageHandle &metRoughImg,
+								  const SamplerHandle &metRoughSmp,
+								  const ImageHandle &occlusionImg,
+								  const SamplerHandle &occlusionSmp,
+								  const ImageHandle &emissiveImg,
+								  const SamplerHandle &emissiveSmp,
+								  const float baseColorFactor [4],
 								  float metallicFactor,
 								  float roughnessFactor,
 								  float normalScale,
 								  float occlusionStrength,
-								  float emissiveFactor [3]);
+								  const float emissiveFactor [3]);
 	
 	};
 	

@@ -101,7 +101,7 @@ namespace vkcv {
 			const ImageHandle& handle,
 			vk::CommandBuffer cmdBuffer);
 
-		void fillImage(const ImageHandle& handle, void* data, size_t size);
+		void fillImage(const ImageHandle& handle, const void* data, size_t size);
 		void generateImageMipChainImmediate(const ImageHandle& handle);
 		void recordImageMipChainGenerationToCmdStream(const vkcv::CommandStreamHandle& cmdStream, const ImageHandle& handle);
 		

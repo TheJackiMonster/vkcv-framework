@@ -19,75 +19,89 @@ namespace vkcv::material {
 		return (m_Type == MaterialType::UNKNOWN);
 	}
 	
-	const std::vector<DescriptorBinding>& Material::getPBRDescriptorBindings() noexcept
+	const std::vector<DescriptorBinding>& Material::getDescriptorBindings(MaterialType type)
 	{
-		static std::vector<DescriptorBinding> bindings;
-		
-		if (bindings.empty()) {
-			bindings.emplace_back(0, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
-			bindings.emplace_back(1, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
-			bindings.emplace_back(2, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
-			bindings.emplace_back(3, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
-			bindings.emplace_back(4, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
-			bindings.emplace_back(5, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
-			bindings.emplace_back(6, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
-			bindings.emplace_back(7, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
-			bindings.emplace_back(8, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
-			bindings.emplace_back(9, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+		switch (type) {
+			case MaterialType::PBR_MATERIAL:
+				static std::vector<DescriptorBinding> pbr_bindings;
+				
+				if (pbr_bindings.empty()) {
+					pbr_bindings.emplace_back(0, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+					pbr_bindings.emplace_back(1, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+					pbr_bindings.emplace_back(2, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+					pbr_bindings.emplace_back(3, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+					pbr_bindings.emplace_back(4, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+					pbr_bindings.emplace_back(5, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+					pbr_bindings.emplace_back(6, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+					pbr_bindings.emplace_back(7, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+					pbr_bindings.emplace_back(8, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+					pbr_bindings.emplace_back(9, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+				}
+				
+				return pbr_bindings;
+			default:
+				static std::vector<DescriptorBinding> default_bindings;
+				return default_bindings;
 		}
-		
-		return bindings;
 	}
 	
 	Material Material::createPBR(Core &core,
-								 ImageHandle &colorImg, SamplerHandle &colorSmp,
-								 ImageHandle &normalImg, SamplerHandle &normalSmp,
-								 ImageHandle &metRoughImg, SamplerHandle &metRoughSmp,
-								 ImageHandle &occlusionImg, SamplerHandle &occlusionSmp,
-								 ImageHandle &emissiveImg, SamplerHandle &emissiveSmp,
-								 float baseColorFactor [4],
+								 const ImageHandle &colorImg, const SamplerHandle &colorSmp,
+								 const ImageHandle &normalImg, const SamplerHandle &normalSmp,
+								 const ImageHandle &metRoughImg, const SamplerHandle &metRoughSmp,
+								 const ImageHandle &occlusionImg, const SamplerHandle &occlusionSmp,
+								 const ImageHandle &emissiveImg, const SamplerHandle &emissiveSmp,
+								 const float baseColorFactor [4],
 								 float metallicFactor,
 								 float roughnessFactor,
 								 float normalScale,
 								 float occlusionStrength,
-								 float emissiveFactor [3]) {
+								 const float emissiveFactor [3]) {
+		ImageHandle images [5] = {
+				colorImg, normalImg, metRoughImg, occlusionImg, emissiveImg
+		};
+		
+		SamplerHandle samplers [5] = {
+				colorSmp, normalSmp, metRoughSmp, occlusionSmp, emissiveSmp
+		};
+		
 		if (!colorImg) {
 			vkcv::Image defaultColor = core.createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
 			float colorData [4] = { 228, 51, 255, 1 };
 			defaultColor.fill(&colorData);
-			colorImg = defaultColor.getHandle();
+			images[0] = defaultColor.getHandle();
 		}
 		
 		if (!normalImg) {
 			vkcv::Image defaultNormal = core.createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
 			float normalData [4] = { 0, 0, 1, 0 };
 			defaultNormal.fill(&normalData);
-			normalImg = defaultNormal.getHandle();
+			images[1] = defaultNormal.getHandle();
 		}
 		
 		if (!metRoughImg) {
 			vkcv::Image defaultRough = core.createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
 			float roughData [4] = { 228, 51, 255, 1 };
 			defaultRough.fill(&roughData);
-			metRoughImg = defaultRough.getHandle();
+			images[2] = defaultRough.getHandle();
 		}
 		
 		if (!occlusionImg) {
 			vkcv::Image defaultOcclusion = core.createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
 			float occlusionData [4] = { 228, 51, 255, 1 };
 			defaultOcclusion.fill(&occlusionData);
-			occlusionImg = defaultOcclusion.getHandle();
+			images[3] = defaultOcclusion.getHandle();
 		}
 		
 		if (!emissiveImg) {
 			vkcv::Image defaultEmissive = core.createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
 			float emissiveData [4] = { 0, 0, 0, 1 };
 			defaultEmissive.fill(&emissiveData);
-			emissiveImg = defaultEmissive.getHandle();
+			images[4] = defaultEmissive.getHandle();
 		}
 		
 		if (!colorSmp) {
-			colorSmp = core.createSampler(
+			samplers[0] = core.createSampler(
 					vkcv::SamplerFilterType::LINEAR,
 					vkcv::SamplerFilterType::LINEAR,
 					vkcv::SamplerMipmapMode::LINEAR,
@@ -96,7 +110,7 @@ namespace vkcv::material {
 		}
 		
 		if (!normalSmp) {
-			normalSmp = core.createSampler(
+			samplers[1] = core.createSampler(
 					vkcv::SamplerFilterType::LINEAR,
 					vkcv::SamplerFilterType::LINEAR,
 					vkcv::SamplerMipmapMode::LINEAR,
@@ -105,7 +119,7 @@ namespace vkcv::material {
 		}
 		
 		if (!metRoughSmp) {
-			metRoughSmp = core.createSampler(
+			samplers[2] = core.createSampler(
 					vkcv::SamplerFilterType::LINEAR,
 					vkcv::SamplerFilterType::LINEAR,
 					vkcv::SamplerMipmapMode::LINEAR,
@@ -114,7 +128,7 @@ namespace vkcv::material {
 		}
 		
 		if (!occlusionSmp) {
-			occlusionSmp = core.createSampler(
+			samplers[3] = core.createSampler(
 					vkcv::SamplerFilterType::LINEAR,
 					vkcv::SamplerFilterType::LINEAR,
 					vkcv::SamplerMipmapMode::LINEAR,
@@ -123,7 +137,7 @@ namespace vkcv::material {
 		}
 		
 		if (!emissiveSmp) {
-			emissiveSmp = core.createSampler(
+			samplers[4] = core.createSampler(
 					vkcv::SamplerFilterType::LINEAR,
 					vkcv::SamplerFilterType::LINEAR,
 					vkcv::SamplerMipmapMode::LINEAR,
@@ -131,20 +145,18 @@ namespace vkcv::material {
 			);
 		}
 		
-		const auto& bindings = getPBRDescriptorBindings();
-		vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(bindings);
-		
-		
 		Material material;
 		material.m_Type = MaterialType::PBR_MATERIAL;
-		material.m_DescriptorSet = descriptorSet;
+		
+		const auto& bindings = getDescriptorBindings(material.m_Type);
+		material.m_DescriptorSet = core.createDescriptorSet(bindings);;
 		
 		material.m_Textures.reserve(bindings.size());
-		material.m_Textures.push_back({ colorImg, colorSmp, std::vector<float>(baseColorFactor, baseColorFactor+4) });
-		material.m_Textures.push_back({ normalImg, normalSmp, std::vector<float>(&normalScale, &normalScale+1) });
-		material.m_Textures.push_back({ metRoughImg, metRoughSmp, std::vector<float>(&metallicFactor, &metallicFactor+1) });
-		material.m_Textures.push_back({ occlusionImg, occlusionSmp, std::vector<float>(&occlusionStrength, &occlusionStrength+1) });
-		material.m_Textures.push_back({ emissiveImg, emissiveSmp, std::vector<float>(emissiveFactor, emissiveFactor+3) });
+		material.m_Textures.push_back({ images[0], samplers[0], std::vector<float>(baseColorFactor, baseColorFactor+4) });
+		material.m_Textures.push_back({ images[1], samplers[1], { normalScale } });
+		material.m_Textures.push_back({ images[2], samplers[2], { metallicFactor, roughnessFactor } });
+		material.m_Textures.push_back({ images[3], samplers[3], { occlusionStrength } });
+		material.m_Textures.push_back({ images[4], samplers[4], std::vector<float>(emissiveFactor, emissiveFactor+3) });
 		
 		vkcv::DescriptorWrites setWrites;
 		
@@ -153,7 +165,7 @@ namespace vkcv::material {
 			setWrites.samplerWrites.emplace_back(i * 2 + 1, material.m_Textures[i].m_Sampler);
 		}
 		
-		core.writeDescriptorSet(descriptorSet, setWrites);
+		core.writeDescriptorSet(material.m_DescriptorSet, setWrites);
 		return material;
 	}
 

@@ -10,6 +10,15 @@ set(vkcv_scene_include ${PROJECT_SOURCE_DIR}/include)
 
 # Add source and header files to the module
 set(vkcv_scene_sources
+		${vkcv_scene_include}/vkcv/scene/Bounds.hpp
+		${vkcv_scene_source}/vkcv/scene/Bounds.cpp
+		
+		${vkcv_scene_include}/vkcv/scene/Mesh.hpp
+		${vkcv_scene_source}/vkcv/scene/Mesh.cpp
+		
+		${vkcv_scene_include}/vkcv/scene/Node.hpp
+		${vkcv_scene_source}/vkcv/scene/Node.cpp
+		
 		${vkcv_scene_include}/vkcv/scene/Scene.hpp
 		${vkcv_scene_source}/vkcv/scene/Scene.cpp
 )

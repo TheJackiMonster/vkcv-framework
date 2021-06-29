@@ -38,7 +38,7 @@ namespace vkcv {
 
 		void switchLayout(vk::ImageLayout newLayout);
 		
-		void fill(void* data, size_t size = SIZE_MAX);
+		void fill(const void* data, size_t size = SIZE_MAX);
 		void generateMipChainImmediate();
 		void recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream);
 	private:
