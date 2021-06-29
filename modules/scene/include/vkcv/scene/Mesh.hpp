@@ -12,6 +12,7 @@
 namespace vkcv::scene {
 	
 	class Scene;
+	class Mesh;
 	
 	class MeshPart {
 		friend class Mesh;
