@@ -21,10 +21,11 @@ namespace vkcv::material {
 	
 	const std::vector<DescriptorBinding>& Material::getDescriptorBindings(MaterialType type)
 	{
+		static std::vector<DescriptorBinding> pbr_bindings;
+		static std::vector<DescriptorBinding> default_bindings;
+		
 		switch (type) {
 			case MaterialType::PBR_MATERIAL:
-				static std::vector<DescriptorBinding> pbr_bindings;
-				
 				if (pbr_bindings.empty()) {
 					pbr_bindings.emplace_back(0, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
 					pbr_bindings.emplace_back(1, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
@@ -40,7 +41,6 @@ namespace vkcv::material {
 				
 				return pbr_bindings;
 			default:
-				static std::vector<DescriptorBinding> default_bindings;
 				return default_bindings;
 		}
 	}
