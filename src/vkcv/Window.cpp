@@ -181,4 +181,9 @@ namespace vkcv {
     GLFWwindow *Window::getWindow() const {
         return m_window;
     }
+    
+    void Window::getFramebufferSize(int &width, int &height) const {
+		glfwGetFramebufferSize(m_window, &width, &height);
+    }
+    
 }

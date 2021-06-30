@@ -160,8 +160,24 @@ namespace vkcv
 			m_swapchain.updateSwapchain(m_Context, m_window);
 			const auto swapchainViews = createSwapchainImageViews(m_Context, m_swapchain);
 			const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
+			
+			const auto& extent = m_swapchain.getExtent();
 
-			m_ImageManager->setSwapchainImages(swapchainImages, swapchainViews, width, height, m_swapchain.getFormat());
+			m_ImageManager->setSwapchainImages(
+					swapchainImages,
+					swapchainViews,
+					extent.width, extent.height,
+					m_swapchain.getFormat()
+			);
+		}
+		
+		const auto& extent = m_swapchain.getExtent();
+		
+		width = extent.width;
+		height = extent.height;
+		
+		if ((width < 2) || (height < 2)) {
+			return false;
 		}
 		
     	if (acquireSwapchainImage() != Result::SUCCESS) {
@@ -171,11 +187,6 @@ namespace vkcv
     	}
 		
 		m_Context.getDevice().waitIdle(); // TODO: this is a sin against graphics programming, but its getting late - Alex
-		
-		const auto& extent = m_swapchain.getExtent();
-		
-		width = extent.width;
-		height = extent.height;
 		
 		m_ImageManager->setCurrentSwapchainImageIndex(m_currentSwapchainImageIndex);
 

@@ -78,10 +78,13 @@ namespace vkcv
         if(physicalDevice.getSurfaceCapabilitiesKHR(surface,&surfaceCapabilities) != vk::Result::eSuccess){
             throw std::runtime_error("cannot get surface capabilities. There is an issue with the surface.");
         }
-
+        
+        int fb_width, fb_height;
+        window.getFramebufferSize(fb_width, fb_height);
+        
         VkExtent2D extent2D = {
-                static_cast<uint32_t>(window.getWidth()),
-                static_cast<uint32_t>(window.getHeight())
+                static_cast<uint32_t>(fb_width),
+                static_cast<uint32_t>(fb_height)
         };
         
         extent2D.width = std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, extent2D.width));
