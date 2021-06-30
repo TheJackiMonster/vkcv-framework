@@ -38,3 +38,5 @@ target_include_directories(vkcv_asset_loader SYSTEM BEFORE PRIVATE ${vkcv_asset_
 
 # add the own include directory for public headers
 target_include_directories(vkcv_asset_loader BEFORE PUBLIC ${vkcv_asset_loader_include})
+
+target_compile_definitions(vkcv_asset_loader PUBLIC ${vkcv_asset_loader_definitions})
