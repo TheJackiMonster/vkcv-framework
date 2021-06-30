@@ -38,12 +38,12 @@ namespace vkcv
             uint32_t bindingID,
             DescriptorType descriptorType,
             uint32_t descriptorCount,
-            vk::ShaderStageFlags shaderStages
+            ShaderStages shaderStages
         ) noexcept;
         
         uint32_t bindingID;
         DescriptorType descriptorType;
         uint32_t descriptorCount;
-        vk::ShaderStageFlags shaderStages;
+        ShaderStages shaderStages;
     };
 }

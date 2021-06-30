@@ -45,7 +45,7 @@ namespace vkcv
                 bindings[i].bindingID,
                 convertDescriptorTypeFlag(bindings[i].descriptorType),
                 bindings[i].descriptorCount,
-                bindings[i].shaderStages);
+				getShaderStageFlags(bindings[i].shaderStages));
             setBindings.push_back(descriptorSetLayoutBinding);
         }
 

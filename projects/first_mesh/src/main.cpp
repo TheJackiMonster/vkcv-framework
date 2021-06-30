@@ -79,8 +79,8 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::ShaderProgram firstMeshProgram{};
-    firstMeshProgram.addShader(vk::ShaderStageFlagBits::eVertex, std::filesystem::path("resources/shaders/vert.spv"));
-    firstMeshProgram.addShader(vk::ShaderStageFlagBits::eFragment, std::filesystem::path("resources/shaders/frag.spv"));
+    firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
+    firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 	
 	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 	
