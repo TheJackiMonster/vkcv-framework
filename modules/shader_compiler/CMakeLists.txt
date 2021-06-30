@@ -28,7 +28,7 @@ include(config/GLSLANG.cmake)
 target_link_libraries(vkcv_shader_compiler ${vkcv_shader_compiler_libraries} vkcv)
 
 # including headers of dependencies and the VkCV framework
-target_include_directories(vkcv_shader_compiler SYSTEM BEFORE PRIVATE ${vkcv_shader_compiler_includes} ${vkcv_include})
+target_include_directories(vkcv_shader_compiler SYSTEM BEFORE PRIVATE ${vkcv_shader_compiler_includes} ${vkcv_include} ${vkcv_includes})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_shader_compiler BEFORE PUBLIC ${vkcv_shader_compiler_include})
