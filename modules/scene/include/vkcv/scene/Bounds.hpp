@@ -11,7 +11,7 @@ namespace vkcv::scene {
 		
 	public:
 		Bounds();
-		~Bounds();
+		~Bounds() = default;
 		
 		Bounds(const Bounds& other) = default;
 		Bounds(Bounds&& other) = default;

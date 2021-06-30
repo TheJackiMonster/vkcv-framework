@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <vkcv/camera/Camera.hpp>
+
 #include "Mesh.hpp"
 
 namespace vkcv::scene {
@@ -20,15 +22,17 @@ namespace vkcv::scene {
 		explicit Node(Scene* scene);
 		
 		void loadMesh(const asset::Scene& asset_scene, const asset::Mesh& asset_mesh);
+		
+		void recordDrawcalls(std::vector<glm::mat4>& matrices, std::vector<DrawcallInfo>& drawcalls);
 	
 	public:
-		~Node() = default;
+		~Node();
 		
-		Node(const Node& other) = default;
-		Node(Node&& other) = default;
+		Node(const Node& other);
+		Node(Node&& other) noexcept;
 		
-		Node& operator=(const Node& other) = default;
-		Node& operator=(Node&& other) = default;
+		Node& operator=(const Node& other);
+		Node& operator=(Node&& other) noexcept;
 		
 		Node& addNode();
 		

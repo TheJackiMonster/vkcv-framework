@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include <vkcv/Core.hpp>
+#include <vkcv/camera/Camera.hpp>
 #include <vkcv/material/Material.hpp>
 
 #include "Node.hpp"
@@ -26,15 +27,26 @@ namespace vkcv::scene {
 		explicit Scene(Core* core);
 		
 	public:
-		~Scene() = default;
+		~Scene();
 		
-		Scene(const Scene& other) = default;
-		Scene(Scene&& other) = default;
+		Scene(const Scene& other);
+		Scene(Scene&& other) noexcept;
 		
-		Scene& operator=(const Scene& other) = default;
-		Scene& operator=(Scene&& other) = default;
+		Scene& operator=(const Scene& other);
+		Scene& operator=(Scene&& other) noexcept;
 		
 		Node& addNode();
+		
+		size_t getMaterialCount() const;
+		
+		[[nodiscard]]
+		const material::Material& getMaterial(size_t index) const;
+		
+		void recordDrawcalls(CommandStreamHandle       		 &cmdStream,
+							 const camera::Camera			 &camera,
+							 const PassHandle                &pass,
+							 const PipelineHandle            &pipeline,
+							 const std::vector<ImageHandle>  &renderTargets);
 		
 		static Scene create(Core& core);
 		

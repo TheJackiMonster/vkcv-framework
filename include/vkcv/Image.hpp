@@ -31,7 +31,7 @@ namespace vkcv {
 		uint32_t getDepth() const;
 
 		[[nodiscard]]
-		vkcv::ImageHandle getHandle() const;
+		const vkcv::ImageHandle& getHandle() const;
 
 		[[nodiscard]]
 		uint32_t getMipCount() const;
@@ -45,7 +45,7 @@ namespace vkcv {
 	    // TODO: const qualifier removed, very hacky!!!
 	    //  Else you cannot recreate an image. Pls fix.
 		ImageManager*       m_manager;
-		ImageHandle   m_handle;
+		ImageHandle   		m_handle;
 
 		Image(ImageManager* manager, const ImageHandle& handle);
 		

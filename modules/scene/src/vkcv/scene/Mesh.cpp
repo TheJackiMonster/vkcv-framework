@@ -4,174 +4,89 @@
 
 namespace vkcv::scene {
 	
-	MeshPart::MeshPart(Scene* scene) :
-	m_scene(scene) {}
-	
-	void loadImage(Core& core, const asset::Scene& asset_scene,
-				   const asset::Texture& asset_texture,
-				   const vk::Format& format,
-				   ImageHandle& image, SamplerHandle& sampler) {
-		asset::Sampler* asset_sampler = nullptr;
-		
-		if ((asset_texture.sampler >= 0) && (asset_texture.sampler < asset_scene.samplers.size())) {
-			//asset_sampler = &(asset_scene.samplers[asset_texture.sampler]); // TODO
-		}
-		
-		Image img = core.createImage(format, asset_texture.w, asset_texture.h, 1, true);
-		img.fill(asset_texture.data.data());
-		image = img.getHandle();
-		
-		if (asset_sampler) {
-			//sampler = core.createSampler(asset_sampler) // TODO
-		}
-	}
-	
-	material::Material loadMaterial(Core& core, const asset::Scene& scene,
-					  				const asset::Material& material) {
-		ImageHandle diffuseImg;
-		SamplerHandle diffuseSmp;
-		
-		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
-			loadImage(core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Srgb,
-					  diffuseImg,diffuseSmp);
-		}
-		
-		ImageHandle normalImg;
-		SamplerHandle normalSmp;
-		
-		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
-			loadImage(core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Srgb,
-					  diffuseImg,diffuseSmp);
-		}
-		
-		ImageHandle metalRoughImg;
-		SamplerHandle metalRoughSmp;
-		
-		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
-			loadImage(core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Srgb,
-					  diffuseImg,diffuseSmp);
-		}
-		
-		ImageHandle occlusionImg;
-		SamplerHandle occlusionSmp;
-		
-		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
-			loadImage(core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Srgb,
-					  diffuseImg,diffuseSmp);
-		}
-		
-		ImageHandle emissionImg;
-		SamplerHandle emissionSmp;
-		
-		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
-			loadImage(core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Srgb,
-					  diffuseImg,diffuseSmp);
-		}
-		
-		const float colorFactors [4] = {
-				material.baseColorFactor.r,
-				material.baseColorFactor.g,
-				material.baseColorFactor.b,
-				material.baseColorFactor.a
-		};
-		
-		const float emissionFactors[4] = {
-				material.emissiveFactor.r,
-				material.emissiveFactor.g,
-				material.emissiveFactor.b
-		};
-		
-		return material::Material::createPBR(
-				core,
-				diffuseImg, diffuseSmp,
-				normalImg, normalSmp,
-				metalRoughImg, metalRoughSmp,
-				occlusionImg, occlusionSmp,
-				emissionImg, emissionSmp,
-				colorFactors,
-				material.normalScale,
-				material.metallicFactor,
-				material.roughnessFactor,
-				material.occlusionStrength,
-				emissionFactors
-		);
-	}
-	
-	void MeshPart::load(const asset::Scene& scene,
-						const asset::VertexGroup &vertexGroup) {
-		Core& core = *(m_scene->m_core);
-		
-		auto vertexBuffer = core.createBuffer<uint8_t>(
-				BufferType::VERTEX, vertexGroup.vertexBuffer.data.size()
-		);
-		
-		vertexBuffer.fill(vertexGroup.vertexBuffer.data);
-		m_vertices = vertexBuffer.getHandle();
-		
-		auto indexBuffer = core.createBuffer<uint8_t>(
-				BufferType::INDEX, vertexGroup.indexBuffer.data.size()
-		);
-		
-		indexBuffer.fill(vertexGroup.indexBuffer.data);
-		m_indices = indexBuffer.getHandle();
-		
-		m_bounds.setMin(glm::vec3(
-				vertexGroup.min.x,
-				vertexGroup.min.y,
-				vertexGroup.min.z
-		));
-		
-		m_bounds.setMax(glm::vec3(
-				vertexGroup.max.x,
-				vertexGroup.max.y,
-				vertexGroup.max.z
-		));
-		
-		if ((vertexGroup.materialIndex >= 0) &&
-			(vertexGroup.materialIndex < scene.materials.size())) {
-			m_materialIndex = vertexGroup.materialIndex;
-			
-			auto& material = m_scene->m_materials[m_materialIndex];
-			
-			if (0 == material.m_usages++) {
-				material.m_data = loadMaterial(core, scene, scene.materials[vertexGroup.materialIndex]);
-			}
-		} else {
-			m_materialIndex = std::numeric_limits<size_t>::max();
-		}
-	}
-	
-	MeshPart::~MeshPart() {
-		if (m_materialIndex < std::numeric_limits<size_t>::max()) {
-			auto& material = m_scene->m_materials[m_materialIndex];
-			
-			if (material.m_usages > 0) {
-				material.m_usages--;
-			}
-		}
-	}
-	
-	const material::Material & MeshPart::getMaterial() const {
-		if (m_materialIndex < std::numeric_limits<size_t>::max()) {
-			return m_scene->m_materials[m_materialIndex].m_data;
-		} else {
-			static material::Material noMaterial;
-			return noMaterial;
-		}
-	}
-	
 	Mesh::Mesh(Scene* scene) :
 	m_scene(scene) {}
 	
+	static glm::mat4 arrayTo4x4Matrix(const std::array<float,16>& array){
+		glm::mat4 matrix;
+		
+		for (int i = 0; i < 4; i++){
+			for (int j = 0; j < 4; j++){
+				matrix[i][j] = array[j * 4 + i];
+			}
+		}
+		
+		return matrix;
+	}
+	
 	void Mesh::load(const asset::Scene &scene, const asset::Mesh &mesh) {
+		m_drawcalls.clear();
+		
 		for (const auto& vertexGroupIndex : mesh.vertexGroups) {
 			if ((vertexGroupIndex < 0) || (vertexGroupIndex >= scene.vertexGroups.size())) {
 				continue;
 			}
 			
 			MeshPart part (m_scene);
-			part.load(scene, scene.vertexGroups[vertexGroupIndex]);
+			part.load(scene, scene.vertexGroups[vertexGroupIndex], m_drawcalls);
+			
+			if (!part) {
+				continue;
+			}
+			
 			m_parts.push_back(part);
+		}
+		
+		m_transform = arrayTo4x4Matrix(mesh.modelMatrix);
+	}
+	
+	Mesh::~Mesh() {
+		m_drawcalls.clear();
+		m_parts.clear();
+	}
+	
+	Mesh::Mesh(const Mesh &other) :
+	m_scene(other.m_scene),
+	m_parts(other.m_parts),
+	m_drawcalls(other.m_drawcalls),
+	m_transform(other.m_transform) {}
+	
+	Mesh::Mesh(Mesh &&other) noexcept :
+	m_scene(other.m_scene),
+	m_parts(other.m_parts),
+	m_drawcalls(other.m_drawcalls),
+	m_transform(other.m_transform) {}
+	
+	Mesh &Mesh::operator=(const Mesh &other) {
+		if (&other == this) {
+			return *this;
+		}
+		
+		m_scene = other.m_scene;
+		m_parts = std::vector<MeshPart>(other.m_parts);
+		m_drawcalls = std::vector<DrawcallInfo>(other.m_drawcalls);
+		m_transform = other.m_transform;
+		
+		return *this;
+	}
+	
+	Mesh &Mesh::operator=(Mesh &&other) noexcept {
+		m_scene = other.m_scene;
+		m_parts = std::move(other.m_parts);
+		m_drawcalls = std::move(other.m_drawcalls);
+		m_transform = other.m_transform;
+		
+		return *this;
+	}
+	
+	void Mesh::recordDrawcalls(std::vector<glm::mat4>& matrices,
+							   std::vector<DrawcallInfo>& drawcalls) {
+		for (const auto& part : m_parts) {
+			matrices.push_back(m_transform);
+		}
+		
+		for (const auto& drawcall : m_drawcalls) {
+			drawcalls.push_back(drawcall);
 		}
 	}
 

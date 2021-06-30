@@ -2,6 +2,10 @@
 #include "vkcv/scene/Bounds.hpp"
 
 namespace vkcv::scene {
+	
+	Bounds::Bounds() :
+	m_min(glm::vec3(0)),
+	m_max(glm::vec3(0)) {}
 
 	void Bounds::setMin(const glm::vec3 &min) {
 		m_min = min;

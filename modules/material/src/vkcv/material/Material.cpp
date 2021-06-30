@@ -45,6 +45,16 @@ namespace vkcv::material {
 		}
 	}
 	
+	static void fillImage(Image& image, float data [4]) {
+		std::vector<float> vec (image.getWidth() * image.getHeight() * image.getDepth() * 4);
+		
+		for (size_t i = 0; i < vec.size(); i++) {
+			vec[i] = data[i % 4];
+		}
+		
+		image.fill(data);
+	}
+	
 	Material Material::createPBR(Core &core,
 								 const ImageHandle &colorImg, const SamplerHandle &colorSmp,
 								 const ImageHandle &normalImg, const SamplerHandle &normalSmp,
@@ -66,37 +76,37 @@ namespace vkcv::material {
 		};
 		
 		if (!colorImg) {
-			vkcv::Image defaultColor = core.createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
+			vkcv::Image defaultColor = core.createImage(vk::Format::eR8G8B8A8Srgb, 2, 2);
 			float colorData [4] = { 228, 51, 255, 1 };
-			defaultColor.fill(&colorData);
+			fillImage(defaultColor, colorData);
 			images[0] = defaultColor.getHandle();
 		}
 		
 		if (!normalImg) {
-			vkcv::Image defaultNormal = core.createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
+			vkcv::Image defaultNormal = core.createImage(vk::Format::eR8G8B8A8Srgb, 2, 2);
 			float normalData [4] = { 0, 0, 1, 0 };
-			defaultNormal.fill(&normalData);
+			fillImage(defaultNormal, normalData);
 			images[1] = defaultNormal.getHandle();
 		}
 		
 		if (!metRoughImg) {
-			vkcv::Image defaultRough = core.createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
+			vkcv::Image defaultRough = core.createImage(vk::Format::eR8G8B8A8Srgb, 2, 2);
 			float roughData [4] = { 228, 51, 255, 1 };
-			defaultRough.fill(&roughData);
+			fillImage(defaultRough, roughData);
 			images[2] = defaultRough.getHandle();
 		}
 		
 		if (!occlusionImg) {
-			vkcv::Image defaultOcclusion = core.createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
+			vkcv::Image defaultOcclusion = core.createImage(vk::Format::eR8G8B8A8Srgb, 2, 2);
 			float occlusionData [4] = { 228, 51, 255, 1 };
-			defaultOcclusion.fill(&occlusionData);
+			fillImage(defaultOcclusion, occlusionData);
 			images[3] = defaultOcclusion.getHandle();
 		}
 		
 		if (!emissiveImg) {
-			vkcv::Image defaultEmissive = core.createImage(vk::Format::eR8G8B8A8Srgb, 1, 1);
+			vkcv::Image defaultEmissive = core.createImage(vk::Format::eR8G8B8A8Srgb, 2, 2);
 			float emissiveData [4] = { 0, 0, 0, 1 };
-			defaultEmissive.fill(&emissiveData);
+			fillImage(defaultEmissive, emissiveData);
 			images[4] = defaultEmissive.getHandle();
 		}
 		

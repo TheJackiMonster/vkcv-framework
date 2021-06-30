@@ -13,6 +13,9 @@ set(vkcv_scene_sources
 		${vkcv_scene_include}/vkcv/scene/Bounds.hpp
 		${vkcv_scene_source}/vkcv/scene/Bounds.cpp
 		
+		${vkcv_scene_include}/vkcv/scene/MeshPart.hpp
+		${vkcv_scene_source}/vkcv/scene/MeshPart.cpp
+		
 		${vkcv_scene_include}/vkcv/scene/Mesh.hpp
 		${vkcv_scene_source}/vkcv/scene/Mesh.cpp
 		

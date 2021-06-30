@@ -53,7 +53,7 @@ namespace vkcv{
 		m_manager->switchImageLayoutImmediate(m_handle, newLayout);
 	}
 
-	vkcv::ImageHandle Image::getHandle() const {
+	const vkcv::ImageHandle& Image::getHandle() const {
 		return m_handle;
 	}
 
