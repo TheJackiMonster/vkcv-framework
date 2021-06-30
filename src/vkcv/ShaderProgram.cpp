@@ -76,7 +76,7 @@ namespace vkcv {
     m_DescriptorSets{}
 	{}
 
-	bool ShaderProgram::addShader(ShaderStage shaderStage, const std::filesystem::path &shaderPath)
+	bool ShaderProgram::addShader(vk::ShaderStageFlagBits shaderStage, const std::filesystem::path &shaderPath)
 	{
 	    if(m_Shaders.find(shaderStage) != m_Shaders.end()) {
 			vkcv_log(LogLevel::WARNING, "Overwriting existing shader stage");
@@ -94,12 +94,12 @@ namespace vkcv {
         }
 	}
 
-    const Shader &ShaderProgram::getShader(ShaderStage shaderStage) const
+    const Shader &ShaderProgram::getShader(vk::ShaderStageFlagBits shaderStage) const
     {
 	    return m_Shaders.at(shaderStage);
 	}
 
-    bool ShaderProgram::existsShader(ShaderStage shaderStage) const
+    bool ShaderProgram::existsShader(vk::ShaderStageFlagBits shaderStage) const
     {
 	    if(m_Shaders.find(shaderStage) == m_Shaders.end())
 	        return false;
@@ -107,7 +107,7 @@ namespace vkcv {
 	        return true;
     }
 
-    void ShaderProgram::reflectShader(ShaderStage shaderStage)
+    void ShaderProgram::reflectShader(vk::ShaderStageFlagBits shaderStage)
     {
         auto shaderCodeChar = m_Shaders.at(shaderStage).shaderCode;
         std::vector<uint32_t> shaderCode;
@@ -119,7 +119,7 @@ namespace vkcv {
         spirv_cross::ShaderResources resources = comp.get_shader_resources();
 
         //reflect vertex input
-		if (shaderStage == ShaderStage::VERTEX)
+		if (shaderStage == vk::ShaderStageFlagBits::eVertex)
 		{
 			// spirv-cross API (hopefully) returns the stage_inputs in order
 			for (uint32_t i = 0; i < resources.stage_inputs.size(); i++)

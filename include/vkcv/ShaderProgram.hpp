@@ -13,7 +13,6 @@
 #include <vulkan/vulkan.hpp>
 #include <spirv_cross.hpp>
 #include "VertexLayout.hpp"
-#include "ShaderStage.hpp"
 #include "DescriptorConfig.hpp"
 
 namespace vkcv {
@@ -21,7 +20,7 @@ namespace vkcv {
     struct Shader
     {
         std::vector<char> shaderCode;
-        ShaderStage shaderStage;
+        vk::ShaderStageFlagBits shaderStage;
     };
 
 	class ShaderProgram
@@ -37,16 +36,16 @@ namespace vkcv {
         * @param[in] flag that signals the respective shaderStage (e.g. VK_SHADER_STAGE_VERTEX_BIT)
         * @param[in] relative path to the shader code (e.g. "../../../../../shaders/vert.spv")
         */
-        bool addShader(ShaderStage shaderStage, const std::filesystem::path &shaderPath);
+        bool addShader(vk::ShaderStageFlagBits shaderStage, const std::filesystem::path &shaderPath);
 
         /**
         * Returns the shader program's shader of the specified shader.
         * Needed for the transfer to the pipeline.
         * @return Shader object consisting of buffer with shader code and shader stage enum
         */
-        const Shader &getShader(ShaderStage shaderStage) const;
+        const Shader &getShader(vk::ShaderStageFlagBits shaderStage) const;
 
-        bool existsShader(ShaderStage shaderStage) const;
+        bool existsShader(vk::ShaderStageFlagBits shaderStage) const;
 
         const std::vector<VertexAttachment> &getVertexAttachments() const;
 		size_t getPushConstantSize() const;
@@ -59,9 +58,9 @@ namespace vkcv {
 	     * Fills vertex input attachments and descriptor sets (if present).
 	     * @param shaderStage the stage to reflect data from
 	     */
-        void reflectShader(ShaderStage shaderStage);
+        void reflectShader(vk::ShaderStageFlagBits shaderStage);
 
-        std::unordered_map<ShaderStage, Shader> m_Shaders;
+        std::unordered_map<vk::ShaderStageFlagBits, Shader> m_Shaders;
 
         // contains all vertex input attachments used in the vertex buffer
         std::vector<VertexAttachment> m_VertexAttachments;

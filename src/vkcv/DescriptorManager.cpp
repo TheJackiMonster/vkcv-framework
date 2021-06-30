@@ -45,7 +45,7 @@ namespace vkcv
                 bindings[i].bindingID,
                 convertDescriptorTypeFlag(bindings[i].descriptorType),
                 bindings[i].descriptorCount,
-                convertShaderStageFlag(bindings[i].shaderStage));
+                bindings[i].shaderStages);
             setBindings.push_back(descriptorSetLayoutBinding);
         }
 
@@ -243,26 +243,6 @@ namespace vkcv
             default:
 				vkcv_log(LogLevel::ERROR, "Unknown DescriptorType");
                 return vk::DescriptorType::eUniformBuffer;
-        }
-    }
-
-    vk::ShaderStageFlagBits DescriptorManager::convertShaderStageFlag(ShaderStage stage) {
-        switch (stage) 
-        {
-            case ShaderStage::VERTEX:
-                return vk::ShaderStageFlagBits::eVertex;
-            case ShaderStage::FRAGMENT:
-                return vk::ShaderStageFlagBits::eFragment;
-            case ShaderStage::TESS_CONTROL:
-                return vk::ShaderStageFlagBits::eTessellationControl;
-            case ShaderStage::TESS_EVAL:
-                return vk::ShaderStageFlagBits::eTessellationEvaluation;
-            case ShaderStage::GEOMETRY:
-                return vk::ShaderStageFlagBits::eGeometry;
-            case ShaderStage::COMPUTE:
-                return vk::ShaderStageFlagBits::eCompute;
-            default:
-                return vk::ShaderStageFlagBits::eAll;
         }
     }
     
