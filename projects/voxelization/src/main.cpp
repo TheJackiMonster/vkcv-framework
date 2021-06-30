@@ -550,14 +550,6 @@ int main(int argc, const char** argv) {
 		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
 			continue;
 		}
-		
-		if ((swapchainWidth < 2) || (swapchainHeight < 2)) {
-			std::cerr << "A" << std::endl;
-		}
-		
-		if ((windowWidth < 2) || (windowHeight < 2)) {
-			std::cerr << "B" << std::endl;
-		}
 
 		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
 			depthBuffer         = core.createImage(depthBufferFormat, swapchainWidth, swapchainHeight, 1, false, false, false, msaa).getHandle();
@@ -574,14 +566,6 @@ int main(int argc, const char** argv) {
 			windowHeight = swapchainHeight;
 
 			bloomFlares.updateImageDimensions(windowWidth, windowHeight);
-		}
-		
-		if ((swapchainWidth < 2) || (swapchainHeight < 2)) {
-			std::cerr << "C" << std::endl;
-		}
-		
-		if ((windowWidth < 2) || (windowHeight < 2)) {
-			std::cerr << "D" << std::endl;
 		}
 
 		auto end = std::chrono::system_clock::now();
