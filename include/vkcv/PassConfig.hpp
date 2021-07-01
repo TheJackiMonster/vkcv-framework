@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
+#include "ImageConfig.hpp"
 
 namespace vkcv
 {
@@ -45,7 +46,8 @@ namespace vkcv
 
     struct PassConfig
     {
-        explicit PassConfig(std::vector<AttachmentDescription> attachments) noexcept;
+        explicit PassConfig(std::vector<AttachmentDescription> attachments, Multisampling msaa = Multisampling::None) noexcept;
         std::vector<AttachmentDescription> attachments{};
+        Multisampling msaa;
     };
 }

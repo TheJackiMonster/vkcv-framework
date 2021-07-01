@@ -7,8 +7,7 @@ namespace vkcv
 
     PipelineManager::PipelineManager(vk::Device device) noexcept :
     m_Device{device},
-    m_Pipelines{},
-    m_Configs{}
+    m_Pipelines{}
     {}
 
     PipelineManager::~PipelineManager() noexcept
@@ -42,6 +41,27 @@ namespace vkcv
 			return vk::Format::eUndefined;
 		}
 	}
+
+    vk::PrimitiveTopology primitiveTopologyToVulkanPrimitiveTopology(const PrimitiveTopology topology) {
+        switch (topology) {
+        case(PrimitiveTopology::PointList):     return vk::PrimitiveTopology::ePointList;
+        case(PrimitiveTopology::LineList):      return vk::PrimitiveTopology::eLineList;
+        case(PrimitiveTopology::TriangleList):  return vk::PrimitiveTopology::eTriangleList;
+        default: std::cout << "Error: Unknown primitive topology type" << std::endl; return vk::PrimitiveTopology::eTriangleList;
+        }
+    }
+
+    vk::CompareOp depthTestToVkCompareOp(DepthTest depthTest) {
+        switch (depthTest) {
+        case(DepthTest::None):          return vk::CompareOp::eAlways;
+        case(DepthTest::Less):          return vk::CompareOp::eLess;
+        case(DepthTest::LessEqual):     return vk::CompareOp::eLessOrEqual;
+        case(DepthTest::Greater):       return vk::CompareOp::eGreater;
+        case(DepthTest::GreatherEqual): return vk::CompareOp::eGreaterOrEqual;
+        case(DepthTest::Equal):         return vk::CompareOp::eEqual;
+        default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown depth test enum"); return vk::CompareOp::eAlways;
+        }
+    }
 
     PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, PassManager& passManager)
     {
@@ -125,9 +145,9 @@ namespace vkcv
 
         // input assembly state
         vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
-                {},
-                vk::PrimitiveTopology::eTriangleList,
-                false
+            {},
+            primitiveTopologyToVulkanPrimitiveTopology(config.m_PrimitiveTopology),
+            false
         );
 
         // viewport state
@@ -135,13 +155,21 @@ namespace vkcv
         vk::Rect2D scissor({ 0,0 }, { config.m_Width, config.m_Height });
         vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
 
+        vk::CullModeFlags cullMode;
+        switch (config.m_culling) {
+            case CullMode::None:    cullMode = vk::CullModeFlagBits::eNone;     break;
+            case CullMode::Front:   cullMode = vk::CullModeFlagBits::eFront;    break;
+            case CullMode::Back:    cullMode = vk::CullModeFlagBits::eBack;     break;
+			default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown CullMode"); cullMode = vk::CullModeFlagBits::eNone;
+        }
+
         // rasterization state
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
                 {},
-                false,
+                config.m_EnableDepthClamping,
                 false,
                 vk::PolygonMode::eFill,
-                vk::CullModeFlagBits::eNone,
+                cullMode,
                 vk::FrontFace::eCounterClockwise,
                 false,
                 0.f,
@@ -149,15 +177,23 @@ namespace vkcv
                 0.f,
                 1.f
         );
+        vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterization;
+        if (config.m_UseConservativeRasterization) {
+            conservativeRasterization = vk::PipelineRasterizationConservativeStateCreateInfoEXT(
+                {}, 
+                vk::ConservativeRasterizationModeEXT::eOverestimate,
+                0.f);
+            pipelineRasterizationStateCreateInfo.pNext = &conservativeRasterization;
+        }
 
         // multisample state
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
                 {},
-                vk::SampleCountFlagBits::e1,
+                msaaToVkSampleCountFlag(config.m_multisampling),
                 false,
                 0.f,
                 nullptr,
-                false,
+                config.m_alphaToCoverage,
                 false
         );
 
@@ -166,8 +202,11 @@ namespace vkcv
                                                VK_COLOR_COMPONENT_G_BIT |
                                                VK_COLOR_COMPONENT_B_BIT |
                                                VK_COLOR_COMPONENT_A_BIT);
+
+        // currently set to additive, if not disabled
+        // BlendFactors must be set as soon as additional BlendModes are added
         vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
-                false,
+                config.m_blendMode != BlendMode::None,
                 vk::BlendFactor::eOne,
                 vk::BlendFactor::eOne,
                 vk::BlendOp::eAdd,
@@ -185,14 +224,18 @@ namespace vkcv
                 { 1.f,1.f,1.f,1.f }
         );
 
-		const size_t matrixPushConstantSize = config.m_ShaderProgram.getPushConstantSize();
-		const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, matrixPushConstantSize);
+		const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
+		const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, pushConstantSize);
 
         // pipeline layout
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
 			{},
 			(config.m_DescriptorLayouts),
 			(pushConstantRange));
+		if (pushConstantSize == 0) {
+			pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+		}
+
 
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
@@ -204,9 +247,9 @@ namespace vkcv
 	
 		const vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo(
 				vk::PipelineDepthStencilStateCreateFlags(),
-				true,
-				true,
-				vk::CompareOp::eLessOrEqual,
+				config.m_depthTest != DepthTest::None,
+				config.m_depthWrite,
+				depthTestToVkCompareOp(config.m_depthTest),
 				false,
 				false,
 				{},
@@ -239,6 +282,20 @@ namespace vkcv
 
         // graphics pipeline create
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = { pipelineVertexShaderStageInfo, pipelineFragmentShaderStageInfo };
+
+		const char *geometryShaderName = "main";	// outside of if to make sure it stays in scope
+		vk::ShaderModule geometryModule;
+		if (config.m_ShaderProgram.existsShader(ShaderStage::GEOMETRY)) {
+			const vkcv::Shader geometryShader = config.m_ShaderProgram.getShader(ShaderStage::GEOMETRY);
+			const auto& geometryCode = geometryShader.shaderCode;
+			const vk::ShaderModuleCreateInfo geometryModuleInfo({}, geometryCode.size(), reinterpret_cast<const uint32_t*>(geometryCode.data()));
+			if (m_Device.createShaderModule(&geometryModuleInfo, nullptr, &geometryModule) != vk::Result::eSuccess) {
+				return PipelineHandle();
+			}
+			vk::PipelineShaderStageCreateInfo geometryStage({}, vk::ShaderStageFlagBits::eGeometry, geometryModule, geometryShaderName);
+			shaderStages.push_back(geometryStage);
+		}
+
         const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
                 {},
                 static_cast<uint32_t>(shaderStages.size()),
@@ -264,15 +321,21 @@ namespace vkcv
         {
             m_Device.destroy(vertexModule);
             m_Device.destroy(fragmentModule);
+            if (geometryModule) {
+                m_Device.destroy(geometryModule);
+            }
+            m_Device.destroy();
             return PipelineHandle();
         }
 
         m_Device.destroy(vertexModule);
         m_Device.destroy(fragmentModule);
+        if (geometryModule) {
+            m_Device.destroy(geometryModule);
+        }
         
         const uint64_t id = m_Pipelines.size();
-        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout });
-        m_Configs.push_back(config);
+        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout, config });
         return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }
 
@@ -320,10 +383,17 @@ namespace vkcv
 		}
     }
 
-    const PipelineConfig &PipelineManager::getPipelineConfig(const PipelineHandle &handle) const
+    const PipelineConfig& PipelineManager::getPipelineConfig(const PipelineHandle &handle) const
     {
         const uint64_t id = handle.getId();
-        return m_Configs.at(id);
+        
+        if (id >= m_Pipelines.size()) {
+        	static PipelineConfig dummyConfig;
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
+			return dummyConfig;
+        }
+        
+        return m_Pipelines[id].m_config;
     }
 
     PipelineHandle PipelineManager::createComputePipeline(
@@ -373,7 +443,7 @@ namespace vkcv
         m_Device.destroy(computeModule);
 
         const uint64_t id = m_Pipelines.size();
-        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout });
+        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout, PipelineConfig() });
 
         return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }

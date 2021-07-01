@@ -10,37 +10,35 @@
 #include "Handles.hpp"
 #include "ShaderProgram.hpp"
 #include "VertexLayout.hpp"
+#include "ImageConfig.hpp"
 
 namespace vkcv {
 
+    enum class PrimitiveTopology{PointList, LineList, TriangleList };
+	enum class CullMode{ None, Front, Back };
+    enum class DepthTest { None, Less, LessEqual, Greater, GreatherEqual, Equal };
+
+    // add more as needed
+    // alternatively we could expose the blend factors directly
+    enum class BlendMode{ None, Additive };
+
     struct PipelineConfig {
-        /**
-         *  Constructor for the pipeline. Creates a pipeline using @p vertexCode, @p fragmentCode as well as the
-         *  dimensions of the application window @p width and @p height. A handle for the Render Pass is also needed, @p passHandle.
-         *
-         * @param shaderProgram shaders of the pipeline
-         * @param height height of the application window
-         * @param width width of the application window
-         * @param passHandle handle for render pass
-         * @param vertexLayout layout of vertex buffer, comprised of its bindings and the bindings' attachments
-         */
-        PipelineConfig(
-            const ShaderProgram&                        shaderProgram,
-            uint32_t                                    width,
-            uint32_t                                    height,
-            const PassHandle                            &passHandle,
-            const VertexLayout                          &vertexLayouts,
-            const std::vector<vk::DescriptorSetLayout>  &descriptorLayouts,
-            bool                                        useDynamicViewport);
-
-        ShaderProgram                         m_ShaderProgram;
-        uint32_t                              m_Height;
-        uint32_t                              m_Width;
-        PassHandle                            m_PassHandle;
-        VertexLayout                          m_VertexLayout;
-        std::vector<vk::DescriptorSetLayout>  m_DescriptorLayouts;
-        bool                                  m_UseDynamicViewport;
-
+        ShaderProgram                         	m_ShaderProgram;
+        uint32_t                              	m_Width;
+		uint32_t                              	m_Height;
+        PassHandle                            	m_PassHandle;
+        VertexLayout                          	m_VertexLayout;
+        std::vector<vk::DescriptorSetLayout>  	m_DescriptorLayouts;
+        bool                                  	m_UseDynamicViewport;
+        bool                                  	m_UseConservativeRasterization 	= false;
+        PrimitiveTopology                     	m_PrimitiveTopology 			= PrimitiveTopology::TriangleList;
+		BlendMode                             	m_blendMode 					= BlendMode::None;
+        bool                                    m_EnableDepthClamping           = false;
+        Multisampling                           m_multisampling                 = Multisampling::None;
+        CullMode                                m_culling                       = CullMode::None;
+        DepthTest                               m_depthTest                     = DepthTest::LessEqual;
+        bool                                    m_depthWrite                    = true;
+        bool                                    m_alphaToCoverage               = false;
     };
 
 }

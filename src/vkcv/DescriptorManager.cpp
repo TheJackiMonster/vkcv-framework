@@ -107,10 +107,11 @@ namespace vkcv
 		std::vector<WriteDescriptorSetInfo> writeInfos;
 
 		for (const auto& write : writes.sampledImageWrites) {
+		    vk::ImageLayout layout = write.useGeneralLayout ? vk::ImageLayout::eGeneral : vk::ImageLayout::eShaderReadOnlyOptimal;
 			const vk::DescriptorImageInfo imageInfo(
 				nullptr,
-				imageManager.getVulkanImageView(write.image),
-				vk::ImageLayout::eShaderReadOnlyOptimal
+				imageManager.getVulkanImageView(write.image, write.mipLevel),
+                layout
 			);
 			
 			imageInfos.push_back(imageInfo);
@@ -128,7 +129,7 @@ namespace vkcv
 		for (const auto& write : writes.storageImageWrites) {
 			const vk::DescriptorImageInfo imageInfo(
 				nullptr,
-				imageManager.getVulkanImageView(write.image),
+				imageManager.getVulkanImageView(write.image, write.mipLevel),
 				vk::ImageLayout::eGeneral
 			);
 			

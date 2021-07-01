@@ -275,7 +275,14 @@ namespace vkcv
 		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
-		
+
+		// FIXME: check if device feature is supported
+		vk::PhysicalDeviceFeatures deviceFeatures;
+		deviceFeatures.fragmentStoresAndAtomics = true;
+		deviceFeatures.geometryShader = true;
+		deviceFeatures.depthClamp = true;
+		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+
 		// Ablauf
 		// qCreateInfos erstellen --> braucht das Device
 		// device erstellen

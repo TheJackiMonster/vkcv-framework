@@ -25,11 +25,12 @@ namespace vkcv::camera {
      */
     class CameraManager{
     private:
-        std::function<void(int, int, int, int)> m_keyHandle;
-        std::function<void(double, double)> m_mouseMoveHandle;
-        std::function<void(double, double)> m_mouseScrollHandle;
-        std::function<void(int, int, int)> m_mouseButtonHandle;
-        std::function<void(int, int)> m_resizeHandle;
+		event_handle<int, int, int, int> m_keyHandle;
+		event_handle<double, double> m_mouseMoveHandle;
+		event_handle<double, double> m_mouseScrollHandle;
+		event_handle<int, int, int> m_mouseButtonHandle;
+		event_handle<int, int> m_resizeHandle;
+        event_handle<int> m_gamepadHandle;
 
         Window& m_window;
         std::vector<Camera> m_cameras;
@@ -41,6 +42,9 @@ namespace vkcv::camera {
 
         double m_lastX;
         double m_lastY;
+
+        double m_inputDelayTimer;
+        double m_frameTime;
 
         /**
          * @brief Binds the camera object to the window event handles.
@@ -86,6 +90,13 @@ namespace vkcv::camera {
          * @param[in] height The new height of the window.
          */
         void resizeCallback(int width, int height);
+
+        /**
+         * @brief A callback function for gamepad input events. Currently, inputs are handled only for the first
+         * connected gamepad!
+         * @param gamepadIndex The gamepad index.
+         */
+        void gamepadCallback(int gamepadIndex);
 	
 		/**
 		 * @brief Gets a camera controller object of specified @p controllerType.
@@ -105,10 +116,8 @@ namespace vkcv::camera {
         /**
          * @brief The constructor of the #CameraManager.
          * @param[in] window The window.
-         * @param[in] width The width of the window.
-         * @param[in] height The height of the window.
          */
-        CameraManager(Window &window, float width, float height);
+        CameraManager(Window &window);
 
         /**
          * @brief The destructor of the #CameraManager. Destroying the #CameraManager leads to deletion of all stored

@@ -51,7 +51,7 @@ namespace vkcv {
         const std::vector<VertexAttachment> &getVertexAttachments() const;
 		size_t getPushConstantSize() const;
 
-        const std::vector<std::vector<DescriptorBinding>> &getReflectedDescriptors() const;
+        const std::vector<std::vector<DescriptorBinding>>& getReflectedDescriptors() const;
 
 	private:
 	    /**

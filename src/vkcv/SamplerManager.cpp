@@ -87,7 +87,7 @@ namespace vkcv {
 				false,
 				vk::CompareOp::eAlways,
 				0.0f,
-				1.0f,
+				16.0f,
 				vk::BorderColor::eIntOpaqueBlack,
 				false
 		);

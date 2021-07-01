@@ -1,5 +1,4 @@
 #include "vkcv/camera/PilotCameraController.hpp"
-
 #include <GLFW/glfw3.h>
 
 namespace vkcv::camera {
@@ -12,9 +11,13 @@ namespace vkcv::camera {
         m_left = false;
         m_right = false;
 
+        m_gamepadX = 0.0f;
+        m_gamepadY = 0.0f;
+        m_gamepadZ = 0.0f;
+
         m_rotationActive = false;
 
-        m_cameraSpeed = 2.0f;
+        m_cameraSpeed = 2.5f;
 
         m_fov_nsteps = 100;
         m_fov_min = 10;
@@ -22,6 +25,11 @@ namespace vkcv::camera {
     }
 
     void PilotCameraController::changeFov(double offset, Camera &camera){
+        // update only if there is (valid) input
+        if (offset == 0.0) {
+            return;
+        }
+
         float fov = camera.getFov();
         float fov_range = m_fov_max - m_fov_min;
         float fov_stepsize = glm::radians(fov_range) / static_cast<float>(m_fov_nsteps);
@@ -36,24 +44,19 @@ namespace vkcv::camera {
     }
 
     void PilotCameraController::panView(double xOffset, double yOffset, Camera &camera) {
+        // update only if there is (valid) input
+        if (xOffset == 0.0 && yOffset == 0.0) {
+            return;
+        }
+
         // handle yaw rotation
-        float yaw = camera.getYaw() + xOffset;
-        if (yaw < -180.0f) {
-            yaw += 360.0f;
-        }
-        else if (yaw > 180.0f) {
-            yaw -= 360.0f;
-        }
+        float yaw = camera.getYaw() + static_cast<float>(xOffset);
+        yaw += 360.0f * (yaw < -180.0f) - 360.0f * (yaw > 180.0f);
         camera.setYaw(yaw);
 
         // handle pitch rotation
-        float pitch = camera.getPitch() - yOffset;
-        if (pitch > 89.0f) {
-            pitch = 89.0f;
-        }
-        if (pitch < -89.0f) {
-            pitch = -89.0f;
-        }
+        float pitch = camera.getPitch() - static_cast<float>(yOffset);
+        pitch = glm::clamp(pitch, -89.0f, 89.0f);
         camera.setPitch(pitch);
     }
     
@@ -70,9 +73,9 @@ namespace vkcv::camera {
 	
 		const float distance = m_cameraSpeed * static_cast<float>(deltaTime);
 	
-		position += distance * getDirectionFactor(m_forward, m_backward) * front;
-		position += distance * getDirectionFactor(m_left, m_right) * left;
-		position += distance * getDirectionFactor(m_upward, m_downward) * up;
+		position += distance * (getDirectionFactor(m_forward, m_backward) + m_gamepadZ) * front;
+		position += distance * (getDirectionFactor(m_left, m_right) + m_gamepadX) * left;
+		position += distance * (getDirectionFactor(m_upward, m_downward) + m_gamepadY) * up;
 	
 		camera.lookAt(position, position + front, up);
     }
@@ -125,6 +128,39 @@ namespace vkcv::camera {
         else if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == true && action == GLFW_RELEASE){
             m_rotationActive = false;
         }
+    }
+
+    void PilotCameraController::gamepadCallback(int gamepadIndex, Camera &camera, double frametime) {
+        GLFWgamepadstate gamepadState;
+        glfwGetGamepadState(gamepadIndex, &gamepadState);
+
+        float sensitivity = 100.0f;
+        double threshold = 0.1;
+
+        // handle rotations
+        double stickRightX = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
+        double stickRightY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
+
+        double rightXVal = glm::clamp(std::abs(stickRightX) - threshold, 0.0, 1.0)
+                * copysign(1.0, stickRightX) * sensitivity * frametime;
+        double rightYVal = glm::clamp(std::abs(stickRightY) - threshold, 0.0, 1.0)
+                * copysign(1.0, stickRightY) * sensitivity * frametime;
+        panView(rightXVal, rightYVal, camera);
+
+        // handle zooming
+        double zoom = static_cast<double>((gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER]
+                - gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER])
+                * sensitivity * frametime);
+        changeFov(zoom, camera);
+
+        // handle translation
+        m_gamepadY = gamepadState.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER] - gamepadState.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER];
+        float stickLeftX = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+        float stickLeftY = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+        m_gamepadZ = glm::clamp(std::abs(stickLeftY) - threshold, 0.0, 1.0)
+                     * -copysign(1.0, stickLeftY);
+        m_gamepadX = glm::clamp(std::abs(stickLeftX) - threshold, 0.0, 1.0)
+                     * -copysign(1.0, stickLeftX);
     }
 
 

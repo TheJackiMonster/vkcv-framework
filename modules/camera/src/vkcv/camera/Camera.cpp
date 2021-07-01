@@ -1,6 +1,5 @@
 #include "vkcv/camera/Camera.hpp"
 
-#define _USE_MATH_DEFINES
 #include <math.h>
 
 namespace vkcv::camera {
@@ -38,22 +37,22 @@ namespace vkcv::camera {
 		m_view = view;
 	}
 
-    const glm::mat4& Camera::getProjection() const {
-        return m_projection;
+    const glm::mat4 y_correction(
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, -1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    );
+
+    glm::mat4 Camera::getProjection() const {
+        return y_correction * m_projection;
     }
 
     void Camera::setProjection(const glm::mat4& projection) {
-        m_projection =  projection;
+        m_projection = glm::inverse(y_correction) * projection;
     }
 
     glm::mat4 Camera::getMVP() const {
-		const glm::mat4 y_correction (
-				1.0f,  0.0f,  0.0f,  0.0f,
-				0.0f, -1.0f,  0.0f,  0.0f,
-				0.0f,  0.0f,  1.0f,  0.0f,
-				0.0f,  0.0f,  0.0f,  1.0f
-		);
-    	
         return y_correction * m_projection * m_view;
     }
 

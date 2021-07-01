@@ -18,7 +18,7 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-    vkcv::camera::CameraManager cameraManager(window, windowWidth, windowHeight);
+    vkcv::camera::CameraManager cameraManager(window);
     uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
     uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
     
@@ -37,10 +37,10 @@ int main(int argc, const char** argv) {
 		{ "VK_KHR_swapchain" }
 	);
 
-	vkcv::asset::Mesh mesh;
+	vkcv::asset::Scene mesh;
 
 	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
-	int result = vkcv::asset::loadMesh(path, mesh);
+	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
 		std::cout << "Mesh loading successful!" << std::endl;
@@ -84,7 +84,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchainImageFormat()
+		core.getSwapchain().getFormat()
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment(
@@ -117,14 +117,16 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
-	const vkcv::PipelineConfig firstMeshPipelineConfig(
+	const vkcv::PipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,
 		windowWidth,
 		windowHeight,
         firstMeshPass,
-        {firstMeshLayout},
+        firstMeshLayout,
 		{ core.getDescriptorSet(descriptorSet).layout },
-		true);
+		true
+	};
+	
 	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
 	
 	if (!firstMeshPipeline) {
@@ -132,8 +134,11 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, mesh.texture_hack.w, mesh.texture_hack.h);
-	texture.fill(mesh.texture_hack.img);
+	//vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, mesh.texture_hack.w, mesh.texture_hack.h);
+	//texture.fill(mesh.texture_hack.img);
+    vkcv::asset::Texture &tex = mesh.textures[0];
+    vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
+    texture.fill(tex.data.data());
 
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
@@ -168,8 +173,8 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DrawcallInfo> shadowDrawcalls;
 	for (const auto& position : instancePositions) {
 		modelMatrices.push_back(glm::translate(glm::mat4(1.f), position));
-		drawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, { descriptorUsage }));
-		shadowDrawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, {}));
+		drawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, { descriptorUsage },1));
+		shadowDrawcalls.push_back(vkcv::DrawcallInfo(loadedMesh, {},1));
 	}
 
 	modelMatrices.back() *= glm::scale(glm::mat4(1.f), glm::vec3(10.f, 1.f, 10.f));
@@ -190,14 +195,16 @@ int main(int argc, const char** argv) {
 
 	const uint32_t shadowMapResolution = 1024;
 	const vkcv::Image shadowMap = core.createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1);
-	const vkcv::PipelineConfig shadowPipeConfig(
+	const vkcv::PipelineConfig shadowPipeConfig {
 		shadowShader, 
 		shadowMapResolution, 
 		shadowMapResolution, 
 		shadowPass,
-        {firstMeshLayout},
-		{}, 
-		false);
+        firstMeshLayout,
+		{},
+		false
+	};
+	
 	const vkcv::PipelineHandle shadowPipe = core.createGraphicsPipeline(shadowPipeConfig);
 
 	struct LightInfo {
@@ -221,7 +228,7 @@ int main(int argc, const char** argv) {
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
 	while (window.isWindowOpen()) {
-		vkcv::Window::pollEvents();
+		window.pollEvents();
 		
 		uint32_t swapchainWidth, swapchainHeight;
 		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {

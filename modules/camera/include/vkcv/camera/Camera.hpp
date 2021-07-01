@@ -1,7 +1,5 @@
 #pragma once
 
-#define GLM_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_LEFT_HANDED
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
@@ -77,7 +75,7 @@ namespace vkcv::camera {
          * @brief Gets the current projection of the camera
          * @return The current projection matrix
          */
-        const glm::mat4& getProjection() const;
+        glm::mat4 getProjection() const;
 
         /**
          * @brief Gets the model-view-projection matrix of the camera with y-axis-correction applied

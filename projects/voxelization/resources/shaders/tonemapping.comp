@@ -1,0 +1,149 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+#include "luma.inc"
+
+layout(set=0, binding=0)        uniform texture2D   inTexture;
+layout(set=0, binding=1)        uniform sampler     textureSampler;
+layout(set=0, binding=2, rgba8) uniform image2D     outImage;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout( push_constant ) uniform constants{
+    float time;
+};
+
+// from: https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+vec3 ACESFilm(vec3 x)
+{
+    float a = 2.51f;
+    float b = 0.03f;
+    float c = 2.43f;
+    float d = 0.59f;
+    float e = 0.14f;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0, 1);
+}
+
+// From Dave Hoskins: https://www.shadertoy.com/view/4djSRW.
+float hash(vec3 p3){
+    p3 = fract(p3 * 0.1031);
+    p3 += dot(p3,p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+// From iq: https://www.shadertoy.com/view/4sfGzS.
+float noise(vec3 x){
+    vec3 i = floor(x);
+    vec3 f = fract(x);
+    f = f*f*(3.0-2.0*f);
+    return mix(mix(mix(hash(i+vec3(0, 0, 0)), 
+                       hash(i+vec3(1, 0, 0)),f.x),
+                   mix(hash(i+vec3(0, 1, 0)), 
+                       hash(i+vec3(1, 1, 0)),f.x),f.y),
+               mix(mix(hash(i+vec3(0, 0, 1)), 
+                       hash(i+vec3(1, 0, 1)),f.x),
+                   mix(hash(i+vec3(0, 1, 1)), 
+                       hash(i+vec3(1, 1, 1)),f.x),f.y),f.z);
+}
+
+// From: https://www.shadertoy.com/view/3sGSWVF
+// Slightly high-passed continuous value-noise.
+float grainSource(vec3 x, float strength, float pitch){
+    float center = noise(x);
+	float v1 = center - noise(vec3( 1, 0, 0)/pitch + x) + 0.5;
+	float v2 = center - noise(vec3( 0, 1, 0)/pitch + x) + 0.5;
+	float v3 = center - noise(vec3(-1, 0, 0)/pitch + x) + 0.5;
+	float v4 = center - noise(vec3( 0,-1, 0)/pitch + x) + 0.5;
+    
+	float total = (v1 + v2 + v3 + v4) / 4.0;
+	return mix(1, 0.5 + total, strength);
+}
+
+vec3 applyGrain(ivec2 uv, vec3 c){
+    float grainLift     = 0.6;
+    float grainStrength = 0.4;
+    float grainTimeFactor = 0.1;
+    
+    float timeColorOffset = 1.2;
+    vec3 grain = vec3(
+        grainSource(vec3(uv, floor(grainTimeFactor*time)),                   grainStrength, grainLift),
+        grainSource(vec3(uv, floor(grainTimeFactor*time + timeColorOffset)), grainStrength, grainLift),
+        grainSource(vec3(uv, floor(grainTimeFactor*time - timeColorOffset)), grainStrength, grainLift));
+    
+    return c * grain;
+}
+
+vec2 computeDistortedUV(vec2 uv, float aspectRatio){
+    uv          = uv * 2 - 1;
+    float   r2  = dot(uv, uv);
+    float   k1  = 0.02f;
+    
+    float maxR2     = dot(vec2(1), vec2(1));
+    float maxFactor = maxR2 * k1;
+    
+    // correction only needed for pincushion distortion
+    maxFactor       = min(maxFactor, 0);
+    
+    uv /= 1 + r2*k1;
+    
+    // correction to avoid going out of [-1, 1] range when using barrel distortion 
+    uv *= 1 + maxFactor;
+    
+    return uv * 0.5 + 0.5;
+}
+
+float computeLocalContrast(vec2 uv){
+    float lumaMin = 100;
+    float lumaMax = 0;
+    
+    vec2 pixelSize = vec2(1) / textureSize(sampler2D(inTexture, textureSampler), 0);
+    
+    for(int x = -1; x <= 1; x++){
+        for(int y = -1; y <= 1; y++){
+            vec3 c = texture(sampler2D(inTexture, textureSampler), uv + vec2(x, y) * pixelSize).rgb;
+            float luma  = computeLuma(c);
+            lumaMin     = min(lumaMin, luma);
+            lumaMax     = max(lumaMax, luma);
+        }
+    }
+    
+    return lumaMax - lumaMin;
+}
+
+vec3 computeChromaticAberrationScale(vec2 uv){
+    float   localContrast   = computeLocalContrast(uv);
+    vec3    colorScales     = vec3(-1, 0, 1);
+    float   aberrationScale = 0.004;
+    vec3    maxScaleFactors = colorScales * aberrationScale;
+    float   factor          = clamp(localContrast, 0, 1);
+    return mix(vec3(0), maxScaleFactors, factor);
+}
+
+vec3 sampleColorChromaticAberration(vec2 uv){
+    vec2 toCenter       = (vec2(0.5) - uv);
+    
+    vec3 scaleFactors = computeChromaticAberrationScale(uv);
+    
+    float r = texture(sampler2D(inTexture, textureSampler), uv + toCenter * scaleFactors.r).r;
+    float g = texture(sampler2D(inTexture, textureSampler), uv + toCenter * scaleFactors.g).g;
+    float b = texture(sampler2D(inTexture, textureSampler), uv + toCenter * scaleFactors.b).b;
+    return vec3(r, g, b);
+}
+
+void main(){
+
+    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(outImage)))){
+        return;
+    }
+    ivec2   textureRes  = textureSize(sampler2D(inTexture, textureSampler), 0);
+    ivec2   coord       = ivec2(gl_GlobalInvocationID.xy);
+    vec2    uv          = vec2(coord) / textureRes;
+    float   aspectRatio = float(textureRes.x) / textureRes.y;
+    uv                  = computeDistortedUV(uv, aspectRatio);
+    vec3 linearColor    = sampleColorChromaticAberration(uv);
+    vec3 tonemapped     = ACESFilm(linearColor);
+    tonemapped          = applyGrain(coord, tonemapped);
+    
+    vec3 gammaCorrected = pow(tonemapped, vec3(1.f / 2.2f));
+    imageStore(outImage, coord, vec4(gammaCorrected, 0.f));
+}

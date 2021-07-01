@@ -17,6 +17,10 @@ namespace vkcv::camera {
         bool m_left;
         bool m_right;
 
+        float m_gamepadX;
+        float m_gamepadY;
+        float m_gamepadZ;
+
         bool m_rotationActive;
 
         float m_cameraSpeed;
@@ -133,6 +137,14 @@ namespace vkcv::camera {
          * @param[in] camera The camera object.
          */
         void mouseButtonCallback(int button, int action, int mods, Camera &camera);
+
+        /**
+         * @brief A callback function for gamepad input events.
+         * @param gamepadIndex The gamepad index.
+         * @param camera The camera object.
+         * @param frametime The current frametime.
+         */
+        void gamepadCallback(int gamepadIndex, Camera &camera, double frametime);
     };
 
 }
