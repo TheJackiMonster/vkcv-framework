@@ -18,5 +18,5 @@ void main()	{
 	gl_Position = mvp * vec4(inPosition, 1.0);
     passPos     = (model * vec4(inPosition, 1)).xyz;
     passUV      = inUV;
-    passN       = inNormal;
+    passN       = mat3(model) * inNormal;
 }

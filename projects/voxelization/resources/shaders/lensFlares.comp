@@ -1,0 +1,106 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(set=0, binding=0) uniform texture2D                          blurBuffer;
+layout(set=0, binding=1) uniform sampler                            linearSampler;
+layout(set=0, binding=2, r11f_g11f_b10f) uniform image2D            lensBuffer;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+vec3 sampleColorChromaticAberration(vec2 _uv)
+{
+    vec2 toCenter = (vec2(0.5) - _uv);
+
+    vec3    colorScales     = vec3(-1, 0, 1);
+    float   aberrationScale = 0.15;
+    vec3 scaleFactors = colorScales * aberrationScale;
+
+    float r = texture(sampler2D(blurBuffer, linearSampler), _uv + toCenter * scaleFactors.r).r;
+    float g = texture(sampler2D(blurBuffer, linearSampler), _uv + toCenter * scaleFactors.g).g;
+    float b = texture(sampler2D(blurBuffer, linearSampler), _uv + toCenter * scaleFactors.b).b;
+    return vec3(r, g, b);
+}
+
+// _uv assumed to be flipped UV coordinates!
+vec3 ghost_vectors(vec2 _uv)
+{
+    vec2 ghost_vec = (vec2(0.5f) - _uv);
+
+    const uint c_ghost_count = 8;
+    const float c_ghost_spacing = length(ghost_vec) / c_ghost_count;
+
+    ghost_vec *= c_ghost_spacing;
+
+    vec3 ret_color = vec3(0.0f);
+
+    for (uint i = 0; i < c_ghost_count; ++i)
+    {
+        // sample scene color
+        vec2 s_uv = fract(_uv + ghost_vec * vec2(i));
+        vec3 s = sampleColorChromaticAberration(s_uv);
+
+        // tint/weight
+        float d = distance(s_uv, vec2(0.5));
+        float weight = 1.0f - smoothstep(0.0f, 0.75f, d);
+        s *= weight;
+
+        ret_color += s;
+    }
+
+    ret_color /= c_ghost_count;
+    return ret_color;
+}
+
+vec3 halo(vec2 _uv)
+{
+    float c_aspect_ratio = float(imageSize(lensBuffer).x) / float(imageSize(lensBuffer).y);
+    c_aspect_ratio *= 0.55;
+    const float c_radius = 0.5f;
+    const float c_halo_thickness = 0.15f;
+
+    vec2 halo_vec   = vec2(0.5) - _uv;
+    halo_vec.x      /= c_aspect_ratio;
+    halo_vec        = normalize(halo_vec);
+    halo_vec.x      *= c_aspect_ratio;
+
+
+    vec2 w_uv = (_uv - vec2(0.5, 0.0)) * vec2(c_aspect_ratio, 1.0) + vec2(0.5, 0.0);
+    //vec2 w_uv = _uv;
+    float d = distance(w_uv, vec2(0.5)); // distance to center
+
+    float distance_to_halo = abs(d - c_radius);
+
+    float halo_weight = 0.0f;
+    if(abs(d - c_radius) <= c_halo_thickness)
+    {
+        float distance_to_border = c_halo_thickness - distance_to_halo;
+        halo_weight = distance_to_border / c_halo_thickness;
+
+        halo_weight = pow(clamp(halo_weight + 0.1, 0, 1), 2);
+    }
+
+    return sampleColorChromaticAberration(_uv + halo_vec) * halo_weight;
+}
+
+
+
+void main()
+{
+    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(lensBuffer)))){
+        return;
+    }
+
+    ivec2 pixel_coord   = ivec2(gl_GlobalInvocationID.xy);
+    vec2  pixel_size    = vec2(1.0f) / imageSize(lensBuffer);
+    vec2  UV            = pixel_coord.xy * pixel_size;
+
+    vec2 flipped_UV = vec2(1.0f) - UV;
+
+    vec3 color = vec3(0.0f);
+
+    color += ghost_vectors(flipped_UV);
+    color += halo(UV);
+    color  *= 0.5f;
+
+    imageStore(lensBuffer, pixel_coord, vec4(color, 0.0f));
+}
