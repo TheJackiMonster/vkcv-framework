@@ -7,6 +7,9 @@
 
 namespace vkcv
 {
+	
+	const uint32_t MIN_SWAPCHAIN_SIZE = 2;
+	
     class Swapchain final {
     private:
     	friend class Core;
@@ -119,4 +122,5 @@ namespace vkcv
 		const vk::Extent2D& getExtent() const;
     
     };
+    
 }

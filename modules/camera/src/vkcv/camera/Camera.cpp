@@ -37,27 +37,27 @@ namespace vkcv::camera {
 		m_view = view;
 	}
 
+    const glm::mat4 y_correction(
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, -1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    );
+
     const glm::mat4& Camera::getProjection() const {
         return m_projection;
     }
 
     void Camera::setProjection(const glm::mat4& projection) {
-        m_projection =  projection;
+        m_projection = y_correction * projection;
     }
 
     glm::mat4 Camera::getMVP() const {
-		const glm::mat4 y_correction (
-				1.0f,  0.0f,  0.0f,  0.0f,
-				0.0f, -1.0f,  0.0f,  0.0f,
-				0.0f,  0.0f,  1.0f,  0.0f,
-				0.0f,  0.0f,  0.0f,  1.0f
-		);
-    	
-        return y_correction * m_projection * m_view;
+        return m_projection * m_view;
     }
 
     float Camera::getFov() const {
-    	const float tanHalfFovy = 1.0f / m_projection[1][1];
+    	const float tanHalfFovy = -1.0f / m_projection[1][1];
     	float halfFovy = std::atan(tanHalfFovy);
     	
     	if (halfFovy < 0) {
@@ -73,7 +73,7 @@ namespace vkcv::camera {
 
     float Camera::getRatio() const {
     	const float aspectProduct = 1.0f / m_projection[0][0];
-		const float tanHalfFovy = 1.0f / m_projection[1][1];
+		const float tanHalfFovy = -1.0f / m_projection[1][1];
 		
         return aspectProduct / tanHalfFovy;
     }

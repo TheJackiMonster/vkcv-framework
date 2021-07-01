@@ -83,6 +83,7 @@ int main(int argc, const char** argv) {
     firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 	
 	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
+
 	
 	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
@@ -149,7 +150,7 @@ int main(int argc, const char** argv) {
 	const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
 
 	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
-	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage });
+	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage },1);
 
     vkcv::camera::CameraManager cameraManager(window);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);

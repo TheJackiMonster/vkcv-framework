@@ -96,7 +96,7 @@ int main(int argc, const char** argv) {
 	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-
+	
 	auto start = std::chrono::system_clock::now();
 	while (window.isWindowOpen()) {
         vkcv::Window::pollEvents();

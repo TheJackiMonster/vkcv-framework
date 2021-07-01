@@ -7,11 +7,11 @@
 #include "vulkan/vulkan.hpp"
 
 #include "Handles.hpp"
+#include "vkcv/ImageConfig.hpp"
 
 namespace vkcv {
-
-    // forward declares
-    class ImageManager;
+	
+	class ImageManager;
 
 	bool isDepthFormat(const vk::Format format);
 
@@ -50,15 +50,16 @@ namespace vkcv {
 		Image(ImageManager* manager, const ImageHandle& handle);
 		
 		static Image create(
-			ImageManager* manager,
-			vk::Format format,
-			uint32_t width,
-			uint32_t height,
-			uint32_t depth,
-			uint32_t mipCount,
-			bool supportStorage,
-			bool supportColorAttachment);
-		
+			ImageManager*   manager,
+			vk::Format      format,
+			uint32_t        width,
+			uint32_t        height,
+			uint32_t        depth,
+			uint32_t        mipCount,
+			bool            supportStorage,
+			bool            supportColorAttachment,
+			Multisampling   msaa);
+
 	};
 	
 }

@@ -59,19 +59,33 @@ vkcv::ShaderProgram loadVoxelBufferToImageShader() {
 	return shader;
 }
 
-const uint32_t voxelResolution = 128;
-uint32_t voxelCount = voxelResolution * voxelResolution * voxelResolution;
-const vk::Format voxelizationDummyFormat = vk::Format::eR8Unorm;
+vkcv::ShaderProgram loadSecondaryBounceShader() {
+	vkcv::shader::GLSLCompiler compiler;
+	vkcv::ShaderProgram shader;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelSecondaryBounce.comp",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		shader.addShader(shaderStage, path);
+	});
+	return shader;
+}
+
+const uint32_t      voxelResolution = 128;
+uint32_t            voxelCount = voxelResolution * voxelResolution * voxelResolution;
+const vk::Format    voxelizationDummyFormat = vk::Format::eR8Unorm;
+const int           maxStableMip = 4;	// must be the same as in voxelConeTrace shader function
 
 Voxelization::Voxelization(
 	vkcv::Core* corePtr,
 	const Dependencies& dependencies,
 	vkcv::BufferHandle  lightInfoBuffer,
 	vkcv::ImageHandle   shadowMap,
-	vkcv::SamplerHandle shadowSampler)
+	vkcv::SamplerHandle shadowSampler,
+	vkcv::SamplerHandle voxelSampler,
+	vkcv::Multisampling msaa)
 	:
 	m_corePtr(corePtr), 
 	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
+	m_voxelImageIntermediate(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
 	m_dummyRenderTarget(m_corePtr->createImage(voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, false, true)),
 	m_voxelInfoBuffer(m_corePtr->createBuffer<VoxelizationInfo>(vkcv::BufferType::UNIFORM, 1)),
 	m_voxelBuffer(m_corePtr->createBuffer<VoxelBufferContent>(vkcv::BufferType::STORAGE, voxelCount)){
@@ -112,7 +126,7 @@ Voxelization::Voxelization(
 	};
 	voxelizationDescriptorWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(4, shadowMap) };
 	voxelizationDescriptorWrites.samplerWrites      = { vkcv::SamplerDescriptorWrite(5, shadowSampler) };
-	voxelizationDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(2, m_voxelImage.getHandle()) };
+	voxelizationDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(2, m_voxelImageIntermediate.getHandle()) };
 	m_corePtr->writeDescriptorSet(m_voxelizationDescriptorSet, voxelizationDescriptorWrites);
 
 	vkcv::ShaderProgram voxelVisualisationShader = loadVoxelVisualisationShader();
@@ -135,9 +149,10 @@ Voxelization::Voxelization(
 
 	vkcv::PassConfig voxelVisualisationPassDefinition(
 		{ voxelVisualisationColorAttachments, voxelVisualisationDepthAttachments });
+	voxelVisualisationPassDefinition.msaa = msaa;
 	m_visualisationPass = m_corePtr->createPass(voxelVisualisationPassDefinition);
 
-	const vkcv::PipelineConfig voxelVisualisationPipeConfig{
+	vkcv::PipelineConfig voxelVisualisationPipeConfig{
 		voxelVisualisationShader,
 		0,
 		0,
@@ -147,6 +162,7 @@ Voxelization::Voxelization(
 		true,
 		false,
 		vkcv::PrimitiveTopology::PointList };	// points are extended to cubes in the geometry shader
+	voxelVisualisationPipeConfig.m_multisampling = msaa;
 	m_visualisationPipe = m_corePtr->createGraphicsPipeline(voxelVisualisationPipeConfig);
 
 	std::vector<uint16_t> voxelIndexData;
@@ -167,7 +183,7 @@ Voxelization::Voxelization(
 	resetVoxelWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
 	m_corePtr->writeDescriptorSet(m_voxelResetDescriptorSet, resetVoxelWrites);
 
-
+	// buffer to image
 	vkcv::ShaderProgram bufferToImageShader = loadVoxelBufferToImageShader();
 
 	m_bufferToImageDescriptorSet = m_corePtr->createDescriptorSet(bufferToImageShader.getReflectedDescriptors()[0]);
@@ -177,27 +193,35 @@ Voxelization::Voxelization(
 
 	vkcv::DescriptorWrites bufferToImageDescriptorWrites;
 	bufferToImageDescriptorWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
-	bufferToImageDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(1, m_voxelImage.getHandle()) };
+	bufferToImageDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(1, m_voxelImageIntermediate.getHandle()) };
 	m_corePtr->writeDescriptorSet(m_bufferToImageDescriptorSet, bufferToImageDescriptorWrites);
+
+	// secondary bounce
+	vkcv::ShaderProgram secondaryBounceShader = loadSecondaryBounceShader();
+
+	m_secondaryBounceDescriptorSet = m_corePtr->createDescriptorSet(secondaryBounceShader.getReflectedDescriptors()[0]);
+	m_secondaryBouncePipe = m_corePtr->createComputePipeline(
+		secondaryBounceShader,
+		{ m_corePtr->getDescriptorSet(m_secondaryBounceDescriptorSet).layout });
+
+	vkcv::DescriptorWrites secondaryBounceDescriptorWrites;
+	secondaryBounceDescriptorWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
+	secondaryBounceDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(1, m_voxelImageIntermediate.getHandle()) };
+	secondaryBounceDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(2, voxelSampler) };
+	secondaryBounceDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(3, m_voxelImage.getHandle()) };
+	secondaryBounceDescriptorWrites.uniformBufferWrites = { vkcv::UniformBufferDescriptorWrite(4, m_voxelInfoBuffer.getHandle()) };
+	m_corePtr->writeDescriptorSet(m_secondaryBounceDescriptorSet, secondaryBounceDescriptorWrites);
 }
 
 void Voxelization::voxelizeMeshes(
-	vkcv::CommandStreamHandle                       cmdStream, 
-	const glm::vec3&                                cameraPosition, 
+	vkcv::CommandStreamHandle                       cmdStream,
 	const std::vector<vkcv::Mesh>&                  meshes,
 	const std::vector<glm::mat4>&                   modelMatrices,
 	const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets) {
 
-	VoxelizationInfo voxelizationInfo;
-	voxelizationInfo.extent = m_voxelExtent;
+	m_voxelInfoBuffer.fill({ m_voxelInfo });
 
-	// move voxel offset with camera in voxel sized steps
-	const float voxelSize = m_voxelExtent / voxelResolution;
-	voxelizationInfo.offset = glm::floor(cameraPosition / voxelSize) * voxelSize;
-
-	m_voxelInfoBuffer.fill({ voxelizationInfo });
-
-	const float voxelizationHalfExtent = 0.5f * m_voxelExtent;
+	const float voxelizationHalfExtent = 0.5f * m_voxelInfo.extent;
 	const glm::mat4 voxelizationProjection = glm::ortho(
 		-voxelizationHalfExtent,
 		voxelizationHalfExtent,
@@ -206,7 +230,7 @@ void Voxelization::voxelizeMeshes(
 		-voxelizationHalfExtent,
 		voxelizationHalfExtent);
 
-	const glm::mat4 voxelizationView = glm::translate(glm::mat4(1.f), -voxelizationInfo.offset);
+	const glm::mat4 voxelizationView = glm::translate(glm::mat4(1.f), -m_voxelInfo.offset);
 	const glm::mat4 voxelizationViewProjection = voxelizationProjection * voxelizationView;
 
 	std::vector<std::array<glm::mat4, 2>> voxelizationMatrices;
@@ -223,7 +247,6 @@ void Voxelization::voxelizeMeshes(
 	resetVoxelDispatchCount[1] = 1;
 	resetVoxelDispatchCount[2] = 1;
 
-	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImage.getHandle());
 	m_corePtr->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_voxelResetPipe,
@@ -240,9 +263,10 @@ void Voxelization::voxelizeMeshes(
 			{ 
 				vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_voxelizationDescriptorSet).vulkanHandle),
 				vkcv::DescriptorSetUsage(1, m_corePtr->getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) 
-			}));
+			},1));
 	}
 
+	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImageIntermediate.getHandle());
 	m_corePtr->recordDrawcallsToCmdStream(
 		cmdStream,
 		m_voxelizationPass,
@@ -265,9 +289,28 @@ void Voxelization::voxelizeMeshes(
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_bufferToImageDescriptorSet).vulkanHandle) },
 		vkcv::PushConstantData(nullptr, 0));
 
+	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImageIntermediate.getHandle());
+
+	// intermediate image mipchain
+	m_voxelImageIntermediate.recordMipChainGeneration(cmdStream);
+	m_corePtr->prepareImageForSampling(cmdStream, m_voxelImageIntermediate.getHandle());
+
+	// secondary bounce
+	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImage.getHandle());
+
+	m_corePtr->recordComputeDispatchToCmdStream(
+		cmdStream,
+		m_secondaryBouncePipe,
+		bufferToImageDispatchCount,
+		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_secondaryBounceDescriptorSet).vulkanHandle) },
+		vkcv::PushConstantData(nullptr, 0));
+	m_voxelImage.recordMipChainGeneration(cmdStream);
+
 	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImage.getHandle());
 
+	// final image mipchain
 	m_voxelImage.recordMipChainGeneration(cmdStream);
+	m_corePtr->prepareImageForSampling(cmdStream, m_voxelImage.getHandle());
 }
 
 void Voxelization::renderVoxelVisualisation(
@@ -292,8 +335,9 @@ void Voxelization::renderVoxelVisualisation(
 
 	const auto drawcall = vkcv::DrawcallInfo(
 		vkcv::Mesh({}, nullptr, drawVoxelCount),
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle) });
+		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle) },1);
 
+	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImage.getHandle());
 	m_corePtr->recordDrawcallsToCmdStream(
 		cmdStream,
 		m_visualisationPass,
@@ -303,6 +347,33 @@ void Voxelization::renderVoxelVisualisation(
 		renderTargets);
 }
 
+void Voxelization::updateVoxelOffset(const vkcv::camera::Camera& camera) {
+
+	// move voxel offset with camera in voxel sized steps
+	const float voxelSize   = m_voxelInfo.extent / voxelResolution;
+	const float snapSize    = voxelSize * exp2(maxStableMip);
+
+	glm::vec3 voxelVolumeCenter = camera.getPosition() + (1.f / 3.f) * m_voxelInfo.extent * glm::normalize(camera.getFront());
+	voxelVolumeCenter.y         = camera.getPosition().y;
+	m_voxelInfo.offset          = glm::floor(voxelVolumeCenter / snapSize) * snapSize;
+}
+
 void Voxelization::setVoxelExtent(float extent) {
-	m_voxelExtent = extent;
+	m_voxelInfo.extent = extent;
+}
+
+vkcv::ImageHandle Voxelization::getVoxelImageHandle() const {
+	return m_voxelImage.getHandle();
+}
+
+vkcv::BufferHandle Voxelization::getVoxelInfoBufferHandle() const {
+	return m_voxelInfoBuffer.getHandle();
+}
+
+glm::vec3 Voxelization::getVoxelOffset() const{
+	return m_voxelInfo.offset;
+}
+
+float Voxelization::getVoxelExtent() const {
+	return m_voxelInfo.extent;
 }

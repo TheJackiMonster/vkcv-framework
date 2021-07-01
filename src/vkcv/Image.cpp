@@ -27,9 +27,12 @@ namespace vkcv{
 		uint32_t        depth,
 		uint32_t        mipCount,
 		bool            supportStorage,
-		bool            supportColorAttachment)
+		bool            supportColorAttachment,
+		Multisampling   msaa)
 	{
-		return Image(manager, manager->createImage(width, height, depth, format, mipCount, supportStorage, supportColorAttachment));
+		return Image(
+			manager, 
+			manager->createImage(width, height, depth, format, mipCount, supportStorage, supportColorAttachment, msaa));
 	}
 	
 	vk::Format Image::getFormat() const {
