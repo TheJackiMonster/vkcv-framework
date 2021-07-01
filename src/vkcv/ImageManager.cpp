@@ -278,7 +278,7 @@ namespace vkcv {
 		
 		const auto& image = m_images[id];
 
-		if (mipLevel >= m_images.size()) {
+		if (mipLevel >= image.m_viewPerMip.size()) {
 			vkcv_log(LogLevel::ERROR, "Image does not have requested mipLevel");
 			return nullptr;
 		}
