@@ -85,13 +85,14 @@ namespace vkcv {
 	}
 
 	ImageHandle ImageManager::createImage(
-		uint32_t    width, 
-		uint32_t    height, 
-		uint32_t    depth, 
-		vk::Format  format, 
-		uint32_t    mipCount,
-		bool        supportStorage, 
-		bool        supportColorAttachment)
+		uint32_t        width, 
+		uint32_t        height, 
+		uint32_t        depth, 
+		vk::Format      format, 
+		uint32_t        mipCount,
+		bool            supportStorage, 
+		bool            supportColorAttachment,
+		Multisampling   msaa)
 	{
 		const vk::PhysicalDevice& physicalDevice = m_core->getContext().getPhysicalDevice();
 		
@@ -101,9 +102,17 @@ namespace vkcv {
 		vk::ImageUsageFlags imageUsageFlags = (
 				vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc
 		);
+		
+		vk::ImageTiling imageTiling = vk::ImageTiling::eOptimal;
+		
 		if (supportStorage) {
 			imageUsageFlags |= vk::ImageUsageFlagBits::eStorage;
+			
+			if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eStorageImage)) {
+				imageTiling = vk::ImageTiling::eLinear;
+			}
 		}
+		
 		if (supportColorAttachment) {
 			imageUsageFlags |= vk::ImageUsageFlagBits::eColorAttachment;
 		}
@@ -134,8 +143,6 @@ namespace vkcv {
 			imageViewType = vk::ImageViewType::e2D;
 		}
 		
-		vk::ImageTiling imageTiling = vk::ImageTiling::eOptimal;
-		
 		if (!formatProperties.optimalTilingFeatures) {
 			if (!formatProperties.linearTilingFeatures)
 				return ImageHandle();
@@ -147,7 +154,9 @@ namespace vkcv {
 			physicalDevice.getImageFormatProperties(format, imageType, imageTiling, imageUsageFlags);
 		
 		const uint32_t arrayLayers = std::min<uint32_t>(1, imageFormatProperties.maxArrayLayers);
-		
+
+		vk::SampleCountFlagBits sampleCountFlag = msaaToVkSampleCountFlag(msaa);
+
 		const vk::ImageCreateInfo imageCreateInfo(
 			createFlags,
 			imageType,
@@ -155,7 +164,7 @@ namespace vkcv {
 			vk::Extent3D(width, height, depth),
 			mipCount,
 			arrayLayers,
-			vk::SampleCountFlagBits::e1,
+			sampleCountFlag,
 			imageTiling,
 			imageUsageFlags,
 			vk::SharingMode::eExclusive,
@@ -352,8 +361,10 @@ namespace vkcv {
 				return 1;
 			case vk::Format::eR8G8B8A8Srgb:
 				return 4;
+			case vk::Format::eR8G8B8A8Unorm:
+				return 4;
 			default:
-				std::cerr << "Check format instead of guessing, please!" << std::endl;
+				std::cerr << "Unknown image format" << std::endl;
 				return 4;
 		}
 	}
@@ -519,6 +530,43 @@ namespace vkcv {
 			recordImageMipGenerationToCmdBuffer(cmdBuffer, handle);
 		};
 		m_core->recordCommandsToStream(cmdStream, record, nullptr);
+	}
+
+	void ImageManager::recordMSAAResolve(vk::CommandBuffer cmdBuffer, ImageHandle src, ImageHandle dst) {
+
+		const uint64_t srcId = src.getId();
+		const uint64_t dstId = dst.getId();
+
+		const bool isSrcSwapchainImage = src.isSwapchainImage();
+		const bool isDstSwapchainImage = dst.isSwapchainImage();
+
+		const bool isSrcHandleInvalid = srcId >= m_images.size() && !isSrcSwapchainImage;
+		const bool isDstHandleInvalid = dstId >= m_images.size() && !isDstSwapchainImage;
+
+		if (isSrcHandleInvalid || isDstHandleInvalid) {
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
+			return;
+		}
+
+		auto& srcImage = isSrcSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[srcId];
+		auto& dstImage = isDstSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[dstId];
+
+		vk::ImageResolve region(
+			vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
+			vk::Offset3D(0, 0, 0),
+			vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
+			vk::Offset3D(0, 0, 0), 
+			vk::Extent3D(dstImage.m_width, dstImage.m_height, dstImage.m_depth));
+
+		recordImageLayoutTransition(src, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer);
+		recordImageLayoutTransition(dst, vk::ImageLayout::eTransferDstOptimal, cmdBuffer);
+
+		cmdBuffer.resolveImage(
+			srcImage.m_handle,
+			srcImage.m_layout,
+			dstImage.m_handle,
+			dstImage.m_layout,
+			region);
 	}
 
 	uint32_t ImageManager::getImageWidth(const ImageHandle &handle) const {

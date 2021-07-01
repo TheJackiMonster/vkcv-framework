@@ -51,6 +51,18 @@ namespace vkcv
         }
     }
 
+    vk::CompareOp depthTestToVkCompareOp(DepthTest depthTest) {
+        switch (depthTest) {
+        case(DepthTest::None):          return vk::CompareOp::eAlways;
+        case(DepthTest::Less):          return vk::CompareOp::eLess;
+        case(DepthTest::LessEqual):     return vk::CompareOp::eLessOrEqual;
+        case(DepthTest::Greater):       return vk::CompareOp::eGreater;
+        case(DepthTest::GreatherEqual): return vk::CompareOp::eGreaterOrEqual;
+        case(DepthTest::Equal):         return vk::CompareOp::eEqual;
+        default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown depth test enum"); return vk::CompareOp::eAlways;
+        }
+    }
+
     PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, PassManager& passManager)
     {
 		const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
@@ -143,13 +155,21 @@ namespace vkcv
         vk::Rect2D scissor({ 0,0 }, { config.m_Width, config.m_Height });
         vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
 
+        vk::CullModeFlags cullMode;
+        switch (config.m_culling) {
+            case CullMode::None:    cullMode = vk::CullModeFlagBits::eNone;     break;
+            case CullMode::Front:   cullMode = vk::CullModeFlagBits::eFront;    break;
+            case CullMode::Back:    cullMode = vk::CullModeFlagBits::eBack;     break;
+			default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown CullMode"); cullMode = vk::CullModeFlagBits::eNone;
+        }
+
         // rasterization state
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
                 {},
-                false,
+                config.m_EnableDepthClamping,
                 false,
                 vk::PolygonMode::eFill,
-                vk::CullModeFlagBits::eNone,
+                cullMode,
                 vk::FrontFace::eCounterClockwise,
                 false,
                 0.f,
@@ -169,11 +189,11 @@ namespace vkcv
         // multisample state
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
                 {},
-                vk::SampleCountFlagBits::e1,
+                msaaToVkSampleCountFlag(config.m_multisampling),
                 false,
                 0.f,
                 nullptr,
-                false,
+                config.m_alphaToCoverage,
                 false
         );
 
@@ -201,14 +221,18 @@ namespace vkcv
                 { 1.f,1.f,1.f,1.f }
         );
 
-		const size_t matrixPushConstantSize = config.m_ShaderProgram.getPushConstantSize();
-		const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, matrixPushConstantSize);
+		const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
+		const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, pushConstantSize);
 
         // pipeline layout
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
 			{},
 			(config.m_DescriptorLayouts),
 			(pushConstantRange));
+		if (pushConstantSize == 0) {
+			pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+		}
+
 
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
@@ -220,9 +244,9 @@ namespace vkcv
 	
 		const vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo(
 				vk::PipelineDepthStencilStateCreateFlags(),
-				true,
-				true,
-				vk::CompareOp::eLessOrEqual,
+				config.m_depthTest != DepthTest::None,
+				config.m_depthWrite,
+				depthTestToVkCompareOp(config.m_depthTest),
 				false,
 				false,
 				{},

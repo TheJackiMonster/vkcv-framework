@@ -9,6 +9,7 @@
 
 #include "vkcv/BufferManager.hpp"
 #include "vkcv/Handles.hpp"
+#include "vkcv/ImageConfig.hpp"
 
 namespace vkcv {
 
@@ -72,13 +73,14 @@ namespace vkcv {
 		ImageManager& operator=(const ImageManager& other) = delete;
 		
 		ImageHandle createImage(
-			uint32_t    width, 
-			uint32_t    height, 
-			uint32_t    depth, 
-			vk::Format  format, 
-			uint32_t    mipCount,
-			bool        supportStorage, 
-			bool        supportColorAttachment);
+			uint32_t        width, 
+			uint32_t        height, 
+			uint32_t        depth, 
+			vk::Format      format, 
+			uint32_t        mipCount,
+			bool            supportStorage, 
+			bool            supportColorAttachment,
+			Multisampling   msaa);
 		
 		ImageHandle createSwapchainImage();
 		
@@ -104,7 +106,8 @@ namespace vkcv {
 		void fillImage(const ImageHandle& handle, void* data, size_t size);
 		void generateImageMipChainImmediate(const ImageHandle& handle);
 		void recordImageMipChainGenerationToCmdStream(const vkcv::CommandStreamHandle& cmdStream, const ImageHandle& handle);
-		
+		void recordMSAAResolve(vk::CommandBuffer cmdBuffer, ImageHandle src, ImageHandle dst);
+
 		[[nodiscard]]
 		uint32_t getImageWidth(const ImageHandle& handle) const;
 		
