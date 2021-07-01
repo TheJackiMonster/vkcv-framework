@@ -221,27 +221,36 @@ namespace vkcv
 		vk::SwapchainKHR oldSwapchain = m_Swapchain;
 		vk::Extent2D extent2D = chooseExtent(context.getPhysicalDevice(), m_Surface.handle, window);
 	
-		vk::SwapchainCreateInfoKHR swapchainCreateInfo(
-				vk::SwapchainCreateFlagsKHR(),
-				m_Surface.handle,
-				m_ImageCount,
-				m_Format,
-				m_ColorSpace,
-				extent2D,
-				1,
-				vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
-				vk::SharingMode::eExclusive,
-				0,
-				nullptr,
-				vk::SurfaceTransformFlagBitsKHR::eIdentity,
-				vk::CompositeAlphaFlagBitsKHR::eOpaque,
-				m_PresentMode,
-				true,
-				oldSwapchain
-		);
-	
-		m_Swapchain = context.getDevice().createSwapchainKHR(swapchainCreateInfo);
-		context.getDevice().destroySwapchainKHR(oldSwapchain);
+		if ((extent2D.width >= MIN_SWAPCHAIN_SIZE) && (extent2D.height >= MIN_SWAPCHAIN_SIZE)) {
+			vk::SwapchainCreateInfoKHR swapchainCreateInfo(
+					vk::SwapchainCreateFlagsKHR(),
+					m_Surface.handle,
+					m_ImageCount,
+					m_Format,
+					m_ColorSpace,
+					extent2D,
+					1,
+					vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
+					vk::SharingMode::eExclusive,
+					0,
+					nullptr,
+					vk::SurfaceTransformFlagBitsKHR::eIdentity,
+					vk::CompositeAlphaFlagBitsKHR::eOpaque,
+					m_PresentMode,
+					true,
+					oldSwapchain
+			);
+			
+			m_Swapchain = context.getDevice().createSwapchainKHR(swapchainCreateInfo);
+		} else {
+			m_Swapchain = nullptr;
+			
+			signalSwapchainRecreation();
+		}
+		
+		if (oldSwapchain) {
+			context.getDevice().destroySwapchainKHR(oldSwapchain);
+		}
 		
 		m_Extent = extent2D;
     }

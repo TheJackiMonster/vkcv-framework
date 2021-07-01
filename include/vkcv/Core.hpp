@@ -78,8 +78,6 @@ namespace vkcv
 
 		event_handle<int,int> e_resizeHandle;
 
-        static std::vector<vk::ImageView> createSwapchainImageViews( Context &context, Swapchain& swapChain);
-
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.

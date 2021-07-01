@@ -20,6 +20,35 @@
 
 namespace vkcv
 {
+	
+	static std::vector<vk::ImageView> createSwapchainImageViews( Context &context, const std::vector<vk::Image>& images,
+																 vk::Format format){
+		std::vector<vk::ImageView> imageViews;
+		imageViews.reserve( images.size() );
+		//here can be swizzled with vk::ComponentSwizzle if needed
+		vk::ComponentMapping componentMapping(
+				vk::ComponentSwizzle::eR,
+				vk::ComponentSwizzle::eG,
+				vk::ComponentSwizzle::eB,
+				vk::ComponentSwizzle::eA );
+		
+		vk::ImageSubresourceRange subResourceRange( vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 );
+		
+		for ( auto image : images )
+		{
+			vk::ImageViewCreateInfo imageViewCreateInfo(
+					vk::ImageViewCreateFlags(),
+					image,
+					vk::ImageViewType::e2D,
+					format,
+					componentMapping,
+					subResourceRange);
+			
+			imageViews.push_back(context.getDevice().createImageView(imageViewCreateInfo));
+		}
+		
+		return imageViews;
+	}
 
     Core Core::create(Window &window,
                       const char *applicationName,
@@ -36,8 +65,9 @@ namespace vkcv
 		);
 
         Swapchain swapChain = Swapchain::create(window, context);
-
-		 std::vector<vk::ImageView> swapchainImageViews = createSwapchainImageViews( context, swapChain);
+	
+		const auto swapchainImages = context.getDevice().getSwapchainImagesKHR(swapChain.getSwapchain());
+		const auto swapchainImageViews = createSwapchainImageViews( context, swapchainImages, swapChain.getFormat());
 
         const auto& queueManager = context.getQueueManager();
         
@@ -158,8 +188,13 @@ namespace vkcv
 			m_Context.getDevice().waitIdle();
 
 			m_swapchain.updateSwapchain(m_Context, m_window);
-			const auto swapchainViews = createSwapchainImageViews(m_Context, m_swapchain);
+			
+			if (!m_swapchain.getSwapchain()) {
+				return false;
+			}
+			
 			const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
+			const auto swapchainViews = createSwapchainImageViews(m_Context, swapchainImages, m_swapchain.getFormat());
 			
 			const auto& extent = m_swapchain.getExtent();
 
@@ -176,7 +211,7 @@ namespace vkcv
 		width = extent.width;
 		height = extent.height;
 		
-		if ((width < 2) || (height < 2)) {
+		if ((width < MIN_SWAPCHAIN_SIZE) || (height < MIN_SWAPCHAIN_SIZE)) {
 			return false;
 		}
 		
@@ -504,34 +539,6 @@ namespace vkcv
 	DescriptorSet Core::getDescriptorSet(const DescriptorSetHandle handle) const {
 		return m_DescriptorManager->getDescriptorSet(handle);
 	}
-
-    std::vector<vk::ImageView> Core::createSwapchainImageViews( Context &context, Swapchain& swapChain){
-        std::vector<vk::ImageView> imageViews;
-        std::vector<vk::Image> swapChainImages = context.getDevice().getSwapchainImagesKHR(swapChain.getSwapchain());
-        imageViews.reserve( swapChainImages.size() );
-        //here can be swizzled with vk::ComponentSwizzle if needed
-        vk::ComponentMapping componentMapping(
-                vk::ComponentSwizzle::eR,
-                vk::ComponentSwizzle::eG,
-                vk::ComponentSwizzle::eB,
-                vk::ComponentSwizzle::eA );
-
-        vk::ImageSubresourceRange subResourceRange( vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 );
-
-        for ( auto image : swapChainImages )
-        {
-            vk::ImageViewCreateInfo imageViewCreateInfo(
-                    vk::ImageViewCreateFlags(),
-                    image,
-                    vk::ImageViewType::e2D,
-                    swapChain.getFormat(),
-                    componentMapping,
-                    subResourceRange);
-
-            imageViews.push_back(context.getDevice().createImageView(imageViewCreateInfo));
-        }
-        return imageViews;
-    }
 
 	void Core::prepareSwapchainImageForPresent(const CommandStreamHandle cmdStream) {
 		auto swapchainHandle = ImageHandle::createSwapchainImageHandle();
