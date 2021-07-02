@@ -247,9 +247,11 @@ bool materialHasTexture(const Material *const m, const PBRTextureTarget t)
 	return m->textureMask & bitflag(t);
 }
 
-/**
- * TODO document
- */
+ /**
+  * This function translates a given fx-gltf-sampler-wrapping-mode-enum to its vulkan sampler-adress-mode counterpart.
+  * @param mode: wrapping mode of a sampler given as fx-gltf-enum
+  * @return int vulkan-enum representing the same wrapping mode
+  */
 int translateSamplerMode(const fx::gltf::Sampler::WrappingMode mode)
 {
 	switch (mode) {
