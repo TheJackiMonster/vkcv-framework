@@ -82,6 +82,8 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &type)
  * and image- array of an fx::gltf::Document.
  * @param tex_src The array of textures from a fx::gltf::Document
  * @param img_src The array of images from a fx::gltf::Document
+ * @param buf_src The Array of buffers from a fx::gltf::Document
+ * @param bV_src The Array of bufferViews from a fx::gltf::Document
  * @param dir	  The path of directory in which the glTF file is located
  * @param dst	  The array from the vkcv::Scene to write the textures to
  * @return	  ASSET_ERROR if at least one texture could not be constructed
@@ -89,8 +91,8 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &type)
  */
 int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
 	const std::vector<fx::gltf::Image>& img_src,
-	const std::vector<fx::gltf::Buffer>& buffers,
-	const std::vector<fx::gltf::BufferView>& bufferViews,
+	const std::vector<fx::gltf::Buffer>& buf_src,
+	const std::vector<fx::gltf::BufferView>& bV_src,
 	const std::string& dir, std::vector<Texture>& dst)
 {
 	dst.clear();
@@ -113,11 +115,11 @@ int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
 			}
 		}
 		else {
-			const fx::gltf::BufferView bufferView = bufferViews[img_src[tex_src[i].source].bufferView];
-			data = stbi_load_from_memory(&buffers[bufferView.buffer].data[bufferView.byteOffset], bufferView.byteLength, &w, &h, &c, 4);
+			const fx::gltf::BufferView bufferView = bV_src[img_src[tex_src[i].source].bufferView];
+			data = stbi_load_from_memory(&buf_src[bufferView.buffer].data[bufferView.byteOffset], bufferView.byteLength, &w, &h, &c, 4);
 			if (!data) {
 				vkcv_log(LogLevel::ERROR, "Failed to load image data from Buffer %s",
-					buffers[bufferView.buffer].name.c_str());
+					buf_src[bufferView.buffer].name.c_str());
 				return ASSET_ERROR;
 			}
 		}
