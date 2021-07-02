@@ -87,30 +87,41 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &type)
  * @return	  ASSET_ERROR if at least one texture could not be constructed
  * 		  properly, otherwise ASSET_SUCCESS
  */
-int createTextures(const std::vector<fx::gltf::Texture> &tex_src,
-		const std::vector<fx::gltf::Image> &img_src,
-		const std::string &dir, std::vector<Texture> &dst)
+int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
+	const std::vector<fx::gltf::Image>& img_src,
+	const std::vector<fx::gltf::Buffer>& buffers,
+	const std::vector<fx::gltf::BufferView>& bufferViews,
+	const std::string& dir, std::vector<Texture>& dst)
 {
 	dst.clear();
 	dst.reserve(tex_src.size());
+	// TODO Image objects in glTF can have
+	// 1) a URI
+	// 2) a bufferView and a mimeType
+	// to describe where/how to load the data.
+	// currently does not support mimeType
 	for (int i = 0; i < tex_src.size(); i++) {
-		// TODO Image objects in glTF can have
-		// 1) a URI
-		// 2) a bufferView and a mimeType
-		// to describe where/how to load the data, but here we are
-		// always assuming a URI. In order to load files where images
-		// have no URI, we need to handle the second case as well here.
 		std::string uri = dir + "/" + img_src[tex_src[i].source].uri;
-
 		int w, h, c;
-		uint8_t *data = stbi_load(uri.c_str(), &w, &h, &c, 4);
-		c = 4;	// FIXME hardcoded to always have RGBA channel layout
-		if (!data) {
-			vkcv_log(LogLevel::ERROR, "Failed to load image data from %s",
+		uint8_t* data;
+		if (!uri.empty()) {
+			data = stbi_load(uri.c_str(), &w, &h, &c, 4);
+			if (!data) {
+				vkcv_log(LogLevel::ERROR, "Failed to load image data from %s",
 					uri.c_str());
-			return ASSET_ERROR;
+				return ASSET_ERROR;
+			}
 		}
-
+		else {
+			const fx::gltf::BufferView bufferView = bufferViews[img_src[tex_src[i].source].bufferView];
+			data = stbi_load_from_memory(&buffers[bufferView.buffer].data[bufferView.byteOffset], bufferView.byteLength, &w, &h, &c, 4);
+			if (!data) {
+				vkcv_log(LogLevel::ERROR, "Failed to load image data from Buffer %s",
+					buffers[bufferView.buffer].name.c_str());
+				return ASSET_ERROR;
+			}
+		}
+		c = 4;	// FIXME hardcoded to always have RGBA channel layout
 		const size_t nbytes = w * h * c;
 		std::vector<uint8_t> imgdata;
 		imgdata.resize(nbytes);
@@ -605,7 +616,7 @@ int loadScene(const std::filesystem::path &path, Scene &scene){
 		}
 	}
 
-    if (createTextures(sceneObjects.textures, sceneObjects.images, dir, textures) != ASSET_SUCCESS) {
+    if (createTextures(sceneObjects.textures, sceneObjects.images,sceneObjects.buffers,sceneObjects.bufferViews, dir, textures) != ASSET_SUCCESS) {
 	    size_t missing = sceneObjects.textures.size() - textures.size();
 	    vkcv_log(LogLevel::ERROR, "Failed to get %lu textures from glTF source '%s'",
 			    missing, path.c_str());
