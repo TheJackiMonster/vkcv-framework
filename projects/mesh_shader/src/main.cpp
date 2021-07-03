@@ -25,7 +25,7 @@ int main(int argc, const char** argv) {
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
 		{},
-		{ "VK_KHR_swapchain" }
+		{ "VK_KHR_swapchain", VK_NV_MESH_SHADER_EXTENSION_NAME }
 	);
 	
 	vkcv::gui::GUI gui (core, window);
@@ -41,9 +41,9 @@ int main(int argc, const char** argv) {
 		core.getSwapchain().getFormat());
 
 	vkcv::PassConfig trianglePassDefinition({ present_color_attachment });
-	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
+	vkcv::PassHandle renderPass = core.createPass(trianglePassDefinition);
 
-	if (!trianglePass)
+	if (!renderPass)
 	{
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
@@ -66,7 +66,7 @@ int main(int argc, const char** argv) {
 		triangleShaderProgram,
 		(uint32_t)windowWidth,
 		(uint32_t)windowHeight,
-		trianglePass,
+		renderPass,
 		{},
 		{},
 		false
@@ -77,6 +77,41 @@ int main(int argc, const char** argv) {
 	if (!trianglePipeline)
 	{
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	// mesh shader
+	vkcv::ShaderProgram meshShaderProgram;
+	compiler.compile(vkcv::ShaderStage::TASK, std::filesystem::path("resources/shaders/shader.task"),
+		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		meshShaderProgram.addShader(shaderStage, path);
+	});
+
+	compiler.compile(vkcv::ShaderStage::MESH, std::filesystem::path("resources/shaders/shader.mesh"),
+		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		meshShaderProgram.addShader(shaderStage, path);
+	});
+
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		meshShaderProgram.addShader(shaderStage, path);
+	});
+
+	const vkcv::PipelineConfig meshShaderPipelineDefinition{
+		meshShaderProgram,
+		(uint32_t)windowWidth,
+		(uint32_t)windowHeight,
+		renderPass,
+		{},
+		{},
+		false
+	};
+
+	vkcv::PipelineHandle meshShaderPipeline = core.createGraphicsPipeline(meshShaderPipelineDefinition);
+
+	if (!meshShaderPipeline)
+	{
+		std::cout << "Error. Could not create mesh shader pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -115,7 +150,7 @@ int main(int argc, const char** argv) {
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			trianglePass,
+			renderPass,
 			trianglePipeline,
 			pushConstantData,
 			{ drawcall },

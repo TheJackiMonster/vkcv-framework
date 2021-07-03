@@ -33,11 +33,12 @@ namespace vkcv
         [[nodiscard]]
         const QueueManager& getQueueManager() const;
         
-        static Context create(const char *applicationName,
-							  uint32_t applicationVersion,
-							  std::vector<vk::QueueFlagBits> queueFlags,
-							  std::vector<const char *> instanceExtensions,
-							  std::vector<const char *> deviceExtensions);
+        static Context create(
+			const char*                     applicationName,
+			uint32_t                        applicationVersion,
+			std::vector<vk::QueueFlagBits>  queueFlags,
+			std::vector<const char *>       instanceExtensions,
+			std::vector<const char *>       deviceExtensions);
 
     private:
         /**

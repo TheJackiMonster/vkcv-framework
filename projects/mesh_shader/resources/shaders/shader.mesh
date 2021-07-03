@@ -1,0 +1,19 @@
+#version 460
+#extension GL_ARB_separate_shader_objects   : enable
+#extension GL_NV_mesh_shader                : require
+
+layout(local_size_x=32) in;
+
+layout(triangles) out;
+layout(max_vertices=64, max_primitives=126) out;
+
+// out uint gl_PrimitiveCountNV;
+// out uint gl_PrimitiveIndicesNV[];
+
+out gl_MeshPerVertexNV {
+    vec4 gl_Position;
+} gl_MeshVerticesNV[];
+
+void main()	{
+    
+}

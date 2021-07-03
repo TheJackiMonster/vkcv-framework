@@ -50,6 +50,10 @@ namespace vkcv::shader {
 				return EShLangFragment;
 			case ShaderStage::COMPUTE:
 				return EShLangCompute;
+			case ShaderStage::TASK:
+				return EShLangTaskNV;
+			case ShaderStage::MESH:
+				return EShLangMeshNV;
 			default:
 				return EShLangCount;
 		}

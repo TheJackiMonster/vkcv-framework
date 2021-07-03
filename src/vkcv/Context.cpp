@@ -168,12 +168,22 @@ namespace vkcv
 		
 		return extensions;
 	}
-	
-	Context Context::create(const char *applicationName,
-							uint32_t applicationVersion,
-							std::vector<vk::QueueFlagBits> queueFlags,
-							std::vector<const char *> instanceExtensions,
-							std::vector<const char *> deviceExtensions) {
+
+	bool isPresentInCharPtrVector(const std::vector<const char*>& v, const char* term){
+		for (const auto& entry : v) {
+			if (strcmp(entry, term) != 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	Context Context::create(
+        const char* applicationName,
+        uint32_t                        applicationVersion,
+        std::vector<vk::QueueFlagBits>  queueFlags,
+        std::vector<const char*>        instanceExtensions,
+        std::vector<const char*>        deviceExtensions) {
 		// check for layer support
 		
 		const std::vector<vk::LayerProperties>& layerProperties = vk::enumerateInstanceLayerProperties();
@@ -277,10 +287,19 @@ namespace vkcv
 #endif
 
 		// FIXME: check if device feature is supported
-		vk::PhysicalDeviceFeatures deviceFeatures;
-		deviceFeatures.fragmentStoresAndAtomics = true;
-		deviceFeatures.geometryShader = true;
-		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+		vk::PhysicalDeviceFeatures2 deviceFeatures;
+		deviceFeatures.features.fragmentStoresAndAtomics    = true;
+		deviceFeatures.features.geometryShader              = true;
+
+		const bool usingMeshShaders = isPresentInCharPtrVector(deviceExtensions, VK_NV_MESH_SHADER_EXTENSION_NAME);
+		vk::PhysicalDeviceMeshShaderFeaturesNV meshShading;
+		if (usingMeshShaders) {
+			meshShading.taskShader = true;
+			meshShading.meshShader = true;
+			deviceFeatures.pNext = &meshShading;
+		}
+
+		deviceCreateInfo.pNext = &deviceFeatures;
 
 		// Ablauf
 		// qCreateInfos erstellen --> braucht das Device
