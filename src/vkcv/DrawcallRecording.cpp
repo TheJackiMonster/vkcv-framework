@@ -43,6 +43,22 @@ namespace vkcv {
         }
     }
 
+
+
+    struct MeshShaderFunctions
+    {
+        PFN_vkCmdDrawMeshTasksNV cmdDrawMeshTasks                           = nullptr;
+        PFN_vkCmdDrawMeshTasksIndirectNV cmdDrawMeshTasksIndirect           = nullptr;
+        PFN_vkCmdDrawMeshTasksIndirectCountNV cmdDrawMeshTasksIndirectCount = nullptr;
+    } MeshShaderFunctions;
+
+    void InitMeshShaderDrawFunctions(vk::Device device)
+    {
+        MeshShaderFunctions.cmdDrawMeshTasks = reinterpret_cast<PFN_vkCmdDrawMeshTasksNV>(vkGetDeviceProcAddr(VkDevice(device), "vkCmdDrawMeshTasksNV"));
+        MeshShaderFunctions.cmdDrawMeshTasksIndirect = reinterpret_cast<PFN_vkCmdDrawMeshTasksIndirectNV>(vkGetDeviceProcAddr(VkDevice(device), "vkCmdDrawMeshTasksIndirectNV"));
+        MeshShaderFunctions.cmdDrawMeshTasksIndirectCount = reinterpret_cast<PFN_vkCmdDrawMeshTasksIndirectCountNV>(vkGetDeviceProcAddr(VkDevice(device), "vkCmdDrawMeshTasksIndirectCountNV"));
+    }
+
     void recordMeshShaderDrawcall(
         vk::CommandBuffer                       cmdBuffer,
         vk::PipelineLayout                      pipelineLayout,
@@ -71,6 +87,6 @@ namespace vkcv {
             pushConstantData.sizePerDrawcall,
             drawcallPushConstantData);
 
-        cmdBuffer.drawMeshTasksNV(drawcall.taskCount, firstTask);
+        MeshShaderFunctions.cmdDrawMeshTasks(cmdBuffer, drawcall.taskCount, firstTask);
     }
 }

@@ -51,8 +51,10 @@ namespace vkcv {
         const PushConstantData  &pushConstantData,
         const size_t            drawcallIndex);
 
+    void InitMeshShaderDrawFunctions(vk::Device device);
+
     struct MeshShaderDrawcall {
-        inline MeshShaderDrawcall(const std::vector<DescriptorSetUsage> descriptorSets, uint32_t taskCout)
+        inline MeshShaderDrawcall(const std::vector<DescriptorSetUsage> descriptorSets, uint32_t taskCount)
             : descriptorSets(descriptorSets), taskCount(taskCount) {}
 
         std::vector<DescriptorSetUsage> descriptorSets;

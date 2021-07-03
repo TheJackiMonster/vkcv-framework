@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "QueueManager.hpp"
+#include "DrawcallRecording.hpp"
 
 namespace vkcv
 {

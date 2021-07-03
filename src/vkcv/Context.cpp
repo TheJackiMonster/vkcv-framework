@@ -307,6 +307,11 @@ namespace vkcv
 		// jetzt koennen wir mit dem device die queues erstellen
 		
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
+
+		if (usingMeshShaders)
+		{
+			InitMeshShaderDrawFunctions(device);
+		}
 		
 		QueueManager queueManager = QueueManager::create(device, queuePairsGraphics, queuePairsCompute, queuePairsTransfer);
 		
