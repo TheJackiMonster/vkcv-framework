@@ -15,5 +15,15 @@ out gl_MeshPerVertexNV {
 } gl_MeshVerticesNV[];
 
 void main()	{
-    
+	if(gl_LocalInvocationID.x == 0)
+	{
+		gl_PrimitiveCountNV = 1;
+		gl_PrimitiveIndicesNV[0] = 0;
+		gl_PrimitiveIndicesNV[1] = 1;
+		gl_PrimitiveIndicesNV[2] = 2;
+		
+		gl_MeshVerticesNV[0].gl_Position = vec4(-0.5,  0.5, -1, 1);
+		gl_MeshVerticesNV[1].gl_Position = vec4( 0.5,  0.5, -1, 1);
+		gl_MeshVerticesNV[2].gl_Position = vec4( 0  , -0.5, -1, 1);
+	}
 }

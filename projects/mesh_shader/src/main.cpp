@@ -156,6 +156,7 @@ int main(int argc, const char** argv) {
 			{ vkcv::MeshShaderDrawcall({}, 1) },
 			{ swapchainInput });
 
+		/*
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			renderPass,
@@ -163,7 +164,7 @@ int main(int argc, const char** argv) {
 			pushConstantData,
 			{ drawcall },
 			{ swapchainInput });
-
+		*/
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

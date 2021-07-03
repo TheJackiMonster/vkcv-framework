@@ -4,12 +4,15 @@
 
 layout(local_size_x=32) in;
 
-taskNV out Task {
-  uint baseID;
-  uint subIDs[32];
-} OUT;
+//taskNV out Task {
+//  uint baseID;
+//  uint subIDs[32];
+//} OUT;
 
 
 void main() {
-
+	if(gl_LocalInvocationID.x == 0)
+	{
+		gl_TaskCountNV = 1;
+	}
 }
