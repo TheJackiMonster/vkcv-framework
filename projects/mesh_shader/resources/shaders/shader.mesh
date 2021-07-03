@@ -18,6 +18,13 @@ layout( push_constant ) uniform constants{
 //    vec4 gl_Position;
 //} gl_MeshVerticesNV[];
 
+struct VertColor
+{
+	vec3 color;
+};
+
+layout(location = 0) out VertColor VertexOutputs[];
+
 void main()	{
 	if(gl_LocalInvocationID.x == 0)
 	{
@@ -29,5 +36,9 @@ void main()	{
 		gl_MeshVerticesNV[0].gl_Position = mvp * vec4(-0.5,  0.5, 0.5, 1);
 		gl_MeshVerticesNV[1].gl_Position = mvp * vec4( 0.5,  0.5, 0.5, 1);
 		gl_MeshVerticesNV[2].gl_Position = mvp * vec4( 0  , -0.5, 0.5, 1);
+		
+		VertexOutputs[0].color = vec3(1, 0, 0);
+		VertexOutputs[1].color = vec3(0, 1, 0);
+		VertexOutputs[2].color = vec3(0, 0, 1);		
 	}
 }
