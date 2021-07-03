@@ -152,7 +152,7 @@ int main(int argc, const char** argv) {
 			cmdStream,
 			renderPass,
 			meshShaderPipeline,
-			vkcv::PushConstantData(nullptr, 0),
+			pushConstantData,
 			{ vkcv::MeshShaderDrawcall({}, 1) },
 			{ swapchainInput });
 

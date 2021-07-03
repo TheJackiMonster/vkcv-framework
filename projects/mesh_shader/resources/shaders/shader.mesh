@@ -7,12 +7,16 @@ layout(local_size_x=32) in;
 layout(triangles) out;
 layout(max_vertices=64, max_primitives=126) out;
 
+layout( push_constant ) uniform constants{
+    mat4 mvp;
+};
+
 // out uint gl_PrimitiveCountNV;
 // out uint gl_PrimitiveIndicesNV[];
 
-out gl_MeshPerVertexNV {
-    vec4 gl_Position;
-} gl_MeshVerticesNV[];
+//out gl_MeshPerVertexNV {
+//    vec4 gl_Position;
+//} gl_MeshVerticesNV[];
 
 void main()	{
 	if(gl_LocalInvocationID.x == 0)
@@ -22,8 +26,8 @@ void main()	{
 		gl_PrimitiveIndicesNV[1] = 1;
 		gl_PrimitiveIndicesNV[2] = 2;
 		
-		gl_MeshVerticesNV[0].gl_Position = vec4(-0.5,  0.5, 0.5, 1);
-		gl_MeshVerticesNV[1].gl_Position = vec4( 0.5,  0.5, 0.5, 1);
-		gl_MeshVerticesNV[2].gl_Position = vec4( 0  , -0.5, 0.5, 1);
+		gl_MeshVerticesNV[0].gl_Position = mvp * vec4(-0.5,  0.5, 0.5, 1);
+		gl_MeshVerticesNV[1].gl_Position = mvp * vec4( 0.5,  0.5, 0.5, 1);
+		gl_MeshVerticesNV[2].gl_Position = mvp * vec4( 0  , -0.5, 0.5, 1);
 	}
 }
