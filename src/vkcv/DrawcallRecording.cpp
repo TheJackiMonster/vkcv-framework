@@ -54,9 +54,9 @@ namespace vkcv {
 
     void InitMeshShaderDrawFunctions(vk::Device device)
     {
-        MeshShaderFunctions.cmdDrawMeshTasks = reinterpret_cast<PFN_vkCmdDrawMeshTasksNV>(vkGetDeviceProcAddr(VkDevice(device), "vkCmdDrawMeshTasksNV"));
-        MeshShaderFunctions.cmdDrawMeshTasksIndirect = reinterpret_cast<PFN_vkCmdDrawMeshTasksIndirectNV>(vkGetDeviceProcAddr(VkDevice(device), "vkCmdDrawMeshTasksIndirectNV"));
-        MeshShaderFunctions.cmdDrawMeshTasksIndirectCount = reinterpret_cast<PFN_vkCmdDrawMeshTasksIndirectCountNV>(vkGetDeviceProcAddr(VkDevice(device), "vkCmdDrawMeshTasksIndirectCountNV"));
+        MeshShaderFunctions.cmdDrawMeshTasks = PFN_vkCmdDrawMeshTasksNV(device.getProcAddr("vkCmdDrawMeshTasksNV"));
+        MeshShaderFunctions.cmdDrawMeshTasksIndirect = PFN_vkCmdDrawMeshTasksIndirectNV(device.getProcAddr("vkCmdDrawMeshTasksIndirectNV"));
+        MeshShaderFunctions.cmdDrawMeshTasksIndirectCount = PFN_vkCmdDrawMeshTasksIndirectCountNV (device.getProcAddr( "vkCmdDrawMeshTasksIndirectCountNV"));
     }
 
     void recordMeshShaderDrawcall(
