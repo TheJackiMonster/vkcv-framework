@@ -42,4 +42,35 @@ namespace vkcv {
             cmdBuffer.draw(drawcall.mesh.indexCount, 1, 0, 0, {});
         }
     }
+
+    void recordMeshShaderDrawcall(
+        vk::CommandBuffer                       cmdBuffer,
+        vk::PipelineLayout                      pipelineLayout,
+        const PushConstantData&                 pushConstantData,
+        const uint32_t                          pushConstantOffset,
+        const MeshShaderDrawcall&               drawcall,
+        const uint32_t                          firstTask) {
+
+        for (const auto& descriptorUsage : drawcall.descriptorSets) {
+            cmdBuffer.bindDescriptorSets(
+                vk::PipelineBindPoint::eGraphics,
+                pipelineLayout,
+                descriptorUsage.setLocation,
+                descriptorUsage.vulkanHandle,
+                nullptr);
+        }
+
+        const size_t drawcallPushConstantOffset = pushConstantOffset;
+        // char* cast because void* does not support pointer arithmetic
+        const void* drawcallPushConstantData = drawcallPushConstantOffset + (char*)pushConstantData.data;
+
+        cmdBuffer.pushConstants(
+            pipelineLayout,
+            vk::ShaderStageFlagBits::eAll,
+            0,
+            pushConstantData.sizePerDrawcall,
+            drawcallPushConstantData);
+
+        cmdBuffer.drawMeshTasksNV(drawcall.taskCount, firstTask);
+    }
 }

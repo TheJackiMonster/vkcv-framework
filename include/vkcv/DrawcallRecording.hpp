@@ -51,4 +51,19 @@ namespace vkcv {
         const PushConstantData  &pushConstantData,
         const size_t            drawcallIndex);
 
+    struct MeshShaderDrawcall {
+        inline MeshShaderDrawcall(const std::vector<DescriptorSetUsage> descriptorSets, uint32_t taskCout)
+            : descriptorSets(descriptorSets), taskCount(taskCount) {}
+
+        std::vector<DescriptorSetUsage> descriptorSets;
+        uint32_t                        taskCount;
+    };
+
+    void recordMeshShaderDrawcall(
+        vk::CommandBuffer                       cmdBuffer,
+        vk::PipelineLayout                      pipelineLayout,
+        const PushConstantData&                 pushConstantData,
+        const uint32_t                          pushConstantOffset,
+        const MeshShaderDrawcall&               drawcall,
+        const uint32_t                          firstTask);
 }
