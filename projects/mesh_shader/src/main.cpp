@@ -148,6 +148,14 @@ int main(int argc, const char** argv) {
 		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
+		core.recordMeshShaderDrawcalls(
+			cmdStream,
+			renderPass,
+			meshShaderPipeline,
+			vkcv::PushConstantData(nullptr, 0),
+			{ vkcv::MeshShaderDrawcall({}, 1) },
+			{ swapchainInput });
+
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			renderPass,
@@ -155,6 +163,7 @@ int main(int argc, const char** argv) {
 			pushConstantData,
 			{ drawcall },
 			{ swapchainInput });
+
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

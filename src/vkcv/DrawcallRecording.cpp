@@ -76,17 +76,18 @@ namespace vkcv {
                 nullptr);
         }
 
-        const size_t drawcallPushConstantOffset = pushConstantOffset;
         // char* cast because void* does not support pointer arithmetic
-        const void* drawcallPushConstantData = drawcallPushConstantOffset + (char*)pushConstantData.data;
+        const void* drawcallPushConstantData = pushConstantOffset + (char*)pushConstantData.data;
 
-        cmdBuffer.pushConstants(
-            pipelineLayout,
-            vk::ShaderStageFlagBits::eAll,
-            0,
-            pushConstantData.sizePerDrawcall,
-            drawcallPushConstantData);
+        if (pushConstantData.data) {
+            cmdBuffer.pushConstants(
+                pipelineLayout,
+                vk::ShaderStageFlagBits::eAll,
+                0,
+                pushConstantData.sizePerDrawcall,
+                drawcallPushConstantData);
+        }
 
-        MeshShaderFunctions.cmdDrawMeshTasks(cmdBuffer, drawcall.taskCount, firstTask);
+        MeshShaderFunctions.cmdDrawMeshTasks(VkCommandBuffer(cmdBuffer), drawcall.taskCount, firstTask);
     }
 }
