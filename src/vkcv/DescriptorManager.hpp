@@ -1,5 +1,5 @@
 /**
- * @authors Artur Wasmut, Susanne D�tsch, Simeon Hermann
+ * @authors Artur Wasmut, Susanne Dötsch, Simeon Hermann
  * @file src/vkcv/DescriptorManager.cpp
  * @brief Creation and handling of descriptor sets and the respective descriptor pools
  */
@@ -21,7 +21,7 @@ namespace vkcv
 	    explicit DescriptorManager(vk::Device device) noexcept;
 	    ~DescriptorManager() noexcept;
 
-        DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &descriptorBindings);
+        DescriptorSetHandle createDescriptorSet(const std::unordered_map<uint32_t, DescriptorBinding> &descriptorBindings);
 
 		void writeDescriptorSet(
 			const DescriptorSetHandle	&handle,

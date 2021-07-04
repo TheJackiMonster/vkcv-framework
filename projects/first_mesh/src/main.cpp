@@ -79,8 +79,8 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::ShaderProgram firstMeshProgram{};
-    firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
-    firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
+    firstMeshProgram.addShader(vk::ShaderStageFlagBits::eVertex, std::filesystem::path("resources/shaders/vert.spv"));
+    firstMeshProgram.addShader(vk::ShaderStageFlagBits::eFragment, std::filesystem::path("resources/shaders/frag.spv"));
 	
 	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 
@@ -98,8 +98,8 @@ int main(int argc, const char** argv) {
 	const vkcv::VertexLayout firstMeshLayout (bindings);
 
 	uint32_t setID = 0;
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[setID] };
-	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+
+	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(firstMeshProgram.getReflectedDescriptors().at(setID));
 
 	const vkcv::PipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,

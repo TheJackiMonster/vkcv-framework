@@ -35,17 +35,17 @@ namespace vkcv
 		}
     }
 
-    DescriptorSetHandle DescriptorManager::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
+    DescriptorSetHandle DescriptorManager::createDescriptorSet(const std::unordered_map<uint32_t, DescriptorBinding>& bindings)
     {
         std::vector<vk::DescriptorSetLayoutBinding> setBindings = {};
 
-        //create each set's binding
-        for (uint32_t i = 0; i < bindings.size(); i++) {
+        //create the set's bindings
+		for (auto bindingIter = bindings.begin(); bindingIter != bindings.end(); bindingIter++) {
             vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding(
-                bindings[i].bindingID,
-                convertDescriptorTypeFlag(bindings[i].descriptorType),
-                bindings[i].descriptorCount,
-				getShaderStageFlags(bindings[i].shaderStages));
+				bindingIter->second.bindingID,
+                convertDescriptorTypeFlag(bindingIter->second.descriptorType),
+				bindingIter->second.descriptorCount,
+				bindingIter->second.shaderStages);
             setBindings.push_back(descriptorSetLayoutBinding);
         }
 

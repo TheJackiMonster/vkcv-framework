@@ -63,11 +63,11 @@ int main(int argc, const char **argv) {
 
     vkcv::shader::GLSLCompiler compiler;
     vkcv::ShaderProgram computeShaderProgram{};
-    compiler.compile(vkcv::ShaderStage::COMPUTE, useSpace ? "shaders/shader_space.comp" : "shaders/shader_water.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+    compiler.compile(vk::ShaderStageFlagBits::eCompute, useSpace ? "shaders/shader_space.comp" : "shaders/shader_water.comp", [&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
         computeShaderProgram.addShader(shaderStage, path);
     });
 
-    vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
+    vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors().at(0));
 
     const std::vector<vkcv::VertexAttachment> computeVertexAttachments = computeShaderProgram.getVertexAttachments();
 
@@ -78,15 +78,15 @@ int main(int argc, const char **argv) {
     const vkcv::VertexLayout computeLayout(computeBindings);
 
     vkcv::ShaderProgram particleShaderProgram{};
-    compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/shader.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+    compiler.compile(vk::ShaderStageFlagBits::eVertex, "shaders/shader.vert", [&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
         particleShaderProgram.addShader(shaderStage, path);
     });
-    compiler.compile(vkcv::ShaderStage::FRAGMENT, useSpace ? "shaders/shader_space.frag" : "shaders/shader_water.frag", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+    compiler.compile(vk::ShaderStageFlagBits::eFragment, useSpace ? "shaders/shader_space.frag" : "shaders/shader_water.frag", [&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
         particleShaderProgram.addShader(shaderStage, path);
     });
 
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(
-            particleShaderProgram.getReflectedDescriptors()[0]);
+            particleShaderProgram.getReflectedDescriptors().at(0));
 
     vkcv::Buffer<glm::vec3> vertexBuffer = core.createBuffer<glm::vec3>(
             vkcv::BufferType::VERTEX,
@@ -230,11 +230,11 @@ int main(int argc, const char **argv) {
     });
 
     vkcv::ShaderProgram tonemappingShader;
-    compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/tonemapping.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+    compiler.compile(vk::ShaderStageFlagBits::eCompute, "shaders/tonemapping.comp", [&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
         tonemappingShader.addShader(shaderStage, path);
     });
 
-    vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingShader.getReflectedDescriptors()[0]);
+    vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingShader.getReflectedDescriptors().at(0));
     vkcv::PipelineHandle tonemappingPipe = core.createComputePipeline(
         tonemappingShader, 
         { core.getDescriptorSet(tonemappingDescriptor).layout });

@@ -171,12 +171,12 @@ int main(int argc, const char** argv) {
 	vkcv::shader::GLSLCompiler compiler;
 
 	vkcv::ShaderProgram forwardProgram;
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"), 
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eVertex, std::filesystem::path("resources/shaders/shader.vert"),
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		forwardProgram.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eFragment, std::filesystem::path("resources/shaders/shader.frag"),
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		forwardProgram.addShader(shaderStage, path);
 	});
 
@@ -189,16 +189,16 @@ int main(int argc, const char** argv) {
 	const vkcv::VertexLayout vertexLayout (vertexBindings);
 
 	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = 
-		core.createDescriptorSet({ forwardProgram.getReflectedDescriptors()[0] });
+		core.createDescriptorSet(forwardProgram.getReflectedDescriptors().at(0));
 
 	// depth prepass config
 	vkcv::ShaderProgram depthPrepassShader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/depthPrepass.vert"),
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eVertex, std::filesystem::path("resources/shaders/depthPrepass.vert"),
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		depthPrepassShader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/depthPrepass.frag"),
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eFragment, std::filesystem::path("resources/shaders/depthPrepass.frag"),
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		depthPrepassShader.addShader(shaderStage, path);
 	});
 
@@ -247,7 +247,7 @@ int main(int argc, const char** argv) {
 			specularIndex = 0;
 		}
 
-		materialDescriptorSets.push_back(core.createDescriptorSet(forwardProgram.getReflectedDescriptors()[1]));
+		materialDescriptorSets.push_back(core.createDescriptorSet(forwardProgram.getReflectedDescriptors().at(1)));
 
 		vkcv::asset::Texture& albedoTexture     = scene.textures[albedoIndex];
 		vkcv::asset::Texture& normalTexture     = scene.textures[normalIndex];
@@ -292,7 +292,7 @@ int main(int argc, const char** argv) {
 	}
 
 	// prepass pipeline
-	vkcv::DescriptorSetHandle prepassDescriptorSet = core.createDescriptorSet(std::vector<vkcv::DescriptorBinding>());
+	vkcv::DescriptorSetHandle prepassDescriptorSet = core.createDescriptorSet({});
 
 	vkcv::PipelineConfig prepassPipelineConfig{
 		depthPrepassShader,
@@ -358,12 +358,12 @@ int main(int argc, const char** argv) {
 	vkcv::PassHandle skyPass = core.createPass(skyPassConfig);
 
 	vkcv::ShaderProgram skyShader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/sky.vert"),
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eVertex, std::filesystem::path("resources/shaders/sky.vert"),
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		skyShader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/sky.frag"),
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eFragment, std::filesystem::path("resources/shaders/sky.frag"),
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		skyShader.addShader(shaderStage, path);
 	});
 
@@ -412,24 +412,24 @@ int main(int argc, const char** argv) {
 
 	// tonemapping compute shader
 	vkcv::ShaderProgram tonemappingProgram;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/tonemapping.comp", 
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eCompute, "resources/shaders/tonemapping.comp",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		tonemappingProgram.addShader(shaderStage, path);
 	});
 	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(
-		tonemappingProgram.getReflectedDescriptors()[0]);
+		tonemappingProgram.getReflectedDescriptors().at(0));
 	vkcv::PipelineHandle tonemappingPipeline = core.createComputePipeline(
 		tonemappingProgram,
 		{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
 
 	// resolve compute shader
 	vkcv::ShaderProgram resolveProgram;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/msaa4XResolve.comp",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eCompute, "resources/shaders/msaa4XResolve.comp",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		resolveProgram.addShader(shaderStage, path);
 	});
 	vkcv::DescriptorSetHandle resolveDescriptorSet = core.createDescriptorSet(
-		resolveProgram.getReflectedDescriptors()[0]);
+		resolveProgram.getReflectedDescriptors().at(0));
 	vkcv::PipelineHandle resolvePipeline = core.createComputePipeline(
 		resolveProgram,
 		{ core.getDescriptorSet(resolveDescriptorSet).layout });
@@ -753,12 +753,12 @@ int main(int argc, const char** argv) {
 			if (ImGui::Button("Reload forward pass")) {
 
 				vkcv::ShaderProgram newForwardProgram;
-				compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
-					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+				compiler.compile(vk::ShaderStageFlagBits::eVertex, std::filesystem::path("resources/shaders/shader.vert"),
+					[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 					newForwardProgram.addShader(shaderStage, path);
 				});
-				compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
-					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+				compiler.compile(vk::ShaderStageFlagBits::eFragment, std::filesystem::path("resources/shaders/shader.frag"),
+					[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 					newForwardProgram.addShader(shaderStage, path);
 				});
 				forwardPipelineConfig.m_ShaderProgram = newForwardProgram;
@@ -771,8 +771,8 @@ int main(int argc, const char** argv) {
 			if (ImGui::Button("Reload tonemapping")) {
 
 				vkcv::ShaderProgram newProgram;
-				compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("resources/shaders/tonemapping.comp"),
-					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+				compiler.compile(vk::ShaderStageFlagBits::eCompute, std::filesystem::path("resources/shaders/tonemapping.comp"),
+					[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 					newProgram.addShader(shaderStage, path);
 				});
 				vkcv::PipelineHandle newPipeline = core.createComputePipeline(

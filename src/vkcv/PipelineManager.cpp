@@ -67,8 +67,8 @@ namespace vkcv
     {
 		const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
     	
-        const bool existsVertexShader = config.m_ShaderProgram.existsShader(ShaderStage::VERTEX);
-        const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
+        const bool existsVertexShader = config.m_ShaderProgram.existsShader(vk::ShaderStageFlagBits::eVertex);
+        const bool existsFragmentShader = config.m_ShaderProgram.existsShader(vk::ShaderStageFlagBits::eFragment);
         if (!(existsVertexShader && existsFragmentShader))
         {
 			vkcv_log(LogLevel::ERROR, "Requires vertex and fragment shader code");
@@ -76,7 +76,7 @@ namespace vkcv
         }
 
         // vertex shader stage
-        std::vector<char> vertexCode = config.m_ShaderProgram.getShader(ShaderStage::VERTEX).shaderCode;
+        std::vector<char> vertexCode = config.m_ShaderProgram.getShader(vk::ShaderStageFlagBits::eVertex).shaderCode;
         vk::ShaderModuleCreateInfo vertexModuleInfo({}, vertexCode.size(), reinterpret_cast<uint32_t*>(vertexCode.data()));
         vk::ShaderModule vertexModule{};
         if (m_Device.createShaderModule(&vertexModuleInfo, nullptr, &vertexModule) != vk::Result::eSuccess)
@@ -91,7 +91,7 @@ namespace vkcv
         );
 
         // fragment shader stage
-        std::vector<char> fragCode = config.m_ShaderProgram.getShader(ShaderStage::FRAGMENT).shaderCode;
+        std::vector<char> fragCode = config.m_ShaderProgram.getShader(vk::ShaderStageFlagBits::eFragment).shaderCode;
         vk::ShaderModuleCreateInfo fragmentModuleInfo({}, fragCode.size(), reinterpret_cast<uint32_t*>(fragCode.data()));
         vk::ShaderModule fragmentModule{};
         if (m_Device.createShaderModule(&fragmentModuleInfo, nullptr, &fragmentModule) != vk::Result::eSuccess)
@@ -285,8 +285,8 @@ namespace vkcv
 
 		const char *geometryShaderName = "main";	// outside of if to make sure it stays in scope
 		vk::ShaderModule geometryModule;
-		if (config.m_ShaderProgram.existsShader(ShaderStage::GEOMETRY)) {
-			const vkcv::Shader geometryShader = config.m_ShaderProgram.getShader(ShaderStage::GEOMETRY);
+		if (config.m_ShaderProgram.existsShader(vk::ShaderStageFlagBits::eGeometry)) {
+			const vkcv::Shader geometryShader = config.m_ShaderProgram.getShader(vk::ShaderStageFlagBits::eGeometry);
 			const auto& geometryCode = geometryShader.shaderCode;
 			const vk::ShaderModuleCreateInfo geometryModuleInfo({}, geometryCode.size(), reinterpret_cast<const uint32_t*>(geometryCode.data()));
 			if (m_Device.createShaderModule(&geometryModuleInfo, nullptr, &geometryModule) != vk::Result::eSuccess) {
@@ -402,7 +402,7 @@ namespace vkcv
 
         // Temporally handing over the Shader Program instead of a pipeline config
         vk::ShaderModule computeModule{};
-        if (createShaderModule(computeModule, shaderProgram, ShaderStage::COMPUTE) != vk::Result::eSuccess)
+        if (createShaderModule(computeModule, shaderProgram, vk::ShaderStageFlagBits::eCompute) != vk::Result::eSuccess)
             return PipelineHandle();
 
         vk::PipelineShaderStageCreateInfo pipelineComputeShaderStageInfo(
@@ -451,7 +451,7 @@ namespace vkcv
     // There is an issue for refactoring the Pipeline Manager.
     // While including Compute Pipeline Creation, some private helper functions where introduced:
 
-    vk::Result PipelineManager::createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, const ShaderStage stage)
+    vk::Result PipelineManager::createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, const vk::ShaderStageFlagBits stage)
     {
         std::vector<char> code = shaderProgram.getShader(stage).shaderCode;
         vk::ShaderModuleCreateInfo moduleInfo({}, code.size(), reinterpret_cast<uint32_t*>(code.data()));

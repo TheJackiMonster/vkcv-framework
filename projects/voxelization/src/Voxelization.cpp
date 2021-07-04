@@ -6,16 +6,16 @@
 vkcv::ShaderProgram loadVoxelizationShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelization.vert",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eVertex, "resources/shaders/voxelization.vert",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelization.geom",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eGeometry, "resources/shaders/voxelization.geom",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelization.frag",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eFragment, "resources/shaders/voxelization.frag",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
 	return shader;
@@ -24,16 +24,16 @@ vkcv::ShaderProgram loadVoxelizationShader() {
 vkcv::ShaderProgram loadVoxelVisualisationShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelVisualisation.vert",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eVertex, "resources/shaders/voxelVisualisation.vert",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelVisualisation.geom",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eGeometry, "resources/shaders/voxelVisualisation.geom",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelVisualisation.frag",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eFragment, "resources/shaders/voxelVisualisation.frag",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
 	return shader;
@@ -42,8 +42,8 @@ vkcv::ShaderProgram loadVoxelVisualisationShader() {
 vkcv::ShaderProgram loadVoxelResetShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelReset.comp",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eCompute, "resources/shaders/voxelReset.comp",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
 	return shader;
@@ -52,8 +52,8 @@ vkcv::ShaderProgram loadVoxelResetShader() {
 vkcv::ShaderProgram loadVoxelBufferToImageShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelBufferToImage.comp",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eCompute, "resources/shaders/voxelBufferToImage.comp",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
 	return shader;
@@ -62,8 +62,8 @@ vkcv::ShaderProgram loadVoxelBufferToImageShader() {
 vkcv::ShaderProgram loadSecondaryBounceShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelSecondaryBounce.comp",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eCompute, "resources/shaders/voxelSecondaryBounce.comp",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
 	return shader;
@@ -98,12 +98,10 @@ Voxelization::Voxelization(
 		voxelizationDummyFormat) });
 	m_voxelizationPass = m_corePtr->createPass(voxelizationPassConfig);
 
-	std::vector<vkcv::DescriptorBinding> voxelizationDescriptorBindings = 
-	{ voxelizationShader.getReflectedDescriptors()[0] };
-	m_voxelizationDescriptorSet = m_corePtr->createDescriptorSet(voxelizationDescriptorBindings);
+	m_voxelizationDescriptorSet = m_corePtr->createDescriptorSet(voxelizationShader.getReflectedDescriptors().at(0));
 
 	vkcv::DescriptorSetHandle dummyPerMeshDescriptorSet =
-		m_corePtr->createDescriptorSet({ voxelizationShader.getReflectedDescriptors()[1] });
+		m_corePtr->createDescriptorSet({ voxelizationShader.getReflectedDescriptors().at(1) });
 
 	const vkcv::PipelineConfig voxelizationPipeConfig{
 		voxelizationShader,
@@ -131,9 +129,7 @@ Voxelization::Voxelization(
 
 	vkcv::ShaderProgram voxelVisualisationShader = loadVoxelVisualisationShader();
 
-	const std::vector<vkcv::DescriptorBinding> voxelVisualisationDescriptorBindings = 
-		{ voxelVisualisationShader.getReflectedDescriptors()[0] };
-	m_visualisationDescriptorSet = m_corePtr->createDescriptorSet(voxelVisualisationDescriptorBindings);
+	m_visualisationDescriptorSet = m_corePtr->createDescriptorSet(voxelVisualisationShader.getReflectedDescriptors().at(0));
 
 	const vkcv::AttachmentDescription voxelVisualisationColorAttachments(
 		vkcv::AttachmentOperation::STORE,
@@ -174,7 +170,7 @@ Voxelization::Voxelization(
 
 	vkcv::ShaderProgram resetVoxelShader = loadVoxelResetShader();
 
-	m_voxelResetDescriptorSet = m_corePtr->createDescriptorSet(resetVoxelShader.getReflectedDescriptors()[0]);
+	m_voxelResetDescriptorSet = m_corePtr->createDescriptorSet(resetVoxelShader.getReflectedDescriptors().at(0));
 	m_voxelResetPipe = m_corePtr->createComputePipeline(
 		resetVoxelShader,
 		{ m_corePtr->getDescriptorSet(m_voxelResetDescriptorSet).layout });
@@ -186,7 +182,7 @@ Voxelization::Voxelization(
 	// buffer to image
 	vkcv::ShaderProgram bufferToImageShader = loadVoxelBufferToImageShader();
 
-	m_bufferToImageDescriptorSet = m_corePtr->createDescriptorSet(bufferToImageShader.getReflectedDescriptors()[0]);
+	m_bufferToImageDescriptorSet = m_corePtr->createDescriptorSet(bufferToImageShader.getReflectedDescriptors().at(0));
 	m_bufferToImagePipe = m_corePtr->createComputePipeline(
 		bufferToImageShader,
 		{ m_corePtr->getDescriptorSet(m_bufferToImageDescriptorSet).layout });
@@ -199,7 +195,7 @@ Voxelization::Voxelization(
 	// secondary bounce
 	vkcv::ShaderProgram secondaryBounceShader = loadSecondaryBounceShader();
 
-	m_secondaryBounceDescriptorSet = m_corePtr->createDescriptorSet(secondaryBounceShader.getReflectedDescriptors()[0]);
+	m_secondaryBounceDescriptorSet = m_corePtr->createDescriptorSet(secondaryBounceShader.getReflectedDescriptors().at(0));
 	m_secondaryBouncePipe = m_corePtr->createComputePipeline(
 		secondaryBounceShader,
 		{ m_corePtr->getDescriptorSet(m_secondaryBounceDescriptorSet).layout });

@@ -22,57 +22,57 @@ BloomAndFlares::BloomAndFlares(
 
     // DOWNSAMPLE
     vkcv::ShaderProgram dsProg;
-    compiler.compile(vkcv::ShaderStage::COMPUTE,
+    compiler.compile(vk::ShaderStageFlagBits::eCompute,
                      "shaders/bloom/downsample.comp",
-                     [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path)
+                     [&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path)
                      {
                          dsProg.addShader(shaderStage, path);
                      });
     for(uint32_t mipLevel = 0; mipLevel < m_Blur.getMipCount(); mipLevel++)
     {
 		m_DownsampleDescSets.push_back(
-                p_Core->createDescriptorSet(dsProg.getReflectedDescriptors()[0]));
+                p_Core->createDescriptorSet(dsProg.getReflectedDescriptors().at(0)));
     }
     m_DownsamplePipe = p_Core->createComputePipeline(
             dsProg, { p_Core->getDescriptorSet(m_DownsampleDescSets[0]).layout });
 
     // UPSAMPLE
     vkcv::ShaderProgram usProg;
-    compiler.compile(vkcv::ShaderStage::COMPUTE,
+    compiler.compile(vk::ShaderStageFlagBits::eCompute,
                      "shaders/bloom/upsample.comp",
-                     [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path)
+                     [&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path)
                      {
                          usProg.addShader(shaderStage, path);
                      });
     for(uint32_t mipLevel = 0; mipLevel < m_Blur.getMipCount(); mipLevel++)
     {
         m_UpsampleDescSets.push_back(
-                p_Core->createDescriptorSet(usProg.getReflectedDescriptors()[0]));
+                p_Core->createDescriptorSet(usProg.getReflectedDescriptors().at(0)));
     }
     m_UpsamplePipe = p_Core->createComputePipeline(
             usProg, { p_Core->getDescriptorSet(m_UpsampleDescSets[0]).layout });
 
     // LENS FEATURES
     vkcv::ShaderProgram lensProg;
-    compiler.compile(vkcv::ShaderStage::COMPUTE,
+    compiler.compile(vk::ShaderStageFlagBits::eCompute,
                      "shaders/bloom/lensFlares.comp",
-                     [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path)
+                     [&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path)
                      {
                          lensProg.addShader(shaderStage, path);
                      });
-    m_LensFlareDescSet = p_Core->createDescriptorSet(lensProg.getReflectedDescriptors()[0]);
+    m_LensFlareDescSet = p_Core->createDescriptorSet(lensProg.getReflectedDescriptors().at(0));
     m_LensFlarePipe = p_Core->createComputePipeline(
             lensProg, { p_Core->getDescriptorSet(m_LensFlareDescSet).layout });
 
     // COMPOSITE
     vkcv::ShaderProgram compProg;
-    compiler.compile(vkcv::ShaderStage::COMPUTE,
+    compiler.compile(vk::ShaderStageFlagBits::eCompute,
                      "shaders/bloom/composite.comp",
-                     [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path)
+                     [&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path)
                      {
                          compProg.addShader(shaderStage, path);
                      });
-    m_CompositeDescSet = p_Core->createDescriptorSet(compProg.getReflectedDescriptors()[0]);
+    m_CompositeDescSet = p_Core->createDescriptorSet(compProg.getReflectedDescriptors().at(0));
     m_CompositePipe = p_Core->createComputePipeline(
             compProg, { p_Core->getDescriptorSet(m_CompositeDescSet).layout });
 }

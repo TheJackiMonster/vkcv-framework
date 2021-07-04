@@ -1,8 +1,7 @@
 #pragma once
 
 #include <filesystem>
-
-#include <vkcv/ShaderStage.hpp>
+#include <vulkan/vulkan.hpp>
 #include "Compiler.hpp"
 
 namespace vkcv::shader {
@@ -20,7 +19,7 @@ namespace vkcv::shader {
 		GLSLCompiler& operator=(const GLSLCompiler& other);
 		GLSLCompiler& operator=(GLSLCompiler&& other) = default;
 		
-		void compile(ShaderStage shaderStage, const std::filesystem::path& shaderPath,
+		void compile(vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& shaderPath,
 					 const ShaderCompiledFunction& compiled, bool update = false);
 		
 	};

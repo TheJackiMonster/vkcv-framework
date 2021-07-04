@@ -96,13 +96,13 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram triangleShaderProgram{};
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/shader.vert"),
-					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eVertex, std::filesystem::path("shaders/shader.vert"),
+					 [&triangleShaderProgram](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		 triangleShaderProgram.addShader(shaderStage, path);
 	});
 	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/shader.frag"),
-					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eFragment, std::filesystem::path("shaders/shader.frag"),
+					 [&triangleShaderProgram](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		triangleShaderProgram.addShader(shaderStage, path);
 	});
 
@@ -126,10 +126,10 @@ int main(int argc, const char** argv) {
 
 	// Compute Pipeline
 	vkcv::ShaderProgram computeShaderProgram{};
-	computeShaderProgram.addShader(vkcv::ShaderStage::COMPUTE, std::filesystem::path("shaders/comp.spv"));
+	computeShaderProgram.addShader(vk::ShaderStageFlagBits::eCompute, std::filesystem::path("shaders/comp.spv"));
 
 	// take care, assuming shader has exactly one descriptor set
-	vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
+	vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors().at(0));
 
 	vkcv::PipelineHandle computePipeline = core.createComputePipeline(
 		computeShaderProgram, 

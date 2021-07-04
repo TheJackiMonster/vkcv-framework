@@ -121,12 +121,12 @@ int main(int argc, const char** argv) {
 	vkcv::shader::GLSLCompiler compiler;
 
 	vkcv::ShaderProgram forwardProgram;
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"), 
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eVertex, std::filesystem::path("resources/shaders/shader.vert"),
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		forwardProgram.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eFragment, std::filesystem::path("resources/shaders/shader.frag"),
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		forwardProgram.addShader(shaderStage, path);
 	});
 
@@ -159,7 +159,7 @@ int main(int argc, const char** argv) {
 	vkcv::Buffer lightBuffer = core.createBuffer<LightInfo>(vkcv::BufferType::UNIFORM, sizeof(glm::vec3));
 
 	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = 
-		core.createDescriptorSet({ forwardProgram.getReflectedDescriptors()[0] });
+		core.createDescriptorSet(forwardProgram.getReflectedDescriptors().at(0));
 
 	vkcv::DescriptorWrites forwardDescriptorWrites;
 	forwardDescriptorWrites.uniformBufferWrites = { vkcv::UniformBufferDescriptorWrite(0, lightBuffer.getHandle()) };
@@ -178,7 +178,7 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DescriptorSetHandle> perMeshDescriptorSets;
 	std::vector<vkcv::Image> sceneImages;
 	for (const auto& vertexGroup : scene.vertexGroups) {
-		perMeshDescriptorSets.push_back(core.createDescriptorSet(forwardProgram.getReflectedDescriptors()[1]));
+		perMeshDescriptorSets.push_back(core.createDescriptorSet(forwardProgram.getReflectedDescriptors().at(1)));
 
 		const auto& material = scene.materials[vertexGroup.materialIndex];
 
@@ -227,12 +227,12 @@ int main(int argc, const char** argv) {
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
 	vkcv::ShaderProgram shadowShader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/shadow.vert",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eVertex, "resources/shaders/shadow.vert",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		shadowShader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/shadow.frag",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eFragment, "resources/shaders/shadow.frag",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		shadowShader.addShader(shaderStage, path);
 	});
 
@@ -257,11 +257,11 @@ int main(int argc, const char** argv) {
 
 	// gamma correction compute shader
 	vkcv::ShaderProgram gammaCorrectionProgram;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/gammaCorrection.comp",
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+	compiler.compile(vk::ShaderStageFlagBits::eCompute, "resources/shaders/gammaCorrection.comp",
+		[&](vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& path) {
 		gammaCorrectionProgram.addShader(shaderStage, path);
 	});
-	vkcv::DescriptorSetHandle gammaCorrectionDescriptorSet = core.createDescriptorSet(gammaCorrectionProgram.getReflectedDescriptors()[0]);
+	vkcv::DescriptorSetHandle gammaCorrectionDescriptorSet = core.createDescriptorSet(gammaCorrectionProgram.getReflectedDescriptors().at(0));
 	vkcv::PipelineHandle gammaCorrectionPipeline = core.createComputePipeline(gammaCorrectionProgram,
 		{ core.getDescriptorSet(gammaCorrectionDescriptorSet).layout });
 

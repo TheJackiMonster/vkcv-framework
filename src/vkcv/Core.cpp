@@ -532,7 +532,7 @@ namespace vkcv
 		return m_ImageManager->getImageHeight(imageHandle);
 	}
 
-    DescriptorSetHandle Core::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
+    DescriptorSetHandle Core::createDescriptorSet(const std::unordered_map<uint32_t, DescriptorBinding>& bindings)
     {
         return m_DescriptorManager->createDescriptorSet(bindings);
     }
