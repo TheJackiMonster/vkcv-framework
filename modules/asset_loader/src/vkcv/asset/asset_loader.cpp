@@ -63,8 +63,7 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &t)
 	case fx::gltf::Accessor::ComponentType::UnsignedInt:
 		return IndexType::UINT32;
 	default:
-        std::cerr << "ERROR: Index type not supported: " <<
-			static_cast<uint16_t>(t) << std::endl;
+		vkcv_log(LogLevel::ERROR, "Index type not supported: %u", static_cast<uint16_t>(t));
 		return IndexType::UNDEFINED;
 	}
 }
@@ -174,8 +173,11 @@ int loadScene(const std::string &path, Scene &scene){
                     attribute.type = PrimitiveType::NORMAL;
                 } else if (attrib.first == "TEXCOORD_0") {
                     attribute.type = PrimitiveType::TEXCOORD_0;
-                } else if (attrib.first == "TEXCOORD_1") {
+                }
+                else if (attrib.first == "TEXCOORD_1") {
                     attribute.type = PrimitiveType::TEXCOORD_1;
+                } else if (attrib.first == "TANGENT") {
+                    attribute.type = PrimitiveType::TANGENT;
                 } else {
                     return 0;
                 }
@@ -361,6 +363,25 @@ int loadScene(const std::string &path, Scene &scene){
     };
 
     return 1;
+}
+
+TextureData loadTexture(const std::filesystem::path& path) {
+    TextureData texture;
+    
+    uint8_t* data = stbi_load(path.string().c_str(), &texture.width, &texture.height, &texture.componentCount, 4);
+    
+    if (!data) {
+		vkcv_log(LogLevel::ERROR, "Texture could not be loaded from '%s'", path.c_str());
+    	
+    	texture.width = 0;
+    	texture.height = 0;
+    	texture.componentCount = 0;
+    	return texture;
+    }
+    
+    texture.data.resize(texture.width * texture.height * 4);
+    memcpy(texture.data.data(), data, texture.data.size());
+    return texture;
 }
 
 }

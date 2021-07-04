@@ -280,6 +280,7 @@ namespace vkcv
 		vk::PhysicalDeviceFeatures deviceFeatures;
 		deviceFeatures.fragmentStoresAndAtomics = true;
 		deviceFeatures.geometryShader = true;
+		deviceFeatures.depthClamp = true;
 		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
 		// Ablauf

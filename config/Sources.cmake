@@ -80,4 +80,7 @@ set(vkcv_sources
         ${vkcv_source}/vkcv/CommandStreamManager.cpp
         
         ${vkcv_include}/vkcv/CommandRecordingFunctionTypes.hpp
+        
+        ${vkcv_include}/vkcv/ImageConfig.hpp
+        ${vkcv_source}/vkcv/ImageConfig.cpp
 )

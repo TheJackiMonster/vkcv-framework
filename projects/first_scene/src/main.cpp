@@ -199,7 +199,7 @@ int main(int argc, const char** argv) {
 
         vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSets[i]).vulkanHandle);
 
-	    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}));
+	    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage},1));
 	}
 
 	std::vector<glm::mat4> modelMatrices;

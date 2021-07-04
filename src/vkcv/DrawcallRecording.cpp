@@ -27,16 +27,18 @@ namespace vkcv {
         // char* cast because void* does not support pointer arithmetic
         const void* drawcallPushConstantData = drawcallPushConstantOffset + (char*)pushConstantData.data;
 
-        cmdBuffer.pushConstants(
-            pipelineLayout,
-            vk::ShaderStageFlagBits::eAll,
-            0,
-            pushConstantData.sizePerDrawcall,
-            drawcallPushConstantData);
+        if (pushConstantData.data && pushConstantData.sizePerDrawcall > 0) {
+            cmdBuffer.pushConstants(
+                pipelineLayout,
+                vk::ShaderStageFlagBits::eAll,
+                0,
+                pushConstantData.sizePerDrawcall,
+                drawcallPushConstantData);
+        }
 
         if (drawcall.mesh.indexBuffer) {
             cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
-            cmdBuffer.drawIndexed(drawcall.mesh.indexCount, 1, 0, 0, {});
+            cmdBuffer.drawIndexed(drawcall.mesh.indexCount, drawcall.instanceCount, 0, 0, {});
         }
         else {
             cmdBuffer.draw(drawcall.mesh.indexCount, 1, 0, 0, {});
