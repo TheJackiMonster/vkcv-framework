@@ -82,6 +82,8 @@ namespace vkcv::scene {
 	static glm::vec3 projectPoint(const glm::mat4& transform, const glm::vec3& point) {
 		const glm::vec4 position = transform * glm::vec4(point, 1.0f);
 		
+		//std::cout << "POS: " << position.x << " " << position.y << " " << position.z << " " << position.w << std::endl;
+		
 		return glm::vec3(
 				position[0] / position[3],
 				position[1] / position[3],
@@ -95,7 +97,7 @@ namespace vkcv::scene {
 				glm::vec3(+1.0f, +1.0f, +1.0f)
 		);
 		
-		return frustum.intersects(bounds);
+		return bounds.intersects(frustum);
 	}
 	
 	void Mesh::recordDrawcalls(const glm::mat4& viewProjection,
@@ -118,6 +120,7 @@ namespace vkcv::scene {
 			}
 			
 			if (!checkFrustum(aabb)) {
+				m_drawcalls[i].instanceCount = 2;
 				continue;
 			}
 			

@@ -25,8 +25,13 @@ int main(int argc, const char** argv) {
 	vkcv::camera::CameraManager cameraManager(window);
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
-
-	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
+	
+	glm::vec3 pos (-7.96175f, 0.889579f, -0.514462f);
+	glm::vec3 front (-0.504636f, -0.603207f, 0.617643f);
+	cameraManager.getCamera(camIndex0).setPosition(pos);
+	cameraManager.getCamera(camIndex0).setFront(front);
+	
+	//cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
 	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 30.0f);
 	
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
