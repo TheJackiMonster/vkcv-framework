@@ -43,6 +43,9 @@ namespace vkcv::scene {
 		[[nodiscard]]
 		const material::Material& getMaterial() const;
 		
+		[[nodiscard]]
+		const Bounds& getBounds() const;
+		
 		explicit operator bool() const;
 		bool operator!() const;
 		

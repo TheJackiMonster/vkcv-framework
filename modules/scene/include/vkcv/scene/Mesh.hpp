@@ -24,7 +24,9 @@ namespace vkcv::scene {
 		void load(const asset::Scene& scene,
 				  const asset::Mesh& mesh);
 		
-		void recordDrawcalls(std::vector<glm::mat4>& matrices, std::vector<DrawcallInfo>& drawcalls);
+		void recordDrawcalls(const glm::mat4& viewProjection,
+							 std::vector<glm::mat4>& matrices,
+							 std::vector<DrawcallInfo>& drawcalls);
 	
 	public:
 		~Mesh();

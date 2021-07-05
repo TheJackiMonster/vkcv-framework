@@ -79,14 +79,50 @@ namespace vkcv::scene {
 		return *this;
 	}
 	
-	void Mesh::recordDrawcalls(std::vector<glm::mat4>& matrices,
-							   std::vector<DrawcallInfo>& drawcalls) {
-		for (const auto& part : m_parts) {
-			matrices.push_back(m_transform);
-		}
+	static glm::vec3 projectPoint(const glm::mat4& transform, const glm::vec3& point) {
+		const glm::vec4 position = transform * glm::vec4(point, 1.0f);
 		
-		for (const auto& drawcall : m_drawcalls) {
-			drawcalls.push_back(drawcall);
+		return glm::vec3(
+				position[0] / position[3],
+				position[1] / position[3],
+				position[2] / position[3]
+		);
+	}
+	
+	static bool checkFrustum(const Bounds& bounds) {
+		static Bounds frustum (
+				glm::vec3(-1.0f, -1.0f, -0.0f),
+				glm::vec3(+1.0f, +1.0f, +1.0f)
+		);
+		
+		return frustum.intersects(bounds);
+	}
+	
+	void Mesh::recordDrawcalls(const glm::mat4& viewProjection,
+							   std::vector<glm::mat4>& matrices,
+							   std::vector<DrawcallInfo>& drawcalls) {
+		const glm::mat4 transform = viewProjection * m_transform;
+		
+		for (size_t i = 0; i < m_parts.size(); i++) {
+			const MeshPart& part = m_parts[i];
+			const Bounds& bounds = part.getBounds();
+			const auto corners = bounds.getCorners();
+			
+			auto projected = projectPoint(transform, corners[0]);
+			
+			Bounds aabb (projected, projected);
+			
+			for (size_t j = 1; j < corners.size(); j++) {
+				projected = projectPoint(transform, corners[j]);
+				aabb.extend(projected);
+			}
+			
+			if (!checkFrustum(aabb)) {
+				continue;
+			}
+			
+			matrices.push_back(transform);
+			drawcalls.push_back(m_drawcalls[i]);
 		}
 	}
 

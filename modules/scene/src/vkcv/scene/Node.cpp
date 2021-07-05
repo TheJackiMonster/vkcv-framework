@@ -55,14 +55,15 @@ namespace vkcv::scene {
 		return m_nodes.back();
 	}
 	
-	void Node::recordDrawcalls(std::vector<glm::mat4>& matrices,
+	void Node::recordDrawcalls(const glm::mat4& viewProjection,
+							   std::vector<glm::mat4>& matrices,
 							   std::vector<DrawcallInfo>& drawcalls) {
 		for (auto& mesh : m_meshes) {
-			mesh.recordDrawcalls(matrices, drawcalls);
+			mesh.recordDrawcalls(viewProjection, matrices, drawcalls);
 		}
 		
 		for (auto& node : m_nodes) {
-			node.recordDrawcalls(matrices, drawcalls);
+			node.recordDrawcalls(viewProjection, matrices, drawcalls);
 		}
 	}
 

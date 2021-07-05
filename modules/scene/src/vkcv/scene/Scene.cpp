@@ -74,12 +74,10 @@ namespace vkcv::scene {
 		std::vector<glm::mat4> matrices;
 		std::vector<DrawcallInfo> drawcalls;
 		
-		for (auto& node : m_nodes) {
-			node.recordDrawcalls(matrices, drawcalls);
-		}
+		const glm::mat4 viewProjection = camera.getMVP();
 		
-		for (auto& matrix : matrices) {
-			matrix = camera.getMVP() * matrix;
+		for (auto& node : m_nodes) {
+			node.recordDrawcalls(viewProjection, matrices, drawcalls);
 		}
 		
 		PushConstantData pushConstantData (matrices.data(), sizeof(glm::mat4));

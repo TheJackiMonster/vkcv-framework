@@ -267,5 +267,9 @@ namespace vkcv::scene {
 				(!m_indices)
 		);
 	}
-
+	
+	const Bounds &MeshPart::getBounds() const {
+		return m_bounds;
+	}
+	
 }
