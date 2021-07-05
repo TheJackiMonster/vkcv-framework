@@ -4,6 +4,7 @@
 
 #include <vkcv/camera/Camera.hpp>
 
+#include "Bounds.hpp"
 #include "Mesh.hpp"
 
 namespace vkcv::scene {
@@ -18,6 +19,7 @@ namespace vkcv::scene {
 		
 		std::vector<Mesh> m_meshes;
 		std::vector<Node> m_nodes;
+		Bounds m_bounds;
 		
 		explicit Node(Scene* scene);
 		
@@ -29,6 +31,8 @@ namespace vkcv::scene {
 		
 		[[nodiscard]]
 		size_t getDrawcallCount() const;
+		
+		Node& addNode();
 	
 	public:
 		~Node();
@@ -39,7 +43,8 @@ namespace vkcv::scene {
 		Node& operator=(const Node& other);
 		Node& operator=(Node&& other) noexcept;
 		
-		Node& addNode();
+		[[nodiscard]]
+		const Bounds& getBounds() const;
 		
 	};
 	

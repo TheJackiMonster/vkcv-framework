@@ -18,6 +18,7 @@ namespace vkcv::scene {
 		std::vector<MeshPart> m_parts;
 		std::vector<DrawcallInfo> m_drawcalls;
 		glm::mat4 m_transform;
+		Bounds m_bounds;
 		
 		explicit Mesh(Scene* scene);
 		
@@ -39,6 +40,9 @@ namespace vkcv::scene {
 		
 		Mesh& operator=(const Mesh& other);
 		Mesh& operator=(Mesh&& other) noexcept;
+		
+		[[nodiscard]]
+		const Bounds& getBounds() const;
 	
 	};
 	

@@ -1,6 +1,7 @@
 
 #include "vkcv/scene/Mesh.hpp"
 #include "vkcv/scene/Scene.hpp"
+#include "Frustum.hpp"
 
 namespace vkcv::scene {
 	
@@ -20,7 +21,10 @@ namespace vkcv::scene {
 	}
 	
 	void Mesh::load(const asset::Scene &scene, const asset::Mesh &mesh) {
+		m_parts.clear();
 		m_drawcalls.clear();
+		
+		m_transform = arrayTo4x4Matrix(mesh.modelMatrix);
 		
 		for (const auto& vertexGroupIndex : mesh.vertexGroups) {
 			if ((vertexGroupIndex < 0) || (vertexGroupIndex >= scene.vertexGroups.size())) {
@@ -34,10 +38,17 @@ namespace vkcv::scene {
 				continue;
 			}
 			
+			auto bounds = transformBounds(m_transform, part.getBounds());
+			
+			if (m_parts.empty()) {
+				m_bounds = bounds;
+			} else {
+				m_bounds.extend(bounds.getMin());
+				m_bounds.extend(bounds.getMax());
+			}
+			
 			m_parts.push_back(part);
 		}
-		
-		m_transform = arrayTo4x4Matrix(mesh.modelMatrix);
 	}
 	
 	Mesh::~Mesh() {
@@ -49,13 +60,15 @@ namespace vkcv::scene {
 	m_scene(other.m_scene),
 	m_parts(other.m_parts),
 	m_drawcalls(other.m_drawcalls),
-	m_transform(other.m_transform) {}
+	m_transform(other.m_transform),
+	m_bounds(other.m_bounds) {}
 	
 	Mesh::Mesh(Mesh &&other) noexcept :
 	m_scene(other.m_scene),
 	m_parts(other.m_parts),
 	m_drawcalls(other.m_drawcalls),
-	m_transform(other.m_transform) {}
+	m_transform(other.m_transform),
+	m_bounds(other.m_bounds) {}
 	
 	Mesh &Mesh::operator=(const Mesh &other) {
 		if (&other == this) {
@@ -66,6 +79,7 @@ namespace vkcv::scene {
 		m_parts = std::vector<MeshPart>(other.m_parts);
 		m_drawcalls = std::vector<DrawcallInfo>(other.m_drawcalls);
 		m_transform = other.m_transform;
+		m_bounds = other.m_bounds;
 		
 		return *this;
 	}
@@ -75,39 +89,9 @@ namespace vkcv::scene {
 		m_parts = std::move(other.m_parts);
 		m_drawcalls = std::move(other.m_drawcalls);
 		m_transform = other.m_transform;
+		m_bounds = other.m_bounds;
 		
 		return *this;
-	}
-	
-	static glm::vec3 projectPoint(const glm::mat4& transform, const glm::vec3& point, bool& negative_w) {
-		const glm::vec4 position = transform * glm::vec4(point, 1.0f);
-		const float perspective = std::abs(position[3]);
-		
-		/*
-		 * We divide by the absolute of the 4th coorditnate because
-		 * clipping is weird and points have to move to the other
-		 * side of the camera.
-		 *
-		 * We also need to collect if the 4th coordinate was negative
-		 * to know if all corners are behind the camera. So these can
-		 * be culled as well
-		 */
-		negative_w = (position[3] < 0.0f);
-		
-		return glm::vec3(
-				position[0] / perspective,
-				position[1] / perspective,
-				position[2] / perspective
-		);
-	}
-	
-	static bool checkFrustum(const Bounds& bounds) {
-		static Bounds frustum (
-				glm::vec3(-1.0f, -1.0f, -0.0f),
-				glm::vec3(+1.0f, +1.0f, +1.0f)
-		);
-		
-		return bounds.intersects(frustum);
 	}
 	
 	void Mesh::recordDrawcalls(const glm::mat4& viewProjection,
@@ -115,34 +99,33 @@ namespace vkcv::scene {
 							   std::vector<DrawcallInfo>& drawcalls) {
 		const glm::mat4 transform = viewProjection * m_transform;
 		
-		for (size_t i = 0; i < m_parts.size(); i++) {
-			const MeshPart& part = m_parts[i];
-			const Bounds& bounds = part.getBounds();
-			const auto corners = bounds.getCorners();
-			
-			bool negative_w;
-			auto projected = projectPoint(transform, corners[0], negative_w);
-			
-			Bounds aabb (projected, projected);
-			
-			for (size_t j = 1; j < corners.size(); j++) {
-				bool flag_w;
-				projected = projectPoint(transform, corners[j], flag_w);
-				aabb.extend(projected);
-				negative_w &= flag_w;
-			}
-			
-			if ((negative_w) || (!checkFrustum(aabb))) {
-				continue;
-			}
-			
+		if (!checkFrustum(viewProjection, m_bounds)) {
+			return;
+		}
+		
+		if (m_drawcalls.size() == 1) {
 			matrices.push_back(transform);
-			drawcalls.push_back(m_drawcalls[i]);
+			drawcalls.push_back(m_drawcalls[0]);
+		} else {
+			for (size_t i = 0; i < m_parts.size(); i++) {
+				const MeshPart& part = m_parts[i];
+				
+				if (!checkFrustum(transform, part.getBounds())) {
+					continue;
+				}
+				
+				matrices.push_back(transform);
+				drawcalls.push_back(m_drawcalls[i]);
+			}
 		}
 	}
 	
 	size_t Mesh::getDrawcallCount() const {
 		return m_drawcalls.size();
+	}
+	
+	const Bounds& Mesh::getBounds() const {
+		return m_bounds;
 	}
 
 }
