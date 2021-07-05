@@ -44,33 +44,33 @@ namespace vkcv {
 #define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
 
-#define vkcv_log(level, ...) {        \
-  char output_message [               \
-    VKCV_DEBUG_MESSAGE_LEN            \
-  ];                                  \
-  snprintf(                           \
-    output_message,                   \
-    VKCV_DEBUG_MESSAGE_LEN,           \
-    __VA_ARGS__                       \
-  );                                  \
-  if (level != LogLevel::RAW_INFO) {  \
-    fprintf(                          \
-      getLogOutput(level),            \
-      "[%s]: %s [%s, line %d: %s]\n", \
-      vkcv::getLogName(level),        \
-      output_message,                 \
-      __FILE__,                       \
-      __LINE__,                       \
-      __PRETTY_FUNCTION__             \
-    );                                \
-  } else {                            \
-    fprintf(                          \
-      getLogOutput(level),            \
-      "[%s]: %s\n",                   \
-      vkcv::getLogName(level),        \
-      output_message                  \
-    );                                \
-  }                                   \
+#define vkcv_log(level, ...) {             \
+  char output_message [                    \
+    VKCV_DEBUG_MESSAGE_LEN                 \
+  ];                                       \
+  snprintf(                                \
+    output_message,                        \
+    VKCV_DEBUG_MESSAGE_LEN,                \
+    __VA_ARGS__                            \
+  );                                       \
+  if (level != vkcv::LogLevel::RAW_INFO) { \
+    fprintf(                               \
+      getLogOutput(level),                 \
+      "[%s]: %s [%s, line %d: %s]\n",      \
+      vkcv::getLogName(level),             \
+      output_message,                      \
+      __FILE__,                            \
+      __LINE__,                            \
+      __PRETTY_FUNCTION__                  \
+    );                                     \
+  } else {                                 \
+    fprintf(                               \
+      getLogOutput(level),                 \
+      "[%s]: %s\n",                        \
+      vkcv::getLogName(level),             \
+      output_message                       \
+    );                                     \
+  }                                        \
 }
 
 #else
