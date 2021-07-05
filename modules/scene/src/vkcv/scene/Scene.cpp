@@ -73,12 +73,16 @@ namespace vkcv::scene {
 								const std::vector<ImageHandle>  &renderTargets) {
 		std::vector<glm::mat4> matrices;
 		std::vector<DrawcallInfo> drawcalls;
+		size_t count = 0;
 		
 		const glm::mat4 viewProjection = camera.getMVP();
 		
 		for (auto& node : m_nodes) {
+			count += node.getDrawcallCount();
 			node.recordDrawcalls(viewProjection, matrices, drawcalls);
 		}
+		
+		vkcv_log(LogLevel::RAW_INFO, "Frustum culling: %lu / %lu", drawcalls.size(), count);
 		
 		PushConstantData pushConstantData (matrices.data(), sizeof(glm::mat4));
 		

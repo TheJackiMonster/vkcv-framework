@@ -26,6 +26,9 @@ namespace vkcv::scene {
 		void recordDrawcalls(const glm::mat4& viewProjection,
 							 std::vector<glm::mat4>& matrices,
 							 std::vector<DrawcallInfo>& drawcalls);
+		
+		[[nodiscard]]
+		size_t getDrawcallCount() const;
 	
 	public:
 		~Node();

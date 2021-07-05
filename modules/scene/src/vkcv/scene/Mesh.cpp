@@ -79,9 +79,20 @@ namespace vkcv::scene {
 		return *this;
 	}
 	
-	static glm::vec3 projectPoint(const glm::mat4& transform, const glm::vec3& point) {
+	static glm::vec3 projectPoint(const glm::mat4& transform, const glm::vec3& point, bool& negative_w) {
 		const glm::vec4 position = transform * glm::vec4(point, 1.0f);
 		const float perspective = std::abs(position[3]);
+		
+		/*
+		 * We divide by the absolute of the 4th coorditnate because
+		 * clipping is weird and points have to move to the other
+		 * side of the camera.
+		 *
+		 * We also need to collect if the 4th coordinate was negative
+		 * to know if all corners are behind the camera. So these can
+		 * be culled as well
+		 */
+		negative_w = (position[3] < 0.0f);
 		
 		return glm::vec3(
 				position[0] / perspective,
@@ -109,22 +120,29 @@ namespace vkcv::scene {
 			const Bounds& bounds = part.getBounds();
 			const auto corners = bounds.getCorners();
 			
-			auto projected = projectPoint(transform, corners[0]);
+			bool negative_w;
+			auto projected = projectPoint(transform, corners[0], negative_w);
 			
 			Bounds aabb (projected, projected);
 			
 			for (size_t j = 1; j < corners.size(); j++) {
-				projected = projectPoint(transform, corners[j]);
+				bool flag_w;
+				projected = projectPoint(transform, corners[j], flag_w);
 				aabb.extend(projected);
+				negative_w &= flag_w;
 			}
 			
-			if (!checkFrustum(aabb)) {
+			if ((negative_w) || (!checkFrustum(aabb))) {
 				continue;
 			}
 			
 			matrices.push_back(transform);
 			drawcalls.push_back(m_drawcalls[i]);
 		}
+	}
+	
+	size_t Mesh::getDrawcallCount() const {
+		return m_drawcalls.size();
 	}
 
 }

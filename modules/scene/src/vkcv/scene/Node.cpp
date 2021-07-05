@@ -66,5 +66,19 @@ namespace vkcv::scene {
 			node.recordDrawcalls(viewProjection, matrices, drawcalls);
 		}
 	}
+	
+	size_t Node::getDrawcallCount() const {
+		size_t count = 0;
+		
+		for (auto& mesh : m_meshes) {
+			count += mesh.getDrawcallCount();
+		}
+		
+		for (auto& node : m_nodes) {
+			count += node.getDrawcallCount();
+		}
+		
+		return count;
+	}
 
 }
