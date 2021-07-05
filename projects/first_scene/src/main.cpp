@@ -41,7 +41,7 @@ int main(int argc, const char** argv) {
 	);
 	
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
-			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
+			argc > 1 ? argv[1] : "resources/Sponza/SponzaFloor.gltf"
 	));
 
 	const vkcv::AttachmentDescription present_color_attachment(
