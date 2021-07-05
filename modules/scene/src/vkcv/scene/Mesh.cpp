@@ -121,7 +121,7 @@ namespace vkcv::scene {
 			
 			if (!checkFrustum(aabb)) {
 				m_drawcalls[i].instanceCount = 2;
-				continue;
+				//continue;
 			}
 			
 			matrices.push_back(transform);
