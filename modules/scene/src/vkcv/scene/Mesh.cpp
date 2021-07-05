@@ -81,13 +81,12 @@ namespace vkcv::scene {
 	
 	static glm::vec3 projectPoint(const glm::mat4& transform, const glm::vec3& point) {
 		const glm::vec4 position = transform * glm::vec4(point, 1.0f);
-		
-		//std::cout << "POS: " << position.x << " " << position.y << " " << position.z << " " << position.w << std::endl;
+		const float perspective = std::abs(position[3]);
 		
 		return glm::vec3(
-				position[0] / position[3],
-				position[1] / position[3],
-				position[2] / position[3]
+				position[0] / perspective,
+				position[1] / perspective,
+				position[2] / perspective
 		);
 	}
 	
@@ -120,8 +119,7 @@ namespace vkcv::scene {
 			}
 			
 			if (!checkFrustum(aabb)) {
-				m_drawcalls[i].instanceCount = 2;
-				//continue;
+				continue;
 			}
 			
 			matrices.push_back(transform);

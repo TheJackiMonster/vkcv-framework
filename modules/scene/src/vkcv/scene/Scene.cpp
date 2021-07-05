@@ -66,10 +66,6 @@ namespace vkcv::scene {
 		return m_materials[index].m_data;
 	}
 	
-	std::ostream& operator << (std::ostream& out, const glm::vec3& vec) {
-		return out << vec.x << " " << vec.y << " " << vec.z;
-	}
-	
 	void Scene::recordDrawcalls(CommandStreamHandle       		&cmdStream,
 								const camera::Camera			&camera,
 								const PassHandle                &pass,
@@ -77,8 +73,6 @@ namespace vkcv::scene {
 								const std::vector<ImageHandle>  &renderTargets) {
 		std::vector<glm::mat4> matrices;
 		std::vector<DrawcallInfo> drawcalls;
-		
-		std::cout << camera.getPosition() << " | " << camera.getFront() << std::endl;
 		
 		const glm::mat4 viewProjection = camera.getMVP();
 		

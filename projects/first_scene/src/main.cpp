@@ -26,12 +26,7 @@ int main(int argc, const char** argv) {
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
-	glm::vec3 pos (-7.96175f, 0.889579f, -0.514462f);
-	glm::vec3 front (-0.504636f, -0.603207f, 0.617643f);
-	cameraManager.getCamera(camIndex0).setPosition(pos);
-	cameraManager.getCamera(camIndex0).setFront(front);
-	
-	//cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
+	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(-8, 1, -0.5));
 	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 30.0f);
 	
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
@@ -46,7 +41,7 @@ int main(int argc, const char** argv) {
 	);
 	
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
-			argc > 1 ? argv[1] : "resources/Sponza/SponzaFloor.gltf"
+			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
 	));
 
 	const vkcv::AttachmentDescription present_color_attachment(
