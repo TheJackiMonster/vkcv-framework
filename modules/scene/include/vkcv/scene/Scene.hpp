@@ -21,8 +21,8 @@ namespace vkcv::scene {
 		
 		Core* m_core;
 		
-		std::vector<Node> m_nodes;
 		std::vector<Material> m_materials;
+		std::vector<Node> m_nodes;
 		
 		explicit Scene(Core* core);
 		

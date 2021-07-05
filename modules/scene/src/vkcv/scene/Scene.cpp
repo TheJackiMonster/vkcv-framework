@@ -8,8 +8,8 @@ namespace vkcv::scene {
 	
 	Scene::Scene(Core* core) :
 	m_core(core),
-	m_nodes(),
-	m_materials() {}
+	m_materials(),
+	m_nodes() {}
 	
 	Scene::~Scene() {
 		m_nodes.clear();
