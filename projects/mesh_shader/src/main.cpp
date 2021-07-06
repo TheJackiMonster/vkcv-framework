@@ -7,6 +7,7 @@
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/asset/asset_loader.hpp>
+#include "MeshStruct.hpp"
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Mesh shader";
@@ -56,6 +57,12 @@ int main(int argc, const char** argv) {
     );
     indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
 
+    auto meshBuffer = core.createBuffer<MeshStruct>(
+            vkcv::BufferType::STORAGE,
+            mesh.vertexGroups[0].vertexBuffer.data.size()
+    );
+//    meshBuffer.fill();
+
     auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 
     std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
@@ -73,8 +80,8 @@ int main(int argc, const char** argv) {
             vk::Format::eD32Sfloat
     );
 
-	vkcv::PassConfig trianglePassDefinition({ present_color_attachment, depth_attachment });
-	vkcv::PassHandle renderPass = core.createPass(trianglePassDefinition);
+	vkcv::PassConfig bunnyPassDefinition({ present_color_attachment, depth_attachment });
+	vkcv::PassHandle renderPass = core.createPass(bunnyPassDefinition);
 
 	if (!renderPass)
 	{
@@ -100,25 +107,21 @@ int main(int argc, const char** argv) {
     for (size_t i = 0; i < vertexAttachments.size(); i++) {
         bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
     }
-    const vkcv::VertexLayout meshShaderLayout (bindings);
-
-    uint32_t setID = 0;
-//    std::vector<vkcv::DescriptorBinding> descriptorBindings = {bunnyShaderProgram.getReflectedDescriptors()[setID] };
-//    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+    const vkcv::VertexLayout bunnyLayout (bindings);
 
 	const vkcv::PipelineConfig bunnyPipelineDefinition {
             bunnyShaderProgram,
             (uint32_t)windowWidth,
             (uint32_t)windowHeight,
             renderPass,
-            { meshShaderLayout },
+            { bunnyLayout },
             {},
             false
 	};
 
-	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
+	vkcv::PipelineHandle bunnyPipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
 
-	if (!trianglePipeline)
+	if (!bunnyPipeline)
 	{
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
@@ -141,13 +144,17 @@ int main(int argc, const char** argv) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
 
+    uint32_t setID = 0;
+    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet( meshShaderProgram.getReflectedDescriptors()[setID]);
+    const vkcv::VertexLayout meshShaderLayout(bindings);
+
 	const vkcv::PipelineConfig meshShaderPipelineDefinition{
 		meshShaderProgram,
 		(uint32_t)windowWidth,
 		(uint32_t)windowHeight,
 		renderPass,
-		{},
-		{},
+		{meshShaderLayout},
+		{core.getDescriptorSet(descriptorSet).layout},
 		false
 	};
 
@@ -164,7 +171,9 @@ int main(int argc, const char** argv) {
             vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
             vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
-	vkcv::DescriptorWrites setWrites;
+    vkcv::DescriptorWrites setWrites;
+    setWrites.storageBufferWrites = {vkcv::StorageBufferDescriptorWrite(0, meshBuffer.getHandle())};
+    core.writeDescriptorSet( descriptorSet, setWrites);
 
     vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
 
@@ -216,12 +225,12 @@ int main(int argc, const char** argv) {
 		*/
 
 		core.recordDrawcallsToCmdStream(
-			cmdStream,
-			renderPass,
-			trianglePipeline,
-			pushConstantData,
-			{ drawcall },
-			{ renderTargets });
+                cmdStream,
+                renderPass,
+                bunnyPipeline,
+                pushConstantData,
+                { drawcall },
+                { renderTargets });
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

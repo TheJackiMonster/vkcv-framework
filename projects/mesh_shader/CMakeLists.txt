@@ -11,6 +11,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 # adding source files to the project
 add_executable(mesh_shader src/main.cpp)
 
+target_sources(mesh_shader PRIVATE
+		src/MeshStruct.hpp)
+
 # this should fix the execution path to load local files from the project (for MSVC)
 if(MSVC)
 	set_target_properties(mesh_shader PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
