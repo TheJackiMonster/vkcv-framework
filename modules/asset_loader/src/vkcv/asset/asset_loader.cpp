@@ -97,11 +97,6 @@ int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
 {
 	dst.clear();
 	dst.reserve(tex_src.size());
-	// TODO Image objects in glTF can have
-	// 1) a URI
-	// 2) a bufferView and a mimeType
-	// to describe where/how to load the data.
-	// currently does not support mimeType
 	for (int i = 0; i < tex_src.size(); i++) {
 		std::string uri = dir + "/" + img_src[tex_src[i].source].uri;
 		int w, h, c;
@@ -115,6 +110,7 @@ int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
 			}
 		}
 		else {
+			//TODO this is untested. Find gltf file without uri to test it!
 			const fx::gltf::BufferView bufferView = bV_src[img_src[tex_src[i].source].bufferView];
 			data = stbi_load_from_memory(&buf_src[bufferView.buffer].data[bufferView.byteOffset], bufferView.byteLength, &w, &h, &c, 4);
 			if (!data) {
@@ -433,7 +429,7 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 		for (const auto& attribute : vertexAttributes) {
 			relevantBufferOffset = std::min(attribute.offset, relevantBufferOffset);
 			const uint32_t attributeEnd = attribute.offset + attribute.length;
-			relevantBufferEnd = std::max(relevantBufferEnd, attributeEnd);    // TODO: need to incorporate stride?
+			relevantBufferEnd = std::max(relevantBufferEnd, attributeEnd);
 		}
 		const uint32_t relevantBufferSize = relevantBufferEnd - relevantBufferOffset;
 
@@ -502,15 +498,6 @@ int createMaterial(fx::gltf::Document &sceneObjects, std::vector<Material> &mate
 			fx::gltf::Material material = sceneObjects.materials[l];
 			uint16_t textureMask = 0;
 			generateTextureMask(material, textureMask);
-			// TODO When constructing the the vkcv::asset::Material  we need to
-			// test what kind of texture targets it has and then define the
-			// textureMask for it.
-			// Also, what does the fx::gltf::Material do with indices of
-			// texture targets that don't exist? Maybe we shouldn't set the
-			// index for eb. the normalTexture if there is no normal texture...
-			// It may be a good idea to create an extra function for creating a
-			// material and adding it to the materials array instead of trying
-			// to fit it all into one push_back({...}) call.
 			materials.push_back({
 			textureMask,	
 			material.pbrMetallicRoughness.baseColorTexture.index,
@@ -544,20 +531,6 @@ int createMaterial(fx::gltf::Document &sceneObjects, std::vector<Material> &mate
 
 int loadScene(const std::filesystem::path &path, Scene &scene){
     fx::gltf::Document sceneObjects;
-	/*
-    try {
-        if (path.rfind(".glb", (path.length()-4)) != std::string::npos) {
-            sceneObjects = fx::gltf::LoadFromBinary(path);
-        } else {
-            sceneObjects = fx::gltf::LoadFromText(path);
-        }
-    } catch (const std::system_error &err) {
-        recurseExceptionPrint(err, path);
-        return ASSET_ERROR;
-    } catch (const std::exception &e) {
-        recurseExceptionPrint(e, path);
-        return ASSET_ERROR;
-    }*/
 
 	try {
 		if ( path.extension() == ".glb") {
@@ -575,12 +548,6 @@ int loadScene(const std::filesystem::path &path, Scene &scene){
 		recurseExceptionPrint(e, path.string());
 		return ASSET_ERROR;
 	}
-
-    // TODO use std::filesystem::path instead of std::string for path/uri.
-    // Using simple strings and assuming the path separator symbol to be "/" is
-    // not safe across different operating systems. --erledigt
-    //size_t pos = path.find_last_of("/");
-    //auto dir = path.substr(0, pos);
 	auto dir = path.parent_path().string();
 
     // file has to contain at least one mesh
