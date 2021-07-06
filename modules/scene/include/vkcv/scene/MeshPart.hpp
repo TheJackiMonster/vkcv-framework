@@ -17,7 +17,7 @@ namespace vkcv::scene {
 		friend class Mesh;
 	
 	private:
-		Scene* m_scene;
+		Scene& m_scene;
 		BufferHandle m_vertices;
 		std::vector<VertexBufferBinding> m_vertexBindings;
 		BufferHandle m_indices;
@@ -25,7 +25,7 @@ namespace vkcv::scene {
 		Bounds m_bounds;
 		size_t m_materialIndex;
 		
-		explicit MeshPart(Scene* scene);
+		explicit MeshPart(Scene& scene);
 		
 		void load(const asset::Scene& scene,
 				  const asset::VertexGroup& vertexGroup,
@@ -34,8 +34,8 @@ namespace vkcv::scene {
 	public:
 		~MeshPart();
 		
-		MeshPart(const MeshPart& other);
-		MeshPart(MeshPart&& other) noexcept;
+		MeshPart(const MeshPart& other) = default;
+		MeshPart(MeshPart&& other) = default;
 		
 		MeshPart& operator=(const MeshPart& other);
 		MeshPart& operator=(MeshPart&& other) noexcept;

@@ -15,6 +15,10 @@ namespace vkcv::material {
 		return m_DescriptorSet;
 	}
 	
+	Material::operator bool() const {
+		return (m_Type != MaterialType::UNKNOWN);
+	}
+	
 	bool Material::operator!() const {
 		return (m_Type == MaterialType::UNKNOWN);
 	}

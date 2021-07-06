@@ -5,7 +5,7 @@
 
 namespace vkcv::scene {
 	
-	Mesh::Mesh(Scene* scene) :
+	Mesh::Mesh(Scene& scene) :
 	m_scene(scene) {}
 	
 	static glm::mat4 arrayTo4x4Matrix(const std::array<float,16>& array){
@@ -56,27 +56,17 @@ namespace vkcv::scene {
 		m_parts.clear();
 	}
 	
-	Mesh::Mesh(const Mesh &other) :
-	m_scene(other.m_scene),
-	m_parts(other.m_parts),
-	m_drawcalls(other.m_drawcalls),
-	m_transform(other.m_transform),
-	m_bounds(other.m_bounds) {}
-	
-	Mesh::Mesh(Mesh &&other) noexcept :
-	m_scene(other.m_scene),
-	m_parts(other.m_parts),
-	m_drawcalls(other.m_drawcalls),
-	m_transform(other.m_transform),
-	m_bounds(other.m_bounds) {}
-	
 	Mesh &Mesh::operator=(const Mesh &other) {
 		if (&other == this) {
 			return *this;
 		}
 		
-		m_scene = other.m_scene;
-		m_parts = std::vector<MeshPart>(other.m_parts);
+		m_parts.resize(other.m_parts.size(), MeshPart(m_scene));
+		
+		for (size_t i = 0; i < m_parts.size(); i++) {
+			m_parts[i] = other.m_parts[i];
+		}
+		
 		m_drawcalls = std::vector<DrawcallInfo>(other.m_drawcalls);
 		m_transform = other.m_transform;
 		m_bounds = other.m_bounds;
@@ -85,8 +75,12 @@ namespace vkcv::scene {
 	}
 	
 	Mesh &Mesh::operator=(Mesh &&other) noexcept {
-		m_scene = other.m_scene;
-		m_parts = std::move(other.m_parts);
+		m_parts.resize(other.m_parts.size(), MeshPart(m_scene));
+		
+		for (size_t i = 0; i < m_parts.size(); i++) {
+			m_parts[i] = std::move(other.m_parts[i]);
+		}
+		
 		m_drawcalls = std::move(other.m_drawcalls);
 		m_transform = other.m_transform;
 		m_bounds = other.m_bounds;

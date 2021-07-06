@@ -41,6 +41,8 @@ namespace vkcv::material {
 		[[nodiscard]]
 		const DescriptorSetHandle& getDescriptorSet() const;
 		
+		explicit operator bool() const;
+		
 		bool operator!() const;
 		
 		static const std::vector<DescriptorBinding>& getDescriptorBindings(MaterialType type);

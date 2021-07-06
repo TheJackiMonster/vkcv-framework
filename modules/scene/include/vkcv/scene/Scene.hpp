@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <mutex>
 
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/Camera.hpp>
@@ -26,6 +27,19 @@ namespace vkcv::scene {
 		
 		explicit Scene(Core* core);
 		
+		size_t addNode();
+		
+		Node& getNode(size_t index);
+		
+		const Node& getNode(size_t index) const;
+		
+		void increaseMaterialUsage(size_t index);
+		
+		void decreaseMaterialUsage(size_t index);
+		
+		void loadMaterial(size_t index, const asset::Scene& scene,
+						  const asset::Material& material);
+		
 	public:
 		~Scene();
 		
@@ -34,8 +48,6 @@ namespace vkcv::scene {
 		
 		Scene& operator=(const Scene& other);
 		Scene& operator=(Scene&& other) noexcept;
-		
-		Node& addNode();
 		
 		size_t getMaterialCount() const;
 		

@@ -14,13 +14,13 @@ namespace vkcv::scene {
 		friend class Node;
 		
 	private:
-		Scene* m_scene;
+		Scene& m_scene;
 		std::vector<MeshPart> m_parts;
 		std::vector<DrawcallInfo> m_drawcalls;
 		glm::mat4 m_transform;
 		Bounds m_bounds;
 		
-		explicit Mesh(Scene* scene);
+		explicit Mesh(Scene& scene);
 		
 		void load(const asset::Scene& scene,
 				  const asset::Mesh& mesh);
@@ -35,8 +35,8 @@ namespace vkcv::scene {
 	public:
 		~Mesh();
 		
-		Mesh(const Mesh& other);
-		Mesh(Mesh&& other) noexcept;
+		Mesh(const Mesh& other) = default;
+		Mesh(Mesh&& other) = default;
 		
 		Mesh& operator=(const Mesh& other);
 		Mesh& operator=(Mesh&& other) noexcept;
