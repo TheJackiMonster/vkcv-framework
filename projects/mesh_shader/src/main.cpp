@@ -6,6 +6,7 @@
 
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/gui/GUI.hpp>
+#include <vkcv/asset/asset_loader.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Mesh shader";
@@ -27,20 +28,52 @@ int main(int argc, const char** argv) {
 		{},
 		{ "VK_KHR_swapchain", VK_NV_MESH_SHADER_EXTENSION_NAME }
 	);
-	
-	vkcv::gui::GUI gui (core, window);
 
-	const auto& context = core.getContext();
-	const vk::Instance& instance = context.getInstance();
-	const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
-	const vk::Device& device = context.getDevice();
+    vkcv::gui::GUI gui (core, window);
+
+    const auto& context = core.getContext();
+    const vk::Instance& instance = context.getInstance();
+    const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
+    const vk::Device& device = context.getDevice();
+
+    vkcv::asset::Scene mesh;
+    const char* path = argc > 1 ? argv[1] : "resources/Bunny/Bunny.gltf";
+    vkcv::asset::loadScene(path, mesh);
+
+    assert(!mesh.vertexGroups.empty());
+
+    auto vertexBuffer = core.createBuffer<uint8_t>(
+            vkcv::BufferType::VERTEX,
+            mesh.vertexGroups[0].vertexBuffer.data.size(),
+            vkcv::BufferMemoryType::DEVICE_LOCAL
+    );
+    vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
+
+    auto indexBuffer = core.createBuffer<uint8_t>(
+            vkcv::BufferType::INDEX,
+            mesh.vertexGroups[0].indexBuffer.data.size(),
+            vkcv::BufferMemoryType::DEVICE_LOCAL
+    );
+    indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
+
+    auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
+
+    std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
+        return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
+    });
 
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
 		core.getSwapchain().getFormat());
 
-	vkcv::PassConfig trianglePassDefinition({ present_color_attachment });
+    const vkcv::AttachmentDescription depth_attachment(
+            vkcv::AttachmentOperation::STORE,
+            vkcv::AttachmentOperation::CLEAR,
+            vk::Format::eD32Sfloat
+    );
+
+	vkcv::PassConfig trianglePassDefinition({ present_color_attachment, depth_attachment });
 	vkcv::PassHandle renderPass = core.createPass(trianglePassDefinition);
 
 	if (!renderPass)
@@ -49,30 +82,41 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	vkcv::ShaderProgram triangleShaderProgram{};
+	vkcv::ShaderProgram bunnyShaderProgram{};
 	vkcv::shader::GLSLCompiler compiler;
 	
 	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
-					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		 triangleShaderProgram.addShader(shaderStage, path);
+					 [&bunnyShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		 bunnyShaderProgram.addShader(shaderStage, path);
 	});
 	
 	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
-					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		triangleShaderProgram.addShader(shaderStage, path);
+					 [&bunnyShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		bunnyShaderProgram.addShader(shaderStage, path);
 	});
 
-	const vkcv::PipelineConfig trianglePipelineDefinition {
-		triangleShaderProgram,
-		(uint32_t)windowWidth,
-		(uint32_t)windowHeight,
-		renderPass,
-		{},
-		{},
-		false
+    const std::vector<vkcv::VertexAttachment> vertexAttachments = bunnyShaderProgram.getVertexAttachments();
+    std::vector<vkcv::VertexBinding> bindings;
+    for (size_t i = 0; i < vertexAttachments.size(); i++) {
+        bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+    }
+    const vkcv::VertexLayout meshShaderLayout (bindings);
+
+    uint32_t setID = 0;
+//    std::vector<vkcv::DescriptorBinding> descriptorBindings = {bunnyShaderProgram.getReflectedDescriptors()[setID] };
+//    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+
+	const vkcv::PipelineConfig bunnyPipelineDefinition {
+            bunnyShaderProgram,
+            (uint32_t)windowWidth,
+            (uint32_t)windowHeight,
+            renderPass,
+            { meshShaderLayout },
+            {},
+            false
 	};
 
-	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
+	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
 
 	if (!trianglePipeline)
 	{
@@ -115,12 +159,23 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	auto start = std::chrono::system_clock::now();
+    const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
+            vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
+            vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
+            vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
+
+	vkcv::DescriptorWrites setWrites;
+
+    vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
+
+    auto start = std::chrono::system_clock::now();
 
 	vkcv::ImageHandle swapchainImageHandle = vkcv::ImageHandle::createSwapchainImageHandle();
 
-	const vkcv::Mesh renderMesh({}, nullptr, 3);
-	vkcv::DrawcallInfo drawcall(renderMesh, {});
+    const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices, vkcv::IndexBitCount::Bit32);
+
+//    vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+    vkcv::DrawcallInfo          drawcall(renderMesh, {});
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -146,8 +201,11 @@ int main(int argc, const char** argv) {
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 
 		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
+
+        const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
+		/*
 		core.recordMeshShaderDrawcalls(
 			cmdStream,
 			renderPass,
@@ -155,16 +213,15 @@ int main(int argc, const char** argv) {
 			pushConstantData,
 			{ vkcv::MeshShaderDrawcall({}, 1) },
 			{ swapchainInput });
+		*/
 
-		/*
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			renderPass,
 			trianglePipeline,
 			pushConstantData,
 			{ drawcall },
-			{ swapchainInput });
-		*/
+			{ renderTargets });
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

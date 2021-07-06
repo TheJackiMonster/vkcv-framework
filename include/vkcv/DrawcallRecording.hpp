@@ -12,6 +12,11 @@ namespace vkcv {
         vk::Buffer      buffer;
     };
 
+    enum class IndexBitCount{
+        Bit16,
+        Bit32
+    };
+
     struct DescriptorSetUsage {
         inline DescriptorSetUsage(uint32_t setLocation, vk::DescriptorSet vulkanHandle) noexcept
             : setLocation(setLocation), vulkanHandle(vulkanHandle) {}
@@ -21,12 +26,14 @@ namespace vkcv {
     };
 
     struct Mesh {
-        inline Mesh(std::vector<VertexBufferBinding> vertexBufferBindings, vk::Buffer indexBuffer, size_t indexCount) noexcept
-            : vertexBufferBindings(vertexBufferBindings), indexBuffer(indexBuffer), indexCount(indexCount){}
+        inline Mesh(std::vector<VertexBufferBinding> vertexBufferBindings, vk::Buffer indexBuffer, size_t indexCount, IndexBitCount indexBitCount = IndexBitCount::Bit16) noexcept
+            : vertexBufferBindings(vertexBufferBindings), indexBuffer(indexBuffer), indexCount(indexCount), indexBitCount(indexBitCount){}
 
         std::vector<VertexBufferBinding>    vertexBufferBindings;
         vk::Buffer                          indexBuffer;
         size_t                              indexCount;
+        IndexBitCount                       indexBitCount;
+
     };
 
     struct PushConstantData {

@@ -1,6 +1,17 @@
 #include <vkcv/DrawcallRecording.hpp>
+#include <vkcv/Logger.hpp>
 
 namespace vkcv {
+
+    vk::IndexType getIndexType(IndexBitCount indexByteCount){
+        switch (indexByteCount) {
+            case IndexBitCount::Bit16: return vk::IndexType::eUint16;
+            case IndexBitCount::Bit32: return vk::IndexType::eUint32;
+            default:
+                vkcv_log(LogLevel::ERROR, "unknown Enum");
+                return vk::IndexType::eUint16;
+        }
+    }
 
     void recordDrawcall(
         const DrawcallInfo      &drawcall,
@@ -35,7 +46,7 @@ namespace vkcv {
             drawcallPushConstantData);
 
         if (drawcall.mesh.indexBuffer) {
-            cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, vk::IndexType::eUint16);	//FIXME: choose proper size
+            cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, getIndexType(drawcall.mesh.indexBitCount));
             cmdBuffer.drawIndexed(drawcall.mesh.indexCount, 1, 0, 0, {});
         }
         else {
