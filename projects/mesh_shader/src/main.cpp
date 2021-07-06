@@ -9,6 +9,40 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include "MeshStruct.hpp"
 
+struct Vertex {
+	glm::vec3 position;
+	glm::vec3 normal;
+};
+
+std::vector<Vertex> convertToVertices(
+	const std::vector<uint8_t>&         vertexData,
+	const uint64_t                      vertexCount,
+	const vkcv::asset::VertexAttribute& positionAttribute,
+	const vkcv::asset::VertexAttribute& normalAttribute) {
+
+	assert(positionAttribute.type   == vkcv::asset::PrimitiveType::POSITION);
+	assert(normalAttribute.type     == vkcv::asset::PrimitiveType::NORMAL);
+
+	std::vector<Vertex> vertices;
+	vertices.reserve(vertexCount);
+
+	const size_t positionStepSize   = positionAttribute.stride == 0 ? sizeof(glm::vec3) : positionAttribute.stride;
+	const size_t normalStepSize     = normalAttribute.stride   == 0 ? sizeof(glm::vec3) : normalAttribute.stride;
+
+	for (int i = 0; i < vertexCount; i++) {
+		Vertex v;
+
+		const size_t positionOffset = positionAttribute.offset  + positionStepSize  * i;
+		const size_t normalOffset   = normalAttribute.offset    + normalStepSize    * i;
+
+		v.position  = *reinterpret_cast<const glm::vec3*>(&(vertexData[positionOffset]));
+		v.normal    = *reinterpret_cast<const glm::vec3*>(&(vertexData[normalOffset]));
+		vertices.push_back(v);
+	}
+
+	return vertices;
+}
+
 int main(int argc, const char** argv) {
 	const char* applicationName = "Mesh shader";
 
@@ -57,18 +91,33 @@ int main(int argc, const char** argv) {
     );
     indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
 
-    auto meshBuffer = core.createBuffer<MeshStruct>(
-            vkcv::BufferType::STORAGE,
-            mesh.vertexGroups[0].vertexBuffer.data.size()
-    );
-//    meshBuffer.fill();
+	// format data for mesh shader
+	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 
-    auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
+	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
+		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
+	});
 
-    std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-        return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-    });
+	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
+			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
+			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
+			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
+	const auto& bunny = mesh.vertexGroups[0];
+	const auto interleavedVertices = convertToVertices(bunny.vertexBuffer.data, bunny.numVertices, attributes[0], attributes[1]);
+
+	// mesh shader buffers
+	auto meshBuffer = core.createBuffer<Vertex>(
+		vkcv::BufferType::STORAGE,
+		interleavedVertices.size());
+	meshBuffer.fill(interleavedVertices);
+
+	auto meshShaderIndexBuffer = core.createBuffer<uint8_t>(
+		vkcv::BufferType::STORAGE,
+		mesh.vertexGroups[0].indexBuffer.data.size());
+	meshShaderIndexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
+
+	// attachments
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
@@ -145,7 +194,7 @@ int main(int argc, const char** argv) {
 	});
 
     uint32_t setID = 0;
-    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet( meshShaderProgram.getReflectedDescriptors()[setID]);
+    vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet( meshShaderProgram.getReflectedDescriptors()[setID]);
     const vkcv::VertexLayout meshShaderLayout(bindings);
 
 	const vkcv::PipelineConfig meshShaderPipelineDefinition{
@@ -154,7 +203,7 @@ int main(int argc, const char** argv) {
 		(uint32_t)windowHeight,
 		renderPass,
 		{meshShaderLayout},
-		{core.getDescriptorSet(descriptorSet).layout},
+		{core.getDescriptorSet(meshShaderDescriptorSet).layout},
 		false
 	};
 
@@ -166,14 +215,11 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-    const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-            vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-            vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-            vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
-
-    vkcv::DescriptorWrites setWrites;
-    setWrites.storageBufferWrites = {vkcv::StorageBufferDescriptorWrite(0, meshBuffer.getHandle())};
-    core.writeDescriptorSet( descriptorSet, setWrites);
+    vkcv::DescriptorWrites meshShaderWrites;
+	meshShaderWrites.storageBufferWrites = {
+		vkcv::StorageBufferDescriptorWrite(0, meshBuffer.getHandle()), 
+		vkcv::StorageBufferDescriptorWrite(1, meshShaderIndexBuffer.getHandle()) };
+    core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
 
     vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
 
@@ -182,9 +228,6 @@ int main(int argc, const char** argv) {
 	vkcv::ImageHandle swapchainImageHandle = vkcv::ImageHandle::createSwapchainImageHandle();
 
     const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices, vkcv::IndexBitCount::Bit32);
-
-//    vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
-    vkcv::DrawcallInfo          drawcall(renderMesh, {});
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -216,23 +259,29 @@ int main(int argc, const char** argv) {
         const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-		/*
-		core.recordMeshShaderDrawcalls(
-			cmdStream,
-			renderPass,
-			meshShaderPipeline,
-			pushConstantData,
-			{ vkcv::MeshShaderDrawcall({}, 1) },
-			{ swapchainInput });
-		*/
+		const bool useMeshShader = true;
 
-		core.recordDrawcallsToCmdStream(
-                cmdStream,
-                renderPass,
-                bunnyPipeline,
-                pushConstantData,
-                { drawcall },
-                { renderTargets });
+		if (useMeshShader) {
+
+			vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(meshShaderDescriptorSet).vulkanHandle);
+
+			core.recordMeshShaderDrawcalls(
+				cmdStream,
+				renderPass,
+				meshShaderPipeline,
+				pushConstantData,
+				{ vkcv::MeshShaderDrawcall({descriptorUsage}, 1) },
+				{ renderTargets });
+		}
+		else {
+			core.recordDrawcallsToCmdStream(
+				cmdStream,
+				renderPass,
+				bunnyPipeline,
+				pushConstantData,
+				{ vkcv::DrawcallInfo(renderMesh, {}) },
+				{ renderTargets });
+		}
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

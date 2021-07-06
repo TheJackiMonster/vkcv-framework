@@ -194,25 +194,28 @@ namespace vkcv
         std::vector<vk::VertexInputAttributeDescription>	vertexAttributeDescriptions;
 		std::vector<vk::VertexInputBindingDescription>		vertexBindingDescriptions;
 
-        const VertexLayout &layout = config.m_VertexLayout;
+		if (existsVertexShader) {
+			const VertexLayout& layout = config.m_VertexLayout;
 
-        // iterate over the layout's specified, mutually exclusive buffer bindings that make up a vertex buffer
-        for (const auto &vertexBinding : layout.vertexBindings)
-        {
-            vertexBindingDescriptions.emplace_back(vertexBinding.bindingLocation,
-                                                   vertexBinding.stride,
-                                                   vk::VertexInputRate::eVertex);
+			// iterate over the layout's specified, mutually exclusive buffer bindings that make up a vertex buffer
+			for (const auto& vertexBinding : layout.vertexBindings)
+			{
+				vertexBindingDescriptions.emplace_back(vertexBinding.bindingLocation,
+					vertexBinding.stride,
+					vk::VertexInputRate::eVertex);
 
-            // iterate over the bindings' specified, mutually exclusive vertex input attachments that make up a vertex
-            for(const auto &vertexAttachment: vertexBinding.vertexAttachments)
-            {
-                vertexAttributeDescriptions.emplace_back(vertexAttachment.inputLocation,
-                                                         vertexBinding.bindingLocation,
-                                                         vertexFormatToVulkanFormat(vertexAttachment.format),
-                                                         vertexAttachment.offset % vertexBinding.stride);
+				// iterate over the bindings' specified, mutually exclusive vertex input attachments that make up a vertex
+				for (const auto& vertexAttachment : vertexBinding.vertexAttachments)
+				{
+					vertexAttributeDescriptions.emplace_back(vertexAttachment.inputLocation,
+						vertexBinding.bindingLocation,
+						vertexFormatToVulkanFormat(vertexAttachment.format),
+						vertexAttachment.offset % vertexBinding.stride);
 
-            }
-        }
+				}
+			}
+
+		}
 
         // Handover Containers to PipelineVertexInputStateCreateIngo Struct
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(

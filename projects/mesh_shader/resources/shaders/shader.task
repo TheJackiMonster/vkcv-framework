@@ -9,17 +9,6 @@ layout(local_size_x=32) in;
 //  uint subIDs[32];
 //} OUT;
 
-struct Mesh
-{
-    vec3 position;
-    vec3 index;
-};
-
-layout(std430, binding = 0) coherent buffer buffer_inMesh
-{
-    Mesh mesh[];
-};
-
 void main() {
 	if(gl_LocalInvocationID.x == 0)
 	{
