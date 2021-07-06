@@ -2,10 +2,10 @@
 #extension GL_ARB_separate_shader_objects   : enable
 #extension GL_NV_mesh_shader                : require
 
-layout(local_size_x=32) in;
+layout(local_size_x=30) in;
 
 layout(triangles) out;
-layout(max_vertices=64, max_primitives=126) out;
+layout(max_vertices=30, max_primitives=10) out;
 
 layout( push_constant ) uniform constants{
     mat4 mvp;
@@ -15,8 +15,8 @@ layout(location = 0) out vec3 passNormal[];
 
 struct Vertex
 {
-    vec3 position;
-    vec3 normal;
+    vec3 position;  float padding0;
+    vec3 normal;    float padding1;
 };
 
 layout(std430, binding = 0) readonly buffer vertexBuffer
@@ -29,20 +29,26 @@ layout(std430, binding = 1) readonly buffer indexBuffer
     uint indices[]; // breaks for 16 bit indices
 };
 
+taskNV in Task {
+  uint baseID;
+} IN;
+
 void main()	{
-	if(gl_LocalInvocationID.x == 0)
-	{
-		gl_PrimitiveCountNV = 1;
-		gl_PrimitiveIndicesNV[0] = 0;
-		gl_PrimitiveIndicesNV[1] = 1;
-		gl_PrimitiveIndicesNV[2] = 2;
-		
-		gl_MeshVerticesNV[0].gl_Position = mvp * vec4(-0.5,  0.5, 0.5, 1);
-		gl_MeshVerticesNV[1].gl_Position = mvp * vec4( 0.5,  0.5, 0.5, 1);
-		gl_MeshVerticesNV[2].gl_Position = mvp * vec4( 0  , -0.5, 0.5, 1);
-		
-		passNormal[0] = vec3(1, 0, 0);
-		passNormal[1] = vec3(0, 1, 0);
-		passNormal[2] = vec3(0, 0, 1);		
-	}
+    
+    uint workIndex                      = gl_LocalInvocationID.x;      
+    gl_PrimitiveIndicesNV[workIndex]    = workIndex;
+    
+    const uint verticesPerMeshTask  = 30;
+    uint previousMeshGroupCount     = IN.baseID;
+    uint indexBufferIndex           = previousMeshGroupCount * verticesPerMeshTask + workIndex;
+    uint index                      = indices[indexBufferIndex];
+    
+    vec3 inPos      = vertices[index].position;
+    vec3 inNormal   = vertices[index].normal;
+    gl_MeshVerticesNV[workIndex].gl_Position    = mvp * vec4(inPos, 1);
+    passNormal[workIndex]                       = inNormal;
+    
+    if(gl_LocalInvocationID.x == 0){
+        gl_PrimitiveCountNV = 10;
+    }
 }

@@ -10,8 +10,10 @@
 #include "MeshStruct.hpp"
 
 struct Vertex {
-	glm::vec3 position;
-	glm::vec3 normal;
+	glm::vec3   position;
+	float       padding0;
+	glm::vec3   normal;
+	float       padding1;
 };
 
 std::vector<Vertex> convertToVertices(
@@ -254,26 +256,28 @@ int main(int argc, const char** argv) {
 		glm::mat4 modelMatrix = *reinterpret_cast<glm::mat4*>(&mesh.meshes.front().modelMatrix);
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP() * modelMatrix;
 
-		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
-
         const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
 		const bool useMeshShader = true;
 
+		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
+
 		if (useMeshShader) {
 
 			vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(meshShaderDescriptorSet).vulkanHandle);
+			const uint32_t verticesPerTask = 30;
 
 			core.recordMeshShaderDrawcalls(
 				cmdStream,
 				renderPass,
 				meshShaderPipeline,
 				pushConstantData,
-				{ vkcv::MeshShaderDrawcall({descriptorUsage}, 1) },
+				{ vkcv::MeshShaderDrawcall({descriptorUsage}, glm::ceil(bunny.numIndices / float(verticesPerTask))) },
 				{ renderTargets });
 		}
 		else {
+
 			core.recordDrawcallsToCmdStream(
 				cmdStream,
 				renderPass,
