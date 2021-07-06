@@ -38,7 +38,7 @@ int main(int argc, const char** argv) {
     const vk::Device& device = context.getDevice();
 
     vkcv::asset::Scene mesh;
-    const char* path = argc > 1 ? argv[1] : "resources/Bunny/Bunny.gltf";
+    const char* path = argc > 1 ? argv[1] : "resources/Bunny/Bunny.glb";
     vkcv::asset::loadScene(path, mesh);
 
     assert(!mesh.vertexGroups.empty());
@@ -207,7 +207,9 @@ int main(int argc, const char** argv) {
         start = end;
 		
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
-        glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
+
+		glm::mat4 modelMatrix = *reinterpret_cast<glm::mat4*>(&mesh.meshes.front().modelMatrix);
+        glm::mat4 mvp = cameraManager.getActiveCamera().getMVP() * modelMatrix;
 
 		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
 
