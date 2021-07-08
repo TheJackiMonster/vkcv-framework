@@ -5,6 +5,7 @@
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/Logger.hpp>
+#include <vkcv/rtx/Test.hpp>    // TODO: replace this
 
 glm::mat4 arrayTo4x4Matrix(std::array<float,16> array){
     glm::mat4 matrix;
