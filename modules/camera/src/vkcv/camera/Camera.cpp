@@ -49,7 +49,7 @@ namespace vkcv::camera {
     }
 
     void Camera::setProjection(const glm::mat4& projection) {
-        m_projection = glm::inverse(y_correction) * projection;
+        m_projection = projection;
     }
 
     glm::mat4 Camera::getMVP() const {
