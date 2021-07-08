@@ -89,8 +89,9 @@ namespace vkcv::scene {
 	}
 	
 	void Mesh::recordDrawcalls(const glm::mat4& viewProjection,
-							   std::vector<glm::mat4>& matrices,
-							   std::vector<DrawcallInfo>& drawcalls) {
+							   PushConstants& pushConstants,
+							   std::vector<DrawcallInfo>& drawcalls,
+							   const RecordMeshDrawcallFunction& record) {
 		const glm::mat4 transform = viewProjection * m_transform;
 		
 		if (!checkFrustum(viewProjection, m_bounds)) {
@@ -98,8 +99,11 @@ namespace vkcv::scene {
 		}
 		
 		if (m_drawcalls.size() == 1) {
-			matrices.push_back(transform);
 			drawcalls.push_back(m_drawcalls[0]);
+			
+			if (record) {
+				record(transform, m_transform, pushConstants, drawcalls.back());
+			}
 		} else {
 			for (size_t i = 0; i < m_parts.size(); i++) {
 				const MeshPart& part = m_parts[i];
@@ -108,8 +112,11 @@ namespace vkcv::scene {
 					continue;
 				}
 				
-				matrices.push_back(transform);
 				drawcalls.push_back(m_drawcalls[i]);
+				
+				if (record) {
+					record(transform, m_transform, pushConstants, drawcalls.back());
+				}
 			}
 		}
 	}

@@ -185,7 +185,8 @@ int main(int argc, const char** argv) {
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 
-		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
+		vkcv::PushConstants pushConstants (sizeof(glm::mat4));
+		pushConstants.appendDrawcall(mvp);
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
@@ -194,7 +195,7 @@ int main(int argc, const char** argv) {
 			cmdStream,
 			firstMeshPass,
 			firstMeshPipeline,
-			pushConstantData,
+			pushConstants,
 			{ drawcall },
 			renderTargets);
 		core.prepareSwapchainImageForPresent(cmdStream);

@@ -28,8 +28,9 @@ namespace vkcv::scene {
 		void loadMesh(const asset::Scene& asset_scene, const asset::Mesh& asset_mesh);
 		
 		void recordDrawcalls(const glm::mat4& viewProjection,
-							 std::vector<glm::mat4>& matrices,
-							 std::vector<DrawcallInfo>& drawcalls);
+							 PushConstants& pushConstants,
+							 std::vector<DrawcallInfo>& drawcalls,
+							 const RecordMeshDrawcallFunction& record);
 		
 		void splitMeshesToSubNodes(size_t maxMeshesPerNode);
 		

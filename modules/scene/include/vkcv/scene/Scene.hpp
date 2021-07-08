@@ -4,6 +4,7 @@
 #include <mutex>
 
 #include <vkcv/Core.hpp>
+#include <vkcv/Event.hpp>
 #include <vkcv/camera/Camera.hpp>
 #include <vkcv/material/Material.hpp>
 
@@ -54,11 +55,13 @@ namespace vkcv::scene {
 		[[nodiscard]]
 		const material::Material& getMaterial(size_t index) const;
 		
-		void recordDrawcalls(CommandStreamHandle       		 &cmdStream,
-							 const camera::Camera			 &camera,
-							 const PassHandle                &pass,
-							 const PipelineHandle            &pipeline,
-							 const std::vector<ImageHandle>  &renderTargets);
+		void recordDrawcalls(CommandStreamHandle       		  &cmdStream,
+							 const camera::Camera			  &camera,
+							 const PassHandle                 &pass,
+							 const PipelineHandle             &pipeline,
+							 size_t							  pushConstantsSizePerDrawcall,
+							 const RecordMeshDrawcallFunction &record,
+							 const std::vector<ImageHandle>   &renderTargets);
 		
 		static Scene create(Core& core);
 		

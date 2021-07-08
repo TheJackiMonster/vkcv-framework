@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.hpp>
 #include <vkcv/Handles.hpp>
 #include <vkcv/DescriptorConfig.hpp>
+#include <vkcv/PushConstants.hpp>
 
 namespace vkcv {
     struct VertexBufferBinding {
@@ -29,13 +30,6 @@ namespace vkcv {
         size_t                              indexCount;
     };
 
-    struct PushConstantData {
-        inline PushConstantData(void* data, size_t sizePerDrawcall) : data(data), sizePerDrawcall(sizePerDrawcall) {}
-
-        void* data;
-        size_t  sizePerDrawcall;
-    };
-
     struct DrawcallInfo {
         inline DrawcallInfo(const Mesh& mesh, const std::vector<DescriptorSetUsage>& descriptorSets, const uint32_t instanceCount = 1)
             : mesh(mesh), descriptorSets(descriptorSets), instanceCount(instanceCount){}
@@ -49,7 +43,7 @@ namespace vkcv {
         const DrawcallInfo      &drawcall,
         vk::CommandBuffer       cmdBuffer,
         vk::PipelineLayout      pipelineLayout,
-        const PushConstantData  &pushConstantData,
+        const PushConstants     &pushConstants,
         const size_t            drawcallIndex);
 
 }

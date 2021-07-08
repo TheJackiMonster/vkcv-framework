@@ -252,9 +252,6 @@ int main(int argc, const char** argv) {
 	};
 	const vkcv::PipelineHandle shadowPipe = core.createGraphicsPipeline(shadowPipeConfig);
 
-	std::vector<std::array<glm::mat4, 2>> mainPassMatrices;
-	std::vector<glm::mat4> mvpLight;
-
 	// gamma correction compute shader
 	vkcv::ShaderProgram gammaCorrectionProgram;
 	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/gammaCorrection.comp",
@@ -348,18 +345,19 @@ int main(int argc, const char** argv) {
 		lightBuffer.fill({ lightInfo });
 
 		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();
-
-		mainPassMatrices.clear();
-		mvpLight.clear();
+		
+		vkcv::PushConstants pushConstants (2 * sizeof(glm::mat4));
+		vkcv::PushConstants shadowPushConstants (sizeof(glm::mat4));
+		
 		for (const auto& m : modelMatrices) {
-			mainPassMatrices.push_back({ viewProjectionCamera * m, m });
-			mvpLight.push_back(lightInfo.lightMatrix * m);
+			pushConstants.appendDrawcall(std::array<glm::mat4, 2>{ viewProjectionCamera * m, m });
+			shadowPushConstants.appendDrawcall(lightInfo.lightMatrix * m);
 		}
 
-		vkcv::PushConstantData pushConstantData((void*)mainPassMatrices.data(), 2 * sizeof(glm::mat4));
+		
 		const std::vector<vkcv::ImageHandle> renderTargets = { colorBuffer, depthBuffer };
 
-		const vkcv::PushConstantData shadowPushConstantData((void*)mvpLight.data(), sizeof(glm::mat4));
+		const
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
@@ -368,7 +366,7 @@ int main(int argc, const char** argv) {
 			cmdStream,
 			shadowPass,
 			shadowPipe,
-			shadowPushConstantData,
+			shadowPushConstants,
 			shadowDrawcalls,
 			{ shadowMap.getHandle() });
 		core.prepareImageForSampling(cmdStream, shadowMap.getHandle());
@@ -378,7 +376,7 @@ int main(int argc, const char** argv) {
 			cmdStream,
             forwardPass,
             forwardPipeline,
-			pushConstantData,
+			pushConstants,
 			drawcalls,
 			renderTargets);
 
@@ -406,7 +404,7 @@ int main(int argc, const char** argv) {
 			gammaCorrectionPipeline, 
 			gammaCorrectionDispatchCount,
 			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(gammaCorrectionDescriptorSet).vulkanHandle) },
-			vkcv::PushConstantData(nullptr, 0));
+			vkcv::PushConstants(0));
 
 		// present and end
 		core.prepareSwapchainImageForPresent(cmdStream);

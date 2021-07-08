@@ -104,7 +104,7 @@ void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStre
             m_DownsamplePipe,
             initialDispatchCount,
             {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_DownsampleDescSets[0]).vulkanHandle)},
-            vkcv::PushConstantData(nullptr, 0));
+            vkcv::PushConstants(0));
 
     // downsample dispatches of blur buffer's mip maps
     float mipDispatchCountX = dispatchCountX;
@@ -139,7 +139,7 @@ void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStre
                 m_DownsamplePipe,
                 mipDispatchCount,
                 {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_DownsampleDescSets[mipLevel]).vulkanHandle)},
-                vkcv::PushConstantData(nullptr, 0));
+                vkcv::PushConstants(0));
 
         // image barrier between mips
         p_Core->recordImageMemoryBarrier(cmdStream, m_Blur.getHandle());
@@ -184,7 +184,7 @@ void BloomAndFlares::execUpsamplePipe(const vkcv::CommandStreamHandle &cmdStream
                 m_UpsamplePipe,
                 upsampleDispatchCount,
                 {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_UpsampleDescSets[mipLevel]).vulkanHandle)},
-                vkcv::PushConstantData(nullptr, 0)
+                vkcv::PushConstants(0)
         );
         // image barrier between mips
         p_Core->recordImageMemoryBarrier(cmdStream, m_Blur.getHandle());
@@ -216,7 +216,7 @@ void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStr
             m_LensFlarePipe,
             lensFeatureDispatchCount,
             {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_LensFlareDescSet).vulkanHandle)},
-            vkcv::PushConstantData(nullptr, 0));
+            vkcv::PushConstants(0));
 }
 
 void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStream,
@@ -249,7 +249,7 @@ void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStrea
             m_CompositePipe,
             compositeDispatchCount,
             {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_CompositeDescSet).vulkanHandle)},
-            vkcv::PushConstantData(nullptr, 0));
+            vkcv::PushConstants(0));
 }
 
 void BloomAndFlares::execWholePipeline(const vkcv::CommandStreamHandle &cmdStream,

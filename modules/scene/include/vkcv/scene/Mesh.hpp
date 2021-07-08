@@ -8,6 +8,8 @@
 
 namespace vkcv::scene {
 	
+	typedef typename event_function<const glm::mat4&, const glm::mat4&, PushConstants&, vkcv::DrawcallInfo&>::type RecordMeshDrawcallFunction;
+	
 	class Node;
 	
 	class Mesh {
@@ -26,8 +28,9 @@ namespace vkcv::scene {
 				  const asset::Mesh& mesh);
 		
 		void recordDrawcalls(const glm::mat4& viewProjection,
-							 std::vector<glm::mat4>& matrices,
-							 std::vector<DrawcallInfo>& drawcalls);
+							 PushConstants& pushConstants,
+							 std::vector<DrawcallInfo>& drawcalls,
+							 const RecordMeshDrawcallFunction& record);
 		
 		[[nodiscard]]
 		size_t getDrawcallCount() const;

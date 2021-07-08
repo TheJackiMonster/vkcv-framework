@@ -195,26 +195,31 @@ int main(int argc, const char** argv) {
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 
-		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
+		vkcv::PushConstants pushConstants (sizeof(glm::mat4));
+		pushConstants.appendDrawcall(mvp);
+		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			trianglePass,
 			trianglePipeline,
-			pushConstantData,
+			pushConstants,
 			{ drawcall },
 			{ swapchainInput });
 
 		const uint32_t dispatchSize[3] = { 2, 1, 1 };
 		const float theMeaningOfLife = 42;
+		
+		vkcv::PushConstants pushConstantsCompute (sizeof(theMeaningOfLife));
+		pushConstantsCompute.appendDrawcall(theMeaningOfLife);
 
 		core.recordComputeDispatchToCmdStream(
 			cmdStream,
 			computePipeline,
 			dispatchSize,
 			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(computeDescriptorSet).vulkanHandle) },
-			vkcv::PushConstantData((void*)&theMeaningOfLife, sizeof(theMeaningOfLife)));
+			pushConstantsCompute);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

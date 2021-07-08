@@ -91,18 +91,19 @@ namespace vkcv::scene {
 	}
 	
 	void Node::recordDrawcalls(const glm::mat4& viewProjection,
-							   std::vector<glm::mat4>& matrices,
-							   std::vector<DrawcallInfo>& drawcalls) {
+							   PushConstants& pushConstants,
+							   std::vector<DrawcallInfo>& drawcalls,
+							   const RecordMeshDrawcallFunction& record) {
 		if (!checkFrustum(viewProjection, m_bounds)) {
 			return;
 		}
 		
 		for (auto& mesh : m_meshes) {
-			mesh.recordDrawcalls(viewProjection, matrices, drawcalls);
+			mesh.recordDrawcalls(viewProjection, pushConstants, drawcalls, record);
 		}
 		
 		for (auto& node : m_nodes) {
-			node.recordDrawcalls(viewProjection, matrices, drawcalls);
+			node.recordDrawcalls(viewProjection, pushConstants, drawcalls, record);
 		}
 	}
 	

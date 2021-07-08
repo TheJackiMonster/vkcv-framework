@@ -260,30 +260,38 @@ int main(int argc, const char **argv) {
         cameraManager.update(deltatime);
 
         // split view and projection to allow for easy billboarding in shader
-        glm::mat4 renderingMatrices[2];
-        renderingMatrices[0] = cameraManager.getActiveCamera().getView();
-        renderingMatrices[1] = cameraManager.getActiveCamera().getProjection();
+        struct {
+			glm::mat4 view;
+			glm::mat4 projection;
+        } renderingMatrices;
+        
+        renderingMatrices.view = cameraManager.getActiveCamera().getView();
+        renderingMatrices.projection = cameraManager.getActiveCamera().getProjection();
 
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
         float random = rdm(rdmEngine);
         glm::vec2 pushData = glm::vec2(deltatime, random);
 
-        vkcv::PushConstantData pushConstantDataCompute( &pushData, sizeof(glm::vec2));
+        vkcv::PushConstants pushConstantsCompute (sizeof(glm::vec2));
+        pushConstantsCompute.appendDrawcall(pushData);
+        
         uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(particleSystem.getParticles().size()/256.f)),1,1};
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline,
                                               computeDispatchCount,
                                               {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet).vulkanHandle)},
-                                              pushConstantDataCompute);
+											  pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer.getHandle());
 
-        vkcv::PushConstantData pushConstantDataDraw((void *) &renderingMatrices[0], 2 * sizeof(glm::mat4));
+        vkcv::PushConstants pushConstantsDraw (sizeof(renderingMatrices));
+        pushConstantsDraw.appendDrawcall(renderingMatrices);
+        
         core.recordDrawcallsToCmdStream(
                 cmdStream,
                 particlePass,
                 particlePipeline,
-                pushConstantDataDraw,
+				pushConstantsDraw,
                 {drawcalls},
                 { colorBuffer });
 
@@ -309,7 +317,7 @@ int main(int argc, const char **argv) {
             tonemappingPipe, 
             tonemappingDispatchCount, 
             {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptor).vulkanHandle) },
-            vkcv::PushConstantData(nullptr, 0));
+            vkcv::PushConstants(0));
 
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);

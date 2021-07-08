@@ -618,29 +618,32 @@ int main(int argc, const char** argv) {
 
 		// depth prepass
 		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();
-
+		
+		vkcv::PushConstants prepassPushConstants (sizeof(glm::mat4));
+		
 		std::vector<glm::mat4> prepassMatrices;
 		for (const auto& m : modelMatrices) {
-			prepassMatrices.push_back(viewProjectionCamera * m);
+			prepassPushConstants.appendDrawcall(viewProjectionCamera * m);
 		}
 
-		const vkcv::PushConstantData            prepassPushConstantData((void*)prepassMatrices.data(), sizeof(glm::mat4));
+		
 		const std::vector<vkcv::ImageHandle>    prepassRenderTargets = { depthBuffer };
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			prepassPass,
 			prepassPipeline,
-			prepassPushConstantData,
+			prepassPushConstants,
 			prepassDrawcalls,
 			prepassRenderTargets);
 
 		core.recordImageMemoryBarrier(cmdStream, depthBuffer);
-
+		
+		vkcv::PushConstants pushConstants (2 * sizeof(glm::mat4));
+		
 		// main pass
-		std::vector<std::array<glm::mat4, 2>> mainPassMatrices;
 		for (const auto& m : modelMatrices) {
-			mainPassMatrices.push_back({ viewProjectionCamera * m, m });
+			pushConstants.appendDrawcall(std::array<glm::mat4, 2>{ viewProjectionCamera * m, m });
 		}
 
 		VolumetricSettings volumeSettings;
@@ -648,28 +651,30 @@ int main(int argc, const char** argv) {
 		volumeSettings.absorptionCoefficient    = absorptionColor * absorptionDensity;
 		volumeSettings.ambientLight             = volumetricAmbient;
 		volumetricSettingsBuffer.fill({ volumeSettings });
-
-		const vkcv::PushConstantData            pushConstantData((void*)mainPassMatrices.data(), 2 * sizeof(glm::mat4));
+		
 		const std::vector<vkcv::ImageHandle>    renderTargets = { colorBuffer, depthBuffer };
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			forwardPass,
 			forwardPipeline,
-			pushConstantData,
+			pushConstants,
 			drawcalls,
 			renderTargets);
 
 		if (renderVoxelVis) {
 			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets, voxelVisualisationMip);
 		}
+		
+		vkcv::PushConstants skySettingsPushConstants (sizeof(skySettings));
+		skySettingsPushConstants.appendDrawcall(skySettings);
 
 		// sky
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			skyPass,
 			skyPipe,
-			vkcv::PushConstantData((void*)&skySettings, sizeof(skySettings)),
+			skySettingsPushConstants,
 			{ vkcv::DrawcallInfo(vkcv::Mesh({}, nullptr, 3), {}) },
 			renderTargets);
 
@@ -692,7 +697,7 @@ int main(int argc, const char** argv) {
 					resolvePipeline,
 					fulsscreenDispatchCount,
 					{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(resolveDescriptorSet).vulkanHandle) },
-					vkcv::PushConstantData(nullptr, 0));
+					vkcv::PushConstants(0));
 
 				core.recordImageMemoryBarrier(cmdStream, resolvedColorBuffer);
 			}
@@ -710,12 +715,15 @@ int main(int argc, const char** argv) {
 		auto timeSinceStart = std::chrono::duration_cast<std::chrono::microseconds>(end - appStartTime);
 		float timeF         = static_cast<float>(timeSinceStart.count()) * 0.01;
 
+		vkcv::PushConstants timePushConstants (sizeof(timeF));
+		timePushConstants.appendDrawcall(timeF);
+		
 		core.recordComputeDispatchToCmdStream(
 			cmdStream, 
 			tonemappingPipeline, 
 			fulsscreenDispatchCount,
 			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptorSet).vulkanHandle) },
-			vkcv::PushConstantData(&timeF, sizeof(timeF)));
+			timePushConstants);
 
 		// present and end
 		core.prepareSwapchainImageForPresent(cmdStream);

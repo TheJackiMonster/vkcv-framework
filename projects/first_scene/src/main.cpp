@@ -125,10 +125,18 @@ int main(int argc, const char** argv) {
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
+		auto recordMesh = [](const glm::mat4& MVP, const glm::mat4& M,
+							 vkcv::PushConstants &pushConstants,
+							 vkcv::DrawcallInfo& drawcallInfo) {
+			pushConstants.appendDrawcall(MVP);
+		};
+		
 		scene.recordDrawcalls(cmdStream,
 							  cameraManager.getActiveCamera(),
 							  scenePass,
 							  scenePipeline,
+							  sizeof(glm::mat4),
+							  recordMesh,
 							  renderTargets);
 		
 		core.prepareSwapchainImageForPresent(cmdStream);

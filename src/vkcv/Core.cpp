@@ -232,7 +232,7 @@ namespace vkcv
 		const CommandStreamHandle       cmdStreamHandle,
 		const PassHandle                renderpassHandle, 
 		const PipelineHandle            pipelineHandle, 
-        const PushConstantData          &pushConstantData,
+        const PushConstants             &pushConstants,
         const std::vector<DrawcallInfo> &drawcalls,
 		const std::vector<ImageHandle>  &renderTargets) {
 
@@ -345,7 +345,7 @@ namespace vkcv
             }
 
             for (int i = 0; i < drawcalls.size(); i++) {
-                recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
+                recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstants, i);
             }
 
             cmdBuffer.endRenderPass();
@@ -364,7 +364,7 @@ namespace vkcv
 		PipelineHandle computePipeline,
 		const uint32_t dispatchCount[3],
 		const std::vector<DescriptorSetUsage>& descriptorSetUsages,
-		const PushConstantData& pushConstantData) {
+		const PushConstants& pushConstants) {
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
 
@@ -379,13 +379,13 @@ namespace vkcv
 					{ usage.vulkanHandle },
 					{});
 			}
-			if (pushConstantData.sizePerDrawcall > 0) {
+			if (pushConstants.getSizePerDrawcall() > 0) {
 				cmdBuffer.pushConstants(
 					pipelineLayout,
 					vk::ShaderStageFlagBits::eCompute,
 					0,
-					pushConstantData.sizePerDrawcall,
-					pushConstantData.data);
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getData());
 			}
 			cmdBuffer.dispatch(dispatchCount[0], dispatchCount[1], dispatchCount[2]);
 		};

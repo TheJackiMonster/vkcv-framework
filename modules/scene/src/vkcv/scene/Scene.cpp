@@ -109,12 +109,14 @@ namespace vkcv::scene {
 		return m_materials[index].m_data;
 	}
 	
-	void Scene::recordDrawcalls(CommandStreamHandle       		&cmdStream,
-								const camera::Camera			&camera,
-								const PassHandle                &pass,
-								const PipelineHandle            &pipeline,
-								const std::vector<ImageHandle>  &renderTargets) {
-		std::vector<glm::mat4> matrices;
+	void Scene::recordDrawcalls(CommandStreamHandle       		 &cmdStream,
+								const camera::Camera			 &camera,
+								const PassHandle                 &pass,
+								const PipelineHandle             &pipeline,
+								size_t							 pushConstantsSizePerDrawcall,
+								const RecordMeshDrawcallFunction &record,
+								const std::vector<ImageHandle>   &renderTargets) {
+		PushConstants pushConstants (pushConstantsSizePerDrawcall);
 		std::vector<DrawcallInfo> drawcalls;
 		size_t count = 0;
 		
@@ -122,18 +124,16 @@ namespace vkcv::scene {
 		
 		for (auto& node : m_nodes) {
 			count += node.getDrawcallCount();
-			node.recordDrawcalls(viewProjection, matrices, drawcalls);
+			node.recordDrawcalls(viewProjection, pushConstants, drawcalls, record);
 		}
 		
 		vkcv_log(LogLevel::RAW_INFO, "Frustum culling: %lu / %lu", drawcalls.size(), count);
-		
-		PushConstantData pushConstantData (matrices.data(), sizeof(glm::mat4));
 		
 		m_core->recordDrawcallsToCmdStream(
 				cmdStream,
 				pass,
 				pipeline,
-				pushConstantData,
+				pushConstants,
 				drawcalls,
 				renderTargets
 		);
