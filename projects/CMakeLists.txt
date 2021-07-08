@@ -3,6 +3,7 @@
 add_subdirectory(bloom)
 add_subdirectory(first_triangle)
 add_subdirectory(first_mesh)
+add_subdirectory(rtx)
 add_subdirectory(particle_simulation)
 add_subdirectory(first_scene)
 add_subdirectory(voxelization)
