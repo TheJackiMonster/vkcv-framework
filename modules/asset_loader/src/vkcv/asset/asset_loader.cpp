@@ -350,9 +350,8 @@ int translateSampler(const fx::gltf::Sampler &src, vkcv::asset::Sampler &dst)
 
 	dst.addressModeU = translateSamplerMode(src.wrapS);
 	dst.addressModeV = translateSamplerMode(src.wrapT);
-	// TODO There is no information about wrapping for a third axis in
-	// glTF...  what's a good heuristic we can use to set addressModeW?
-	// The following hardocded solution is only a temporary hack.
+	// There is no information about wrapping for a third axis in glTF and
+	// we have to hardcode this value.
 	dst.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
 	return ASSET_SUCCESS;

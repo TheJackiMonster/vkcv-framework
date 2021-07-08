@@ -61,11 +61,15 @@ enum class PrimitiveMode : uint8_t {
 /** The indices in the index buffer can be of different bit width. */
 enum class IndexType : uint8_t { UNDEFINED=0, UINT8=1, UINT16=2, UINT32=3 };
 
-/* NOTE: glTF defines samplers based on OpenGL, which can not be
- * directly translated to Vulkan. The vkcv::asset::Sampler struct defined here
- * adheres to the Vulkan spec, having alerady translated the flags from glTF to
- * Vulkan. All values here can directly be passed to VkSamplerCreateInfo.
- * */
+/**
+ * This struct defines a sampler for a texture object. All values here can
+ * directly be passed to VkSamplerCreateInfo.
+ * NOTE that glTF defines samplers based on OpenGL, which can not be directly
+ * translated to Vulkan. The vkcv::asset::Sampler struct defined here adheres
+ * to the Vulkan spec, having alerady translated the flags from glTF to Vulkan.
+ * Since glTF does not specify border sampling for more than two dimensions,
+ * the addressModeW is hardcoded to a default: VK_SAMPLER_ADDRESS_MODE_REPEAT.
+ */
 typedef struct {
 	int minFilter, magFilter;
 	int mipmapMode;
