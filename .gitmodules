@@ -25,3 +25,6 @@
 [submodule "lib/VulkanMemoryAllocator"]
 	path = lib/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "lib/VulkanMemoryAllocator-Hpp"]
+	path = lib/VulkanMemoryAllocator-Hpp
+	url = https://github.com/malte-v/VulkanMemoryAllocator-Hpp.git

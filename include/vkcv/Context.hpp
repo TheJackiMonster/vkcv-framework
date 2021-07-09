@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
-#include <vk_mem_alloc.h>
+#include <vk_mem_alloc.hpp>
 
 #include "QueueManager.hpp"
 
@@ -35,7 +35,7 @@ namespace vkcv
         const QueueManager& getQueueManager() const;
 	
         [[nodiscard]]
-		const VmaAllocator& getAllocator() const;
+		const vma::Allocator& getAllocator() const;
         
         static Context create(const char *applicationName,
 							  uint32_t applicationVersion,
@@ -52,13 +52,13 @@ namespace vkcv
          * @param device Vulkan-Device
          */
         Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device,
-				QueueManager&& queueManager, VmaAllocator& allocator) noexcept;
+				QueueManager&& queueManager, vma::Allocator&& allocator) noexcept;
         
         vk::Instance        m_Instance;
         vk::PhysicalDevice  m_PhysicalDevice;
         vk::Device          m_Device;
 		QueueManager		m_QueueManager;
-		VmaAllocator 		m_Allocator;
+		vma::Allocator 		m_Allocator;
 		
     };
 }

@@ -25,7 +25,7 @@ else()
         add_subdirectory(${vkcv_lib}/SPIRV-Cross)
 
         list(APPEND vkcv_libraries spirv-cross-cpp)
-        list(APPEND vkcv_includes ${vkcv_lib}/SPIV-Cross/include)
+        list(APPEND vkcv_includes ${vkcv_lib_path}/SPIV-Cross/include)
 
         message(${vkcv_config_msg} " SPIRV Cross    - " ${SPIRV_CROSS_VERSION})
     else()
