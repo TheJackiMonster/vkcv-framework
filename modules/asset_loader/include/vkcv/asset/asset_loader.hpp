@@ -135,8 +135,16 @@ bool materialHasTexture(const Material *const m, const PBRTextureTarget t);
 
 /* With these enums, 0 is reserved to signal uninitialized or invalid data. */
 enum class PrimitiveType : uint32_t {
-    UNDEFINED = 0, POSITION = 1, NORMAL, TANGENT, TEXCOORD_0, TEXCOORD_1,
-    COLOR_0, COLOR_1, JOINTS_0, WEIGHTS_0
+    UNDEFINED = 0,
+    POSITION = 1,
+    NORMAL = 2,
+    TEXCOORD_0 = 3,
+    TEXCOORD_1 = 4,
+	TANGENT = 5,
+    COLOR_0 = 6,
+    COLOR_1 = 7,
+    JOINTS_0 = 8,
+    WEIGHTS_0 = 9
 };
 
 /**

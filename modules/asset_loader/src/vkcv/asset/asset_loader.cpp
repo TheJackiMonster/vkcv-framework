@@ -40,7 +40,6 @@ uint8_t getCompCount(const fx::gltf::Accessor::Type type) {
 	case fx::gltf::Accessor::Type::Vec3 :
 		return 3;
 	case fx::gltf::Accessor::Type::Vec4 :
-		return 4;
 	case fx::gltf::Accessor::Type::Mat2 :
 		return 4;
 	case fx::gltf::Accessor::Type::Mat3 :
@@ -48,7 +47,8 @@ uint8_t getCompCount(const fx::gltf::Accessor::Type type) {
 	case fx::gltf::Accessor::Type::Mat4 :
 		return 16;
 	case fx::gltf::Accessor::Type::None :
-	default: return ASSET_ERROR;
+	default:
+		return ASSET_ERROR;
 	}
 }
 
@@ -95,8 +95,8 @@ int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
 {
 	dst.clear();
 	dst.reserve(tex_src.size());
-	for (int i = 0; i < tex_src.size(); i++) {
-		std::string uri = dir + "/" + img_src[tex_src[i].source].uri;
+	for (const auto& tex : tex_src) {
+		std::string uri = dir + "/" + img_src[tex.source].uri;
 		int w, h, c;
 		uint8_t* data;
 		if (!uri.empty()) {
@@ -106,11 +106,15 @@ int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
 					uri.c_str());
 				return ASSET_ERROR;
 			}
-		}
-		else {
+		} else {
 			//TODO this is untested. Find gltf file without uri to test it!
-			const fx::gltf::BufferView bufferView = bV_src[img_src[tex_src[i].source].bufferView];
-			data = stbi_load_from_memory(&buf_src[bufferView.buffer].data[bufferView.byteOffset], bufferView.byteLength, &w, &h, &c, 4);
+			const fx::gltf::BufferView bufferView = bV_src[img_src[tex.source].bufferView];
+			data = stbi_load_from_memory(
+					&buf_src[bufferView.buffer].data[bufferView.byteOffset],
+					static_cast<int>(bufferView.byteLength),
+					&w, &h, &c, 4
+			);
+			
 			if (!data) {
 				vkcv_log(LogLevel::ERROR, "Failed to load image data from Buffer %s",
 					buf_src[bufferView.buffer].name.c_str());
@@ -129,7 +133,7 @@ int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
 		free(data);
 
 		dst.push_back({
-			tex_src[i].sampler,
+			tex.sampler,
 			static_cast<uint8_t>(c),
 			static_cast<uint16_t>(w), static_cast<uint16_t>(h),
 			imgdata
@@ -187,8 +191,11 @@ int createVertexAttributes(const fx::gltf::Attributes &src,
 		att.length = buf.byteLength;
 		att.stride = buf.byteStride;
 		att.componentType = static_cast<ComponentType>(accessor.componentType);
-		if ((att.componentCount = getCompCount(accessor.type) == ASSET_ERROR))
+		att.componentCount = getCompCount(accessor.type);
+		
+		if (att.componentCount == ASSET_ERROR) {
 			return ASSET_ERROR;
+		}
 	}
 	return ASSET_SUCCESS;
 }
@@ -322,30 +329,42 @@ int translateSampler(const fx::gltf::Sampler &src, vkcv::asset::Sampler &dst)
 		dst.minFilter = VK_FILTER_NEAREST;
 		dst.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		dst.maxLOD = 0.25;
+		break;
 	case fx::gltf::Sampler::MinFilter::Linear:
 		dst.minFilter = VK_FILTER_LINEAR;
 		dst.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		dst.maxLOD = 0.25;
+		break;
 	case fx::gltf::Sampler::MinFilter::NearestMipMapNearest:
 		dst.minFilter = VK_FILTER_NEAREST;
 		dst.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		break;
 	case fx::gltf::Sampler::MinFilter::LinearMipMapNearest:
 		dst.minFilter = VK_FILTER_LINEAR;
 		dst.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		break;
 	case fx::gltf::Sampler::MinFilter::NearestMipMapLinear:
 		dst.minFilter = VK_FILTER_NEAREST;
 		dst.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		break;
 	case fx::gltf::Sampler::MinFilter::LinearMipMapLinear:
 		dst.minFilter = VK_FILTER_LINEAR;
 		dst.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		break;
+	default:
+		break;
 	}
 
 	switch (src.magFilter) {
 	case fx::gltf::Sampler::MagFilter::None:
 	case fx::gltf::Sampler::MagFilter::Nearest:
 		dst.magFilter = VK_FILTER_NEAREST;
+		break;
 	case fx::gltf::Sampler::MagFilter::Linear:
 		dst.magFilter = VK_FILTER_LINEAR;
+		break;
+	default:
+		break;
 	}
 
 	dst.addressModeU = translateSamplerMode(src.wrapS);
@@ -369,9 +388,8 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 	const size_t numVertexGroups = objectMesh.primitives.size();
 	vertexGroups.reserve(numVertexGroups);
 
-	for (int j = 0; j < objectMesh.primitives.size(); j++) {
-		fx::gltf::Primitive const& objectPrimitive = objectMesh.primitives[j];
-		std::vector<VertexAttribute> vertexAttributes;
+	for (const auto & objectPrimitive : objectMesh.primitives) {
+			std::vector<VertexAttribute> vertexAttributes;
 		vertexAttributes.reserve(objectPrimitive.attributes.size());
 
 		if (createVertexAttributes(objectPrimitive.attributes,
@@ -490,12 +508,11 @@ void generateTextureMask(fx::gltf::Material &material, uint16_t &textureMask) {
  * TODO document
  */
 int createMaterial(fx::gltf::Document &sceneObjects, std::vector<Material> &materials) {
-	if (sceneObjects.materials.size() > 0) {
+	if (!sceneObjects.materials.empty()) {
 		materials.reserve(sceneObjects.materials.size());
 
-		for (int l = 0; l < sceneObjects.materials.size(); l++) {
-			fx::gltf::Material material = sceneObjects.materials[l];
-			uint16_t textureMask = 0;
+		for (auto material : sceneObjects.materials) {
+				uint16_t textureMask = 0;
 			generateTextureMask(material, textureMask);
 			materials.push_back({
 			textureMask,	
@@ -521,8 +538,7 @@ int createMaterial(fx::gltf::Document &sceneObjects, std::vector<Material> &mate
 			}
 			});
 		}
-	}
-	else {
+	} else {
 		return ASSET_ERROR;
 	}
 	return ASSET_SUCCESS;
@@ -538,19 +554,19 @@ int loadScene(const std::filesystem::path &path, Scene &scene){
 		else {
 			sceneObjects = fx::gltf::LoadFromText(path.string());
 		}
-	}
-	catch (const std::system_error& err) {
+	} catch (const std::system_error& err) {
 		recurseExceptionPrint(err, path.string());
 		return ASSET_ERROR;
-	}
-	catch (const std::exception& e) {
+	} catch (const std::exception& e) {
 		recurseExceptionPrint(e, path.string());
 		return ASSET_ERROR;
 	}
 	auto dir = path.parent_path().string();
 
     // file has to contain at least one mesh
-    if (sceneObjects.meshes.size() == 0) return ASSET_ERROR;
+    if (sceneObjects.meshes.empty()) {
+    	return ASSET_ERROR;
+    }
 
     std::vector<Material> materials;
     std::vector<Texture> textures;
@@ -559,7 +575,7 @@ int loadScene(const std::filesystem::path &path, Scene &scene){
     std::vector<VertexGroup> vertexGroups;
 	int groupCount = 0;
 
-    for(int i = 0; i < sceneObjects.meshes.size(); i++){
+    for (size_t i = 0; i < sceneObjects.meshes.size(); i++){
         std::vector<int> vertexGroupsIndices;
         fx::gltf::Mesh const &objectMesh = sceneObjects.meshes[i];
 
@@ -576,12 +592,14 @@ int loadScene(const std::filesystem::path &path, Scene &scene){
     }
 
     // This only works if the node has a mesh and it only loads the meshes and ignores cameras and lights
-    for(int m = 0; m < sceneObjects.nodes.size(); m++) {
-		if (sceneObjects.nodes[m].mesh > -1) {
-			meshes[sceneObjects.nodes[m].mesh].modelMatrix = computeModelMatrix(sceneObjects.nodes[m].translation,
-																				sceneObjects.nodes[m].scale,
-																				sceneObjects.nodes[m].rotation,
-																				sceneObjects.nodes[m].matrix);
+    for (auto & node : sceneObjects.nodes) {
+		if (node.mesh > -1) {
+			meshes[node.mesh].modelMatrix = computeModelMatrix(
+					node.translation,
+					node.scale,
+					node.rotation,
+					node.matrix
+			);
 		}
 	}
 
@@ -601,8 +619,9 @@ int loadScene(const std::filesystem::path &path, Scene &scene){
     for (const auto &it : sceneObjects.samplers) {
 	    samplers.push_back({});
 	    auto &sampler = samplers.back();
-	    if (translateSampler(it, sampler) != ASSET_SUCCESS)
-		    return ASSET_ERROR;
+	    if (translateSampler(it, sampler) != ASSET_SUCCESS) {
+			return ASSET_ERROR;
+		}
     }
 
     scene = {
