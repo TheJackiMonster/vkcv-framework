@@ -248,7 +248,7 @@ namespace vkcv::scene {
 		asset::Scene asset_scene;
 		
 		if (!asset::loadScene(path.string(), asset_scene)) {
-			vkcv_log(LogLevel::WARNING, "Scene could not be loaded")
+			vkcv_log(LogLevel::ERROR, "Scene could not be loaded (%s)", path.c_str());
 			return create(core);
 		}
 		
