@@ -11,7 +11,7 @@ if (EXISTS "${vkcv_lib_path}/VulkanMemoryAllocator-Hpp")
 	set(VMA_DEBUG_GLOBAL_MUTEX OFF CACHE INTERNAL "")
 	set(VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT OFF CACHE INTERNAL "")
 	
-	add_subdirectory(vma)
+	add_subdirectory(${vkcv_config_lib}/vma)
 	
 	list(APPEND vkcv_libraries VulkanMemoryAllocator)
 	list(APPEND vkcv_includes ${vkcv_lib_path}/VulkanMemoryAllocator-Hpp)

@@ -320,6 +320,13 @@ namespace vkcv
 				nullptr,
 				nullptr,
 				instance,
+				
+				/* Uses default version when set to 0 (currently VK_VERSION_1_0):
+				 *
+				 * The reason for this is that the allocator restricts the allowed version
+				 * to be at maximum VK_VERSION_1_1 which is already less than
+				 * VK_HEADER_VERSION_COMPLETE at most platforms.
+				 * */
 				0
 		);
 		
