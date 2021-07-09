@@ -34,8 +34,8 @@ namespace vkcv::scene {
 	public:
 		~MeshPart();
 		
-		MeshPart(const MeshPart& other) = default;
-		MeshPart(MeshPart&& other) = default;
+		MeshPart(const MeshPart& other);
+		MeshPart(MeshPart&& other);
 		
 		MeshPart& operator=(const MeshPart& other);
 		MeshPart& operator=(MeshPart&& other) noexcept;

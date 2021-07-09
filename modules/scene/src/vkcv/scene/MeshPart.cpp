@@ -83,6 +83,28 @@ namespace vkcv::scene {
 		m_scene.decreaseMaterialUsage(m_materialIndex);
 	}
 	
+	MeshPart::MeshPart(const MeshPart &other) :
+			m_scene(other.m_scene),
+			m_vertices(other.m_vertices),
+			m_vertexBindings(other.m_vertexBindings),
+			m_indices(other.m_indices),
+			m_indexCount(other.m_indexCount),
+			m_bounds(other.m_bounds),
+			m_materialIndex(other.m_materialIndex) {
+		m_scene.increaseMaterialUsage(m_materialIndex);
+	}
+	
+	MeshPart::MeshPart(MeshPart &&other) :
+			m_scene(other.m_scene),
+			m_vertices(other.m_vertices),
+			m_vertexBindings(other.m_vertexBindings),
+			m_indices(other.m_indices),
+			m_indexCount(other.m_indexCount),
+			m_bounds(other.m_bounds),
+			m_materialIndex(other.m_materialIndex) {
+		m_scene.increaseMaterialUsage(m_materialIndex);
+	}
+	
 	MeshPart &MeshPart::operator=(const MeshPart &other) {
 		if (&other == this) {
 			return *this;
@@ -105,8 +127,6 @@ namespace vkcv::scene {
 		m_indexCount = other.m_indexCount;
 		m_bounds = other.m_bounds;
 		m_materialIndex = other.m_materialIndex;
-		
-		other.m_materialIndex = std::numeric_limits<size_t>::max();
 		
 		return *this;
 	}
