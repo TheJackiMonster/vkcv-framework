@@ -12,7 +12,7 @@ const glm::vec3& Particle::getPosition()const{
     return m_position;
 }
 
-const bool Particle::isAlive()const{
+bool Particle::isAlive()const{
     return m_lifeTime > 0.f;
 }
 

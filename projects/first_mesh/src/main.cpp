@@ -163,7 +163,7 @@ int main(int argc, const char** argv) {
     auto start = std::chrono::system_clock::now();
     
 	while (window.isWindowOpen()) {
-        window.pollEvents();
+        vkcv::Window::pollEvents();
 		
 		if(window.getHeight() == 0 || window.getWidth() == 0)
 			continue;

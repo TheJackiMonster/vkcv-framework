@@ -17,7 +17,7 @@ public:
 
     void update( const float delta );
 
-    const bool isAlive()const;
+    bool isAlive()const;
 
     void setLifeTime( const float lifeTime );
 
