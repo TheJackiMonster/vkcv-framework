@@ -67,7 +67,8 @@ namespace vkcv {
 		for (uint64_t id = 0; id < m_images.size(); id++) {
 			destroyImageById(id);
 		}
-		for (const auto swapchainImage : m_swapchainImages) {
+		
+		for (const auto& swapchainImage : m_swapchainImages) {
 			for (const auto view : swapchainImage.m_viewPerMip) {
 				m_core->getContext().getDevice().destroy(view);
 			}
@@ -196,7 +197,7 @@ namespace vkcv {
 		}
 		
 		std::vector<vk::ImageView> views;
-		for (int mip = 0; mip < mipCount; mip++) {
+		for (uint32_t mip = 0; mip < mipCount; mip++) {
 			const vk::ImageViewCreateInfo imageViewCreateInfo(
 				{},
 				image,
@@ -369,7 +370,7 @@ namespace vkcv {
 		}
 	}
 	
-	void ImageManager::fillImage(const ImageHandle& handle, void* data, size_t size)
+	void ImageManager::fillImage(const ImageHandle& handle, const void* data, size_t size)
 	{
 		const uint64_t id = handle.getId();
 		
@@ -504,9 +505,6 @@ namespace vkcv {
 	}
 
 	void ImageManager::generateImageMipChainImmediate(const ImageHandle& handle) {
-
-		const auto& device = m_core->getContext().getDevice();
-
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
 
@@ -655,7 +653,6 @@ namespace vkcv {
 
 	uint32_t ImageManager::getImageMipCount(const ImageHandle& handle) const {
 		const uint64_t id = handle.getId();
-		const bool isSwapchainFormat = handle.isSwapchainImage();
 
 		if (handle.isSwapchainImage()) {
 			return 1;
@@ -685,7 +682,7 @@ namespace vkcv {
 
 		assert(images.size() == views.size());
 		m_swapchainImages.clear();
-		for (int i = 0; i < images.size(); i++) {
+		for (size_t i = 0; i < images.size(); i++) {
 			m_swapchainImages.push_back(Image(images[i], nullptr, { views[i] }, width, height, 1, format, 1));
 		}
 	}

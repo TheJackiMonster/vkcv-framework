@@ -248,12 +248,13 @@ void ShadowMapping::recordShadowMapRendering(
 		voxelVolumeOffset,
 		voxelVolumeExtent);
 	m_lightInfoBuffer.fill({ lightInfo });
-
-	std::vector<glm::mat4> mvpLight;
+	
+	vkcv::PushConstants shadowPushConstants (sizeof(glm::mat4));
+	
 	for (const auto& m : modelMatrices) {
-		mvpLight.push_back(lightInfo.lightMatrix * m);
+		shadowPushConstants.appendDrawcall(lightInfo.lightMatrix * m);
 	}
-	const vkcv::PushConstantData shadowPushConstantData((void*)mvpLight.data(), sizeof(glm::mat4));
+	
 
 	std::vector<vkcv::DrawcallInfo> drawcalls;
 	for (const auto& mesh : meshes) {
@@ -264,7 +265,7 @@ void ShadowMapping::recordShadowMapRendering(
 		cmdStream,
 		m_shadowMapPass,
 		m_shadowMapPipe,
-		shadowPushConstantData,
+		shadowPushConstants,
 		drawcalls,
 		{ m_shadowMapDepth.getHandle() });
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMapDepth.getHandle());
@@ -276,6 +277,9 @@ void ShadowMapping::recordShadowMapRendering(
 	dispatchCount[2] = 1;
 
 	const uint32_t msaaSampleCount = msaaToSampleCount(msaa);
+	
+	vkcv::PushConstants msaaPushConstants (sizeof(msaaSampleCount));
+	msaaPushConstants.appendDrawcall(msaaSampleCount);
 
 	m_corePtr->prepareImageForStorage(cmdStream, m_shadowMap.getHandle());
 	m_corePtr->recordComputeDispatchToCmdStream(
@@ -283,7 +287,7 @@ void ShadowMapping::recordShadowMapRendering(
 		m_depthToMomentsPipe,
 		dispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_depthToMomentsDescriptorSet).vulkanHandle) },
-		vkcv::PushConstantData((void*)&msaaSampleCount, sizeof(msaaSampleCount)));
+		msaaPushConstants);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMap.getHandle());
 
 	// blur X
@@ -293,7 +297,7 @@ void ShadowMapping::recordShadowMapRendering(
 		m_shadowBlurXPipe,
 		dispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_shadowBlurXDescriptorSet).vulkanHandle) },
-		vkcv::PushConstantData(nullptr, 0));
+		vkcv::PushConstants(0));
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMapIntermediate.getHandle());
 
 	// blur Y
@@ -303,7 +307,7 @@ void ShadowMapping::recordShadowMapRendering(
 		m_shadowBlurYPipe,
 		dispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_shadowBlurYDescriptorSet).vulkanHandle) },
-		vkcv::PushConstantData(nullptr, 0));
+		vkcv::PushConstants(0));
 	m_shadowMap.recordMipChainGeneration(cmdStream);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMap.getHandle());
 }

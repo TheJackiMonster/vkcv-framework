@@ -71,7 +71,6 @@ namespace vkcv
 
         const auto& queueManager = context.getQueueManager();
         
-		const int						graphicQueueFamilyIndex	= queueManager.getGraphicsQueues()[0].familyIndex;
 		const std::unordered_set<int>	queueFamilySet			= generateQueueFamilyIndexSet(queueManager);
 		const auto						commandResources		= createCommandResources(context.getDevice(), queueFamilySet);
 		const auto						defaultSyncResources	= createSyncResources(context.getDevice());
@@ -163,9 +162,9 @@ namespace vkcv
 					nullptr,
 					&imageIndex, {}
 			);
-		} catch (vk::OutOfDateKHRError e) {
+		} catch (const vk::OutOfDateKHRError& e) {
 			result = vk::Result::eErrorOutOfDateKHR;
-		} catch (vk::DeviceLostError e) {
+		} catch (const vk::DeviceLostError& e) {
 			result = vk::Result::eErrorDeviceLost;
 		}
 		
@@ -232,7 +231,7 @@ namespace vkcv
 		const CommandStreamHandle       cmdStreamHandle,
 		const PassHandle                renderpassHandle, 
 		const PipelineHandle            pipelineHandle, 
-        const PushConstantData          &pushConstantData,
+        const PushConstants             &pushConstants,
         const std::vector<DrawcallInfo> &drawcalls,
 		const std::vector<ImageHandle>  &renderTargets) {
 
@@ -268,7 +267,7 @@ namespace vkcv
 		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
 
 		std::vector<vk::ImageView> attachmentsViews;
-		for (const ImageHandle handle : renderTargets) {
+		for (const ImageHandle& handle : renderTargets) {
 			vk::ImageView targetHandle;
 			const auto cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
 
@@ -305,8 +304,6 @@ namespace vkcv
 
         vk::Rect2D dynamicScissor({0, 0}, {width, height});
 
-		auto &bufferManager = m_BufferManager;
-
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
@@ -338,14 +335,13 @@ namespace vkcv
             cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
             const PipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
-            if(pipeConfig.m_UseDynamicViewport)
-            {
+            if (pipeConfig.m_UseDynamicViewport) {
                 cmdBuffer.setViewport(0, 1, &dynamicViewport);
                 cmdBuffer.setScissor(0, 1, &dynamicScissor);
             }
 
-            for (int i = 0; i < drawcalls.size(); i++) {
-                recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
+            for (size_t i = 0; i < drawcalls.size(); i++) {
+                recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstants, i);
             }
 
             cmdBuffer.endRenderPass();
@@ -364,7 +360,7 @@ namespace vkcv
 		PipelineHandle computePipeline,
 		const uint32_t dispatchCount[3],
 		const std::vector<DescriptorSetUsage>& descriptorSetUsages,
-		const PushConstantData& pushConstantData) {
+		const PushConstants& pushConstants) {
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
 
@@ -379,13 +375,13 @@ namespace vkcv
 					{ usage.vulkanHandle },
 					{});
 			}
-			if (pushConstantData.sizePerDrawcall > 0) {
+			if (pushConstants.getSizePerDrawcall() > 0) {
 				cmdBuffer.pushConstants(
 					pipelineLayout,
 					vk::ShaderStageFlagBits::eCompute,
 					0,
-					pushConstantData.sizePerDrawcall,
-					pushConstantData.data);
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getData());
 			}
 			cmdBuffer.dispatch(dispatchCount[0], dispatchCount[1], dispatchCount[2]);
 		};
@@ -417,9 +413,9 @@ namespace vkcv
 		
 		try {
 			result = queueManager.getPresentQueue().handle.presentKHR(presentInfo);
-		} catch (vk::OutOfDateKHRError e) {
+		} catch (const vk::OutOfDateKHRError& e) {
 			result = vk::Result::eErrorOutOfDateKHR;
-		} catch (vk::DeviceLostError e) {
+		} catch (const vk::DeviceLostError& e) {
 			result = vk::Result::eErrorDeviceLost;
 		}
 		
@@ -463,8 +459,6 @@ namespace vkcv
 	}
 
 	CommandStreamHandle Core::createCommandStream(QueueType queueType) {
-
-		const vk::Device&       device  = m_Context.getDevice();
 		const vkcv::Queue       queue   = getQueueForSubmit(queueType, m_Context.getQueueManager());
 		const vk::CommandPool   cmdPool = chooseCmdPool(queue, m_CommandResources);
 
@@ -522,12 +516,12 @@ namespace vkcv
 			multisampling);
 	}
 
-	const uint32_t Core::getImageWidth(ImageHandle imageHandle)
+	uint32_t Core::getImageWidth(ImageHandle imageHandle)
 	{
 		return m_ImageManager->getImageWidth(imageHandle);
 	}
 
-	const uint32_t Core::getImageHeight(ImageHandle imageHandle)
+	uint32_t Core::getImageHeight(ImageHandle imageHandle)
 	{
 		return m_ImageManager->getImageHeight(imageHandle);
 	}

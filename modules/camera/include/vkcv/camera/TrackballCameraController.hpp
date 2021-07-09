@@ -14,6 +14,8 @@ namespace vkcv::camera {
         float m_cameraSpeed;
         float m_scrollSensitivity;
         float m_radius;
+        float m_pitch;
+        float m_yaw;
 
         /**
          * @brief Updates the current radius of @p camera in respect to the @p offset.

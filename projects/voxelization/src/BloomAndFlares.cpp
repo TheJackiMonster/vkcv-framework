@@ -128,7 +128,7 @@ void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStre
             m_DownsamplePipe,
             initialDispatchCount,
             {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_DownsampleDescSets[0]).vulkanHandle)},
-            vkcv::PushConstantData(nullptr, 0));
+            vkcv::PushConstants(0));
 
     // downsample dispatches of blur buffer's mip maps
     float mipDispatchCountX = dispatchCountX;
@@ -163,7 +163,7 @@ void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStre
                 m_DownsamplePipe,
                 mipDispatchCount,
                 {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_DownsampleDescSets[mipLevel]).vulkanHandle)},
-                vkcv::PushConstantData(nullptr, 0));
+                vkcv::PushConstants(0));
 
         // image barrier between mips
         p_Core->recordImageMemoryBarrier(cmdStream, m_Blur.getHandle());
@@ -208,7 +208,7 @@ void BloomAndFlares::execUpsamplePipe(const vkcv::CommandStreamHandle &cmdStream
                 m_UpsamplePipe,
                 upsampleDispatchCount,
                 {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_UpsampleDescSets[mipLevel]).vulkanHandle)},
-                vkcv::PushConstantData(nullptr, 0)
+                vkcv::PushConstants(0)
         );
         // image barrier between mips
         p_Core->recordImageMemoryBarrier(cmdStream, m_Blur.getHandle());
@@ -243,7 +243,7 @@ void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStr
             m_LensFlarePipe,
             lensFeatureDispatchCount,
             {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_LensFlareDescSet).vulkanHandle)},
-            vkcv::PushConstantData(nullptr, 0));
+            vkcv::PushConstants(0));
 
     // upsample dispatch
     p_Core->prepareImageForStorage(cmdStream, m_LensFeatures.getHandle());
@@ -276,7 +276,7 @@ void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStr
             m_UpsamplePipe,
             upsampleDispatchCount,
             { vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_UpsampleLensFlareDescSets[i]).vulkanHandle) },
-            vkcv::PushConstantData(nullptr, 0)
+            vkcv::PushConstants(0)
         );
         // image barrier between mips
         p_Core->recordImageMemoryBarrier(cmdStream, m_LensFeatures.getHandle());
@@ -309,6 +309,9 @@ void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStrea
             static_cast<uint32_t>(glm::ceil(dispatchCountY)),
             1
     };
+	
+	vkcv::PushConstants pushConstants (sizeof(cameraForward));
+	pushConstants.appendDrawcall(cameraForward);
 
     // bloom composite dispatch
     p_Core->recordComputeDispatchToCmdStream(
@@ -316,7 +319,7 @@ void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStrea
             m_CompositePipe,
             compositeDispatchCount,
             {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_CompositeDescSet).vulkanHandle)},
-            vkcv::PushConstantData((void*)&cameraForward, sizeof(cameraForward)));
+			pushConstants);
 }
 
 void BloomAndFlares::execWholePipeline(const vkcv::CommandStreamHandle &cmdStream, const vkcv::ImageHandle &colorAttachment, 
