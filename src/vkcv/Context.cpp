@@ -320,7 +320,7 @@ namespace vkcv
 				nullptr,
 				nullptr,
 				instance,
-				VK_HEADER_VERSION_COMPLETE
+				0
 		);
 		
 		vma::Allocator allocator = vma::createAllocator(allocatorCreateInfo);

@@ -1,6 +1,5 @@
 
-if ((EXISTS "${vkcv_lib_path}/VulkanMemoryAllocator") AND
-	(EXISTS "${vkcv_lib_path}/VulkanMemoryAllocator-Hpp"))
+if (EXISTS "${vkcv_lib_path}/VulkanMemoryAllocator-Hpp")
 	set(VMA_HPP_PATH "${vkcv_lib_path}/VulkanMemoryAllocator-Hpp" CACHE INTERNAL "")
 	
 	set(VMA_RECORDING_ENABLED OFF CACHE INTERNAL "")
