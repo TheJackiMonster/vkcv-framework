@@ -1,9 +1,8 @@
 
 if ((EXISTS "${vkcv_lib_path}/VulkanMemoryAllocator") AND
 	(EXISTS "${vkcv_lib_path}/VulkanMemoryAllocator-Hpp"))
-	set(VMA_BUILD_SAMPLE OFF CACHE INTERNAL "")
-	set(VMA_BUILD_SAMPLE_SHADERS OFF CACHE INTERNAL "")
-	set(VMA_BUILD_REPLAY OFF CACHE INTERNAL "")
+	set(VMA_PATH "${vkcv_lib_path}/VulkanMemoryAllocator" CACHE INTERNAL "")
+	set(VMA_HPP_PATH "${vkcv_lib_path}/VulkanMemoryAllocator-Hpp" CACHE INTERNAL "")
 	
 	set(VMA_RECORDING_ENABLED OFF CACHE INTERNAL "")
 	set(VMA_USE_STL_CONTAINERS OFF CACHE INTERNAL "")
@@ -14,7 +13,7 @@ if ((EXISTS "${vkcv_lib_path}/VulkanMemoryAllocator") AND
 	set(VMA_DEBUG_GLOBAL_MUTEX OFF CACHE INTERNAL "")
 	set(VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT OFF CACHE INTERNAL "")
 	
-	add_subdirectory(${vkcv_lib}/VulkanMemoryAllocator)
+	add_subdirectory(vma)
 	
 	list(APPEND vkcv_libraries VulkanMemoryAllocator)
 	list(APPEND vkcv_includes ${vkcv_lib_path}/VulkanMemoryAllocator-Hpp)
