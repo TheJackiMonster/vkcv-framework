@@ -29,9 +29,6 @@ int main(int argc, const char** argv) {
 	);
 
 	const auto& context = core.getContext();
-	const vk::Instance& instance = context.getInstance();
-	const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
-	const vk::Device& device = context.getDevice();
 
 	auto triangleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
 	uint16_t indices[3] = { 0, 1, 2 };

@@ -23,8 +23,6 @@ namespace vkcv {
                 nullptr);
         }
 
-        const size_t drawcallPushConstantOffset = drawcallIndex * pushConstants.getSizePerDrawcall();
-
         if (pushConstants.getSizePerDrawcall() > 0) {
             cmdBuffer.pushConstants(
                 pipelineLayout,

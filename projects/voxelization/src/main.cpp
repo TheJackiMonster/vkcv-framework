@@ -111,7 +111,7 @@ int main(int argc, const char** argv) {
 	std::vector<std::vector<vkcv::VertexBufferBinding>> vertexBufferBindings;
 	std::vector<vkcv::asset::VertexAttribute> vAttributes;
 
-	for (int i = 0; i < scene.vertexGroups.size(); i++) {
+	for (size_t i = 0; i < scene.vertexGroups.size(); i++) {
 
 		vBuffers.push_back(scene.vertexGroups[i].vertexBuffer.data);
 		iBuffers.push_back(scene.vertexGroups[i].indexBuffer.data);
@@ -452,14 +452,14 @@ int main(int argc, const char** argv) {
 
 	// prepare meshes
 	std::vector<vkcv::Mesh> meshes;
-	for (int i = 0; i < scene.vertexGroups.size(); i++) {
+	for (size_t i = 0; i < scene.vertexGroups.size(); i++) {
 		vkcv::Mesh mesh(vertexBufferBindings[i], indexBuffers[i].getVulkanHandle(), scene.vertexGroups[i].numIndices);
 		meshes.push_back(mesh);
 	}
 
 	std::vector<vkcv::DrawcallInfo> drawcalls;
 	std::vector<vkcv::DrawcallInfo> prepassDrawcalls;
-	for (int i = 0; i < meshes.size(); i++) {
+	for (size_t i = 0; i < meshes.size(); i++) {
 
 		drawcalls.push_back(vkcv::DrawcallInfo(meshes[i], { 
 			vkcv::DescriptorSetUsage(0, core.getDescriptorSet(forwardShadingDescriptorSet).vulkanHandle),

@@ -259,7 +259,7 @@ void Voxelization::voxelizeMeshes(
 
 	// voxelization
 	std::vector<vkcv::DrawcallInfo> drawcalls;
-	for (int i = 0; i < meshes.size(); i++) {
+	for (size_t i = 0; i < meshes.size(); i++) {
 		drawcalls.push_back(vkcv::DrawcallInfo(
 			meshes[i],
 			{ 
