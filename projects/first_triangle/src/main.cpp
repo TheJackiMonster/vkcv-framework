@@ -2,10 +2,8 @@
 #include <vkcv/Core.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
-#include <chrono>
-
 #include <vkcv/shader/GLSLCompiler.hpp>
-#include <vkcv/gui/GUI.hpp>
+#include <chrono>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Triangle";
@@ -49,7 +47,7 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	vkcv::ShaderProgram triangleShaderProgram{};
+	vkcv::ShaderProgram triangleShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	
 	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/shader.vert"),

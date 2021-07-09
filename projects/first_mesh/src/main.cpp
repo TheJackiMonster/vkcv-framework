@@ -4,6 +4,7 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
+#include <vkcv/shader/GLSLCompiler.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
@@ -77,10 +78,19 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	vkcv::ShaderProgram firstMeshProgram{};
-    firstMeshProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
-    firstMeshProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
+	vkcv::ShaderProgram firstMeshProgram;
+	vkcv::shader::GLSLCompiler compiler;
 	
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		firstMeshProgram.addShader(shaderStage, path);
+	});
+	
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		firstMeshProgram.addShader(shaderStage, path);
+	});
+ 
 	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 
 	

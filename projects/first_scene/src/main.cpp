@@ -4,10 +4,8 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
-#include <vkcv/Logger.hpp>
+#include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/scene/Scene.hpp>
-
-
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Scene";
@@ -64,9 +62,18 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	vkcv::ShaderProgram sceneShaderProgram{};
-	sceneShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
-	sceneShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
+	vkcv::ShaderProgram sceneShaderProgram;
+	vkcv::shader::GLSLCompiler compiler;
+	
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+					 [&sceneShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		sceneShaderProgram.addShader(shaderStage, path);
+	});
+	
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+					 [&sceneShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		sceneShaderProgram.addShader(shaderStage, path);
+	});
 
 	const std::vector<vkcv::VertexAttachment> vertexAttachments = sceneShaderProgram.getVertexAttachments();
 	std::vector<vkcv::VertexBinding> bindings;
