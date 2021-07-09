@@ -4,7 +4,6 @@ project(VulkanMemoryAllocator)
 
 find_package(Vulkan REQUIRED)
 
-option(VMA_PATH "Location of official API and headers" "")
 option(VMA_HPP_PATH "Location of C++ headers" "")
 
 message(STATUS "VMA_BUILD_SAMPLE = ${VMA_BUILD_SAMPLE}")
@@ -28,9 +27,7 @@ message(STATUS "VMA_DEBUG_INITIALIZE_ALLOCATIONS = ${VMA_DEBUG_INITIALIZE_ALLOCA
 message(STATUS "VMA_DEBUG_GLOBAL_MUTEX = ${VMA_DEBUG_GLOBAL_MUTEX}")
 message(STATUS "VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT = ${VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT}")
 
-set(VMA_LIBRARY_SOURCE_FILES ${VMA_PATH}/src/VmaUsage.cpp)
-
-add_library(VulkanMemoryAllocator ${VMA_LIBRARY_SOURCE_FILES})
+add_library(VulkanMemoryAllocator vma.cpp)
 
 set_target_properties(
 		VulkanMemoryAllocator PROPERTIES
