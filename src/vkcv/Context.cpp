@@ -9,11 +9,13 @@ namespace vkcv
             m_Instance(other.m_Instance),
             m_PhysicalDevice(other.m_PhysicalDevice),
             m_Device(other.m_Device),
-            m_QueueManager(other.m_QueueManager)
+            m_QueueManager(other.m_QueueManager),
+            m_Allocator(other.m_Allocator)
     {
         other.m_Instance        = nullptr;
         other.m_PhysicalDevice  = nullptr;
         other.m_Device          = nullptr;
+		other.m_Allocator		= nullptr;
     }
 
     Context & Context::operator=(Context &&other) noexcept
@@ -22,10 +24,12 @@ namespace vkcv
         m_PhysicalDevice    = other.m_PhysicalDevice;
         m_Device            = other.m_Device;
         m_QueueManager		= other.m_QueueManager;
+        m_Allocator			= other.m_Allocator;
 
         other.m_Instance        = nullptr;
         other.m_PhysicalDevice  = nullptr;
         other.m_Device          = nullptr;
+        other.m_Allocator		= nullptr;
 
         return *this;
     }
@@ -33,15 +37,21 @@ namespace vkcv
     Context::Context(vk::Instance instance,
                      vk::PhysicalDevice physicalDevice,
                      vk::Device device,
-					 QueueManager&& queueManager) noexcept :
-    m_Instance{instance},
-    m_PhysicalDevice{physicalDevice},
-    m_Device{device},
-    m_QueueManager{queueManager}
+					 QueueManager&& queueManager,
+					 VmaAllocator& allocator) noexcept :
+    m_Instance(instance),
+    m_PhysicalDevice(physicalDevice),
+    m_Device(device),
+    m_QueueManager(queueManager),
+    m_Allocator(allocator)
     {}
 
     Context::~Context() noexcept
     {
+    	if (m_Allocator) {
+			vmaDestroyAllocator(m_Allocator);
+    	}
+    	
         m_Device.destroy();
         m_Instance.destroy();
     }
@@ -63,6 +73,10 @@ namespace vkcv
     
     const QueueManager& Context::getQueueManager() const {
     	return m_QueueManager;
+    }
+    
+    const VmaAllocator& Context::getAllocator() const {
+    	return m_Allocator;
     }
 	
 	/**
@@ -290,9 +304,25 @@ namespace vkcv
 		
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
 		
-		QueueManager queueManager = QueueManager::create(device, queuePairsGraphics, queuePairsCompute, queuePairsTransfer);
+		QueueManager queueManager = QueueManager::create(
+				device,
+				queuePairsGraphics,
+				queuePairsCompute,
+				queuePairsTransfer
+		);
 		
-		return Context(instance, physicalDevice, device, std::move(queueManager));
+		VmaAllocatorCreateInfo allocatorCreateInfo = {};
+		allocatorCreateInfo.physicalDevice = physicalDevice;
+		allocatorCreateInfo.instance = instance;
+		allocatorCreateInfo.device = device;
+		allocatorCreateInfo.vulkanApiVersion = VK_HEADER_VERSION_COMPLETE;
+		
+		VmaAllocator allocator;
+		if (VK_SUCCESS != vmaCreateAllocator(&allocatorCreateInfo, &allocator)) {
+			allocator = nullptr;
+		}
+		
+		return Context(instance, physicalDevice, device, std::move(queueManager), allocator);
 	}
  
 }

@@ -10,6 +10,7 @@ else()
         add_subdirectory(${vkcv_lib}/glfw)
 
         list(APPEND vkcv_libraries glfw)
+        list(APPEND vkcv_includes ${vkcv_lib}/glfw/include)
 
         message(${vkcv_config_msg} " GLFW    -   " ${glfw3_VERSION})
     else()
