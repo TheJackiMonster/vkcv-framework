@@ -25,7 +25,7 @@ void main()	{
     int index2D         = gl_VertexIndex % slicePixelCount;
     int y               = index2D / voxelResolution;
     int x               = index2D % voxelResolution;
-    vec3 position       = (vec3(x, y, z) / voxelResolution - 0.5) * voxelInfo.extent + passCubeHalf + voxelInfo.offset;
+    vec3 position       = voxelCoordinatesToWorldPosition(ivec3(x, y, z), voxelResolution, voxelInfo, passCubeHalf);
 	gl_Position         = vec4(position, 1.0);
     
     vec4 voxelColor = imageLoad(voxelImage, ivec3(x,y,z));

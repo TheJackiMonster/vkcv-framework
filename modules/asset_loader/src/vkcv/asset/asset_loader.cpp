@@ -2,11 +2,8 @@
 #include <iostream>
 #include <string.h>	// memcpy(3)
 #include <stdlib.h>	// calloc(3)
-#include <fx/gltf.h>
 #include <vulkan/vulkan.hpp>
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_JPEG
-#define STBI_ONLY_PNG
+#include <fx/gltf.h>
 #include <stb_image.h>
 #include <vkcv/Logger.hpp>
 #include <algorithm>
@@ -73,6 +70,7 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &type)
 	case fx::gltf::Accessor::ComponentType::UnsignedInt:
 		return IndexType::UINT32;
 	default:
+		vkcv_log(LogLevel::ERROR, "Index type not supported: %u", static_cast<uint16_t>(type));
 		return IndexType::UNDEFINED;
 	}
 }
@@ -172,8 +170,10 @@ int createVertexAttributes(const fx::gltf::Attributes &src,
 			att.type = PrimitiveType::TEXCOORD_0;
 		} else if (attrib.first == "TEXCOORD_1") {
 			att.type = PrimitiveType::TEXCOORD_1;
-		} else if (attrib.first == "COLOR0") {
+		} else if (attrib.first == "COLOR_0") {
 			att.type = PrimitiveType::COLOR_0;
+		} else if (attrib.first == "COLOR_1") {
+			att.type = PrimitiveType::COLOR_1;
 		} else if (attrib.first == "JOINTS_0") {
 			att.type = PrimitiveType::JOINTS_0;
 		} else if (attrib.first == "WEIGHTS_0") {
@@ -567,7 +567,6 @@ int loadScene(const std::filesystem::path &path, Scene &scene){
 			vkcv_log(LogLevel::ERROR, "Failed to get Vertex Groups!");
 			return ASSET_ERROR;
 		}
-		
 
 		Mesh mesh = {};
         mesh.name = sceneObjects.meshes[i].name;
@@ -615,6 +614,25 @@ int loadScene(const std::filesystem::path &path, Scene &scene){
     };
 
     return ASSET_SUCCESS;
+}
+
+TextureData loadTexture(const std::filesystem::path& path) {
+    TextureData texture;
+    
+    uint8_t* data = stbi_load(path.string().c_str(), &texture.width, &texture.height, &texture.componentCount, 4);
+    
+    if (!data) {
+		vkcv_log(LogLevel::ERROR, "Texture could not be loaded from '%s'", path.c_str());
+    	
+    	texture.width = 0;
+    	texture.height = 0;
+    	texture.componentCount = 0;
+    	return texture;
+    }
+    
+    texture.data.resize(texture.width * texture.height * 4);
+    memcpy(texture.data.data(), data, texture.data.size());
+    return texture;
 }
 
 }

@@ -32,11 +32,10 @@ namespace vkcv {
 
 		// find unused stream
 		int unusedStreamIndex = -1;
-		for (int i = 0; i < m_commandStreams.size(); i++) {
+		for (size_t i = 0; i < m_commandStreams.size(); i++) {
 			if (m_commandStreams[i].cmdBuffer) {
 				// still in use
-			}
-			else {
+			} else {
 				unusedStreamIndex = i;
 				break;
 			}

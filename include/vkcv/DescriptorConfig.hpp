@@ -11,6 +11,7 @@ namespace vkcv
     {
         vk::DescriptorSet       vulkanHandle;
         vk::DescriptorSetLayout layout;
+        size_t                  poolIndex;
     };
 
     /*

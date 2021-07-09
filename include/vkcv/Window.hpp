@@ -7,6 +7,7 @@
 
 #define NOMINMAX
 #include <algorithm>
+
 #include "Event.hpp"
 
 struct GLFWwindow;
@@ -22,8 +23,6 @@ namespace vkcv {
          * @param GLFWwindow of the class
          */
 		explicit Window(GLFWwindow *window);
-		
-		static GLFWwindow* createGLFWWindow(const char *windowTitle, int width, int height, bool resizable);
 		
     private:
         /**
@@ -42,6 +41,12 @@ namespace vkcv {
          */
         static void onMouseButtonEvent(GLFWwindow *callbackWindow, int button, int action, int mods);
 
+        /**
+         * @brief A callback function for handling mouse scrolling events.
+         * @param[in] callbackWindow The window that received the event.
+         * @param[in] xoffset The extent of horizontal scrolling.
+         * @param[in] yoffset The extent of vertical scrolling.
+         */
         static void onMouseScrollEvent(GLFWwindow *callbackWindow, double xoffset, double yoffset);
 
         /**
@@ -69,6 +74,12 @@ namespace vkcv {
          */
 		static void onCharEvent(GLFWwindow *callbackWindow, unsigned int c);
 
+        /**
+         * @brief A callback function for gamepad input events.
+         * @param gamepadIndex The gamepad index.
+         */
+        static void onGamepadEvent(int gamepadIndex);
+
     public:
         /**
          * creates a GLFWwindow with the parameters in the function
@@ -88,11 +99,6 @@ namespace vkcv {
         bool isWindowOpen() const;
 
         /**
-         * binds windowEvents to lambda events
-         */
-        void initEvents();
-
-        /**
          * polls all events on the GLFWwindow
          */
         static void pollEvents();
@@ -106,6 +112,7 @@ namespace vkcv {
         event< int, int > e_resize;
         event< int, int, int, int > e_key;
         event< unsigned int > e_char;
+        event< int > e_gamepad;
 
         /**
          * returns the current window
@@ -150,6 +157,13 @@ namespace vkcv {
          * Destructor of #Window, terminates GLFW
          */
         virtual ~Window();
+        
+        /**
+         * gets the windows framebuffer size
+         * @param width
+         * @param height
+         */
+        void getFramebufferSize(int& width, int& height) const;
     };
 
 }

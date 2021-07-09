@@ -14,6 +14,8 @@ namespace vkcv::camera {
         float m_cameraSpeed;
         float m_scrollSensitivity;
         float m_radius;
+        float m_pitch;
+        float m_yaw;
 
         /**
          * @brief Updates the current radius of @p camera in respect to the @p offset.
@@ -95,6 +97,13 @@ namespace vkcv::camera {
          */
         void mouseButtonCallback(int button, int action, int mods, Camera &camera);
 
+        /**
+         * @brief A callback function for gamepad input events.
+         * @param gamepadIndex The gamepad index.
+         * @param camera The camera object.
+         * @param frametime The current frametime.
+         */
+        void gamepadCallback(int gamepadIndex, Camera &camera, double frametime);
     };
 
 }

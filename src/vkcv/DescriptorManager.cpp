@@ -16,7 +16,8 @@ namespace vkcv
 													vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
 													vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000) };
 
-		m_PoolInfo = vk::DescriptorPoolCreateInfo({},
+		m_PoolInfo = vk::DescriptorPoolCreateInfo(
+				vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
 			1000,
 			static_cast<uint32_t>(m_PoolSizes.size()),
 			m_PoolSizes.data());
@@ -29,9 +30,13 @@ namespace vkcv
         for (uint64_t id = 0; id < m_DescriptorSets.size(); id++) {
 			destroyDescriptorSetById(id);
         }
+        
 		m_DescriptorSets.clear();
+  
 		for (const auto &pool : m_Pools) {
-			m_Device.destroy(pool);
+			if (pool) {
+				m_Device.destroy(pool);
+			}
 		}
     }
 
@@ -40,12 +45,12 @@ namespace vkcv
         std::vector<vk::DescriptorSetLayoutBinding> setBindings = {};
 
         //create each set's binding
-        for (uint32_t i = 0; i < bindings.size(); i++) {
+        for (auto binding : bindings) {
             vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding(
-                bindings[i].bindingID,
-                convertDescriptorTypeFlag(bindings[i].descriptorType),
-                bindings[i].descriptorCount,
-                convertShaderStageFlag(bindings[i].shaderStage));
+                binding.bindingID,
+                convertDescriptorTypeFlag(binding.descriptorType),
+                binding.descriptorCount,
+                convertShaderStageFlag(binding.shaderStage));
             setBindings.push_back(descriptorSetLayoutBinding);
         }
 
@@ -53,8 +58,7 @@ namespace vkcv
 
         //create the descriptor set's layout from the bindings gathered above
         vk::DescriptorSetLayoutCreateInfo layoutInfo({}, setBindings);
-        if(m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &set.layout) != vk::Result::eSuccess)
-        {
+        if (m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &set.layout) != vk::Result::eSuccess) {
 			vkcv_log(LogLevel::ERROR, "Failed to create descriptor set layout");
             return DescriptorSetHandle();
         };
@@ -70,6 +74,7 @@ namespace vkcv
 				allocInfo.setDescriptorPool(m_Pools.back());
 				result = m_Device.allocateDescriptorSets(&allocInfo, &set.vulkanHandle);
 			}
+			
 			if (result != vk::Result::eSuccess) {
 				vkcv_log(LogLevel::ERROR, "Failed to create descriptor set (%s)",
 						 vk::to_string(result).c_str());
@@ -78,6 +83,8 @@ namespace vkcv
 				return DescriptorSetHandle();
 			}
         };
+	
+		set.poolIndex = (m_Pools.size() - 1);
 
         const uint64_t id = m_DescriptorSets.size();
 
@@ -107,10 +114,11 @@ namespace vkcv
 		std::vector<WriteDescriptorSetInfo> writeInfos;
 
 		for (const auto& write : writes.sampledImageWrites) {
+		    vk::ImageLayout layout = write.useGeneralLayout ? vk::ImageLayout::eGeneral : vk::ImageLayout::eShaderReadOnlyOptimal;
 			const vk::DescriptorImageInfo imageInfo(
 				nullptr,
-				imageManager.getVulkanImageView(write.image),
-				vk::ImageLayout::eShaderReadOnlyOptimal
+				imageManager.getVulkanImageView(write.image, write.mipLevel),
+                layout
 			);
 			
 			imageInfos.push_back(imageInfo);
@@ -276,17 +284,22 @@ namespace vkcv
 			m_Device.destroyDescriptorSetLayout(set.layout);
 			set.layout = nullptr;
 		}
-		// FIXME: descriptor set itself not destroyed
+		
+		if (set.vulkanHandle) {
+			m_Device.freeDescriptorSets(m_Pools[set.poolIndex], 1, &(set.vulkanHandle));
+			set.vulkanHandle = nullptr;
+		}
 	}
 
 	vk::DescriptorPool DescriptorManager::allocateDescriptorPool() {
 		vk::DescriptorPool pool;
-		if (m_Device.createDescriptorPool(&m_PoolInfo, nullptr, &pool) != vk::Result::eSuccess)
-		{
+		if (m_Device.createDescriptorPool(&m_PoolInfo, nullptr, &pool) != vk::Result::eSuccess) {
 			vkcv_log(LogLevel::WARNING, "Failed to allocate descriptor pool");
 			pool = nullptr;
-		};
-		m_Pools.push_back(pool);
+		} else {
+			m_Pools.push_back(pool);
+		}
+		
 		return pool;
 	}
 

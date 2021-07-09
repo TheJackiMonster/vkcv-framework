@@ -3,7 +3,7 @@
 #include "voxel.inc"
 
 layout(set=0, binding=0, std430) buffer voxelBuffer{
-    uint packedVoxelData[];
+    PackedVoxelData packedVoxelData[];
 };
 
 layout(set=0, binding=1, rgba16f) uniform image3D voxelImage;
@@ -19,6 +19,15 @@ void main(){
     ivec3 UV = ivec3(gl_GlobalInvocationID);
     uint flatIndex = flattenVoxelUVToIndex(UV, voxelImageSize);
     
-    vec4 color = unpackVoxelInfo(packedVoxelData[flatIndex]);
+    vec4 color = unpackVoxelColor(packedVoxelData[flatIndex].color);
+    
+    // for proper visualisation voxel secondary bounce should be disabled, otherwise it adds color
+    
+    // for debugging: write normal into image, so voxel visualisation draws normal
+    // color = vec4(unpackVoxelNormal(packedVoxelData[flatIndex].normal), color.a); 
+    
+    // for debugging: write albedo into image, so voxel visualisation draws albedo
+    // color = vec4(unpackVoxelAlbedo(packedVoxelData[flatIndex].albedo), color.a); 
+    
     imageStore(voxelImage, UV, vec4(color));
 }
