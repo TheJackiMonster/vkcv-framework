@@ -87,5 +87,5 @@ add_subdirectory(projects)
 
 if (NOT WIN32)
 	# add doxygen as target if installed
-	#include(${vkcv_config}/ext/Doxygen.cmake)
+	include(${vkcv_config}/ext/Doxygen.cmake)
 endif()
