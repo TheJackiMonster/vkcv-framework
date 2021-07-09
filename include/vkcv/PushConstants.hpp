@@ -3,6 +3,8 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
+#include "Logger.hpp"
+
 namespace vkcv {
 	
 	class PushConstants {
@@ -48,6 +50,8 @@ namespace vkcv {
 		template<typename T = uint8_t>
 		bool appendDrawcall(const T& value) {
 			if (sizeof(T) != m_sizePerDrawcall) {
+				vkcv_log(LogLevel::WARNING, "Size (%lu) of value does not match the specified size per drawcall (%lu)",
+						 sizeof(value), m_sizePerDrawcall);
 				return false;
 			}
 			
