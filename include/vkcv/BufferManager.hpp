@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
+#include <vk_mem_alloc.hpp>
 
 #include "Handles.hpp"
 
@@ -30,9 +31,8 @@ namespace vkcv
 		struct Buffer
 		{
 			vk::Buffer m_handle;
-			vk::DeviceMemory m_memory;
+			vma::Allocation m_allocation;
 			size_t m_size = 0;
-			void* m_mapped = nullptr;
 			bool m_mappable = false;
 		};
 		
