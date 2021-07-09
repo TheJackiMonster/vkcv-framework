@@ -34,9 +34,8 @@ int main(int argc, const char** argv) {
 
 	if (result == 1) {
 		std::cout << "Mesh loading successful!" << std::endl;
-	}
-	else {
-		std::cout << "Mesh loading failed: " << result << std::endl;
+	} else {
+		std::cerr << "Mesh loading failed: " << result << std::endl;
 		return 1;
 	}
 
@@ -74,7 +73,7 @@ int main(int argc, const char** argv) {
 	vkcv::PassHandle firstMeshPass = core.createPass(firstMeshPassDefinition);
 
 	if (!firstMeshPass) {
-		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
+		std::cerr << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -113,12 +112,15 @@ int main(int argc, const char** argv) {
 	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
 	
 	if (!firstMeshPipeline) {
-		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
+		std::cerr << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 	
-	// FIXME There should be a test here to make sure there is at least 1
-	// texture in the mesh.
+	if (mesh.textures.empty()) {
+		std::cerr << "Error. No textures found. Exiting." << std::endl;
+		return EXIT_FAILURE;
+	}
+	
 	vkcv::asset::Texture &tex = mesh.textures[0];
 	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
 	texture.fill(tex.data.data());
