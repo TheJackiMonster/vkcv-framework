@@ -14,9 +14,13 @@ public:
 };
 
 #define VMA_MUTEX VmaMutex
+
+// TODO: This is not actually a valid way to do aligned allocations!
+#define VMA_SYSTEM_ALIGNED_MALLOC(size, alignment) (malloc(size))
+#else
+#define VMA_SYSTEM_ALIGNED_MALLOC(size, alignment) (aligned_alloc((alignment), (size)))
 #endif
 
-#define VMA_SYSTEM_ALIGNED_MALLOC(size, alignment) (aligned_alloc((alignment), (size)))
 #define VMA_SYSTEM_FREE(ptr) free(ptr)
 #endif
 
