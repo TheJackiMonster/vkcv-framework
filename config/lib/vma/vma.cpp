@@ -3,8 +3,8 @@
 #define _DEBUG
 #endif
 
-#ifdef __MINGW32__
-
+#ifndef _MSVC_LANG
+#include <stdlib.h>
 #include <mutex>
 
 class VmaMutex {
@@ -16,7 +16,6 @@ private:
 };
 
 #define VMA_MUTEX VmaMutex
-
 #define VMA_SYSTEM_ALIGNED_MALLOC(size, alignment) (aligned_alloc((alignment), (size) ))
 #define VMA_SYSTEM_FREE(ptr) free(ptr)
 #endif
