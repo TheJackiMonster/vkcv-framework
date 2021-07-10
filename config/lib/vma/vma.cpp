@@ -5,18 +5,18 @@
 
 #ifndef _MSVC_LANG
 #include <stdlib.h>
-#include <mutex>
 
+#ifdef __MINGW32__
 class VmaMutex {
 public:
-	void Lock() { m_Mutex.lock(); }
-	void Unlock() { m_Mutex.unlock(); }
-private:
-	std::mutex m_Mutex;
+	void Lock() {} // TODO: This should actually lock!
+	void Unlock() {} // TODO: This should actually unlock!
 };
 
 #define VMA_MUTEX VmaMutex
-#define VMA_SYSTEM_ALIGNED_MALLOC(size, alignment) (aligned_alloc((alignment), (size) ))
+#endif
+
+#define VMA_SYSTEM_ALIGNED_MALLOC(size, alignment) (aligned_alloc((alignment), (size)))
 #define VMA_SYSTEM_FREE(ptr) free(ptr)
 #endif
 
