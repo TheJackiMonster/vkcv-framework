@@ -1,16 +1,24 @@
 
-#include <mutex>
-
 #ifndef NDEBUG
 #define _DEBUG
 #endif
 
-#ifndef _WIN32
+#ifdef __MINGW32__
 
-#ifndef _aligned_malloc
-#define _aligned_malloc(alignment, size) aligned_alloc((alignment), (size))
-#endif
+#include <mutex>
 
+class VmaMutex {
+public:
+	void Lock() { m_Mutex.lock(); }
+	void Unlock() { m_Mutex.unlock(); }
+private:
+	std::mutex m_Mutex;
+};
+
+#define VMA_MUTEX VmaMutex
+
+#define VMA_SYSTEM_ALIGNED_MALLOC(size, alignment) (aligned_alloc((alignment), (size) ))
+#define VMA_SYSTEM_FREE(ptr) free(ptr)
 #endif
 
 #define VMA_IMPLEMENTATION
