@@ -383,7 +383,7 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 	fx::gltf::Document &sceneObjects, 
 	std::vector<VertexGroup> &vertexGroups,
 	std::vector<int> &vertexGroupsIndices,
-	int &groupCount) {
+	int &groupCount, bool probe) {
 
 	const size_t numVertexGroups = objectMesh.primitives.size();
 	vertexGroups.reserve(numVertexGroups);
@@ -415,8 +415,8 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 
 		IndexType indexType;
 		std::vector<uint8_t> indexBufferData = {};
-		if (objectPrimitive.indices >= 0) { // if there is no index buffer, -1 is returned from fx-gltf
-			const fx::gltf::Accessor& indexAccessor = sceneObjects.accessors[objectPrimitive.indices];
+		const fx::gltf::Accessor& indexAccessor = sceneObjects.accessors[objectPrimitive.indices];
+		if (objectPrimitive.indices >= 0 && !probe) { // if there is no index buffer, -1 is returned from fx-gltf
 			const fx::gltf::BufferView& indexBufferView = sceneObjects.bufferViews[indexAccessor.bufferView];
 			const fx::gltf::Buffer& indexBuffer = sceneObjects.buffers[indexBufferView.buffer];
 
@@ -429,12 +429,11 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 					return ASSET_ERROR;
 				}
 			}
-
-			indexType = getIndexType(indexAccessor.componentType);
-			if (indexType == IndexType::UNDEFINED) {
-				vkcv_log(LogLevel::ERROR, "Index Type undefined or not supported.");
-				return ASSET_ERROR;
-			}
+		}
+		indexType = getIndexType(indexAccessor.componentType);
+		if (indexType == IndexType::UNDEFINED) {
+			vkcv_log(LogLevel::ERROR, "Index Type undefined or not supported.");
+			return ASSET_ERROR;
 		}
 
 		const fx::gltf::BufferView& vertexBufferView = sceneObjects.bufferViews[posAccessor.bufferView];
@@ -452,20 +451,22 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 
 		// FIXME: This only works when all vertex attributes are in one buffer
 		std::vector<uint8_t> vertexBufferData;
-		vertexBufferData.resize(relevantBufferSize);
-		{
-			const void* const ptr = ((char*)vertexBuffer.data.data()) + relevantBufferOffset;
-			if (!memcpy(vertexBufferData.data(), ptr, relevantBufferSize)) {
-				vkcv_log(LogLevel::ERROR, "Copying vertex buffer data");
-				return ASSET_ERROR;
+		if (!probe) {
+			vertexBufferData.resize(relevantBufferSize);
+			{
+				const void* const ptr = ((char*)vertexBuffer.data.data()) + relevantBufferOffset;
+				if (!memcpy(vertexBufferData.data(), ptr, relevantBufferSize)) {
+					vkcv_log(LogLevel::ERROR, "Copying vertex buffer data");
+					return ASSET_ERROR;
+				}
+			}
+
+			// make vertex attributes relative to copied section
+			for (auto& attribute : vertexAttributes) {
+				attribute.offset -= relevantBufferOffset;
 			}
 		}
-
-		// make vertex attributes relative to copied section
-		for (auto& attribute : vertexAttributes) {
-			attribute.offset -= relevantBufferOffset;
-		}
-
+		
 		vertexGroups.push_back({
 			static_cast<PrimitiveMode>(objectPrimitive.mode),
 			sceneObjects.accessors[objectPrimitive.indices].count,
@@ -579,7 +580,7 @@ int loadScene(const std::filesystem::path &path, Scene &scene){
         std::vector<int> vertexGroupsIndices;
         fx::gltf::Mesh const &objectMesh = sceneObjects.meshes[i];
 
-		if (createVertexGroups(objectMesh, sceneObjects, vertexGroups, vertexGroupsIndices, groupCount) != ASSET_SUCCESS) {
+		if (createVertexGroups(objectMesh, sceneObjects, vertexGroups, vertexGroupsIndices, groupCount, false) != ASSET_SUCCESS) {
 			vkcv_log(LogLevel::ERROR, "Failed to get Vertex Groups!");
 			return ASSET_ERROR;
 		}
@@ -652,6 +653,201 @@ TextureData loadTexture(const std::filesystem::path& path) {
     texture.data.resize(texture.width * texture.height * 4);
     memcpy(texture.data.data(), data, texture.data.size());
     return texture;
+}
+
+int probeScene(const std::filesystem::path& path, Scene& scene) {
+	fx::gltf::Document sceneObjects;
+
+	try {
+		if (path.extension() == ".glb") {
+			sceneObjects = fx::gltf::LoadFromBinary(path.string());
+		}
+		else {
+			sceneObjects = fx::gltf::LoadFromText(path.string());
+		}
+	}
+	catch (const std::system_error& err) {
+		recurseExceptionPrint(err, path.string());
+		return ASSET_ERROR;
+	}
+	catch (const std::exception& e) {
+		recurseExceptionPrint(e, path.string());
+		return ASSET_ERROR;
+	}
+	auto dir = path.parent_path().string();
+
+	// file has to contain at least one mesh
+	if (sceneObjects.meshes.empty()) {
+		return ASSET_ERROR;
+	}
+
+	std::vector<Material> materials;
+	std::vector<Texture> textures;
+	std::vector<Sampler> samplers;
+	std::vector<Mesh> meshes;
+	std::vector<VertexGroup> vertexGroups;
+	int groupCount = 0;
+
+	for (size_t i = 0; i < sceneObjects.meshes.size(); i++) {
+		std::vector<int> vertexGroupsIndices;
+		fx::gltf::Mesh const& objectMesh = sceneObjects.meshes[i];
+
+		if (createVertexGroups(objectMesh, sceneObjects, vertexGroups, vertexGroupsIndices, groupCount, true) != ASSET_SUCCESS) {
+			vkcv_log(LogLevel::ERROR, "Failed to get Vertex Groups!");
+			return ASSET_ERROR;
+		}
+
+		Mesh mesh = {};
+		mesh.name = sceneObjects.meshes[i].name;
+		mesh.vertexGroups = vertexGroupsIndices;
+
+		meshes.push_back(mesh);
+	}
+
+	// This only works if the node has a mesh and it only loads the meshes and ignores cameras and lights
+	for (auto& node : sceneObjects.nodes) {
+		if (node.mesh > -1) {
+			meshes[node.mesh].modelMatrix = computeModelMatrix(
+				node.translation,
+				node.scale,
+				node.rotation,
+				node.matrix
+			);
+		}
+	}
+
+	/*if (createTextures(sceneObjects.textures, sceneObjects.images, sceneObjects.buffers, sceneObjects.bufferViews, dir, textures) != ASSET_SUCCESS) {
+		size_t missing = sceneObjects.textures.size() - textures.size();
+		vkcv_log(LogLevel::ERROR, "Failed to get %lu textures from glTF source '%s'",
+			missing, path.c_str());
+	}*/
+
+
+	if (createMaterial(sceneObjects, materials) != ASSET_SUCCESS) {
+		vkcv_log(LogLevel::ERROR, "Failed to get Materials!");
+		return ASSET_ERROR;
+	}
+
+	/*samplers.reserve(sceneObjects.samplers.size());
+	for (const auto& it : sceneObjects.samplers) {
+		samplers.push_back({});
+		auto& sampler = samplers.back();
+		if (translateSampler(it, sampler) != ASSET_SUCCESS) {
+			return ASSET_ERROR;
+		}
+	}*/
+
+	scene = {
+			meshes,
+			vertexGroups,
+			materials,
+			textures,
+			samplers
+	};
+
+	return ASSET_SUCCESS;
+}
+
+
+int loadMesh(const std::filesystem::path& path, Scene& scene, std::string name) {
+	fx::gltf::Document sceneObjects;
+
+	try {
+		if (path.extension() == ".glb") {
+			sceneObjects = fx::gltf::LoadFromBinary(path.string());
+		}
+		else {
+			sceneObjects = fx::gltf::LoadFromText(path.string());
+		}
+	}
+	catch (const std::system_error& err) {
+		recurseExceptionPrint(err, path.string());
+		return ASSET_ERROR;
+	}
+	catch (const std::exception& e) {
+		recurseExceptionPrint(e, path.string());
+		return ASSET_ERROR;
+	}
+	auto dir = path.parent_path().string();
+
+	// file has to contain at least one mesh
+	if (sceneObjects.meshes.empty()) {
+		return ASSET_ERROR;
+	}
+
+	std::vector<Material> materials;
+	std::vector<Texture> textures;
+	std::vector<Sampler> samplers;
+	std::vector<Mesh> meshes;
+	std::vector<VertexGroup> vertexGroups;
+	int groupCount = 0;
+	int meshIndex = -1;
+
+	for (size_t i = 0; i < sceneObjects.meshes.size(); i++) {
+		if (sceneObjects.meshes[i].name == name) {
+			std::vector<int> vertexGroupsIndices;
+			fx::gltf::Mesh const& objectMesh = sceneObjects.meshes[i];
+
+			if (createVertexGroups(objectMesh, sceneObjects, vertexGroups, vertexGroupsIndices, groupCount, false) != ASSET_SUCCESS) {
+				vkcv_log(LogLevel::ERROR, "Failed to get Vertex Groups!");
+				return ASSET_ERROR;
+			}
+
+			Mesh mesh = {};
+			mesh.name = sceneObjects.meshes[i].name;
+			mesh.vertexGroups = vertexGroupsIndices;
+
+			meshes.push_back(mesh);
+			meshIndex = i;
+			break;
+		}
+	}
+
+	if (meshes.empty()) {
+		vkcv_log(LogLevel::ERROR, "No mesh by that name!");
+		return ASSET_ERROR;
+	}
+
+	// This only works if the node has a mesh and it only loads the meshes and ignores cameras and lights
+	if (sceneObjects.nodes[meshIndex].mesh > -1) {
+		meshes[sceneObjects.nodes[meshIndex].mesh].modelMatrix = computeModelMatrix(
+			sceneObjects.nodes[meshIndex].translation,
+			sceneObjects.nodes[meshIndex].scale,
+			sceneObjects.nodes[meshIndex].rotation,
+			sceneObjects.nodes[meshIndex].matrix
+		);
+	}
+
+	if (createTextures(sceneObjects.textures, sceneObjects.images, sceneObjects.buffers, sceneObjects.bufferViews, dir, textures) != ASSET_SUCCESS) {
+		size_t missing = sceneObjects.textures.size() - textures.size();
+		vkcv_log(LogLevel::ERROR, "Failed to get %lu textures from glTF source '%s'",
+			missing, path.c_str());
+	}
+
+
+	if (createMaterial(sceneObjects, materials) != ASSET_SUCCESS) {
+		vkcv_log(LogLevel::ERROR, "Failed to get Materials!");
+		return ASSET_ERROR;
+	}
+
+	samplers.reserve(sceneObjects.samplers.size());
+	for (const auto& it : sceneObjects.samplers) {
+		samplers.push_back({});
+		auto& sampler = samplers.back();
+		if (translateSampler(it, sampler) != ASSET_SUCCESS) {
+			return ASSET_ERROR;
+		}
+	}
+
+	scene = {
+			meshes,
+			vertexGroups,
+			materials,
+			textures,
+			samplers
+	};
+
+	return ASSET_SUCCESS;
 }
 
 }

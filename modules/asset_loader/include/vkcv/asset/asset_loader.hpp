@@ -227,12 +227,18 @@ typedef struct {
  */
 int loadScene(const std::filesystem::path &path, Scene &scene);
 
+int probeScene(const std::filesystem::path &path, Scene &scene);
+
+int loadMesh(const std::filesystem::path& path, Scene& scene, std::string name);
+
+
 struct TextureData {
     int width;
     int height;
     int componentCount;
     std::vector<char*> data;
 };
+
 TextureData loadTexture(const std::filesystem::path& path);
 
 }
