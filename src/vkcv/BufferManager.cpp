@@ -49,7 +49,7 @@ namespace vkcv {
 				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
 				break;
 			default:
-				// TODO: maybe an issue
+				vkcv_log(LogLevel::WARNING, "Unknown buffer type");
 				break;
 		}
 		
@@ -79,6 +79,10 @@ namespace vkcv {
 				memoryUsage = vma::MemoryUsage::eUnknown;
 				mappable = false;
 				break;
+		}
+		
+		if (type == BufferType::STAGING) {
+			memoryUsage = vma::MemoryUsage::eCpuToGpu;
 		}
 		
 		auto bufferAllocation = allocator.createBuffer(
