@@ -3,6 +3,7 @@
 #include <vkcv/camera/Camera.hpp>
 
 #include <glm/glm.hpp>
+#define GLM_ENABLE_EXPERIMENTAL // use this before inclusion, else error!
 #include <glm/gtx/transform.hpp>
 
 struct LightInfo {
