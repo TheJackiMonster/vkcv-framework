@@ -223,9 +223,9 @@ namespace vkcv
 			Multisampling   multisampling = Multisampling::None);
 
         [[nodiscard]]
-        const uint32_t getImageWidth(ImageHandle imageHandle);
+        uint32_t getImageWidth(ImageHandle imageHandle);
         [[nodiscard]]
-        const uint32_t getImageHeight(ImageHandle imageHandle);
+        uint32_t getImageHeight(ImageHandle imageHandle);
 
         /** TODO:
          *   @param setDescriptions
@@ -246,7 +246,7 @@ namespace vkcv
             const CommandStreamHandle       cmdStreamHandle,
 			const PassHandle                renderpassHandle, 
 			const PipelineHandle            pipelineHandle,
-			const PushConstantData          &pushConstantData,
+			const PushConstants             &pushConstants,
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets);
 
@@ -255,7 +255,7 @@ namespace vkcv
 			PipelineHandle computePipeline,
 			const uint32_t dispatchCount[3],
 			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
-			const PushConstantData& pushConstantData);
+			const PushConstants& pushConstants);
 
 		/**
 		 * @brief end recording and present image

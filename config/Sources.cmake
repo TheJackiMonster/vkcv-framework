@@ -21,6 +21,8 @@ set(vkcv_sources
 
 		${vkcv_include}/vkcv/Buffer.hpp
 		
+		${vkcv_include}/vkcv/PushConstants.hpp
+		
 		${vkcv_include}/vkcv/BufferManager.hpp
 		${vkcv_source}/vkcv/BufferManager.cpp
 
