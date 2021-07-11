@@ -67,8 +67,6 @@ int main(int argc, const char** argv) {
 		deviceExtensions
 	);
 
-	vk::RayTracingPipelineCreateInfoNV rtnv;
-	
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
 			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
 	));
