@@ -140,7 +140,7 @@ enum class PrimitiveType : uint32_t {
     NORMAL = 2,
     TEXCOORD_0 = 3,
     TEXCOORD_1 = 4,
-	TANGENT = 5,
+    TANGENT = 5,
     COLOR_0 = 6,
     COLOR_1 = 7,
     JOINTS_0 = 8,
@@ -227,8 +227,14 @@ typedef struct {
  */
 int loadScene(const std::filesystem::path &path, Scene &scene);
 
+/**
+ * TODO document
+ */
 int probeScene(const std::filesystem::path &path, Scene &scene);
 
+/**
+ * TODO document
+ */
 int loadMesh(const std::filesystem::path& path, Scene& scene, std::string name);
 
 
