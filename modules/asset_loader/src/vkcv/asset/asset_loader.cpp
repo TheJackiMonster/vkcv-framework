@@ -246,10 +246,9 @@ std::array<float, 16> computeModelMatrix(std::array<float, 3> translation, std::
 
 }
 
-/* TODO Should probably be a member function of vkcv::asset::Material */
-bool materialHasTexture(const Material *const m, const PBRTextureTarget t)
+bool Material::hasTexture(const PBRTextureTarget t) const
 {
-	return m->textureMask & bitflag(t);
+	return textureMask & bitflag(t);
 }
 
  /**

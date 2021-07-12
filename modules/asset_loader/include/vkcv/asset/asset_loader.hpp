@@ -85,22 +85,6 @@ typedef struct {
 } Texture;
 
 /**
- * The asset loader module only supports the PBR-MetallicRoughness model for
- * materials.
- */
-typedef struct {
-	uint16_t textureMask;	// bit mask with active texture targets
-	// Indices into the Scene.textures vector
-	int baseColor, metalRough, normal, occlusion, emissive;
-	// Scaling factors for each texture target
-	struct { float r, g, b, a; } baseColorFactor;
-	float metallicFactor, roughnessFactor;
-	float normalScale;
-	float occlusionStrength;
-	struct { float r, g, b; } emissiveFactor;
-} Material;
-
-/**
  * Flags for the bit-mask in the Material struct. To check if a material has a
  * certain texture target, you can use the hasTexture() function below, passing
  * the material struct and the enum.
@@ -122,16 +106,31 @@ enum class PBRTextureTarget {
 #define bitflag(ENUM) (0x1u << ((unsigned)(ENUM)))
 
 /**
- * To signal that a certain texture target is active in a Material struct, its
- * bit is set in the textureMask. You can use this function to check that:
- * Material mat = ...;
- * if (materialHasTexture(&mat, baseColor)) {...}
- * @param m The material to query
- * @param t The target to query for
- * @return Boolean to signal whether the texture target is active in the
- * material.
+ * The asset loader module only supports the PBR-MetallicRoughness model for
+ * materials.
  */
-bool materialHasTexture(const Material *const m, const PBRTextureTarget t);
+typedef struct {
+	uint16_t textureMask;	// bit mask with active texture targets
+	// Indices into the Scene.textures vector
+	int baseColor, metalRough, normal, occlusion, emissive;
+	// Scaling factors for each texture target
+	struct { float r, g, b, a; } baseColorFactor;
+	float metallicFactor, roughnessFactor;
+	float normalScale;
+	float occlusionStrength;
+	struct { float r, g, b; } emissiveFactor;
+
+	/**
+	 * To signal that a certain texture target is active in this Material
+	 * struct, its bit is set in the textureMask. You can use this function
+	 * to check that:
+	 * if (myMaterial.hasTexture(baseColor)) {...}
+	 * @param t The target to query for
+	 * @return Boolean to signal whether the texture target is active in
+	 * the material.
+	 */
+	bool hasTexture(const PBRTextureTarget t) const;
+} Material;
 
 /* With these enums, 0 is reserved to signal uninitialized or invalid data. */
 enum class PrimitiveType : uint32_t {
