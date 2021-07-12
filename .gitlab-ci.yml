@@ -65,6 +65,8 @@ build_mac_clang:
   script:
     - mkdir debug
     - cd debug
+    - export LDFLAGS="-L/usr/local/opt/llvm/lib"
+    - export CPPFLAGS="-I/usr/local/opt/llvm/include"
     - cmake -DCMAKE_BUILD_TYPE=Debug ..
     - cmake --build .
 
