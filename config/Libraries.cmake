@@ -5,8 +5,6 @@ set(vkcv_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_lib})
 if(NOT WIN32)
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		set(vkcv_libraries stdc++fs)
-	else()
-		set(vkcv_libraries c++fs)
 	endif()
 	
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
