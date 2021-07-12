@@ -1,7 +1,7 @@
 variables:
   RUN:
     value: "all"
-    description: "The tests that should run. Possible values: ubuntu, win, osx, all."
+    description: "The tests that should run. Possible values: ubuntu, win, mac, all."
   GIT_DEPTH: 1
 
 stages:
@@ -51,10 +51,10 @@ build_win10_msvc:
     - cmake -DCMAKE_BUILD_TYPE=Debug ..
     - cmake --build .
 
-build_osx_clang:
+build_mac_clang:
   only:
     variables:
-      - $RUN =~ /\bosx.*/i || $RUN =~ /\ball.*/i
+      - $RUN =~ /\bmac.*/i || $RUN =~ /\ball.*/i
   stage: build
   tags: 
     - catalina-clang-cached
