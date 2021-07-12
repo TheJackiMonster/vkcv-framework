@@ -41,7 +41,7 @@ build_win10_msvc:
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
   timeout: 10m
-  retry: 0
+  retry: 1
   script:
     - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
     - .\Launch-VsDevShell.ps1
