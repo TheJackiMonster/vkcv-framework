@@ -1,0 +1,18 @@
+#version 450 core
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(local_size_x = 1) in;
+
+layout(std430, binding = 0) coherent buffer buffer_input
+{
+    int bufferInput[];
+};
+
+layout( push_constant ) uniform constants{
+    int increment;
+};
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+    bufferInput[id] += increment;
+}
