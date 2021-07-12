@@ -13,6 +13,7 @@ endif()
 
 message("-- Language: [ C++ " ${CMAKE_CXX_STANDARD} " ]")
 message("-- Compiler: [ " ${CMAKE_CXX_COMPILER_ID} " " ${CMAKE_CXX_COMPILER_VERSION} " ]")
+message("--   Linker: [ " ${CMAKE_LINKER} " " ${CMAKE_CXX_LINK_EXECUTABLE} " ]")
 
 if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0.0"))
 	message(FATAL_ERROR "Upgrade your compiler! GCC 9.0+ is required!")
