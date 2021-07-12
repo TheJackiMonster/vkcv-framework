@@ -67,7 +67,7 @@ build_mac_clang:
     - cd debug
     - export LDFLAGS="-L/usr/local/opt/llvm/lib"
     - export CPPFLAGS="-I/usr/local/opt/llvm/include"
-    - cmake -DCMAKE_BUILD_TYPE=Debug ..
+    - cmake -DCMAKE_C_COMPILER="/usr/local/opt/llvm/bin/clang" -DCMAKE_CXX_COMPILER="/usr/local/opt/llvm/bin/clang++" -DCMAKE_BUILD_TYPE=Debug ..
     - cmake --build .
 
 deploy_doc_develop:
