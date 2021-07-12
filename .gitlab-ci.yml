@@ -57,7 +57,7 @@ build_osx_clang:
       - $RUN =~ /\bosx.*/i || $RUN =~ /\ball.*/i
   stage: build
   tags: 
-    - osx-clang-cached
+    - catalina-clang-cached
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
   timeout: 10m
