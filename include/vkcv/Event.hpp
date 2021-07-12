@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <mutex>
+#include <vector>
 
 namespace vkcv {
 	
