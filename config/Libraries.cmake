@@ -5,6 +5,10 @@ set(vkcv_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_lib})
 if(NOT WIN32)
 	set(vkcv_libraries  stdc++fs)
 	
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+		list(APPEND vkcv_flags -Xpreprocessor)
+	endif()
+	
 	# optimization for loading times
 	list(APPEND vkcv_flags -pthread)
 	list(APPEND vkcv_flags -fopenmp)
