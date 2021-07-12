@@ -748,6 +748,9 @@ int probeScene(const std::filesystem::path& path, Scene& scene) {
 }
 
 
+// TODO Do we want to _extend_ the given scene with the newly loaded mesh or do
+// we want to _clear_ the scene such that the result will always be an empty
+// scene with only the given mesh (and associated textures etc)?
 int loadMesh(const std::filesystem::path &path, const std::string &name, Scene &scene) {
 	fx::gltf::Document sceneObjects;
 

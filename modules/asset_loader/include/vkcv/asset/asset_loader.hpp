@@ -204,11 +204,11 @@ typedef struct {
 	std::vector<int> vertexGroups;
 } Mesh;
 
-/** The scene struct is simply a collection of objects in the scene as well as
+/**
+ * The scene struct is simply a collection of objects in the scene as well as
  * the resources used by those objects.
- * For now the only type of object are the meshes and they are represented in a
- * flat array.
- * Note that parent-child relations are not yet possible. */
+ * Note that parent-child relations are not yet possible.
+ */
 typedef struct {
 	std::vector<Mesh> meshes;
 	std::vector<VertexGroup> vertexGroups;
@@ -218,21 +218,41 @@ typedef struct {
 } Scene;
 
 /**
- * Load every mesh from the glTF file, as well as materials and textures.
+ * Load every mesh from the glTF file, as well as materials, textures and other
+ * associated objects.
  *
- * @param path must be the path to a glTF or glb file.
+ * @param path	must be the path to a glTF- or glb-file.
  * @param scene is a reference to a Scene struct that will be filled with the
  * 	content of the glTF file being loaded.
  */
 int loadScene(const std::filesystem::path &path, Scene &scene);
 
 /**
- * TODO document
+ * Parse the given glTF file and create a shallow description of the content.
+ * Only the meta-data of the objects in the scene is loaded, not the binary
+ * content. The rationale is to provide a means of probing the content of a
+ * glTF file without the costly process of loading and decoding large amounts
+ * of data. The returned Scene struct can be used to search for specific meshes
+ * in the scene, that can then be loaded on their own using the loadMesh()
+ * function. Note that the Scene struct received as output argument will be
+ * overwritten by this function.
+ *
+ * @param path	must be the path to a glTF- or glb-file.
+ * @param scene	is a reference to a Scene struct that will be filled with the
+ * 	meta-data of all objects described in the glTF file.
  */
 int probeScene(const std::filesystem::path &path, Scene &scene);
 
 /**
- * TODO document
+ * This function loads a single mesh from the given file into the given Scene.
+ * TODO document whather this function extends or overwrites the given scene
+ * The names of meshes can be obtained by calling probeScene() and iterating
+ * through the array of meshes from the probed scene.
+ * Besides the mesh, this function will also add any associated data to the
+ * Scene struct such as Materials and Textures required by the Mesh.
+ *
+ * @param path	must be the path to a glTF- or glb-file.
+ * @param scene	is the scene struct to which the results will be written.
  */
 int loadMesh(const std::filesystem::path &path, const std::string &name, Scene &scene);
 
