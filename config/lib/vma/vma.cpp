@@ -4,24 +4,53 @@
 #endif
 
 #ifndef _MSVC_LANG
+#ifdef __MINGW32__
 #include <stdlib.h>
 
-#ifdef __MINGW32__
 class VmaMutex {
 public:
-	void Lock() {} // TODO: This should actually lock!
-	void Unlock() {} // TODO: This should actually unlock!
+	VmaMutex() : m_locked(false) {}
+	
+	void Lock() {
+		while (m_locked);
+		m_locked = true;
+	}
+	
+	void Unlock() {
+		m_locked = false;
+	}
+private:
+	bool m_locked;
 };
 
 #define VMA_MUTEX VmaMutex
 
-// TODO: This is not actually a valid way to do aligned allocations!
-#define VMA_SYSTEM_ALIGNED_MALLOC(size, alignment) (malloc(size))
-#else
-#define VMA_SYSTEM_ALIGNED_MALLOC(size, alignment) (aligned_alloc((alignment), (size)))
-#endif
+template <typename T>
+T* custom_overestimate_malloc(size_t size) {
+	return new T[size + (sizeof(T) - 1) / sizeof(T)];
+}
 
-#define VMA_SYSTEM_FREE(ptr) free(ptr)
+void* custom_aligned_malloc(size_t alignment, size_t size) {
+	if (alignment > 4) {
+		return custom_overestimate_malloc<u_int64_t>(size);
+	} else
+	if (alignment > 2) {
+		return custom_overestimate_malloc<u_int32_t>(size);
+	} else
+	if (alignment > 1) {
+		return custom_overestimate_malloc<u_int16_t>(size);
+	} else {
+		return custom_overestimate_malloc<u_int8_t>(size);
+	}
+}
+
+void custom_free(void *ptr) {
+	delete[] reinterpret_cast<u_int8_t*>(ptr);
+}
+
+#define VMA_SYSTEM_ALIGNED_MALLOC(size, alignment) (custom_aligned_malloc(alignment, size))
+#define VMA_SYSTEM_FREE(ptr) (custom_free(ptr))
+#endif
 #endif
 
 #define VMA_IMPLEMENTATION
