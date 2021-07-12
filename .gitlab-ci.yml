@@ -1,7 +1,7 @@
 variables:
   RUN:
     value: "all"
-    description: "The tests that should run. Possible values: ubuntu, win, all."
+    description: "The tests that should run. Possible values: ubuntu, win, osx, all."
   GIT_DEPTH: 1
 
 stages:
@@ -46,6 +46,23 @@ build_win10_msvc:
     - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
     - .\Launch-VsDevShell.ps1
     - cd $CI_PROJECT_DIR
+    - mkdir debug
+    - cd debug
+    - cmake -DCMAKE_BUILD_TYPE=Debug ..
+    - cmake --build .
+
+build_osx_clang:
+  only:
+    variables:
+      - $RUN =~ /\bosx.*/i || $RUN =~ /\ball.*/i
+  stage: build
+  tags: 
+    - osx-clang-cached
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  timeout: 10m
+  retry: 1
+  script:
     - mkdir debug
     - cd debug
     - cmake -DCMAKE_BUILD_TYPE=Debug ..
