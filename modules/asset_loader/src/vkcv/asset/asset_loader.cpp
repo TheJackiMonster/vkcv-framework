@@ -749,7 +749,7 @@ int probeScene(const std::filesystem::path& path, Scene& scene) {
 }
 
 
-int loadMesh(const std::filesystem::path& path, Scene& scene, std::string name) {
+int loadMesh(const std::filesystem::path &path, Scene &scene, const std::string &name) {
 	fx::gltf::Document sceneObjects;
 
 	try {

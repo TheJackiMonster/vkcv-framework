@@ -235,7 +235,7 @@ int probeScene(const std::filesystem::path &path, Scene &scene);
 /**
  * TODO document
  */
-int loadMesh(const std::filesystem::path& path, Scene& scene, std::string name);
+int loadMesh(const std::filesystem::path &path, Scene &scene, const std::string &name);
 
 
 struct TextureData {
