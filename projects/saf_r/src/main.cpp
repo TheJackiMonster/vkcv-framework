@@ -153,12 +153,11 @@ int main(int argc, const char** argv) {
             { "VK_KHR_swapchain" }
     );
 
-    vkcv::asset::TextureData texData = vkcv::asset::loadTexture("textures/texture.ppm");
+    vkcv::asset::TextureData texData = vkcv::asset::loadTexture("textures/texture.png");
     vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, 800, 600);
     texture.fill( texData.data.data());
     texture.generateMipChainImmediate();
     texture.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-
 
     const auto& context = core.getContext();
 
