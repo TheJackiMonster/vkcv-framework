@@ -2,6 +2,7 @@
 #include <vkcv/Core.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
+#include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <chrono>
 #include <limits>
@@ -10,8 +11,6 @@
 #include <fstream>
 #include <vector>
 #include <glm/glm.hpp>
-
-#define STB_IMAGE_IMPLEMENTATION
 
 
 struct Light {
@@ -113,9 +112,11 @@ void render(const std::vector<Sphere> &spheres, const std::vector<Light> &lights
         }
     }
 
+    std::vector<int> img;
     std::ofstream ofs; // save the framebuffer to file
     ofs.open(path + "./texture.ppm");
     ofs << "P3\n" << width << " " << height << "\n255\n";
+
     for (size_t i = 0; i < height*width; ++i) {
         glm::vec3 &c = framebuffer[i];
         float max = std::max(c[0], std::max(c[1], c[2]));
@@ -152,13 +153,12 @@ int main(int argc, const char** argv) {
             { "VK_KHR_swapchain" }
     );
 
-    /*
-    const void* data = NULL;
+    vkcv::asset::TextureData texData = vkcv::asset::loadTexture("textures/texture.ppm");
     vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, 800, 600);
-    texture.fill(data);
+    texture.fill( texData.data.data());
     texture.generateMipChainImmediate();
     texture.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-     */
+
 
     const auto& context = core.getContext();
 
