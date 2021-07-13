@@ -34,7 +34,6 @@ int main(int argc, const char** argv) {
         "VK_KHR_get_physical_device_properties2"
 	};
     std::vector<const char*> raytracingDeviceExtensions = {
-        // vulkan raytracing extensions (according to https://www.khronos.org/blog/ray-tracing-in-vulkan)
         "VK_KHR_maintenance3",
         "VK_EXT_descriptor_indexing",
         "VK_KHR_buffer_device_address",
@@ -43,11 +42,7 @@ int main(int argc, const char** argv) {
         "VK_KHR_spirv_1_4",
         "VK_KHR_ray_tracing_pipeline",
         "VK_KHR_ray_query",
-        "VK_KHR_pipeline_library",
-
-        // turing raytracing extensions (rtx) (according to https://developer.nvidia.com/vulkan-turing)
-        "VK_KHR_get_memory_requirements2",
-        "VK_NV_ray_tracing"
+        "VK_KHR_pipeline_library"
     };
 
     std::vector<const char*> instanceExtensions = {};
