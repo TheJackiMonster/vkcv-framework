@@ -12,6 +12,7 @@ layout( push_constant ) uniform constants{
 };
 
 layout(location = 0) out vec3 passNormal[];
+layout(location = 1) out uint passTaskIndex[];
 
 struct Vertex
 {
@@ -45,8 +46,10 @@ void main()	{
     
     vec3 inPos      = vertices[index].position;
     vec3 inNormal   = vertices[index].normal;
+    
     gl_MeshVerticesNV[workIndex].gl_Position    = mvp * vec4(inPos, 1);
     passNormal[workIndex]                       = inNormal;
+    passTaskIndex[workIndex]                    = previousMeshGroupCount;
     
     if(gl_LocalInvocationID.x == 0){
         gl_PrimitiveCountNV = 10;
