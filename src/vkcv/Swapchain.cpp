@@ -78,10 +78,13 @@ namespace vkcv
         if(physicalDevice.getSurfaceCapabilitiesKHR(surface,&surfaceCapabilities) != vk::Result::eSuccess){
             throw std::runtime_error("cannot get surface capabilities. There is an issue with the surface.");
         }
-
+        
+        int fb_width, fb_height;
+        window.getFramebufferSize(fb_width, fb_height);
+        
         VkExtent2D extent2D = {
-                static_cast<uint32_t>(window.getWidth()),
-                static_cast<uint32_t>(window.getHeight())
+                static_cast<uint32_t>(fb_width),
+                static_cast<uint32_t>(fb_height)
         };
         
         extent2D.width = std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, extent2D.width));
@@ -97,18 +100,14 @@ namespace vkcv
      * @return available Format
      */
     vk::SurfaceFormatKHR chooseSurfaceFormat(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
-        uint32_t formatCount;
-        physicalDevice.getSurfaceFormatsKHR(surface, &formatCount, nullptr);
-        std::vector<vk::SurfaceFormatKHR> availableFormats(formatCount);
-        if (physicalDevice.getSurfaceFormatsKHR(surface, &formatCount, &availableFormats[0]) != vk::Result::eSuccess) {
-            throw std::runtime_error("Failed to get surface formats");
-        }
+        std::vector<vk::SurfaceFormatKHR> availableFormats = physicalDevice.getSurfaceFormatsKHR(surface);
 
         for (const auto& availableFormat : availableFormats) {
             if (availableFormat.format == vk::Format::eB8G8R8A8Unorm  && availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
                 return availableFormat;
             }
         }
+        
         return availableFormats[0];
     }
 
@@ -119,12 +118,7 @@ namespace vkcv
      * @return available PresentationMode
      */
     vk::PresentModeKHR choosePresentMode(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
-        uint32_t modeCount;
-        physicalDevice.getSurfacePresentModesKHR( surface, &modeCount, nullptr );
-        std::vector<vk::PresentModeKHR> availablePresentModes(modeCount);
-        if (physicalDevice.getSurfacePresentModesKHR(surface, &modeCount, &availablePresentModes[0]) != vk::Result::eSuccess) {
-            throw std::runtime_error("Failed to get presentation modes");
-        }
+        std::vector<vk::PresentModeKHR> availablePresentModes = physicalDevice.getSurfacePresentModesKHR(surface);
 
         for (const auto& availablePresentMode : availablePresentModes) {
             if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
@@ -142,12 +136,11 @@ namespace vkcv
      * @return available ImageCount
      */
     uint32_t chooseImageCount(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
-        vk::SurfaceCapabilitiesKHR surfaceCapabilities;
-        if(physicalDevice.getSurfaceCapabilitiesKHR(surface, &surfaceCapabilities) != vk::Result::eSuccess){
-            throw std::runtime_error("cannot get surface capabilities. There is an issue with the surface.");
-        }
-
-        uint32_t imageCount = surfaceCapabilities.minImageCount + 1;    // minImageCount should always be at least 2; set to 3 for triple buffering
+        vk::SurfaceCapabilitiesKHR surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
+	
+		// minImageCount should always be at least 2; set to 3 for triple buffering
+        uint32_t imageCount = surfaceCapabilities.minImageCount + 1;
+        
         // check if requested image count is supported
         if (surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceCapabilities.maxImageCount) {
             imageCount = surfaceCapabilities.maxImageCount;
@@ -212,33 +205,43 @@ namespace vkcv
     }
     
     void Swapchain::updateSwapchain(const Context &context, const Window &window) {
-    	if (!m_RecreationRequired.exchange(false))
-    		return;
+    	if (!m_RecreationRequired.exchange(false)) {
+			return;
+		}
     	
 		vk::SwapchainKHR oldSwapchain = m_Swapchain;
 		vk::Extent2D extent2D = chooseExtent(context.getPhysicalDevice(), m_Surface.handle, window);
 	
-		vk::SwapchainCreateInfoKHR swapchainCreateInfo(
-				vk::SwapchainCreateFlagsKHR(),
-				m_Surface.handle,
-				m_ImageCount,
-				m_Format,
-				m_ColorSpace,
-				extent2D,
-				1,
-				vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
-				vk::SharingMode::eExclusive,
-				0,
-				nullptr,
-				vk::SurfaceTransformFlagBitsKHR::eIdentity,
-				vk::CompositeAlphaFlagBitsKHR::eOpaque,
-				m_PresentMode,
-				true,
-				oldSwapchain
-		);
-	
-		m_Swapchain = context.getDevice().createSwapchainKHR(swapchainCreateInfo);
-		context.getDevice().destroySwapchainKHR(oldSwapchain);
+		if ((extent2D.width >= MIN_SWAPCHAIN_SIZE) && (extent2D.height >= MIN_SWAPCHAIN_SIZE)) {
+			vk::SwapchainCreateInfoKHR swapchainCreateInfo(
+					vk::SwapchainCreateFlagsKHR(),
+					m_Surface.handle,
+					m_ImageCount,
+					m_Format,
+					m_ColorSpace,
+					extent2D,
+					1,
+					vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
+					vk::SharingMode::eExclusive,
+					0,
+					nullptr,
+					vk::SurfaceTransformFlagBitsKHR::eIdentity,
+					vk::CompositeAlphaFlagBitsKHR::eOpaque,
+					m_PresentMode,
+					true,
+					oldSwapchain
+			);
+			
+			m_Swapchain = context.getDevice().createSwapchainKHR(swapchainCreateInfo);
+		} else {
+			m_Swapchain = nullptr;
+			
+			signalSwapchainRecreation();
+		}
+		
+		if (oldSwapchain) {
+			context.getDevice().destroySwapchainKHR(oldSwapchain);
+		}
 		
 		m_Extent = extent2D;
     }

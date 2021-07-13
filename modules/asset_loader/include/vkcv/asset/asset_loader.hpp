@@ -9,6 +9,7 @@
 #include <vector>
 #include <array>
 #include <cstdint>
+#include <filesystem>
 
 /** These macros define limits of the following structs. Implementations can
  * test against these limits when performing sanity checks. The main constraint
@@ -114,7 +115,8 @@ enum class PrimitiveType : uint32_t {
     POSITION = 1,
     NORMAL = 2,
     TEXCOORD_0 = 3,
-    TEXCOORD_1 = 4
+    TEXCOORD_1 = 4,
+    TANGENT = 5
 };
 
 /** These integer values are used the same way in OpenGL, Vulkan and glTF. This
@@ -189,5 +191,12 @@ typedef struct {
  * */
 int loadScene(const std::string &path, Scene &scene);
 
+struct TextureData {
+    int width;
+    int height;
+    int componentCount;
+    std::vector<char*> data;
+};
+TextureData loadTexture(const std::filesystem::path& path);
 
 }

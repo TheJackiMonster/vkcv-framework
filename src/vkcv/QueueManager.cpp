@@ -51,7 +51,7 @@ namespace vkcv {
         }
         //resort flags with heighest priority before allocating the queues
         std::vector<vk::QueueFlagBits> newFlags;
-        for(int i = 0; i < prios.size(); i++) {
+        for(size_t i = 0; i < prios.size(); i++) {
             auto minElem = std::min_element(prios.begin(), prios.end());
             int index = minElem - prios.begin();
             newFlags.push_back(queueFlags[index]);
@@ -79,7 +79,7 @@ namespace vkcv {
             switch (qFlag) {
                 case vk::QueueFlagBits::eGraphics:
                     found = false;
-                    for (int i = 0; i < queueFamilyStatus.size() && !found; i++) {
+                    for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                         if (queueFamilyStatus[i][0] > 0) {
                             queuePairsGraphics.push_back(std::pair(i, initialQueueFamilyStatus[i][0] - queueFamilyStatus[i][0]));
                             queueFamilyStatus[i][0]--;
@@ -89,7 +89,7 @@ namespace vkcv {
                         }
                     }
                     if (!found) {
-                        for (int i = 0; i < queueFamilyStatus.size() && !found; i++) {
+                        for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                             if (initialQueueFamilyStatus[i][0] > 0) {
                                 queuePairsGraphics.push_back(std::pair(i, 0));
                                 found = true;
@@ -101,7 +101,7 @@ namespace vkcv {
                     break;
                 case vk::QueueFlagBits::eCompute:
                     found = false;
-                    for (int i = 0; i < queueFamilyStatus.size() && !found; i++) {
+                    for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                         if (queueFamilyStatus[i][1] > 0) {
                             queuePairsCompute.push_back(std::pair(i, initialQueueFamilyStatus[i][1] - queueFamilyStatus[i][1]));
                             queueFamilyStatus[i][0]--;
@@ -111,7 +111,7 @@ namespace vkcv {
                         }
                     }
                     if (!found) {
-                        for (int i = 0; i < queueFamilyStatus.size() && !found; i++) {
+                        for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                             if (initialQueueFamilyStatus[i][1] > 0) {
                                 queuePairsCompute.push_back(std::pair(i, 0));
                                 found = true;
@@ -123,7 +123,7 @@ namespace vkcv {
                     break;
                 case vk::QueueFlagBits::eTransfer:
                     found = false;
-                    for (int i = 0; i < queueFamilyStatus.size() && !found; i++) {
+                    for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                         if (queueFamilyStatus[i][2] > 0) {
                             queuePairsTransfer.push_back(std::pair(i, initialQueueFamilyStatus[i][2] - queueFamilyStatus[i][2]));
                             queueFamilyStatus[i][0]--;
@@ -133,7 +133,7 @@ namespace vkcv {
                         }
                     }
                     if (!found) {
-                        for (int i = 0; i < queueFamilyStatus.size() && !found; i++) {
+                        for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                             if (initialQueueFamilyStatus[i][2] > 0) {
                                 queuePairsTransfer.push_back(std::pair(i, 0));
                                 found = true;
@@ -149,7 +149,7 @@ namespace vkcv {
         }
 
         // create all requested queues
-        for (int i = 0; i < qFamilyProperties.size(); i++) {
+        for (size_t i = 0; i < qFamilyProperties.size(); i++) {
             uint32_t create = std::abs(initialQueueFamilyStatus[i][0] - queueFamilyStatus[i][0]);
             if (create > 0) {
                 vk::DeviceQueueCreateInfo qCreateInfo(

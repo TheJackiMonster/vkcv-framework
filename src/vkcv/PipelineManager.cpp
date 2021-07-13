@@ -44,24 +44,36 @@ namespace vkcv
 
     vk::PrimitiveTopology primitiveTopologyToVulkanPrimitiveTopology(const PrimitiveTopology topology) {
         switch (topology) {
-        case(PrimitiveTopology::PointList):     return vk::PrimitiveTopology::ePointList;
-        case(PrimitiveTopology::LineList):      return vk::PrimitiveTopology::eLineList;
-        case(PrimitiveTopology::TriangleList):  return vk::PrimitiveTopology::eTriangleList;
-        default: std::cout << "Error: Unknown primitive topology type" << std::endl; return vk::PrimitiveTopology::eTriangleList;
+            case(PrimitiveTopology::PointList):     return vk::PrimitiveTopology::ePointList;
+            case(PrimitiveTopology::LineList):      return vk::PrimitiveTopology::eLineList;
+            case(PrimitiveTopology::TriangleList):  return vk::PrimitiveTopology::eTriangleList;
+            default: std::cout << "Error: Unknown primitive topology type" << std::endl; return vk::PrimitiveTopology::eTriangleList;
         }
     }
 
+    vk::CompareOp depthTestToVkCompareOp(DepthTest depthTest) {
+        switch (depthTest) {
+            case(DepthTest::None):          return vk::CompareOp::eAlways;
+            case(DepthTest::Less):          return vk::CompareOp::eLess;
+            case(DepthTest::LessEqual):     return vk::CompareOp::eLessOrEqual;
+            case(DepthTest::Greater):       return vk::CompareOp::eGreater;
+            case(DepthTest::GreatherEqual): return vk::CompareOp::eGreaterOrEqual;
+            case(DepthTest::Equal):         return vk::CompareOp::eEqual;
+            default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown depth test enum"); return vk::CompareOp::eAlways;
+        }
+    }
+        
 	vk::ShaderStageFlagBits shaderStageToVkShaderStage(vkcv::ShaderStage stage) {
 		switch (stage) {
-		case vkcv::ShaderStage::VERTEX:         return vk::ShaderStageFlagBits::eVertex;
-		case vkcv::ShaderStage::FRAGMENT:       return vk::ShaderStageFlagBits::eFragment;
-		case vkcv::ShaderStage::GEOMETRY:       return vk::ShaderStageFlagBits::eGeometry;
-		case vkcv::ShaderStage::TESS_CONTROL:   return vk::ShaderStageFlagBits::eTessellationControl;
-		case vkcv::ShaderStage::TESS_EVAL:      return vk::ShaderStageFlagBits::eTessellationEvaluation;
-		case vkcv::ShaderStage::COMPUTE:        return vk::ShaderStageFlagBits::eCompute;
-		case vkcv::ShaderStage::TASK:           return vk::ShaderStageFlagBits::eTaskNV;
-		case vkcv::ShaderStage::MESH:           return vk::ShaderStageFlagBits::eMeshNV;
-		default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown shader stage"); return vk::ShaderStageFlagBits::eAll;
+            case vkcv::ShaderStage::VERTEX:         return vk::ShaderStageFlagBits::eVertex;
+            case vkcv::ShaderStage::FRAGMENT:       return vk::ShaderStageFlagBits::eFragment;
+            case vkcv::ShaderStage::GEOMETRY:       return vk::ShaderStageFlagBits::eGeometry;
+            case vkcv::ShaderStage::TESS_CONTROL:   return vk::ShaderStageFlagBits::eTessellationControl;
+            case vkcv::ShaderStage::TESS_EVAL:      return vk::ShaderStageFlagBits::eTessellationEvaluation;
+            case vkcv::ShaderStage::COMPUTE:        return vk::ShaderStageFlagBits::eCompute;
+            case vkcv::ShaderStage::TASK:           return vk::ShaderStageFlagBits::eTaskNV;
+            case vkcv::ShaderStage::MESH:           return vk::ShaderStageFlagBits::eMeshNV;
+            default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown shader stage"); return vk::ShaderStageFlagBits::eAll;
 		}
 	}
 
@@ -238,13 +250,21 @@ namespace vkcv
         vk::Rect2D scissor({ 0,0 }, { config.m_Width, config.m_Height });
         vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
 
+        vk::CullModeFlags cullMode;
+        switch (config.m_culling) {
+            case CullMode::None:    cullMode = vk::CullModeFlagBits::eNone;     break;
+            case CullMode::Front:   cullMode = vk::CullModeFlagBits::eFront;    break;
+            case CullMode::Back:    cullMode = vk::CullModeFlagBits::eBack;     break;
+			default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown CullMode"); cullMode = vk::CullModeFlagBits::eNone;
+        }
+
         // rasterization state
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
                 {},
-                false,
+                config.m_EnableDepthClamping,
                 false,
                 vk::PolygonMode::eFill,
-                vk::CullModeFlagBits::eNone,
+                cullMode,
                 vk::FrontFace::eCounterClockwise,
                 false,
                 0.f,
@@ -264,11 +284,11 @@ namespace vkcv
         // multisample state
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
                 {},
-                vk::SampleCountFlagBits::e1,
+                msaaToVkSampleCountFlag(config.m_multisampling),
                 false,
                 0.f,
                 nullptr,
-                false,
+                config.m_alphaToCoverage,
                 false
         );
 
@@ -277,8 +297,11 @@ namespace vkcv
                                                VK_COLOR_COMPONENT_G_BIT |
                                                VK_COLOR_COMPONENT_B_BIT |
                                                VK_COLOR_COMPONENT_A_BIT);
+
+        // currently set to additive, if not disabled
+        // BlendFactors must be set as soon as additional BlendModes are added
         vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
-                false,
+                config.m_blendMode != BlendMode::None,
                 vk::BlendFactor::eOne,
                 vk::BlendFactor::eOne,
                 vk::BlendOp::eAdd,
@@ -318,9 +341,9 @@ namespace vkcv
 	
 		const vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo(
 				vk::PipelineDepthStencilStateCreateFlags(),
-				true,
-				true,
-				vk::CompareOp::eLessOrEqual,
+				config.m_depthTest != DepthTest::None,
+				config.m_depthWrite,
+				depthTestToVkCompareOp(config.m_depthTest),
 				false,
 				false,
 				{},

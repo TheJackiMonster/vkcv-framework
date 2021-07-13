@@ -78,8 +78,6 @@ namespace vkcv
 
 		event_handle<int,int> e_resizeHandle;
 
-        static std::vector<vk::ImageView> createSwapchainImageViews( Context &context, Swapchain& swapChain);
-
     public:
         /**
          * Destructor of #Core destroys the Vulkan objects contained in the core's context.
@@ -215,13 +213,19 @@ namespace vkcv
          */
         [[nodiscard]]
         Image createImage(
-			vk::Format  format,
-			uint32_t    width,
-			uint32_t    height,
-			uint32_t    depth = 1,
-			bool        createMipChain = false,
-			bool        supportStorage = false,
-			bool        supportColorAttachment = false);
+			vk::Format      format,
+			uint32_t        width,
+			uint32_t        height,
+			uint32_t        depth = 1,
+			bool            createMipChain = false,
+			bool            supportStorage = false,
+			bool            supportColorAttachment = false,
+			Multisampling   multisampling = Multisampling::None);
+
+        [[nodiscard]]
+        uint32_t getImageWidth(ImageHandle imageHandle);
+        [[nodiscard]]
+        uint32_t getImageHeight(ImageHandle imageHandle);
 
         /** TODO:
          *   @param setDescriptions
@@ -242,7 +246,7 @@ namespace vkcv
 			const CommandStreamHandle       cmdStreamHandle,
 			const PassHandle                renderpassHandle, 
 			const PipelineHandle            pipelineHandle,
-			const PushConstantData          &pushConstantData,
+			const PushConstants             &pushConstants,
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets);
 
@@ -250,7 +254,7 @@ namespace vkcv
 			const CommandStreamHandle               cmdStreamHandle,
 			const PassHandle                        renderpassHandle,
 			const PipelineHandle                    pipelineHandle,
-			const PushConstantData&                 pushConstantData,
+			const PushConstants&                    pushConstantData,
             const std::vector<MeshShaderDrawcall>&  drawcalls,
 			const std::vector<ImageHandle>&         renderTargets);
 
@@ -259,7 +263,7 @@ namespace vkcv
 			PipelineHandle computePipeline,
 			const uint32_t dispatchCount[3],
 			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
-			const PushConstantData& pushConstantData);
+			const PushConstants& pushConstants);
 
 		/**
 		 * @brief end recording and present image
@@ -293,7 +297,8 @@ namespace vkcv
 		void prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image);
 		void recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image);
 		void recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer);
-		
+		void resolveMSAAImage(CommandStreamHandle cmdStream, ImageHandle src, ImageHandle dst);
+
 		vk::ImageView getSwapchainImageView() const;
 		
     };

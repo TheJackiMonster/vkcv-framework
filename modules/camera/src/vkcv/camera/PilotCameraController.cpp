@@ -50,12 +50,11 @@ namespace vkcv::camera {
         }
 
         // handle yaw rotation
-        float yaw = camera.getYaw() + static_cast<float>(xOffset);
-        yaw += 360.0f * (yaw < -180.0f) - 360.0f * (yaw > 180.0f);
+        float yaw = camera.getYaw() + static_cast<float>(xOffset) * m_cameraSpeed;
         camera.setYaw(yaw);
 
         // handle pitch rotation
-        float pitch = camera.getPitch() - static_cast<float>(yOffset);
+        float pitch = camera.getPitch() - static_cast<float>(yOffset) * m_cameraSpeed;
         pitch = glm::clamp(pitch, -89.0f, 89.0f);
         camera.setPitch(pitch);
     }

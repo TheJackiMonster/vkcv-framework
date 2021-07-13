@@ -261,7 +261,8 @@ int main(int argc, const char** argv) {
 
 		const bool useMeshShader = true;
 
-		vkcv::PushConstantData pushConstantData((void*)&mvp, sizeof(glm::mat4));
+		vkcv::PushConstants pushConstantData(sizeof(glm::mat4));
+		pushConstantData.appendDrawcall(mvp);
 
 		if (useMeshShader) {
 

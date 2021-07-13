@@ -20,6 +20,35 @@
 
 namespace vkcv
 {
+	
+	static std::vector<vk::ImageView> createSwapchainImageViews( Context &context, const std::vector<vk::Image>& images,
+																 vk::Format format){
+		std::vector<vk::ImageView> imageViews;
+		imageViews.reserve( images.size() );
+		//here can be swizzled with vk::ComponentSwizzle if needed
+		vk::ComponentMapping componentMapping(
+				vk::ComponentSwizzle::eR,
+				vk::ComponentSwizzle::eG,
+				vk::ComponentSwizzle::eB,
+				vk::ComponentSwizzle::eA );
+		
+		vk::ImageSubresourceRange subResourceRange( vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 );
+		
+		for ( auto image : images )
+		{
+			vk::ImageViewCreateInfo imageViewCreateInfo(
+					vk::ImageViewCreateFlags(),
+					image,
+					vk::ImageViewType::e2D,
+					format,
+					componentMapping,
+					subResourceRange);
+			
+			imageViews.push_back(context.getDevice().createImageView(imageViewCreateInfo));
+		}
+		
+		return imageViews;
+	}
 
     Core Core::create(Window &window,
                       const char *applicationName,
@@ -36,12 +65,12 @@ namespace vkcv
 		);
 
         Swapchain swapChain = Swapchain::create(window, context);
-
-		 std::vector<vk::ImageView> swapchainImageViews = createSwapchainImageViews( context, swapChain);
+	
+		const auto swapchainImages = context.getDevice().getSwapchainImagesKHR(swapChain.getSwapchain());
+		const auto swapchainImageViews = createSwapchainImageViews( context, swapchainImages, swapChain.getFormat());
 
         const auto& queueManager = context.getQueueManager();
         
-		const int						graphicQueueFamilyIndex	= queueManager.getGraphicsQueues()[0].familyIndex;
 		const std::unordered_set<int>	queueFamilySet			= generateQueueFamilyIndexSet(queueManager);
 		const auto						commandResources		= createCommandResources(context.getDevice(), queueFamilySet);
 		const auto						defaultSyncResources	= createSyncResources(context.getDevice());
@@ -116,7 +145,6 @@ namespace vkcv
         return m_PipelineManager->createComputePipeline(shaderProgram, descriptorSetLayouts);
     }
 
-
     PassHandle Core::createPass(const PassConfig &config)
     {
         return m_PassManager->createPass(config);
@@ -124,7 +152,6 @@ namespace vkcv
 
 	Result Core::acquireSwapchainImage() {
     	uint32_t imageIndex;
-		
     	vk::Result result;
     	
 		try {
@@ -135,13 +162,20 @@ namespace vkcv
 					nullptr,
 					&imageIndex, {}
 			);
-		} catch (vk::OutOfDateKHRError e) {
+		} catch (const vk::OutOfDateKHRError& e) {
 			result = vk::Result::eErrorOutOfDateKHR;
+		} catch (const vk::DeviceLostError& e) {
+			result = vk::Result::eErrorDeviceLost;
 		}
 		
-		if (result != vk::Result::eSuccess) {
+		if ((result != vk::Result::eSuccess) &&
+			(result != vk::Result::eSuboptimalKHR)) {
 			vkcv_log(LogLevel::ERROR, "%s", vk::to_string(result).c_str());
 			return Result::ERROR;
+		} else
+		if (result == vk::Result::eSuboptimalKHR) {
+			vkcv_log(LogLevel::WARNING, "Acquired image is suboptimal");
+			m_swapchain.signalSwapchainRecreation();
 		}
 		
 		m_currentSwapchainImageIndex = imageIndex;
@@ -153,10 +187,31 @@ namespace vkcv
 			m_Context.getDevice().waitIdle();
 
 			m_swapchain.updateSwapchain(m_Context, m_window);
-			const auto swapchainViews = createSwapchainImageViews(m_Context, m_swapchain);
+			
+			if (!m_swapchain.getSwapchain()) {
+				return false;
+			}
+			
 			const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
+			const auto swapchainViews = createSwapchainImageViews(m_Context, swapchainImages, m_swapchain.getFormat());
+			
+			const auto& extent = m_swapchain.getExtent();
 
-			m_ImageManager->setSwapchainImages(swapchainImages, swapchainViews, width, height, m_swapchain.getFormat());
+			m_ImageManager->setSwapchainImages(
+					swapchainImages,
+					swapchainViews,
+					extent.width, extent.height,
+					m_swapchain.getFormat()
+			);
+		}
+		
+		const auto& extent = m_swapchain.getExtent();
+		
+		width = extent.width;
+		height = extent.height;
+		
+		if ((width < MIN_SWAPCHAIN_SIZE) || (height < MIN_SWAPCHAIN_SIZE)) {
+			return false;
 		}
 		
     	if (acquireSwapchainImage() != Result::SUCCESS) {
@@ -166,11 +221,6 @@ namespace vkcv
     	}
 		
 		m_Context.getDevice().waitIdle(); // TODO: this is a sin against graphics programming, but its getting late - Alex
-		
-		const auto& extent = m_swapchain.getExtent();
-		
-		width = extent.width;
-		height = extent.height;
 		
 		m_ImageManager->setCurrentSwapchainImageIndex(m_currentSwapchainImageIndex);
 
@@ -283,7 +333,7 @@ namespace vkcv
 		const CommandStreamHandle       cmdStreamHandle,
 		const PassHandle                renderpassHandle, 
 		const PipelineHandle            pipelineHandle, 
-        const PushConstantData          &pushConstantData,
+        const PushConstants             &pushConstantData,
         const std::vector<DrawcallInfo> &drawcalls,
 		const std::vector<ImageHandle>  &renderTargets) {
 
@@ -335,6 +385,7 @@ namespace vkcv
 				recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
 			}
 
+        vk::Rect2D dynamicScissor({0, 0}, {width, height});
 			cmdBuffer.endRenderPass();
 		};
 
@@ -350,7 +401,7 @@ namespace vkcv
 		const CommandStreamHandle                           cmdStreamHandle,
 		const PassHandle                                    renderpassHandle,
 		const PipelineHandle                                pipelineHandle,
-		const PushConstantData&                             pushConstantData,
+		const PushConstants&                                pushConstantData,
 		const std::vector<MeshShaderDrawcall>&              drawcalls,
 		const std::vector<ImageHandle>&                     renderTargets) {
 
@@ -399,7 +450,7 @@ namespace vkcv
 			}
 
 			for (int i = 0; i < drawcalls.size(); i++) {
-                const uint32_t pushConstantOffset = i * pushConstantData.sizePerDrawcall;
+                const uint32_t pushConstantOffset = i * pushConstantData.getSizePerDrawcall();
                 recordMeshShaderDrawcall(
                     cmdBuffer,
                     pipelineLayout,
@@ -425,7 +476,7 @@ namespace vkcv
 		PipelineHandle computePipeline,
 		const uint32_t dispatchCount[3],
 		const std::vector<DescriptorSetUsage>& descriptorSetUsages,
-		const PushConstantData& pushConstantData) {
+		const PushConstants& pushConstants) {
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
 
@@ -440,13 +491,13 @@ namespace vkcv
 					{ usage.vulkanHandle },
 					{});
 			}
-			if (pushConstantData.sizePerDrawcall > 0) {
+			if (pushConstants.getSizePerDrawcall() > 0) {
 				cmdBuffer.pushConstants(
 					pipelineLayout,
 					vk::ShaderStageFlagBits::eCompute,
 					0,
-					pushConstantData.sizePerDrawcall,
-					pushConstantData.data);
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getData());
 			}
 			cmdBuffer.dispatch(dispatchCount[0], dispatchCount[1], dispatchCount[2]);
 		};
@@ -478,12 +529,19 @@ namespace vkcv
 		
 		try {
 			result = queueManager.getPresentQueue().handle.presentKHR(presentInfo);
-		} catch (vk::OutOfDateKHRError e) {
+		} catch (const vk::OutOfDateKHRError& e) {
 			result = vk::Result::eErrorOutOfDateKHR;
+		} catch (const vk::DeviceLostError& e) {
+			result = vk::Result::eErrorDeviceLost;
 		}
 		
-		if (result != vk::Result::eSuccess) {
-			vkcv_log(LogLevel::ERROR, "Swapchain present failed (%s)", vk::to_string(result).c_str());
+		if ((result != vk::Result::eSuccess) &&
+			(result != vk::Result::eSuboptimalKHR)) {
+			vkcv_log(LogLevel::ERROR, "Swapchain presentation failed (%s)", vk::to_string(result).c_str());
+		} else
+		if (result == vk::Result::eSuboptimalKHR) {
+			vkcv_log(LogLevel::WARNING, "Swapchain presentation is suboptimal");
+			m_swapchain.signalSwapchainRecreation();
 		}
 	}
 	
@@ -517,8 +575,6 @@ namespace vkcv
 	}
 
 	CommandStreamHandle Core::createCommandStream(QueueType queueType) {
-
-		const vk::Device&       device  = m_Context.getDevice();
 		const vkcv::Queue       queue   = getQueueForSubmit(queueType, m_Context.getQueueManager());
 		const vk::CommandPool   cmdPool = chooseCmdPool(queue, m_CommandResources);
 
@@ -549,13 +605,14 @@ namespace vkcv
 	}
 
 	Image Core::createImage(
-		vk::Format  format,
-		uint32_t    width,
-		uint32_t    height,
-		uint32_t    depth,
-		bool        createMipChain,
-		bool        supportStorage,
-		bool        supportColorAttachment)
+		vk::Format      format,
+		uint32_t        width,
+		uint32_t        height,
+		uint32_t        depth,
+		bool            createMipChain,
+		bool            supportStorage,
+		bool            supportColorAttachment,
+		Multisampling   multisampling)
 	{
 
 		uint32_t mipCount = 1;
@@ -571,7 +628,18 @@ namespace vkcv
 			depth,
 			mipCount,
 			supportStorage,
-			supportColorAttachment);
+			supportColorAttachment,
+			multisampling);
+	}
+
+	uint32_t Core::getImageWidth(ImageHandle imageHandle)
+	{
+		return m_ImageManager->getImageWidth(imageHandle);
+	}
+
+	uint32_t Core::getImageHeight(ImageHandle imageHandle)
+	{
+		return m_ImageManager->getImageHeight(imageHandle);
 	}
 
     DescriptorSetHandle Core::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
@@ -591,34 +659,6 @@ namespace vkcv
 	DescriptorSet Core::getDescriptorSet(const DescriptorSetHandle handle) const {
 		return m_DescriptorManager->getDescriptorSet(handle);
 	}
-
-    std::vector<vk::ImageView> Core::createSwapchainImageViews( Context &context, Swapchain& swapChain){
-        std::vector<vk::ImageView> imageViews;
-        std::vector<vk::Image> swapChainImages = context.getDevice().getSwapchainImagesKHR(swapChain.getSwapchain());
-        imageViews.reserve( swapChainImages.size() );
-        //here can be swizzled with vk::ComponentSwizzle if needed
-        vk::ComponentMapping componentMapping(
-                vk::ComponentSwizzle::eR,
-                vk::ComponentSwizzle::eG,
-                vk::ComponentSwizzle::eB,
-                vk::ComponentSwizzle::eA );
-
-        vk::ImageSubresourceRange subResourceRange( vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 );
-
-        for ( auto image : swapChainImages )
-        {
-            vk::ImageViewCreateInfo imageViewCreateInfo(
-                    vk::ImageViewCreateFlags(),
-                    image,
-                    vk::ImageViewType::e2D,
-                    swapChain.getFormat(),
-                    componentMapping,
-                    subResourceRange);
-
-            imageViews.push_back(context.getDevice().createImageView(imageViewCreateInfo));
-        }
-        return imageViews;
-    }
 
 	void Core::prepareSwapchainImageForPresent(const CommandStreamHandle cmdStream) {
 		auto swapchainHandle = ImageHandle::createSwapchainImageHandle();
@@ -651,6 +691,12 @@ namespace vkcv
 		}, nullptr);
 	}
 	
+	void Core::resolveMSAAImage(CommandStreamHandle cmdStream, ImageHandle src, ImageHandle dst) {
+		recordCommandsToStream(cmdStream, [src, dst, this](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordMSAAResolve(cmdBuffer, src, dst);
+		}, nullptr);
+	}
+
 	vk::ImageView Core::getSwapchainImageView() const {
     	return m_ImageManager->getVulkanImageView(vkcv::ImageHandle::createSwapchainImageHandle());
     }

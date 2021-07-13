@@ -157,6 +157,13 @@ namespace vkcv {
          * Destructor of #Window, terminates GLFW
          */
         virtual ~Window();
+        
+        /**
+         * gets the windows framebuffer size
+         * @param width
+         * @param height
+         */
+        void getFramebufferSize(int& width, int& height) const;
     };
 
 }

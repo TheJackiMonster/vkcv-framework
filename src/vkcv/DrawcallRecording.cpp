@@ -17,7 +17,7 @@ namespace vkcv {
         const DrawcallInfo      &drawcall,
         vk::CommandBuffer       cmdBuffer,
         vk::PipelineLayout      pipelineLayout,
-        const PushConstantData  &pushConstantData,
+        const PushConstants     &pushConstants,
         const size_t            drawcallIndex) {
 
         for (uint32_t i = 0; i < drawcall.mesh.vertexBufferBindings.size(); i++) {
@@ -34,23 +34,21 @@ namespace vkcv {
                 nullptr);
         }
 
-        const size_t drawcallPushConstantOffset = drawcallIndex * pushConstantData.sizePerDrawcall;
-        // char* cast because void* does not support pointer arithmetic
-        const void* drawcallPushConstantData = drawcallPushConstantOffset + (char*)pushConstantData.data;
-
-        cmdBuffer.pushConstants(
-            pipelineLayout,
-            vk::ShaderStageFlagBits::eAll,
-            0,
-            pushConstantData.sizePerDrawcall,
-            drawcallPushConstantData);
+        if (pushConstants.getSizePerDrawcall() > 0) {
+            cmdBuffer.pushConstants(
+                pipelineLayout,
+                vk::ShaderStageFlagBits::eAll,
+                0,
+				pushConstants.getSizePerDrawcall(),
+                pushConstants.getDrawcallData(drawcallIndex));
+        }
 
         if (drawcall.mesh.indexBuffer) {
             cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, getIndexType(drawcall.mesh.indexBitCount));
-            cmdBuffer.drawIndexed(drawcall.mesh.indexCount, 1, 0, 0, {});
+            cmdBuffer.drawIndexed(drawcall.mesh.indexCount, drawcall.instanceCount, 0, 0, {});
         }
         else {
-            cmdBuffer.draw(drawcall.mesh.indexCount, 1, 0, 0, {});
+            cmdBuffer.draw(drawcall.mesh.indexCount, drawcall.instanceCount, 0, 0, {});
         }
     }
 
@@ -73,7 +71,7 @@ namespace vkcv {
     void recordMeshShaderDrawcall(
         vk::CommandBuffer                       cmdBuffer,
         vk::PipelineLayout                      pipelineLayout,
-        const PushConstantData&                 pushConstantData,
+        const PushConstants&                    pushConstantData,
         const uint32_t                          pushConstantOffset,
         const MeshShaderDrawcall&               drawcall,
         const uint32_t                          firstTask) {
@@ -88,17 +86,18 @@ namespace vkcv {
         }
 
         // char* cast because void* does not support pointer arithmetic
-        const void* drawcallPushConstantData = pushConstantOffset + (char*)pushConstantData.data;
+        const void* drawcallPushConstantData = pushConstantOffset + (char*)pushConstantData.getData();
 
-        if (pushConstantData.data) {
+        if (pushConstantData.getData()) {
             cmdBuffer.pushConstants(
                 pipelineLayout,
                 vk::ShaderStageFlagBits::eAll,
                 0,
-                pushConstantData.sizePerDrawcall,
+                pushConstantData.getSizePerDrawcall(),
                 drawcallPushConstantData);
         }
 
         MeshShaderFunctions.cmdDrawMeshTasks(VkCommandBuffer(cmdBuffer), drawcall.taskCount, firstTask);
     }
 }
+
