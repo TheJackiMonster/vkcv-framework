@@ -8,12 +8,20 @@
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include "MeshStruct.hpp"
+#include <Map>
 
 struct Vertex {
 	glm::vec3   position;
 	float       padding0;
 	glm::vec3   normal;
 	float       padding1;
+};
+
+struct Meshlet {
+    uint32_t vertexOffset;
+    uint32_t vertexCount;
+    uint32_t indexOffset;
+    uint32_t indexCount;
 };
 
 std::vector<Vertex> convertToVertices(
@@ -43,6 +51,117 @@ std::vector<Vertex> convertToVertices(
 	}
 
 	return vertices;
+}
+
+struct MeshShaderModelData {
+	std::vector<Vertex>     vertices;
+	std::vector<uint32_t>   localIndices;
+	std::vector<Meshlet>    meshlets;
+};
+
+MeshShaderModelData createMeshShaderModelData(
+	const std::vector<Vertex>&      inVertices,
+	const std::vector<uint32_t>&    inIndices) {
+
+	MeshShaderModelData data;
+	size_t currentIndex = 0;
+
+	const size_t maxVerticesPerMeshlet = 64;
+	const size_t maxIndicesPerMeshlet  = 126 * 3;
+
+	bool indicesAreLeft = true;
+
+	while (indicesAreLeft) {
+		Meshlet meshlet;
+
+		meshlet.indexCount  = 0;
+		meshlet.vertexCount = 0;
+
+		meshlet.indexOffset  = data.localIndices.size();
+		meshlet.vertexOffset = data.vertices.size();
+
+        std::map<uint32_t, uint32_t> globalToLocalIndexMap;
+
+		while (true) {
+
+			indicesAreLeft = currentIndex + 1 <= inIndices.size();
+			if (!indicesAreLeft) {
+				break;
+			}
+
+			bool enoughSpaceForIndices = meshlet.indexCount + 3 < maxIndicesPerMeshlet;
+			if (!enoughSpaceForIndices) {
+				break;
+			}
+
+			size_t vertexCountToAdd = 0;
+			for (int i = 0; i < 3; i++) {
+				const uint32_t globalIndex = inIndices[currentIndex + i];
+				const bool containsVertex  = globalToLocalIndexMap.find(globalIndex) != globalToLocalIndexMap.end();
+				if (!containsVertex) {
+					vertexCountToAdd++;
+				}
+			}
+
+			bool enoughSpaceForVertices = meshlet.vertexCount + vertexCountToAdd < maxVerticesPerMeshlet;
+			if (!enoughSpaceForVertices) {
+				break;
+			}
+
+			for (int i = 0; i < 3; i++) {
+				const uint32_t globalIndex = inIndices[currentIndex + i];
+
+				uint32_t localIndex;
+				const bool indexAlreadyExists = globalToLocalIndexMap.find(globalIndex) != globalToLocalIndexMap.end();
+				if (indexAlreadyExists) {
+					localIndex = globalToLocalIndexMap[globalIndex];
+				}
+				else {
+					localIndex = globalToLocalIndexMap.size();
+					globalToLocalIndexMap[globalIndex] = localIndex;
+				}
+
+				data.localIndices.push_back(localIndex);
+			}
+
+			meshlet.indexCount  += 3;
+			currentIndex        += 3;
+			meshlet.vertexCount += vertexCountToAdd;
+		}
+
+		for (const auto& iterator : globalToLocalIndexMap) {
+			const uint32_t globalIndex = iterator.first;
+			const uint32_t localIndex  = iterator.second;
+
+			const Vertex v = inVertices[globalIndex];
+			data.vertices.push_back(v);
+		}
+
+		data.meshlets.push_back(meshlet);
+	}
+
+	return data;
+}
+
+std::vector<uint32_t> assetLoaderIndicesTo32BitIndices(const std::vector<uint8_t>& indexData, vkcv::asset::IndexType indexType) {
+	std::vector<uint32_t> indices;
+	if (indexType == vkcv::asset::IndexType::UINT16) {
+		for (int i = 0; i < indexData.size(); i += 2) {
+			const uint16_t index16Bit = *reinterpret_cast<const uint16_t*>(&(indexData[i]));
+			const uint32_t index32Bit = static_cast<uint32_t>(index16Bit);
+			indices.push_back(index32Bit);
+		}
+	}
+	else if (indexType == vkcv::asset::IndexType::UINT32) {
+		for (int i = 0; i < indexData.size(); i += 4) {
+			const uint32_t index32Bit = *reinterpret_cast<const uint32_t*>(&(indexData[i]));
+			indices.push_back(index32Bit);
+		}
+	}
+	else {
+		vkcv_log(vkcv::LogLevel::ERROR, "Unsupported index type");
+	}
+	return indices;
 }
 
 int main(int argc, const char** argv) {
@@ -106,18 +225,29 @@ int main(int argc, const char** argv) {
 			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
 	const auto& bunny = mesh.vertexGroups[0];
-	const auto interleavedVertices = convertToVertices(bunny.vertexBuffer.data, bunny.numVertices, attributes[0], attributes[1]);
+	const std::vector<Vertex> interleavedVertices = convertToVertices(bunny.vertexBuffer.data, bunny.numVertices, attributes[0], attributes[1]);
 
 	// mesh shader buffers
-	auto meshBuffer = core.createBuffer<Vertex>(
-		vkcv::BufferType::STORAGE,
-		interleavedVertices.size());
-	meshBuffer.fill(interleavedVertices);
+	const auto& assetLoaderIndexBuffer              = mesh.vertexGroups[0].indexBuffer;
+	const std::vector<uint32_t> indexBuffer32Bit    = assetLoaderIndicesTo32BitIndices(assetLoaderIndexBuffer.data, assetLoaderIndexBuffer.type);
+	const auto meshShaderModelData                  = createMeshShaderModelData(interleavedVertices, indexBuffer32Bit);
 
-	auto meshShaderIndexBuffer = core.createBuffer<uint8_t>(
+	auto meshShaderVertexBuffer = core.createBuffer<Vertex>(
 		vkcv::BufferType::STORAGE,
-		mesh.vertexGroups[0].indexBuffer.data.size());
-	meshShaderIndexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
+		meshShaderModelData.vertices.size());
+	meshShaderVertexBuffer.fill(meshShaderModelData.vertices);
+
+	auto meshShaderIndexBuffer = core.createBuffer<uint32_t>(
+		vkcv::BufferType::STORAGE,
+		meshShaderModelData.localIndices.size());
+	meshShaderIndexBuffer.fill(meshShaderModelData.localIndices);
+
+	auto meshletBuffer = core.createBuffer<Meshlet>(
+		vkcv::BufferType::STORAGE,
+		meshShaderModelData.meshlets.size(),
+		vkcv::BufferMemoryType::DEVICE_LOCAL
+		);
+	meshletBuffer.fill(meshShaderModelData.meshlets);
 
 	// attachments
 	const vkcv::AttachmentDescription present_color_attachment(
@@ -219,8 +349,10 @@ int main(int argc, const char** argv) {
 
     vkcv::DescriptorWrites meshShaderWrites;
 	meshShaderWrites.storageBufferWrites = {
-		vkcv::StorageBufferDescriptorWrite(0, meshBuffer.getHandle()), 
-		vkcv::StorageBufferDescriptorWrite(1, meshShaderIndexBuffer.getHandle()) };
+		vkcv::StorageBufferDescriptorWrite(0, meshShaderVertexBuffer.getHandle()), 
+		vkcv::StorageBufferDescriptorWrite(1, meshShaderIndexBuffer.getHandle()),
+		vkcv::StorageBufferDescriptorWrite(2, meshletBuffer.getHandle()) };
+
     core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
 
     vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
@@ -267,14 +399,13 @@ int main(int argc, const char** argv) {
 		if (useMeshShader) {
 
 			vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(meshShaderDescriptorSet).vulkanHandle);
-			const uint32_t verticesPerTask = 30;
 
 			core.recordMeshShaderDrawcalls(
 				cmdStream,
 				renderPass,
 				meshShaderPipeline,
 				pushConstantData,
-				{ vkcv::MeshShaderDrawcall({descriptorUsage}, glm::ceil(bunny.numIndices / float(verticesPerTask))) },
+				{ vkcv::MeshShaderDrawcall({descriptorUsage}, meshShaderModelData.meshlets.size()) },
 				{ renderTargets });
 		}
 		else {

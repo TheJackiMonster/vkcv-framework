@@ -28,5 +28,5 @@ vec3 colorFromIndex(uint i){
 
 void main() {
 	outColor = normalize(passNormal) * 0.5 + 0.5;
-    outColor = colorFromIndex(passTaskIndex);
+    //outColor = colorFromIndex(passTaskIndex);
 }

@@ -5,14 +5,10 @@
 layout(local_size_x=1) in;
 
 taskNV out Task {
-  uint baseID;
+  uint meshletIndex;
 } OUT;
 
-layout( push_constant ) uniform constants{
-    mat4 mvp;
-};
-
 void main() {
-    gl_TaskCountNV  = 1;
-    OUT.baseID      = gl_GlobalInvocationID.x;
+    gl_TaskCountNV      = 1;
+    OUT.meshletIndex    = gl_GlobalInvocationID.x;
 }
