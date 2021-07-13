@@ -76,7 +76,7 @@ int main(int argc, const char** argv) {
         pushConstantsCompute);
 
     core.recordBufferMemoryBarrier(cmdStream, inputBuffer.getHandle());
-
+    core.submitCommandStream(cmdStream);
 
     return 0;
 }
