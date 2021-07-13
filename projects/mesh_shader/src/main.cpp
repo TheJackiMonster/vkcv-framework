@@ -80,7 +80,8 @@ MeshShaderModelData createMeshShaderModelData(
 		meshlet.indexOffset  = data.localIndices.size();
 		meshlet.vertexOffset = data.vertices.size();
 
-        std::map<uint32_t, uint32_t> globalToLocalIndexMap;
+		std::map<uint32_t, uint32_t> globalToLocalIndexMap;
+		std::vector<uint32_t> globalIndicesOrdered;
 
 		while (true) {
 
@@ -119,6 +120,7 @@ MeshShaderModelData createMeshShaderModelData(
 				else {
 					localIndex = globalToLocalIndexMap.size();
 					globalToLocalIndexMap[globalIndex] = localIndex;
+					globalIndicesOrdered.push_back(globalIndex);
 				}
 
 				data.localIndices.push_back(localIndex);
@@ -129,10 +131,7 @@ MeshShaderModelData createMeshShaderModelData(
 			meshlet.vertexCount += vertexCountToAdd;
 		}
 
-		for (const auto& iterator : globalToLocalIndexMap) {
-			const uint32_t globalIndex = iterator.first;
-			const uint32_t localIndex  = iterator.second;
-
+		for (const uint32_t globalIndex : globalIndicesOrdered) {
 			const Vertex v = inVertices[globalIndex];
 			data.vertices.push_back(v);
 		}
@@ -405,7 +404,7 @@ int main(int argc, const char** argv) {
 				renderPass,
 				meshShaderPipeline,
 				pushConstantData,
-				{ vkcv::MeshShaderDrawcall({descriptorUsage}, meshShaderModelData.meshlets.size()) },
+				{ vkcv::MeshShaderDrawcall({descriptorUsage}, meshShaderModelData.meshlets.size())},
 				{ renderTargets });
 		}
 		else {

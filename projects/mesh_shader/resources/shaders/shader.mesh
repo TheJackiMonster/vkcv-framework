@@ -63,7 +63,7 @@ void main()	{
     
         gl_MeshVerticesNV[workIndex].gl_Position    = mvp * vec4(vertex.position, 1);
         passNormal[workIndex]                       = vertex.normal;
-        // passTaskIndex[workIndex]                    = IN.meshletIndex;
+        passTaskIndex[workIndex]                    = IN.meshletIndex;
     }
     
     // set local indices
