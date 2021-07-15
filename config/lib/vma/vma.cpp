@@ -5,6 +5,7 @@
 
 #ifndef _MSVC_LANG
 #ifdef __MINGW32__
+#include <stdint.h>
 #include <stdlib.h>
 
 class VmaMutex {
@@ -32,20 +33,20 @@ T* custom_overestimate_malloc(size_t size) {
 
 void* custom_aligned_malloc(size_t alignment, size_t size) {
 	if (alignment > 4) {
-		return custom_overestimate_malloc<u_int64_t>(size);
+		return custom_overestimate_malloc<uint64_t>(size);
 	} else
 	if (alignment > 2) {
-		return custom_overestimate_malloc<u_int32_t>(size);
+		return custom_overestimate_malloc<uint32_t>(size);
 	} else
 	if (alignment > 1) {
-		return custom_overestimate_malloc<u_int16_t>(size);
+		return custom_overestimate_malloc<uint16_t>(size);
 	} else {
-		return custom_overestimate_malloc<u_int8_t>(size);
+		return custom_overestimate_malloc<uint8_t>(size);
 	}
 }
 
 void custom_free(void *ptr) {
-	delete[] reinterpret_cast<u_int8_t*>(ptr);
+	delete[] reinterpret_cast<uint8_t*>(ptr);
 }
 
 #define VMA_SYSTEM_ALIGNED_MALLOC(size, alignment) (custom_aligned_malloc(alignment, size))
