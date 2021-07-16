@@ -21,6 +21,8 @@ set(vkcv_scene_sources
 		
 		${vkcv_scene_include}/vkcv/scene/Mesh.hpp
 		${vkcv_scene_source}/vkcv/scene/Mesh.cpp
+
+		${vkcv_scene_include}/vkcv/scene/Meshlet.hpp
 		
 		${vkcv_scene_include}/vkcv/scene/Node.hpp
 		${vkcv_scene_source}/vkcv/scene/Node.cpp
