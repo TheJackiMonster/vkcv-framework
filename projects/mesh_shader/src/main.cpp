@@ -217,7 +217,7 @@ int main(int argc, const char** argv) {
 
 	while (window.isWindowOpen())
 	{
-        window.pollEvents();
+        vkcv::Window::pollEvents();
 
 		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
 		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
