@@ -326,11 +326,11 @@ namespace vkcv
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
 			{},
 			(config.m_DescriptorLayouts),
-			pushConstantRange);
-
-		if (pushConstantSize <= 0) {
+			(pushConstantRange));
+		if (pushConstantSize == 0) {
 			pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 		}
+
 
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)

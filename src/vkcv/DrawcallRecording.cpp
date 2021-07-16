@@ -100,4 +100,3 @@ namespace vkcv {
         MeshShaderFunctions.cmdDrawMeshTasks(VkCommandBuffer(cmdBuffer), drawcall.taskCount, firstTask);
     }
 }
-
