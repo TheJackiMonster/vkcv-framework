@@ -119,8 +119,6 @@ int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
 				uris.push_back(uri);
 			}
 		} else {
-			// TODO What to do in this case with Texture.uri?
-			// TODO this is untested. Find gltf file without uri to test it!
 			const fx::gltf::BufferView bufferView = bV_src[img_src[tex.source].bufferView];
 			data = stbi_load_from_memory(
 					&buf_src[bufferView.buffer].data[bufferView.byteOffset],
