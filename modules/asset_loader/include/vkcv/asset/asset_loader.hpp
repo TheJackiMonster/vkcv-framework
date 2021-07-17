@@ -76,6 +76,8 @@ typedef struct {
 
 /**
  * This struct describes a loaded texture.
+ * Note that textures are currently always loaded with 4 channels as RGBA, even
+ * if the image has just RGB or is grayscale.
  */
 typedef struct {
 	int sampler;		// index into the sampler array of the Scene
@@ -236,6 +238,10 @@ int loadScene(const std::filesystem::path &path, Scene &scene);
  * in the scene, that can then be loaded on their own using the loadMesh()
  * function. Note that the Scene struct received as output argument will be
  * overwritten by this function.
+ * After this function completes, the returned Scene struct is completely
+ * initialized and all information is final, except for the missing binary
+ * data. This means that indices to vectors will remain valid even when the
+ * shallow scene struct is filled with data by loadMesh().
  *
  * @param path	must be the path to a glTF- or glb-file.
  * @param scene	is a reference to a Scene struct that will be filled with the
