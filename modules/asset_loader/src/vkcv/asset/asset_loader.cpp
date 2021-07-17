@@ -1,6 +1,7 @@
 #include "vkcv/asset/asset_loader.hpp"
 #include <iostream>
 #include <string.h>	// memcpy(3)
+#include <set>
 #include <stdlib.h>	// calloc(3)
 #include <vulkan/vulkan.hpp>
 #include <fx/gltf.h>
@@ -686,6 +687,7 @@ int probeScene(const std::filesystem::path& path, Scene& scene) {
 	std::vector<VertexGroup> vertexGroups;
 	int groupCount = 0;
 
+	std::set<std::string> names;
 	for (size_t i = 0; i < sceneObjects.meshes.size(); i++) {
 		std::vector<int> vertexGroupsIndices;
 		fx::gltf::Mesh const& objectMesh = sceneObjects.meshes[i];
@@ -700,6 +702,12 @@ int probeScene(const std::filesystem::path& path, Scene& scene) {
 		mesh.vertexGroups = vertexGroupsIndices;
 
 		meshes.push_back(mesh);
+		if (names.count(mesh.name)) {
+			vkcv_log(LogLevel::WARNING, "More than one mesh with name %s",
+					mesh.name.c_str());
+		} else {
+			names.insert(mesh.name);
+		}
 	}
 
 	// This only works if the node has a mesh and it only loads the meshes and ignores cameras and lights
