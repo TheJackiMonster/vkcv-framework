@@ -11,6 +11,7 @@
 #include "vkcv/gui/GUI.hpp"
 #include "ShadowMapping.hpp"
 #include "BloomAndFlares.hpp"
+#include <vkcv/upscaling/FSRUpscaling.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";
@@ -393,6 +394,8 @@ int main(int argc, const char** argv) {
 	else {
 		resolvedColorBuffer = colorBuffer;
 	}
+	
+	vkcv::ImageHandle swapBuffer = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, true).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -523,6 +526,8 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerDescriptorWrite(5, voxelSampler) };
 	core.writeDescriptorSet(forwardShadingDescriptorSet, forwardDescriptorWrites);
 
+	vkcv::upscaling::FSRUpscaling upscaling (core);
+	
 	vkcv::gui::GUI gui(core, window);
 
 	glm::vec2   lightAnglesDegree               = glm::vec2(90.f, 0.f);
@@ -561,6 +566,8 @@ int main(int argc, const char** argv) {
 			else {
 				resolvedColorBuffer = colorBuffer;
 			}
+			
+			swapBuffer = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, false, true).getHandle();
 
 			windowWidth = swapchainWidth;
 			windowHeight = swapchainHeight;
@@ -575,7 +582,7 @@ int main(int argc, const char** argv) {
 		vkcv::DescriptorWrites tonemappingDescriptorWrites;
 		tonemappingDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(0, resolvedColorBuffer) };
 		tonemappingDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(1, colorSampler) };
-		tonemappingDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, swapchainInput) };
+		tonemappingDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, swapBuffer) };
 
 		core.writeDescriptorSet(tonemappingDescriptorSet, tonemappingDescriptorWrites);
 
@@ -709,11 +716,11 @@ int main(int argc, const char** argv) {
 		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer, windowWidth, windowHeight, 
 			glm::normalize(cameraManager.getActiveCamera().getFront()));
 
-		core.prepareImageForStorage(cmdStream, swapchainInput);
+		core.prepareImageForStorage(cmdStream, swapBuffer);
 		core.prepareImageForSampling(cmdStream, resolvedColorBuffer);
 
 		auto timeSinceStart = std::chrono::duration_cast<std::chrono::microseconds>(end - appStartTime);
-		float timeF         = static_cast<float>(timeSinceStart.count()) * 0.01;
+		float timeF         = static_cast<float>(timeSinceStart.count()) * 0.01f;
 
 		vkcv::PushConstants timePushConstants (sizeof(timeF));
 		timePushConstants.appendDrawcall(timeF);
@@ -723,7 +730,11 @@ int main(int argc, const char** argv) {
 			tonemappingPipeline, 
 			fulsscreenDispatchCount,
 			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptorSet).vulkanHandle) },
-			timePushConstants);
+			timePushConstants
+		);
+		
+		core.prepareImageForSampling(cmdStream, swapBuffer);
+		upscaling.recordUpscaling(cmdStream, swapBuffer, swapchainInput);
 
 		// present and end
 		core.prepareSwapchainImageForPresent(cmdStream);

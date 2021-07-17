@@ -13,15 +13,15 @@ set(vkcv_upscaling_sources
 		${vkcv_upscaling_source}/vkcv/upscaling/FSRUpscaling.cpp
 )
 
-# adding source files to the project
-add_library(vkcv_upscaling STATIC ${vkcv_upscaling_sources})
-
 # Setup some path variables to load libraries
 set(vkcv_upscaling_lib lib)
 set(vkcv_upscaling_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_upscaling_lib})
 
-# Check and load GLSLANG
+# Check and load FidelityFX_FSR
 include(config/FidelityFX_FSR.cmake)
+
+# adding source files to the project
+add_library(vkcv_upscaling STATIC ${vkcv_upscaling_sources})
 
 # link the required libraries to the module
 target_link_libraries(vkcv_upscaling ${vkcv_upscaling_libraries} vkcv vkcv_shader_compiler)

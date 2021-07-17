@@ -516,14 +516,18 @@ namespace vkcv
 			multisampling);
 	}
 
-	uint32_t Core::getImageWidth(ImageHandle imageHandle)
+	uint32_t Core::getImageWidth(const ImageHandle& image)
 	{
-		return m_ImageManager->getImageWidth(imageHandle);
+		return m_ImageManager->getImageWidth(image);
 	}
 
-	uint32_t Core::getImageHeight(ImageHandle imageHandle)
+	uint32_t Core::getImageHeight(const ImageHandle& image)
 	{
-		return m_ImageManager->getImageHeight(imageHandle);
+		return m_ImageManager->getImageHeight(image);
+	}
+	
+	vk::Format Core::getImageFormat(const ImageHandle& image) {
+		return m_ImageManager->getImageFormat(image);
 	}
 
     DescriptorSetHandle Core::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)

@@ -124,14 +124,17 @@ namespace vkcv::upscaling {
 		const uint32_t outputWidth = m_core.getImageWidth(output);
 		const uint32_t outputHeight = m_core.getImageWidth(output);
 		
-		if ((outputWidth != m_core.getImageWidth(m_intermediateImage)) ||
+		if ((!m_intermediateImage) ||
+			(outputWidth != m_core.getImageWidth(m_intermediateImage)) ||
 			(outputHeight != m_core.getImageHeight(m_intermediateImage))) {
 			m_intermediateImage = m_core.createImage(
-					vk::Format::eR8G8B8A8Srgb,
+					m_core.getImageFormat(output),
 					outputWidth, outputHeight,1,
 					false,
 					true
 			).getHandle();
+			
+			m_core.prepareImageForStorage(cmdStream, m_intermediateImage);
 		}
 		
 		{
@@ -220,8 +223,6 @@ namespace vkcv::upscaling {
 					PushConstants(0)
 			);
 		}
-		
-		m_core.recordImageMemoryBarrier(cmdStream, output);
 	}
 	
 	bool FSRUpscaling::isHdrEnabled() const {

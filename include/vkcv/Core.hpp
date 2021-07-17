@@ -223,9 +223,13 @@ namespace vkcv
 			Multisampling   multisampling = Multisampling::None);
 
         [[nodiscard]]
-        uint32_t getImageWidth(ImageHandle imageHandle);
+        uint32_t getImageWidth(const ImageHandle& image);
+        
         [[nodiscard]]
-        uint32_t getImageHeight(ImageHandle imageHandle);
+        uint32_t getImageHeight(const ImageHandle& image);
+	
+		[[nodiscard]]
+		vk::Format getImageFormat(const ImageHandle& image);
 
         /** TODO:
          *   @param setDescriptions

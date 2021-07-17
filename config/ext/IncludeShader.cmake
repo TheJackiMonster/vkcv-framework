@@ -33,7 +33,7 @@ function(include_shader shader include_dir source_dir)
 		endif()
 	endforeach()
 	
-	string(APPEND shader_source "}\n")
+	string(APPEND shader_source "}\;\n")
 	string(APPEND shader_source "unsigned int ${varname}_LEN = ${filesize}\;")
 	
 	file(WRITE ${include_dir}/${filename}.hxx ${shader_header})

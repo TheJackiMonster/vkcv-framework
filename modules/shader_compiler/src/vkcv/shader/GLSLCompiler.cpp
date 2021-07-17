@@ -243,18 +243,18 @@ namespace vkcv::shader {
 			return false;
 		}
 		
-		size_t pos = preprocessedGLSL.find("#version");
+		size_t pos = preprocessedGLSL.find("#version") + 8;
 		if (pos >= preprocessedGLSL.length()) {
 			pos = 0;
 		}
 		
-		const size_t epos = preprocessedGLSL.find_last_of("#extension", pos);
+		const size_t epos = preprocessedGLSL.find_last_of("#extension", pos) + 10;
 		if (epos < preprocessedGLSL.length()) {
 			pos = epos;
 		}
 		
 		pos = preprocessedGLSL.find('\n', pos) + 1;
-		preprocessedGLSL = preprocessedGLSL.insert(pos, defines.str());
+		preprocessedGLSL.insert(pos, defines.str(), defines.width());
 		
 		const char* preprocessedCString = preprocessedGLSL.c_str();
 		shader.setStrings(&preprocessedCString, 1);
