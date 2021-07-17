@@ -9,8 +9,13 @@ namespace vkcv::shader {
 	class Compiler {
 	private:
 	public:
+		virtual bool compileSource(ShaderStage shaderStage, const char* shaderSource,
+								   const ShaderCompiledFunction& compiled,
+								   const std::filesystem::path& includePath) = 0;
+		
 		virtual void compile(ShaderStage shaderStage, const std::filesystem::path& shaderPath,
-							 const ShaderCompiledFunction& compiled, bool update = false) = 0;
+							 const ShaderCompiledFunction& compiled,
+							 const std::filesystem::path& includePath, bool update) = 0;
 		
 	};
 	

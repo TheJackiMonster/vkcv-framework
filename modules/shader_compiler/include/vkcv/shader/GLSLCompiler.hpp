@@ -7,7 +7,7 @@
 
 namespace vkcv::shader {
 	
-	class GLSLCompiler {
+	class GLSLCompiler : Compiler {
 	private:
 	public:
 		GLSLCompiler();
@@ -20,8 +20,13 @@ namespace vkcv::shader {
 		GLSLCompiler& operator=(const GLSLCompiler& other);
 		GLSLCompiler& operator=(GLSLCompiler&& other) = default;
 		
+		bool compileSource(ShaderStage shaderStage, const char* shaderSource,
+						   const ShaderCompiledFunction& compiled,
+						   const std::filesystem::path& includePath);
+		
 		void compile(ShaderStage shaderStage, const std::filesystem::path& shaderPath,
-					 const ShaderCompiledFunction& compiled, bool update = false);
+					 const ShaderCompiledFunction& compiled,
+					 const std::filesystem::path& includePath = "", bool update = false) override;
 		
 	};
 	
