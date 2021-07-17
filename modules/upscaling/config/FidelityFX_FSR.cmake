@@ -2,6 +2,7 @@
 if (EXISTS "${vkcv_upscaling_lib_path}/FidelityFX-FSR")
 	include_shader(${vkcv_upscaling_lib_path}/FidelityFX-FSR/ffx-fsr/ffx_a.h ${vkcv_upscaling_include} ${vkcv_upscaling_source})
 	include_shader(${vkcv_upscaling_lib_path}/FidelityFX-FSR/ffx-fsr/ffx_fsr1.h ${vkcv_upscaling_include} ${vkcv_upscaling_source})
+	include_shader(${vkcv_upscaling_lib_path}/FidelityFX-FSR/sample/src/VK/FSR_Pass.glsl ${vkcv_upscaling_include} ${vkcv_upscaling_source})
 	
 	list(APPEND vkcv_upscaling_includes ${vkcv_upscaling_lib}/FidelityFX-FSR/ffx-fsr)
 else()
