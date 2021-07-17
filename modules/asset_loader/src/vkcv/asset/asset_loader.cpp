@@ -92,14 +92,19 @@ int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
 	const std::vector<fx::gltf::Image>& img_src,
 	const std::vector<fx::gltf::Buffer>& buf_src,
 	const std::vector<fx::gltf::BufferView>& bV_src,
-	const std::string& dir, std::vector<Texture>& dst)
+	const std::string& dir, std::vector<std::string> &uris,
+	std::vector<Texture>& dst)
 {
+	std::unordered_map<std::string,int> known_uris;
+	for (int i = 0; i < uris.size(); i++) known_uris[uris[i]] = i;
+
 	dst.clear();
 	dst.reserve(tex_src.size());
 	for (const auto& tex : tex_src) {
 		std::string uri = dir + "/" + img_src[tex.source].uri;
 		int w, h, c;
 		uint8_t* data;
+		int uri_index = -1;
 		if (!uri.empty()) {
 			data = stbi_load(uri.c_str(), &w, &h, &c, 4);
 			if (!data) {
@@ -107,8 +112,15 @@ int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
 					uri.c_str());
 				return ASSET_ERROR;
 			}
+			if (known_uris.count(uri)) {
+				uri_index = known_uris[uri];
+			} else {
+				uri_index = uris.size();
+				uris.push_back(uri);
+			}
 		} else {
-			//TODO this is untested. Find gltf file without uri to test it!
+			// TODO What to do in this case with Texture.uri?
+			// TODO this is untested. Find gltf file without uri to test it!
 			const fx::gltf::BufferView bufferView = bV_src[img_src[tex.source].bufferView];
 			data = stbi_load_from_memory(
 					&buf_src[bufferView.buffer].data[bufferView.byteOffset],
@@ -133,7 +145,9 @@ int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
 		}
 		free(data);
 
+		if (uri_index < 0) vkcv_log(LogLevel::WARNING, "Texture is missing a URI.");
 		dst.push_back({
+			uri_index,
 			tex.sampler,
 			static_cast<uint8_t>(c),
 			static_cast<uint16_t>(w), static_cast<uint16_t>(h),
@@ -383,10 +397,14 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 	fx::gltf::Document &sceneObjects, 
 	std::vector<VertexGroup> &vertexGroups,
 	std::vector<int> &vertexGroupsIndices,
+	std::vector<std::string> &uris,
 	int &groupCount, bool probe) {
 
 	const size_t numVertexGroups = objectMesh.primitives.size();
 	vertexGroups.reserve(numVertexGroups);
+
+	std::unordered_map<std::string,int> known_uris;
+	for (int i = 0; i < uris.size(); i++) known_uris[uris[i]] = i;
 
 	for (const auto & objectPrimitive : objectMesh.primitives) {
 			std::vector<VertexAttribute> vertexAttributes;
@@ -416,9 +434,16 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 		IndexType indexType;
 		std::vector<uint8_t> indexBufferData = {};
 		const fx::gltf::Accessor& indexAccessor = sceneObjects.accessors[objectPrimitive.indices];
+		int indexBufferURI;
 		if (objectPrimitive.indices >= 0 && !probe) { // if there is no index buffer, -1 is returned from fx-gltf
 			const fx::gltf::BufferView& indexBufferView = sceneObjects.bufferViews[indexAccessor.bufferView];
 			const fx::gltf::Buffer& indexBuffer = sceneObjects.buffers[indexBufferView.buffer];
+			if (known_uris.count(indexBuffer.uri)) {
+				indexBufferURI = known_uris[indexBuffer.uri];
+			} else {
+				indexBufferURI = uris.size();
+				uris.push_back(indexBuffer.uri);
+			}
 
 			indexBufferData.resize(indexBufferView.byteLength);
 			{
@@ -438,6 +463,13 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 
 		const fx::gltf::BufferView& vertexBufferView = sceneObjects.bufferViews[posAccessor.bufferView];
 		const fx::gltf::Buffer& vertexBuffer = sceneObjects.buffers[vertexBufferView.buffer];
+		int vertexBufferURI;
+		if (known_uris.count(vertexBuffer.uri)) {
+			vertexBufferURI = known_uris[vertexBuffer.uri];
+		} else {
+			vertexBufferURI = uris.size();
+			uris.push_back(vertexBuffer.uri);
+		}
 
 		// only copy relevant part of vertex data
 		uint32_t relevantBufferOffset = std::numeric_limits<uint32_t>::max();
@@ -470,8 +502,8 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 			static_cast<PrimitiveMode>(objectPrimitive.mode),
 			sceneObjects.accessors[objectPrimitive.indices].count,
 			posAccessor.count,
-			{indexType, indexBufferData},
-			{vertexBufferData, vertexAttributes},
+			{indexBufferURI, indexType, indexBufferData},
+			{vertexBufferURI, vertexBufferData, vertexAttributes},
 			{posAccessor.min[0], posAccessor.min[1], posAccessor.min[2]},
 			{posAccessor.max[0], posAccessor.max[1], posAccessor.max[2]},
 			static_cast<uint8_t>(objectPrimitive.material)
@@ -573,13 +605,16 @@ int loadScene(const std::filesystem::path &path, Scene &scene){
     std::vector<Sampler> samplers;
     std::vector<Mesh> meshes;
     std::vector<VertexGroup> vertexGroups;
+    std::vector<std::string> uris;
 	int groupCount = 0;
 
     for (size_t i = 0; i < sceneObjects.meshes.size(); i++){
         std::vector<int> vertexGroupsIndices;
         fx::gltf::Mesh const &objectMesh = sceneObjects.meshes[i];
 
-		if (createVertexGroups(objectMesh, sceneObjects, vertexGroups, vertexGroupsIndices, groupCount, false) != ASSET_SUCCESS) {
+		if (createVertexGroups(objectMesh, sceneObjects, vertexGroups,
+					vertexGroupsIndices, uris, groupCount,
+					false) != ASSET_SUCCESS) {
 			vkcv_log(LogLevel::ERROR, "Failed to get Vertex Groups!");
 			return ASSET_ERROR;
 		}
@@ -603,7 +638,7 @@ int loadScene(const std::filesystem::path &path, Scene &scene){
 		}
 	}
 
-    if (createTextures(sceneObjects.textures, sceneObjects.images,sceneObjects.buffers,sceneObjects.bufferViews, dir, textures) != ASSET_SUCCESS) {
+    if (createTextures(sceneObjects.textures, sceneObjects.images,sceneObjects.buffers,sceneObjects.bufferViews, dir, uris, textures) != ASSET_SUCCESS) {
 	    size_t missing = sceneObjects.textures.size() - textures.size();
 	    vkcv_log(LogLevel::ERROR, "Failed to get %lu textures from glTF source '%s'",
 			    missing, path.c_str());
@@ -685,6 +720,7 @@ int probeScene(const std::filesystem::path& path, Scene& scene) {
 	std::vector<Sampler> samplers;
 	std::vector<Mesh> meshes;
 	std::vector<VertexGroup> vertexGroups;
+	std::vector<std::string> uris;
 	int groupCount = 0;
 
 	std::set<std::string> names;
@@ -692,7 +728,9 @@ int probeScene(const std::filesystem::path& path, Scene& scene) {
 		std::vector<int> vertexGroupsIndices;
 		fx::gltf::Mesh const& objectMesh = sceneObjects.meshes[i];
 
-		if (createVertexGroups(objectMesh, sceneObjects, vertexGroups, vertexGroupsIndices, groupCount, true) != ASSET_SUCCESS) {
+		if (createVertexGroups(objectMesh, sceneObjects, vertexGroups,
+					vertexGroupsIndices, uris, groupCount,
+					true) != ASSET_SUCCESS) {
 			vkcv_log(LogLevel::ERROR, "Failed to get Vertex Groups!");
 			return ASSET_ERROR;
 		}
@@ -722,7 +760,7 @@ int probeScene(const std::filesystem::path& path, Scene& scene) {
 		}
 	}
 
-	/*if (createTextures(sceneObjects.textures, sceneObjects.images, sceneObjects.buffers, sceneObjects.bufferViews, dir, textures) != ASSET_SUCCESS) {
+	/*if (createTextures(sceneObjects.textures, sceneObjects.images, sceneObjects.buffers, sceneObjects.bufferViews, dir, uris, textures) != ASSET_SUCCESS) {
 		size_t missing = sceneObjects.textures.size() - textures.size();
 		vkcv_log(LogLevel::ERROR, "Failed to get %lu textures from glTF source '%s'",
 			missing, path.c_str());
@@ -786,6 +824,7 @@ int loadMesh(const std::filesystem::path &path, const std::string &name, Scene &
 	std::vector<Sampler> samplers;
 	std::vector<Mesh> meshes;
 	std::vector<VertexGroup> vertexGroups;
+	std::vector<std::string> uris;
 	int groupCount = 0;
 	int meshIndex = -1;
 
@@ -794,7 +833,11 @@ int loadMesh(const std::filesystem::path &path, const std::string &name, Scene &
 			std::vector<int> vertexGroupsIndices;
 			fx::gltf::Mesh const& objectMesh = sceneObjects.meshes[i];
 
-			if (createVertexGroups(objectMesh, sceneObjects, vertexGroups, vertexGroupsIndices, groupCount, false) != ASSET_SUCCESS) {
+			if (createVertexGroups(objectMesh, sceneObjects,
+						vertexGroups,
+						vertexGroupsIndices, uris,
+						groupCount, false)
+					!= ASSET_SUCCESS) {
 				vkcv_log(LogLevel::ERROR, "Failed to get Vertex Groups!");
 				return ASSET_ERROR;
 			}
@@ -824,7 +867,7 @@ int loadMesh(const std::filesystem::path &path, const std::string &name, Scene &
 		);
 	}
 
-	if (createTextures(sceneObjects.textures, sceneObjects.images, sceneObjects.buffers, sceneObjects.bufferViews, dir, textures) != ASSET_SUCCESS) {
+	if (createTextures(sceneObjects.textures, sceneObjects.images, sceneObjects.buffers, sceneObjects.bufferViews, dir, uris, textures) != ASSET_SUCCESS) {
 		size_t missing = sceneObjects.textures.size() - textures.size();
 		vkcv_log(LogLevel::ERROR, "Failed to get %lu textures from glTF source '%s'",
 			missing, path.c_str());

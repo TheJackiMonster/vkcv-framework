@@ -80,6 +80,7 @@ typedef struct {
  * if the image has just RGB or is grayscale.
  */
 typedef struct {
+	int uri;		// index into the URIs array of the Scene
 	int sampler;		// index into the sampler array of the Scene
 	uint8_t channels;	// number of channels
 	uint16_t w, h;		// width and height of the texture
@@ -183,10 +184,12 @@ typedef struct {
 	enum PrimitiveMode mode;	// draw as points, lines or triangle?
 	size_t numIndices, numVertices;
 	struct {
+		int uri;		// index into the URIs array of Scene
 		enum IndexType type;	// data type of the indices
 		std::vector<uint8_t> data; // binary data of the index buffer
 	} indexBuffer;
 	struct {
+		int uri;		// index into the URIs array of Scene
 		std::vector<uint8_t> data; // binary data of the vertex buffer
 		std::vector<VertexAttribute> attributes; // description of one
 	} vertexBuffer;
@@ -217,6 +220,7 @@ typedef struct {
 	std::vector<Material> materials;
 	std::vector<Texture> textures;
 	std::vector<Sampler> samplers;
+	std::vector<std::string> uris;
 } Scene;
 
 /**
