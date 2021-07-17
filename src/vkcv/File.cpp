@@ -2,7 +2,14 @@
 #include "vkcv/File.hpp"
 
 #include <stdlib.h>
+
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
+
+#include "vkcv/Logger.hpp"
 
 namespace vkcv {
 	
@@ -15,13 +22,25 @@ namespace vkcv {
 		}
 		
 		char name [16] = "vkcv_tmp_XXXXXX";
+		
+#ifdef _WIN32
+		int err = _mktemp_s(name, 16);
+		
+		if (err != 0) {
+			vkcv_log(LogLevel::ERROR, "Temporary file path could not be generated");
+			return "";
+		}
+#else
 		int fd = mkstemp(name);
 		
 		if (fd == -1) {
+			vkcv_log(LogLevel::ERROR, "Temporary file path could not be generated");
 			return "";
 		}
 		
 		close(fd);
+#endif
+		
 		return tmp / name;
 	}
 	
