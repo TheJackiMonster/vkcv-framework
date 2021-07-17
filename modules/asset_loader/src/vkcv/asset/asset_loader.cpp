@@ -121,7 +121,7 @@ int createTextures(const std::vector<fx::gltf::Texture>& tex_src,
 				return ASSET_ERROR;
 			}
 		}
-		c = 4;	// FIXME hardcoded to always have RGBA channel layout
+		c = 4;
 		const size_t nbytes = w * h * c;
 		std::vector<uint8_t> imgdata;
 		imgdata.resize(nbytes);
@@ -448,7 +448,6 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 		}
 		const uint32_t relevantBufferSize = relevantBufferEnd - relevantBufferOffset;
 
-		// FIXME: This only works when all vertex attributes are in one buffer
 		std::vector<uint8_t> vertexBufferData;
 		if (!probe) {
 			vertexBufferData.resize(relevantBufferSize);
@@ -748,9 +747,6 @@ int probeScene(const std::filesystem::path& path, Scene& scene) {
 }
 
 
-// TODO Do we want to _extend_ the given scene with the newly loaded mesh or do
-// we want to _clear_ the scene such that the result will always be an empty
-// scene with only the given mesh (and associated textures etc)?
 int loadMesh(const std::filesystem::path &path, const std::string &name, Scene &scene) {
 	fx::gltf::Document sceneObjects;
 
