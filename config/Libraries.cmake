@@ -34,6 +34,9 @@ endif ()
 # fix dependencies for different Linux distros (looking at you Ubuntu)
 include(${vkcv_config_ext}/CheckLibraries.cmake)
 
+# add custom function to include a file like a shader as string
+include(${vkcv_config_ext}/IncludeShader.cmake)
+
 # cleanup of compiler definitions aka preprocessor variables
 if (vkcv_definitions)
     list(REMOVE_DUPLICATES vkcv_definitions)

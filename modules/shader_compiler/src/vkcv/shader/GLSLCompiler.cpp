@@ -5,6 +5,7 @@
 #include <glslang/SPIRV/GlslangToSpv.h>
 #include <glslang/StandAlone/DirStackFileIncluder.h>
 
+#include <vkcv/File.hpp>
 #include <vkcv/Logger.hpp>
 
 namespace vkcv::shader {
@@ -263,7 +264,7 @@ namespace vkcv::shader {
 		std::vector<uint32_t> spirv;
 		glslang::GlslangToSpv(*intermediate, spirv);
 		
-		const std::filesystem::path tmp_path (std::tmpnam(nullptr));
+		const std::filesystem::path tmp_path = generateTemporaryFilePath();
 		
 		if (!writeSpirvCode(tmp_path, spirv)) {
 			vkcv_log(LogLevel::ERROR, "Spir-V could not be written to disk");

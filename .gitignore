@@ -18,3 +18,8 @@ cmake-build-release/
 
 # GUI configuration files
 imgui.ini
+
+# Generated source and header files for shaders
+*.hxx
+*.cxx
+
