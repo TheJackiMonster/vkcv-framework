@@ -61,7 +61,15 @@ namespace vkcv::upscaling {
 		
 		return compiler.compileSource(vkcv::ShaderStage::COMPUTE,
 									  FSR_PASS_GLSL_SHADER.c_str(),
-									  compiled, directory);
+									  [&directory, &compiled] (vkcv::ShaderStage shaderStage,
+									  		const std::filesystem::path& path) {
+				if (compiled) {
+					compiled(shaderStage, path);
+				}
+				
+				std::filesystem::remove_all(directory);
+			}, directory
+		);
 	}
 	
 	FSRUpscaling::FSRUpscaling(Core& core) :

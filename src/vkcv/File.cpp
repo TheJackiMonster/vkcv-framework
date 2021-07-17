@@ -31,7 +31,7 @@ namespace vkcv {
 			return "";
 		}
 #else
-		int fd = mkstemp(name);
+		int fd = mkstemp(name); // creates a file locally
 		
 		if (fd == -1) {
 			vkcv_log(LogLevel::ERROR, "Temporary file path could not be generated");
@@ -39,6 +39,7 @@ namespace vkcv {
 		}
 		
 		close(fd);
+		remove(name); // removes the local file again
 #endif
 		
 		return tmp / name;
