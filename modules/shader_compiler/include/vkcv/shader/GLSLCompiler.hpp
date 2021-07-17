@@ -7,7 +7,7 @@
 
 namespace vkcv::shader {
 	
-	class GLSLCompiler : Compiler {
+	class GLSLCompiler : public Compiler {
 	private:
 	public:
 		GLSLCompiler();

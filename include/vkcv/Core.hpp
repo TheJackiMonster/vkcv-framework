@@ -163,7 +163,7 @@ namespace vkcv
          */
         [[nodiscard]]
         PipelineHandle createComputePipeline(
-            const ShaderProgram &config, 
+            const ShaderProgram &shaderProgram,
             const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
 
         /**

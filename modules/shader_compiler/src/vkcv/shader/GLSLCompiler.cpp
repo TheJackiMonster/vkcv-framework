@@ -2,6 +2,7 @@
 #include "vkcv/shader/GLSLCompiler.hpp"
 
 #include <fstream>
+#include <strstream>
 #include <glslang/SPIRV/GlslangToSpv.h>
 #include <glslang/StandAlone/DirStackFileIncluder.h>
 
@@ -12,7 +13,7 @@ namespace vkcv::shader {
 	
 	static uint32_t s_CompilerCount = 0;
 	
-	GLSLCompiler::GLSLCompiler() {
+	GLSLCompiler::GLSLCompiler() : Compiler() {
 		if (s_CompilerCount == 0) {
 			glslang::InitializeProcess();
 		}
@@ -20,7 +21,7 @@ namespace vkcv::shader {
 		s_CompilerCount++;
 	}
 	
-	GLSLCompiler::GLSLCompiler(const GLSLCompiler &other) {
+	GLSLCompiler::GLSLCompiler(const GLSLCompiler &other) : Compiler(other) {
 		s_CompilerCount++;
 	}
 	
@@ -223,6 +224,11 @@ namespace vkcv::shader {
 			EShMsgSpvRules |
 			EShMsgVulkanRules
 		);
+		
+		std::strstream defines;
+		for (const auto& define : m_defines) {
+			defines << "#define " << define.first << " " << define.second << std::endl;
+		}
 
 		std::string preprocessedGLSL;
 
@@ -236,6 +242,19 @@ namespace vkcv::shader {
 				shader.getInfoLog(), shader.getInfoDebugLog());
 			return false;
 		}
+		
+		size_t pos = preprocessedGLSL.find("#version");
+		if (pos >= preprocessedGLSL.length()) {
+			pos = 0;
+		}
+		
+		const size_t epos = preprocessedGLSL.find_last_of("#extension", pos);
+		if (epos < preprocessedGLSL.length()) {
+			pos = epos;
+		}
+		
+		pos = preprocessedGLSL.find('\n', pos) + 1;
+		preprocessedGLSL = preprocessedGLSL.insert(pos, defines.str());
 		
 		const char* preprocessedCString = preprocessedGLSL.c_str();
 		shader.setStrings(&preprocessedCString, 1);
