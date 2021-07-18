@@ -76,6 +76,33 @@ enum IndexType getIndexType(const enum fx::gltf::Accessor::ComponentType &type)
 	}
 }
 
+
+int loadTexture(const Scene &scene, Texture &tex)
+{
+	if (tex.uri < 0 || tex.uri >= scene.uris.size()) {
+		vkcv_log(LogLevel::ERROR, "URI index out of range: %d", tex.uri);
+	}
+	const std::string &uri = scene.uris[tex.uri];
+	int w, h, ch;
+	uint8_t *data = NULL;
+	if (!(data = stbi_load(uri.c_str(), &w, &h, &ch, 4))) {
+		vkcv_log(LogLevel::ERROR, "Failed to load image data from %s",
+				uri.c_str());
+		tex.w = tex.h = tex.channels = 0;
+		return ASSET_ERROR;
+	}
+	tex.channels = 4;
+	tex.w = static_cast<uint16_t>(w);
+	tex.h = static_cast<uint16_t>(h);
+
+	tex.data.resize(tex.w * tex.h * tex.channels);
+	memcpy(tex.data.data(), data, tex.data.size());
+	free(data);
+
+	return ASSET_SUCCESS;
+}
+
+
 /**
  * This function loads all the textures of a Scene described by the texture-
  * and image- array of an fx::gltf::Document.
