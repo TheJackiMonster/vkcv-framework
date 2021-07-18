@@ -53,9 +53,9 @@ namespace vkcv
     Core Core::create(Window &window,
                       const char *applicationName,
                       uint32_t applicationVersion,
-                      std::vector<vk::QueueFlagBits> queueFlags,
-                      std::vector<const char *> instanceExtensions,
-                      std::vector<const char *> deviceExtensions)
+                      const std::vector<vk::QueueFlagBits>& queueFlags,
+                      const std::vector<const char *>& instanceExtensions,
+                      const std::vector<const char *>& deviceExtensions)
     {
         Context context = Context::create(
         		applicationName, applicationVersion,
@@ -90,8 +90,8 @@ namespace vkcv
     Core::Core(Context &&context, Window &window, const Swapchain& swapChain,  std::vector<vk::ImageView> swapchainImageViews,
         const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
             m_Context(std::move(context)),
+			m_swapchain(swapChain),
             m_window(window),
-            m_swapchain(swapChain),
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
             m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
             m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
@@ -118,7 +118,8 @@ namespace vkcv
 			swapchainImageViews, 
 			swapChain.getExtent().width,
 			swapChain.getExtent().height,
-			swapChain.getFormat());
+			swapChain.getFormat()
+		);
 	}
 
 	Core::~Core() noexcept {
@@ -373,7 +374,8 @@ namespace vkcv
 					pipelineLayout,
 					usage.setLocation,
 					{ usage.vulkanHandle },
-					{});
+					usage.dynamicOffsets
+				);
 			}
 			if (pushConstants.getSizePerDrawcall() > 0) {
 				cmdBuffer.pushConstants(

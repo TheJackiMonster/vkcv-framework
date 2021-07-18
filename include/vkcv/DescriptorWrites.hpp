@@ -21,15 +21,19 @@ namespace vkcv {
 	};
 
 	struct UniformBufferDescriptorWrite {
-		inline UniformBufferDescriptorWrite(uint32_t binding, BufferHandle buffer) : binding(binding), buffer(buffer) {};
+		inline UniformBufferDescriptorWrite(uint32_t binding, BufferHandle buffer, bool dynamic = false) :
+		binding(binding), buffer(buffer), dynamic(dynamic) {};
 		uint32_t		binding;
 		BufferHandle	buffer;
+		bool 			dynamic;
 	};
 
 	struct StorageBufferDescriptorWrite {
-		inline StorageBufferDescriptorWrite(uint32_t binding, BufferHandle buffer) : binding(binding), buffer(buffer) {};
+		inline StorageBufferDescriptorWrite(uint32_t binding, BufferHandle buffer, bool dynamic = false) :
+		binding(binding), buffer(buffer), dynamic(dynamic) {};
 		uint32_t		binding;
 		BufferHandle	buffer;
+		bool			dynamic;
 	};
 
 	struct SamplerDescriptorWrite {

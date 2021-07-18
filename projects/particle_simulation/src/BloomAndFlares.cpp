@@ -263,6 +263,10 @@ void BloomAndFlares::execWholePipeline(const vkcv::CommandStreamHandle &cmdStrea
 
 void BloomAndFlares::updateImageDimensions(uint32_t width, uint32_t height)
 {
+    if ((width == m_Width) && (height == m_Height)) {
+        return;
+    }
+    
     m_Width  = width;
     m_Height = height;
 

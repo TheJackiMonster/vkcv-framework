@@ -29,6 +29,18 @@ namespace vkcv::upscaling {
 		SamplerHandle m_sampler;
 		
 		bool m_hdr;
+		
+		/**
+		 * Sharpness will calculate the rcasAttenuation value
+		 * which should be between 0.0f and 2.0f (default: 0.25f).
+		 *
+		 * rcasAttenuation = (1.0f - sharpness) * 2.0f
+		 *
+		 * So the default value for sharpness should be 0.875f.
+		 *
+		 * Beware that 0.0f or any negative value of sharpness will
+		 * disable the rcas pass completely.
+		 */
 		float m_sharpness;
 	
 	public:

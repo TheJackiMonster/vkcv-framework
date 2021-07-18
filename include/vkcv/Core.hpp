@@ -138,9 +138,9 @@ namespace vkcv
         static Core create(Window &window,
                            const char *applicationName,
                            uint32_t applicationVersion,
-                           std::vector<vk::QueueFlagBits> queueFlags    = {},
-                           std::vector<const char*> instanceExtensions  = {},
-                           std::vector<const char*> deviceExtensions    = {});
+                           const std::vector<vk::QueueFlagBits>& queueFlags    = {},
+                           const std::vector<const char*>& instanceExtensions  = {},
+                           const std::vector<const char*>& deviceExtensions    = {});
 
         /**
          * Creates a basic vulkan graphics pipeline using @p config from the pipeline config class and returns it using the @p handle.

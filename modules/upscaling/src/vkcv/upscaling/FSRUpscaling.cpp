@@ -18,6 +18,47 @@
 
 namespace vkcv::upscaling {
 	
+	static std::vector<DescriptorBinding> getDescriptorBindings() {
+		return std::vector<DescriptorBinding>({
+			DescriptorBinding(
+					0, DescriptorType::UNIFORM_BUFFER_DYNAMIC,
+					1, ShaderStage::COMPUTE
+			),
+			DescriptorBinding(
+					1, DescriptorType::IMAGE_SAMPLED,
+					1, ShaderStage::COMPUTE
+			),
+			DescriptorBinding(
+					2, DescriptorType::IMAGE_STORAGE,
+					1, ShaderStage::COMPUTE
+			),
+			DescriptorBinding(
+					3, DescriptorType::SAMPLER,
+					1, ShaderStage::COMPUTE
+			)
+		});
+	}
+	
+	template<typename T>
+	bool checkFeatures(const vk::BaseInStructure* base, vk::StructureType type, bool (*check)(const T& features)) {
+		if (base->sType == type) {
+			return check(*reinterpret_cast<const T*>(base));
+		} else
+		if (base->pNext) {
+			return checkFeatures<T>(base->pNext, type, check);
+		} else {
+			return false;
+		}
+	}
+	
+	static bool checkFloat16(const vk::PhysicalDeviceFloat16Int8FeaturesKHR& features) {
+		return features.shaderFloat16;
+	}
+	
+	static bool check16Storage(const vk::PhysicalDevice16BitStorageFeaturesKHR& features) {
+		return features.storageBuffer16BitAccess;
+	}
+	
 	static bool writeShaderCode(const std::filesystem::path &shaderPath, const std::string& code) {
 		std::ofstream file (shaderPath.string(), std::ios::out);
 		
@@ -67,8 +108,8 @@ namespace vkcv::upscaling {
 	m_core(core),
 	m_easuPipeline(),
 	m_rcasPipeline(),
-	m_easuDescriptorSet(),
-	m_rcasDescriptorSet(),
+	m_easuDescriptorSet(m_core.createDescriptorSet(getDescriptorBindings())),
+	m_rcasDescriptorSet(m_core.createDescriptorSet(getDescriptorBindings())),
 	m_constants(m_core.createBuffer<FSRConstants>(
 			BufferType::UNIFORM,1,
 			BufferMemoryType::HOST_VISIBLE
@@ -81,13 +122,29 @@ namespace vkcv::upscaling {
 			SamplerAddressMode::CLAMP_TO_EDGE
 	)),
 	m_hdr(false),
-	m_sharpness(0.0f) {
+	m_sharpness(0/*.875f*/) {
 		vkcv::shader::GLSLCompiler easuCompiler, rcasCompiler;
 		
-		easuCompiler.setDefine("SAMPLE_SLOW_FALLBACK", "1");
-		easuCompiler.setDefine("SAMPLE_EASU", "1");
+		const auto& features = m_core.getContext().getPhysicalDevice().getFeatures2();
+		const bool float16Support = (
+				checkFeatures<vk::PhysicalDeviceFloat16Int8FeaturesKHR>(
+						reinterpret_cast<const vk::BaseInStructure*>(&features),
+						vk::StructureType::ePhysicalDeviceShaderFloat16Int8FeaturesKHR,
+						checkFloat16
+				) &&
+				checkFeatures<vk::PhysicalDevice16BitStorageFeaturesKHR>(
+						reinterpret_cast<const vk::BaseInStructure*>(&features),
+						vk::StructureType::ePhysicalDevice16BitStorageFeaturesKHR,
+						check16Storage
+				)
+		) || (true); // check doesn't work because chain is empty
 		
-		rcasCompiler.setDefine("SAMPLE_SLOW_FALLBACK", "1");
+		if (!float16Support) {
+			easuCompiler.setDefine("SAMPLE_SLOW_FALLBACK", "1");
+			rcasCompiler.setDefine("SAMPLE_SLOW_FALLBACK", "1");
+		}
+		
+		easuCompiler.setDefine("SAMPLE_EASU", "1");
 		rcasCompiler.setDefine("SAMPLE_RCAS", "1");
 		
 		{
@@ -97,13 +154,12 @@ namespace vkcv::upscaling {
 				program.addShader(shaderStage, path);
 			});
 			
-			m_easuDescriptorSet = m_core.createDescriptorSet(program.getReflectedDescriptors()[0]);
 			m_easuPipeline = m_core.createComputePipeline(program, {
 				m_core.getDescriptorSet(m_easuDescriptorSet).layout
 			});
 			
 			DescriptorWrites writes;
-			writes.uniformBufferWrites.emplace_back(0, m_constants.getHandle());
+			writes.uniformBufferWrites.emplace_back(0, m_constants.getHandle(), true);
 			writes.samplerWrites.emplace_back(3, m_sampler);
 			
 			m_core.writeDescriptorSet(m_easuDescriptorSet, writes);
@@ -116,13 +172,12 @@ namespace vkcv::upscaling {
 				program.addShader(shaderStage, path);
 			});
 			
-			m_rcasDescriptorSet = m_core.createDescriptorSet(program.getReflectedDescriptors()[0]);
 			m_rcasPipeline = m_core.createComputePipeline(program, {
 				m_core.getDescriptorSet(m_rcasDescriptorSet).layout
 			});
 			
 			DescriptorWrites writes;
-			writes.uniformBufferWrites.emplace_back(0, m_constants.getHandle());
+			writes.uniformBufferWrites.emplace_back(0, m_constants.getHandle(), true);
 			writes.samplerWrites.emplace_back(3, m_sampler);
 			
 			m_core.writeDescriptorSet(m_rcasDescriptorSet, writes);
@@ -162,6 +217,7 @@ namespace vkcv::upscaling {
 			);
 			
 			consts.Sample[0] = (((m_hdr) && (m_sharpness <= +0.0f)) ? 1 : 0);
+			
 			m_constants.fill(&consts);
 		}
 		
@@ -172,7 +228,7 @@ namespace vkcv::upscaling {
 		dispatch[1] = (outputHeight + (threadGroupWorkRegionDim - 1)) / threadGroupWorkRegionDim;
 		dispatch[2] = 1;
 		
-		m_core.recordMemoryBarrier(cmdStream);
+		m_core.recordBufferMemoryBarrier(cmdStream, m_constants.getHandle());
 		
 		if (m_sharpness > +0.0f) {
 			{
@@ -182,28 +238,6 @@ namespace vkcv::upscaling {
 				
 				m_core.writeDescriptorSet(m_easuDescriptorSet, writes);
 			}
-			
-			m_core.recordComputeDispatchToCmdStream(
-					cmdStream,
-					m_easuPipeline,
-					dispatch,
-					{DescriptorSetUsage(0, m_core.getDescriptorSet(
-							m_easuDescriptorSet
-					).vulkanHandle)},
-					PushConstants(0)
-			);
-			
-			{
-				FSRConstants consts = {};
-				
-				FsrRcasCon(consts.Const0, 1.0f / m_sharpness);
-				consts.Sample[0] = (m_hdr ? 1 : 0);
-				
-				m_constants.fill(&consts);
-			}
-			
-			m_core.prepareImageForSampling(cmdStream, m_intermediateImage);
-			
 			{
 				DescriptorWrites writes;
 				writes.sampledImageWrites.emplace_back(1, m_intermediateImage);
@@ -214,11 +248,33 @@ namespace vkcv::upscaling {
 			
 			m_core.recordComputeDispatchToCmdStream(
 					cmdStream,
+					m_easuPipeline,
+					dispatch,
+					{DescriptorSetUsage(0, m_core.getDescriptorSet(
+							m_easuDescriptorSet
+					).vulkanHandle, { 0 })},
+					PushConstants(0)
+			);
+			
+			{
+				FSRConstants consts = {};
+				
+				FsrRcasCon(consts.Const0, (1.0f - m_sharpness) * 2.0f);
+				consts.Sample[0] = (m_hdr ? 1 : 0);
+				
+				m_constants.fill(&consts);
+			}
+			
+			m_core.recordBufferMemoryBarrier(cmdStream, m_constants.getHandle());
+			m_core.prepareImageForSampling(cmdStream, m_intermediateImage);
+			
+			m_core.recordComputeDispatchToCmdStream(
+					cmdStream,
 					m_rcasPipeline,
 					dispatch,
 					{DescriptorSetUsage(0, m_core.getDescriptorSet(
 							m_rcasDescriptorSet
-					).vulkanHandle)},
+					).vulkanHandle, { 0 })},
 					PushConstants(0)
 			);
 			
@@ -238,12 +294,10 @@ namespace vkcv::upscaling {
 					dispatch,
 					{DescriptorSetUsage(0, m_core.getDescriptorSet(
 							m_easuDescriptorSet
-					).vulkanHandle)},
+					).vulkanHandle, { 0 })},
 					PushConstants(0)
 			);
 		}
-		
-		m_core.recordMemoryBarrier(cmdStream);
 	}
 	
 	bool FSRUpscaling::isHdrEnabled() const {
@@ -259,7 +313,7 @@ namespace vkcv::upscaling {
 	}
 	
 	void FSRUpscaling::setSharpness(float sharpness) {
-		m_sharpness = sharpness;
+		m_sharpness = (sharpness < 0.0f ? 0.0f : (sharpness > 1.0f ? 1.0f : sharpness));
 	}
 	
 }

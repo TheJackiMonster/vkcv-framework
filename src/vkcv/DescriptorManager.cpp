@@ -105,7 +105,6 @@ namespace vkcv
 		const ImageManager		&imageManager, 
 		const BufferManager		&bufferManager,
 		const SamplerManager	&samplerManager) {
-
 		vk::DescriptorSet set = m_DescriptorSets[handle.getId()].vulkanHandle;
 
 		std::vector<vk::DescriptorImageInfo> imageInfos;
@@ -165,6 +164,8 @@ namespace vkcv
 					0,
 					bufferInfos.size(),
 					write.binding,
+					write.dynamic?
+					vk::DescriptorType::eUniformBufferDynamic :
 					vk::DescriptorType::eUniformBuffer
 			};
 			
@@ -184,6 +185,8 @@ namespace vkcv
 					0,
 					bufferInfos.size(),
 					write.binding,
+					write.dynamic?
+					vk::DescriptorType::eStorageBufferDynamic :
 					vk::DescriptorType::eStorageBuffer
 			};
 			
@@ -239,8 +242,12 @@ namespace vkcv
         {
             case DescriptorType::UNIFORM_BUFFER:
                 return vk::DescriptorType::eUniformBuffer;
+			case DescriptorType::UNIFORM_BUFFER_DYNAMIC:
+				return vk::DescriptorType::eUniformBufferDynamic;
             case DescriptorType::STORAGE_BUFFER:
                 return vk::DescriptorType::eStorageBuffer;
+			case DescriptorType::STORAGE_BUFFER_DYNAMIC:
+				return vk::DescriptorType::eStorageBufferDynamic;
             case DescriptorType::SAMPLER:
                 return vk::DescriptorType::eSampler;
             case DescriptorType::IMAGE_SAMPLED:

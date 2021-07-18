@@ -28,11 +28,11 @@ int main(int argc, const char** argv) {
 		true
 	);
 
-	bool    isFullscreen            = false;
-	int     windowedWidthBackup     = windowWidth;
-	int     windowedHeightBackup    = windowHeight;
-	int     windowedPosXBackup;
-	int     windowedPosYBackup;
+	bool     isFullscreen            = false;
+	uint32_t windowedWidthBackup     = windowWidth;
+	uint32_t windowedHeightBackup    = windowHeight;
+	int      windowedPosXBackup;
+	int      windowedPosYBackup;
     glfwGetWindowPos(window.getWindow(), &windowedPosXBackup, &windowedPosYBackup);
 
 	window.e_key.add([&](int key, int scancode, int action, int mods) {
@@ -86,7 +86,7 @@ int main(int argc, const char** argv) {
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
 		{},
-		{ "VK_KHR_swapchain" }
+		{ "VK_KHR_swapchain", "VK_KHR_shader_float16_int8", "VK_KHR_16bit_storage" }
 	);
 
 	vkcv::asset::Scene mesh;
@@ -528,6 +528,9 @@ int main(int argc, const char** argv) {
 
 	vkcv::upscaling::FSRUpscaling upscaling (core);
 	
+	float fsrFactor = 1.5f;
+	float rcasSharpness = upscaling.getSharpness();
+	
 	vkcv::gui::GUI gui(core, window);
 
 	glm::vec2   lightAnglesDegree               = glm::vec2(90.f, 0.f);
@@ -555,24 +558,33 @@ int main(int argc, const char** argv) {
 		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
 			continue;
 		}
+		
+		if (fsrFactor < 1.0f) {
+			fsrFactor = 1.0f;
+		} else
+		if (fsrFactor > 2.0f) {
+			fsrFactor = 2.0f;
+		}
+		
+		const auto fsrWidth = static_cast<uint32_t>(std::round(static_cast<float>(swapchainWidth) / fsrFactor));
+		const auto fsrHeight = static_cast<uint32_t>(std::round(static_cast<float>(swapchainHeight) / fsrFactor));
 
-		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
-			depthBuffer         = core.createImage(depthBufferFormat, swapchainWidth, swapchainHeight, 1, false, false, false, msaa).getHandle();
-			colorBuffer         = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, false, colorBufferRequiresStorage, true, msaa).getHandle();
+		if ((fsrWidth != windowWidth) || ((fsrHeight != windowHeight))) {
+			depthBuffer         = core.createImage(depthBufferFormat, fsrWidth, fsrHeight, 1, false, false, false, msaa).getHandle();
+			colorBuffer         = core.createImage(colorBufferFormat, fsrWidth, fsrHeight, 1, false, colorBufferRequiresStorage, true, msaa).getHandle();
 
 			if (usingMsaa) {
-				resolvedColorBuffer = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, false, true, true).getHandle();
-			}
-			else {
+				resolvedColorBuffer = core.createImage(colorBufferFormat, fsrWidth, fsrHeight, 1, false, true, true).getHandle();
+			} else {
 				resolvedColorBuffer = colorBuffer;
 			}
 			
-			swapBuffer = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, false, true).getHandle();
-
+			swapBuffer = core.createImage(colorBufferFormat, fsrWidth, fsrHeight, 1, false, true).getHandle();
+			
 			windowWidth = swapchainWidth;
 			windowHeight = swapchainHeight;
-
-			bloomFlares.updateImageDimensions(windowWidth, windowHeight);
+			
+			bloomFlares.updateImageDimensions(swapchainWidth, swapchainHeight);
 		}
 
 		auto end = std::chrono::system_clock::now();
@@ -687,8 +699,8 @@ int main(int argc, const char** argv) {
 
 		const uint32_t fullscreenLocalGroupSize = 8;
 		const uint32_t fulsscreenDispatchCount[3] = {
-			static_cast<uint32_t>(glm::ceil(windowWidth  / static_cast<float>(fullscreenLocalGroupSize))),
-			static_cast<uint32_t>(glm::ceil(windowHeight / static_cast<float>(fullscreenLocalGroupSize))),
+			static_cast<uint32_t>(glm::ceil(fsrWidth  / static_cast<float>(fullscreenLocalGroupSize))),
+			static_cast<uint32_t>(glm::ceil(fsrHeight / static_cast<float>(fullscreenLocalGroupSize))),
 			1
 		};
 
@@ -713,7 +725,7 @@ int main(int argc, const char** argv) {
 			}
 		}
 
-		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer, windowWidth, windowHeight, 
+		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer, fsrWidth, fsrHeight,
 			glm::normalize(cameraManager.getActiveCamera().getFront())
 		);
 
@@ -738,7 +750,16 @@ int main(int argc, const char** argv) {
 		
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 		core.prepareImageForSampling(cmdStream, swapBuffer);
+		
+		if (fsrFactor <= 1.0f) {
+			upscaling.setSharpness(0.0f);
+		}
+		
 		upscaling.recordUpscaling(cmdStream, swapBuffer, swapchainInput);
+		
+		if (fsrFactor <= 1.0f) {
+			upscaling.setSharpness(rcasSharpness);
+		}
 
 		// present and end
 		core.prepareSwapchainImageForPresent(cmdStream);
@@ -766,12 +787,16 @@ int main(int argc, const char** argv) {
 			ImGui::DragFloat("Voxelization extent", &voxelizationExtent, 1.f, 0.f);
 			voxelizationExtent = std::max(voxelizationExtent, 1.f);
 			voxelVisualisationMip = std::max(voxelVisualisationMip, 0);
-
+			
 			ImGui::ColorEdit3("Scattering color", &scatteringColor.x);
 			ImGui::DragFloat("Scattering density", &scatteringDensity, 0.0001);
 			ImGui::ColorEdit3("Absorption color", &absorptionColor.x);
 			ImGui::DragFloat("Absorption density", &absorptionDensity, 0.0001);
 			ImGui::DragFloat("Volumetric ambient", &volumetricAmbient, 0.002);
+			ImGui::DragFloat("FidelityFX FSR Factor", &fsrFactor, 0.01f, 1.0f, 2.0f);
+			ImGui::DragFloat("RCAS Sharpness", &rcasSharpness, 0.01f, 0.0f, 1.0f);
+			
+			upscaling.setSharpness(rcasSharpness);
 
 			if (ImGui::Button("Reload forward pass")) {
 
