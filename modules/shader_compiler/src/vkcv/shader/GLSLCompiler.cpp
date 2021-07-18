@@ -212,8 +212,30 @@ namespace vkcv::shader {
 		glslang::TShader shader (language);
 		glslang::TProgram program;
 		
+		std::string source (shaderSource);
+		
+		std::strstream defines;
+		for (const auto& define : m_defines) {
+			defines << "#define " << define.first << " " << define.second << std::endl;
+		}
+		
+		defines << '\0';
+		
+		size_t pos = source.find("#version") + 8;
+		if (pos >= source.length()) {
+			pos = 0;
+		}
+		
+		const size_t epos = source.find_last_of("#extension", pos) + 10;
+		if (epos < source.length()) {
+			pos = epos;
+		}
+		
+		pos = source.find('\n', pos) + 1;
+		source = source.insert(pos, defines.str());
+		
 		const char *shaderStrings [1];
-		shaderStrings[0] = shaderSource;
+		shaderStrings[0] = source.c_str();
 		
 		shader.setStrings(shaderStrings, 1);
 		
@@ -224,11 +246,6 @@ namespace vkcv::shader {
 			EShMsgSpvRules |
 			EShMsgVulkanRules
 		);
-		
-		std::strstream defines;
-		for (const auto& define : m_defines) {
-			defines << "#define " << define.first << " " << define.second << std::endl;
-		}
 
 		std::string preprocessedGLSL;
 
@@ -242,19 +259,6 @@ namespace vkcv::shader {
 				shader.getInfoLog(), shader.getInfoDebugLog());
 			return false;
 		}
-		
-		size_t pos = preprocessedGLSL.find("#version") + 8;
-		if (pos >= preprocessedGLSL.length()) {
-			pos = 0;
-		}
-		
-		const size_t epos = preprocessedGLSL.find_last_of("#extension", pos) + 10;
-		if (epos < preprocessedGLSL.length()) {
-			pos = epos;
-		}
-		
-		pos = preprocessedGLSL.find('\n', pos) + 1;
-		preprocessedGLSL.insert(pos, defines.str(), defines.width());
 		
 		const char* preprocessedCString = preprocessedGLSL.c_str();
 		shader.setStrings(&preprocessedCString, 1);
