@@ -476,7 +476,7 @@ namespace vkcv
 		}
 	}
 
-	void Core::submitCommandStream(const CommandStreamHandle handle) {
+	void Core::submitCommandStream(const CommandStreamHandle& handle) {
 		std::vector<vk::Semaphore> waitSemaphores;
 		// FIXME: add proper user controllable sync
 		std::vector<vk::Semaphore> signalSemaphores = { m_SyncResources.renderFinished };
@@ -548,38 +548,38 @@ namespace vkcv
 		return m_DescriptorManager->getDescriptorSet(handle);
 	}
 
-	void Core::prepareSwapchainImageForPresent(const CommandStreamHandle cmdStream) {
+	void Core::prepareSwapchainImageForPresent(const CommandStreamHandle& cmdStream) {
 		auto swapchainHandle = ImageHandle::createSwapchainImageHandle();
 		recordCommandsToStream(cmdStream, [swapchainHandle, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordImageLayoutTransition(swapchainHandle, vk::ImageLayout::ePresentSrcKHR, cmdBuffer);
 		}, nullptr);
 	}
 
-	void Core::prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image) {
+	void Core::prepareImageForSampling(const CommandStreamHandle& cmdStream, const ImageHandle& image) {
 		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eShaderReadOnlyOptimal, cmdBuffer);
 		}, nullptr);
 	}
 
-	void Core::prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image) {
+	void Core::prepareImageForStorage(const CommandStreamHandle& cmdStream, const ImageHandle& image) {
 		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eGeneral, cmdBuffer);
 		}, nullptr);
 	}
 
-	void Core::recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image) {
+	void Core::recordImageMemoryBarrier(const CommandStreamHandle& cmdStream, const ImageHandle& image) {
 		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordImageMemoryBarrier(image, cmdBuffer);
 		}, nullptr);
 	}
 
-	void Core::recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer) {
+	void Core::recordBufferMemoryBarrier(const CommandStreamHandle& cmdStream, const BufferHandle& buffer) {
 		recordCommandsToStream(cmdStream, [buffer, this](const vk::CommandBuffer cmdBuffer) {
 			m_BufferManager->recordBufferMemoryBarrier(buffer, cmdBuffer);
 		}, nullptr);
 	}
 	
-	void Core::resolveMSAAImage(CommandStreamHandle cmdStream, ImageHandle src, ImageHandle dst) {
+	void Core::resolveMSAAImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst) {
 		recordCommandsToStream(cmdStream, [src, dst, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordMSAAResolve(cmdBuffer, src, dst);
 		}, nullptr);
@@ -588,5 +588,23 @@ namespace vkcv
 	vk::ImageView Core::getSwapchainImageView() const {
     	return m_ImageManager->getVulkanImageView(vkcv::ImageHandle::createSwapchainImageHandle());
     }
+    
+    void Core::recordMemoryBarrier(const CommandStreamHandle& cmdStream) {
+		recordCommandsToStream(cmdStream, [](const vk::CommandBuffer cmdBuffer) {
+			vk::MemoryBarrier barrier (
+					vk::AccessFlagBits::eMemoryWrite | vk::AccessFlagBits::eMemoryRead,
+					vk::AccessFlagBits::eMemoryWrite | vk::AccessFlagBits::eMemoryRead
+			);
+			
+			cmdBuffer.pipelineBarrier(
+					vk::PipelineStageFlagBits::eAllCommands,
+					vk::PipelineStageFlagBits::eAllCommands,
+					vk::DependencyFlags(),
+					1, &barrier,
+					0, nullptr,
+					0, nullptr
+			);
+		}, nullptr);
+	}
 	
 }

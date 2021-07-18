@@ -287,15 +287,18 @@ namespace vkcv
 			const RecordCommandFunction &record,
 			const FinishCommandFunction &finish);
 
-		void submitCommandStream(const CommandStreamHandle handle);
-		void prepareSwapchainImageForPresent(const CommandStreamHandle handle);
-		void prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image);
-		void prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image);
-		void recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image);
-		void recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer);
-		void resolveMSAAImage(CommandStreamHandle cmdStream, ImageHandle src, ImageHandle dst);
+		void submitCommandStream(const CommandStreamHandle& handle);
+		void prepareSwapchainImageForPresent(const CommandStreamHandle& handle);
+		void prepareImageForSampling(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+		void prepareImageForStorage(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+		void recordImageMemoryBarrier(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+		void recordBufferMemoryBarrier(const CommandStreamHandle& cmdStream, const BufferHandle& buffer);
+		void resolveMSAAImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst);
 
+		[[nodiscard]]
 		vk::ImageView getSwapchainImageView() const;
+	
+		void recordMemoryBarrier(const CommandStreamHandle& cmdStream);
 		
     };
 }

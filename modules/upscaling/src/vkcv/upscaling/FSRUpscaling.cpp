@@ -18,15 +18,6 @@
 
 namespace vkcv::upscaling {
 	
-	static std::vector<DescriptorBinding> getDescriptorBindings() {
-		return std::vector<DescriptorBinding>({
-			DescriptorBinding(0, DescriptorType::UNIFORM_BUFFER, 1, ShaderStage::COMPUTE),
-			DescriptorBinding(1, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::COMPUTE),
-			DescriptorBinding(2, DescriptorType::IMAGE_STORAGE, 1, ShaderStage::COMPUTE),
-			DescriptorBinding(3, DescriptorType::SAMPLER, 1, ShaderStage::COMPUTE)
-		});
-	}
-	
 	static bool writeShaderCode(const std::filesystem::path &shaderPath, const std::string& code) {
 		std::ofstream file (shaderPath.string(), std::ios::out);
 		
@@ -76,7 +67,8 @@ namespace vkcv::upscaling {
 	m_core(core),
 	m_easuPipeline(),
 	m_rcasPipeline(),
-	m_descriptorSet(m_core.createDescriptorSet(getDescriptorBindings())),
+	m_easuDescriptorSet(),
+	m_rcasDescriptorSet(),
 	m_constants(m_core.createBuffer<FSRConstants>(
 			BufferType::UNIFORM,1,
 			BufferMemoryType::HOST_VISIBLE
@@ -89,37 +81,51 @@ namespace vkcv::upscaling {
 			SamplerAddressMode::CLAMP_TO_EDGE
 	)),
 	m_hdr(false),
-	m_sharpness(1.0f) {
-		const auto descriptorSetLayout = m_core.getDescriptorSet(m_descriptorSet).layout;
-		
+	m_sharpness(0.0f) {
 		vkcv::shader::GLSLCompiler easuCompiler, rcasCompiler;
 		
-		easuCompiler.setDefine("SAMPLE_BILINEAR", "0");
-		easuCompiler.setDefine("SAMPLE_RCAS", "0");
+		easuCompiler.setDefine("SAMPLE_SLOW_FALLBACK", "1");
 		easuCompiler.setDefine("SAMPLE_EASU", "1");
 		
-		rcasCompiler.setDefine("SAMPLE_BILINEAR", "0");
+		rcasCompiler.setDefine("SAMPLE_SLOW_FALLBACK", "1");
 		rcasCompiler.setDefine("SAMPLE_RCAS", "1");
-		rcasCompiler.setDefine("SAMPLE_EASU", "0");
 		
 		{
 			ShaderProgram program;
-			compileFSRShader(easuCompiler, [&program, &descriptorSetLayout](vkcv::ShaderStage shaderStage,
+			compileFSRShader(easuCompiler, [&program](vkcv::ShaderStage shaderStage,
 					const std::filesystem::path& path) {
 				program.addShader(shaderStage, path);
 			});
 			
-			m_easuPipeline = m_core.createComputePipeline(program, { descriptorSetLayout });
+			m_easuDescriptorSet = m_core.createDescriptorSet(program.getReflectedDescriptors()[0]);
+			m_easuPipeline = m_core.createComputePipeline(program, {
+				m_core.getDescriptorSet(m_easuDescriptorSet).layout
+			});
+			
+			DescriptorWrites writes;
+			writes.uniformBufferWrites.emplace_back(0, m_constants.getHandle());
+			writes.samplerWrites.emplace_back(3, m_sampler);
+			
+			m_core.writeDescriptorSet(m_easuDescriptorSet, writes);
 		}
 		
 		{
 			ShaderProgram program;
-			compileFSRShader(rcasCompiler, [&program, &descriptorSetLayout](vkcv::ShaderStage shaderStage,
+			compileFSRShader(rcasCompiler, [&program](vkcv::ShaderStage shaderStage,
 					const std::filesystem::path& path) {
 				program.addShader(shaderStage, path);
 			});
 			
-			m_rcasPipeline = m_core.createComputePipeline(program, { descriptorSetLayout });
+			m_rcasDescriptorSet = m_core.createDescriptorSet(program.getReflectedDescriptors()[0]);
+			m_rcasPipeline = m_core.createComputePipeline(program, {
+				m_core.getDescriptorSet(m_rcasDescriptorSet).layout
+			});
+			
+			DescriptorWrites writes;
+			writes.uniformBufferWrites.emplace_back(0, m_constants.getHandle());
+			writes.samplerWrites.emplace_back(3, m_sampler);
+			
+			m_core.writeDescriptorSet(m_rcasDescriptorSet, writes);
 		}
 	}
 	
@@ -127,10 +133,10 @@ namespace vkcv::upscaling {
 									   const ImageHandle& input,
 									   const ImageHandle& output) {
 		const uint32_t inputWidth = m_core.getImageWidth(input);
-		const uint32_t inputHeight = m_core.getImageWidth(input);
+		const uint32_t inputHeight = m_core.getImageHeight(input);
 		
 		const uint32_t outputWidth = m_core.getImageWidth(output);
-		const uint32_t outputHeight = m_core.getImageWidth(output);
+		const uint32_t outputHeight = m_core.getImageHeight(output);
 		
 		if ((!m_intermediateImage) ||
 			(outputWidth != m_core.getImageWidth(m_intermediateImage)) ||
@@ -155,34 +161,35 @@ namespace vkcv::upscaling {
 					static_cast<AF1>(outputWidth), static_cast<AF1>(outputHeight)
 			);
 			
-			consts.Sample[0] = (((m_hdr) && (m_sharpness <= 0.0f)) ? 1 : 0);
+			consts.Sample[0] = (((m_hdr) && (m_sharpness <= +0.0f)) ? 1 : 0);
 			m_constants.fill(&consts);
 		}
 		
 		static const uint32_t threadGroupWorkRegionDim = 16;
 		
-		const uint32_t dispatch[3] = {
-				(outputWidth + (threadGroupWorkRegionDim - 1)) / threadGroupWorkRegionDim,
-				(outputHeight + (threadGroupWorkRegionDim - 1)) / threadGroupWorkRegionDim,
-				1
-		};
+		uint32_t dispatch[3];
+		dispatch[0] = (outputWidth + (threadGroupWorkRegionDim - 1)) / threadGroupWorkRegionDim;
+		dispatch[1] = (outputHeight + (threadGroupWorkRegionDim - 1)) / threadGroupWorkRegionDim;
+		dispatch[2] = 1;
 		
-		m_core.recordImageMemoryBarrier(cmdStream, input);
+		m_core.recordMemoryBarrier(cmdStream);
 		
-		if (m_sharpness >= 0.0f) {
+		if (m_sharpness > +0.0f) {
 			{
 				DescriptorWrites writes;
 				writes.sampledImageWrites.emplace_back(1, input);
 				writes.storageImageWrites.emplace_back(2, m_intermediateImage);
 				
-				m_core.writeDescriptorSet(m_descriptorSet, writes);
+				m_core.writeDescriptorSet(m_easuDescriptorSet, writes);
 			}
 			
 			m_core.recordComputeDispatchToCmdStream(
 					cmdStream,
 					m_easuPipeline,
 					dispatch,
-					{DescriptorSetUsage(0, m_core.getDescriptorSet(m_descriptorSet).vulkanHandle)},
+					{DescriptorSetUsage(0, m_core.getDescriptorSet(
+							m_easuDescriptorSet
+					).vulkanHandle)},
 					PushConstants(0)
 			);
 			
@@ -202,14 +209,16 @@ namespace vkcv::upscaling {
 				writes.sampledImageWrites.emplace_back(1, m_intermediateImage);
 				writes.storageImageWrites.emplace_back(2, output);
 				
-				m_core.writeDescriptorSet(m_descriptorSet, writes);
+				m_core.writeDescriptorSet(m_rcasDescriptorSet, writes);
 			}
 			
 			m_core.recordComputeDispatchToCmdStream(
 					cmdStream,
 					m_rcasPipeline,
 					dispatch,
-					{DescriptorSetUsage(0, m_core.getDescriptorSet(m_descriptorSet).vulkanHandle)},
+					{DescriptorSetUsage(0, m_core.getDescriptorSet(
+							m_rcasDescriptorSet
+					).vulkanHandle)},
 					PushConstants(0)
 			);
 			
@@ -220,17 +229,21 @@ namespace vkcv::upscaling {
 				writes.sampledImageWrites.emplace_back(1, input);
 				writes.storageImageWrites.emplace_back(2, output);
 				
-				m_core.writeDescriptorSet(m_descriptorSet, writes);
+				m_core.writeDescriptorSet(m_easuDescriptorSet, writes);
 			}
 			
 			m_core.recordComputeDispatchToCmdStream(
 					cmdStream,
 					m_rcasPipeline,
 					dispatch,
-					{DescriptorSetUsage(0, m_core.getDescriptorSet(m_descriptorSet).vulkanHandle)},
+					{DescriptorSetUsage(0, m_core.getDescriptorSet(
+							m_easuDescriptorSet
+					).vulkanHandle)},
 					PushConstants(0)
 			);
 		}
+		
+		m_core.recordMemoryBarrier(cmdStream);
 	}
 	
 	bool FSRUpscaling::isHdrEnabled() const {

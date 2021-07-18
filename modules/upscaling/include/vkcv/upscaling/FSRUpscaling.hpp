@@ -21,7 +21,9 @@ namespace vkcv::upscaling {
 		PipelineHandle m_easuPipeline;
 		PipelineHandle m_rcasPipeline;
 		
-		DescriptorSetHandle m_descriptorSet;
+		DescriptorSetHandle m_easuDescriptorSet;
+		DescriptorSetHandle m_rcasDescriptorSet;
+		
 		Buffer<FSRConstants> m_constants;
 		ImageHandle m_intermediateImage;
 		SamplerHandle m_sampler;
@@ -38,10 +40,12 @@ namespace vkcv::upscaling {
 							 const ImageHandle& input,
 							 const ImageHandle& output);
 		
+		[[nodiscard]]
 		bool isHdrEnabled() const;
 		
 		void setHdrEnabled(bool enabled);
 		
+		[[nodiscard]]
 		float getSharpness() const;
 		
 		void setSharpness(float sharpness);

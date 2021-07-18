@@ -714,7 +714,8 @@ int main(int argc, const char** argv) {
 		}
 
 		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer, windowWidth, windowHeight, 
-			glm::normalize(cameraManager.getActiveCamera().getFront()));
+			glm::normalize(cameraManager.getActiveCamera().getFront())
+		);
 
 		core.prepareImageForStorage(cmdStream, swapBuffer);
 		core.prepareImageForSampling(cmdStream, resolvedColorBuffer);
@@ -729,10 +730,13 @@ int main(int argc, const char** argv) {
 			cmdStream, 
 			tonemappingPipeline, 
 			fulsscreenDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptorSet).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(
+					tonemappingDescriptorSet
+			).vulkanHandle) },
 			timePushConstants
 		);
 		
+		core.prepareImageForStorage(cmdStream, swapchainInput);
 		core.prepareImageForSampling(cmdStream, swapBuffer);
 		upscaling.recordUpscaling(cmdStream, swapBuffer, swapchainInput);
 
