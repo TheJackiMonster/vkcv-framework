@@ -14,6 +14,16 @@
 namespace vkcv {
 	
 	std::filesystem::path generateTemporaryFilePath() {
+		std::filesystem::path tmp = generateTemporaryDirectoryPath();
+		
+		if (std::filesystem::is_directory(tmp)) {
+			return std::filesystem::path(tmp.string() + "W"); // add W for Wambo
+		} else {
+			return tmp;
+		}
+	}
+	
+	std::filesystem::path generateTemporaryDirectoryPath() {
 		std::error_code code;
 		auto tmp = std::filesystem::temp_directory_path(code);
 		
@@ -45,14 +55,6 @@ namespace vkcv {
 		return tmp / name;
 	}
 	
-	std::filesystem::path generateTemporaryDirectoryPath() {
-		std::filesystem::path tmp = generateTemporaryFilePath();
-		
-		if (std::filesystem::is_directory(tmp)) {
-			return std::filesystem::path(tmp.string() + "W"); // add W for Wambo
-		} else {
-			return tmp;
-		}
-	}
+	
 	
 }
