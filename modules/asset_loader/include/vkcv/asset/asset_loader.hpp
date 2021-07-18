@@ -254,17 +254,21 @@ int loadScene(const std::filesystem::path &path, Scene &scene);
 int probeScene(const std::filesystem::path &path, Scene &scene);
 
 /**
- * This function loads a single mesh from the given file into the given Scene.
- * TODO document whather this function extends or overwrites the given scene
- * The names of meshes can be obtained by calling probeScene() and iterating
- * through the array of meshes from the probed scene.
+ * This function loads a single mesh from the given file and adds it to the
+ * given scene. The scene must already be initialized (via probeScene()).
+ * The mesh_index refers to the Scenes meshes array and identifies the mesh to
+ * load. To find the mesh you want, iterate over the probed scene and check the
+ * meshes details (eg. name).
  * Besides the mesh, this function will also add any associated data to the
  * Scene struct such as Materials and Textures required by the Mesh.
  *
  * @param path	must be the path to a glTF- or glb-file.
  * @param scene	is the scene struct to which the results will be written.
  */
-int loadMesh(const std::filesystem::path &path, const std::string &name, Scene &scene);
+int loadMesh(Scene &scene, const int mesh_index);
+
+// The old loadMesh-function, to be removed
+int loadMesh(const std::filesystem::path &path, const std::string &name, Scene &scene) {
 
 
 struct TextureData {

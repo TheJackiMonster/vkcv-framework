@@ -460,7 +460,7 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 		std::vector<uint8_t> indexBufferData = {};
 		const fx::gltf::Accessor& indexAccessor = sceneObjects.accessors[objectPrimitive.indices];
 		int indexBufferURI;
-		if (objectPrimitive.indices >= 0 && !probe) { // if there is no index buffer, -1 is returned from fx-gltf
+		if (objectPrimitive.indices >= 0) { // if there is no index buffer, -1 is returned from fx-gltf
 			const fx::gltf::BufferView& indexBufferView = sceneObjects.bufferViews[indexAccessor.bufferView];
 			const fx::gltf::Buffer& indexBuffer = sceneObjects.buffers[indexBufferView.buffer];
 			if (known_uris.count(indexBuffer.uri)) {
@@ -471,7 +471,7 @@ int createVertexGroups(fx::gltf::Mesh const& objectMesh,
 			}
 
 			indexBufferData.resize(indexBufferView.byteLength);
-			{
+			if (!probe) {
 				const size_t off = indexBufferView.byteOffset;
 				const void* const ptr = ((char*)indexBuffer.data.data()) + off;
 				if (!memcpy(indexBufferData.data(), ptr, indexBufferView.byteLength)) {
@@ -814,6 +814,20 @@ int probeScene(const std::filesystem::path& path, Scene& scene) {
 			samplers
 	};
 
+	return ASSET_SUCCESS;
+}
+
+
+int loadMesh(Scene &scene, const int idx)
+{
+	if (idx < 0 || (size_t)idx >= scene.meshes.size()) {
+		vkcv_log(LogLevel::ERROR, "mesh index out of range: %d", idx);
+		return ASSET_ERROR;
+	}
+	Mesh &mesh = scene.meshes[idx];
+
+	// TODO go through all vertex groups of the mesh and load the
+	// associated materials and index/vertex buffers
 	return ASSET_SUCCESS;
 }
 
