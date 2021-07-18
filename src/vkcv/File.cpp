@@ -45,4 +45,14 @@ namespace vkcv {
 		return tmp / name;
 	}
 	
+	std::filesystem::path generateTemporaryDirectoryPath() {
+		std::filesystem::path tmp = generateTemporaryFilePath();
+		
+		if (std::filesystem::is_directory(tmp)) {
+			return std::filesystem::path(tmp.string() + "W"); // add W for Wambo
+		} else {
+			return tmp;
+		}
+	}
+	
 }

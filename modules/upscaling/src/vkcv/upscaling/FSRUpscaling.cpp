@@ -35,7 +35,7 @@ namespace vkcv::upscaling {
 	
 	static bool compileFSRShader(vkcv::shader::GLSLCompiler& compiler,
 								 const shader::ShaderCompiledFunction& compiled) {
-		std::filesystem::path directory = generateTemporaryFilePath();
+		std::filesystem::path directory = generateTemporaryDirectoryPath();
 		
 		if (!std::filesystem::create_directory(directory)) {
 			vkcv_log(LogLevel::ERROR, "The directory could not be created (%s)", directory.string().c_str());
