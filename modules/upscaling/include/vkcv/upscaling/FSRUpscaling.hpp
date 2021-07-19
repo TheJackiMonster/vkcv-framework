@@ -36,7 +36,8 @@ namespace vkcv::upscaling {
 		DescriptorSetHandle m_easuDescriptorSet;
 		DescriptorSetHandle m_rcasDescriptorSet;
 		
-		Buffer<FSRConstants> m_constants;
+		Buffer<FSRConstants> m_easuConstants;
+		Buffer<FSRConstants> m_rcasConstants;
 		ImageHandle m_intermediateImage;
 		SamplerHandle m_sampler;
 		

@@ -142,8 +142,12 @@ namespace vkcv::upscaling {
 	m_rcasPipeline(),
 	m_easuDescriptorSet(m_core.createDescriptorSet(getDescriptorBindings())),
 	m_rcasDescriptorSet(m_core.createDescriptorSet(getDescriptorBindings())),
-	m_constants(m_core.createBuffer<FSRConstants>(
-			BufferType::UNIFORM,2,
+	m_easuConstants(m_core.createBuffer<FSRConstants>(
+			BufferType::UNIFORM,1,
+			BufferMemoryType::HOST_VISIBLE
+	)),
+	m_rcasConstants(m_core.createBuffer<FSRConstants>(
+			BufferType::UNIFORM,1,
 			BufferMemoryType::HOST_VISIBLE
 	)),
 	m_intermediateImage(),
@@ -193,8 +197,7 @@ namespace vkcv::upscaling {
 			
 			DescriptorWrites writes;
 			writes.uniformBufferWrites.emplace_back(
-					0, m_constants.getHandle(),
-					true, 0, sizeof(FSRConstants)
+					0, m_easuConstants.getHandle(),true
 			);
 			
 			writes.samplerWrites.emplace_back(3, m_sampler);
@@ -215,8 +218,7 @@ namespace vkcv::upscaling {
 			
 			DescriptorWrites writes;
 			writes.uniformBufferWrites.emplace_back(
-					0, m_constants.getHandle(),
-					true, sizeof(FSRConstants), sizeof(FSRConstants)
+					0, m_rcasConstants.getHandle(),true
 			);
 			
 			writes.samplerWrites.emplace_back(3, m_sampler);
@@ -264,7 +266,7 @@ namespace vkcv::upscaling {
 			
 			consts.Sample[0] = (((m_hdr) && (!rcasEnabled)) ? 1 : 0);
 			
-			m_constants.fill(&consts, 1, 0);
+			m_easuConstants.fill(&consts);
 		}
 		
 		static const uint32_t threadGroupWorkRegionDim = 16;
@@ -274,7 +276,7 @@ namespace vkcv::upscaling {
 		dispatch[1] = (outputHeight + (threadGroupWorkRegionDim - 1)) / threadGroupWorkRegionDim;
 		dispatch[2] = 1;
 		
-		m_core.recordBufferMemoryBarrier(cmdStream, m_constants.getHandle());
+		m_core.recordBufferMemoryBarrier(cmdStream, m_easuConstants.getHandle());
 		
 		if (rcasEnabled) {
 			{
@@ -308,10 +310,10 @@ namespace vkcv::upscaling {
 				FsrRcasCon(consts.Const0, (1.0f - m_sharpness) * 2.0f);
 				consts.Sample[0] = (m_hdr ? 1 : 0);
 				
-				m_constants.fill(&consts, 1, 1);
+				m_rcasConstants.fill(&consts);
 			}
 			
-			m_core.recordBufferMemoryBarrier(cmdStream, m_constants.getHandle());
+			m_core.recordBufferMemoryBarrier(cmdStream, m_rcasConstants.getHandle());
 			m_core.prepareImageForSampling(cmdStream, m_intermediateImage);
 			
 			m_core.recordComputeDispatchToCmdStream(
