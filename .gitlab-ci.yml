@@ -1,7 +1,7 @@
 variables:
   RUN:
     value: "all"
-    description: "The tests that should run. Possible values: ubuntu, win, all."
+    description: "The tests that should run. Possible values: ubuntu, win-msvc, win-mingw, all."
   GIT_DEPTH: 1
 
 stages:
@@ -17,7 +17,7 @@ build_ubuntu_gcc:
     - ubuntu-gcc-cached
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
-  timeout: 10m
+  timeout: 15m
   retry: 1
   script:
     - mkdir debug
@@ -34,13 +34,13 @@ build_ubuntu_gcc:
 build_win10_msvc:
   only:
     variables:
-      - $RUN =~ /\bwin.*/i || $RUN =~ /\ball.*/i
+      - $RUN =~ /\bwin-msvc.*/i || $RUN =~ /\ball.*/i
   stage: build
   tags: 
     - win10-msvc-cached
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
-  timeout: 10m
+  timeout: 15m
   retry: 0
   script:
     - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
@@ -50,6 +50,23 @@ build_win10_msvc:
     - cd debug
     - cmake -DCMAKE_BUILD_TYPE=Debug ..
     - cmake --build .
+
+build_win10_mingw:
+  only:
+    variables:
+      - $RUN =~ /\bwin-mingw.*/i || $RUN =~ /\ball.*/i
+  stage: build
+  tags: 
+    - win10-mingw-cached
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  timeout: 15m
+  retry: 0
+  script:
+    - mkdir debug
+    - cd debug
+    - cmake --no-warn-unused-cli -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_C_COMPILER:FILEPATH=C:\msys64\mingw64\bin\x86_64-w64-mingw32-gcc.exe -DCMAKE_CXX_COMPILER:FILEPATH=C:\msys64\mingw64\bin\x86_64-w64-mingw32-g++.exe .. -G "Unix Makefiles"
+    - cmake --build . -j 8
 
 deploy_doc_develop:
   only:
