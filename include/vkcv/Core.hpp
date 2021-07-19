@@ -302,5 +302,8 @@ namespace vkcv
 	
 		void recordMemoryBarrier(const CommandStreamHandle& cmdStream);
 		
+		void recordBlitImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst,
+							 SamplerFilterType filterType);
+		
     };
 }

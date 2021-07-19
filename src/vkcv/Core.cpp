@@ -610,4 +610,54 @@ namespace vkcv
 		}, nullptr);
 	}
 	
+	void Core::recordBlitImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst,
+							   SamplerFilterType filterType) {
+		recordCommandsToStream(cmdStream, [&](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordImageLayoutTransition(
+					src, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer
+			);
+			
+			m_ImageManager->recordImageLayoutTransition(
+					dst, vk::ImageLayout::eTransferDstOptimal, cmdBuffer
+			);
+			
+			const std::array<vk::Offset3D, 2> offsets = {
+					vk::Offset3D(0, 0, 0),
+					vk::Offset3D(0, 0, 1)
+			};
+			
+			const bool srcDepth = isDepthFormat(m_ImageManager->getImageFormat(src));
+			const bool dstDepth = isDepthFormat(m_ImageManager->getImageFormat(dst));
+			
+			const vk::ImageBlit blit = vk::ImageBlit(
+					vk::ImageSubresourceLayers(
+							srcDepth?
+							vk::ImageAspectFlagBits::eDepth :
+							vk::ImageAspectFlagBits::eColor,
+							0, 0, 1
+					),
+					offsets,
+					vk::ImageSubresourceLayers(
+							dstDepth?
+							vk::ImageAspectFlagBits::eDepth :
+							vk::ImageAspectFlagBits::eColor,
+							0, 0, 1
+					),
+					offsets
+			);
+			
+			cmdBuffer.blitImage(
+					m_ImageManager->getVulkanImage(src),
+					vk::ImageLayout::eTransferSrcOptimal,
+					m_ImageManager->getVulkanImage(dst),
+					vk::ImageLayout::eTransferDstOptimal,
+					1,
+					&blit,
+					filterType == SamplerFilterType::LINEAR?
+					vk::Filter::eLinear :
+					vk::Filter::eNearest
+			);
+		}, nullptr);
+	}
+	
 }

@@ -152,7 +152,7 @@ namespace vkcv::upscaling {
 	}
 	
 	FSRUpscaling::FSRUpscaling(Core& core) :
-	m_core(core),
+	Upscaling(core),
 	m_easuPipeline(),
 	m_rcasPipeline(),
 	m_easuDescriptorSet(m_core.createDescriptorSet(getDescriptorBindings())),

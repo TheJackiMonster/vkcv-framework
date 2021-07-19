@@ -12,6 +12,7 @@
 #include "ShadowMapping.hpp"
 #include "BloomAndFlares.hpp"
 #include <vkcv/upscaling/FSRUpscaling.hpp>
+#include <vkcv/upscaling/BilinearUpscaling.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";
@@ -558,6 +559,10 @@ int main(int argc, const char** argv) {
 	bool fsrMipLoadBiasFlag = true;
 	bool fsrMipLoadBiasFlagBackup = fsrMipLoadBiasFlag;
 	
+	vkcv::upscaling::BilinearUpscaling upscaling1 (core);
+	
+	bool bilinearUpscaling = false;
+	
 	vkcv::gui::GUI gui(core, window);
 
 	glm::vec2   lightAnglesDegree               = glm::vec2(90.f, 0.f);
@@ -826,7 +831,11 @@ int main(int argc, const char** argv) {
 		core.prepareImageForStorage(cmdStream, swapBuffer2);
 		core.prepareImageForSampling(cmdStream, swapBuffer);
 		
-		upscaling.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+		if (bilinearUpscaling) {
+			upscaling1.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+		} else {
+			upscaling.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+		}
 		
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 		core.prepareImageForSampling(cmdStream, swapBuffer2);
@@ -891,8 +900,9 @@ int main(int argc, const char** argv) {
 			float fsrSharpness = upscaling.getSharpness();
 			
 			ImGui::Combo("FSR Quality Mode", &fsrModeIndex, fsrModeNames.data(), fsrModeNames.size());
-			ImGui::DragFloat("FSR Sharpness", &fsrSharpness, 0.01, 0.0f, 1.0f);
+			ImGui::DragFloat("FSR Sharpness", &fsrSharpness, 0.001, 0.0f, 1.0f);
 			ImGui::Checkbox("FSR Mip Lod Bias", &fsrMipLoadBiasFlag);
+			ImGui::Checkbox("Bilinear Upscaling", &bilinearUpscaling);
 			
 			if ((fsrModeIndex >= 0) && (fsrModeIndex <= 4)) {
 				fsrMode = static_cast<vkcv::upscaling::FSRQualityMode>(fsrModeIndex);

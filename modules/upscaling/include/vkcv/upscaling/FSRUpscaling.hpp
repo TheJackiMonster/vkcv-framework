@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vkcv/Core.hpp>
-#include <vkcv/Handles.hpp>
+#include "Upscaling.hpp"
+
 #include <vkcv/ShaderProgram.hpp>
 
 namespace vkcv::upscaling {
@@ -28,10 +28,8 @@ namespace vkcv::upscaling {
 		uint32_t Sample [4];
 	};
 	
-	class FSRUpscaling {
+	class FSRUpscaling : public Upscaling {
 	private:
-		Core& m_core;
-		
 		PipelineHandle m_easuPipeline;
 		PipelineHandle m_rcasPipeline;
 		
@@ -61,11 +59,9 @@ namespace vkcv::upscaling {
 	public:
 		explicit FSRUpscaling(Core& core);
 		
-		~FSRUpscaling() = default;
-		
 		void recordUpscaling(const CommandStreamHandle& cmdStream,
 							 const ImageHandle& input,
-							 const ImageHandle& output);
+							 const ImageHandle& output) override;
 		
 		[[nodiscard]]
 		bool isHdrEnabled() const;

@@ -9,6 +9,12 @@ set(vkcv_upscaling_source ${PROJECT_SOURCE_DIR}/src)
 set(vkcv_upscaling_include ${PROJECT_SOURCE_DIR}/include)
 
 set(vkcv_upscaling_sources
+		${vkcv_upscaling_include}/vkcv/upscaling/Upscaling.hpp
+		${vkcv_upscaling_source}/vkcv/upscaling/Upscaling.cpp
+		
+		${vkcv_upscaling_include}/vkcv/upscaling/BilinearUpscaling.hpp
+		${vkcv_upscaling_source}/vkcv/upscaling/BilinearUpscaling.cpp
+		
 		${vkcv_upscaling_include}/vkcv/upscaling/FSRUpscaling.hpp
 		${vkcv_upscaling_source}/vkcv/upscaling/FSRUpscaling.cpp
 )
