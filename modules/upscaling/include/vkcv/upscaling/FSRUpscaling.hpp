@@ -6,6 +6,18 @@
 
 namespace vkcv::upscaling {
 	
+	enum class FSRQualityMode : int {
+		NONE = 0,
+		ULTRA_QUALITY = 1,
+		QUALITY = 2,
+		BALANCED = 3,
+		PERFORMANCE = 4
+	};
+	
+	void getFSRResolution(FSRQualityMode mode,
+						  uint32_t outputWidth, uint32_t outputHeight,
+						  uint32_t &inputWidth, uint32_t &inputHeight);
+	
 	struct FSRConstants {
 		uint32_t Const0 [4];
 		uint32_t Const1 [4];

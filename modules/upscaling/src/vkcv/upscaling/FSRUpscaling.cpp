@@ -18,6 +18,38 @@
 
 namespace vkcv::upscaling {
 	
+	void getFSRResolution(FSRQualityMode mode,
+						  uint32_t outputWidth, uint32_t outputHeight,
+						  uint32_t &inputWidth, uint32_t &inputHeight) {
+		float scale;
+		
+		switch (mode) {
+			case FSRQualityMode::ULTRA_QUALITY:
+				scale = 1.3f;
+				break;
+			case FSRQualityMode::QUALITY:
+				scale = 1.5f;
+				break;
+			case FSRQualityMode::BALANCED:
+				scale = 1.7f;
+				break;
+			case FSRQualityMode::PERFORMANCE:
+				scale = 2.0f;
+				break;
+			default:
+				scale = 1.0f;
+				break;
+		}
+		
+		inputWidth = static_cast<uint32_t>(
+				std::round(static_cast<float>(outputWidth) / scale)
+		);
+		
+		inputHeight = static_cast<uint32_t>(
+				std::round(static_cast<float>(outputHeight) / scale)
+		);
+	}
+	
 	static std::vector<DescriptorBinding> getDescriptorBindings() {
 		return std::vector<DescriptorBinding>({
 			DescriptorBinding(
@@ -215,6 +247,11 @@ namespace vkcv::upscaling {
 			m_core.prepareImageForStorage(cmdStream, m_intermediateImage);
 		}
 		
+		const bool rcasEnabled = (
+				(m_sharpness > +0.0f) &&
+				((inputWidth < outputWidth) || (inputHeight < outputHeight))
+		);
+		
 		{
 			FSRConstants consts = {};
 			
@@ -225,7 +262,7 @@ namespace vkcv::upscaling {
 					static_cast<AF1>(outputWidth), static_cast<AF1>(outputHeight)
 			);
 			
-			consts.Sample[0] = (((m_hdr) && (m_sharpness <= +0.0f)) ? 1 : 0);
+			consts.Sample[0] = (((m_hdr) && (!rcasEnabled)) ? 1 : 0);
 			
 			m_constants.fill(&consts, 1, 0);
 		}
@@ -239,7 +276,7 @@ namespace vkcv::upscaling {
 		
 		m_core.recordBufferMemoryBarrier(cmdStream, m_constants.getHandle());
 		
-		if (m_sharpness > +0.0f) {
+		if (rcasEnabled) {
 			{
 				DescriptorWrites writes;
 				writes.sampledImageWrites.emplace_back(1, input);

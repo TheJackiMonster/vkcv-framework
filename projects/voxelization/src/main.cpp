@@ -542,8 +542,16 @@ int main(int argc, const char** argv) {
 	vkcv::upscaling::FSRUpscaling upscaling (core);
 	uint32_t fsrWidth = windowWidth, fsrHeight = windowHeight;
 	
-	float fsrFactor = 1.5f;
-	float rcasSharpness = upscaling.getSharpness();
+	vkcv::upscaling::FSRQualityMode fsrMode = vkcv::upscaling::FSRQualityMode::NONE;
+	int fsrModeIndex = static_cast<int>(fsrMode);
+	
+	const std::vector<const char*> fsrModeNames = {
+			"None",
+			"Ultra Quality",
+			"Quality",
+			"Balanced",
+			"Performance"
+	};
 	
 	vkcv::gui::GUI gui(core, window);
 
@@ -573,15 +581,12 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 		
-		if (fsrFactor < 1.0f) {
-			fsrFactor = 1.0f;
-		} else
-		if (fsrFactor > 2.0f) {
-			fsrFactor = 2.0f;
-		}
-		
-		const auto width = static_cast<uint32_t>(std::round(static_cast<float>(swapchainWidth) / fsrFactor));
-		const auto height = static_cast<uint32_t>(std::round(static_cast<float>(swapchainHeight) / fsrFactor));
+		uint32_t width, height;
+		vkcv::upscaling::getFSRResolution(
+				fsrMode,
+				swapchainWidth, swapchainHeight,
+				width, height
+		);
 
 		if ((width != fsrWidth) || ((height != fsrHeight))) {
 			fsrWidth = width;
@@ -799,15 +804,7 @@ int main(int argc, const char** argv) {
 		core.prepareImageForStorage(cmdStream, swapBuffer2);
 		core.prepareImageForSampling(cmdStream, swapBuffer);
 		
-		if (fsrFactor <= 1.0f) {
-			upscaling.setSharpness(0.0f);
-		}
-		
 		upscaling.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
-		
-		if (fsrFactor <= 1.0f) {
-			upscaling.setSharpness(rcasSharpness);
-		}
 		
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 		core.prepareImageForSampling(cmdStream, swapBuffer2);
@@ -868,10 +865,12 @@ int main(int argc, const char** argv) {
 			ImGui::ColorEdit3("Absorption color", &absorptionColor.x);
 			ImGui::DragFloat("Absorption density", &absorptionDensity, 0.0001);
 			ImGui::DragFloat("Volumetric ambient", &volumetricAmbient, 0.002);
-			ImGui::DragFloat("FidelityFX FSR Factor", &fsrFactor, 0.01f, 1.0f, 2.0f);
-			ImGui::DragFloat("RCAS Sharpness", &rcasSharpness, 0.01f, 0.0f, 1.0f);
 			
-			upscaling.setSharpness(rcasSharpness);
+			ImGui::Combo("FidelityFX FSR Quality Mode", &fsrModeIndex, fsrModeNames.data(), fsrModeNames.size());
+			
+			if ((fsrModeIndex >= 0) && (fsrModeIndex <= 4)) {
+				fsrMode = static_cast<vkcv::upscaling::FSRQualityMode>(fsrModeIndex);
+			}
 
 			if (ImGui::Button("Reload forward pass")) {
 
