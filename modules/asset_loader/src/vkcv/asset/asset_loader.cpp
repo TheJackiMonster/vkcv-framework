@@ -818,7 +818,7 @@ int probeScene(const std::filesystem::path& path, Scene& scene) {
 }
 
 
-int loadMesh(Scene &scene, const int idx)
+int loadMesh(Scene &scene, int idx)
 {
 	if (idx < 0 || (size_t)idx >= scene.meshes.size()) {
 		vkcv_log(LogLevel::ERROR, "mesh index out of range: %d", idx);
@@ -828,113 +828,6 @@ int loadMesh(Scene &scene, const int idx)
 
 	// TODO go through all vertex groups of the mesh and load the
 	// associated materials and index/vertex buffers
-	return ASSET_SUCCESS;
-}
-
-
-int loadMesh(const std::filesystem::path &path, const std::string &name, Scene &scene) {
-	fx::gltf::Document sceneObjects;
-
-	try {
-		if (path.extension() == ".glb") {
-			sceneObjects = fx::gltf::LoadFromBinary(path.string());
-		}
-		else {
-			sceneObjects = fx::gltf::LoadFromText(path.string());
-		}
-	}
-	catch (const std::system_error& err) {
-		recurseExceptionPrint(err, path.string());
-		return ASSET_ERROR;
-	}
-	catch (const std::exception& e) {
-		recurseExceptionPrint(e, path.string());
-		return ASSET_ERROR;
-	}
-	auto dir = path.parent_path().string();
-
-	// file has to contain at least one mesh
-	if (sceneObjects.meshes.empty()) {
-		return ASSET_ERROR;
-	}
-
-	std::vector<Material> materials;
-	std::vector<Texture> textures;
-	std::vector<Sampler> samplers;
-	std::vector<Mesh> meshes;
-	std::vector<VertexGroup> vertexGroups;
-	std::vector<std::string> uris;
-	int groupCount = 0;
-	int meshIndex = -1;
-
-	for (size_t i = 0; i < sceneObjects.meshes.size(); i++) {
-		if (sceneObjects.meshes[i].name == name) {
-			std::vector<int> vertexGroupsIndices;
-			fx::gltf::Mesh const& objectMesh = sceneObjects.meshes[i];
-
-			if (createVertexGroups(objectMesh, sceneObjects,
-						vertexGroups,
-						vertexGroupsIndices, uris,
-						groupCount, false)
-					!= ASSET_SUCCESS) {
-				vkcv_log(LogLevel::ERROR, "Failed to get Vertex Groups!");
-				return ASSET_ERROR;
-			}
-
-			Mesh mesh = {};
-			mesh.name = sceneObjects.meshes[i].name;
-			mesh.vertexGroups = vertexGroupsIndices;
-
-			meshes.push_back(mesh);
-			meshIndex = i;
-			break;
-		}
-	}
-
-	if (meshes.empty()) {
-		vkcv_log(LogLevel::ERROR, "No mesh by that name!");
-		return ASSET_ERROR;
-	}
-
-	// This only works if the node has a mesh and it only loads the meshes and ignores cameras and lights
-	if (sceneObjects.nodes[meshIndex].mesh > -1) {
-		meshes[sceneObjects.nodes[meshIndex].mesh].modelMatrix = computeModelMatrix(
-			sceneObjects.nodes[meshIndex].translation,
-			sceneObjects.nodes[meshIndex].scale,
-			sceneObjects.nodes[meshIndex].rotation,
-			sceneObjects.nodes[meshIndex].matrix
-		);
-	}
-
-	if (createTextures(sceneObjects.textures, sceneObjects.images, sceneObjects.buffers, sceneObjects.bufferViews, dir, uris, textures) != ASSET_SUCCESS) {
-		size_t missing = sceneObjects.textures.size() - textures.size();
-		vkcv_log(LogLevel::ERROR, "Failed to get %lu textures from glTF source '%s'",
-			missing, path.c_str());
-	}
-
-
-	if (createMaterial(sceneObjects, materials) != ASSET_SUCCESS) {
-		vkcv_log(LogLevel::ERROR, "Failed to get Materials!");
-		return ASSET_ERROR;
-	}
-
-	samplers.reserve(sceneObjects.samplers.size());
-	for (const auto& it : sceneObjects.samplers) {
-		samplers.push_back({});
-		auto& sampler = samplers.back();
-		if (translateSampler(it, sampler) != ASSET_SUCCESS) {
-			return ASSET_ERROR;
-		}
-	}
-
-	scene = {
-			meshes,
-			vertexGroups,
-			materials,
-			textures,
-			samplers
-	};
-
 	return ASSET_SUCCESS;
 }
 

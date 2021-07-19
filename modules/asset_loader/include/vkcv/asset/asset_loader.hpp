@@ -265,11 +265,7 @@ int probeScene(const std::filesystem::path &path, Scene &scene);
  * @param path	must be the path to a glTF- or glb-file.
  * @param scene	is the scene struct to which the results will be written.
  */
-int loadMesh(Scene &scene, const int mesh_index);
-
-// The old loadMesh-function, to be removed
-int loadMesh(const std::filesystem::path &path, const std::string &name, Scene &scene) {
-
+int loadMesh(Scene &scene, int mesh_index);
 
 struct TextureData {
     int width;
