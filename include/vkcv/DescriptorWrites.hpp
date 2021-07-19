@@ -20,20 +20,15 @@ namespace vkcv {
 		uint32_t	mipLevel;
 	};
 
-	struct UniformBufferDescriptorWrite {
-		inline UniformBufferDescriptorWrite(uint32_t binding, BufferHandle buffer, bool dynamic = false) :
-		binding(binding), buffer(buffer), dynamic(dynamic) {};
+	struct BufferDescriptorWrite {
+		inline BufferDescriptorWrite(uint32_t binding, BufferHandle buffer, bool dynamic = false,
+									 uint32_t offset = 0, uint32_t size = 0) :
+		binding(binding), buffer(buffer), dynamic(dynamic), offset(offset), size(size) {};
 		uint32_t		binding;
 		BufferHandle	buffer;
 		bool 			dynamic;
-	};
-
-	struct StorageBufferDescriptorWrite {
-		inline StorageBufferDescriptorWrite(uint32_t binding, BufferHandle buffer, bool dynamic = false) :
-		binding(binding), buffer(buffer), dynamic(dynamic) {};
-		uint32_t		binding;
-		BufferHandle	buffer;
-		bool			dynamic;
+		uint32_t 		offset;
+		uint32_t 		size;
 	};
 
 	struct SamplerDescriptorWrite {
@@ -45,8 +40,8 @@ namespace vkcv {
 	struct DescriptorWrites {
 		std::vector<SampledImageDescriptorWrite>		sampledImageWrites;
 		std::vector<StorageImageDescriptorWrite>		storageImageWrites;
-		std::vector<UniformBufferDescriptorWrite>	    uniformBufferWrites;
-		std::vector<StorageBufferDescriptorWrite>	    storageBufferWrites;
+		std::vector<BufferDescriptorWrite>	    		uniformBufferWrites;
+		std::vector<BufferDescriptorWrite>	    		storageBufferWrites;
 		std::vector<SamplerDescriptorWrite>			    samplerWrites;
 	};
 }

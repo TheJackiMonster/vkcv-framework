@@ -396,6 +396,7 @@ int main(int argc, const char** argv) {
 	}
 	
 	vkcv::ImageHandle swapBuffer = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, true).getHandle();
+	vkcv::ImageHandle swapBuffer2 = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, true).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -424,6 +425,18 @@ int main(int argc, const char** argv) {
 	vkcv::PipelineHandle tonemappingPipeline = core.createComputePipeline(
 		tonemappingProgram,
 		{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
+	
+	// tonemapping compute shader
+	vkcv::ShaderProgram postEffectsProgram;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/postEffects.comp",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		postEffectsProgram.addShader(shaderStage, path);
+	});
+	vkcv::DescriptorSetHandle postEffectsDescriptorSet = core.createDescriptorSet(
+			postEffectsProgram.getReflectedDescriptors()[0]);
+	vkcv::PipelineHandle postEffectsPipeline = core.createComputePipeline(
+			postEffectsProgram,
+			{ core.getDescriptorSet(postEffectsDescriptorSet).layout });
 
 	// resolve compute shader
 	vkcv::ShaderProgram resolveProgram;
@@ -514,10 +527,10 @@ int main(int argc, const char** argv) {
 	// write forward pass descriptor set
 	vkcv::DescriptorWrites forwardDescriptorWrites;
 	forwardDescriptorWrites.uniformBufferWrites = {
-		vkcv::UniformBufferDescriptorWrite(0, shadowMapping.getLightInfoBuffer()),
-		vkcv::UniformBufferDescriptorWrite(3, cameraPosBuffer.getHandle()),
-		vkcv::UniformBufferDescriptorWrite(6, voxelization.getVoxelInfoBufferHandle()),
-		vkcv::UniformBufferDescriptorWrite(7, volumetricSettingsBuffer.getHandle())};
+		vkcv::BufferDescriptorWrite(0, shadowMapping.getLightInfoBuffer()),
+		vkcv::BufferDescriptorWrite(3, cameraPosBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(6, voxelization.getVoxelInfoBufferHandle()),
+		vkcv::BufferDescriptorWrite(7, volumetricSettingsBuffer.getHandle())};
 	forwardDescriptorWrites.sampledImageWrites = {
 		vkcv::SampledImageDescriptorWrite(1, shadowMapping.getShadowMap()),
 		vkcv::SampledImageDescriptorWrite(4, voxelization.getVoxelImageHandle()) };
@@ -574,16 +587,41 @@ int main(int argc, const char** argv) {
 			fsrWidth = width;
 			fsrHeight = height;
 			
-			depthBuffer         = core.createImage(depthBufferFormat, fsrWidth, fsrHeight, 1, false, false, false, msaa).getHandle();
-			colorBuffer         = core.createImage(colorBufferFormat, fsrWidth, fsrHeight, 1, false, colorBufferRequiresStorage, true, msaa).getHandle();
+			depthBuffer         = core.createImage(
+					depthBufferFormat,
+					fsrWidth, fsrHeight, 1,
+					false, false, false,
+					msaa
+			).getHandle();
+			
+			colorBuffer         = core.createImage(
+					colorBufferFormat,
+					fsrWidth, fsrHeight, 1,
+					false, colorBufferRequiresStorage, true,
+					msaa
+			).getHandle();
 
 			if (usingMsaa) {
-				resolvedColorBuffer = core.createImage(colorBufferFormat, fsrWidth, fsrHeight, 1, false, true, true).getHandle();
+				resolvedColorBuffer = core.createImage(
+						colorBufferFormat,
+						fsrWidth, fsrHeight, 1,
+						false, true, true
+				).getHandle();
 			} else {
 				resolvedColorBuffer = colorBuffer;
 			}
 			
-			swapBuffer = core.createImage(colorBufferFormat, fsrWidth, fsrHeight, 1, false, true).getHandle();
+			swapBuffer = core.createImage(
+					colorBufferFormat,
+					fsrWidth, fsrHeight, 1,
+					false, true
+			).getHandle();
+			
+			swapBuffer2 = core.createImage(
+					colorBufferFormat,
+					swapchainWidth, swapchainHeight, 1,
+					false, true
+			).getHandle();
 			
 			bloomFlares.updateImageDimensions(swapchainWidth, swapchainHeight);
 		}
@@ -598,6 +636,14 @@ int main(int argc, const char** argv) {
 		tonemappingDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, swapBuffer) };
 
 		core.writeDescriptorSet(tonemappingDescriptorSet, tonemappingDescriptorWrites);
+		
+		// update descriptor sets which use swapchain image
+		vkcv::DescriptorWrites postEffectsDescriptorWrites;
+		postEffectsDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(0, swapBuffer2) };
+		postEffectsDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(1, colorSampler) };
+		postEffectsDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, swapchainInput) };
+		
+		core.writeDescriptorSet(postEffectsDescriptorSet, postEffectsDescriptorWrites);
 
 		// update resolve descriptor, color images could be changed
 		vkcv::DescriptorWrites resolveDescriptorWrites;
@@ -699,11 +745,18 @@ int main(int argc, const char** argv) {
 			renderTargets);
 
 		const uint32_t fullscreenLocalGroupSize = 8;
-		const uint32_t fulsscreenDispatchCount[3] = {
-			static_cast<uint32_t>(glm::ceil(fsrWidth  / static_cast<float>(fullscreenLocalGroupSize))),
-			static_cast<uint32_t>(glm::ceil(fsrHeight / static_cast<float>(fullscreenLocalGroupSize))),
-			1
-		};
+		
+		uint32_t fulsscreenDispatchCount [3];
+		
+		fulsscreenDispatchCount[0] = static_cast<uint32_t>(
+				glm::ceil(fsrWidth  / static_cast<float>(fullscreenLocalGroupSize))
+		);
+		
+		fulsscreenDispatchCount[1] = static_cast<uint32_t>(
+				glm::ceil(fsrHeight / static_cast<float>(fullscreenLocalGroupSize))
+		);
+		
+		fulsscreenDispatchCount[2] = 1;
 
 		if (usingMsaa) {
 			if (msaaCustomResolve) {
@@ -732,12 +785,6 @@ int main(int argc, const char** argv) {
 
 		core.prepareImageForStorage(cmdStream, swapBuffer);
 		core.prepareImageForSampling(cmdStream, resolvedColorBuffer);
-
-		auto timeSinceStart = std::chrono::duration_cast<std::chrono::microseconds>(end - appStartTime);
-		float timeF         = static_cast<float>(timeSinceStart.count()) * 0.01f;
-
-		vkcv::PushConstants timePushConstants (sizeof(timeF));
-		timePushConstants.appendDrawcall(timeF);
 		
 		core.recordComputeDispatchToCmdStream(
 			cmdStream, 
@@ -746,21 +793,48 @@ int main(int argc, const char** argv) {
 			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(
 					tonemappingDescriptorSet
 			).vulkanHandle) },
-			timePushConstants
+			vkcv::PushConstants(0)
 		);
 		
-		core.prepareImageForStorage(cmdStream, swapchainInput);
+		core.prepareImageForStorage(cmdStream, swapBuffer2);
 		core.prepareImageForSampling(cmdStream, swapBuffer);
 		
 		if (fsrFactor <= 1.0f) {
 			upscaling.setSharpness(0.0f);
 		}
 		
-		upscaling.recordUpscaling(cmdStream, swapBuffer, swapchainInput);
+		upscaling.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
 		
 		if (fsrFactor <= 1.0f) {
 			upscaling.setSharpness(rcasSharpness);
 		}
+		
+		core.prepareImageForStorage(cmdStream, swapchainInput);
+		core.prepareImageForSampling(cmdStream, swapBuffer2);
+		
+		auto timeSinceStart = std::chrono::duration_cast<std::chrono::microseconds>(end - appStartTime);
+		float timeF         = static_cast<float>(timeSinceStart.count()) * 0.01f;
+		
+		vkcv::PushConstants timePushConstants (sizeof(timeF));
+		timePushConstants.appendDrawcall(timeF);
+		
+		fulsscreenDispatchCount[0] = static_cast<uint32_t>(
+				glm::ceil(swapchainWidth  / static_cast<float>(fullscreenLocalGroupSize))
+		);
+		
+		fulsscreenDispatchCount[1] = static_cast<uint32_t>(
+				glm::ceil(swapchainHeight / static_cast<float>(fullscreenLocalGroupSize))
+		);
+		
+		core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				postEffectsPipeline,
+				fulsscreenDispatchCount,
+				{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(
+						postEffectsDescriptorSet
+				).vulkanHandle) },
+				timePushConstants
+		);
 
 		// present and end
 		core.prepareSwapchainImageForPresent(cmdStream);

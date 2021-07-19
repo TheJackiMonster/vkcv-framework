@@ -156,10 +156,15 @@ namespace vkcv
 		}
 
 		for (const auto& write : writes.uniformBufferWrites) {
+			const size_t size = bufferManager.getBufferSize(write.buffer);
+			const uint32_t offset = std::clamp<uint32_t>(write.offset, 0, size);
+			
 			const vk::DescriptorBufferInfo bufferInfo(
 				bufferManager.getBuffer(write.buffer),
-				static_cast<uint32_t>(0),
-				bufferManager.getBufferSize(write.buffer)
+				offset,
+				write.size == 0? size : std::min<uint32_t>(
+						write.size, size - offset
+				)
 			);
 			
 			bufferInfos.push_back(bufferInfo);
@@ -177,10 +182,15 @@ namespace vkcv
 		}
 
 		for (const auto& write : writes.storageBufferWrites) {
+			const size_t size = bufferManager.getBufferSize(write.buffer);
+			const uint32_t offset = std::clamp<uint32_t>(write.offset, 0, size);
+			
 			const vk::DescriptorBufferInfo bufferInfo(
 				bufferManager.getBuffer(write.buffer),
-				static_cast<uint32_t>(0),
-				bufferManager.getBufferSize(write.buffer)
+				offset,
+				write.size == 0? size : std::min<uint32_t>(
+						write.size, size - offset
+				)
 			);
 			
 			bufferInfos.push_back(bufferInfo);

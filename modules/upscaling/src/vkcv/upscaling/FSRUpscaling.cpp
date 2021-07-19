@@ -111,7 +111,7 @@ namespace vkcv::upscaling {
 	m_easuDescriptorSet(m_core.createDescriptorSet(getDescriptorBindings())),
 	m_rcasDescriptorSet(m_core.createDescriptorSet(getDescriptorBindings())),
 	m_constants(m_core.createBuffer<FSRConstants>(
-			BufferType::UNIFORM,1,
+			BufferType::UNIFORM,2,
 			BufferMemoryType::HOST_VISIBLE
 	)),
 	m_intermediateImage(),
@@ -122,8 +122,9 @@ namespace vkcv::upscaling {
 			SamplerAddressMode::CLAMP_TO_EDGE
 	)),
 	m_hdr(false),
-	m_sharpness(0/*.875f*/) {
-		vkcv::shader::GLSLCompiler easuCompiler, rcasCompiler;
+	m_sharpness(0.875f) {
+		vkcv::shader::GLSLCompiler easuCompiler;
+		vkcv::shader::GLSLCompiler rcasCompiler;
 		
 		const auto& features = m_core.getContext().getPhysicalDevice().getFeatures2();
 		const bool float16Support = (
@@ -159,7 +160,11 @@ namespace vkcv::upscaling {
 			});
 			
 			DescriptorWrites writes;
-			writes.uniformBufferWrites.emplace_back(0, m_constants.getHandle(), true);
+			writes.uniformBufferWrites.emplace_back(
+					0, m_constants.getHandle(),
+					true, 0, sizeof(FSRConstants)
+			);
+			
 			writes.samplerWrites.emplace_back(3, m_sampler);
 			
 			m_core.writeDescriptorSet(m_easuDescriptorSet, writes);
@@ -177,7 +182,11 @@ namespace vkcv::upscaling {
 			});
 			
 			DescriptorWrites writes;
-			writes.uniformBufferWrites.emplace_back(0, m_constants.getHandle(), true);
+			writes.uniformBufferWrites.emplace_back(
+					0, m_constants.getHandle(),
+					true, sizeof(FSRConstants), sizeof(FSRConstants)
+			);
+			
 			writes.samplerWrites.emplace_back(3, m_sampler);
 			
 			m_core.writeDescriptorSet(m_rcasDescriptorSet, writes);
@@ -218,7 +227,7 @@ namespace vkcv::upscaling {
 			
 			consts.Sample[0] = (((m_hdr) && (m_sharpness <= +0.0f)) ? 1 : 0);
 			
-			m_constants.fill(&consts);
+			m_constants.fill(&consts, 1, 0);
 		}
 		
 		static const uint32_t threadGroupWorkRegionDim = 16;
@@ -262,7 +271,7 @@ namespace vkcv::upscaling {
 				FsrRcasCon(consts.Const0, (1.0f - m_sharpness) * 2.0f);
 				consts.Sample[0] = (m_hdr ? 1 : 0);
 				
-				m_constants.fill(&consts);
+				m_constants.fill(&consts, 1, 1);
 			}
 			
 			m_core.recordBufferMemoryBarrier(cmdStream, m_constants.getHandle());
@@ -290,7 +299,7 @@ namespace vkcv::upscaling {
 			
 			m_core.recordComputeDispatchToCmdStream(
 					cmdStream,
-					m_rcasPipeline,
+					m_easuPipeline,
 					dispatch,
 					{DescriptorSetUsage(0, m_core.getDescriptorSet(
 							m_easuDescriptorSet
