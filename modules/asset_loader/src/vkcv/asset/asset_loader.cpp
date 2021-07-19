@@ -32,7 +32,7 @@ namespace vkcv::asset {
 	 * @param type	The accessor type
 	 * @return	An unsigned integer count
 	 */
-	static uint8_t getComponentCount(const fx::gltf::Accessor::Type type) {
+	static uint32_t getComponentCount(const fx::gltf::Accessor::Type type) {
 		switch (type) {
 		case fx::gltf::Accessor::Type::Scalar:
 			return 1;
@@ -50,6 +50,22 @@ namespace vkcv::asset {
 		case fx::gltf::Accessor::Type::None:
 		default:
 			return 0;
+		}
+	}
+	
+	static uint32_t getComponentSize(ComponentType type) {
+		switch (type) {
+			case ComponentType::INT8:
+			case ComponentType::UINT8:
+				return 1;
+			case ComponentType::INT16:
+			case ComponentType::UINT16:
+				return 2;
+			case ComponentType::UINT32:
+			case ComponentType::FLOAT32:
+				return 4;
+			default:
+				return 0;
 		}
 	}
 
@@ -124,6 +140,11 @@ namespace vkcv::asset {
 				att.stride = buf.byteStride;
 				att.componentType = static_cast<ComponentType>(accessor.componentType);
 				att.componentCount = getComponentCount(accessor.type);
+				
+				/* Assume tightly packed stride as not explicitly provided */
+				if (att.stride == 0) {
+					att.stride = att.componentCount * getComponentSize(att.componentType);
+				}
 			}
 			
 			if ((att.type == PrimitiveType::UNDEFINED) ||
