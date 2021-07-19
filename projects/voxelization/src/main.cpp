@@ -527,6 +527,7 @@ int main(int argc, const char** argv) {
 	core.writeDescriptorSet(forwardShadingDescriptorSet, forwardDescriptorWrites);
 
 	vkcv::upscaling::FSRUpscaling upscaling (core);
+	uint32_t fsrWidth = windowWidth, fsrHeight = windowHeight;
 	
 	float fsrFactor = 1.5f;
 	float rcasSharpness = upscaling.getSharpness();
@@ -566,10 +567,13 @@ int main(int argc, const char** argv) {
 			fsrFactor = 2.0f;
 		}
 		
-		const auto fsrWidth = static_cast<uint32_t>(std::round(static_cast<float>(swapchainWidth) / fsrFactor));
-		const auto fsrHeight = static_cast<uint32_t>(std::round(static_cast<float>(swapchainHeight) / fsrFactor));
+		const auto width = static_cast<uint32_t>(std::round(static_cast<float>(swapchainWidth) / fsrFactor));
+		const auto height = static_cast<uint32_t>(std::round(static_cast<float>(swapchainHeight) / fsrFactor));
 
-		if ((fsrWidth != windowWidth) || ((fsrHeight != windowHeight))) {
+		if ((width != fsrWidth) || ((height != fsrHeight))) {
+			fsrWidth = width;
+			fsrHeight = height;
+			
 			depthBuffer         = core.createImage(depthBufferFormat, fsrWidth, fsrHeight, 1, false, false, false, msaa).getHandle();
 			colorBuffer         = core.createImage(colorBufferFormat, fsrWidth, fsrHeight, 1, false, colorBufferRequiresStorage, true, msaa).getHandle();
 
@@ -580,9 +584,6 @@ int main(int argc, const char** argv) {
 			}
 			
 			swapBuffer = core.createImage(colorBufferFormat, fsrWidth, fsrHeight, 1, false, true).getHandle();
-			
-			windowWidth = swapchainWidth;
-			windowHeight = swapchainHeight;
 			
 			bloomFlares.updateImageDimensions(swapchainWidth, swapchainHeight);
 		}

@@ -11,10 +11,14 @@ namespace vkcv
          * Allocate the set size for the descriptor pools, namely 1000 units of each descriptor type below.
 		 * Finally, create an initial pool.
          */
-		m_PoolSizes = { vk::DescriptorPoolSize(vk::DescriptorType::eSampler, 1000),
-													vk::DescriptorPoolSize(vk::DescriptorType::eSampledImage, 1000),
-													vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
-													vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000) };
+		m_PoolSizes = {
+				vk::DescriptorPoolSize(vk::DescriptorType::eSampler, 1000),
+				vk::DescriptorPoolSize(vk::DescriptorType::eSampledImage, 1000),
+				vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
+				vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000),
+				vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic, 1000),
+				vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic, 1000)
+		};
 
 		m_PoolInfo = vk::DescriptorPoolCreateInfo(
 				vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
