@@ -2,7 +2,7 @@ variables:
   RUN:
     value: "all"
     description: "The tests that should run. Possible values: ubuntu, win-msvc, win-mingw, mac, all."
-  GIT_DEPTH: 1
+  GIT_DEPTH: 15
 
 stages:
   - build
