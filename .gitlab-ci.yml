@@ -105,7 +105,7 @@ deploy_doc_develop:
     - rsync -avh doc/html/ /var/www/html/develop --delete
     - echo "Check it out at https://vkcv.de/develop"
 
-deploy_doc_branch:CMAKE_CXX_COMPILER
+deploy_doc_branch:
   only:
     variables:
       - $RUN =~ /\bubuntu.*/i || $RUN =~ /\ball.*/i
