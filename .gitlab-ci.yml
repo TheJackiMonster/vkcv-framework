@@ -65,7 +65,7 @@ build_win10_mingw:
   script:
     - mkdir debug
     - cd debug
-    - cmake -DCMAKE_BUILD_TYPE=Debug ..
+    - cmake --no-warn-unused-cli -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_C_COMPILER:FILEPATH=C:\msys64\mingw64\bin\x86_64-w64-mingw32-gcc.exe -DCMAKE_CXX_COMPILER:FILEPATH=C:\msys64\mingw64\bin\x86_64-w64-mingw32-g++.exe .. -G "Unix Makefiles"
     - cmake --build .
 
 deploy_doc_develop:
@@ -86,7 +86,7 @@ deploy_doc_develop:
     - rsync -avh doc/html/ /var/www/html/develop --delete
     - echo "Check it out at https://vkcv.de/develop"
 
-deploy_doc_branch:
+deploy_doc_branch:CMAKE_CXX_COMPILER
   only:
     variables:
       - $RUN =~ /\bubuntu.*/i || $RUN =~ /\ball.*/i
