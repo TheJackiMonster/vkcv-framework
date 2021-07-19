@@ -17,7 +17,7 @@ build_ubuntu_gcc:
     - ubuntu-gcc-cached
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
-  timeout: 10m
+  timeout: 15m
   retry: 1
   script:
     - mkdir debug
@@ -40,7 +40,7 @@ build_win10_msvc:
     - win10-msvc-cached
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
-  timeout: 10m
+  timeout: 15m
   retry: 0
   script:
     - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
@@ -60,7 +60,7 @@ build_win10_mingw:
     - win10-mingw-cached
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
-  timeout: 10m
+  timeout: 15m
   retry: 0
   script:
     - mkdir debug
