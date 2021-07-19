@@ -621,9 +621,22 @@ namespace vkcv
 					dst, vk::ImageLayout::eTransferDstOptimal, cmdBuffer
 			);
 			
-			const std::array<vk::Offset3D, 2> offsets = {
+			const std::array<vk::Offset3D, 2> srcOffsets = {
 					vk::Offset3D(0, 0, 0),
-					vk::Offset3D(0, 0, 1)
+					vk::Offset3D(
+							m_ImageManager->getImageWidth(src),
+							m_ImageManager->getImageHeight(src),
+							1
+					)
+			};
+			
+			const std::array<vk::Offset3D, 2> dstOffsets = {
+					vk::Offset3D(0, 0, 0),
+					vk::Offset3D(
+							m_ImageManager->getImageWidth(dst),
+							m_ImageManager->getImageHeight(dst),
+							1
+					)
 			};
 			
 			const bool srcDepth = isDepthFormat(m_ImageManager->getImageFormat(src));
@@ -636,14 +649,14 @@ namespace vkcv
 							vk::ImageAspectFlagBits::eColor,
 							0, 0, 1
 					),
-					offsets,
+					srcOffsets,
 					vk::ImageSubresourceLayers(
 							dstDepth?
 							vk::ImageAspectFlagBits::eDepth :
 							vk::ImageAspectFlagBits::eColor,
 							0, 0, 1
 					),
-					offsets
+					dstOffsets
 			);
 			
 			cmdBuffer.blitImage(
