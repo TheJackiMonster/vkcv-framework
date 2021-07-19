@@ -618,7 +618,7 @@ namespace vkcv::asset {
 			);
 		} else {
 			data = stbi_load(
-					texture.path.c_str(),
+					texture.path.string().c_str(),
 					&texture.width,
 					&texture.height,
 					&texture.channels, 4

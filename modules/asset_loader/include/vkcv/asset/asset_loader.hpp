@@ -11,7 +11,6 @@
 #include <cstdint>
 #include <filesystem>
 
-
 /* LOADING MESHES
  * The description of meshes is a hierarchy of structures with the Mesh at the
  * top.
