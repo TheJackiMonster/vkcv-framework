@@ -196,11 +196,13 @@ namespace vkcv
          * @param minFilter Minimizing filter
          * @param mipmapMode Mipmapping filter
          * @param addressMode Address mode
+         * @param mipLodBias Mip level of detail bias
          * @return Sampler handle
          */
         [[nodiscard]]
         SamplerHandle createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
-									SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode);
+									SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode,
+									float mipLodBias = 0.0f);
 
         /**
          * Creates an #Image with a given format, width, height and depth.

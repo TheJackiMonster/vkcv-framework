@@ -50,6 +50,21 @@ namespace vkcv::upscaling {
 		);
 	}
 	
+	float getFSRLodBias(FSRQualityMode mode) {
+		switch (mode) {
+			case FSRQualityMode::ULTRA_QUALITY:
+				return -0.38f;
+			case FSRQualityMode::QUALITY:
+				return -0.58f;
+			case FSRQualityMode::BALANCED:
+				return -0.79f;
+			case FSRQualityMode::PERFORMANCE:
+				return -1.0f;
+			default:
+				return 0.0f;
+		}
+	}
+	
 	static std::vector<DescriptorBinding> getDescriptorBindings() {
 		return std::vector<DescriptorBinding>({
 			DescriptorBinding(

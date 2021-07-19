@@ -18,6 +18,8 @@ namespace vkcv::upscaling {
 						  uint32_t outputWidth, uint32_t outputHeight,
 						  uint32_t &inputWidth, uint32_t &inputHeight);
 	
+	float getFSRLodBias(FSRQualityMode mode);
+	
 	struct FSRConstants {
 		uint32_t Const0 [4];
 		uint32_t Const1 [4];

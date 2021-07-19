@@ -17,7 +17,8 @@ namespace vkcv {
 	SamplerHandle SamplerManager::createSampler(SamplerFilterType magFilter,
 												SamplerFilterType minFilter,
 												SamplerMipmapMode mipmapMode,
-												SamplerAddressMode addressMode) {
+												SamplerAddressMode addressMode,
+												float mipLodBias) {
 		vk::Filter vkMagFilter;
 		vk::Filter vkMinFilter;
 		vk::SamplerMipmapMode vkMipmapMode;
@@ -81,7 +82,7 @@ namespace vkcv {
 				vkAddressMode,
 				vkAddressMode,
 				vkAddressMode,
-				0.0f,
+				mipLodBias,
 				false,
 				16.0f,
 				false,

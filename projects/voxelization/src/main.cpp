@@ -454,7 +454,8 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerFilterType::NEAREST,
 		vkcv::SamplerFilterType::NEAREST,
 		vkcv::SamplerMipmapMode::NEAREST,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
+		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
+	);
 
 	// model matrices per mesh
 	std::vector<glm::mat4> modelMatrices;
@@ -489,7 +490,8 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
+		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
+	);
 
 	ShadowMapping shadowMapping(&core, vertexLayout);
 
@@ -553,6 +555,9 @@ int main(int argc, const char** argv) {
 			"Performance"
 	};
 	
+	bool fsrMipLoadBiasFlag = true;
+	bool fsrMipLoadBiasFlagBackup = fsrMipLoadBiasFlag;
+	
 	vkcv::gui::GUI gui(core, window);
 
 	glm::vec2   lightAnglesDegree               = glm::vec2(90.f, 0.f);
@@ -588,18 +593,35 @@ int main(int argc, const char** argv) {
 				width, height
 		);
 
-		if ((width != fsrWidth) || ((height != fsrHeight))) {
+		if ((width != fsrWidth) || ((height != fsrHeight)) || (fsrMipLoadBiasFlagBackup != fsrMipLoadBiasFlag)) {
 			fsrWidth = width;
 			fsrHeight = height;
+			fsrMipLoadBiasFlagBackup = fsrMipLoadBiasFlag;
 			
-			depthBuffer         = core.createImage(
+			colorSampler = core.createSampler(
+					vkcv::SamplerFilterType::LINEAR,
+					vkcv::SamplerFilterType::LINEAR,
+					vkcv::SamplerMipmapMode::LINEAR,
+					vkcv::SamplerAddressMode::REPEAT,
+					fsrMipLoadBiasFlag? vkcv::upscaling::getFSRLodBias(fsrMode) : 0.0f
+			);
+			
+			for (size_t i = 0; i < scene.materials.size(); i++) {
+				vkcv::DescriptorWrites setWrites;
+				setWrites.samplerWrites = {
+						vkcv::SamplerDescriptorWrite(1, colorSampler),
+				};
+				core.writeDescriptorSet(materialDescriptorSets[i], setWrites);
+			}
+			
+			depthBuffer = core.createImage(
 					depthBufferFormat,
 					fsrWidth, fsrHeight, 1,
 					false, false, false,
 					msaa
 			).getHandle();
 			
-			colorBuffer         = core.createImage(
+			colorBuffer = core.createImage(
 					colorBufferFormat,
 					fsrWidth, fsrHeight, 1,
 					false, colorBufferRequiresStorage, true,
@@ -866,11 +888,17 @@ int main(int argc, const char** argv) {
 			ImGui::DragFloat("Absorption density", &absorptionDensity, 0.0001);
 			ImGui::DragFloat("Volumetric ambient", &volumetricAmbient, 0.002);
 			
-			ImGui::Combo("FidelityFX FSR Quality Mode", &fsrModeIndex, fsrModeNames.data(), fsrModeNames.size());
+			float fsrSharpness = upscaling.getSharpness();
+			
+			ImGui::Combo("FSR Quality Mode", &fsrModeIndex, fsrModeNames.data(), fsrModeNames.size());
+			ImGui::DragFloat("FSR Sharpness", &fsrSharpness, 0.01, 0.0f, 1.0f);
+			ImGui::Checkbox("FSR Mip Lod Bias", &fsrMipLoadBiasFlag);
 			
 			if ((fsrModeIndex >= 0) && (fsrModeIndex <= 4)) {
 				fsrMode = static_cast<vkcv::upscaling::FSRQualityMode>(fsrModeIndex);
 			}
+			
+			upscaling.setSharpness(fsrSharpness);
 
 			if (ImGui::Button("Reload forward pass")) {
 
