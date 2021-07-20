@@ -6,6 +6,8 @@
 #include <mutex>
 #endif
 
+#include <vector>
+
 namespace vkcv {
 	
 	template<typename... T>
