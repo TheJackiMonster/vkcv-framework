@@ -19,9 +19,6 @@ set(vkcv_meshlet_sources
 # adding source files to the module
 add_library(vkcv_meshlet STATIC ${vkcv_meshlet_sources})
 
-# Setup some path variables to load libraries
-set(vkcv_meshlet_lib lib)
-set(vkcv_meshlet_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_meshlet_lib})
 
 # link the required libraries to the module
 target_link_libraries(vkcv_meshlet vkcv ${vkcv_libraries})
@@ -33,4 +30,4 @@ target_include_directories(vkcv_meshlet SYSTEM BEFORE PRIVATE ${vkcv_include} ${
 target_include_directories(vkcv_meshlet BEFORE PUBLIC ${vkcv_meshlet_include})
 
 # linking with libraries from all dependencies and the VkCV framework
-target_link_libraries(vkcv_meshlet vkcv vkcv_asset_loader)
+target_link_libraries(vkcv_meshlet vkcv vkcv_asset_loader vkcv_camera)

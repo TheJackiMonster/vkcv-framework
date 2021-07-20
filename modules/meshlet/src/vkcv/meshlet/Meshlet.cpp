@@ -1,6 +1,5 @@
 
 #include "vkcv/meshlet/Meshlet.hpp"
-#include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/Logger.hpp>
 #include <cassert>
 

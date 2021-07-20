@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <glm/glm.hpp>
+#include <vkcv/asset/asset_loader.hpp>
 
 namespace vkcv::meshlet {
 

@@ -8,7 +8,7 @@
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/meshlet/Meshlet.hpp>
-#include <vkcv/meshlet/Tipsify.hpp>
+//#include <vkcv/meshlet/Tipsify.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Mesh shader";
