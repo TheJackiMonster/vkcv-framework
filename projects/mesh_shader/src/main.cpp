@@ -7,7 +7,8 @@
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/asset/asset_loader.hpp>
-#include <vkcv/scene/Meshlet.hpp>
+#include <vkcv/meshlet/Meshlet.hpp>
+#include <vkcv/meshlet/Tipsify.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Mesh shader";
@@ -70,14 +71,15 @@ int main(int argc, const char** argv) {
 			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
 	const auto& bunny = mesh.vertexGroups[0];
-	const std::vector<vkcv::scene::Vertex> interleavedVertices = vkcv::scene::convertToVertices(bunny.vertexBuffer.data, bunny.numVertices, attributes[0], attributes[1]);
-
+	std::vector<vkcv::meshlet::Vertex> interleavedVertices = vkcv::meshlet::convertToVertices(bunny.vertexBuffer.data, bunny.numVertices, attributes[0], attributes[1]);
 	// mesh shader buffers
 	const auto& assetLoaderIndexBuffer              = mesh.vertexGroups[0].indexBuffer;
-	const std::vector<uint32_t> indexBuffer32Bit    = vkcv::scene::assetLoaderIndicesTo32BitIndices(assetLoaderIndexBuffer.data, assetLoaderIndexBuffer.type);
-	const auto meshShaderModelData                  = createMeshShaderModelData(interleavedVertices, indexBuffer32Bit);
+	std::vector<uint32_t> indexBuffer32Bit    = vkcv::meshlet::assetLoaderIndicesTo32BitIndices(assetLoaderIndexBuffer.data, assetLoaderIndexBuffer.type);
+//    std::vector<uint32_t> reorderedIndexBuffer32Bit  = vkcv::meshlet::tipsifyMesh(indexBuffer32Bit, interleavedVertices.size(), 2);
 
-	auto meshShaderVertexBuffer = core.createBuffer<vkcv::scene::Vertex>(
+    const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, indexBuffer32Bit);
+
+	auto meshShaderVertexBuffer = core.createBuffer<vkcv::meshlet::Vertex>(
 		vkcv::BufferType::STORAGE,
 		meshShaderModelData.vertices.size());
 	meshShaderVertexBuffer.fill(meshShaderModelData.vertices);
@@ -87,7 +89,7 @@ int main(int argc, const char** argv) {
 		meshShaderModelData.localIndices.size());
 	meshShaderIndexBuffer.fill(meshShaderModelData.localIndices);
 
-	auto meshletBuffer = core.createBuffer<vkcv::scene::Meshlet>(
+	auto meshletBuffer = core.createBuffer<vkcv::meshlet::Meshlet>(
 		vkcv::BufferType::STORAGE,
 		meshShaderModelData.meshlets.size(),
 		vkcv::BufferMemoryType::DEVICE_LOCAL
