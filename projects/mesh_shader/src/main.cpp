@@ -10,6 +10,70 @@
 #include <vkcv/meshlet/Meshlet.hpp>
 //#include <vkcv/meshlet/Tipsify.hpp>
 
+struct Plane {
+	glm::vec3 pointOnPlane;
+	float padding0;
+	glm::vec3 normal;
+	float padding1;
+};
+
+struct CameraPlanes {
+	Plane planes[6];
+};
+
+CameraPlanes computeCameraPlanes(const vkcv::camera::Camera& camera) {
+	const float     fov     = camera.getFov();
+	const glm::vec3 pos     = camera.getPosition();
+	const float     ratio   = camera.getRatio();
+	const glm::vec3 forward = glm::normalize(camera.getFront());
+	float near;
+	float far;
+	camera.getNearFar(near, far);
+
+	glm::vec3 up    = glm::dot(forward, glm::vec3(0, -1, 0)) < 0.99 ? glm::vec3(0, -1, 0) : glm::vec3(1, 0, 0);
+	glm::vec3 right = glm::normalize(glm::cross(forward, up));
+	up              = glm::cross(forward, right);
+
+	const glm::vec3 nearCenter      = pos + forward * near;
+	const glm::vec3 farCenter       = pos + forward * far;
+
+	const float tanFovHalf          = glm::tan(fov / 2);
+
+	const glm::vec3 nearUpCenter    = nearCenter + up    * tanFovHalf * near;
+	const glm::vec3 nearDownCenter  = nearCenter - up    * tanFovHalf * near;
+	const glm::vec3 nearRightCenter = nearCenter + right * tanFovHalf * near * ratio;
+	const glm::vec3 nearLeftCenter  = nearCenter - right * tanFovHalf * near * ratio;
+
+	const glm::vec3 farUpCenter     = farCenter + up    * tanFovHalf * far;
+	const glm::vec3 farDownCenter   = farCenter - up    * tanFovHalf * far;
+	const glm::vec3 farRightCenter  = farCenter + right * tanFovHalf * far * ratio;
+	const glm::vec3 farLeftCenter   = farCenter - right * tanFovHalf * far * ratio;
+
+	CameraPlanes cameraPlanes;
+	// near
+	cameraPlanes.planes[0].pointOnPlane  = nearCenter;
+	cameraPlanes.planes[0].normal           = -forward;
+	// far
+	cameraPlanes.planes[1].pointOnPlane  = farCenter;
+	cameraPlanes.planes[1].normal           = forward;
+
+	// top
+	cameraPlanes.planes[2].pointOnPlane  = nearUpCenter;
+	cameraPlanes.planes[2].normal           = glm::normalize(glm::cross(farUpCenter - nearUpCenter, right));
+	// bot
+	cameraPlanes.planes[3].pointOnPlane  = nearDownCenter;
+	cameraPlanes.planes[3].normal           = glm::normalize(glm::cross(right, farDownCenter - nearDownCenter));
+
+	// right
+	cameraPlanes.planes[4].pointOnPlane  = nearRightCenter;
+	cameraPlanes.planes[4].normal           = glm::normalize(glm::cross(up, farRightCenter - nearRightCenter));
+	// left
+	cameraPlanes.planes[5].pointOnPlane  = nearLeftCenter;
+	cameraPlanes.planes[5].normal           = glm::normalize(glm::cross(farLeftCenter - nearLeftCenter, up));
+
+	return cameraPlanes;
+}
+
 int main(int argc, const char** argv) {
 	const char* applicationName = "Mesh shader";
 
@@ -194,11 +258,25 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
+	vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = core.createBuffer<CameraPlanes>(vkcv::BufferType::UNIFORM, 1);
+
+	struct ObjectMatrices {
+		glm::mat4 model;
+		glm::mat4 mvp;
+	};
+	const size_t objectCount = 1;
+	vkcv::Buffer<ObjectMatrices> matrixBuffer = core.createBuffer<ObjectMatrices>(vkcv::BufferType::STORAGE, objectCount);
+
     vkcv::DescriptorWrites meshShaderWrites;
 	meshShaderWrites.storageBufferWrites = {
-		vkcv::StorageBufferDescriptorWrite(0, meshShaderVertexBuffer.getHandle()), 
+		vkcv::StorageBufferDescriptorWrite(0, meshShaderVertexBuffer.getHandle()),
 		vkcv::StorageBufferDescriptorWrite(1, meshShaderIndexBuffer.getHandle()),
-		vkcv::StorageBufferDescriptorWrite(2, meshletBuffer.getHandle()) };
+		vkcv::StorageBufferDescriptorWrite(2, meshletBuffer.getHandle()),
+		vkcv::StorageBufferDescriptorWrite(4, matrixBuffer.getHandle()) 
+	};
+	meshShaderWrites.uniformBufferWrites = {
+		vkcv::UniformBufferDescriptorWrite(3, cameraPlaneBuffer.getHandle())
+	};
 
     core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
 
@@ -212,14 +290,14 @@ int main(int argc, const char** argv) {
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    vkcv::camera::CameraManager cameraManager(window);
-    uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	vkcv::camera::CameraManager cameraManager(window);
+	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
 
 	while (window.isWindowOpen())
 	{
-        vkcv::Window::pollEvents();
+		vkcv::Window::pollEvents();
 
 		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
 		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
@@ -232,14 +310,22 @@ int main(int argc, const char** argv) {
 		
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 
-		glm::mat4 modelMatrix = *reinterpret_cast<glm::mat4*>(&mesh.meshes.front().modelMatrix);
-		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP() * modelMatrix;
+		const vkcv::camera::Camera& camera = cameraManager.getActiveCamera();
+
+		ObjectMatrices objectMatrices;
+		objectMatrices.model    = *reinterpret_cast<glm::mat4*>(&mesh.meshes.front().modelMatrix);
+		objectMatrices.mvp      = camera.getMVP() * objectMatrices.model;
+
+		matrixBuffer.fill({ objectMatrices });
 
 		struct PushConstants {
-			glm::mat4 mvp;
 			uint32_t meshletCount;
+			uint32_t matrixIndex;
 		};
-		PushConstants pushConstants{ mvp, meshShaderModelData.meshlets.size() };
+		PushConstants pushConstants{ meshShaderModelData.meshlets.size(), 0 };
+
+		const CameraPlanes cameraPlanes = computeCameraPlanes(camera);
+		cameraPlaneBuffer.fill({ cameraPlanes });
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
