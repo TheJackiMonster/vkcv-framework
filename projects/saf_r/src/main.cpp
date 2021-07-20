@@ -153,11 +153,42 @@ int main(int argc, const char** argv) {
             { "VK_KHR_swapchain" }
     );
 
+    vkcv::ShaderProgram triangleShaderProgram;
+    vkcv::shader::GLSLCompiler compiler;
+
+    compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/shader.vert"),
+                     [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+                         triangleShaderProgram.addShader(shaderStage, path);
+                     });
+
+    compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/shader.frag"),
+                     [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+                         triangleShaderProgram.addShader(shaderStage, path);
+                     });
+
+    uint32_t setID = 0;
+    std::vector<vkcv::DescriptorBinding> descriptorBindings = { triangleShaderProgram.getReflectedDescriptors()[setID] };
+    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+
     vkcv::asset::TextureData texData = vkcv::asset::loadTexture("textures/texture.png");
     vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, 800, 600);
     texture.fill( texData.data.data());
     texture.generateMipChainImmediate();
     texture.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+    vkcv::SamplerHandle sampler = core.createSampler(
+            vkcv::SamplerFilterType::LINEAR,
+            vkcv::SamplerFilterType::LINEAR,
+            vkcv::SamplerMipmapMode::LINEAR,
+            vkcv::SamplerAddressMode::REPEAT
+    );
+
+
+    vkcv::DescriptorWrites setWrites;
+    setWrites.sampledImageWrites	= { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
+    setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
+
+    core.writeDescriptorSet(descriptorSet, setWrites);
 
     const auto& context = core.getContext();
 
@@ -180,18 +211,7 @@ int main(int argc, const char** argv) {
         return EXIT_FAILURE;
     }
 
-    vkcv::ShaderProgram triangleShaderProgram;
-    vkcv::shader::GLSLCompiler compiler;
 
-    compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/shader.vert"),
-                     [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-                         triangleShaderProgram.addShader(shaderStage, path);
-                     });
-
-    compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/shader.frag"),
-                     [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-                         triangleShaderProgram.addShader(shaderStage, path);
-                     });
 
     const vkcv::PipelineConfig trianglePipelineDefinition {
             triangleShaderProgram,
@@ -199,7 +219,7 @@ int main(int argc, const char** argv) {
             (uint32_t)windowHeight,
             trianglePass,
             {},
-            {},
+            { core.getDescriptorSet(descriptorSet).layout },
             false
     };
 
@@ -214,7 +234,8 @@ int main(int argc, const char** argv) {
     auto start = std::chrono::system_clock::now();
 
     const vkcv::Mesh renderMesh({}, triangleIndexBuffer.getVulkanHandle(), 3);
-    vkcv::DrawcallInfo drawcall(renderMesh, {},1);
+    vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+    vkcv::DrawcallInfo drawcall(renderMesh, { descriptorUsage },1);
 
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
