@@ -15,10 +15,12 @@ namespace vkcv::meshlet {
     };
 
     struct Meshlet {
-        uint32_t vertexOffset;
-        uint32_t vertexCount;
-        uint32_t indexOffset;
-        uint32_t indexCount;
+        uint32_t    vertexOffset;
+        uint32_t    vertexCount;
+        uint32_t    indexOffset;
+        uint32_t    indexCount;
+        glm::vec3   meanPosition;
+        float       boundingSphereRadius;
     };
 
     struct MeshShaderModelData {

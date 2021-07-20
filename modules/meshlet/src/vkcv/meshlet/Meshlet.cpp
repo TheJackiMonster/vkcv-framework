@@ -110,6 +110,24 @@ MeshShaderModelData createMeshShaderModelData(
             data.vertices.push_back(v);
         }
 
+        // compute mean position
+        meshlet.meanPosition = glm::vec3(0);
+        const uint32_t meshletLastVertexIndex = meshlet.vertexOffset + meshlet.vertexCount;
+
+        for (uint32_t vertexIndex = meshlet.vertexOffset; vertexIndex < meshletLastVertexIndex; vertexIndex++) {
+            const Vertex& v         = data.vertices[vertexIndex];
+            meshlet.meanPosition    += v.position;
+        }
+        meshlet.meanPosition /= meshlet.vertexCount;
+
+        // compute bounding sphere radius
+        meshlet.boundingSphereRadius = 0.f;
+        for (uint32_t vertexIndex = meshlet.vertexOffset; vertexIndex < meshletLastVertexIndex; vertexIndex++) {
+            const Vertex& v = data.vertices[vertexIndex];
+            const float d                   = glm::distance(v.position, meshlet.meanPosition);
+            meshlet.boundingSphereRadius    = glm::max(meshlet.boundingSphereRadius, d);
+        }
+
         data.meshlets.push_back(meshlet);
     }
 

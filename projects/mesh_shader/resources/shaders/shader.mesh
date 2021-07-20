@@ -31,10 +31,12 @@ layout(std430, binding = 1) readonly buffer indexBuffer
 };
 
 struct Meshlet{
-    uint vertexOffset;
-    uint vertexCount;
-    uint indexOffset;
-    uint indexCount;
+    uint    vertexOffset;
+    uint    vertexCount;
+    uint    indexOffset;
+    uint    indexCount;
+    vec3    meanPosition;
+    float   boundingSphereRadius;
 };
 
 layout(std430, binding = 2) readonly buffer meshletBuffer
