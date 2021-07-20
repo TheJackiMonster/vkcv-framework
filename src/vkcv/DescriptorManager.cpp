@@ -11,10 +11,14 @@ namespace vkcv
          * Allocate the set size for the descriptor pools, namely 1000 units of each descriptor type below.
 		 * Finally, create an initial pool.
          */
-		m_PoolSizes = { vk::DescriptorPoolSize(vk::DescriptorType::eSampler, 1000),
-													vk::DescriptorPoolSize(vk::DescriptorType::eSampledImage, 1000),
-													vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
-													vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000) };
+		m_PoolSizes = {
+				vk::DescriptorPoolSize(vk::DescriptorType::eSampler, 1000),
+				vk::DescriptorPoolSize(vk::DescriptorType::eSampledImage, 1000),
+				vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
+				vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000),
+				vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic, 1000),
+				vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic, 1000)
+		};
 
 		m_PoolInfo = vk::DescriptorPoolCreateInfo(
 				vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
@@ -105,7 +109,6 @@ namespace vkcv
 		const ImageManager		&imageManager, 
 		const BufferManager		&bufferManager,
 		const SamplerManager	&samplerManager) {
-
 		vk::DescriptorSet set = m_DescriptorSets[handle.getId()].vulkanHandle;
 
 		std::vector<vk::DescriptorImageInfo> imageInfos;
@@ -153,10 +156,15 @@ namespace vkcv
 		}
 
 		for (const auto& write : writes.uniformBufferWrites) {
+			const size_t size = bufferManager.getBufferSize(write.buffer);
+			const uint32_t offset = std::clamp<uint32_t>(write.offset, 0, size);
+			
 			const vk::DescriptorBufferInfo bufferInfo(
 				bufferManager.getBuffer(write.buffer),
-				static_cast<uint32_t>(0),
-				bufferManager.getBufferSize(write.buffer)
+				offset,
+				write.size == 0? size : std::min<uint32_t>(
+						write.size, size - offset
+				)
 			);
 			
 			bufferInfos.push_back(bufferInfo);
@@ -165,6 +173,8 @@ namespace vkcv
 					0,
 					bufferInfos.size(),
 					write.binding,
+					write.dynamic?
+					vk::DescriptorType::eUniformBufferDynamic :
 					vk::DescriptorType::eUniformBuffer
 			};
 			
@@ -172,10 +182,15 @@ namespace vkcv
 		}
 
 		for (const auto& write : writes.storageBufferWrites) {
+			const size_t size = bufferManager.getBufferSize(write.buffer);
+			const uint32_t offset = std::clamp<uint32_t>(write.offset, 0, size);
+			
 			const vk::DescriptorBufferInfo bufferInfo(
 				bufferManager.getBuffer(write.buffer),
-				static_cast<uint32_t>(0),
-				bufferManager.getBufferSize(write.buffer)
+				offset,
+				write.size == 0? size : std::min<uint32_t>(
+						write.size, size - offset
+				)
 			);
 			
 			bufferInfos.push_back(bufferInfo);
@@ -184,6 +199,8 @@ namespace vkcv
 					0,
 					bufferInfos.size(),
 					write.binding,
+					write.dynamic?
+					vk::DescriptorType::eStorageBufferDynamic :
 					vk::DescriptorType::eStorageBuffer
 			};
 			
@@ -239,8 +256,12 @@ namespace vkcv
         {
             case DescriptorType::UNIFORM_BUFFER:
                 return vk::DescriptorType::eUniformBuffer;
+			case DescriptorType::UNIFORM_BUFFER_DYNAMIC:
+				return vk::DescriptorType::eUniformBufferDynamic;
             case DescriptorType::STORAGE_BUFFER:
                 return vk::DescriptorType::eStorageBuffer;
+			case DescriptorType::STORAGE_BUFFER_DYNAMIC:
+				return vk::DescriptorType::eStorageBufferDynamic;
             case DescriptorType::SAMPLER:
                 return vk::DescriptorType::eSampler;
             case DescriptorType::IMAGE_SAMPLED:
