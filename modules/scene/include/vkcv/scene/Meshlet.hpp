@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <Map>
+#include <map>
 #include <glm/glm.hpp>
 
 namespace vkcv::scene {
