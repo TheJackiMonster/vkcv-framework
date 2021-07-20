@@ -226,33 +226,40 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 		
-        auto end = std::chrono::system_clock::now();
-        auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        start = end;
+		auto end = std::chrono::system_clock::now();
+		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		start = end;
 		
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 
 		glm::mat4 modelMatrix = *reinterpret_cast<glm::mat4*>(&mesh.meshes.front().modelMatrix);
-        glm::mat4 mvp = cameraManager.getActiveCamera().getMVP() * modelMatrix;
+		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP() * modelMatrix;
 
-        const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
+		struct PushConstants {
+			glm::mat4 mvp;
+			uint32_t meshletCount;
+		};
+		PushConstants pushConstants{ mvp, meshShaderModelData.meshlets.size() };
+
+		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
 		const bool useMeshShader = true;
 
-		vkcv::PushConstants pushConstantData(sizeof(glm::mat4));
-		pushConstantData.appendDrawcall(mvp);
+		vkcv::PushConstants pushConstantData(sizeof(pushConstants));
+		pushConstantData.appendDrawcall(pushConstants);
 
 		if (useMeshShader) {
 
 			vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(meshShaderDescriptorSet).vulkanHandle);
+			const uint32_t taskCount = (meshShaderModelData.meshlets.size() + 31) / 32;
 
 			core.recordMeshShaderDrawcalls(
 				cmdStream,
 				renderPass,
 				meshShaderPipeline,
 				pushConstantData,
-				{ vkcv::MeshShaderDrawcall({descriptorUsage}, meshShaderModelData.meshlets.size())},
+				{ vkcv::MeshShaderDrawcall({descriptorUsage}, taskCount)},
 				{ renderTargets });
 		}
 		else {

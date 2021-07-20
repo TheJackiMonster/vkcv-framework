@@ -2,13 +2,23 @@
 #extension GL_ARB_separate_shader_objects   : enable
 #extension GL_NV_mesh_shader                : require
 
-layout(local_size_x=1) in;
+layout(local_size_x=32) in;
 
 taskNV out Task {
-  uint meshletIndex;
+  uint meshletIndices[32];
 } OUT;
 
+layout( push_constant ) uniform constants{
+    mat4 mvp;
+    uint meshletCount;
+};
+
 void main() {
-    gl_TaskCountNV      = 1;
-    OUT.meshletIndex    = gl_GlobalInvocationID.x;
+    if(gl_LocalInvocationID.x == 0){
+        int taskCount              = int(gl_WorkGroupID.x * 32);
+        // use signed ints to avoid underflow
+        int superflousTaskCount    = max(taskCount - int(meshletCount), 0);
+        gl_TaskCountNV              = 32 - superflousTaskCount;
+    }
+    OUT.meshletIndices[gl_LocalInvocationID.x] = gl_GlobalInvocationID.x;
 }

@@ -43,12 +43,13 @@ layout(std430, binding = 2) readonly buffer meshletBuffer
 };
 
 taskNV in Task {
-  uint meshletIndex;
+  uint meshletIndices[32];
 } IN;
 
 void main()	{
     
-    Meshlet meshlet = meshlets[IN.meshletIndex];
+    uint meshletIndex = IN.meshletIndices[gl_WorkGroupID.x];
+    Meshlet meshlet = meshlets[meshletIndex];
     
     // set vertices
     for(uint i = 0; i < 2; i++){
@@ -63,7 +64,7 @@ void main()	{
     
         gl_MeshVerticesNV[workIndex].gl_Position    = mvp * vec4(vertex.position, 1);
         passNormal[workIndex]                       = vertex.normal;
-        passTaskIndex[workIndex]                    = IN.meshletIndex;
+        passTaskIndex[workIndex]                    = meshletIndex;
     }
     
     // set local indices
