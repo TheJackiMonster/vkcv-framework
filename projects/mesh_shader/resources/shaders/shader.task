@@ -4,6 +4,7 @@
 #extension GL_GOOGLE_include_directive      : enable
 
 #include "meshlet.inc"
+#include "common.inc"
 
 layout(local_size_x=32) in;
 
@@ -13,29 +14,25 @@ taskNV out Task {
 } OUT;
 
 layout( push_constant ) uniform constants{
-    uint meshletCount;
     uint matrixIndex;
+    uint meshletCount;
 };
 
-layout(std430, binding = 2) readonly buffer meshletBuffer
+// TODO: reuse mesh stage binding at location 2 after required fix in framework
+layout(std430, binding = 5) readonly buffer meshletBuffer
 {
     Meshlet meshlets[];
 };
 
 struct Plane{
-    vec3 pointOnPlane;
-    float padding0;
-    vec3 normal;
-    float padding1;
+    vec3    pointOnPlane;
+    float   padding0;
+    vec3    normal;
+    float   padding1;
 };
 
 layout(set=0, binding=3, std140) uniform cameraPlaneBuffer{
     Plane cameraPlanes[6];
-};
-
-struct ObjectMatrices{
-    mat4 model;
-    mat4 mvp;
 };
 
 layout(std430, binding = 4) readonly buffer matrixBuffer
@@ -49,7 +46,8 @@ bool isSphereInsideFrustum(vec3 spherePos, float sphereRadius, Plane cameraPlane
     bool isInside = true;
     for(int i = 0; i < 6; i++){
         Plane p     = cameraPlanes[i];
-        isInside    = isInside && dot(p.normal, spherePos - p.pointOnPlane) + sphereRadius < 0;
+        isInside    = isInside && dot(p.normal, spherePos - p.pointOnPlane) - sphereRadius < 0;
+        //break;
     }
     return isInside;
 }
@@ -67,7 +65,9 @@ void main() {
         taskCount = 0;
     }
     
-    if(isSphereInsideFrustum(meshlet.meanPosition, meshlet.boundingSphereRadius, cameraPlanes)){
+    // TODO: scaling support
+    vec3 meshletPositionWorld = (vec4(meshlet.meanPosition, 1) * objectMatrices[matrixIndex].model).xyz;
+    if(isSphereInsideFrustum(meshletPositionWorld, meshlet.boundingSphereRadius, cameraPlanes)){
         uint outIndex = atomicAdd(taskCount, 1);
         OUT.meshletIndices[outIndex] = gl_GlobalInvocationID.x;
     }

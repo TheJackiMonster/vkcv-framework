@@ -30,7 +30,7 @@ CameraPlanes computeCameraPlanes(const vkcv::camera::Camera& camera) {
 	float far;
 	camera.getNearFar(near, far);
 
-	glm::vec3 up    = glm::dot(forward, glm::vec3(0, -1, 0)) < 0.99 ? glm::vec3(0, -1, 0) : glm::vec3(1, 0, 0);
+	glm::vec3 up    = glm::vec3(0, -1, 0);
 	glm::vec3 right = glm::normalize(glm::cross(forward, up));
 	up              = glm::cross(forward, right);
 
@@ -51,25 +51,25 @@ CameraPlanes computeCameraPlanes(const vkcv::camera::Camera& camera) {
 
 	CameraPlanes cameraPlanes;
 	// near
-	cameraPlanes.planes[0].pointOnPlane  = nearCenter;
-	cameraPlanes.planes[0].normal           = -forward;
+	cameraPlanes.planes[0].pointOnPlane = nearCenter;
+	cameraPlanes.planes[0].normal       = -forward;
 	// far
-	cameraPlanes.planes[1].pointOnPlane  = farCenter;
-	cameraPlanes.planes[1].normal           = forward;
+	cameraPlanes.planes[1].pointOnPlane = farCenter;
+	cameraPlanes.planes[1].normal       = forward;
 
 	// top
-	cameraPlanes.planes[2].pointOnPlane  = nearUpCenter;
-	cameraPlanes.planes[2].normal           = glm::normalize(glm::cross(farUpCenter - nearUpCenter, right));
+	cameraPlanes.planes[2].pointOnPlane = nearUpCenter;
+	cameraPlanes.planes[2].normal       = glm::normalize(glm::cross(farUpCenter - nearUpCenter, right));
 	// bot
-	cameraPlanes.planes[3].pointOnPlane  = nearDownCenter;
-	cameraPlanes.planes[3].normal           = glm::normalize(glm::cross(right, farDownCenter - nearDownCenter));
+	cameraPlanes.planes[3].pointOnPlane = nearDownCenter;
+	cameraPlanes.planes[3].normal       = glm::normalize(glm::cross(right, farDownCenter - nearDownCenter));
 
 	// right
-	cameraPlanes.planes[4].pointOnPlane  = nearRightCenter;
-	cameraPlanes.planes[4].normal           = glm::normalize(glm::cross(up, farRightCenter - nearRightCenter));
+	cameraPlanes.planes[4].pointOnPlane = nearRightCenter;
+	cameraPlanes.planes[4].normal       = glm::normalize(glm::cross(up, farRightCenter - nearRightCenter));
 	// left
-	cameraPlanes.planes[5].pointOnPlane  = nearLeftCenter;
-	cameraPlanes.planes[5].normal           = glm::normalize(glm::cross(farLeftCenter - nearLeftCenter, up));
+	cameraPlanes.planes[5].pointOnPlane = nearLeftCenter;
+	cameraPlanes.planes[5].normal       = glm::normalize(glm::cross(farLeftCenter - nearLeftCenter, up));
 
 	return cameraPlanes;
 }
@@ -201,15 +201,28 @@ int main(int argc, const char** argv) {
     }
     const vkcv::VertexLayout bunnyLayout (bindings);
 
+	vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(bunnyShaderProgram.getReflectedDescriptors()[0]);
+
 	const vkcv::PipelineConfig bunnyPipelineDefinition {
-            bunnyShaderProgram,
-            (uint32_t)windowWidth,
-            (uint32_t)windowHeight,
-            renderPass,
-            { bunnyLayout },
-            {},
-            false
+			bunnyShaderProgram,
+			(uint32_t)windowWidth,
+			(uint32_t)windowHeight,
+			renderPass,
+			{ bunnyLayout },
+			{ core.getDescriptorSet(vertexShaderDescriptorSet).layout },
+			false
 	};
+
+	struct ObjectMatrices {
+		glm::mat4 model;
+		glm::mat4 mvp;
+	};
+	const size_t objectCount = 1;
+	vkcv::Buffer<ObjectMatrices> matrixBuffer = core.createBuffer<ObjectMatrices>(vkcv::BufferType::STORAGE, objectCount);
+
+	vkcv::DescriptorWrites vertexShaderDescriptorWrites;
+	vertexShaderDescriptorWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0, matrixBuffer.getHandle()) };
+	core.writeDescriptorSet(vertexShaderDescriptorSet, vertexShaderDescriptorWrites);
 
 	vkcv::PipelineHandle bunnyPipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
 
@@ -236,9 +249,9 @@ int main(int argc, const char** argv) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
 
-    uint32_t setID = 0;
-    vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet( meshShaderProgram.getReflectedDescriptors()[setID]);
-    const vkcv::VertexLayout meshShaderLayout(bindings);
+	uint32_t setID = 0;
+	vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet( meshShaderProgram.getReflectedDescriptors()[setID]);
+	const vkcv::VertexLayout meshShaderLayout(bindings);
 
 	const vkcv::PipelineConfig meshShaderPipelineDefinition{
 		meshShaderProgram,
@@ -260,19 +273,13 @@ int main(int argc, const char** argv) {
 
 	vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = core.createBuffer<CameraPlanes>(vkcv::BufferType::UNIFORM, 1);
 
-	struct ObjectMatrices {
-		glm::mat4 model;
-		glm::mat4 mvp;
-	};
-	const size_t objectCount = 1;
-	vkcv::Buffer<ObjectMatrices> matrixBuffer = core.createBuffer<ObjectMatrices>(vkcv::BufferType::STORAGE, objectCount);
-
-    vkcv::DescriptorWrites meshShaderWrites;
+	vkcv::DescriptorWrites meshShaderWrites;
 	meshShaderWrites.storageBufferWrites = {
 		vkcv::StorageBufferDescriptorWrite(0, meshShaderVertexBuffer.getHandle()),
 		vkcv::StorageBufferDescriptorWrite(1, meshShaderIndexBuffer.getHandle()),
 		vkcv::StorageBufferDescriptorWrite(2, meshletBuffer.getHandle()),
-		vkcv::StorageBufferDescriptorWrite(4, matrixBuffer.getHandle()) 
+		vkcv::StorageBufferDescriptorWrite(4, matrixBuffer.getHandle()),
+		vkcv::StorageBufferDescriptorWrite(5, meshletBuffer.getHandle()),
 	};
 	meshShaderWrites.uniformBufferWrites = {
 		vkcv::UniformBufferDescriptorWrite(3, cameraPlaneBuffer.getHandle())
@@ -294,6 +301,9 @@ int main(int argc, const char** argv) {
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
+
+	bool useMeshShader          = true;
+	bool updateFrustumPlanes    = true;
 
 	while (window.isWindowOpen())
 	{
@@ -319,18 +329,18 @@ int main(int argc, const char** argv) {
 		matrixBuffer.fill({ objectMatrices });
 
 		struct PushConstants {
-			uint32_t meshletCount;
 			uint32_t matrixIndex;
+			uint32_t meshletCount;
 		};
-		PushConstants pushConstants{ meshShaderModelData.meshlets.size(), 0 };
+		PushConstants pushConstants{ 0, meshShaderModelData.meshlets.size() };
 
-		const CameraPlanes cameraPlanes = computeCameraPlanes(camera);
-		cameraPlaneBuffer.fill({ cameraPlanes });
+		if (updateFrustumPlanes) {
+			const CameraPlanes cameraPlanes = computeCameraPlanes(camera);
+			cameraPlaneBuffer.fill({ cameraPlanes });
+		}
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
-
-		const bool useMeshShader = true;
 
 		vkcv::PushConstants pushConstantData(sizeof(pushConstants));
 		pushConstantData.appendDrawcall(pushConstants);
@@ -350,26 +360,31 @@ int main(int argc, const char** argv) {
 		}
 		else {
 
+			vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(vertexShaderDescriptorSet).vulkanHandle);
+
 			core.recordDrawcallsToCmdStream(
 				cmdStream,
 				renderPass,
 				bunnyPipeline,
 				pushConstantData,
-				{ vkcv::DrawcallInfo(renderMesh, {}) },
+				{ vkcv::DrawcallInfo(renderMesh, { descriptorUsage }) },
 				{ renderTargets });
 		}
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
 		
-		// gui.beginGUI();
-		// 
-		// ImGui::Begin("Settings");
-		// ImGui::End();
-		// 
-		// gui.endGUI();
-	    
-	    core.endFrame();
+		gui.beginGUI();
+		
+		ImGui::Begin("Settings");
+		ImGui::Checkbox("Use mesh shader", &useMeshShader);
+		ImGui::Checkbox("Upadte frustum culling", &updateFrustumPlanes);
+
+		ImGui::End();
+		
+		gui.endGUI();
+
+		core.endFrame();
 	}
 	return 0;
 }
