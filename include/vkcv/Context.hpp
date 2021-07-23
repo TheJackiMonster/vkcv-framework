@@ -38,12 +38,11 @@ namespace vkcv
         [[nodiscard]]
 		const vma::Allocator& getAllocator() const;
         
-        static Context create(
-			const char*                     applicationName,
-			uint32_t                        applicationVersion,
-			std::vector<vk::QueueFlagBits>  queueFlags,
-			std::vector<const char *>       instanceExtensions,
-			std::vector<const char *>       deviceExtensions);
+        static Context create(const char *applicationName,
+							  uint32_t applicationVersion,
+							  const std::vector<vk::QueueFlagBits>& queueFlags,
+							  const std::vector<const char *>& instanceExtensions,
+							  const std::vector<const char *>& deviceExtensions);
 
     private:
         /**

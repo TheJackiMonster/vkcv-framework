@@ -196,9 +196,9 @@ int main(int argc, const char** argv) {
 
     vkcv::DescriptorWrites meshShaderWrites;
 	meshShaderWrites.storageBufferWrites = {
-		vkcv::StorageBufferDescriptorWrite(0, meshShaderVertexBuffer.getHandle()), 
-		vkcv::StorageBufferDescriptorWrite(1, meshShaderIndexBuffer.getHandle()),
-		vkcv::StorageBufferDescriptorWrite(2, meshletBuffer.getHandle()) };
+		vkcv::BufferDescriptorWrite(0, meshShaderVertexBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(1, meshShaderIndexBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(2, meshletBuffer.getHandle()) };
 
     core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
 

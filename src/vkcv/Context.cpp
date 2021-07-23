@@ -151,7 +151,7 @@ namespace vkcv
 	 * @param check The elements to be checked
 	 * @return True, if all elements in "check" are supported
 	*/
-	bool checkSupport(std::vector<const char*>& supported, std::vector<const char*>& check)
+	bool checkSupport(const std::vector<const char*>& supported, const std::vector<const char*>& check)
 	{
 		for (auto checkElem : check) {
 			bool found = false;
@@ -179,7 +179,7 @@ namespace vkcv
 		
 		return extensions;
 	}
-
+	
 	bool isPresentInCharPtrVector(const std::vector<const char*>& v, const char* term){
 		for (const auto& entry : v) {
 			if (strcmp(entry, term) != 0) {
@@ -188,13 +188,12 @@ namespace vkcv
 		}
 		return false;
 	}
-
-	Context Context::create(
-        const char* applicationName,
-        uint32_t                        applicationVersion,
-        std::vector<vk::QueueFlagBits>  queueFlags,
-        std::vector<const char*>        instanceExtensions,
-        std::vector<const char*>        deviceExtensions) {
+	
+	Context Context::create(const char *applicationName,
+							uint32_t applicationVersion,
+							const std::vector<vk::QueueFlagBits>& queueFlags,
+							const std::vector<const char *>& instanceExtensions,
+							const std::vector<const char *>& deviceExtensions) {
 		// check for layer support
 		
 		const std::vector<vk::LayerProperties>& layerProperties = vk::enumerateInstanceLayerProperties();
@@ -233,7 +232,7 @@ namespace vkcv
 		
 		// for GLFW: get all required extensions
 		std::vector<const char*> requiredExtensions = getRequiredExtensions();
-		instanceExtensions.insert(instanceExtensions.end(), requiredExtensions.begin(), requiredExtensions.end());
+		requiredExtensions.insert(requiredExtensions.end(), instanceExtensions.begin(), instanceExtensions.end());
 		
 		const vk::ApplicationInfo applicationInfo(
 				applicationName,
@@ -248,8 +247,8 @@ namespace vkcv
 				&applicationInfo,
 				0,
 				nullptr,
-				static_cast<uint32_t>(instanceExtensions.size()),
-				instanceExtensions.data()
+				static_cast<uint32_t>(requiredExtensions.size()),
+				requiredExtensions.data()
 		);
 
 #ifndef NDEBUG
@@ -296,22 +295,39 @@ namespace vkcv
 		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
-
+		const bool shaderFloat16 = checkSupport(deviceExtensions, { "VK_KHR_shader_float16_int8" });
+		const bool storage16bit  = checkSupport(deviceExtensions, { "VK_KHR_16bit_storage" });
+		
 		// FIXME: check if device feature is supported
-		vk::PhysicalDeviceFeatures2 deviceFeatures;
-		deviceFeatures.features.fragmentStoresAndAtomics    = true;
-		deviceFeatures.features.geometryShader              = true;
-		deviceFeatures.features.depthClamp                 = true;
-
+		vk::PhysicalDeviceShaderFloat16Int8Features deviceShaderFloat16Int8Features;
+		deviceShaderFloat16Int8Features.shaderFloat16 = shaderFloat16;
+		
+		vk::PhysicalDevice16BitStorageFeatures device16BitStorageFeatures;
+		device16BitStorageFeatures.storageBuffer16BitAccess = storage16bit;
+		
+		vk::PhysicalDeviceFeatures2 deviceFeatures2;
+		deviceFeatures2.features.fragmentStoresAndAtomics = true;
+		deviceFeatures2.features.geometryShader = true;
+		deviceFeatures2.features.depthClamp = true;
+		deviceFeatures2.features.shaderInt16 = true;
+		
 		const bool usingMeshShaders = isPresentInCharPtrVector(deviceExtensions, VK_NV_MESH_SHADER_EXTENSION_NAME);
-		vk::PhysicalDeviceMeshShaderFeaturesNV meshShading;
+		vk::PhysicalDeviceMeshShaderFeaturesNV meshShadingFeatures;
 		if (usingMeshShaders) {
-			meshShading.taskShader = true;
-			meshShading.meshShader = true;
-			deviceFeatures.pNext = &meshShading;
+			meshShadingFeatures.taskShader = true;
+			meshShadingFeatures.meshShader = true;
+            deviceFeatures2.setPNext(&meshShadingFeatures);
 		}
-
-		deviceCreateInfo.pNext = &deviceFeatures;
+		
+		if (shaderFloat16) {
+			deviceFeatures2.setPNext(&deviceShaderFloat16Int8Features);
+		}
+		
+		if (storage16bit) {
+			deviceShaderFloat16Int8Features.setPNext(&device16BitStorageFeatures);
+		}
+		
+		deviceCreateInfo.setPNext(&deviceFeatures2);
 
 		// Ablauf
 		// qCreateInfos erstellen --> braucht das Device
