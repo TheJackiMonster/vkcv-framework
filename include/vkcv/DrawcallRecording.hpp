@@ -19,11 +19,13 @@ namespace vkcv {
     };
 
     struct DescriptorSetUsage {
-        inline DescriptorSetUsage(uint32_t setLocation, vk::DescriptorSet vulkanHandle) noexcept
-            : setLocation(setLocation), vulkanHandle(vulkanHandle) {}
+        inline DescriptorSetUsage(uint32_t setLocation, vk::DescriptorSet vulkanHandle,
+								  const std::vector<uint32_t>& dynamicOffsets = {}) noexcept
+            : setLocation(setLocation), vulkanHandle(vulkanHandle), dynamicOffsets(dynamicOffsets) {}
 
-        const uint32_t          setLocation;
-        const vk::DescriptorSet vulkanHandle;
+        const uint32_t          	setLocation;
+        const vk::DescriptorSet 	vulkanHandle;
+        const std::vector<uint32_t> dynamicOffsets;
     };
 
     struct Mesh {

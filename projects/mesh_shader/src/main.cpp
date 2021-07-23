@@ -8,7 +8,7 @@
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/meshlet/Meshlet.hpp>
-//#include <vkcv/meshlet/Tipsify.hpp>
+#include <vkcv/meshlet/Tipsify.hpp>
 
 struct Plane {
 	glm::vec3 pointOnPlane;
@@ -138,10 +138,10 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::meshlet::Vertex> interleavedVertices = vkcv::meshlet::convertToVertices(bunny.vertexBuffer.data, bunny.numVertices, attributes[0], attributes[1]);
 	// mesh shader buffers
 	const auto& assetLoaderIndexBuffer              = mesh.vertexGroups[0].indexBuffer;
-	std::vector<uint32_t> indexBuffer32Bit    = vkcv::meshlet::assetLoaderIndicesTo32BitIndices(assetLoaderIndexBuffer.data, assetLoaderIndexBuffer.type);
-//    std::vector<uint32_t> reorderedIndexBuffer32Bit  = vkcv::meshlet::tipsifyMesh(indexBuffer32Bit, interleavedVertices.size(), 2);
+	std::vector<uint32_t> indexBuffer32Bit          = vkcv::meshlet::assetLoaderIndicesTo32BitIndices(assetLoaderIndexBuffer.data, assetLoaderIndexBuffer.type);
+    std::vector<uint32_t> reorderedIndexBuffer32Bit = vkcv::meshlet::tipsifyMesh(indexBuffer32Bit, interleavedVertices.size());
 
-    const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, indexBuffer32Bit);
+    const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, reorderedIndexBuffer32Bit);
 
 	auto meshShaderVertexBuffer = core.createBuffer<vkcv::meshlet::Vertex>(
 		vkcv::BufferType::STORAGE,
@@ -221,7 +221,7 @@ int main(int argc, const char** argv) {
 	vkcv::Buffer<ObjectMatrices> matrixBuffer = core.createBuffer<ObjectMatrices>(vkcv::BufferType::STORAGE, objectCount);
 
 	vkcv::DescriptorWrites vertexShaderDescriptorWrites;
-	vertexShaderDescriptorWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0, matrixBuffer.getHandle()) };
+	vertexShaderDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, matrixBuffer.getHandle()) };
 	core.writeDescriptorSet(vertexShaderDescriptorSet, vertexShaderDescriptorWrites);
 
 	vkcv::PipelineHandle bunnyPipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
@@ -275,14 +275,14 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorWrites meshShaderWrites;
 	meshShaderWrites.storageBufferWrites = {
-		vkcv::StorageBufferDescriptorWrite(0, meshShaderVertexBuffer.getHandle()),
-		vkcv::StorageBufferDescriptorWrite(1, meshShaderIndexBuffer.getHandle()),
-		vkcv::StorageBufferDescriptorWrite(2, meshletBuffer.getHandle()),
-		vkcv::StorageBufferDescriptorWrite(4, matrixBuffer.getHandle()),
-		vkcv::StorageBufferDescriptorWrite(5, meshletBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(0, meshShaderVertexBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(1, meshShaderIndexBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(2, meshletBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(4, matrixBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(5, meshletBuffer.getHandle()),
 	};
 	meshShaderWrites.uniformBufferWrites = {
-		vkcv::UniformBufferDescriptorWrite(3, cameraPlaneBuffer.getHandle())
+		vkcv::BufferDescriptorWrite(3, cameraPlaneBuffer.getHandle()),
 	};
 
     core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
