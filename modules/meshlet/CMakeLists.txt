@@ -12,9 +12,12 @@ set(vkcv_meshlet_include ${PROJECT_SOURCE_DIR}/include)
 set(vkcv_meshlet_sources
 		${vkcv_meshlet_include}/vkcv/meshlet/Meshlet.hpp
 		${vkcv_meshlet_source}/vkcv/meshlet/Meshlet.cpp
+
 		${vkcv_meshlet_include}/vkcv/meshlet/Tipsify.hpp
 		${vkcv_meshlet_source}/vkcv/meshlet/Tipsify.cpp
-)
+
+		${vkcv_meshlet_include}/vkcv/meshlet/Forsyth.hpp
+		${vkcv_meshlet_source}/vkcv/meshlet/Forsyth.cpp)
 
 # adding source files to the module
 add_library(vkcv_meshlet STATIC ${vkcv_meshlet_sources})

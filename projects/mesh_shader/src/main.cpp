@@ -9,6 +9,7 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/meshlet/Meshlet.hpp>
 #include <vkcv/meshlet/Tipsify.hpp>
+#include <vkcv/meshlet/Forsyth.hpp>
 
 struct Plane {
 	glm::vec3 pointOnPlane;
@@ -139,7 +140,8 @@ int main(int argc, const char** argv) {
 	// mesh shader buffers
 	const auto& assetLoaderIndexBuffer              = mesh.vertexGroups[0].indexBuffer;
 	std::vector<uint32_t> indexBuffer32Bit          = vkcv::meshlet::assetLoaderIndicesTo32BitIndices(assetLoaderIndexBuffer.data, assetLoaderIndexBuffer.type);
-    std::vector<uint32_t> reorderedIndexBuffer32Bit = vkcv::meshlet::tipsifyMesh(indexBuffer32Bit, interleavedVertices.size());
+    //std::vector<uint32_t> reorderedIndexBuffer32Bit = vkcv::meshlet::tipsifyMesh(indexBuffer32Bit, interleavedVertices.size());
+    std::vector<uint32_t> reorderedIndexBuffer32Bit = vkcv::meshlet::forsythReorder(indexBuffer32Bit, interleavedVertices.size());
 
     const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, reorderedIndexBuffer32Bit);
 
