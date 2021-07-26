@@ -100,8 +100,8 @@ vkcv::asset::TextureData render(const std::vector<Sphere> &spheres, const std::v
     const int width    = 800;
     const int height   = 600;
     const int fov      = M_PI/2.;
+    
     std::vector<glm::vec3> framebuffer(width*height);
-    std::string path = "textures";
 #pragma omp parallel for
     for (size_t j = 0; j<height; j++) {
         for (size_t i = 0; i<width; i++) {
