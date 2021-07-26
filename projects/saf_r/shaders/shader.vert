@@ -24,8 +24,8 @@ void main()	{
     vec4 position = mvp * vec4(positions[gl_VertexIndex], 1.0);
 	gl_Position = position;
 
-    texCoord.x = (position.x + 1.0) * 0.5;
-    texCoord.y = (position.y + 1.0) * 0.5;
+    texCoord.x = (positions[gl_VertexIndex].x + 1.0) * 0.5;
+    texCoord.y = (-positions[gl_VertexIndex].y + 1.0) * 0.5;
 
 	fragColor = colors[gl_VertexIndex];
 }
