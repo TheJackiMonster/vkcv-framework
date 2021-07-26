@@ -115,10 +115,13 @@ vkcv::asset::TextureData render(const std::vector<Sphere> &spheres, const std::v
 
     std::vector<uint8_t> data;
     for (size_t i = 0; i < height*width; ++i) {
+        glm::vec3 &c = framebuffer[i];
+        float max = std::max(c[0], std::max(c[1], c[2]));
+        if (max>1) c = c*(1.f/max);
         data.push_back(static_cast<uint8_t>(255.f * framebuffer[i].x));
         data.push_back(static_cast<uint8_t>(255.f * framebuffer[i].y));
         data.push_back(static_cast<uint8_t>(255.f * framebuffer[i].z));
-        data.push_back(static_cast<uint8_t>(1.f));
+        data.push_back(static_cast<uint8_t>(255.f));
     }
 
     vkcv::asset::TextureData textureData;
