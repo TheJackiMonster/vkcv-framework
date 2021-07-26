@@ -11,6 +11,7 @@
 #include <fstream>
 #include <vector>
 #include <glm/glm.hpp>
+#include <string.h>	// memcpy(3)
 
 
 struct Light {
@@ -95,7 +96,7 @@ glm::vec3 cast_ray(const glm::vec3 &orig, const glm::vec3 &dir, const std::vecto
 }
 
 
-void render(const std::vector<Sphere> &spheres, const std::vector<Light> &lights) {
+vkcv::asset::TextureData render(const std::vector<Sphere> &spheres, const std::vector<Light> &lights) {
     const int width    = 800;
     const int height   = 600;
     const int fov      = M_PI/2.;
@@ -112,23 +113,22 @@ void render(const std::vector<Sphere> &spheres, const std::vector<Light> &lights
         }
     }
 
-    std::vector<int> img;
-    std::ofstream ofs; // save the framebuffer to file
-    ofs.open(path + "./texture.ppm");
-    ofs << "P3\n" << width << " " << height << "\n255\n";
-
+    std::vector<uint8_t> data;
     for (size_t i = 0; i < height*width; ++i) {
-        glm::vec3 &c = framebuffer[i];
-        float max = std::max(c[0], std::max(c[1], c[2]));
-        if (max>1) c = c*(1.f/max);
-        ofs << static_cast<int>(255.f * framebuffer[i].x);
-        ofs << " ";
-        ofs << static_cast<int>(255.f * framebuffer[i].y);
-        ofs << " ";
-        ofs << static_cast<int>(255.f * framebuffer[i].z);
-        ofs << " ";
+        data.push_back(static_cast<uint8_t>(255.f * framebuffer[i].x));
+        data.push_back(static_cast<uint8_t>(255.f * framebuffer[i].y));
+        data.push_back(static_cast<uint8_t>(255.f * framebuffer[i].z));
+        data.push_back(static_cast<uint8_t>(1.f));
     }
-    ofs.close();
+
+    vkcv::asset::TextureData textureData;
+    textureData.width = width;
+    textureData.height = height;
+    textureData.componentCount = 4;
+
+    textureData.data.resize(textureData.width * textureData.height * textureData.componentCount);
+    memcpy(textureData.data.data(), data.data(), textureData.data.size());
+    return textureData;
 }
 
 
@@ -170,8 +170,24 @@ int main(int argc, const char** argv) {
     std::vector<vkcv::DescriptorBinding> descriptorBindings = { triangleShaderProgram.getReflectedDescriptors()[setID] };
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
-    vkcv::asset::TextureData texData = vkcv::asset::loadTexture("textures/texture.png");
-    vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, 800, 600);
+    Material      ivory(glm::vec3(0.6,  0.3, 0.1), glm::vec3(0.4, 0.4, 0.3),   50.);
+    Material red_rubber(glm::vec3(0.9,  0.1, 0.0), glm::vec3(0.3, 0.1, 0.1),   10.);
+    Material     mirror(glm::vec3(0.0, 10.0, 0.8), glm::vec3(1.0, 1.0, 1.0), 1425.);
+
+    std::vector<Sphere> spheres;
+    spheres.push_back(Sphere(glm::vec3(-3,    0,   -16), 2,      ivory));
+    spheres.push_back(Sphere(glm::vec3(-1.0, -1.5, -12), 2, mirror));
+    spheres.push_back(Sphere(glm::vec3( 1.5, -0.5, -18), 3, red_rubber));
+    spheres.push_back(Sphere(glm::vec3( 7,    5,   -18), 4,      mirror));
+
+    std::vector<Light> lights;
+    lights.push_back(Light(glm::vec3(-20, 20, 20), 1.5));
+    lights.push_back(Light(glm::vec3( 30, 50, -25), 1.8));
+    lights.push_back(Light(glm::vec3( 30, 20,  30), 1.7));
+    vkcv::asset::TextureData texData = render(spheres, lights);
+
+//    texData = vkcv::asset::loadTexture("textures/texture.png");
+    vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Unorm, texData.width, texData.height);
     texture.fill( texData.data.data());
     texture.generateMipChainImmediate();
     texture.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
@@ -246,23 +262,6 @@ int main(int argc, const char** argv) {
     cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
-
-
-    Material      ivory(glm::vec3(0.6,  0.3, 0.1), glm::vec3(0.4, 0.4, 0.3),   50.);
-    Material red_rubber(glm::vec3(0.9,  0.1, 0.0), glm::vec3(0.3, 0.1, 0.1),   10.);
-    Material     mirror(glm::vec3(0.0, 10.0, 0.8), glm::vec3(1.0, 1.0, 1.0), 1425.);
-
-    std::vector<Sphere> spheres;
-    spheres.push_back(Sphere(glm::vec3(-3,    0,   -16), 2,      ivory));
-    spheres.push_back(Sphere(glm::vec3(-1.0, -1.5, -12), 2, mirror));
-    spheres.push_back(Sphere(glm::vec3( 1.5, -0.5, -18), 3, red_rubber));
-    spheres.push_back(Sphere(glm::vec3( 7,    5,   -18), 4,      mirror));
-
-    std::vector<Light> lights;
-    lights.push_back(Light(glm::vec3(-20, 20, 20), 1.5));
-    lights.push_back(Light(glm::vec3( 30, 50, -25), 1.8));
-    lights.push_back(Light(glm::vec3( 30, 20,  30), 1.7));
-    render(spheres, lights);
 
     while (window.isWindowOpen())
     {
