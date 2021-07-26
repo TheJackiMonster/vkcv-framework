@@ -175,10 +175,10 @@ int main(int argc, const char** argv) {
     Material     mirror(glm::vec3(0.0, 10.0, 0.8), glm::vec3(1.0, 1.0, 1.0), 1425.);
 
     std::vector<Sphere> spheres;
-    spheres.push_back(Sphere(glm::vec3(-3,    0,   -16), 2,      ivory));
+    spheres.push_back(Sphere(glm::vec3(-3,    0,   -16), 2, ivory));
     spheres.push_back(Sphere(glm::vec3(-1.0, -1.5, -12), 2, mirror));
     spheres.push_back(Sphere(glm::vec3( 1.5, -0.5, -18), 3, red_rubber));
-    spheres.push_back(Sphere(glm::vec3( 7,    5,   -18), 4,      mirror));
+    spheres.push_back(Sphere(glm::vec3( 7,    5,   -18), 4, mirror));
 
     std::vector<Light> lights;
     lights.push_back(Light(glm::vec3(-20, 20, 20), 1.5));
@@ -278,9 +278,10 @@ int main(int argc, const char** argv) {
 
         cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
+        glm::mat4 proj = cameraManager.getActiveCamera().getProjection();
 
-        vkcv::PushConstants pushConstants (sizeof(glm::mat4));
-        pushConstants.appendDrawcall(mvp);
+        vkcv::PushConstants pushConstants (sizeof(glm::mat4) * 2);
+        pushConstants.appendDrawcall(std::array<glm::mat4, 2>{ mvp, proj });
 
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 

@@ -6,6 +6,7 @@ layout(location = 1) out vec2 texCoord;
 
 layout( push_constant ) uniform constants{
     mat4 mvp;
+    mat4 proj;
 };
 
 void main()	{
@@ -24,8 +25,8 @@ void main()	{
     vec4 position = mvp * vec4(positions[gl_VertexIndex], 1.0);
 	gl_Position = position;
 
-    texCoord.x = (positions[gl_VertexIndex].x + 1.0) * 0.5;
-    texCoord.y = (-positions[gl_VertexIndex].y + 1.0) * 0.5;
+    texCoord.x = ((proj * vec4(positions[gl_VertexIndex], 1.0)).x + 1.0) * 0.5;
+    texCoord.y = ((proj * vec4(positions[gl_VertexIndex], 1.0)).y + 1.0) * 0.5;
 
 	fragColor = colors[gl_VertexIndex];
 }
