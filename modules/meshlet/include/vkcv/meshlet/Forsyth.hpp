@@ -14,5 +14,5 @@ namespace vkcv::meshlet
   * https://www.martin.st/thesis/efficient_triangle_reordering.pdf
   * https://github.com/vivkin/forsyth/blob/master/forsyth.h
   */
-    std::vector<uint32_t> forsythReorder(const std::vector<uint32_t> &idxBuf, const size_t vertexCount);
+ VertexCacheReorderResult forsythReorder(const std::vector<uint32_t> &idxBuf, const size_t vertexCount);
 }

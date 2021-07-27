@@ -118,14 +118,14 @@ namespace vkcv::meshlet {
         return nextVertexIndex;
     }
 
-    tipsifyResult tipsifyMesh(
+    VertexCacheReorderResult tipsifyMesh(
             const std::vector<uint32_t> &indexBuffer32Bit,
             const int vertexCount,
             const unsigned int cacheSize) {
 
         if (indexBuffer32Bit.empty() || vertexCount <= 0) {
             vkcv_log(LogLevel::ERROR, "Invalid Input.");
-            return tipsifyResult(indexBuffer32Bit ,skippedIndices );
+            return VertexCacheReorderResult(indexBuffer32Bit ,skippedIndices);
         }
         int triangleCount = indexBuffer32Bit.size() / 3;
 
@@ -271,6 +271,6 @@ namespace vkcv::meshlet {
             }
         }
 
-        return tipsifyResult(reorderedIndexBuffer, skippedIndices);
+        return VertexCacheReorderResult(reorderedIndexBuffer, skippedIndices);
     }
 }

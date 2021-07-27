@@ -138,12 +138,12 @@ int main(int argc, const char** argv) {
 	const auto& bunny = mesh.vertexGroups[0];
 	std::vector<vkcv::meshlet::Vertex> interleavedVertices = vkcv::meshlet::convertToVertices(bunny.vertexBuffer.data, bunny.numVertices, attributes[0], attributes[1]);
 	// mesh shader buffers
-	const auto& assetLoaderIndexBuffer              = mesh.vertexGroups[0].indexBuffer;
-	std::vector<uint32_t> indexBuffer32Bit          = vkcv::meshlet::assetLoaderIndicesTo32BitIndices(assetLoaderIndexBuffer.data, assetLoaderIndexBuffer.type);
-    vkcv::meshlet::tipsifyResult tipsifyResult      = vkcv::meshlet::tipsifyMesh(indexBuffer32Bit, interleavedVertices.size());
-    //std::vector<uint32_t> reorderedIndexBuffer32Bit = vkcv::meshlet::forsythReorder(indexBuffer32Bit, interleavedVertices.size());
+	const auto& assetLoaderIndexBuffer                    = mesh.vertexGroups[0].indexBuffer;
+	std::vector<uint32_t> indexBuffer32Bit                = vkcv::meshlet::assetLoaderIndicesTo32BitIndices(assetLoaderIndexBuffer.data, assetLoaderIndexBuffer.type);
+    vkcv::meshlet::VertexCacheReorderResult tipsifyResult = vkcv::meshlet::tipsifyMesh(indexBuffer32Bit, interleavedVertices.size());
+    vkcv::meshlet::VertexCacheReorderResult forsythResult = vkcv::meshlet::forsythReorder(indexBuffer32Bit, interleavedVertices.size());
 
-    const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, tipsifyResult.indexBuffer, tipsifyResult.skippedIndices);
+    const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, forsythResult.indexBuffer, forsythResult.skippedIndices);
 
 	auto meshShaderVertexBuffer = core.createBuffer<vkcv::meshlet::Vertex>(
 		vkcv::BufferType::STORAGE,

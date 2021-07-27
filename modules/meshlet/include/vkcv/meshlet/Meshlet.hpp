@@ -23,6 +23,18 @@ namespace vkcv::meshlet {
         float       boundingSphereRadius;
     };
 
+    struct VertexCacheReorderResult {
+        /**
+         * @param indexBuffer new indexBuffer
+         * @param skippedIndices indices that have a spacial break
+         */
+        VertexCacheReorderResult(const std::vector<uint32_t> indexBuffer, const std::vector<uint32_t> skippedIndices)
+                :indexBuffer(indexBuffer), skippedIndices(skippedIndices) {}
+
+        std::vector<uint32_t> indexBuffer;
+        std::vector<uint32_t>  skippedIndices;
+    };
+
     struct MeshShaderModelData {
         std::vector<Vertex>     vertices;
         std::vector<uint32_t>   localIndices;

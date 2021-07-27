@@ -5,19 +5,6 @@
 #include <iostream>
 
 namespace vkcv::meshlet {
-    struct tipsifyResult{
-        /**
-         *
-         * @param indexBuffer new indexBuffer
-         * @param skippedIndices indices that have a spacial break
-         */
-        tipsifyResult(const std::vector<uint32_t> indexBuffer, const std::vector<uint32_t> skippedIndices)
-        :indexBuffer(indexBuffer), skippedIndices(skippedIndices) {}
-
-        std::vector<uint32_t> indexBuffer;
-        std::vector<uint32_t>  skippedIndices;
-    };
-
     /**
      * reorders the IndexBuffer, so all usages of vertices to triangle are as close as possible
      * @param indexBuffer32Bit current IndexBuffer
@@ -31,8 +18,6 @@ namespace vkcv::meshlet {
      * https://gfx.cs.princeton.edu/pubs/Sander_2007_%3ETR/tipsy.pdf
      * https://www.martin.st/thesis/efficient_triangle_reordering.pdf
      */
-    tipsifyResult tipsifyMesh(
-            const std::vector<uint32_t> &indexBuffer32Bit,
-            const int vertexCount, const unsigned int cacheSize = 20);
-
+    VertexCacheReorderResult tipsifyMesh(const std::vector<uint32_t> &indexBuffer32Bit,
+                                         const int vertexCount, const unsigned int cacheSize = 20);
 }

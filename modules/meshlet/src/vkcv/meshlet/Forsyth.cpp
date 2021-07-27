@@ -82,8 +82,10 @@ namespace vkcv::meshlet
         return score;
     }
 
-    std::vector<uint32_t> forsythReorder(const std::vector<uint32_t> &idxBuf, const size_t vertexCount)
+    VertexCacheReorderResult forsythReorder(const std::vector<uint32_t> &idxBuf, const size_t vertexCount)
     {
+        std::vector<uint32_t> skippedIndices;
+
         initScoreTables();
 
         // get the total triangle count from the index buffer
@@ -98,7 +100,7 @@ namespace vkcv::meshlet
             {
                 vkcv_log(LogLevel::ERROR, "Unsupported mesh.");
                 vkcv_log(LogLevel::ERROR, "Vertex shared by too many triangles.");
-                return {};
+                return VertexCacheReorderResult({}, {});
             }
 
             numActiveTris[index]++;
@@ -287,6 +289,9 @@ namespace vkcv::meshlet
                     if(!triangleAdded[scanPos])
                     {
                         bestTriangle = scanPos;
+
+                        skippedIndices.push_back(3 * outPos);
+
                         break;
                     }
                 }
@@ -307,6 +312,6 @@ namespace vkcv::meshlet
             }
         }
 
-        return outIndices;
+        return VertexCacheReorderResult(outIndices, skippedIndices);
     }
 }
