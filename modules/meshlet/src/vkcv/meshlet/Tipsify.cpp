@@ -3,9 +3,10 @@
 #include "vkcv/meshlet/Tipsify.hpp"
 #include <iostream>
 
-const int maxUsedVertices = 128;
-
 namespace vkcv::meshlet {
+
+    const int maxUsedVertices           = 128;
+    std::vector<uint32_t> skippedIndices;
 
     /**
      * modulo operation with maxUsedVertices
@@ -47,6 +48,7 @@ namespace vkcv::meshlet {
         while (lowestLivingVertexIndex + 1 < vertexCount) {
             lowestLivingVertexIndex++;
             if (livingTriangles[lowestLivingVertexIndex] > 0) {
+                skippedIndices.push_back(static_cast<uint32_t>(lowestLivingVertexIndex));
                 return lowestLivingVertexIndex;
             }
         }
@@ -115,14 +117,14 @@ namespace vkcv::meshlet {
         return nextVertexIndex;
     }
 
-    std::vector<uint32_t> tipsifyMesh(
+    tipsifyResult tipsifyMesh(
             const std::vector<uint32_t> &indexBuffer32Bit,
             const int vertexCount,
             const unsigned int cacheSize) {
 
         if (indexBuffer32Bit.empty() || vertexCount <= 0) {
             vkcv_log(LogLevel::ERROR, "Invalid Input.");
-            return indexBuffer32Bit;
+            return tipsifyResult(indexBuffer32Bit ,skippedIndices );
         }
         int triangleCount = indexBuffer32Bit.size() / 3;
 
@@ -264,6 +266,6 @@ namespace vkcv::meshlet {
             }
         }
 
-        return reorderedIndexBuffer;
+        return tipsifyResult(reorderedIndexBuffer, skippedIndices);
     }
 }

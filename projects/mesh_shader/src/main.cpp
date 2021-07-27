@@ -140,10 +140,10 @@ int main(int argc, const char** argv) {
 	// mesh shader buffers
 	const auto& assetLoaderIndexBuffer              = mesh.vertexGroups[0].indexBuffer;
 	std::vector<uint32_t> indexBuffer32Bit          = vkcv::meshlet::assetLoaderIndicesTo32BitIndices(assetLoaderIndexBuffer.data, assetLoaderIndexBuffer.type);
-    //std::vector<uint32_t> reorderedIndexBuffer32Bit = vkcv::meshlet::tipsifyMesh(indexBuffer32Bit, interleavedVertices.size());
-    std::vector<uint32_t> reorderedIndexBuffer32Bit = vkcv::meshlet::forsythReorder(indexBuffer32Bit, interleavedVertices.size());
+    vkcv::meshlet::tipsifyResult tipsifyResult      = vkcv::meshlet::tipsifyMesh(indexBuffer32Bit, interleavedVertices.size());
+    //std::vector<uint32_t> reorderedIndexBuffer32Bit = vkcv::meshlet::forsythReorder(indexBuffer32Bit, interleavedVertices.size());
 
-    const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, reorderedIndexBuffer32Bit);
+    const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, tipsifyResult.indexBuffer);
 
 	auto meshShaderVertexBuffer = core.createBuffer<vkcv::meshlet::Vertex>(
 		vkcv::BufferType::STORAGE,
