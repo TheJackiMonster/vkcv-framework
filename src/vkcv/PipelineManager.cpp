@@ -17,6 +17,63 @@ namespace vkcv
     	}
     }
 
+    vk::Pipeline PipelineManager::getVkPipeline(const PipelineHandle &handle) const
+    {
+        const uint64_t id = handle.getId();
+
+        if (id >= m_Pipelines.size()) {
+            return nullptr;
+        }
+
+        auto& pipeline = m_Pipelines[id];
+
+        return pipeline.m_handle;
+    }
+
+    vk::PipelineLayout PipelineManager::getVkPipelineLayout(const PipelineHandle &handle) const
+    {
+        const uint64_t id = handle.getId();
+
+        if (id >= m_Pipelines.size()) {
+            return nullptr;
+        }
+
+        auto& pipeline = m_Pipelines[id];
+
+        return pipeline.m_layout;
+    }
+
+    const PipelineConfig& PipelineManager::getPipelineConfig(const PipelineHandle &handle) const
+    {
+        const uint64_t id = handle.getId();
+
+        if (id >= m_Pipelines.size()) {
+            static PipelineConfig dummyConfig;
+            vkcv_log(LogLevel::ERROR, "Invalid handle");
+            return dummyConfig;
+        }
+
+        return m_Pipelines[id].m_config;
+    }
+
+    void PipelineManager::destroyPipelineById(uint64_t id) {
+        if (id >= m_Pipelines.size()) {
+            return;
+        }
+
+        auto& pipeline = m_Pipelines[id];
+
+        if (pipeline.m_handle) {
+            m_Device.destroy(pipeline.m_handle);
+            pipeline.m_handle = nullptr;
+        }
+
+        if (pipeline.m_layout) {
+            m_Device.destroy(pipeline.m_layout);
+            pipeline.m_layout = nullptr;
+        }
+    }
+
     // TODO: Move to Header
 	// currently assuming default 32 bit formats, no lower precision or normalized variants supported
 	vk::Format vertexFormatToVulkanFormat(const VertexAttachmentFormat format) {
@@ -358,63 +415,6 @@ namespace vkcv
         const uint64_t id = m_Pipelines.size();
         m_Pipelines.push_back({ vkPipeline, vkPipelineLayout, config });
         return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
-    }
-
-    vk::Pipeline PipelineManager::getVkPipeline(const PipelineHandle &handle) const
-    {
-		const uint64_t id = handle.getId();
-	
-		if (id >= m_Pipelines.size()) {
-			return nullptr;
-		}
-	
-		auto& pipeline = m_Pipelines[id];
-	
-		return pipeline.m_handle;
-    }
-
-    vk::PipelineLayout PipelineManager::getVkPipelineLayout(const PipelineHandle &handle) const
-    {
-    	const uint64_t id = handle.getId();
-    	
-		if (id >= m_Pipelines.size()) {
-			return nullptr;
-		}
-	
-		auto& pipeline = m_Pipelines[id];
-    	
-        return pipeline.m_layout;
-    }
-    
-    void PipelineManager::destroyPipelineById(uint64_t id) {
-    	if (id >= m_Pipelines.size()) {
-    		return;
-    	}
-    	
-    	auto& pipeline = m_Pipelines[id];
-    	
-    	if (pipeline.m_handle) {
-			m_Device.destroy(pipeline.m_handle);
-			pipeline.m_handle = nullptr;
-    	}
-	
-		if (pipeline.m_layout) {
-			m_Device.destroy(pipeline.m_layout);
-			pipeline.m_layout = nullptr;
-		}
-    }
-
-    const PipelineConfig& PipelineManager::getPipelineConfig(const PipelineHandle &handle) const
-    {
-        const uint64_t id = handle.getId();
-        
-        if (id >= m_Pipelines.size()) {
-        	static PipelineConfig dummyConfig;
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return dummyConfig;
-        }
-        
-        return m_Pipelines[id].m_config;
     }
 
     PipelineHandle PipelineManager::createComputePipeline(
