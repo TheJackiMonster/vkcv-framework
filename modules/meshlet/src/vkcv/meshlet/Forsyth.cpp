@@ -2,10 +2,15 @@
 #include <vkcv/Logger.hpp>
 #include <array>
 #include <cmath>
-#include <iostream>
 
 namespace vkcv::meshlet
 {
+    /*
+     * CACHE AND VALENCE
+     * SIZE AND SCORE CONSTANTS
+     * CHANGE AS NEEDED
+     */
+
     // set these to adjust performance and result quality
     const size_t VERTEX_CACHE_SIZE = 8;
     const size_t CACHE_FUNCTION_LENGTH = 32;
@@ -26,6 +31,7 @@ namespace vkcv::meshlet
     std::array<float, CACHE_SCORE_TABLE_SIZE> cachePositionScore = {};
     std::array<float, VALENCE_SCORE_TABLE_SIZE> valenceScore = {};
 
+    // function to populate the cache position and valence score tables
     void initScoreTables()
     {
         for(size_t i = 0; i < CACHE_SCORE_TABLE_SIZE; i++)
@@ -53,6 +59,13 @@ namespace vkcv::meshlet
         }
     }
 
+    /**
+     * Return the vertex' score, depending on its current active triangle count and cache position
+     * Add a valence boost to score, if active triangles are below VALENCE_SCORE_TABLE_SIZE
+     * @param numActiveTris the active triangles on this vertex
+     * @param cachePos the vertex' position in the cache
+     * @return vertex' score
+     */
     float findVertexScore(uint32_t numActiveTris, int32_t cachePos)
     {
         if(numActiveTris == 0)
@@ -72,15 +85,8 @@ namespace vkcv::meshlet
     std::vector<uint32_t> forsythReorder(const std::vector<uint32_t> &idxBuf, const size_t vertexCount)
     {
         initScoreTables();
-        /**
-        std::cout << "CACHE POSITION SCORES:" << std::endl;
-        for(const auto element : cachePositionScore)
-            std::cout << element << std::endl;
 
-        std::cout << "VALENCE SCORES:" << std::endl;
-        for(const auto element : valenceScore)
-            std::cout << element << std::endl;
-        **/
+        // get the total triangle count from the index buffer
         const size_t triangleCount = idxBuf.size() / 3;
 
         // per-vertex active triangle count
@@ -100,6 +106,20 @@ namespace vkcv::meshlet
 
 
         // allocate remaining vectors
+        /**
+         * offsets: contains the vertices' offset into the triangleIndices vector
+         * Offset itself is the sum of triangles required by the previous vertices
+         *
+         * lastScore: the vertices' most recent calculated score
+         *
+         * cacheTag: the vertices' most recent cache score
+         *
+         * triangleAdded: boolean flags to denote whether a triangle has been processed or not
+         *
+         * triangleScore: total score of the three vertices making up the triangle
+         *
+         * triangleIndices: indices for the triangles
+         */
         std::vector<uint32_t> offsets(vertexCount, 0);
         std::vector<float> lastScore(vertexCount, 0.0f);
         std::vector<int8_t> cacheTag(vertexCount, -1);
@@ -110,8 +130,8 @@ namespace vkcv::meshlet
         std::vector<int32_t> triangleIndices(idxBuf.size(), 0);
 
 
-        // count the triangle array offset for each vertex, initialize the rest of the data.
-        // ??????????????????????????
+        // sum the number of active triangles for all previous vertices
+        // null the number of active triangles afterwards for recalculation in second loop
         uint32_t sum = 0;
         for(size_t i = 0; i < vertexCount; i++)
         {
@@ -119,9 +139,8 @@ namespace vkcv::meshlet
             sum += numActiveTris[i];
             numActiveTris[i] = 0;
         }
-
-        // fill the vertex data structures with indices to the triangles using each vertex
-        // ??????????????????????????
+        // create the triangle indices, using the newly calculated offsets, and increment numActiveTris
+        // every vertex should be referenced by a triangle index now
         for(size_t i = 0; i < triangleCount; i++)
         {
             for(size_t j = 0; j < 3; j++)
@@ -132,8 +151,7 @@ namespace vkcv::meshlet
             }
         }
 
-        // init score for all vertices
-        // ??????????????????????????
+        // calculate and initialize the triangle score, by summing the vertices' score
         for (size_t i = 0; i < vertexCount; i++)
         {
             lastScore[i] = findVertexScore(numActiveTris[i], static_cast<int32_t>(cacheTag[i]));
@@ -144,7 +162,7 @@ namespace vkcv::meshlet
             }
         }
 
-        // find best triangle
+        // find best triangle to start reordering with
         int32_t bestTriangle = -1;
         float   bestScore    = -1.0f;
         for(size_t i = 0; i < triangleCount; i++)
@@ -160,7 +178,7 @@ namespace vkcv::meshlet
         std::vector<int32_t> outTriangles(triangleCount, 0);
         uint32_t outPos = 0;
 
-        // init cache (with -1)
+        // initialize cache (with -1)
         std::array<int32_t, VERTEX_CACHE_SIZE + 3> cache = {};
         for(auto &element : cache)
         {
@@ -169,33 +187,42 @@ namespace vkcv::meshlet
 
         uint32_t scanPos = 0;
 
+        // begin reordering routine
+        // output the currently best triangle, as long as there are triangles left to output
         while(bestTriangle >= 0)
         {
-            // mark triangle as added
+            // mark best triangle as added
             triangleAdded[bestTriangle] = true;
-            // output triangle
+            // output this triangle
             outTriangles[outPos++] = bestTriangle;
 
+            // push best triangle's vertices into the cache
             for(size_t i = 0; i < 3; i++)
             {
                 uint32_t v = idxBuf[3 * bestTriangle + i];
 
+                // get vertex' cache position, if its -1, set its position to the end
                 int8_t endPos = cacheTag[v];
                 if(endPos < 0)
                     endPos = static_cast<int8_t>(VERTEX_CACHE_SIZE + i);
 
+                // shift vertices' cache entries forward by one
                 for(int8_t j = endPos; j > i; j--)
                 {
                     cache[j] = cache[j - 1];
 
+                    // if cache slot is valid vertex,
+                    // update the vertex cache tag accordingly
                     if (cache[j] >= 0)
                         cacheTag[cache[j]]++;
                 }
 
+                // insert current vertex into its new target slot
                 cache[i] = static_cast<int32_t>(v);
                 cacheTag[v] = static_cast<int8_t>(i);
 
-
+                // find current triangle in the list of active triangles
+                // remove it by moving the last triangle into the slot the current triangle is holding.
                 for (size_t j = 0; j < numActiveTris[v]; j++)
                 {
                     if(triangleIndices[offsets[v] + j] == bestTriangle)
@@ -204,6 +231,7 @@ namespace vkcv::meshlet
                         break;
                     }
                 }
+                // shorten the list
                 numActiveTris[v]--;
             }
 
@@ -214,6 +242,7 @@ namespace vkcv::meshlet
                 if (v < 0)
                     break;
 
+                // this vertex has been pushed outside of the actual cache
                 if(i >= VERTEX_CACHE_SIZE)
                 {
                     cacheTag[v] = -1;
