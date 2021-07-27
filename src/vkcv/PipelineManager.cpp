@@ -17,6 +17,7 @@ namespace vkcv
     	}
     }
 
+    // TODO: Move to Header
 	// currently assuming default 32 bit formats, no lower precision or normalized variants supported
 	vk::Format vertexFormatToVulkanFormat(const VertexAttachmentFormat format) {
 		switch (format) {
@@ -42,6 +43,7 @@ namespace vkcv
 		}
 	}
 
+    // TODO: Move to Header
     vk::PrimitiveTopology primitiveTopologyToVulkanPrimitiveTopology(const PrimitiveTopology topology) {
         switch (topology) {
         case(PrimitiveTopology::PointList):     return vk::PrimitiveTopology::ePointList;
@@ -51,6 +53,7 @@ namespace vkcv
         }
     }
 
+    // TODO: Move to Header
     vk::CompareOp depthTestToVkCompareOp(DepthTest depthTest) {
         switch (depthTest) {
         case(DepthTest::None):          return vk::CompareOp::eAlways;
@@ -63,10 +66,13 @@ namespace vkcv
         }
     }
 
+    // TODO: The createPipeline function contains markers of all TODO's that have to be done
+
     PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, PassManager& passManager)
     {
 		const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
-    	
+
+        // TODO: Check if shader exist
         const bool existsVertexShader = config.m_ShaderProgram.existsShader(ShaderStage::VERTEX);
         const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
         if (!(existsVertexShader && existsFragmentShader))
@@ -75,13 +81,16 @@ namespace vkcv
             return PipelineHandle();
         }
 
-        // vertex shader stage
+        // TODO: Put VertexStageInfo and FragmentStageInfo Creation into one function
+
+        // TODO: vertex shader stage
         std::vector<char> vertexCode = config.m_ShaderProgram.getShader(ShaderStage::VERTEX).shaderCode;
         vk::ShaderModuleCreateInfo vertexModuleInfo({}, vertexCode.size(), reinterpret_cast<uint32_t*>(vertexCode.data()));
         vk::ShaderModule vertexModule{};
         if (m_Device.createShaderModule(&vertexModuleInfo, nullptr, &vertexModule) != vk::Result::eSuccess)
             return PipelineHandle();
 
+        // TODO: Make the name variable but with a default value
         vk::PipelineShaderStageCreateInfo pipelineVertexShaderStageInfo(
                 {},
                 vk::ShaderStageFlagBits::eVertex,
@@ -90,7 +99,7 @@ namespace vkcv
                 nullptr
         );
 
-        // fragment shader stage
+        // TODO: fragment shader stage
         std::vector<char> fragCode = config.m_ShaderProgram.getShader(ShaderStage::FRAGMENT).shaderCode;
         vk::ShaderModuleCreateInfo fragmentModuleInfo({}, fragCode.size(), reinterpret_cast<uint32_t*>(fragCode.data()));
         vk::ShaderModule fragmentModule{};
@@ -100,6 +109,7 @@ namespace vkcv
             return PipelineHandle();
         }
 
+        // TODO: Make the name variable but with a default value
         vk::PipelineShaderStageCreateInfo pipelineFragmentShaderStageInfo(
                 {},
                 vk::ShaderStageFlagBits::eFragment,
@@ -108,13 +118,13 @@ namespace vkcv
                 nullptr
         );
 
-        // vertex input state
+        // TODO: create vertex input state with the given paramters of the StageInfo Struct
 
         // Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
         std::vector<vk::VertexInputAttributeDescription>	vertexAttributeDescriptions;
 		std::vector<vk::VertexInputBindingDescription>		vertexBindingDescriptions;
 
-        const VertexLayout &layout = config.m_VertexLayout;
+        const VertexLayout &layout = config.m_VertexLayout; // TODO: Input of the create function
 
         // iterate over the layout's specified, mutually exclusive buffer bindings that make up a vertex buffer
         for (const auto &vertexBinding : layout.vertexBindings)
@@ -143,18 +153,19 @@ namespace vkcv
                 vertexAttributeDescriptions.data()
         );
 
-        // input assembly state
+        // TODO: input assembly state
         vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
             {},
             primitiveTopologyToVulkanPrimitiveTopology(config.m_PrimitiveTopology),
             false
         );
 
-        // viewport state
+        // TODO: viewport state -> Set default values
         vk::Viewport viewport(0.f, 0.f, static_cast<float>(config.m_Width), static_cast<float>(config.m_Height), 0.f, 1.f);
         vk::Rect2D scissor({ 0,0 }, { config.m_Width, config.m_Height });
         vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
 
+        // TODO: convert cullMode
         vk::CullModeFlags cullMode;
         switch (config.m_culling) {
             case CullMode::None:    cullMode = vk::CullModeFlagBits::eNone;     break;
@@ -163,7 +174,7 @@ namespace vkcv
 			default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown CullMode"); cullMode = vk::CullModeFlagBits::eNone;
         }
 
-        // rasterization state
+        // TODO: rasterization state -> Fill the config struct and handover to rasterization creation function
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
                 {},
                 config.m_EnableDepthClamping,
@@ -186,7 +197,7 @@ namespace vkcv
             pipelineRasterizationStateCreateInfo.pNext = &conservativeRasterization;
         }
 
-        // multisample state
+        // TODO: multisample state -> fill struct and handover to pipelineCreation
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
                 {},
                 msaaToVkSampleCountFlag(config.m_multisampling),
@@ -197,12 +208,13 @@ namespace vkcv
                 false
         );
 
-        // color blend state
+        // TODO: color blend state -> fill struct
         vk::ColorComponentFlags colorWriteMask(VK_COLOR_COMPONENT_R_BIT |
                                                VK_COLOR_COMPONENT_G_BIT |
                                                VK_COLOR_COMPONENT_B_BIT |
                                                VK_COLOR_COMPONENT_A_BIT);
 
+        // TODO: color blend attachment -> fill blend attacment and info struct and hand over to pipelineCreation
         // currently set to additive, if not disabled
         // BlendFactors must be set as soon as additional BlendModes are added
         vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
@@ -227,7 +239,7 @@ namespace vkcv
 		const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
 		const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, pushConstantSize);
 
-        // pipeline layout
+        // TODO: pipeline layout -> fill struct and handover to device->createPipelineLayout
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
 			{},
 			(config.m_DescriptorLayouts),
@@ -237,14 +249,15 @@ namespace vkcv
 		}
 
 
-        vk::PipelineLayout vkPipelineLayout{};
+        vk::PipelineLayout vkPipelineLayout{};  // TODO: Turn to member (?)
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
         {
-            m_Device.destroy(vertexModule);
+            m_Device.destroy(vertexModule);     // Vertex and fragments are deleted. Hence, there is no problem in recycling the program name 'main'
             m_Device.destroy(fragmentModule);
             return PipelineHandle();
         }
-	
+
+        // TODO: depth stencil -> fill config struct and hand over to create
 		const vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo(
 				vk::PipelineDepthStencilStateCreateFlags(),
 				config.m_depthTest != DepthTest::None,
@@ -258,8 +271,8 @@ namespace vkcv
 				1.0f
 		);
 	
-		const vk::PipelineDepthStencilStateCreateInfo* p_depthStencilCreateInfo = nullptr;
-		
+		const vk::PipelineDepthStencilStateCreateInfo* p_depthStencilCreateInfo = nullptr; // TODO: Don't us a pointer -> manage it like all other structs
+
 		const PassConfig& passConfig = passManager.getPassConfig(config.m_PassHandle);
 		
 		for (const auto& attachment : passConfig.attachments) {
@@ -269,6 +282,7 @@ namespace vkcv
 			}
 		}
 
+		// TODO: dynamic state creation
 		std::vector<vk::DynamicState> dynamicStates = {};
 		if(config.m_UseDynamicViewport)
         {
@@ -280,9 +294,11 @@ namespace vkcv
                                                             static_cast<uint32_t>(dynamicStates.size()),
                                                             dynamicStates.data());
 
-        // graphics pipeline create
+        // TODO: create shader stages
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = { pipelineVertexShaderStageInfo, pipelineFragmentShaderStageInfo };
+        // TODO: Only vertex, fragment and geometry shader stages are handled. Whats with the rest?
 
+        // TODO: Check of geometry shader existence, if so, create info struct and add to shader stages
 		const char *geometryShaderName = "main";	// outside of if to make sure it stays in scope
 		vk::ShaderModule geometryModule;
 		if (config.m_ShaderProgram.existsShader(ShaderStage::GEOMETRY)) {
@@ -296,6 +312,7 @@ namespace vkcv
 			shaderStages.push_back(geometryStage);
 		}
 
+		// TODO: Create graphics pipeline -> insert all config struct into info struct and handover it to the device to create the pipeline
         const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
                 {},
                 static_cast<uint32_t>(shaderStages.size()),
@@ -316,6 +333,7 @@ namespace vkcv
                 0
         );
 
+		// TODO: Finalize: Create Pipeline, hand it over to the device and delete unneeded objects -> Whats about all the confic structs? Currently they stay in the scope of the big create function.
         vk::Pipeline vkPipeline{};
         if (m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess)
         {
@@ -327,6 +345,9 @@ namespace vkcv
             m_Device.destroy();
             return PipelineHandle();
         }
+
+        // If the creation was unsuccessfully, delete everything
+        // TODO: Print a error msg to developer?
 
         m_Device.destroy(vertexModule);
         m_Device.destroy(fragmentModule);
