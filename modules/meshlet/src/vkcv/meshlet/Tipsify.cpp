@@ -6,8 +6,6 @@
 namespace vkcv::meshlet {
 
     const int maxUsedVertices           = 128;
-    size_t testTriangleIndex;
-    std::vector<uint32_t> skippedIndices;
 
     /**
      * modulo operation with maxUsedVertices
@@ -26,6 +24,8 @@ namespace vkcv::meshlet {
      * @param usedVerticeOffset
      * @param vertexCount
      * @param lowestLivingVertexIndex
+     * @param currentTriangleIndex
+     * @param skippedIndices
      * @return a VertexIndex to be used as fanningVertexIndex
      */
     int skipDeadEnd(
@@ -34,7 +34,9 @@ namespace vkcv::meshlet {
             int &usedVerticeCount,
             int &usedVerticeOffset,
             int vertexCount,
-            int &lowestLivingVertexIndex) {
+            int &lowestLivingVertexIndex,
+            int &currentTriangleIndex,
+            std::vector<uint32_t> &skippedIndices) {
 
         // returns the latest vertex used that has a living triangle
         while (mod(usedVerticeCount) != usedVerticeOffset) {
@@ -49,7 +51,8 @@ namespace vkcv::meshlet {
         while (lowestLivingVertexIndex + 1 < vertexCount) {
             lowestLivingVertexIndex++;
             if (livingTriangles[lowestLivingVertexIndex] > 0) {
-                skippedIndices.push_back(static_cast<uint32_t>(testTriangleIndex * 3));
+                // add index of the vertex to skippedIndices
+                skippedIndices.push_back(static_cast<uint32_t>(currentTriangleIndex * 3));
                 return lowestLivingVertexIndex;
             }
         }
@@ -69,6 +72,8 @@ namespace vkcv::meshlet {
      * @param usedVerticeStack
      * @param usedVerticeCount
      * @param usedVerticeOffset
+     * @param currentTriangleIndex
+     * @param skippedIndices
      * @return a VertexIndex to be used as fanningVertexIndex
      */
     int getNextVertexIndex(int vertexCount,
@@ -81,7 +86,9 @@ namespace vkcv::meshlet {
                            const std::vector<uint8_t> &livingTriangles,
                            const std::vector<uint32_t> &usedVerticeStack,
                            int &usedVerticeCount,
-                           int &usedVerticeOffset) {
+                           int &usedVerticeOffset,
+                           int &currentTriangleIndex,
+                           std::vector<uint32_t> &skippedIndices) {
         int nextVertexIndex = -1;
         int maxPriority     = -1;
         // calculates the next possibleCandidates that is recently used
@@ -113,7 +120,9 @@ namespace vkcv::meshlet {
                     usedVerticeCount,
                     usedVerticeOffset,
                     vertexCount,
-                    lowestLivingVertexIndex);
+                    lowestLivingVertexIndex,
+                    currentTriangleIndex,
+                    skippedIndices);
         }
         return nextVertexIndex;
     }
@@ -125,7 +134,7 @@ namespace vkcv::meshlet {
 
         if (indexBuffer32Bit.empty() || vertexCount <= 0) {
             vkcv_log(LogLevel::ERROR, "Invalid Input.");
-            return tipsifyResult(indexBuffer32Bit ,skippedIndices );
+            return tipsifyResult(indexBuffer32Bit , {} );
         }
         int triangleCount = indexBuffer32Bit.size() / 3;
 
@@ -199,7 +208,10 @@ namespace vkcv::meshlet {
 
         std::vector<uint32_t> possibleCandidates(3 * maxOffset);
 
-        testTriangleIndex = 0;
+        int currentTriangleIndex = 0;
+        // list of vertex indices where a deadEnd was reached
+        // useful to know where the mesh is potentially not contiguous
+        std::vector<uint32_t> skippedIndices;
 
         // run while not all indices are fanned out, -1 equals all are fanned out
         while (currentVertexIndex >= 0) {
@@ -219,7 +231,7 @@ namespace vkcv::meshlet {
                     // this allows us to iterate over the indexBuffer with the first vertex of the triangle as start
                     const uint32_t *vertexIndexOfTriangle        = &indexBuffer32Bit[3 * triangleIndex];
 
-                    testTriangleIndex++;
+                    currentTriangleIndex++;
 
                     // save emitted vertexIndexOfTriangle to reorderedTriangleIndexBuffer and set it to emitted
                     reorderedTriangleIndexBuffer[triangleOutputOffset++]    = triangleIndex;
@@ -255,7 +267,7 @@ namespace vkcv::meshlet {
             // search for the next vertexIndex to fan out
             currentVertexIndex = getNextVertexIndex(
                     vertexCount, lowestLivingVertexIndex, cacheSize, possibleCandidates, numPossibleCandidates, lastTimestampCache, currentTimeStamp,
-                    livingVertices, usedVerticeStack, usedVerticeCount, usedVerticeOffset);
+                    livingVertices, usedVerticeStack, usedVerticeCount, usedVerticeOffset, currentTriangleIndex, skippedIndices);
         }
 
         std::vector<uint32_t> reorderedIndexBuffer(3 * triangleCount);
