@@ -47,7 +47,6 @@ bool isSphereInsideFrustum(vec3 spherePos, float sphereRadius, Plane cameraPlane
     for(int i = 0; i < 6; i++){
         Plane p     = cameraPlanes[i];
         isInside    = isInside && dot(p.normal, spherePos - p.pointOnPlane) - sphereRadius < 0;
-        //break;
     }
     return isInside;
 }

@@ -2,6 +2,7 @@
 #include "vkcv/meshlet/Meshlet.hpp"
 #include <vkcv/Logger.hpp>
 #include <cassert>
+#include <iostream>
 
 namespace vkcv::meshlet {
 
@@ -35,7 +36,8 @@ std::vector<vkcv::meshlet::Vertex> convertToVertices(
 
 MeshShaderModelData createMeshShaderModelData(
         const std::vector<Vertex>&      inVertices,
-        const std::vector<uint32_t>&    inIndices) {
+        const std::vector<uint32_t>&    inIndices,
+        const std::vector<uint32_t>&    deadEndIndices) {
 
     MeshShaderModelData data;
     size_t currentIndex = 0;
@@ -44,6 +46,8 @@ MeshShaderModelData createMeshShaderModelData(
     const size_t maxIndicesPerMeshlet  = 126 * 3;
 
     bool indicesAreLeft = true;
+
+    size_t deadEndIndicesIndex = 0;
 
     while (indicesAreLeft) {
         Meshlet meshlet;
@@ -58,6 +62,14 @@ MeshShaderModelData createMeshShaderModelData(
         std::vector<uint32_t> globalIndicesOrdered;
 
         while (true) {
+
+            if (deadEndIndicesIndex < deadEndIndices.size()) {
+                const uint32_t deadEndIndex = deadEndIndices[deadEndIndicesIndex];
+                if (deadEndIndex == currentIndex) {
+                    deadEndIndicesIndex++;
+                    break;
+                }
+            }
 
             indicesAreLeft = currentIndex + 1 <= inIndices.size();
             if (!indicesAreLeft) {

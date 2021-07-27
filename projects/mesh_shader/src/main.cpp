@@ -143,7 +143,7 @@ int main(int argc, const char** argv) {
     vkcv::meshlet::tipsifyResult tipsifyResult      = vkcv::meshlet::tipsifyMesh(indexBuffer32Bit, interleavedVertices.size());
     //std::vector<uint32_t> reorderedIndexBuffer32Bit = vkcv::meshlet::forsythReorder(indexBuffer32Bit, interleavedVertices.size());
 
-    const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, tipsifyResult.indexBuffer);
+    const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, tipsifyResult.indexBuffer, tipsifyResult.skippedIndices);
 
 	auto meshShaderVertexBuffer = core.createBuffer<vkcv::meshlet::Vertex>(
 		vkcv::BufferType::STORAGE,
@@ -380,7 +380,7 @@ int main(int argc, const char** argv) {
 		
 		ImGui::Begin("Settings");
 		ImGui::Checkbox("Use mesh shader", &useMeshShader);
-		ImGui::Checkbox("Upadte frustum culling", &updateFrustumPlanes);
+		ImGui::Checkbox("Update frustum culling", &updateFrustumPlanes);
 
 		ImGui::End();
 		

@@ -37,7 +37,8 @@ namespace vkcv::meshlet {
 
     MeshShaderModelData createMeshShaderModelData(
             const std::vector<Vertex>&      inVertices,
-            const std::vector<uint32_t>&    inIndices);
+            const std::vector<uint32_t>&    inIndices,
+            const std::vector<uint32_t>& deadEndIndices = {});
 
     std::vector<uint32_t> assetLoaderIndicesTo32BitIndices(
             const std::vector<uint8_t>& indexData,

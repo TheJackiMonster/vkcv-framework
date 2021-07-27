@@ -6,6 +6,7 @@
 namespace vkcv::meshlet {
 
     const int maxUsedVertices           = 128;
+    size_t testTriangleIndex;
     std::vector<uint32_t> skippedIndices;
 
     /**
@@ -48,7 +49,7 @@ namespace vkcv::meshlet {
         while (lowestLivingVertexIndex + 1 < vertexCount) {
             lowestLivingVertexIndex++;
             if (livingTriangles[lowestLivingVertexIndex] > 0) {
-                skippedIndices.push_back(static_cast<uint32_t>(lowestLivingVertexIndex));
+                skippedIndices.push_back(static_cast<uint32_t>(testTriangleIndex * 3));
                 return lowestLivingVertexIndex;
             }
         }
@@ -198,6 +199,8 @@ namespace vkcv::meshlet {
 
         std::vector<uint32_t> possibleCandidates(3 * maxOffset);
 
+        testTriangleIndex = 0;
+
         // run while not all indices are fanned out, -1 equals all are fanned out
         while (currentVertexIndex >= 0) {
             // number of possible candidates for a fanning VertexIndex
@@ -215,6 +218,8 @@ namespace vkcv::meshlet {
                     // get the pointer to the first vertex of the triangle
                     // this allows us to iterate over the indexBuffer with the first vertex of the triangle as start
                     const uint32_t *vertexIndexOfTriangle        = &indexBuffer32Bit[3 * triangleIndex];
+
+                    testTriangleIndex++;
 
                     // save emitted vertexIndexOfTriangle to reorderedTriangleIndexBuffer and set it to emitted
                     reorderedTriangleIndexBuffer[triangleOutputOffset++]    = triangleIndex;
