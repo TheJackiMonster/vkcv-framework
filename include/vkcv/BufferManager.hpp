@@ -135,6 +135,13 @@ namespace vkcv
 		void recordBufferMemoryBarrier(
 			const BufferHandle& handle,
 			vk::CommandBuffer cmdBuffer);
+
+		void readBufferMemoryBarrier(
+		    const BufferHandle& handle,
+		    vk::CommandBuffer cmdBuffer,
+		    void* data);
+
+        void readBuffer(const BufferHandle& handle, void *data);
 	};
 	
 }

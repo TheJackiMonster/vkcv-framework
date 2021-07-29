@@ -75,8 +75,10 @@ int main(int argc, const char** argv) {
         { vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet).vulkanHandle) },
         pushConstantsCompute);
 
-    core.recordBufferMemoryBarrier(cmdStream, inputBuffer.getHandle());
+    int output[64] = { 0 };
+    core.readBufferMemoryBarrier(cmdStream, inputBuffer.getHandle(), &output);
     core.submitCommandStream(cmdStream);
 
+    std::cout << output << std::endl;
     return 0;
 }

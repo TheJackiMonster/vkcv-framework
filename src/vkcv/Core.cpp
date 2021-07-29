@@ -574,6 +574,12 @@ namespace vkcv
 			m_BufferManager->recordBufferMemoryBarrier(buffer, cmdBuffer);
 		}, nullptr);
 	}
+
+	void Core::readBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer, void *data) {
+		recordCommandsToStream(cmdStream, [buffer, this, data](const vk::CommandBuffer cmdBuffer) {
+			m_BufferManager->readBufferMemoryBarrier(buffer, cmdBuffer, data);
+		}, nullptr);
+	}
 	
 	void Core::resolveMSAAImage(CommandStreamHandle cmdStream, ImageHandle src, ImageHandle dst) {
 		recordCommandsToStream(cmdStream, [src, dst, this](const vk::CommandBuffer cmdBuffer) {
