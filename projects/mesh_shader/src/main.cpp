@@ -334,7 +334,7 @@ int main(int argc, const char** argv) {
 			uint32_t matrixIndex;
 			uint32_t meshletCount;
 		};
-		PushConstants pushConstants{ 0, meshShaderModelData.meshlets.size() };
+		PushConstants pushConstants{ 0, static_cast<uint32_t>(meshShaderModelData.meshlets.size()) };
 
 		if (updateFrustumPlanes) {
 			const CameraPlanes cameraPlanes = computeCameraPlanes(camera);
