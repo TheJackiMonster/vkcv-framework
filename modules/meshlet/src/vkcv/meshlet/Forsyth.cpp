@@ -45,14 +45,14 @@ namespace vkcv::meshlet
             {
                 const float scaler = 1.0f / static_cast<float>(CACHE_FUNCTION_LENGTH - 3);
                 score = 1.0f - (i - 3) * scaler;
-                score = std::powf(score, CACHE_DECAY_POWER);
+                score = std::pow(score, CACHE_DECAY_POWER);
             }
             cachePositionScore[i] = score;
         }
 
         for(size_t i = 0; i < VALENCE_SCORE_TABLE_SIZE; i++)
         {
-            const float valenceBoost = std::powf(i, -VALENCE_BOOST_POWER);
+            const float valenceBoost = std::pow(i, -VALENCE_BOOST_POWER);
             const float score = VALENCE_BOOST_SCALE * valenceBoost;
 
             valenceScore[i] = score;
