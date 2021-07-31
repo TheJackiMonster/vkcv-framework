@@ -180,6 +180,15 @@ namespace vkcv
 		return extensions;
 	}
 	
+	bool isPresentInCharPtrVector(const std::vector<const char*>& v, const char* term){
+		for (const auto& entry : v) {
+			if (strcmp(entry, term) != 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	Context Context::create(const char *applicationName,
 							uint32_t applicationVersion,
 							const std::vector<vk::QueueFlagBits>& queueFlags,
@@ -302,6 +311,14 @@ namespace vkcv
 		deviceFeatures2.features.depthClamp = true;
 		deviceFeatures2.features.shaderInt16 = true;
 		
+		const bool usingMeshShaders = isPresentInCharPtrVector(deviceExtensions, VK_NV_MESH_SHADER_EXTENSION_NAME);
+		vk::PhysicalDeviceMeshShaderFeaturesNV meshShadingFeatures;
+		if (usingMeshShaders) {
+			meshShadingFeatures.taskShader = true;
+			meshShadingFeatures.meshShader = true;
+            deviceFeatures2.setPNext(&meshShadingFeatures);
+		}
+		
 		if (shaderFloat16) {
 			deviceFeatures2.setPNext(&deviceShaderFloat16Int8Features);
 		}
@@ -318,6 +335,11 @@ namespace vkcv
 		// jetzt koennen wir mit dem device die queues erstellen
 		
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
+
+		if (usingMeshShaders)
+		{
+			InitMeshShaderDrawFunctions(device);
+		}
 		
 		QueueManager queueManager = QueueManager::create(
 				device,

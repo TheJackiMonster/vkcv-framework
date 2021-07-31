@@ -4,6 +4,7 @@
 #include <vk_mem_alloc.hpp>
 
 #include "QueueManager.hpp"
+#include "DrawcallRecording.hpp"
 
 namespace vkcv
 {
