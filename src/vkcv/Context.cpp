@@ -261,6 +261,33 @@ namespace vkcv
 		
 		FeatureManager featureManager (physicalDevice);
 		
+		if (featureManager.useExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME, false)) {
+			featureManager.useFeatures<vk::PhysicalDeviceShaderFloat16Int8Features>(
+					[](vk::PhysicalDeviceShaderFloat16Int8Features& features) {
+				features.setShaderFloat16(true);
+			}, false);
+		}
+		
+		if (featureManager.useExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME, false)) {
+			featureManager.useFeatures<vk::PhysicalDevice16BitStorageFeatures>(
+					[](vk::PhysicalDevice16BitStorageFeatures& features) {
+				features.setStorageBuffer16BitAccess(true);
+			}, false);
+		}
+		
+		featureManager.useFeatures([](vk::PhysicalDeviceFeatures& features) {
+			features.setFragmentStoresAndAtomics(true);
+			features.setGeometryShader(true);
+			features.setDepthClamp(true);
+			features.setShaderInt16(true);
+		});
+		
+		for (const auto& extension : deviceExtensions) {
+			featureManager.useExtension(extension);
+		}
+		
+		const auto& extensions = featureManager.getActiveExtensions();
+		
 		std::vector<vk::DeviceQueueCreateInfo> qCreateInfos;
 		
 		// create required queues
@@ -276,9 +303,9 @@ namespace vkcv
 				qCreateInfos.data(),
 				0,
 				nullptr,
-				deviceExtensions.size(),
-				deviceExtensions.data(),
-				nullptr		// Should our device use some features??? If yes: TODO
+				extensions.size(),
+				extensions.data(),
+				nullptr
 		);
 
 #ifndef NDEBUG
@@ -286,33 +313,14 @@ namespace vkcv
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
 		
-		if (featureManager.useExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME, false)) {
-			featureManager.useFeatures<vk::PhysicalDeviceShaderFloat16Int8Features>(
-			[](vk::PhysicalDeviceShaderFloat16Int8Features& features) {
-				features.setShaderFloat16(true);
-			}, false);
-		}
-		
-		if (featureManager.useExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME, false)) {
-			featureManager.useFeatures<vk::PhysicalDevice16BitStorageFeatures>(
-			[](vk::PhysicalDevice16BitStorageFeatures& features) {
-				features.setStorageBuffer16BitAccess(true);
-			}, false);
-		}
-		
-		featureManager.useFeatures([](vk::PhysicalDeviceFeatures& features) {
-			features.setFragmentStoresAndAtomics(true);
-			features.setGeometryShader(true);
-			features.setDepthClamp(true);
-			features.setShaderInt16(true);
-		});
-		
-		if (featureManager.useExtension(VK_NV_MESH_SHADER_EXTENSION_NAME, false)) {
-			featureManager.useFeatures<vk::PhysicalDeviceMeshShaderFeaturesNV>(
-			[](vk::PhysicalDeviceMeshShaderFeaturesNV& features) {
-				features.setTaskShader(true);
-				features.setMeshShader(true);
-			}, false);
+		for (const auto& extension : deviceExtensions) {
+			if (0 == strcmp(extension, VK_NV_MESH_SHADER_EXTENSION_NAME)) {
+				featureManager.useFeatures<vk::PhysicalDeviceMeshShaderFeaturesNV>(
+						[](vk::PhysicalDeviceMeshShaderFeaturesNV& features) {
+					features.setTaskShader(true);
+					features.setMeshShader(true);
+				});
+			}
 		}
 		
 		deviceCreateInfo.setPNext(&(featureManager.getFeatures()));
