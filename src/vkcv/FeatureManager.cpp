@@ -1,26 +1,32 @@
 
 #include "vkcv/FeatureManager.hpp"
 
+#include <stddef.h>
 #include <string.h>
+#include <type_traits>
 
 namespace vkcv {
-
+	
+#ifdef _MSVC_LANG
+#define typeof(var) std::decay<decltype((var))>::type
+#endif
+	
 #define vkcv_check_init_features2(type)\
 type supported;                        \
 vk::PhysicalDeviceFeatures2 query;     \
 query.setPNext(&supported);            \
 m_physicalDevice.getFeatures2(&query)
 
-#define vkcv_check_feature(attribute) {                                                                  \
-  const char *f = reinterpret_cast<const char*>(&(features));                                            \
-  const char *s = reinterpret_cast<const char*>(&(supported));                                           \
-  const vk::Bool32* fb = reinterpret_cast<const vk::Bool32*>(f + offsetof(typeof(features), attribute)); \
-  const vk::Bool32* sb = reinterpret_cast<const vk::Bool32*>(s + offsetof(typeof(features), attribute)); \
-  if ((*fb) && (!*sb)) {                                                                                 \
-    vkcv_log(((required)? LogLevel::ERROR : LogLevel::WARNING),                                          \
-    "Feature '" #attribute "' is not supported");                                                        \
-    return false;                                                                                        \
-  }                                                                                                      \
+#define vkcv_check_feature(attribute) {                                                                    \
+  const char *f = reinterpret_cast<const char*>(&(features));                                              \
+  const char *s = reinterpret_cast<const char*>(&(supported));                                             \
+  const vk::Bool32* fb = reinterpret_cast<const vk::Bool32*>(f + offsetof(typeof((features)), attribute)); \
+  const vk::Bool32* sb = reinterpret_cast<const vk::Bool32*>(s + offsetof(typeof((features)), attribute)); \
+  if ((*fb) && (!*sb)) {                                                                                   \
+    vkcv_log(((required)? LogLevel::ERROR : LogLevel::WARNING),                                            \
+    "Feature '" #attribute "' is not supported");                                                          \
+    return false;                                                                                          \
+  }                                                                                                        \
 }
 	
 	bool FeatureManager::checkSupport(const vk::PhysicalDevice16BitStorageFeatures &features, bool required) const {
