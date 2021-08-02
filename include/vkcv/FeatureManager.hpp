@@ -20,6 +20,9 @@ namespace vkcv {
 		std::vector<vk::BaseOutStructure*> m_featuresExtensions;
 		
 		[[nodiscard]]
+		bool checkSupport(const vk::PhysicalDeviceFeatures& features, bool required) const;
+		
+		[[nodiscard]]
 		bool checkSupport(const vk::PhysicalDevice16BitStorageFeatures& features, bool required) const;
 		
 		[[nodiscard]]
@@ -75,6 +78,8 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		bool checkSupport(const vk::PhysicalDeviceMeshShaderFeaturesNV& features, bool required) const;
+		
+		vk::BaseOutStructure* findFeatureStructure(vk::StructureType type) const;
 	
 	public:
 		explicit FeatureManager(vk::PhysicalDevice& physicalDevice);
@@ -102,24 +107,36 @@ namespace vkcv {
 		
 		template<typename T>
 		bool useFeatures(const std::function<void(T&)>& featureFunction, bool required = true) {
-			T* features = new T();
-			featureFunction(*features);
+			T features;
+			T* features_ptr = reinterpret_cast<T*>(findFeatureStructure(features.sType));
 			
-			if (!checkSupport(*features, required)) {
-				delete features;
+			if (features_ptr) {
+				features = *features_ptr;
+			}
+			
+			featureFunction(features);
+			
+			if (!checkSupport(features, required)) {
 				return false;
 			}
 			
+			if (features_ptr) {
+				*features_ptr = features;
+				return true;
+			}
+			
+			features_ptr = new T(features);
+			
 			if (m_featuresExtensions.empty()) {
-				m_featuresBase.setPNext(features);
+				m_featuresBase.setPNext(features_ptr);
 			} else {
 				m_featuresExtensions.back()->setPNext(
-						reinterpret_cast<vk::BaseOutStructure*>(features)
+						reinterpret_cast<vk::BaseOutStructure*>(features_ptr)
 				);
 			}
 			
 			m_featuresExtensions.push_back(
-					reinterpret_cast<vk::BaseOutStructure*>(features)
+					reinterpret_cast<vk::BaseOutStructure*>(features_ptr)
 			);
 			
 			return true;

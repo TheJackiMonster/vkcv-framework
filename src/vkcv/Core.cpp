@@ -331,8 +331,8 @@ namespace vkcv
 	}
 
 	void Core::recordDrawcallsToCmdStream(
-		const CommandStreamHandle       cmdStreamHandle,
-		const PassHandle                renderpassHandle, 
+		const CommandStreamHandle&      cmdStreamHandle,
+		const PassHandle&               renderpassHandle,
 		const PipelineHandle            pipelineHandle, 
         const PushConstants             &pushConstantData,
         const std::vector<DrawcallInfo> &drawcalls,
@@ -368,7 +368,6 @@ namespace vkcv
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
-
 			const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
 
 			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
@@ -377,16 +376,14 @@ namespace vkcv
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
 			const PipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
-			if(pipeConfig.m_UseDynamicViewport)
-			{
+			if (pipeConfig.m_UseDynamicViewport) {
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
 
-			for (int i = 0; i < drawcalls.size(); i++) {
+			for (size_t i = 0; i < drawcalls.size(); i++) {
 				recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
 			}
 
-        vk::Rect2D dynamicScissor({0, 0}, {width, height});
 			cmdBuffer.endRenderPass();
 		};
 
@@ -399,8 +396,8 @@ namespace vkcv
 	}
 
 	void Core::recordMeshShaderDrawcalls(
-		const CommandStreamHandle                           cmdStreamHandle,
-		const PassHandle                                    renderpassHandle,
+		const CommandStreamHandle&                          cmdStreamHandle,
+		const PassHandle&                                   renderpassHandle,
 		const PipelineHandle                                pipelineHandle,
 		const PushConstants&                                pushConstantData,
 		const std::vector<MeshShaderDrawcall>&              drawcalls,
@@ -436,7 +433,6 @@ namespace vkcv
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
-
 			const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
 
 			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
@@ -445,12 +441,11 @@ namespace vkcv
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
 			const PipelineConfig& pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
-			if (pipeConfig.m_UseDynamicViewport)
-			{
+			if (pipeConfig.m_UseDynamicViewport) {
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
 
-			for (int i = 0; i < drawcalls.size(); i++) {
+			for (size_t i = 0; i < drawcalls.size(); i++) {
                 const uint32_t pushConstantOffset = i * pushConstantData.getSizePerDrawcall();
                 recordMeshShaderDrawcall(
                     cmdBuffer,
@@ -458,14 +453,14 @@ namespace vkcv
                     pushConstantData,
                     pushConstantOffset,
                     drawcalls[i],
-                    0);
+                    0
+				);
 			}
 
 			cmdBuffer.endRenderPass();
 		};
 
-		auto finishFunction = [framebuffer, this]()
-		{
+		auto finishFunction = [framebuffer, this]() {
 			m_Context.m_Device.destroy(framebuffer);
 		};
 

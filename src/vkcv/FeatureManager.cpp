@@ -29,6 +29,68 @@ m_physicalDevice.getFeatures2(&query)
   }                                                                                                        \
 }
 	
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceFeatures &features, bool required) const {
+		const auto& supported = m_physicalDevice.getFeatures();
+		
+		vkcv_check_feature(alphaToOne);
+		vkcv_check_feature(depthBiasClamp);
+		vkcv_check_feature(depthBounds);
+		vkcv_check_feature(depthClamp);
+		vkcv_check_feature(drawIndirectFirstInstance);
+		vkcv_check_feature(dualSrcBlend);
+		vkcv_check_feature(fillModeNonSolid);
+		vkcv_check_feature(fragmentStoresAndAtomics);
+		vkcv_check_feature(fullDrawIndexUint32);
+		vkcv_check_feature(geometryShader);
+		vkcv_check_feature(imageCubeArray);
+		vkcv_check_feature(independentBlend);
+		vkcv_check_feature(inheritedQueries);
+		vkcv_check_feature(largePoints);
+		vkcv_check_feature(logicOp);
+		vkcv_check_feature(multiDrawIndirect);
+		vkcv_check_feature(multiViewport);
+		vkcv_check_feature(occlusionQueryPrecise);
+		vkcv_check_feature(pipelineStatisticsQuery);
+		vkcv_check_feature(robustBufferAccess);
+		vkcv_check_feature(sampleRateShading);
+		vkcv_check_feature(samplerAnisotropy);
+		vkcv_check_feature(shaderClipDistance);
+		vkcv_check_feature(shaderCullDistance);
+		vkcv_check_feature(shaderFloat64);
+		vkcv_check_feature(shaderImageGatherExtended);
+		vkcv_check_feature(shaderInt16);
+		vkcv_check_feature(shaderInt64);
+		vkcv_check_feature(shaderResourceMinLod);
+		vkcv_check_feature(shaderResourceResidency);
+		vkcv_check_feature(shaderSampledImageArrayDynamicIndexing);
+		vkcv_check_feature(shaderStorageBufferArrayDynamicIndexing);
+		vkcv_check_feature(shaderStorageImageArrayDynamicIndexing);
+		vkcv_check_feature(shaderStorageImageExtendedFormats);
+		vkcv_check_feature(shaderStorageImageMultisample);
+		vkcv_check_feature(shaderStorageImageReadWithoutFormat);
+		vkcv_check_feature(shaderStorageImageWriteWithoutFormat);
+		vkcv_check_feature(shaderTessellationAndGeometryPointSize);
+		vkcv_check_feature(shaderUniformBufferArrayDynamicIndexing);
+		vkcv_check_feature(sparseBinding);
+		vkcv_check_feature(sparseResidency2Samples);
+		vkcv_check_feature(sparseResidency4Samples);
+		vkcv_check_feature(sparseResidency8Samples);
+		vkcv_check_feature(sparseResidency16Samples);
+		vkcv_check_feature(sparseResidencyAliased);
+		vkcv_check_feature(sparseResidencyBuffer);
+		vkcv_check_feature(sparseResidencyImage2D);
+		vkcv_check_feature(sparseResidencyImage3D);
+		vkcv_check_feature(tessellationShader);
+		vkcv_check_feature(textureCompressionASTC_LDR);
+		vkcv_check_feature(textureCompressionBC);
+		vkcv_check_feature(textureCompressionETC2);
+		vkcv_check_feature(variableMultisampleRate);
+		vkcv_check_feature(vertexPipelineStoresAndAtomics);
+		vkcv_check_feature(wideLines);
+		
+		return true;
+	}
+	
 	bool FeatureManager::checkSupport(const vk::PhysicalDevice16BitStorageFeatures &features, bool required) const {
 		vkcv_check_init_features2(vk::PhysicalDevice16BitStorageFeatures);
 		
@@ -230,6 +292,16 @@ m_physicalDevice.getFeatures2(&query)
 		return true;
 	}
 	
+	vk::BaseOutStructure* FeatureManager::findFeatureStructure(vk::StructureType type) const {
+		for (auto& base : m_featuresExtensions) {
+			if (base->sType == type) {
+				return base;
+			}
+		}
+		
+		return nullptr;
+	}
+	
 	const char* strclone(const char* str) {
 		if (!str) {
 			return nullptr;
@@ -345,67 +417,15 @@ m_physicalDevice.getFeatures2(&query)
 	
 	bool FeatureManager::useFeatures(const std::function<void(vk::PhysicalDeviceFeatures &)> &featureFunction,
 									 bool required) {
-		featureFunction(m_featuresBase.features);
+		vk::PhysicalDeviceFeatures features = m_featuresBase.features;
 		
-		const auto& features = m_featuresBase.features;
-		const auto& supported = m_physicalDevice.getFeatures();
+		featureFunction(features);
 		
-		vkcv_check_feature(alphaToOne);
-		vkcv_check_feature(depthBiasClamp);
-		vkcv_check_feature(depthBounds);
-		vkcv_check_feature(depthClamp);
-		vkcv_check_feature(drawIndirectFirstInstance);
-		vkcv_check_feature(dualSrcBlend);
-		vkcv_check_feature(fillModeNonSolid);
-		vkcv_check_feature(fragmentStoresAndAtomics);
-		vkcv_check_feature(fullDrawIndexUint32);
-		vkcv_check_feature(geometryShader);
-		vkcv_check_feature(imageCubeArray);
-		vkcv_check_feature(independentBlend);
-		vkcv_check_feature(inheritedQueries);
-		vkcv_check_feature(largePoints);
-		vkcv_check_feature(logicOp);
-		vkcv_check_feature(multiDrawIndirect);
-		vkcv_check_feature(multiViewport);
-		vkcv_check_feature(occlusionQueryPrecise);
-		vkcv_check_feature(pipelineStatisticsQuery);
-		vkcv_check_feature(robustBufferAccess);
-		vkcv_check_feature(sampleRateShading);
-		vkcv_check_feature(samplerAnisotropy);
-		vkcv_check_feature(shaderClipDistance);
-		vkcv_check_feature(shaderCullDistance);
-		vkcv_check_feature(shaderFloat64);
-		vkcv_check_feature(shaderImageGatherExtended);
-		vkcv_check_feature(shaderInt16);
-		vkcv_check_feature(shaderInt64);
-		vkcv_check_feature(shaderResourceMinLod);
-		vkcv_check_feature(shaderResourceResidency);
-		vkcv_check_feature(shaderSampledImageArrayDynamicIndexing);
-		vkcv_check_feature(shaderStorageBufferArrayDynamicIndexing);
-		vkcv_check_feature(shaderStorageImageArrayDynamicIndexing);
-		vkcv_check_feature(shaderStorageImageExtendedFormats);
-		vkcv_check_feature(shaderStorageImageMultisample);
-		vkcv_check_feature(shaderStorageImageReadWithoutFormat);
-		vkcv_check_feature(shaderStorageImageWriteWithoutFormat);
-		vkcv_check_feature(shaderTessellationAndGeometryPointSize);
-		vkcv_check_feature(shaderUniformBufferArrayDynamicIndexing);
-		vkcv_check_feature(sparseBinding);
-		vkcv_check_feature(sparseResidency2Samples);
-		vkcv_check_feature(sparseResidency4Samples);
-		vkcv_check_feature(sparseResidency8Samples);
-		vkcv_check_feature(sparseResidency16Samples);
-		vkcv_check_feature(sparseResidencyAliased);
-		vkcv_check_feature(sparseResidencyBuffer);
-		vkcv_check_feature(sparseResidencyImage2D);
-		vkcv_check_feature(sparseResidencyImage3D);
-		vkcv_check_feature(tessellationShader);
-		vkcv_check_feature(textureCompressionASTC_LDR);
-		vkcv_check_feature(textureCompressionBC);
-		vkcv_check_feature(textureCompressionETC2);
-		vkcv_check_feature(variableMultisampleRate);
-		vkcv_check_feature(vertexPipelineStoresAndAtomics);
-		vkcv_check_feature(wideLines);
+		if (!checkSupport(features, required)) {
+			return false;
+		}
 		
+		m_featuresBase.features = features;
 		return true;
 	}
 	
