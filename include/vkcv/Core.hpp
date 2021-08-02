@@ -270,6 +270,12 @@ namespace vkcv
 			const uint32_t dispatchCount[3],
 			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
 			const PushConstants& pushConstants);
+		
+		void recordBeginDebugLabel(const CommandStreamHandle &cmdStream,
+								   const std::string& label,
+								   const std::array<float, 4>& color);
+		
+		void recordEndDebugLabel(const CommandStreamHandle &cmdStream);
 
 		/**
 		 * @brief end recording and present image

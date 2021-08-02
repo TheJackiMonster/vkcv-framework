@@ -506,7 +506,50 @@ namespace vkcv
 
 		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);
 	}
+	
+	void Core::recordBeginDebugLabel(const CommandStreamHandle &cmdStream,
+									 const std::string& label,
+									 const std::array<float, 4>& color) {
+#ifndef NDEBUG
+		static PFN_vkCmdBeginDebugUtilsLabelEXT beginDebugLabel = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(
+				m_Context.getDevice().getProcAddr("vkCmdBeginDebugUtilsLabelEXT")
+		);
+		
+		if (!beginDebugLabel) {
+			return;
+		}
+		
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+			const vk::DebugUtilsLabelEXT debug (
+					label.c_str(),
+					color
+			);
+			
+			beginDebugLabel(cmdBuffer, &(static_cast<const VkDebugUtilsLabelEXT&>(debug)));
+		};
 
+		recordCommandsToStream(cmdStream, submitFunction, nullptr);
+#endif
+	}
+	
+	void Core::recordEndDebugLabel(const CommandStreamHandle &cmdStream) {
+#ifndef NDEBUG
+		static PFN_vkCmdEndDebugUtilsLabelEXT endDebugLabel = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(
+				m_Context.getDevice().getProcAddr("vkCmdEndDebugUtilsLabelEXT")
+		);
+		
+		if (!endDebugLabel) {
+			return;
+		}
+		
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+			endDebugLabel(cmdBuffer);
+		};
+
+		recordCommandsToStream(cmdStream, submitFunction, nullptr);
+#endif
+	}
+	
 	void Core::endFrame() {
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;

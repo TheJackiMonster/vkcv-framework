@@ -116,6 +116,10 @@ namespace vkcv::scene {
 								size_t							 pushConstantsSizePerDrawcall,
 								const RecordMeshDrawcallFunction &record,
 								const std::vector<ImageHandle>   &renderTargets) {
+		m_core->recordBeginDebugLabel(cmdStream, "vkcv::scene::Scene", {
+			0.0f, 1.0f, 0.0f, 1.0f
+		});
+		
 		PushConstants pushConstants (pushConstantsSizePerDrawcall);
 		std::vector<DrawcallInfo> drawcalls;
 		size_t count = 0;
@@ -137,6 +141,8 @@ namespace vkcv::scene {
 				drawcalls,
 				renderTargets
 		);
+		
+		m_core->recordEndDebugLabel(cmdStream);
 	}
 	
 	Scene Scene::create(Core& core) {
