@@ -3,11 +3,17 @@
 
 struct RenderTargets {
 	vkcv::ImageHandle depthBuffer;
+	vkcv::ImageHandle colorBuffer;
 };
 
 struct GraphicPassHandles {
 	vkcv::PipelineHandle    pipeline;
 	vkcv::PassHandle        renderPass;
+};
+
+struct ComputePassHandles {
+	vkcv::PipelineHandle        pipeline;
+	vkcv::DescriptorSetHandle   descriptorSet;
 };
 
 struct MeshResources {
@@ -28,5 +34,7 @@ bool loadGraphicPass(
 
 bool loadMeshPass(vkcv::Core& core, GraphicPassHandles* outHandles);
 bool loadSkyPass (vkcv::Core& core, GraphicPassHandles* outHandles);
+
+bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, ComputePassHandles* outComputePass);
 
 RenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const uint32_t height);

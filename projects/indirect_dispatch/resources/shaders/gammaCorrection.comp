@@ -1,0 +1,23 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+layout(set=0, binding=0)        uniform texture2D   inTexture;
+layout(set=0, binding=1)        uniform sampler     textureSampler;
+layout(set=0, binding=2, rgba8) uniform image2D     outImage;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void main(){
+
+    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(outImage))))
+        return;
+   
+    ivec2   textureRes  = textureSize(sampler2D(inTexture, textureSampler), 0);
+    ivec2   coord       = ivec2(gl_GlobalInvocationID.xy);
+    vec2    uv          = vec2(coord) / textureRes;
+
+    vec3 linearColor    = texture(sampler2D(inTexture, textureSampler), uv).rgb;
+    vec3 gammaCorrected = pow(linearColor, vec3(1 / 2.2));
+
+    imageStore(outImage, coord, vec4(gammaCorrected, 0.f));
+}

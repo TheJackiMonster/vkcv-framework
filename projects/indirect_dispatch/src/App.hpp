@@ -25,5 +25,8 @@ private:
 	GraphicPassHandles m_meshPassHandles;
 	GraphicPassHandles m_skyPassHandles;
 
-	RenderTargets m_renderTargets;
+	ComputePassHandles m_gammaCorrectionPass;
+
+	RenderTargets       m_renderTargets;
+	vkcv::SamplerHandle m_linearSampler;
 };

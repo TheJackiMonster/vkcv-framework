@@ -31,11 +31,20 @@ bool App::initialize() {
 	if (!loadSkyPass(m_core, &m_skyPassHandles))
 		return false;
 
+	if (!loadComputePass(m_core, "resources/shaders/gammaCorrection.comp", &m_gammaCorrectionPass))
+		return false;
+
 	if (!loadMesh(m_core, "resources/models/sphere.gltf", & m_sphereMesh))
 		return false;
 
 	if (!loadMesh(m_core, "resources/models/cube.gltf", &m_cubeMesh))
 		return false;
+
+	m_linearSampler = m_core.createSampler(
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerMipmapMode::LINEAR,
+		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
 
 	m_renderTargets = createRenderTargets(m_core, m_windowWidth, m_windowHeight);
 
@@ -85,8 +94,11 @@ void App::run() {
 		m_cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 		const glm::mat4 viewProjection = m_cameraManager.getActiveCamera().getMVP();
 
-		const std::vector<vkcv::ImageHandle>    renderTargets   = { swapchainInput, m_renderTargets.depthBuffer };
-		const vkcv::CommandStreamHandle         cmdStream       = m_core.createCommandStream(vkcv::QueueType::Graphics);
+		const std::vector<vkcv::ImageHandle> renderTargets   = { 
+			m_renderTargets.colorBuffer, 
+			m_renderTargets.depthBuffer };
+
+		const vkcv::CommandStreamHandle cmdStream = m_core.createCommandStream(vkcv::QueueType::Graphics);
 
 		vkcv::PushConstants meshPushConstants(sizeof(glm::mat4));
 		meshPushConstants.appendDrawcall(viewProjection);
@@ -109,6 +121,32 @@ void App::run() {
 			skyPushConstants,
 			{ cubeDrawcall },
 			renderTargets);
+
+		vkcv::DescriptorWrites gammaCorrectionDescriptorWrites;
+		gammaCorrectionDescriptorWrites.sampledImageWrites = {
+			vkcv::SampledImageDescriptorWrite(0, m_renderTargets.colorBuffer) };
+		gammaCorrectionDescriptorWrites.samplerWrites = {
+			vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
+		gammaCorrectionDescriptorWrites.storageImageWrites = {
+			vkcv::StorageImageDescriptorWrite(2, swapchainInput) };
+
+		m_core.writeDescriptorSet(m_gammaCorrectionPass.descriptorSet, gammaCorrectionDescriptorWrites);
+
+		m_core.prepareImageForSampling(cmdStream, m_renderTargets.colorBuffer);
+		m_core.prepareImageForStorage (cmdStream, swapchainInput);
+
+		uint32_t gammaCorrectionDispatch[3] = {
+			(m_windowWidth  + 7) / 8,
+			(m_windowHeight + 7) / 8,
+			1
+		};
+
+		m_core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			m_gammaCorrectionPass.pipeline,
+			gammaCorrectionDispatch,
+			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_gammaCorrectionPass.descriptorSet).vulkanHandle) },
+			vkcv::PushConstants(0));
 
 		m_core.prepareSwapchainImageForPresent(cmdStream);
 		m_core.submitCommandStream(cmdStream);

@@ -5,4 +5,5 @@ namespace AppConfig{
 	const int           defaultWindowWidth  = 1280;
 	const int           defaultWindowHeight = 720;
 	const vk::Format    depthBufferFormat   = vk::Format::eD32Sfloat;
+    const vk::Format    colorBufferFormat   = vk::Format::eB10G11R11UfloatPack32;
 }

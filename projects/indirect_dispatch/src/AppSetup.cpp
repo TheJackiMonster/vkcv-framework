@@ -117,7 +117,7 @@ bool loadMeshPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 	vkcv::AttachmentDescription colorAttachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain().getFormat());
+		AppConfig::colorBufferFormat);
 
 	vkcv::AttachmentDescription depthAttachment(
 		vkcv::AttachmentOperation::STORE,
@@ -139,7 +139,7 @@ bool loadSkyPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 	vkcv::AttachmentDescription colorAttachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::LOAD,
-		core.getSwapchain().getFormat());
+		AppConfig::colorBufferFormat);
 
 	vkcv::AttachmentDescription depthAttachment(
 		vkcv::AttachmentOperation::DONT_CARE,
@@ -154,6 +154,36 @@ bool loadSkyPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 		outHandles);
 }
 
+bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, ComputePassHandles* outComputePass) {
+
+	assert(outComputePass);
+	vkcv::ShaderProgram shaderProgram;
+	vkcv::shader::GLSLCompiler compiler;
+
+	compiler.compile(vkcv::ShaderStage::COMPUTE, path,
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		shaderProgram.addShader(shaderStage, path);
+	});
+
+	if (shaderProgram.getReflectedDescriptors().size() < 1) {
+		vkcv_log(vkcv::LogLevel::ERROR, "Compute shader has no descriptor set");
+		return false;
+	}
+
+	outComputePass->descriptorSet = core.createDescriptorSet(shaderProgram.getReflectedDescriptors()[0]);
+
+	outComputePass->pipeline = core.createComputePipeline(
+		shaderProgram,
+		{ core.getDescriptorSet(outComputePass->descriptorSet).layout });
+
+	if (!outComputePass->pipeline) {
+		vkcv_log(vkcv::LogLevel::ERROR, "Compute shader pipeline creation failed");
+		return false;
+	}
+
+	return true;
+}
+
 RenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const uint32_t height) {
 
 	RenderTargets targets;
@@ -164,6 +194,15 @@ RenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const 
 		height,
 		1,
 		false).getHandle();
+
+	targets.colorBuffer = core.createImage(
+		AppConfig::colorBufferFormat,
+		width,
+		height,
+		1,
+		false,
+		false,
+		true).getHandle();
 
 	return targets;
 }
