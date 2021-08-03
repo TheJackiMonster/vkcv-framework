@@ -269,6 +269,8 @@ struct Mesh {
 	 * initialized and all information is final, except for the missing binary
 	 * data. This means that indices to vectors will remain valid even when the
 	 * shallow scene struct is filled with data by loadMesh().
+	 * Note that for URIs only (local) filesystem paths are supported, no
+	 * URLs using network protocols etc.
 	 *
 	 * @param path	must be the path to a glTF- or glb-file.
 	 * @param scene	is a reference to a Scene struct that will be filled with the
@@ -300,6 +302,8 @@ struct Mesh {
 	 */
 	int loadScene(const std::filesystem::path &path, Scene &scene);
 
+	/**
+	 * TODO document
+	 */
 	Texture loadTexture(const std::filesystem::path& path);
-
 }

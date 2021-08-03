@@ -342,7 +342,8 @@ namespace vkcv::asset {
 	}
 
 	/**
-	 * TODO document
+	 * Initializes vertex groups of a Mesh, including copying the data to
+	 * index- and vertex-buffers.
 	 */
 	static int loadVertexGroups(const fx::gltf::Mesh &objectMesh,
 								const fx::gltf::Document &sceneObjects,
