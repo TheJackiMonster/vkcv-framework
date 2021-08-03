@@ -453,7 +453,10 @@ namespace vkcv::asset {
 	}
 
 	/**
-	 * TODO document
+	 * Returns an integer with specific bits set corresponding to the
+	 * textures that appear in the given material. This mask is used in the
+	 * vkcv::asset::Material struct and can be tested via the hasTexture
+	 * method.
 	 */
 	static uint16_t generateTextureMask(fx::gltf::Material &material) {
 		uint16_t textureMask = 0;
@@ -621,6 +624,12 @@ namespace vkcv::asset {
 		return ASSET_SUCCESS;
 	}
 	
+	/**
+	 * Loads and decodes the textures data based on the textures file path.
+	 * The path member is the only one that has to be initialized before
+	 * calling this function, the others (width, height, channels, data)
+	 * are set by this function and the sampler is of no concern here.
+	 */
 	static int loadTextureData(Texture& texture) {
 		if ((texture.width > 0) && (texture.height > 0) && (texture.channels > 0) &&
 			(!texture.data.empty())) {

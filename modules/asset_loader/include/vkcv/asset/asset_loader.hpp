@@ -84,20 +84,23 @@ struct Sampler {
 };
 
 /**
- * This struct describes a loaded texture.
- * Note that textures are currently always loaded with 4 channels as RGBA, even
- * if the image has just RGB or is grayscale.
+ * This struct describes a (partially) loaded texture.
+ * The data member is not populated after calling probeScene() but only when
+ * calling loadMesh(), loadScene() or loadTexture(). Note that textures are
+ * currently always loaded with 4 channels as RGBA, even if the image has just
+ * RGB or is grayscale. In the case where the glTF-file does not provide a URI
+ * but references a buffer view for the raw data, the path member will be empty
+ * even though the rest is initialized properly.
  */
 struct Texture {
-	std::filesystem::path path; // file path of the encoded texture data
-	int sampler;				// index into the sampler array of the Scene
+	std::filesystem::path path;	// URI to the encoded texture data
+	int sampler;			// index into the sampler array of the Scene
 	
 	union { int width; int w; };
 	union { int height; int h; };
 	int channels;
 	
-	// binary data of the decoded texture
-	std::vector<char*> data;
+	std::vector<char*> data;	// binary data of the decoded texture
 };
 
 /**
