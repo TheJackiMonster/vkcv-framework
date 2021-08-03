@@ -25,10 +25,16 @@ App::App() :
 
 bool App::initialize() {
 
-	if (!loadMeshGraphicPass(m_core, &m_meshPassHandles))
+	if (!loadMeshPass(m_core, &m_meshPassHandles))
 		return false;
 
-	if (!loadSphereMesh(m_core, &m_sphereMesh))
+	if (!loadSkyPass(m_core, &m_skyPassHandles))
+		return false;
+
+	if (!loadMesh(m_core, "resources/models/sphere.gltf", & m_sphereMesh))
+		return false;
+
+	if (!loadMesh(m_core, "resources/models/cube.gltf", &m_cubeMesh))
 		return false;
 
 	m_renderTargets = createRenderTargets(m_core, m_windowWidth, m_windowHeight);
@@ -52,6 +58,7 @@ void App::run() {
 	auto                        frameStartTime = std::chrono::system_clock::now();
 	const vkcv::ImageHandle     swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	const vkcv::DrawcallInfo    sphereDrawcall(m_sphereMesh.mesh, {}, 1);
+    const vkcv::DrawcallInfo    cubeDrawcall(m_cubeMesh.mesh, {}, 1);
 
 	while (m_window.isWindowOpen()) {
 		vkcv::Window::pollEvents();
@@ -76,20 +83,31 @@ void App::run() {
 		frameStartTime      = frameEndTime;
 
 		m_cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
-		const glm::mat4 mvp = m_cameraManager.getActiveCamera().getMVP();
-
-		vkcv::PushConstants pushConstants(sizeof(glm::mat4));
-		pushConstants.appendDrawcall(mvp);
+		const glm::mat4 viewProjection = m_cameraManager.getActiveCamera().getMVP();
 
 		const std::vector<vkcv::ImageHandle>    renderTargets   = { swapchainInput, m_renderTargets.depthBuffer };
 		const vkcv::CommandStreamHandle         cmdStream       = m_core.createCommandStream(vkcv::QueueType::Graphics);
+
+		vkcv::PushConstants meshPushConstants(sizeof(glm::mat4));
+		meshPushConstants.appendDrawcall(viewProjection);
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
 			m_meshPassHandles.renderPass,
 			m_meshPassHandles.pipeline,
-			pushConstants,
+			meshPushConstants,
 			{ sphereDrawcall },
+			renderTargets);
+
+		vkcv::PushConstants skyPushConstants(sizeof(glm::mat4));
+		skyPushConstants.appendDrawcall(viewProjection);
+
+		m_core.recordDrawcallsToCmdStream(
+			cmdStream,
+			m_skyPassHandles.renderPass,
+			m_skyPassHandles.pipeline,
+			skyPushConstants,
+			{ cubeDrawcall },
 			renderTargets);
 
 		m_core.prepareSwapchainImageForPresent(cmdStream);

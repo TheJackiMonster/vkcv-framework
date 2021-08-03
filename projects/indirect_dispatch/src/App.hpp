@@ -19,8 +19,11 @@ private:
 	vkcv::Core                  m_core;
 	vkcv::camera::CameraManager m_cameraManager;
 
-	MeshResources       m_sphereMesh;
-	GraphicPassHandles  m_meshPassHandles;
+	MeshResources m_sphereMesh;
+	MeshResources m_cubeMesh;
+
+	GraphicPassHandles m_meshPassHandles;
+	GraphicPassHandles m_skyPassHandles;
 
 	RenderTargets m_renderTargets;
 };

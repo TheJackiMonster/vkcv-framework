@@ -3,128 +3,167 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
-bool loadSphereMesh(vkcv::Core& core, MeshResources* outMesh) {
-    assert(outMesh);
+bool loadMesh(vkcv::Core& core, const std::filesystem::path& path, MeshResources* outMesh) {
+	assert(outMesh);
 
-    vkcv::asset::Scene sphereScene;
-    const int meshLoadResult = vkcv::asset::loadScene("resources/models/Sphere.gltf", sphereScene);
+	vkcv::asset::Scene scene;
+	const int meshLoadResult = vkcv::asset::loadScene(path.string(), scene);
 
-    if (meshLoadResult != 1) {
-        vkcv_log(vkcv::LogLevel::ERROR, "Mesh loading failed");
-        return false;
-    }
+	if (meshLoadResult != 1) {
+		vkcv_log(vkcv::LogLevel::ERROR, "Mesh loading failed");
+		return false;
+	}
 
-    if (sphereScene.meshes.size() < 1) {
-        vkcv_log(vkcv::LogLevel::ERROR, "Sphere mesh scene does not contain any vertex groups");
-        return false;
-    }
-    assert(!sphereScene.vertexGroups.empty());
+	if (scene.meshes.size() < 1) {
+		vkcv_log(vkcv::LogLevel::ERROR, "Cube mesh scene does not contain any vertex groups");
+		return false;
+	}
+	assert(!scene.vertexGroups.empty());
 
-    auto& sphereVertexData = sphereScene.vertexGroups[0].vertexBuffer;
-    auto& sphereIndexData = sphereScene.vertexGroups[0].indexBuffer;
+	auto& vertexData = scene.vertexGroups[0].vertexBuffer;
+	auto& indexData  = scene.vertexGroups[0].indexBuffer;
 
-    vkcv::Buffer vertexBuffer = core.createBuffer<uint8_t>(
-        vkcv::BufferType::VERTEX,
-        sphereVertexData.data.size(),
-        vkcv::BufferMemoryType::DEVICE_LOCAL);
+	vkcv::Buffer vertexBuffer = core.createBuffer<uint8_t>(
+		vkcv::BufferType::VERTEX,
+		vertexData.data.size(),
+		vkcv::BufferMemoryType::DEVICE_LOCAL);
 
-    vkcv::Buffer indexBuffer = core.createBuffer<uint8_t>(
-        vkcv::BufferType::INDEX,
-        sphereIndexData.data.size(),
-        vkcv::BufferMemoryType::DEVICE_LOCAL);
+	vkcv::Buffer indexBuffer = core.createBuffer<uint8_t>(
+		vkcv::BufferType::INDEX,
+		indexData.data.size(),
+		vkcv::BufferMemoryType::DEVICE_LOCAL);
 
-    vertexBuffer.fill(sphereVertexData.data);
-    indexBuffer.fill(sphereIndexData.data);
+	vertexBuffer.fill(vertexData.data);
+	indexBuffer.fill(indexData.data);
 
-    outMesh->vertexBuffer = vertexBuffer.getHandle();
-    outMesh->indexBuffer = indexBuffer.getHandle();
+	outMesh->vertexBuffer = vertexBuffer.getHandle();
+	outMesh->indexBuffer  = indexBuffer.getHandle();
 
-    auto& attributes = sphereVertexData.attributes;
+	auto& attributes = vertexData.attributes;
 
-    std::sort(attributes.begin(), attributes.end(),
-        [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-        return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-    });
+	std::sort(attributes.begin(), attributes.end(),
+		[](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
+		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
+	});
 
-    const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-        vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-        vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()) };
+	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()) };
 
-    outMesh->mesh = vkcv::Mesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), sphereScene.vertexGroups[0].numIndices);
+	outMesh->mesh = vkcv::Mesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), scene.vertexGroups[0].numIndices);
 
-    return true;
+	return true;
 }
 
-bool loadMeshGraphicPass(vkcv::Core& core, GraphicPassHandles* outPassHandles) {
-    assert(outPassHandles);
+bool loadGraphicPass(
+	vkcv::Core& core,
+	const std::filesystem::path vertexPath,
+	const std::filesystem::path fragmentPath,
+	const vkcv::PassConfig&     passConfig,
+	GraphicPassHandles*         outPassHandles) {
 
-    const vkcv::AttachmentDescription present_color_attachment(
-        vkcv::AttachmentOperation::STORE,
-        vkcv::AttachmentOperation::CLEAR,
-        core.getSwapchain().getFormat());
+	assert(outPassHandles);
 
-    const vkcv::AttachmentDescription depth_attachment(
-        vkcv::AttachmentOperation::STORE,
-        vkcv::AttachmentOperation::CLEAR,
-        AppConfig::depthBufferFormat);
+	outPassHandles->renderPass = core.createPass(passConfig);
 
-    vkcv::PassConfig meshPassDefinition({ present_color_attachment, depth_attachment });
-    outPassHandles->renderPass = core.createPass(meshPassDefinition);
+	if (!outPassHandles->renderPass) {
+		vkcv_log(vkcv::LogLevel::ERROR, "Error: Could not create renderpass");
+		return false;
+	}
 
-    if (!outPassHandles->renderPass) {
-        vkcv_log(vkcv::LogLevel::ERROR, "Error: Could not create renderpass");
-        return false;
-    }
+	vkcv::ShaderProgram         shaderProgram;
+	vkcv::shader::GLSLCompiler  compiler;
 
-    vkcv::ShaderProgram meshProgram;
-    vkcv::shader::GLSLCompiler compiler;
+	compiler.compile(vkcv::ShaderStage::VERTEX, vertexPath,
+		[&shaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		shaderProgram.addShader(shaderStage, path);
+	});
 
-    compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
-        [&meshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-        meshProgram.addShader(shaderStage, path);
-    });
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, fragmentPath,
+		[&shaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		shaderProgram.addShader(shaderStage, path);
+	});
 
-    compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
-        [&meshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-        meshProgram.addShader(shaderStage, path);
-    });
+	const std::vector<vkcv::VertexAttachment> vertexAttachments = shaderProgram.getVertexAttachments();
+	std::vector<vkcv::VertexBinding> bindings;
+	for (size_t i = 0; i < vertexAttachments.size(); i++) {
+		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+	}
 
-    const std::vector<vkcv::VertexAttachment> vertexAttachments = meshProgram.getVertexAttachments();
-    std::vector<vkcv::VertexBinding> bindings;
-    for (size_t i = 0; i < vertexAttachments.size(); i++) {
-        bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
-    }
+	const vkcv::VertexLayout vertexLayout(bindings);
 
-    const vkcv::VertexLayout meshVertexLayout(bindings);
+	const vkcv::PipelineConfig pipelineConfig{
+		shaderProgram,
+		UINT32_MAX,
+		UINT32_MAX,
+		outPassHandles->renderPass,
+		{ vertexLayout },
+		{},
+		true };
+	outPassHandles->pipeline = core.createGraphicsPipeline(pipelineConfig);
 
-    const vkcv::PipelineConfig meshPipelineConfig{
-        meshProgram,
-        UINT32_MAX,
-        UINT32_MAX,
-        outPassHandles->renderPass,
-        { meshVertexLayout },
-        {},
-        true };
-    outPassHandles->pipeline = core.createGraphicsPipeline(meshPipelineConfig);
+	if (!outPassHandles->pipeline) {
+		vkcv_log(vkcv::LogLevel::ERROR, "Error: Could not create graphics pipeline");
+		return false;
+	}
 
-    if (!outPassHandles->pipeline) {
-        vkcv_log(vkcv::LogLevel::ERROR, "Error: Could not create graphics pipeline");
-        return false;
-    }
+	return true;
+}
 
-    return true;
+bool loadMeshPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
+
+	assert(outHandles);
+
+	vkcv::AttachmentDescription colorAttachment(
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::CLEAR,
+		core.getSwapchain().getFormat());
+
+	vkcv::AttachmentDescription depthAttachment(
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::CLEAR,
+		AppConfig::depthBufferFormat);
+
+	return loadGraphicPass(
+		core, 
+		"resources/shaders/mesh.vert", 
+		"resources/shaders/mesh.frag", 
+		vkcv::PassConfig({ colorAttachment, depthAttachment }), 
+		outHandles);
+}
+
+bool loadSkyPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
+
+	assert(outHandles);
+
+	vkcv::AttachmentDescription colorAttachment(
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::LOAD,
+		core.getSwapchain().getFormat());
+
+	vkcv::AttachmentDescription depthAttachment(
+		vkcv::AttachmentOperation::DONT_CARE,
+		vkcv::AttachmentOperation::LOAD,
+		AppConfig::depthBufferFormat);
+
+	return loadGraphicPass(
+		core,
+		"resources/shaders/sky.vert",
+		"resources/shaders/sky.frag",
+		vkcv::PassConfig({ colorAttachment, depthAttachment }),
+		outHandles);
 }
 
 RenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const uint32_t height) {
 
-    RenderTargets targets;
+	RenderTargets targets;
 
-    targets.depthBuffer = core.createImage(
-        AppConfig::depthBufferFormat,
-        width,
-        height,
-        1,
-        false).getHandle();
+	targets.depthBuffer = core.createImage(
+		AppConfig::depthBufferFormat,
+		width,
+		height,
+		1,
+		false).getHandle();
 
-    return targets;
+	return targets;
 }
