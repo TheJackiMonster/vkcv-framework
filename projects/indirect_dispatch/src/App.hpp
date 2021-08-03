@@ -10,7 +10,6 @@ public:
 	void run();
 private:
 	const char* m_applicationName;
-	bool        m_isInitialized;
 
 	int m_windowWidth;
 	int m_windowHeight;
@@ -24,6 +23,7 @@ private:
 
 	GraphicPassHandles m_meshPassHandles;
 	GraphicPassHandles m_skyPassHandles;
+	GraphicPassHandles m_prePassHandles;
 
 	ComputePassHandles m_gammaCorrectionPass;
 

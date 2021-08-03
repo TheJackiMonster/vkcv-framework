@@ -4,6 +4,7 @@
 struct RenderTargets {
 	vkcv::ImageHandle depthBuffer;
 	vkcv::ImageHandle colorBuffer;
+	vkcv::ImageHandle motionBuffer;
 };
 
 struct GraphicPassHandles {
@@ -30,10 +31,12 @@ bool loadGraphicPass(
 	const std::filesystem::path vertexPath,
 	const std::filesystem::path fragmentPath,
 	const vkcv::PassConfig&     passConfig,
+	const vkcv::DepthTest       depthTest,
 	GraphicPassHandles*         outPassHandles);
 
 bool loadMeshPass(vkcv::Core& core, GraphicPassHandles* outHandles);
 bool loadSkyPass (vkcv::Core& core, GraphicPassHandles* outHandles);
+bool loadPrePass (vkcv::Core& core, GraphicPassHandles* outHandles);
 
 bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, ComputePassHandles* outComputePass);
 

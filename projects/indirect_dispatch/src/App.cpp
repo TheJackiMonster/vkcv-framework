@@ -1,6 +1,7 @@
 #include "App.hpp"
 #include "AppConfig.hpp"
 #include <chrono>
+#include <vkcv/gui/GUI.hpp>
 
 App::App() : 
 	m_applicationName("Indirect Dispatch"),
@@ -18,10 +19,7 @@ App::App() :
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
 		{},
 		{ "VK_KHR_swapchain" })),
-	m_cameraManager(m_window){
-
-	m_isInitialized = false;
-}
+	m_cameraManager(m_window){}
 
 bool App::initialize() {
 
@@ -30,6 +28,9 @@ bool App::initialize() {
 
 	if (!loadSkyPass(m_core, &m_skyPassHandles))
 		return false;
+
+	if (!loadPrePass(m_core, &m_prePassHandles))
+		false;
 
 	if (!loadComputePass(m_core, "resources/shaders/gammaCorrection.comp", &m_gammaCorrectionPass))
 		return false;
@@ -50,24 +51,20 @@ bool App::initialize() {
 
 	const int cameraIndex = m_cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	m_cameraManager.getCamera(cameraIndex).setPosition(glm::vec3(0, 0, -3));
-
-	m_isInitialized = true;
 }
 
 void App::run() {
 
-	if (!m_isInitialized) {
-		vkcv_log(vkcv::LogLevel::WARNING, "Application is not initialized, app should be initialized explicitly to check for errors");
-		if (!initialize()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Emergency initialization failed, exiting");
-			return;
-		}
-	}
-
 	auto                        frameStartTime = std::chrono::system_clock::now();
 	const vkcv::ImageHandle     swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	const vkcv::DrawcallInfo    sphereDrawcall(m_sphereMesh.mesh, {}, 1);
-    const vkcv::DrawcallInfo    cubeDrawcall(m_cubeMesh.mesh, {}, 1);
+	const vkcv::DrawcallInfo    cubeDrawcall(m_cubeMesh.mesh, {}, 1);
+
+	vkcv::gui::GUI gui(m_core, m_window);
+
+	bool drawMotionVectors = false;
+
+	glm::mat4 previousFrameViewProjection = m_cameraManager.getActiveCamera().getMVP();
 
 	while (m_window.isWindowOpen()) {
 		vkcv::Window::pollEvents();
@@ -94,11 +91,31 @@ void App::run() {
 		m_cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 		const glm::mat4 viewProjection = m_cameraManager.getActiveCamera().getMVP();
 
+		const vkcv::CommandStreamHandle cmdStream = m_core.createCommandStream(vkcv::QueueType::Graphics);
+
+		// prepass
+		glm::mat4 prepassMatrices[2] = {
+			viewProjection,
+			previousFrameViewProjection };
+		vkcv::PushConstants prepassPushConstants(sizeof(glm::mat4)*2);
+		prepassPushConstants.appendDrawcall(prepassMatrices);
+
+		const std::vector<vkcv::ImageHandle> prepassRenderTargets = {
+			m_renderTargets.motionBuffer,
+			m_renderTargets.depthBuffer };
+
+		m_core.recordDrawcallsToCmdStream(
+			cmdStream,
+			m_prePassHandles.renderPass,
+			m_prePassHandles.pipeline,
+			prepassPushConstants,
+			{ sphereDrawcall },
+			prepassRenderTargets);
+
+		// main pass
 		const std::vector<vkcv::ImageHandle> renderTargets   = { 
 			m_renderTargets.colorBuffer, 
 			m_renderTargets.depthBuffer };
-
-		const vkcv::CommandStreamHandle cmdStream = m_core.createCommandStream(vkcv::QueueType::Graphics);
 
 		vkcv::PushConstants meshPushConstants(sizeof(glm::mat4));
 		meshPushConstants.appendDrawcall(viewProjection);
@@ -111,6 +128,7 @@ void App::run() {
 			{ sphereDrawcall },
 			renderTargets);
 
+		// sky
 		vkcv::PushConstants skyPushConstants(sizeof(glm::mat4));
 		skyPushConstants.appendDrawcall(viewProjection);
 
@@ -122,9 +140,15 @@ void App::run() {
 			{ cubeDrawcall },
 			renderTargets);
 
+		// gamma correction
+		vkcv::ImageHandle gammaCorrectionInput = m_renderTargets.colorBuffer;
+		if (drawMotionVectors) {
+			gammaCorrectionInput = m_renderTargets.motionBuffer;
+		}
+
 		vkcv::DescriptorWrites gammaCorrectionDescriptorWrites;
 		gammaCorrectionDescriptorWrites.sampledImageWrites = {
-			vkcv::SampledImageDescriptorWrite(0, m_renderTargets.colorBuffer) };
+			vkcv::SampledImageDescriptorWrite(0, gammaCorrectionInput) };
 		gammaCorrectionDescriptorWrites.samplerWrites = {
 			vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
 		gammaCorrectionDescriptorWrites.storageImageWrites = {
@@ -132,7 +156,7 @@ void App::run() {
 
 		m_core.writeDescriptorSet(m_gammaCorrectionPass.descriptorSet, gammaCorrectionDescriptorWrites);
 
-		m_core.prepareImageForSampling(cmdStream, m_renderTargets.colorBuffer);
+		m_core.prepareImageForSampling(cmdStream, gammaCorrectionInput);
 		m_core.prepareImageForStorage (cmdStream, swapchainInput);
 
 		uint32_t gammaCorrectionDispatch[3] = {
@@ -149,6 +173,15 @@ void App::run() {
 
 		m_core.prepareSwapchainImageForPresent(cmdStream);
 		m_core.submitCommandStream(cmdStream);
+
+		gui.beginGUI();
+		ImGui::Begin("Settings");
+		ImGui::Checkbox("View motion vectors", &drawMotionVectors);
+		ImGui::End();
+		gui.endGUI();
+
 		m_core.endFrame();
+
+		previousFrameViewProjection = viewProjection;
 	}
 }

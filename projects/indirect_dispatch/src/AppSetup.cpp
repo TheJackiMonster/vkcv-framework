@@ -60,6 +60,7 @@ bool loadGraphicPass(
 	const std::filesystem::path vertexPath,
 	const std::filesystem::path fragmentPath,
 	const vkcv::PassConfig&     passConfig,
+	const vkcv::DepthTest       depthTest,
 	GraphicPassHandles*         outPassHandles) {
 
 	assert(outPassHandles);
@@ -92,7 +93,7 @@ bool loadGraphicPass(
 
 	const vkcv::VertexLayout vertexLayout(bindings);
 
-	const vkcv::PipelineConfig pipelineConfig{
+	vkcv::PipelineConfig pipelineConfig{
 		shaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
@@ -100,7 +101,8 @@ bool loadGraphicPass(
 		{ vertexLayout },
 		{},
 		true };
-	outPassHandles->pipeline = core.createGraphicsPipeline(pipelineConfig);
+	pipelineConfig.m_depthTest  = depthTest;
+	outPassHandles->pipeline    = core.createGraphicsPipeline(pipelineConfig);
 
 	if (!outPassHandles->pipeline) {
 		vkcv_log(vkcv::LogLevel::ERROR, "Error: Could not create graphics pipeline");
@@ -116,19 +118,20 @@ bool loadMeshPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 
 	vkcv::AttachmentDescription colorAttachment(
 		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
+		vkcv::AttachmentOperation::DONT_CARE,
 		AppConfig::colorBufferFormat);
 
 	vkcv::AttachmentDescription depthAttachment(
 		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
+		vkcv::AttachmentOperation::LOAD,
 		AppConfig::depthBufferFormat);
 
 	return loadGraphicPass(
-		core, 
-		"resources/shaders/mesh.vert", 
-		"resources/shaders/mesh.frag", 
-		vkcv::PassConfig({ colorAttachment, depthAttachment }), 
+		core,
+		"resources/shaders/mesh.vert",
+		"resources/shaders/mesh.frag",
+		vkcv::PassConfig({ colorAttachment, depthAttachment }),
+		vkcv::DepthTest::Equal,
 		outHandles);
 }
 
@@ -142,7 +145,7 @@ bool loadSkyPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 		AppConfig::colorBufferFormat);
 
 	vkcv::AttachmentDescription depthAttachment(
-		vkcv::AttachmentOperation::DONT_CARE,
+		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::LOAD,
 		AppConfig::depthBufferFormat);
 
@@ -151,6 +154,29 @@ bool loadSkyPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 		"resources/shaders/sky.vert",
 		"resources/shaders/sky.frag",
 		vkcv::PassConfig({ colorAttachment, depthAttachment }),
+		vkcv::DepthTest::Equal,
+		outHandles);
+}
+
+bool loadPrePass(vkcv::Core& core, GraphicPassHandles* outHandles) {
+	assert(outHandles);
+
+	vkcv::AttachmentDescription motionAttachment(
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::CLEAR,
+		AppConfig::motionBufferFormat);
+
+	vkcv::AttachmentDescription depthAttachment(
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::CLEAR,
+		AppConfig::depthBufferFormat);
+
+	return loadGraphicPass(
+		core,
+		"resources/shaders/prepass.vert",
+		"resources/shaders/prepass.frag",
+		vkcv::PassConfig({ motionAttachment, depthAttachment }),
+		vkcv::DepthTest::LessEqual,
 		outHandles);
 }
 
@@ -197,6 +223,15 @@ RenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const 
 
 	targets.colorBuffer = core.createImage(
 		AppConfig::colorBufferFormat,
+		width,
+		height,
+		1,
+		false,
+		false,
+		true).getHandle();
+
+	targets.motionBuffer = core.createImage(
+		AppConfig::motionBufferFormat,
 		width,
 		height,
 		1,
