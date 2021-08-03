@@ -15,7 +15,7 @@ int main(int argc, const char **argv) {
 
     uint32_t windowWidth = 800;
     uint32_t windowHeight = 600;
-    vkcv::Window window = vkcv::Window::create(
+    vkcv::Window window (
             applicationName,
             windowWidth,
             windowHeight,
@@ -235,7 +235,7 @@ int main(int argc, const char **argv) {
 
     std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
     std::default_random_engine rdmEngine;
-    while (window.isWindowOpen()) {
+    while (window.isOpen()) {
         vkcv::Window::pollEvents();
 
         uint32_t swapchainWidth, swapchainHeight;

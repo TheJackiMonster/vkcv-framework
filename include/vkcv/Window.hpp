@@ -7,6 +7,7 @@
 
 #define NOMINMAX
 #include <algorithm>
+#include <string>
 
 #include "Event.hpp"
 
@@ -15,88 +16,49 @@ struct GLFWwindow;
 namespace vkcv {
 
     class Window {
-	protected:
+	private:
+    	std::string m_title;
+    	bool m_resizable;
 		GLFWwindow *m_window;
-	
-		/**
-         *
-         * @param GLFWwindow of the class
-         */
-		explicit Window(GLFWwindow *window);
 		
-    private:
-        /**
-         * mouse callback for moving the mouse on the screen
-         * @param[in] window The window that received the event.
-         * @param[in] xpos The new cursor x-coordinate, relative to the left edge of the content area.
-         * @param[in] ypos The new cursor y-coordinate, relative to the top edge of the content area.
-         */
-        static void onMouseMoveEvent(GLFWwindow *window, double x, double y);
-
-        /**
-         * mouseButton callback for mouse buttons
-         * @param[in] button The [mouse button](@ref buttons) that was pressed or released.
-         * @param[in] action One of `GLFW_PRESS` or `GLFW_RELEASE`.  Future releases may add more actions.
-         * @param[in] mods Bit field describing which [modifier keys](@ref mods) were held down.
-         */
-        static void onMouseButtonEvent(GLFWwindow *callbackWindow, int button, int action, int mods);
-
-        /**
-         * @brief A callback function for handling mouse scrolling events.
-         * @param[in] callbackWindow The window that received the event.
-         * @param[in] xoffset The extent of horizontal scrolling.
-         * @param[in] yoffset The extent of vertical scrolling.
-         */
-        static void onMouseScrollEvent(GLFWwindow *callbackWindow, double xoffset, double yoffset);
-
-        /**
-         * resize callback for the resize option of the window
-         * @param[in] window The window that was resized.
-         * @param[in] width The new width, in screen coordinates, of the window.
-         * @param[in] height The new height, in screen coordinates, of the window.
-         */
-        static void onResize(GLFWwindow *callbackWindow, int width, int height);
-
-        /**
-         * key callback for the pressed key
-         * @param[in] window The window that received the event.
-         * @param[in] key The [keyboard key](@ref keys) that was pressed or released.
-         * @param[in] scancode The system-specific scancode of the key.
-         * @param[in] action `GLFW_PRESS`, `GLFW_RELEASE` or `GLFW_REPEAT`.
-         * @param[in] mods Bit field describing which [modifier keys](@ref mods) were held down.
-         */
-        static void onKeyEvent(GLFWwindow *callbackWindow, int key, int scancode, int action, int mods);
-	
-        /**
-         * char callback for any typed character
-         * @param[in] window The window that received the event
-         * @param[in] c The character that got typed
-         */
-		static void onCharEvent(GLFWwindow *callbackWindow, unsigned int c);
-
-        /**
-         * @brief A callback function for gamepad input events.
-         * @param gamepadIndex The gamepad index.
-         */
-        static void onGamepadEvent(int gamepadIndex);
-
     public:
-        /**
-         * creates a GLFWwindow with the parameters in the function
-         * @param[in] windowTitle of the window
-         * @param[in] width of the window (optional)
-         * @param[in] height of the window (optional)
+    	/**
+    	 * creates an uninitialized #Window
+    	 */
+    	Window();
+    	
+    	/**
+    	 * creates a #Window with the parameters
+    	 *
+         * @param[in] title title of the window
+         * @param[in] width width of the window (optional)
+         * @param[in] height height of the window (optional)
          * @param[in] resizable resize ability of the window (optional)
-         * @return Window class
          */
-        static Window create( const char *windowTitle, int width = -1, int height = -1, bool resizable = false);
+    	Window(const char* title, int width = -1, int height = -1, bool resizable = false);
+    	
+    	/**
+		* Copy-constructor of #Window
+		*
+		* @param other Other instance of #Window
+		*/
+    	Window(const Window& other);
+    	
+    	/**
+		* Copy-operator of #Window
+		*
+		* @param other Other instance of #Window
+		* @return Reference to itself
+		*/
+    	Window &operator=(const Window &other);
+        
         /**
          * checks if the window is still open, or the close event was called
          * This function should be changed/removed later on
          * @return bool if the window is still open
          */
         [[nodiscard]]
-        bool isWindowOpen() const;
+        bool isOpen() const;
 
         /**
          * polls all events on the GLFWwindow
@@ -120,26 +82,16 @@ namespace vkcv {
          */
         [[nodiscard]]
         GLFWwindow *getWindow() const;
-
+        
         /**
-         * Copy-operator of #Window is deleted!
-         *
-         * @param other Other instance of #Window
-         * @return Reference to itself
+         * gets the window title
+         * @return string with window title
          */
-        Window &operator=(const Window &other) = delete;
-
-        /**
-         * Move-operator of #Window uses default behavior!
-         *
-         * @param other Other instance of #Window
-         * @return Reference to itself
-         */
-        Window &operator=(Window &&other) = default;
+        [[nodiscard]]
+        const std::string& getTitle() const;
 
         /**
          * gets the window width
-         * @param window glfwWindow
          * @return int with window width
          */
         [[nodiscard]]
@@ -147,11 +99,17 @@ namespace vkcv {
 
         /**
          * gets the window height
-         * @param window glfwWindow
          * @return int with window height
          */
         [[nodiscard]]
         int getHeight() const;
+        
+        /**
+         * is the window resizable
+         * @return bool with window resizable
+         */
+        [[nodiscard]]
+        bool isResizable() const;
 
         /**
          * Destructor of #Window, terminates GLFW

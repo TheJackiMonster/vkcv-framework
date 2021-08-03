@@ -22,7 +22,7 @@ int main(int argc, const char** argv) {
 	const vkcv::Multisampling   msaa        = vkcv::Multisampling::MSAA4X;
 	const bool                  usingMsaa   = msaa != vkcv::Multisampling::None;
 	
-	vkcv::Window window = vkcv::Window::create(
+	vkcv::Window window (
 		applicationName,
 		windowWidth,
 		windowHeight,
@@ -583,7 +583,7 @@ int main(int argc, const char** argv) {
 
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
-	while (window.isWindowOpen()) {
+	while (window.isOpen()) {
 		vkcv::Window::pollEvents();
 
 		uint32_t swapchainWidth, swapchainHeight;

@@ -12,7 +12,7 @@ int main(int argc, const char** argv) {
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
 
-	vkcv::Window window = vkcv::Window::create(
+	vkcv::Window window (
 		applicationName,
 		windowWidth,
 		windowHeight,
@@ -172,7 +172,7 @@ int main(int argc, const char** argv) {
 
     auto start = std::chrono::system_clock::now();
     
-	while (window.isWindowOpen()) {
+	while (window.isOpen()) {
         vkcv::Window::pollEvents();
 		
 		if(window.getHeight() == 0 || window.getWidth() == 0)

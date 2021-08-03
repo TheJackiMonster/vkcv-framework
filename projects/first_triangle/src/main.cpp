@@ -10,11 +10,10 @@ int main(int argc, const char** argv) {
 
 	const int windowWidth = 800;
 	const int windowHeight = 600;
-	vkcv::Window window = vkcv::Window::create(
+	vkcv::Window window (
 		applicationName,
 		windowWidth,
-		windowHeight,
-		false
+		windowHeight
 	);
 
 	vkcv::Core core = vkcv::Core::create(
@@ -93,7 +92,7 @@ int main(int argc, const char** argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
 
-	while (window.isWindowOpen())
+	while (window.isOpen())
 	{
         vkcv::Window::pollEvents();
 

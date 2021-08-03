@@ -80,11 +80,10 @@ int main(int argc, const char** argv) {
 
 	const int windowWidth = 1280;
 	const int windowHeight = 720;
-	vkcv::Window window = vkcv::Window::create(
+	vkcv::Window window (
 		applicationName,
 		windowWidth,
-		windowHeight,
-		false
+		windowHeight
 	);
 
 	vkcv::Core core = vkcv::Core::create(
@@ -307,7 +306,7 @@ int main(int argc, const char** argv) {
 	bool useMeshShader          = true;
 	bool updateFrustumPlanes    = true;
 
-	while (window.isWindowOpen())
+	while (window.isOpen())
 	{
 		vkcv::Window::pollEvents();
 
