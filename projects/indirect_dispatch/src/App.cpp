@@ -136,10 +136,9 @@ void App::run() {
 		m_core.prepareImageForStorage (cmdStream, swapchainInput);
 
 		uint32_t gammaCorrectionDispatch[3] = {
-			(m_windowWidth  + 7) / 8,
-			(m_windowHeight + 7) / 8,
-			1
-		};
+			static_cast<uint32_t>((m_windowWidth  + 7) / 8),
+			static_cast<uint32_t>((m_windowHeight + 7) / 8),
+			static_cast<uint32_t>(1) };
 
 		m_core.recordComputeDispatchToCmdStream(
 			cmdStream,
