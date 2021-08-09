@@ -294,6 +294,7 @@ namespace vkcv
 		deviceFeatures2.features.shaderInt16 = true;
 
 		// TODO: proper feature management
+		// TODO: check whether these features are ACTUALLY SUPPORTED
 		// -------------- HARD CODED LIST OF DEVICE FEATURES THAT ARE CHECKED AGAINST AND IF USED, ENABLED ------------
 
 		const bool usingMeshShaders = checkSupport(deviceExtensions, { VK_NV_MESH_SHADER_EXTENSION_NAME });
@@ -317,7 +318,17 @@ namespace vkcv
 		    device16BitStorageFeatures.storageBuffer16BitAccess = true;
 			deviceShaderFloat16Int8Features.setPNext(&device16BitStorageFeatures);
 		}
-		
+
+		const bool descriptorIndexing = checkSupport(deviceExtensions, { VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME });
+        vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures;
+        if (descriptorIndexing) {
+            // NOTE: what about
+            // shaderSampledImageArrayNonUniformIndexing ?
+            descriptorIndexingFeatures.descriptorBindingPartiallyBound = true;
+            descriptorIndexingFeatures.runtimeDescriptorArray = true;
+            deviceFeatures2.setPNext(&descriptorIndexingFeatures);
+        }
+
 		deviceCreateInfo.setPNext(&deviceFeatures2);
 
 		// Ablauf
