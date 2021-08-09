@@ -145,11 +145,10 @@ namespace vkcv
 	}
 	
 	/**
-	 * @brief With the help of the reference "supported" all elements in "check" checked,
-	 * if they are supported by the physical device.
-	 * @param supported The reference that can be used to check "check"
-	 * @param check The elements to be checked
-	 * @return True, if all elements in "check" are supported
+	 * @brief Check whether all string occurrences in "check" are contained in "supported"
+	 * @param supported The const vector const char* reference used to compare entries in "check"
+	 * @param check The const vector const char* reference elements to be checked by "supported"
+	 * @return True, if all elements in "check" are supported (contained in supported)
 	*/
 	bool checkSupport(const std::vector<const char*>& supported, const std::vector<const char*>& check)
 	{
@@ -166,7 +165,7 @@ namespace vkcv
 		}
 		return true;
 	}
-	
+
 	
 	std::vector<const char*> getRequiredExtensions() {
 		uint32_t glfwExtensionCount = 0;
@@ -180,14 +179,7 @@ namespace vkcv
 		return extensions;
 	}
 	
-	bool isPresentInCharPtrVector(const std::vector<const char*>& v, const char* term){
-		for (const auto& entry : v) {
-			if (strcmp(entry, term) != 0) {
-				return true;
-			}
-		}
-		return false;
-	}
+
 	
 	Context Context::create(const char *applicationName,
 							uint32_t applicationVersion,
@@ -216,7 +208,7 @@ namespace vkcv
 		}
 #endif
 		
-		// check for extension support
+		// check for instance extension support
 		std::vector<vk::ExtensionProperties> instanceExtensionProperties = vk::enumerateInstanceExtensionProperties();
 		
 		std::vector<const char*> supportedExtensions;
@@ -257,7 +249,7 @@ namespace vkcv
 #endif
 		
 		vk::Instance instance = vk::createInstance(instanceCreateInfo);
-		
+
 		std::vector<vk::PhysicalDevice> physicalDevices = instance.enumeratePhysicalDevices();
 		vk::PhysicalDevice physicalDevice = pickPhysicalDevice(instance);
 		
@@ -270,10 +262,9 @@ namespace vkcv
 		if (!checkSupport(supportedExtensions, deviceExtensions)) {
 			throw std::runtime_error("The requested device extensions are not supported by the physical device!");
 		}
-		
+
+		// create required queue structs
 		std::vector<vk::DeviceQueueCreateInfo> qCreateInfos;
-		
-		// create required queues
 		std::vector<float> qPriorities;
 		qPriorities.resize(queueFlags.size(), 1.f);
 		std::vector<std::pair<int, int>> queuePairsGraphics, queuePairsCompute, queuePairsTransfer;
@@ -295,35 +286,35 @@ namespace vkcv
 		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
-		const bool shaderFloat16 = checkSupport(deviceExtensions, { "VK_KHR_shader_float16_int8" });
-		const bool storage16bit  = checkSupport(deviceExtensions, { "VK_KHR_16bit_storage" });
-		
-		// FIXME: check if device feature is supported
-		vk::PhysicalDeviceShaderFloat16Int8Features deviceShaderFloat16Int8Features;
-		deviceShaderFloat16Int8Features.shaderFloat16 = shaderFloat16;
-		
-		vk::PhysicalDevice16BitStorageFeatures device16BitStorageFeatures;
-		device16BitStorageFeatures.storageBuffer16BitAccess = storage16bit;
-		
+
 		vk::PhysicalDeviceFeatures2 deviceFeatures2;
 		deviceFeatures2.features.fragmentStoresAndAtomics = true;
 		deviceFeatures2.features.geometryShader = true;
 		deviceFeatures2.features.depthClamp = true;
 		deviceFeatures2.features.shaderInt16 = true;
-		
-		const bool usingMeshShaders = isPresentInCharPtrVector(deviceExtensions, VK_NV_MESH_SHADER_EXTENSION_NAME);
+
+		// TODO: proper feature management
+		// -------------- HARD CODED LIST OF DEVICE FEATURES THAT ARE CHECKED AGAINST AND IF USED, ENABLED ------------
+
+		const bool usingMeshShaders = checkSupport(deviceExtensions, { VK_NV_MESH_SHADER_EXTENSION_NAME });
 		vk::PhysicalDeviceMeshShaderFeaturesNV meshShadingFeatures;
 		if (usingMeshShaders) {
 			meshShadingFeatures.taskShader = true;
 			meshShadingFeatures.meshShader = true;
             deviceFeatures2.setPNext(&meshShadingFeatures);
 		}
-		
+
+		const bool shaderFloat16 = checkSupport(deviceExtensions, { "VK_KHR_shader_float16_int8" });
+		vk::PhysicalDeviceShaderFloat16Int8Features deviceShaderFloat16Int8Features;
 		if (shaderFloat16) {
+		    deviceShaderFloat16Int8Features.shaderFloat16 = true;
 			deviceFeatures2.setPNext(&deviceShaderFloat16Int8Features);
 		}
-		
+
+		const bool storage16bit  = checkSupport(deviceExtensions, { "VK_KHR_16bit_storage" });
+		vk::PhysicalDevice16BitStorageFeatures device16BitStorageFeatures;
 		if (storage16bit) {
+		    device16BitStorageFeatures.storageBuffer16BitAccess = true;
 			deviceShaderFloat16Int8Features.setPNext(&device16BitStorageFeatures);
 		}
 		
