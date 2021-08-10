@@ -11,15 +11,15 @@ namespace vkcv
     class PipelineManager
     {
     private:
-    	struct Pipeline {
-			vk::Pipeline m_handle;
-			vk::PipelineLayout m_layout;
-			PipelineConfig m_config;
-    	};
-    	
+        struct Pipeline {
+            vk::Pipeline m_handle;
+            vk::PipelineLayout m_layout;
+            PipelineConfig m_config;
+        };
+
         vk::Device m_Device;
         std::vector<Pipeline> m_Pipelines;
-        
+
         void destroyPipelineById(uint64_t id);
 
         vk::Result createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, ShaderStage stage);
@@ -38,8 +38,8 @@ namespace vkcv
         PipelineHandle createPipeline(const PipelineConfig &config, PassManager& passManager);
 
         PipelineHandle createComputePipeline(
-            const ShaderProgram& shaderProgram,
-            const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
+                const ShaderProgram& shaderProgram,
+                const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
 
         [[nodiscard]]
         vk::Pipeline getVkPipeline(const PipelineHandle &handle) const;

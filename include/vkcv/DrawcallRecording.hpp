@@ -13,6 +13,11 @@ namespace vkcv {
         vk::Buffer      buffer;
     };
 
+    enum class IndexBitCount{
+        Bit16,
+        Bit32
+    };
+
     struct DescriptorSetUsage {
         inline DescriptorSetUsage(uint32_t setLocation, vk::DescriptorSet vulkanHandle,
 								  const std::vector<uint32_t>& dynamicOffsets = {}) noexcept
@@ -24,12 +29,14 @@ namespace vkcv {
     };
 
     struct Mesh {
-        inline Mesh(std::vector<VertexBufferBinding> vertexBufferBindings, vk::Buffer indexBuffer, size_t indexCount) noexcept
-            : vertexBufferBindings(vertexBufferBindings), indexBuffer(indexBuffer), indexCount(indexCount){}
+        inline Mesh(std::vector<VertexBufferBinding> vertexBufferBindings, vk::Buffer indexBuffer, size_t indexCount, IndexBitCount indexBitCount = IndexBitCount::Bit16) noexcept
+            : vertexBufferBindings(vertexBufferBindings), indexBuffer(indexBuffer), indexCount(indexCount), indexBitCount(indexBitCount){}
 
         std::vector<VertexBufferBinding>    vertexBufferBindings;
         vk::Buffer                          indexBuffer;
         size_t                              indexCount;
+        IndexBitCount                       indexBitCount;
+
     };
 
     struct DrawcallInfo {
@@ -48,4 +55,21 @@ namespace vkcv {
         const PushConstants     &pushConstants,
         const size_t            drawcallIndex);
 
+    void InitMeshShaderDrawFunctions(vk::Device device);
+
+    struct MeshShaderDrawcall {
+        inline MeshShaderDrawcall(const std::vector<DescriptorSetUsage> descriptorSets, uint32_t taskCount)
+            : descriptorSets(descriptorSets), taskCount(taskCount) {}
+
+        std::vector<DescriptorSetUsage> descriptorSets;
+        uint32_t                        taskCount;
+    };
+
+    void recordMeshShaderDrawcall(
+        vk::CommandBuffer                       cmdBuffer,
+        vk::PipelineLayout                      pipelineLayout,
+        const PushConstants&                 pushConstantData,
+        const uint32_t                          pushConstantOffset,
+        const MeshShaderDrawcall&               drawcall,
+        const uint32_t                          firstTask);
 }

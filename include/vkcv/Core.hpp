@@ -249,12 +249,20 @@ namespace vkcv
 		bool beginFrame(uint32_t& width, uint32_t& height);
 
 		void recordDrawcallsToCmdStream(
-            const CommandStreamHandle       cmdStreamHandle,
+			const CommandStreamHandle       cmdStreamHandle,
 			const PassHandle                renderpassHandle, 
 			const PipelineHandle            pipelineHandle,
 			const PushConstants             &pushConstants,
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets);
+
+		void recordMeshShaderDrawcalls(
+			const CommandStreamHandle               cmdStreamHandle,
+			const PassHandle                        renderpassHandle,
+			const PipelineHandle                    pipelineHandle,
+			const PushConstants&                    pushConstantData,
+            const std::vector<MeshShaderDrawcall>&  drawcalls,
+			const std::vector<ImageHandle>&         renderTargets);
 
 		void recordComputeDispatchToCmdStream(
 			CommandStreamHandle cmdStream,
