@@ -251,11 +251,8 @@ namespace vkcv
                                                          vertexBindingDescriptions);
 
         // input assembly state
-        vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
-                {},
-                primitiveTopologyToVulkanPrimitiveTopology(config.m_PrimitiveTopology),
-                false
-        );
+        vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo =
+                createPipelineInputAssemblyStateCreateInfo(config);
 
         // viewport state
         vk::Viewport viewport(0.f, 0.f, static_cast<float>(config.m_Width), static_cast<float>(config.m_Height), 0.f, 1.f);
@@ -579,5 +576,15 @@ namespace vkcv
                 vertexAttributeDescriptions.data()
         );
         return pipelineVertexInputStateCreateInfo;
+    }
+
+    vk::PipelineInputAssemblyStateCreateInfo
+    PipelineManager::createPipelineInputAssemblyStateCreateInfo(const PipelineConfig &config) {
+        vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
+                {},
+                primitiveTopologyToVulkanPrimitiveTopology(config.m_PrimitiveTopology),
+                false
+        );
+        return pipelineInputAssemblyStateCreateInfo;
     }
 }

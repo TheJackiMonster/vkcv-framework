@@ -73,5 +73,12 @@ namespace vkcv
                 std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
                 std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions
         );
+
+        /**
+         * Create a Pipeline Input Assembly State Create Info Struct with 'Primitive Restart' disabled.
+         * @param config provides data for primitive topology.
+         * @return Pipeline Input Assembly State Create Info Struct
+         */
+        vk::PipelineInputAssemblyStateCreateInfo createPipelineInputAssemblyStateCreateInfo(const PipelineConfig &config);
     };
 }
