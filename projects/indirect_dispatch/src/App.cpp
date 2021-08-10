@@ -23,16 +23,22 @@ App::App() :
 
 bool App::initialize() {
 
-	if (!loadMeshPass(m_core, &m_meshPassHandles))
+	if (!loadMeshPass(m_core, &m_meshPass))
 		return false;
 
-	if (!loadSkyPass(m_core, &m_skyPassHandles))
+	if (!loadSkyPass(m_core, &m_skyPass))
 		return false;
 
-	if (!loadPrePass(m_core, &m_prePassHandles))
+	if (!loadPrePass(m_core, &m_prePass))
 		false;
 
+	if (!loadSkyPrePass(m_core, &m_skyPrePass))
+		return false;
+
 	if (!loadComputePass(m_core, "resources/shaders/gammaCorrection.comp", &m_gammaCorrectionPass))
+		return false;
+
+	if(!loadComputePass(m_core, "resources/shaders/motionBlurDummy.comp", &m_motionBlurDummyPass))
 		return false;
 
 	if (!loadMesh(m_core, "resources/models/sphere.gltf", & m_sphereMesh))
@@ -106,8 +112,17 @@ void App::run() {
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
-			m_prePassHandles.renderPass,
-			m_prePassHandles.pipeline,
+			m_prePass.renderPass,
+			m_prePass.pipeline,
+			prepassPushConstants,
+			{ sphereDrawcall },
+			prepassRenderTargets);
+
+		// sky prepass
+		m_core.recordDrawcallsToCmdStream(
+			cmdStream,
+			m_skyPrePass.renderPass,
+			m_skyPrePass.pipeline,
 			prepassPushConstants,
 			{ sphereDrawcall },
 			prepassRenderTargets);
@@ -122,8 +137,8 @@ void App::run() {
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
-			m_meshPassHandles.renderPass,
-			m_meshPassHandles.pipeline,
+			m_meshPass.renderPass,
+			m_meshPass.pipeline,
 			meshPushConstants,
 			{ sphereDrawcall },
 			renderTargets);
@@ -134,14 +149,42 @@ void App::run() {
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
-			m_skyPassHandles.renderPass,
-			m_skyPassHandles.pipeline,
+			m_skyPass.renderPass,
+			m_skyPass.pipeline,
 			skyPushConstants,
 			{ cubeDrawcall },
 			renderTargets);
 
+		// motion blur
+		vkcv::DescriptorWrites motionBlurDescriptorWrites;
+		motionBlurDescriptorWrites.sampledImageWrites = {
+			vkcv::SampledImageDescriptorWrite(0, m_renderTargets.colorBuffer),
+			vkcv::SampledImageDescriptorWrite(1, m_renderTargets.motionBuffer) };
+		motionBlurDescriptorWrites.samplerWrites = {
+			vkcv::SamplerDescriptorWrite(2, m_linearSampler) };
+		motionBlurDescriptorWrites.storageImageWrites = {
+			vkcv::StorageImageDescriptorWrite(3, m_renderTargets.motionBlurOutput) };
+
+		m_core.writeDescriptorSet(m_motionBlurDummyPass.descriptorSet, motionBlurDescriptorWrites);
+
+		uint32_t fullScreenImageDispatch[3] = {
+			static_cast<uint32_t>((m_windowWidth + 7) / 8),
+			static_cast<uint32_t>((m_windowHeight + 7) / 8),
+			static_cast<uint32_t>(1) };
+
+		m_core.prepareImageForStorage(cmdStream, m_renderTargets.motionBlurOutput);
+		m_core.prepareImageForSampling(cmdStream, m_renderTargets.colorBuffer);
+		m_core.prepareImageForSampling(cmdStream, m_renderTargets.motionBuffer);
+
+		m_core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			m_motionBlurDummyPass.pipeline,
+			fullScreenImageDispatch,
+			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_motionBlurDummyPass.descriptorSet).vulkanHandle) },
+			vkcv::PushConstants(0));
+
 		// gamma correction
-		vkcv::ImageHandle gammaCorrectionInput = m_renderTargets.colorBuffer;
+		vkcv::ImageHandle gammaCorrectionInput = m_renderTargets.motionBlurOutput;
 		if (drawMotionVectors) {
 			gammaCorrectionInput = m_renderTargets.motionBuffer;
 		}
@@ -159,15 +202,10 @@ void App::run() {
 		m_core.prepareImageForSampling(cmdStream, gammaCorrectionInput);
 		m_core.prepareImageForStorage (cmdStream, swapchainInput);
 
-		uint32_t gammaCorrectionDispatch[3] = {
-			static_cast<uint32_t>((m_windowWidth  + 7) / 8),
-			static_cast<uint32_t>((m_windowHeight + 7) / 8),
-			static_cast<uint32_t>(1) };
-
 		m_core.recordComputeDispatchToCmdStream(
 			cmdStream,
 			m_gammaCorrectionPass.pipeline,
-			gammaCorrectionDispatch,
+			fullScreenImageDispatch,
 			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_gammaCorrectionPass.descriptorSet).vulkanHandle) },
 			vkcv::PushConstants(0));
 

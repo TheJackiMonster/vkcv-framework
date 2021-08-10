@@ -1,0 +1,38 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+layout(set=0, binding=0)                    uniform texture2D   inColor;
+layout(set=0, binding=1)                    uniform texture2D   inMotion;
+layout(set=0, binding=2)                    uniform sampler     textureSampler;
+layout(set=0, binding=3, r11f_g11f_b10f)    uniform image2D     outImage;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void main(){
+
+    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(outImage))))
+        return;
+   
+    ivec2   textureRes  = textureSize(sampler2D(inColor, textureSampler), 0);
+    ivec2   coord       = ivec2(gl_GlobalInvocationID.xy);
+    vec2    uv          = vec2(coord) / textureRes;
+
+    vec2    motion      = texture(sampler2D(inMotion, textureSampler), uv).rg;
+    float   blurFactor  = 5;
+    motion              *= blurFactor;
+
+    vec3        color       = vec3(0);
+    const int   sampleCount = 16;
+    
+    vec2 uvStart    = uv - motion;
+    vec2 uvEnd      = uv + motion;
+    
+    for(int i = 0; i < sampleCount; i++){
+        vec2 sampleUV   = mix(uvStart, uvEnd, i / float(sampleCount - 1));    
+        color           += texture(sampler2D(inColor, textureSampler), sampleUV).rgb;
+    }
+    
+    color /= sampleCount;
+
+    imageStore(outImage, coord, vec4(color, 0.f));
+}

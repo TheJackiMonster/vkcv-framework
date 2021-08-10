@@ -180,6 +180,28 @@ bool loadPrePass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 		outHandles);
 }
 
+bool loadSkyPrePass(vkcv::Core& core, GraphicPassHandles* outHandles) {
+	assert(outHandles);
+
+	vkcv::AttachmentDescription motionAttachment(
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::LOAD,
+		AppConfig::motionBufferFormat);
+
+	vkcv::AttachmentDescription depthAttachment(
+		vkcv::AttachmentOperation::STORE,
+		vkcv::AttachmentOperation::LOAD,
+		AppConfig::depthBufferFormat);
+
+	return loadGraphicPass(
+		core,
+		"resources/shaders/skyPrepass.vert",
+		"resources/shaders/skyPrepass.frag",
+		vkcv::PassConfig({ motionAttachment, depthAttachment }),
+		vkcv::DepthTest::LessEqual,
+		outHandles);
+}
+
 bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, ComputePassHandles* outComputePass) {
 
 	assert(outComputePass);
@@ -227,6 +249,14 @@ RenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const 
 		height,
 		1,
 		false,
+		false,
+		true).getHandle();
+
+	targets.motionBlurOutput = core.createImage(
+		AppConfig::colorBufferFormat,
+		width,
+		height,
+		1,
 		false,
 		true).getHandle();
 

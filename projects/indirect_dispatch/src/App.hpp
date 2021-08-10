@@ -21,11 +21,13 @@ private:
 	MeshResources m_sphereMesh;
 	MeshResources m_cubeMesh;
 
-	GraphicPassHandles m_meshPassHandles;
-	GraphicPassHandles m_skyPassHandles;
-	GraphicPassHandles m_prePassHandles;
+	GraphicPassHandles m_meshPass;
+	GraphicPassHandles m_skyPass;
+	GraphicPassHandles m_prePass;
+	GraphicPassHandles m_skyPrePass;
 
 	ComputePassHandles m_gammaCorrectionPass;
+	ComputePassHandles m_motionBlurDummyPass;
 
 	RenderTargets       m_renderTargets;
 	vkcv::SamplerHandle m_linearSampler;
