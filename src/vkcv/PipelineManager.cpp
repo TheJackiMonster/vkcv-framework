@@ -243,27 +243,7 @@ namespace vkcv
         // Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
         std::vector<vk::VertexInputAttributeDescription>	vertexAttributeDescriptions;
         std::vector<vk::VertexInputBindingDescription>		vertexBindingDescriptions;
-
-        if (existsVertexShader) {
-            const VertexLayout& layout = config.m_VertexLayout;
-
-            // iterate over the layout's specified, mutually exclusive buffer bindings that make up a vertex buffer
-            for (const auto& vertexBinding : layout.vertexBindings)
-            {
-                vertexBindingDescriptions.emplace_back(vertexBinding.bindingLocation,
-                                                       vertexBinding.stride,
-                                                       vk::VertexInputRate::eVertex);
-
-                // iterate over the bindings' specified, mutually exclusive vertex input attachments that make up a vertex
-                for (const auto& vertexAttachment : vertexBinding.vertexAttachments)
-                {
-                    vertexAttributeDescriptions.emplace_back(vertexAttachment.inputLocation,
-                                                             vertexBinding.bindingLocation,
-                                                             vertexFormatToVulkanFormat(vertexAttachment.format),
-                                                             vertexAttachment.offset % vertexBinding.stride);
-                }
-            }
-        }
+        fillVertexInputDescription(vertexAttributeDescriptions, vertexBindingDescriptions, existsVertexShader, config);
 
         // Handover Containers to PipelineVertexInputStateCreateIngo Struct
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
@@ -561,5 +541,33 @@ namespace vkcv
         std::vector<char> code = shaderProgram.getShader(stage).shaderCode;
         vk::ShaderModuleCreateInfo moduleInfo({}, code.size(), reinterpret_cast<uint32_t*>(code.data()));
         return m_Device.createShaderModule(&moduleInfo, nullptr, &module);
+    }
+
+    void PipelineManager::fillVertexInputDescription(
+        std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
+        std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions,
+        const bool existsVertexShader,
+        const PipelineConfig &config) {
+
+        if (existsVertexShader) {
+            const VertexLayout& layout = config.m_VertexLayout;
+
+            // iterate over the layout's specified, mutually exclusive buffer bindings that make up a vertex buffer
+            for (const auto& vertexBinding : layout.vertexBindings)
+            {
+                vertexBindingDescriptions.emplace_back(vertexBinding.bindingLocation,
+                                                       vertexBinding.stride,
+                                                       vk::VertexInputRate::eVertex);
+
+                // iterate over the bindings' specified, mutually exclusive vertex input attachments that make up a vertex
+                for (const auto& vertexAttachment : vertexBinding.vertexAttachments)
+                {
+                    vertexAttributeDescriptions.emplace_back(vertexAttachment.inputLocation,
+                                                             vertexBinding.bindingLocation,
+                                                             vertexFormatToVulkanFormat(vertexAttachment.format),
+                                                             vertexAttachment.offset % vertexBinding.stride);
+                }
+            }
+        }
     }
 }
