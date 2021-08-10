@@ -3,6 +3,7 @@
 #include <vkcv/Handles.hpp>
 #include <vkcv/DescriptorConfig.hpp>
 #include <vkcv/PushConstants.hpp>
+#include "Buffer.hpp"
 
 namespace vkcv {
     struct VertexBufferBinding {
@@ -54,6 +55,15 @@ namespace vkcv {
         vk::PipelineLayout      pipelineLayout,
         const PushConstants     &pushConstants,
         const size_t            drawcallIndex);
+
+    void recordIndirectDrawcall(
+            const DrawcallInfo                                  &drawcall,
+            vk::CommandBuffer                                   cmdBuffer,
+            const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &drawBuffer,
+            const uint32_t                                      drawCount,
+            vk::PipelineLayout                                  pipelineLayout,
+            const PushConstants                                 &pushConstants,
+            const size_t                                        drawcallIndex);
 
     void InitMeshShaderDrawFunctions(vk::Device device);
 
