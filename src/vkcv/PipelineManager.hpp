@@ -23,11 +23,17 @@ namespace vkcv
         void destroyPipelineById(uint64_t id);
 
         vk::Result createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, ShaderStage stage);
+
         void fillVertexInputDescription(
                 std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
                 std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions,
                 const bool existsVertexShader,
                 const PipelineConfig &config);
+
+        vk::PipelineVertexInputStateCreateInfo createPipelineVertexInputStateCreateInfo(
+                std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
+                std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions
+                );
 
     public:
         PipelineManager() = delete; // no default ctor

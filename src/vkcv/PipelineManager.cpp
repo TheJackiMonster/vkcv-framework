@@ -246,13 +246,9 @@ namespace vkcv
         fillVertexInputDescription(vertexAttributeDescriptions, vertexBindingDescriptions, existsVertexShader, config);
 
         // Handover Containers to PipelineVertexInputStateCreateIngo Struct
-        vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
-                {},
-                vertexBindingDescriptions.size(),
-                vertexBindingDescriptions.data(),
-                vertexAttributeDescriptions.size(),
-                vertexAttributeDescriptions.data()
-        );
+        vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo =
+                createPipelineVertexInputStateCreateInfo(vertexAttributeDescriptions,
+                                                         vertexBindingDescriptions);
 
         // input assembly state
         vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
@@ -543,6 +539,13 @@ namespace vkcv
         return m_Device.createShaderModule(&moduleInfo, nullptr, &module);
     }
 
+    /**
+     * Fills Vertex Attribute and Binding Description with the corresponding objects form the Vertex Layout.
+     * @param vertexAttributeDescriptions
+     * @param vertexBindingDescriptions
+     * @param existsVertexShader
+     * @param config
+     */
     void PipelineManager::fillVertexInputDescription(
         std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
         std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions,
@@ -569,5 +572,25 @@ namespace vkcv
                 }
             }
         }
+    }
+
+    /**
+     * Create a Pipeline Vertex Input State Create Info Struct and fills it with Attribute and Binding data.
+     * @param vertexAttributeDescriptions
+     * @param vertexBindingDescriptions
+     * @return Pipeline Vertex Input State Create Info Struct
+     */
+    vk::PipelineVertexInputStateCreateInfo PipelineManager::createPipelineVertexInputStateCreateInfo(
+            std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
+            std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions) {
+
+        vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
+                {},
+                vertexBindingDescriptions.size(),
+                vertexBindingDescriptions.data(),
+                vertexAttributeDescriptions.size(),
+                vertexAttributeDescriptions.data()
+        );
+        return pipelineVertexInputStateCreateInfo;
     }
 }
