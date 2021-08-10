@@ -101,5 +101,12 @@ namespace vkcv
          */
         vk::PipelineRasterizationStateCreateInfo createPipelineRasterizationStateCreateInfo(const PipelineConfig &config);
 
+        /**
+         * Create a Pipeline Multisample State Create Info Struct.
+         * @param config set MSAA Sample Count Flag
+         * @return Pipeline Multisample State Create Info Struct
+         */
+        vk::PipelineMultisampleStateCreateInfo createPipelineMultisampleStateCreateInfo(const PipelineConfig &config);
+
     };
 }

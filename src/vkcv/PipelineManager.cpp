@@ -263,15 +263,8 @@ namespace vkcv
                 createPipelineRasterizationStateCreateInfo(config);
 
         // multisample state
-        vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
-                {},
-                msaaToVkSampleCountFlag(config.m_multisampling),
-                false,
-                0.f,
-                nullptr,
-                config.m_alphaToCoverage,
-                false
-        );
+        vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo =
+                createPipelineMultisampleStateCreateInfo(config);
 
         // color blend state
         vk::ColorComponentFlags colorWriteMask(VK_COLOR_COMPONENT_R_BIT |
@@ -621,5 +614,19 @@ namespace vkcv
         }
 
         return pipelineRasterizationStateCreateInfo;
+    }
+
+    vk::PipelineMultisampleStateCreateInfo
+    PipelineManager::createPipelineMultisampleStateCreateInfo(const PipelineConfig &config) {
+        vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
+                {},
+                msaaToVkSampleCountFlag(config.m_multisampling),
+                false,
+                0.f,
+                nullptr,
+                config.m_alphaToCoverage,
+                false
+        );
+        return pipelineMultisampleStateCreateInfo;
     }
 }
