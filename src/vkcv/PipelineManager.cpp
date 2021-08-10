@@ -44,10 +44,15 @@ namespace vkcv
 
     vk::PrimitiveTopology primitiveTopologyToVulkanPrimitiveTopology(const PrimitiveTopology topology) {
         switch (topology) {
-            case(PrimitiveTopology::PointList):     return vk::PrimitiveTopology::ePointList;
-            case(PrimitiveTopology::LineList):      return vk::PrimitiveTopology::eLineList;
-            case(PrimitiveTopology::TriangleList):  return vk::PrimitiveTopology::eTriangleList;
-            default: std::cout << "Error: Unknown primitive topology type" << std::endl; return vk::PrimitiveTopology::eTriangleList;
+            case(PrimitiveTopology::PointList):
+                return vk::PrimitiveTopology::ePointList;
+            case(PrimitiveTopology::LineList):
+                return vk::PrimitiveTopology::eLineList;
+            case(PrimitiveTopology::TriangleList):
+                return vk::PrimitiveTopology::eTriangleList;
+            default:
+            vkcv_log(LogLevel::ERROR, "Unknown primitive topology type");
+                return vk::PrimitiveTopology::eTriangleList;
         }
     }
 
