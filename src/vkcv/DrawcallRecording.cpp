@@ -52,7 +52,49 @@ namespace vkcv {
         }
     }
 
+    void recordIndirectDrawcall(
+            const DrawcallInfo                              &drawcall,
+            vk::CommandBuffer                               cmdBuffer,
+            const Buffer <vk::DrawIndexedIndirectCommand>   &drawBuffer,
+            const uint32_t                                  drawCount,
+            vk::PipelineLayout                              pipelineLayout,
+            const PushConstants                             &pushConstants,
+            const size_t                                    drawcallIndex) {
 
+        for (uint32_t i = 0; i < drawcall.mesh.vertexBufferBindings.size(); i++) {
+            const auto &vertexBinding = drawcall.mesh.vertexBufferBindings[i];
+            cmdBuffer.bindVertexBuffers(i, vertexBinding.buffer, vertexBinding.offset);
+        }
+
+        for (const auto &descriptorUsage : drawcall.descriptorSets) {
+            cmdBuffer.bindDescriptorSets(
+                    vk::PipelineBindPoint::eGraphics,
+                    pipelineLayout,
+                    descriptorUsage.setLocation,
+                    descriptorUsage.vulkanHandle,
+                    nullptr);
+        }
+
+        if (pushConstants.getSizePerDrawcall() > 0) {
+            cmdBuffer.pushConstants(
+                    pipelineLayout,
+                    vk::ShaderStageFlagBits::eAll,
+                    0,
+                    pushConstants.getSizePerDrawcall(),
+                    pushConstants.getDrawcallData(drawcallIndex));
+        }
+
+        if (drawcall.mesh.indexBuffer) {
+
+            cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, getIndexType(drawcall.mesh.indexBitCount));
+
+            cmdBuffer.drawIndexedIndirect(drawBuffer.getVulkanHandle(), 0, drawCount,
+                                          sizeof(vk::DrawIndexedIndirectCommand));
+
+        } else {
+            cmdBuffer.drawIndirect(drawBuffer.getVulkanHandle(), 0, drawCount, sizeof(vk::DrawIndexedIndirectCommand));
+        }
+    }
 
     struct MeshShaderFunctions
     {

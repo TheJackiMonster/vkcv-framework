@@ -6,8 +6,21 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
+void addMeshToIdirectDraw(const std::vector<vkcv::asset::VertexGroup> &meshes,
+                          std::vector<vk::DrawIndexedIndirectCommand> &indexedIndirectCommands) {
+
+    for (vkcv::asset::VertexGroup mesh : meshes) {
+        vk::DrawIndexedIndirectCommand indirectCommand {
+                mesh.indexBuffer.data.size(),
+                1,
+                mesh.indexBuffer.data[0],
+                0,
+                indexedIndirectCommands.size()};
+        indexedIndirectCommands.push_back(indirectCommand);
+    }
+}
 int main(int argc, const char** argv) {
-	const char* applicationName = "First Mesh";
+	const char* applicationName = "Indirect draw";
 
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
@@ -16,7 +29,7 @@ int main(int argc, const char** argv) {
 		applicationName,
 		windowWidth,
 		windowHeight,
-		true
+		false
 	);
 
 	vkcv::Core core = vkcv::Core::create(
@@ -48,6 +61,17 @@ int main(int argc, const char** argv) {
 	);
 	
 	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
+
+    std::vector<vk::DrawIndexedIndirectCommand> indexedIndirectCommands;
+
+    addMeshToIdirectDraw(mesh.vertexGroups, indexedIndirectCommands);
+
+    vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(
+            vkcv::BufferType::INDIRECT,
+            indexedIndirectCommands.size() * sizeof(vk::DrawIndexedIndirectCommand),
+            vkcv::BufferMemoryType::DEVICE_LOCAL);
+
+    indirectBuffer.fill(indexedIndirectCommands);
 
 	auto indexBuffer = core.createBuffer<uint8_t>(
 			vkcv::BufferType::INDEX,
@@ -203,13 +227,15 @@ int main(int argc, const char** argv) {
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-		core.recordDrawcallsToCmdStream(
+		core.recordIndirectDrawcallsToCmdStream(
 			cmdStream,
 			firstMeshPass,
 			firstMeshPipeline,
 			pushConstants,
 			{ drawcall },
-			renderTargets);
+			renderTargets,
+			indirectBuffer,
+            indexedIndirectCommands.size());
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
 		core.endFrame();
