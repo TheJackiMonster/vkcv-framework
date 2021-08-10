@@ -417,9 +417,12 @@ namespace vkcv
         return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }
 
+    // TODO: Refactor compute pipeline creation
     PipelineHandle PipelineManager::createComputePipeline(
         const ShaderProgram &shaderProgram, 
         const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts) {
+        // TODO: The creation function should be implemented in the same manner as the graphics pipeline.
+        // TODO: Implement a Config Struct that contains all necessary parameters and hand it over to the create function.
 
         // Temporally handing over the Shader Program instead of a pipeline config
         vk::ShaderModule computeModule{};
@@ -471,7 +474,7 @@ namespace vkcv
 
     // There is an issue for refactoring the Pipeline Manager.
     // While including Compute Pipeline Creation, some private helper functions where introduced:
-
+    // TODO: Use this function instead of the the m_Device function or delete it
     vk::Result PipelineManager::createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, const ShaderStage stage)
     {
         std::vector<char> code = shaderProgram.getShader(stage).shaderCode;
