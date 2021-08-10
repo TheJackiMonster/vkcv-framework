@@ -10,31 +10,6 @@ namespace vkcv
 {
     class PipelineManager
     {
-    private:
-        struct Pipeline {
-            vk::Pipeline m_handle;
-            vk::PipelineLayout m_layout;
-            PipelineConfig m_config;
-        };
-
-        vk::Device m_Device;
-        std::vector<Pipeline> m_Pipelines;
-
-        void destroyPipelineById(uint64_t id);
-
-        vk::Result createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, ShaderStage stage);
-
-        void fillVertexInputDescription(
-                std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
-                std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions,
-                const bool existsVertexShader,
-                const PipelineConfig &config);
-
-        vk::PipelineVertexInputStateCreateInfo createPipelineVertexInputStateCreateInfo(
-                std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
-                std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions
-                );
-
     public:
         PipelineManager() = delete; // no default ctor
         explicit PipelineManager(vk::Device device) noexcept; // ctor
@@ -60,5 +35,43 @@ namespace vkcv
 
         [[nodiscard]]
         const PipelineConfig &getPipelineConfig(const PipelineHandle &handle) const;
+
+    private:
+        struct Pipeline {
+            vk::Pipeline m_handle;
+            vk::PipelineLayout m_layout;
+            PipelineConfig m_config;
+        };
+
+        vk::Device m_Device;
+        std::vector<Pipeline> m_Pipelines;
+
+        void destroyPipelineById(uint64_t id);
+
+        vk::Result createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, ShaderStage stage);
+
+        /**
+         * Fills Vertex Attribute and Binding Description with the corresponding objects form the Vertex Layout.
+         * @param vertexAttributeDescriptions
+         * @param vertexBindingDescriptions
+         * @param existsVertexShader
+         * @param config
+         */
+        void fillVertexInputDescription(
+                std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
+                std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions,
+                const bool existsVertexShader,
+                const PipelineConfig &config);
+
+        /**
+         * Create a Pipeline Vertex Input State Create Info Struct and fills it with Attribute and Binding data.
+         * @param vertexAttributeDescriptions
+         * @param vertexBindingDescriptions
+         * @return Pipeline Vertex Input State Create Info Struct
+         */
+        vk::PipelineVertexInputStateCreateInfo createPipelineVertexInputStateCreateInfo(
+                std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
+                std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions
+        );
     };
 }

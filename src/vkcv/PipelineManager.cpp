@@ -539,13 +539,6 @@ namespace vkcv
         return m_Device.createShaderModule(&moduleInfo, nullptr, &module);
     }
 
-    /**
-     * Fills Vertex Attribute and Binding Description with the corresponding objects form the Vertex Layout.
-     * @param vertexAttributeDescriptions
-     * @param vertexBindingDescriptions
-     * @param existsVertexShader
-     * @param config
-     */
     void PipelineManager::fillVertexInputDescription(
         std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
         std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions,
@@ -574,12 +567,6 @@ namespace vkcv
         }
     }
 
-    /**
-     * Create a Pipeline Vertex Input State Create Info Struct and fills it with Attribute and Binding data.
-     * @param vertexAttributeDescriptions
-     * @param vertexBindingDescriptions
-     * @return Pipeline Vertex Input State Create Info Struct
-     */
     vk::PipelineVertexInputStateCreateInfo PipelineManager::createPipelineVertexInputStateCreateInfo(
             std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
             std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions) {
