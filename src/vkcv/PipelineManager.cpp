@@ -59,26 +59,26 @@ namespace vkcv
             case(DepthTest::Greater):       return vk::CompareOp::eGreater;
             case(DepthTest::GreatherEqual): return vk::CompareOp::eGreaterOrEqual;
             case(DepthTest::Equal):         return vk::CompareOp::eEqual;
-            default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown depth test enum"); return vk::CompareOp::eAlways;
+            default: vkcv_log(LogLevel::ERROR, "Unknown depth test enum"); return vk::CompareOp::eAlways;
         }
     }
 
-    vk::ShaderStageFlagBits shaderStageToVkShaderStage(vkcv::ShaderStage stage) {
+    vk::ShaderStageFlagBits shaderStageToVkShaderStage(ShaderStage stage) {
         switch (stage) {
-            case vkcv::ShaderStage::VERTEX:         return vk::ShaderStageFlagBits::eVertex;
-            case vkcv::ShaderStage::FRAGMENT:       return vk::ShaderStageFlagBits::eFragment;
-            case vkcv::ShaderStage::GEOMETRY:       return vk::ShaderStageFlagBits::eGeometry;
-            case vkcv::ShaderStage::TESS_CONTROL:   return vk::ShaderStageFlagBits::eTessellationControl;
-            case vkcv::ShaderStage::TESS_EVAL:      return vk::ShaderStageFlagBits::eTessellationEvaluation;
-            case vkcv::ShaderStage::COMPUTE:        return vk::ShaderStageFlagBits::eCompute;
-            case vkcv::ShaderStage::TASK:           return vk::ShaderStageFlagBits::eTaskNV;
-            case vkcv::ShaderStage::MESH:           return vk::ShaderStageFlagBits::eMeshNV;
-            default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown shader stage"); return vk::ShaderStageFlagBits::eAll;
+            case ShaderStage::VERTEX:         return vk::ShaderStageFlagBits::eVertex;
+            case ShaderStage::FRAGMENT:       return vk::ShaderStageFlagBits::eFragment;
+            case ShaderStage::GEOMETRY:       return vk::ShaderStageFlagBits::eGeometry;
+            case ShaderStage::TESS_CONTROL:   return vk::ShaderStageFlagBits::eTessellationControl;
+            case ShaderStage::TESS_EVAL:      return vk::ShaderStageFlagBits::eTessellationEvaluation;
+            case ShaderStage::COMPUTE:        return vk::ShaderStageFlagBits::eCompute;
+            case ShaderStage::TASK:           return vk::ShaderStageFlagBits::eTaskNV;
+            case ShaderStage::MESH:           return vk::ShaderStageFlagBits::eMeshNV;
+            default: vkcv_log(LogLevel::ERROR, "Unknown shader stage"); return vk::ShaderStageFlagBits::eAll;
         }
     }
 
     bool createPipelineShaderStageCreateInfo(
-            const vkcv::ShaderProgram&          shaderProgram,
+            const ShaderProgram&          shaderProgram,
             ShaderStage                         stage,
             vk::Device                          device,
             vk::PipelineShaderStageCreateInfo*  outCreateInfo) {
@@ -101,23 +101,22 @@ namespace vkcv
         return true;
     }
 
-    PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, PassManager& passManager)
-    {
+    PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, PassManager& passManager) {
         const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
 
-        const bool existsTaskShader = config.m_ShaderProgram.existsShader(ShaderStage::TASK);
-        const bool existsMeshShader = config.m_ShaderProgram.existsShader(ShaderStage::MESH);
-
-        const bool existsVertexShader = config.m_ShaderProgram.existsShader(ShaderStage::VERTEX);
-
-        const bool validGeometryStages = existsVertexShader || (existsTaskShader && existsMeshShader);
-
+        const bool existsTaskShader     = config.m_ShaderProgram.existsShader(ShaderStage::TASK);
+        const bool existsMeshShader     = config.m_ShaderProgram.existsShader(ShaderStage::MESH);
+        const bool existsVertexShader   = config.m_ShaderProgram.existsShader(ShaderStage::VERTEX);
         const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
+        const bool existsGeometryShader = config.m_ShaderProgram.existsShader(ShaderStage::GEOMETRY);
+        const bool validGeometryStages  = existsVertexShader || (existsTaskShader && existsMeshShader);
+
         if (!validGeometryStages)
         {
             vkcv_log(LogLevel::ERROR, "Requires vertex or task and mesh shader");
             return PipelineHandle();
         }
+
         if (!existsFragmentShader) {
             vkcv_log(LogLevel::ERROR, "Requires fragment shader code");
             return PipelineHandle();
@@ -135,7 +134,7 @@ namespace vkcv
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
                     config.m_ShaderProgram,
-                    vkcv::ShaderStage::VERTEX,
+                    ShaderStage::VERTEX,
                     m_Device,
                     &createInfo);
 
@@ -152,7 +151,7 @@ namespace vkcv
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
                     config.m_ShaderProgram,
-                    vkcv::ShaderStage::TASK,
+                    ShaderStage::TASK,
                     m_Device,
                     &createInfo);
 
@@ -169,7 +168,7 @@ namespace vkcv
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
                     config.m_ShaderProgram,
-                    vkcv::ShaderStage::MESH,
+                    ShaderStage::MESH,
                     m_Device,
                     &createInfo);
 
@@ -182,12 +181,28 @@ namespace vkcv
             }
         }
 
-        // fragment shader stage
         {
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
                     config.m_ShaderProgram,
-                    vkcv::ShaderStage::FRAGMENT,
+                    ShaderStage::FRAGMENT,
+                    m_Device,
+                    &createInfo);
+
+            if (success) {
+                shaderStages.push_back(createInfo);
+            }
+            else {
+                destroyShaderModules();
+                return PipelineHandle();
+            }
+        }
+
+        if (existsGeometryShader) {
+            vk::PipelineShaderStageCreateInfo createInfo;
+            const bool success = createPipelineShaderStageCreateInfo(
+                    config.m_ShaderProgram,
+                    ShaderStage::GEOMETRY,
                     m_Device,
                     &createInfo);
 
@@ -223,10 +238,8 @@ namespace vkcv
                                                              vertexBinding.bindingLocation,
                                                              vertexFormatToVulkanFormat(vertexAttachment.format),
                                                              vertexAttachment.offset % vertexBinding.stride);
-
                 }
             }
-
         }
 
         // Handover Containers to PipelineVertexInputStateCreateIngo Struct
@@ -255,7 +268,7 @@ namespace vkcv
             case CullMode::None:    cullMode = vk::CullModeFlagBits::eNone;     break;
             case CullMode::Front:   cullMode = vk::CullModeFlagBits::eFront;    break;
             case CullMode::Back:    cullMode = vk::CullModeFlagBits::eBack;     break;
-            default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown CullMode"); cullMode = vk::CullModeFlagBits::eNone;
+            default: vkcv_log(LogLevel::ERROR, "Unknown CullMode"); cullMode = vk::CullModeFlagBits::eNone;
         }
 
         // rasterization state
@@ -272,6 +285,7 @@ namespace vkcv
                 0.f,
                 1.f
         );
+
         vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterization;
         if (config.m_UseConservativeRasterization) {
             conservativeRasterization = vk::PipelineRasterizationConservativeStateCreateInfoEXT(
@@ -310,6 +324,7 @@ namespace vkcv
                 vk::BlendOp::eAdd,
                 colorWriteMask
         );
+
         vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
                 {},
                 false,
@@ -330,7 +345,6 @@ namespace vkcv
         if (pushConstantSize == 0) {
             pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
         }
-
 
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
@@ -353,7 +367,6 @@ namespace vkcv
         );
 
         const vk::PipelineDepthStencilStateCreateInfo* p_depthStencilCreateInfo = nullptr;
-
         const PassConfig& passConfig = passManager.getPassConfig(config.m_PassHandle);
 
         for (const auto& attachment : passConfig.attachments) {
@@ -374,24 +387,6 @@ namespace vkcv
                 {},
                 static_cast<uint32_t>(dynamicStates.size()),
                 dynamicStates.data());
-
-        const bool existsGeometryShader = config.m_ShaderProgram.existsShader(vkcv::ShaderStage::GEOMETRY);
-        if (existsGeometryShader) {
-            vk::PipelineShaderStageCreateInfo createInfo;
-            const bool success = createPipelineShaderStageCreateInfo(
-                    config.m_ShaderProgram,
-                    vkcv::ShaderStage::GEOMETRY,
-                    m_Device,
-                    &createInfo);
-
-            if (success) {
-                shaderStages.push_back(createInfo);
-            }
-            else {
-                destroyShaderModules();
-                return PipelineHandle();
-            }
-        }
 
         const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
                 {},
@@ -538,7 +533,6 @@ namespace vkcv
 
     // There is an issue for refactoring the Pipeline Manager.
     // While including Compute Pipeline Creation, some private helper functions where introduced:
-
     vk::Result PipelineManager::createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, const ShaderStage stage)
     {
         std::vector<char> code = shaderProgram.getShader(stage).shaderCode;
