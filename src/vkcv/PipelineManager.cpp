@@ -258,45 +258,9 @@ namespace vkcv
         vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo =
                 createPipelineViewportStateCreateInfo(config);
 
-        vk::CullModeFlags cullMode;
-        switch (config.m_culling) {
-            case CullMode::None:
-                cullMode = vk::CullModeFlagBits::eNone;
-                break;
-            case CullMode::Front:
-                cullMode = vk::CullModeFlagBits::eFront;
-                break;
-            case CullMode::Back:
-                cullMode = vk::CullModeFlagBits::eBack;
-                break;
-            default:
-                vkcv_log(LogLevel::ERROR, "Unknown CullMode");
-                cullMode = vk::CullModeFlagBits::eNone;
-        }
-
         // rasterization state
-        vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
-                {},
-                config.m_EnableDepthClamping,
-                false,
-                vk::PolygonMode::eFill,
-                cullMode,
-                vk::FrontFace::eCounterClockwise,
-                false,
-                0.f,
-                0.f,
-                0.f,
-                1.f
-        );
-
-        vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterization;
-        if (config.m_UseConservativeRasterization) {
-            conservativeRasterization = vk::PipelineRasterizationConservativeStateCreateInfoEXT(
-                    {},
-                    vk::ConservativeRasterizationModeEXT::eOverestimate,
-                    0.f);
-            pipelineRasterizationStateCreateInfo.pNext = &conservativeRasterization;
-        }
+        vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo =
+                createPipelineRasterizationStateCreateInfo(config);
 
         // multisample state
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
@@ -612,5 +576,50 @@ namespace vkcv
                                                                             1,
                                                                             &scissor);
         return pipelineViewportStateCreateInfo;
+    }
+
+    vk::PipelineRasterizationStateCreateInfo
+    PipelineManager::createPipelineRasterizationStateCreateInfo(const PipelineConfig &config) {
+
+        vk::CullModeFlags cullMode;
+        switch (config.m_culling) {
+            case CullMode::None:
+                cullMode = vk::CullModeFlagBits::eNone;
+                break;
+            case CullMode::Front:
+                cullMode = vk::CullModeFlagBits::eFront;
+                break;
+            case CullMode::Back:
+                cullMode = vk::CullModeFlagBits::eBack;
+                break;
+            default:
+            vkcv_log(LogLevel::ERROR, "Unknown CullMode");
+                cullMode = vk::CullModeFlagBits::eNone;
+        }
+
+        vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo (
+                {},
+                config.m_EnableDepthClamping,
+                false,
+                vk::PolygonMode::eFill,
+                cullMode,
+                vk::FrontFace::eCounterClockwise,
+                false,
+                0.f,
+                0.f,
+                0.f,
+                1.f
+        );
+
+        vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterization;
+        if (config.m_UseConservativeRasterization) {
+            conservativeRasterization = vk::PipelineRasterizationConservativeStateCreateInfoEXT(
+                    {},
+                    vk::ConservativeRasterizationModeEXT::eOverestimate,
+                    0.f);
+            pipelineRasterizationStateCreateInfo.pNext = &conservativeRasterization;
+        }
+
+        return pipelineRasterizationStateCreateInfo;
     }
 }

@@ -82,10 +82,24 @@ namespace vkcv
         vk::PipelineInputAssemblyStateCreateInfo createPipelineInputAssemblyStateCreateInfo(const PipelineConfig &config);
 
         /**
-         * Create a Pipeline Viewport State Create Info Struct with default set viewport and scissor settings
+         * Create a Pipeline Viewport State Create Info Struct with default set viewport and scissor settings.
          * @param config provides with and height of the output window
          * @return Pipeline Viewport State Create Info Struct
          */
         vk::PipelineViewportStateCreateInfo createPipelineViewportStateCreateInfo(const PipelineConfig &config);
+
+        /**
+         * Create a Pipeline Rasterization State Create Info Struct with default values set to:
+         * Rasterizer Discard: Disabled
+         * Polygon Mode: Fill
+         * Front Face: Counter Clockwise
+         * Depth Bias: Disabled
+         * Line Width: 1.0
+         * Depth Clamping and Culling Mode ist set by the Pipeline Config
+         * @param config sets Depth Clamping and Culling Mode
+         * @return Pipeline Rasterization State Create Info Struct
+         */
+        vk::PipelineRasterizationStateCreateInfo createPipelineRasterizationStateCreateInfo(const PipelineConfig &config);
+
     };
 }
