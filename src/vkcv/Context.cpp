@@ -325,6 +325,7 @@ namespace vkcv
             // NOTE: what about
             // shaderSampledImageArrayNonUniformIndexing ?
             descriptorIndexingFeatures.descriptorBindingPartiallyBound = true;
+            descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = true;
             descriptorIndexingFeatures.runtimeDescriptorArray = true;
             deviceFeatures2.setPNext(&descriptorIndexingFeatures);
         }

@@ -175,12 +175,33 @@ namespace vkcv {
         for (uint32_t i = 0; i < resources.separate_images.size(); i++) {
             auto& u = resources.separate_images[i];
             const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
-            std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
-                DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::IMAGE_SAMPLED, base_type.vecsize, shaderStage));
+
+            // we require the type (not base type!) to query array information
+            const spirv_cross::SPIRType& type      = comp.get_type(u.type_id);
+
+            uint32_t descriptorCount = 1;
+            bool variableCount = false;
+
+            if(type.array_size_literal[0])
+            {
+                if(type.array[0] == 0)
+                    variableCount = true;
+
+                descriptorCount = type.array[0];
+            }
+
+            DescriptorBinding descBinding(comp.get_decoration(u.id, spv::DecorationBinding),
+                                          DescriptorType::IMAGE_SAMPLED,
+                                          descriptorCount,
+                                          shaderStage,
+                                          variableCount);
+
+            std::pair<uint32_t, DescriptorBinding> descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet), descBinding);
+
+
             bindings.push_back(descriptor);
             if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID)
                 maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
-
         }
 
         for (uint32_t i = 0; i < resources.storage_images.size(); i++) {

@@ -4,12 +4,13 @@
 
 namespace vkcv {
 	struct SampledImageDescriptorWrite {
-		inline SampledImageDescriptorWrite(uint32_t binding, ImageHandle image, uint32_t mipLevel = 0, bool useGeneralLayout = false)
-		    : binding(binding), image(image), mipLevel(mipLevel), useGeneralLayout(useGeneralLayout) {};
+		inline SampledImageDescriptorWrite(uint32_t binding, ImageHandle image, uint32_t mipLevel = 0, bool useGeneralLayout = false, uint32_t arrayIndex = 0)
+		: binding(binding), image(image), mipLevel(mipLevel), useGeneralLayout(useGeneralLayout), arrayIndex(arrayIndex) {};
 		uint32_t	binding;
 		ImageHandle	image;
 		uint32_t    mipLevel;
 		bool        useGeneralLayout;
+		uint32_t    arrayIndex;
 	};
 
 	struct StorageImageDescriptorWrite {

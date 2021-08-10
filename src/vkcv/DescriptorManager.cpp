@@ -48,20 +48,46 @@ namespace vkcv
     {
         std::vector<vk::DescriptorSetLayoutBinding> setBindings = {};
 
-        //create each set's binding
-        for (auto binding : bindings) {
+        // When using a variable descriptor count, the reflected bindings' descriptorCount value is 0.
+        // However, a proper value has to be specified. Problem is, this value still counts towards Vulkan's limits,
+        // which is why we can't really use something like UINT32_MAX. So, 128 has been chosen.
+        const uint32_t variableDescriptorCountLimit = 128;
+
+        //create set's bindings
+        for (auto binding : bindings)
+        {
             vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding(
                 binding.bindingID,
                 convertDescriptorTypeFlag(binding.descriptorType),
                 binding.descriptorCount,
                 convertShaderStageFlag(binding.shaderStage));
+
+            if(binding.variableCount)
+                // magic number
+                descriptorSetLayoutBinding.descriptorCount = variableDescriptorCountLimit;
+
             setBindings.push_back(descriptorSetLayoutBinding);
         }
 
-        DescriptorSet set;
-
-        //create the descriptor set's layout from the bindings gathered above
+        std::vector<vk::DescriptorBindingFlags> bindingFlags;
+        // create binding flags
+        for (auto binding : bindings)
+        {
+            if (binding.variableCount)
+            {
+                bindingFlags.push_back(vk::DescriptorBindingFlagBitsEXT::eVariableDescriptorCount |
+                                       vk::DescriptorBindingFlagBitsEXT::ePartiallyBound);
+            } else
+            {
+                bindingFlags.push_back({});
+            }
+        }
+        vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo(static_cast<uint32_t>(bindingFlags.size()), bindingFlags.data());
+        //create the descriptor set's layout from the binding and flag information gathered above
         vk::DescriptorSetLayoutCreateInfo layoutInfo({}, setBindings);
+        layoutInfo.setPNext(&bindingFlagsInfo);
+
+        DescriptorSet set;
         if (m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &set.layout) != vk::Result::eSuccess) {
 			vkcv_log(LogLevel::ERROR, "Failed to create descriptor set layout");
             return DescriptorSetHandle();
@@ -69,6 +95,9 @@ namespace vkcv
         
         //create and allocate the set based on the layout that have been gathered above
         vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), 1, &set.layout);
+        vk::DescriptorSetVariableDescriptorCountAllocateInfo variableAllocInfo = {1, &variableDescriptorCountLimit};
+        allocInfo.setPNext(&variableAllocInfo);
+
         auto result = m_Device.allocateDescriptorSets(&allocInfo, &set.vulkanHandle);
         if(result != vk::Result::eSuccess)
         {
@@ -100,6 +129,7 @@ namespace vkcv
 		size_t imageInfoIndex;
 		size_t bufferInfoIndex;
 		uint32_t binding;
+		uint32_t arrayElementIndex;
 		vk::DescriptorType type;
     };
 
@@ -116,7 +146,8 @@ namespace vkcv
 		
 		std::vector<WriteDescriptorSetInfo> writeInfos;
 
-		for (const auto& write : writes.sampledImageWrites) {
+		for (const auto& write : writes.sampledImageWrites)
+		{
 		    vk::ImageLayout layout = write.useGeneralLayout ? vk::ImageLayout::eGeneral : vk::ImageLayout::eShaderReadOnlyOptimal;
 			const vk::DescriptorImageInfo imageInfo(
 				nullptr,
@@ -130,6 +161,7 @@ namespace vkcv
 					imageInfos.size(),
 					0,
 					write.binding,
+					write.arrayIndex,
 					vk::DescriptorType::eSampledImage,
 			};
 			
@@ -149,6 +181,7 @@ namespace vkcv
 					imageInfos.size(),
 					0,
 					write.binding,
+					0,
 					vk::DescriptorType::eStorageImage
 			};
 			
@@ -173,6 +206,7 @@ namespace vkcv
 					0,
 					bufferInfos.size(),
 					write.binding,
+					0,
 					write.dynamic?
 					vk::DescriptorType::eUniformBufferDynamic :
 					vk::DescriptorType::eUniformBuffer
@@ -199,6 +233,7 @@ namespace vkcv
 					0,
 					bufferInfos.size(),
 					write.binding,
+					0,
 					write.dynamic?
 					vk::DescriptorType::eStorageBufferDynamic :
 					vk::DescriptorType::eStorageBuffer
@@ -222,6 +257,7 @@ namespace vkcv
 					imageInfos.size(),
 					0,
 					write.binding,
+					0,
 					vk::DescriptorType::eSampler
 			};
 			
@@ -234,7 +270,7 @@ namespace vkcv
 			vk::WriteDescriptorSet vulkanWrite(
 					set,
 					write.binding,
-					static_cast<uint32_t>(0),
+					write.arrayElementIndex,
 					1,
 					write.type,
 					(write.imageInfoIndex > 0? &(imageInfos[write.imageInfoIndex - 1]) : nullptr),
