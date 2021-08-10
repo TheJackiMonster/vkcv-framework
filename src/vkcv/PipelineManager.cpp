@@ -267,37 +267,13 @@ namespace vkcv
                 createPipelineMultisampleStateCreateInfo(config);
 
         // color blend state
-        vk::ColorComponentFlags colorWriteMask(VK_COLOR_COMPONENT_R_BIT |
-                                               VK_COLOR_COMPONENT_G_BIT |
-                                               VK_COLOR_COMPONENT_B_BIT |
-                                               VK_COLOR_COMPONENT_A_BIT);
+        vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo =
+                createPipelineColorBlendStateCreateInfo(config);
 
-        // currently set to additive, if not disabled
-        // BlendFactors must be set as soon as additional BlendModes are added
-        vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
-                config.m_blendMode != BlendMode::None,
-                vk::BlendFactor::eOne,
-                vk::BlendFactor::eOne,
-                vk::BlendOp::eAdd,
-                vk::BlendFactor::eOne,
-                vk::BlendFactor::eOne,
-                vk::BlendOp::eAdd,
-                colorWriteMask
-        );
-
-        vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
-                {},
-                false,
-                vk::LogicOp::eClear,
-                1,	//TODO: hardcoded to one
-                &colorBlendAttachmentState,
-                { 1.f,1.f,1.f,1.f }
-        );
-
+        // pipeline layout
         const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
         const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, pushConstantSize);
 
-        // pipeline layout
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
                 {},
                 (config.m_DescriptorLayouts),
@@ -313,6 +289,7 @@ namespace vkcv
             return PipelineHandle();
         }
 
+        // Depth Stencil
         const vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo(
                 vk::PipelineDepthStencilStateCreateFlags(),
                 config.m_depthTest != DepthTest::None,
@@ -336,6 +313,7 @@ namespace vkcv
             }
         }
 
+        // Dynamic State
         std::vector<vk::DynamicState> dynamicStates = {};
         if(config.m_UseDynamicViewport)
         {
@@ -628,5 +606,36 @@ namespace vkcv
                 false
         );
         return pipelineMultisampleStateCreateInfo;
+    }
+
+    vk::PipelineColorBlendStateCreateInfo
+    PipelineManager::createPipelineColorBlendStateCreateInfo(const PipelineConfig &config) {
+        vk::ColorComponentFlags colorWriteMask(VK_COLOR_COMPONENT_R_BIT |
+                                               VK_COLOR_COMPONENT_G_BIT |
+                                               VK_COLOR_COMPONENT_B_BIT |
+                                               VK_COLOR_COMPONENT_A_BIT);
+
+        // currently set to additive, if not disabled
+        // BlendFactors must be set as soon as additional BlendModes are added
+        vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
+                config.m_blendMode != BlendMode::None,
+                vk::BlendFactor::eOne,
+                vk::BlendFactor::eOne,
+                vk::BlendOp::eAdd,
+                vk::BlendFactor::eOne,
+                vk::BlendFactor::eOne,
+                vk::BlendOp::eAdd,
+                colorWriteMask
+        );
+
+        vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
+                {},
+                false,
+                vk::LogicOp::eClear,
+                1,	//TODO: hardcoded to one
+                &colorBlendAttachmentState,
+                { 1.f,1.f,1.f,1.f }
+        );
+        return pipelineColorBlendStateCreateInfo;
     }
 }

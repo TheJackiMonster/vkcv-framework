@@ -64,7 +64,7 @@ namespace vkcv
                 const PipelineConfig &config);
 
         /**
-         * Create a Pipeline Vertex Input State Create Info Struct and fills it with Attribute and Binding data.
+         * Creates a Pipeline Vertex Input State Create Info Struct and fills it with Attribute and Binding data.
          * @param vertexAttributeDescriptions
          * @param vertexBindingDescriptions
          * @return Pipeline Vertex Input State Create Info Struct
@@ -75,21 +75,21 @@ namespace vkcv
         );
 
         /**
-         * Create a Pipeline Input Assembly State Create Info Struct with 'Primitive Restart' disabled.
+         * Creates a Pipeline Input Assembly State Create Info Struct with 'Primitive Restart' disabled.
          * @param config provides data for primitive topology.
          * @return Pipeline Input Assembly State Create Info Struct
          */
         vk::PipelineInputAssemblyStateCreateInfo createPipelineInputAssemblyStateCreateInfo(const PipelineConfig &config);
 
         /**
-         * Create a Pipeline Viewport State Create Info Struct with default set viewport and scissor settings.
+         * Creates a Pipeline Viewport State Create Info Struct with default set viewport and scissor settings.
          * @param config provides with and height of the output window
          * @return Pipeline Viewport State Create Info Struct
          */
         vk::PipelineViewportStateCreateInfo createPipelineViewportStateCreateInfo(const PipelineConfig &config);
 
         /**
-         * Create a Pipeline Rasterization State Create Info Struct with default values set to:
+         * Creates a Pipeline Rasterization State Create Info Struct with default values set to:
          * Rasterizer Discard: Disabled
          * Polygon Mode: Fill
          * Front Face: Counter Clockwise
@@ -102,11 +102,18 @@ namespace vkcv
         vk::PipelineRasterizationStateCreateInfo createPipelineRasterizationStateCreateInfo(const PipelineConfig &config);
 
         /**
-         * Create a Pipeline Multisample State Create Info Struct.
+         * Creates a Pipeline Multisample State Create Info Struct.
          * @param config set MSAA Sample Count Flag
          * @return Pipeline Multisample State Create Info Struct
          */
         vk::PipelineMultisampleStateCreateInfo createPipelineMultisampleStateCreateInfo(const PipelineConfig &config);
 
+        /**
+         * Creates a Pipeline Color Blend State Create Info Struct.
+         * Currently only one blend mode is supported! There for, blending is set to additive.
+         * @param config sets blend mode
+         * @return
+         */
+        vk::PipelineColorBlendStateCreateInfo createPipelineColorBlendStateCreateInfo(const PipelineConfig &config);
     };
 }
