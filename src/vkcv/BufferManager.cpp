@@ -48,6 +48,9 @@ namespace vkcv {
 			case BufferType::INDEX:
 				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
 				break;
+            case BufferType::INDIRECT:
+                usageFlags = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndirectBuffer ;
+                break;
 			default:
 				// TODO: maybe an issue
 				break;
