@@ -298,17 +298,8 @@ namespace vkcv
         }
 
         // Dynamic State
-        std::vector<vk::DynamicState> dynamicStates = {};
-        if(config.m_UseDynamicViewport)
-        {
-            dynamicStates.push_back(vk::DynamicState::eViewport);
-            dynamicStates.push_back(vk::DynamicState::eScissor);
-        }
-
-        vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo(
-                {},
-                static_cast<uint32_t>(dynamicStates.size()),
-                dynamicStates.data());
+        vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo =
+                createPipelineDynamicStateCreateInfo(config);
 
         const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
                 {},
@@ -651,8 +642,24 @@ namespace vkcv
                 0.0f,
                 1.0f
         );
-
         return pipelineDepthStencilCreateInfo;
+    }
+
+    vk::PipelineDynamicStateCreateInfo
+    PipelineManager::createPipelineDynamicStateCreateInfo(const PipelineConfig &config) {
+        std::vector<vk::DynamicState> dynamicStates = {};
+        if(config.m_UseDynamicViewport)
+        {
+            dynamicStates.push_back(vk::DynamicState::eViewport);
+            dynamicStates.push_back(vk::DynamicState::eScissor);
+        }
+
+        vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo(
+                {},
+                static_cast<uint32_t>(dynamicStates.size()),
+                dynamicStates.data()
+        );
+        return dynamicStateCreateInfo;
     }
 
 }

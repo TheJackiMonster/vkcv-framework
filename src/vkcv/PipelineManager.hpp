@@ -130,5 +130,6 @@ namespace vkcv
          */
         vk::PipelineDepthStencilStateCreateInfo createPipelineDepthStencilStateCreateInfo(const PipelineConfig &config);
 
+        vk::PipelineDynamicStateCreateInfo createPipelineDynamicStateCreateInfo(const PipelineConfig &config);
     };
 }
