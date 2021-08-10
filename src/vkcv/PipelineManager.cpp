@@ -58,13 +58,21 @@ namespace vkcv
 
     vk::CompareOp depthTestToVkCompareOp(DepthTest depthTest) {
         switch (depthTest) {
-            case(DepthTest::None):          return vk::CompareOp::eAlways;
-            case(DepthTest::Less):          return vk::CompareOp::eLess;
-            case(DepthTest::LessEqual):     return vk::CompareOp::eLessOrEqual;
-            case(DepthTest::Greater):       return vk::CompareOp::eGreater;
-            case(DepthTest::GreatherEqual): return vk::CompareOp::eGreaterOrEqual;
-            case(DepthTest::Equal):         return vk::CompareOp::eEqual;
-            default: vkcv_log(LogLevel::ERROR, "Unknown depth test enum"); return vk::CompareOp::eAlways;
+            case(DepthTest::None):
+                return vk::CompareOp::eAlways;
+            case(DepthTest::Less):
+                return vk::CompareOp::eLess;
+            case(DepthTest::LessEqual):
+                return vk::CompareOp::eLessOrEqual;
+            case(DepthTest::Greater):
+                return vk::CompareOp::eGreater;
+            case(DepthTest::GreatherEqual):
+                return vk::CompareOp::eGreaterOrEqual;
+            case(DepthTest::Equal):
+                return vk::CompareOp::eEqual;
+            default:
+                vkcv_log(LogLevel::ERROR, "Unknown depth test enum");
+                return vk::CompareOp::eAlways;
         }
     }
 
