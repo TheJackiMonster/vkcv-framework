@@ -6,6 +6,18 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
+void addMeshToIdirectDraw(const std::vector<vkcv::asset::VertexGroup>& meshes, std::vector<vk::DrawIndexedIndirectCommand>& indexedIndirectCommands){
+
+    for(vkcv::asset::VertexGroup mesh : meshes){
+        vk::DrawIndexedIndirectCommand indirectCommand{
+                mesh.indexBuffer.data.size(),
+                1,
+                mesh.indexBuffer.data[0],
+                0,
+                indexedIndirectCommands.size()};
+        indexedIndirectCommands.push_back(indirectCommand);
+    }
+}
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
 
