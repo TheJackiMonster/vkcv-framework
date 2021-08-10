@@ -256,6 +256,16 @@ namespace vkcv
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets);
 
+        void Core::recordIndirectDrawcallsToCmdStream(
+                const CommandStreamHandle       cmdStreamHandle,
+                const PassHandle                renderpassHandle,
+                const PipelineHandle            pipelineHandle,
+                const PushConstants             &pushConstantData,
+                const std::vector<DrawcallInfo> &drawcalls,
+                const std::vector<ImageHandle>  &renderTargets,
+                const vkcv::Buffer<vk::DrawIndexedIndirectCommand> &indirectBuffer,
+                const uint32_t                              drawCount);
+
 		void recordMeshShaderDrawcalls(
 			const CommandStreamHandle               cmdStreamHandle,
 			const PassHandle                        renderpassHandle,
