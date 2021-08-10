@@ -78,15 +78,25 @@ namespace vkcv
 
     vk::ShaderStageFlagBits shaderStageToVkShaderStage(ShaderStage stage) {
         switch (stage) {
-            case ShaderStage::VERTEX:         return vk::ShaderStageFlagBits::eVertex;
-            case ShaderStage::FRAGMENT:       return vk::ShaderStageFlagBits::eFragment;
-            case ShaderStage::GEOMETRY:       return vk::ShaderStageFlagBits::eGeometry;
-            case ShaderStage::TESS_CONTROL:   return vk::ShaderStageFlagBits::eTessellationControl;
-            case ShaderStage::TESS_EVAL:      return vk::ShaderStageFlagBits::eTessellationEvaluation;
-            case ShaderStage::COMPUTE:        return vk::ShaderStageFlagBits::eCompute;
-            case ShaderStage::TASK:           return vk::ShaderStageFlagBits::eTaskNV;
-            case ShaderStage::MESH:           return vk::ShaderStageFlagBits::eMeshNV;
-            default: vkcv_log(LogLevel::ERROR, "Unknown shader stage"); return vk::ShaderStageFlagBits::eAll;
+            case ShaderStage::VERTEX:
+                return vk::ShaderStageFlagBits::eVertex;
+            case ShaderStage::FRAGMENT:
+                return vk::ShaderStageFlagBits::eFragment;
+            case ShaderStage::GEOMETRY:
+                return vk::ShaderStageFlagBits::eGeometry;
+            case ShaderStage::TESS_CONTROL:
+                return vk::ShaderStageFlagBits::eTessellationControl;
+            case ShaderStage::TESS_EVAL:
+                return vk::ShaderStageFlagBits::eTessellationEvaluation;
+            case ShaderStage::COMPUTE:
+                return vk::ShaderStageFlagBits::eCompute;
+            case ShaderStage::TASK:
+                return vk::ShaderStageFlagBits::eTaskNV;
+            case ShaderStage::MESH:
+                return vk::ShaderStageFlagBits::eMeshNV;
+            default:
+                vkcv_log(LogLevel::ERROR, "Unknown shader stage");
+                return vk::ShaderStageFlagBits::eAll;
         }
     }
 
