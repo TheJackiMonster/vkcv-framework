@@ -261,10 +261,18 @@ namespace vkcv
 
         vk::CullModeFlags cullMode;
         switch (config.m_culling) {
-            case CullMode::None:    cullMode = vk::CullModeFlagBits::eNone;     break;
-            case CullMode::Front:   cullMode = vk::CullModeFlagBits::eFront;    break;
-            case CullMode::Back:    cullMode = vk::CullModeFlagBits::eBack;     break;
-            default: vkcv_log(LogLevel::ERROR, "Unknown CullMode"); cullMode = vk::CullModeFlagBits::eNone;
+            case CullMode::None:
+                cullMode = vk::CullModeFlagBits::eNone;
+                break;
+            case CullMode::Front:
+                cullMode = vk::CullModeFlagBits::eFront;
+                break;
+            case CullMode::Back:
+                cullMode = vk::CullModeFlagBits::eBack;
+                break;
+            default:
+                vkcv_log(LogLevel::ERROR, "Unknown CullMode");
+                cullMode = vk::CullModeFlagBits::eNone;
         }
 
         // rasterization state
