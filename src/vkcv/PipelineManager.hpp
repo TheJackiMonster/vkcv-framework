@@ -80,5 +80,12 @@ namespace vkcv
          * @return Pipeline Input Assembly State Create Info Struct
          */
         vk::PipelineInputAssemblyStateCreateInfo createPipelineInputAssemblyStateCreateInfo(const PipelineConfig &config);
+
+        /**
+         * Create a Pipeline Viewport State Create Info Struct with default set viewport and scissor settings
+         * @param config provides with and height of the output window
+         * @return Pipeline Viewport State Create Info Struct
+         */
+        vk::PipelineViewportStateCreateInfo createPipelineViewportStateCreateInfo(const PipelineConfig &config);
     };
 }

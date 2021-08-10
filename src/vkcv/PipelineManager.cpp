@@ -255,9 +255,8 @@ namespace vkcv
                 createPipelineInputAssemblyStateCreateInfo(config);
 
         // viewport state
-        vk::Viewport viewport(0.f, 0.f, static_cast<float>(config.m_Width), static_cast<float>(config.m_Height), 0.f, 1.f);
-        vk::Rect2D scissor({ 0,0 }, { config.m_Width, config.m_Height });
-        vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, 1, &viewport, 1, &scissor);
+        vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo =
+                createPipelineViewportStateCreateInfo(config);
 
         vk::CullModeFlags cullMode;
         switch (config.m_culling) {
@@ -594,5 +593,24 @@ namespace vkcv
                 false
         );
         return pipelineInputAssemblyStateCreateInfo;
+    }
+
+    vk::PipelineViewportStateCreateInfo
+    PipelineManager::createPipelineViewportStateCreateInfo(const PipelineConfig &config) {
+        vk::Viewport viewport(0.f, 0.f,
+                              static_cast<float>(config.m_Width),
+                              static_cast<float>(config.m_Height),
+                              0.f, 1.f);
+
+        vk::Rect2D scissor({ 0,0 },
+                           { config.m_Width,
+                             config.m_Height });
+
+        vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({},
+                                                                            1,
+                                                                            &viewport,
+                                                                            1,
+                                                                            &scissor);
+        return pipelineViewportStateCreateInfo;
     }
 }
