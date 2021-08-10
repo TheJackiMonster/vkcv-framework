@@ -115,5 +115,20 @@ namespace vkcv
          * @return
          */
         vk::PipelineColorBlendStateCreateInfo createPipelineColorBlendStateCreateInfo(const PipelineConfig &config);
+
+        /**
+         * Creates a Pipeline Layout Create Info Struct.
+         * @param config sets Push Constant Size and Descriptor Layouts.
+         * @return Pipeline Layout Create Info Struct
+         */
+        vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(const PipelineConfig &config);
+
+        /**
+         * Creates a Pipeline Depth Stencil State Create Info Struct.
+         * @param config sets if depth test in enabled or not.
+         * @return Pipeline Layout Create Info Struct
+         */
+        vk::PipelineDepthStencilStateCreateInfo createPipelineDepthStencilStateCreateInfo(const PipelineConfig &config);
+
     };
 }

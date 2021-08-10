@@ -271,16 +271,10 @@ namespace vkcv
                 createPipelineColorBlendStateCreateInfo(config);
 
         // pipeline layout
-        const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
-        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, pushConstantSize);
 
-        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
-                {},
-                (config.m_DescriptorLayouts),
-                (pushConstantRange));
-        if (pushConstantSize == 0) {
-            pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-        }
+
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
+                createPipelineLayoutCreateInfo(config);
 
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
@@ -290,18 +284,8 @@ namespace vkcv
         }
 
         // Depth Stencil
-        const vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo(
-                vk::PipelineDepthStencilStateCreateFlags(),
-                config.m_depthTest != DepthTest::None,
-                config.m_depthWrite,
-                depthTestToVkCompareOp(config.m_depthTest),
-                false,
-                false,
-                {},
-                {},
-                0.0f,
-                1.0f
-        );
+        const vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo =
+                createPipelineDepthStencilStateCreateInfo(config);
 
         const vk::PipelineDepthStencilStateCreateInfo* p_depthStencilCreateInfo = nullptr;
         const PassConfig& passConfig = passManager.getPassConfig(config.m_PassHandle);
@@ -638,4 +622,37 @@ namespace vkcv
         );
         return pipelineColorBlendStateCreateInfo;
     }
+
+    vk::PipelineLayoutCreateInfo PipelineManager::createPipelineLayoutCreateInfo(const PipelineConfig &config) {
+        const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
+        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, pushConstantSize);
+
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
+                {},
+                (config.m_DescriptorLayouts),
+                (pushConstantRange));
+        if (pushConstantSize == 0) {
+            pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+        }
+        return pipelineLayoutCreateInfo;
+    }
+
+    vk::PipelineDepthStencilStateCreateInfo
+    PipelineManager::createPipelineDepthStencilStateCreateInfo(const PipelineConfig &config) {
+        const vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilCreateInfo(
+                vk::PipelineDepthStencilStateCreateFlags(),
+                config.m_depthTest != DepthTest::None,
+                config.m_depthWrite,
+                depthTestToVkCompareOp(config.m_depthTest),
+                false,
+                false,
+                {},
+                {},
+                0.0f,
+                1.0f
+        );
+
+        return pipelineDepthStencilCreateInfo;
+    }
+
 }
