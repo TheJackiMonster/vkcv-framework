@@ -423,7 +423,6 @@ namespace vkcv
         const vk::Pipeline          pipeline        = m_PipelineManager->getVkPipeline(pipelineHandle);
         const vk::PipelineLayout    pipelineLayout  = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
         const vk::Rect2D            renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
-        const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
 
         vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
         transitionRendertargetsToAttachmentLayout(renderTargets, *m_ImageManager, cmdBuffer);
