@@ -399,21 +399,22 @@ namespace vkcv
 	}
 
     void Core::recordIndirectDrawcallsToCmdStream(
-            const CommandStreamHandle       cmdStreamHandle,
-            const PassHandle                renderpassHandle,
-            const PipelineHandle            pipelineHandle,
-            const PushConstants             &pushConstantData,
-            const std::vector<DrawcallInfo> &drawcalls,
-            const std::vector<ImageHandle>  &renderTargets,
-            const vkcv::Buffer<vk::DrawIndexedIndirectCommand> &indirectBuffer,
-            const uint32_t                  drawCount) {
+            const CommandStreamHandle                           cmdStreamHandle,
+            const PassHandle                                    renderpassHandle,
+            const PipelineHandle                                pipelineHandle,
+            const PushConstants                                 &pushConstantData,
+            const std::vector<DrawcallInfo>                     &drawcalls,
+            const std::vector<ImageHandle>                      &renderTargets,
+            const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
+            const uint32_t                                      drawCount) {
 
         if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
             return;
         }
 
-        const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_swapchain, *m_ImageManager);
-        const auto width  = widthHeight[0];
+        const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_swapchain,
+                                                                                    *m_ImageManager);
+        const auto width = widthHeight[0];
         const auto height = widthHeight[1];
 
         const vk::RenderPass        renderpass      = m_PassManager->getVkPass(renderpassHandle);
@@ -422,11 +423,13 @@ namespace vkcv
         const vk::Pipeline          pipeline        = m_PipelineManager->getVkPipeline(pipelineHandle);
         const vk::PipelineLayout    pipelineLayout  = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
         const vk::Rect2D            renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+        const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
 
         vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
         transitionRendertargetsToAttachmentLayout(renderTargets, *m_ImageManager, cmdBuffer);
 
-        const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_swapchain, renderpass, m_Context.m_Device);
+        const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_swapchain, renderpass,
+                                                              m_Context.m_Device);
 
         if (!framebuffer) {
             vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
@@ -435,31 +438,31 @@ namespace vkcv
 
         SubmitInfo submitInfo;
         submitInfo.queueType = QueueType::Graphics;
-        submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
+        submitInfo.signalSemaphores = {m_SyncResources.renderFinished};
 
-        auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+        auto submitFunction = [&](const vk::CommandBuffer &cmdBuffer) {
 
             const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
 
-            const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
+            const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(),
+                                                    clearValues.data());
             cmdBuffer.beginRenderPass(beginInfo, {}, {});
 
             cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
             const PipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
-            if(pipeConfig.m_UseDynamicViewport)
-            {
+            if (pipeConfig.m_UseDynamicViewport) {
                 recordDynamicViewport(cmdBuffer, width, height);
             }
 
             for (int i = 0; i < drawcalls.size(); i++) {
-                recordIndirectDrawcall(drawcalls[i], cmdBuffer, indirectBuffer, drawCount , pipelineLayout, pushConstantData, i);
+                recordIndirectDrawcall(drawcalls[i], cmdBuffer, indirectBuffer, drawCount, pipelineLayout,
+                                       pushConstantData, i);
             }
             cmdBuffer.endRenderPass();
         };
 
-        auto finishFunction = [framebuffer, this]()
-        {
+        auto finishFunction = [framebuffer, this]() {
             m_Context.m_Device.destroy(framebuffer);
         };
 

@@ -6,10 +6,11 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
-void addMeshToIdirectDraw(const std::vector<vkcv::asset::VertexGroup>& meshes, std::vector<vk::DrawIndexedIndirectCommand>& indexedIndirectCommands){
+void addMeshToIdirectDraw(const std::vector<vkcv::asset::VertexGroup> &meshes,
+                          std::vector<vk::DrawIndexedIndirectCommand> &indexedIndirectCommands) {
 
-    for(vkcv::asset::VertexGroup mesh : meshes){
-        vk::DrawIndexedIndirectCommand indirectCommand{
+    for (vkcv::asset::VertexGroup mesh : meshes) {
+        vk::DrawIndexedIndirectCommand indirectCommand {
                 mesh.indexBuffer.data.size(),
                 1,
                 mesh.indexBuffer.data[0],
@@ -65,7 +66,10 @@ int main(int argc, const char** argv) {
 
     addMeshToIdirectDraw(mesh.vertexGroups, indexedIndirectCommands);
 
-    vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(vkcv::BufferType::INDIRECT,  indexedIndirectCommands.size()  * sizeof(vk::DrawIndexedIndirectCommand), vkcv::BufferMemoryType::DEVICE_LOCAL);
+    vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(
+            vkcv::BufferType::INDIRECT,
+            indexedIndirectCommands.size() * sizeof(vk::DrawIndexedIndirectCommand),
+            vkcv::BufferMemoryType::DEVICE_LOCAL);
 
     indirectBuffer.fill(indexedIndirectCommands);
 

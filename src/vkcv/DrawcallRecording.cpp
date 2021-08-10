@@ -62,11 +62,11 @@ namespace vkcv {
             const size_t                                    drawcallIndex) {
 
         for (uint32_t i = 0; i < drawcall.mesh.vertexBufferBindings.size(); i++) {
-            const auto& vertexBinding = drawcall.mesh.vertexBufferBindings[i];
+            const auto &vertexBinding = drawcall.mesh.vertexBufferBindings[i];
             cmdBuffer.bindVertexBuffers(i, vertexBinding.buffer, vertexBinding.offset);
         }
 
-        for (const auto& descriptorUsage : drawcall.descriptorSets) {
+        for (const auto &descriptorUsage : drawcall.descriptorSets) {
             cmdBuffer.bindDescriptorSets(
                     vk::PipelineBindPoint::eGraphics,
                     pipelineLayout,
@@ -88,11 +88,11 @@ namespace vkcv {
 
             cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, getIndexType(drawcall.mesh.indexBitCount));
 
-            cmdBuffer.drawIndexedIndirect(drawBuffer.getVulkanHandle(), 0, drawCount , sizeof(vk::DrawIndexedIndirectCommand) );
+            cmdBuffer.drawIndexedIndirect(drawBuffer.getVulkanHandle(), 0, drawCount,
+                                          sizeof(vk::DrawIndexedIndirectCommand));
 
-        }
-        else {
-            cmdBuffer.drawIndirect(drawBuffer.getVulkanHandle(), 0, drawCount, sizeof(vk::DrawIndexedIndirectCommand) );
+        } else {
+            cmdBuffer.drawIndirect(drawBuffer.getVulkanHandle(), 0, drawCount, sizeof(vk::DrawIndexedIndirectCommand));
         }
     }
 
