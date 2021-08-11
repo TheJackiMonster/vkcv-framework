@@ -103,7 +103,7 @@ void App::run() {
 
 	float   objectVerticalSpeed         = 0.005;
 	float   motionBlurMinVelocity       = 0.001;
-	int     cameraShutterSpeedInverse   = 48;
+	int     cameraShutterSpeedInverse   = 30;
 
 	glm::mat4 mvpPrevious               = glm::mat4(1.f);
 	glm::mat4 viewProjectionPrevious    = m_cameraManager.getActiveCamera().getMVP();
