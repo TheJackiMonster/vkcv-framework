@@ -101,7 +101,8 @@ void App::run() {
 	eDebugView          debugView       = eDebugView::None;
 	eMotionBlurInput    motionBlurInput = eMotionBlurInput::MotionVectorMaxTileNeighbourhood;
 
-	float objectVerticalSpeed = 0.005;
+	float   objectVerticalSpeed       = 0.005;
+	int     cameraShutterSpeedInverse = 48;
 
 	glm::mat4 mvpPrevious               = glm::mat4(1.f);
 	glm::mat4 viewProjectionPrevious    = m_cameraManager.getActiveCamera().getMVP();
@@ -126,7 +127,6 @@ void App::run() {
 
 		auto frameEndTime   = std::chrono::system_clock::now();
 		auto deltatime      = std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - frameStartTime);
-		frameStartTime      = frameEndTime;
 
 		m_cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 		const glm::mat4 viewProjection = m_cameraManager.getActiveCamera().getMVP();
@@ -281,12 +281,19 @@ void App::run() {
 		m_core.prepareImageForSampling(cmdStream, m_renderTargets.colorBuffer);
 		m_core.prepareImageForSampling(cmdStream, motionBuffer);
 
+		const float microsecondToSecond     = 0.000001;
+		const float fDeltatimeSeconds       = microsecondToSecond * std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - frameStartTime).count();
+		const float motionBlurMotionFactor  = 1 / (fDeltatimeSeconds * cameraShutterSpeedInverse);
+
+		vkcv::PushConstants motionBlurPushConstants(sizeof(float));
+		motionBlurPushConstants.appendDrawcall(motionBlurMotionFactor);
+
 		m_core.recordComputeDispatchToCmdStream(
 			cmdStream,
 			m_motionBlurDummyPass.pipeline,
 			fullScreenImageDispatch,
 			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_motionBlurDummyPass.descriptorSet).vulkanHandle) },
-			vkcv::PushConstants(0));
+			motionBlurPushConstants);
 
 		// gamma correction
 		vkcv::ImageHandle gammaCorrectionInput;
@@ -342,6 +349,7 @@ void App::run() {
 			static_cast<int>(eMotionBlurInput::OptionCount));
 
 		ImGui::InputFloat("Object movement speed", &objectVerticalSpeed);
+		ImGui::InputInt("Camera shutter speed inverse", &cameraShutterSpeedInverse);
 
 		ImGui::End();
 		gui.endGUI();
@@ -350,5 +358,6 @@ void App::run() {
 
 		viewProjectionPrevious  = viewProjection;
 		mvpPrevious             = mvp;
+		frameStartTime          = frameEndTime;
 	}
 }
