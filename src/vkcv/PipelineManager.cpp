@@ -239,7 +239,6 @@ namespace vkcv
         }
 
         // vertex input state
-
         // Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
         std::vector<vk::VertexInputAttributeDescription>	vertexAttributeDescriptions;
         std::vector<vk::VertexInputBindingDescription>		vertexBindingDescriptions;
@@ -270,15 +269,16 @@ namespace vkcv
         vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo =
                 createPipelineColorBlendStateCreateInfo(config);
 
+        // Dynamic State
+        vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo =
+                createPipelineDynamicStateCreateInfo(config);
+
         // pipeline layout
-
-
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
                 createPipelineLayoutCreateInfo(config);
 
         vk::PipelineLayout vkPipelineLayout{};
-        if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess)
-        {
+        if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess) {
             destroyShaderModules();
             return PipelineHandle();
         }
@@ -297,10 +297,7 @@ namespace vkcv
             }
         }
 
-        // Dynamic State
-        vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo =
-                createPipelineDynamicStateCreateInfo(config);
-
+        // Get all setting structs together and create the Pipeline
         const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
                 {},
                 static_cast<uint32_t>(shaderStages.size()),
@@ -321,6 +318,7 @@ namespace vkcv
                 0
         );
 
+        // Catch runtime error if the creation of the pipeline fails.
         vk::Pipeline vkPipeline{};
         if (m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess)
         {
@@ -328,8 +326,10 @@ namespace vkcv
             return PipelineHandle();
         }
 
+        // Clean Up
         destroyShaderModules();
 
+        // Hand over Handler to main Application
         const uint64_t id = m_Pipelines.size();
         m_Pipelines.push_back({ vkPipeline, vkPipelineLayout, config });
         return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });

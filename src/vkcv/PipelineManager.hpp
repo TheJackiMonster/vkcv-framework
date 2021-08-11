@@ -130,6 +130,11 @@ namespace vkcv
          */
         vk::PipelineDepthStencilStateCreateInfo createPipelineDepthStencilStateCreateInfo(const PipelineConfig &config);
 
+        /**
+         * Creates a Pipeline Dynamic State Create Info Struct.
+         * @param config sets whenever a dynamic viewport is used or not.
+         * @return Pipeline Dynamic State Create Info Struct
+         */
         vk::PipelineDynamicStateCreateInfo createPipelineDynamicStateCreateInfo(const PipelineConfig &config);
     };
 }
