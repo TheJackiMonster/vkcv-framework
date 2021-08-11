@@ -101,8 +101,9 @@ void App::run() {
 	eDebugView          debugView       = eDebugView::None;
 	eMotionBlurInput    motionBlurInput = eMotionBlurInput::MotionVectorMaxTileNeighbourhood;
 
-	float   objectVerticalSpeed       = 0.005;
-	int     cameraShutterSpeedInverse = 48;
+	float   objectVerticalSpeed         = 0.005;
+	float   motionBlurMinVelocity       = 0.001;
+	int     cameraShutterSpeedInverse   = 48;
 
 	glm::mat4 mvpPrevious               = glm::mat4(1.f);
 	glm::mat4 viewProjectionPrevious    = m_cameraManager.getActiveCamera().getMVP();
@@ -285,8 +286,11 @@ void App::run() {
 		const float fDeltatimeSeconds       = microsecondToSecond * std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - frameStartTime).count();
 		const float motionBlurMotionFactor  = 1 / (fDeltatimeSeconds * cameraShutterSpeedInverse);
 
-		vkcv::PushConstants motionBlurPushConstants(sizeof(float));
-		motionBlurPushConstants.appendDrawcall(motionBlurMotionFactor);
+		vkcv::PushConstants motionBlurPushConstants(sizeof(float) * 2);
+
+		float motionBlurConstantData[2] = { motionBlurMotionFactor, motionBlurMinVelocity };
+
+		motionBlurPushConstants.appendDrawcall(motionBlurConstantData);
 
 		m_core.recordComputeDispatchToCmdStream(
 			cmdStream,
@@ -350,6 +354,7 @@ void App::run() {
 
 		ImGui::InputFloat("Object movement speed", &objectVerticalSpeed);
 		ImGui::InputInt("Camera shutter speed inverse", &cameraShutterSpeedInverse);
+		ImGui::DragFloat("Motion blur min velocity", &motionBlurMinVelocity, 0.01, 0, 1);
 
 		ImGui::End();
 		gui.endGUI();

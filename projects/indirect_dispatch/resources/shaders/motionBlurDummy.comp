@@ -11,6 +11,7 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout( push_constant ) uniform constants{
     // computed from delta time and shutter speed
     float motionFactor;
+    float minVelocity;
 };
 
 
@@ -24,6 +25,15 @@ void main(){
     vec2    uv          = vec2(coord) / textureRes;
 
     vec2    motion      = texture(sampler2D(inMotion, textureSampler), uv).rg;
+    float   velocity    = length(motion);
+    
+    // early out on little movement
+    if(velocity < minVelocity){
+        vec3 color = texture(sampler2D(inColor, textureSampler), uv).rgb;
+        imageStore(outImage, coord, vec4(color, 0.f));
+        return;
+    }
+    
     motion              *= motionFactor;
 
     vec3        color       = vec3(0);
