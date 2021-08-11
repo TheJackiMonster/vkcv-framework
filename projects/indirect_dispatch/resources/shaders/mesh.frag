@@ -2,9 +2,11 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 layout(location = 0) in vec3 passNormal;
+layout(location = 1) in vec3 passPos;
 
 layout(location = 0) out vec3 outColor;
 
 void main()	{
-	outColor = passNormal * 0.5 + 0.5;
+	// outColor = passNormal * 0.5 + 0.5;
+    outColor = vec3(sin(passPos.y * 100) * 0.5 + 0.5);
 }

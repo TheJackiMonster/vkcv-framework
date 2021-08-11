@@ -6,6 +6,8 @@ struct RenderTargets {
 	vkcv::ImageHandle colorBuffer;
 	vkcv::ImageHandle motionBlurOutput;
 	vkcv::ImageHandle motionBuffer;
+	vkcv::ImageHandle motionMax;
+	vkcv::ImageHandle motionMaxNeighbourhood;
 };
 
 struct GraphicPassHandles {

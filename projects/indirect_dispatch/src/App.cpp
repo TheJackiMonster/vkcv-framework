@@ -41,6 +41,12 @@ bool App::initialize() {
 	if(!loadComputePass(m_core, "resources/shaders/motionBlurDummy.comp", &m_motionBlurDummyPass))
 		return false;
 
+	if (!loadComputePass(m_core, "resources/shaders/motionVectorMax.comp", &m_motionVectorMaxPass))
+		return false;
+
+	if (!loadComputePass(m_core, "resources/shaders/motionVectorMaxNeighbourhood.comp", &m_motionVectorMaxNeighbourhoodPass))
+		return false;
+
 	if (!loadMesh(m_core, "resources/models/sphere.gltf", & m_sphereMesh))
 		return false;
 
@@ -62,15 +68,43 @@ bool App::initialize() {
 void App::run() {
 
 	auto                        frameStartTime = std::chrono::system_clock::now();
+	const auto                  appStartTime   = std::chrono::system_clock::now();
 	const vkcv::ImageHandle     swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	const vkcv::DrawcallInfo    sphereDrawcall(m_sphereMesh.mesh, {}, 1);
 	const vkcv::DrawcallInfo    cubeDrawcall(m_cubeMesh.mesh, {}, 1);
 
 	vkcv::gui::GUI gui(m_core, m_window);
+	enum class eDebugView : int { 
+		None                                = 0, 
+		MotionVector                        = 1, 
+		MotionVectorMaxTile                 = 2, 
+		MotionVectorMaxTileNeighbourhood    = 3,
+		OptionCount                         = 4 };
 
-	bool drawMotionVectors = false;
+	const char* debugViewLabels[] = {
+		"None",
+		"Motion vectors",
+		"Motion vector max tiles",
+		"Motion vector tile neighbourhood max" };
 
-	glm::mat4 previousFrameViewProjection = m_cameraManager.getActiveCamera().getMVP();
+	enum class eMotionBlurInput : int {
+		MotionVector                        = 0,
+		MotionVectorMaxTile                 = 1,
+		MotionVectorMaxTileNeighbourhood    = 2,
+		OptionCount                         = 3 };
+
+	const char* motionInputLabels[] = {
+		"Motion vectors",
+		"Motion vector max tiles",
+		"Motion vector tile neighbourhood max" };
+
+	eDebugView          debugView       = eDebugView::None;
+	eMotionBlurInput    motionBlurInput = eMotionBlurInput::MotionVectorMaxTileNeighbourhood;
+
+	float objectVerticalSpeed = 0.005;
+
+	glm::mat4 mvpPrevious               = glm::mat4(1.f);
+	glm::mat4 viewProjectionPrevious    = m_cameraManager.getActiveCamera().getMVP();
 
 	while (m_window.isWindowOpen()) {
 		vkcv::Window::pollEvents();
@@ -97,12 +131,18 @@ void App::run() {
 		m_cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 		const glm::mat4 viewProjection = m_cameraManager.getActiveCamera().getMVP();
 
+		const auto      time            = frameEndTime - appStartTime;
+		const float     fCurrentTime    = std::chrono::duration_cast<std::chrono::milliseconds>(time).count();
+		const float     currentHeight   = glm::sin(fCurrentTime * objectVerticalSpeed);
+		const glm::mat4 modelMatrix     = glm::translate(glm::mat4(1), glm::vec3(0, currentHeight, 0));
+		const glm::mat4 mvp             = viewProjection * modelMatrix;
+
 		const vkcv::CommandStreamHandle cmdStream = m_core.createCommandStream(vkcv::QueueType::Graphics);
 
 		// prepass
 		glm::mat4 prepassMatrices[2] = {
-			viewProjection,
-			previousFrameViewProjection };
+			mvp,
+			mvpPrevious };
 		vkcv::PushConstants prepassPushConstants(sizeof(glm::mat4)*2);
 		prepassPushConstants.appendDrawcall(prepassMatrices);
 
@@ -119,13 +159,66 @@ void App::run() {
 			prepassRenderTargets);
 
 		// sky prepass
+		glm::mat4 skyPrepassMatrices[2] = {
+			viewProjection,
+			viewProjectionPrevious };
+		vkcv::PushConstants skyPrepassPushConstants(sizeof(glm::mat4) * 2);
+		skyPrepassPushConstants.appendDrawcall(skyPrepassMatrices);
+
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
 			m_skyPrePass.renderPass,
 			m_skyPrePass.pipeline,
-			prepassPushConstants,
-			{ sphereDrawcall },
+			skyPrepassPushConstants,
+			{ cubeDrawcall },
 			prepassRenderTargets);
+
+		// motion vector max tiles
+		vkcv::DescriptorWrites motionVectorMaxTilesDescriptorWrites;
+		motionVectorMaxTilesDescriptorWrites.sampledImageWrites = {
+			vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionBuffer) };
+		motionVectorMaxTilesDescriptorWrites.samplerWrites = {
+			vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
+		motionVectorMaxTilesDescriptorWrites.storageImageWrites = {
+			vkcv::StorageImageDescriptorWrite(2, m_renderTargets.motionMax)};
+
+		m_core.writeDescriptorSet(m_motionVectorMaxPass.descriptorSet, motionVectorMaxTilesDescriptorWrites);
+
+		m_core.prepareImageForSampling(cmdStream, m_renderTargets.motionBuffer);
+		m_core.prepareImageForStorage(cmdStream, m_renderTargets.motionMax);
+
+		const uint32_t motionTileDispatchCounts[3] = {
+			(m_core.getImageWidth( m_renderTargets.motionMax) + 7) / 8,
+			(m_core.getImageHeight(m_renderTargets.motionMax) + 7) / 8,
+			1 };
+
+		m_core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			m_motionVectorMaxPass.pipeline,
+			motionTileDispatchCounts,
+			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_motionVectorMaxPass.descriptorSet).vulkanHandle) },
+			vkcv::PushConstants(0));
+
+		// motion vector max neighbourhood
+		vkcv::DescriptorWrites motionVectorMaxNeighbourhoodDescriptorWrites;
+		motionVectorMaxNeighbourhoodDescriptorWrites.sampledImageWrites = {
+			vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionMax) };
+		motionVectorMaxNeighbourhoodDescriptorWrites.samplerWrites = {
+			vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
+		motionVectorMaxNeighbourhoodDescriptorWrites.storageImageWrites = {
+			vkcv::StorageImageDescriptorWrite(2, m_renderTargets.motionMaxNeighbourhood) };
+
+		m_core.writeDescriptorSet(m_motionVectorMaxNeighbourhoodPass.descriptorSet, motionVectorMaxNeighbourhoodDescriptorWrites);
+
+		m_core.prepareImageForSampling(cmdStream, m_renderTargets.motionMax);
+		m_core.prepareImageForStorage(cmdStream, m_renderTargets.motionMaxNeighbourhood);
+
+		m_core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			m_motionVectorMaxNeighbourhoodPass.pipeline,
+			motionTileDispatchCounts,
+			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_motionVectorMaxNeighbourhoodPass.descriptorSet).vulkanHandle) },
+			vkcv::PushConstants(0));
 
 		// main pass
 		const std::vector<vkcv::ImageHandle> renderTargets   = { 
@@ -133,7 +226,7 @@ void App::run() {
 			m_renderTargets.depthBuffer };
 
 		vkcv::PushConstants meshPushConstants(sizeof(glm::mat4));
-		meshPushConstants.appendDrawcall(viewProjection);
+		meshPushConstants.appendDrawcall(mvp);
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
@@ -145,7 +238,7 @@ void App::run() {
 
 		// sky
 		vkcv::PushConstants skyPushConstants(sizeof(glm::mat4));
-		skyPushConstants.appendDrawcall(viewProjection);
+		skyPushConstants.appendDrawcall(viewProjectionPrevious);
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
@@ -156,10 +249,22 @@ void App::run() {
 			renderTargets);
 
 		// motion blur
+		vkcv::ImageHandle motionBuffer;
+		if (motionBlurInput == eMotionBlurInput::MotionVector)
+			motionBuffer = m_renderTargets.motionBuffer;
+		else if (motionBlurInput == eMotionBlurInput::MotionVectorMaxTile)
+			motionBuffer = m_renderTargets.motionMax;
+		else if (motionBlurInput == eMotionBlurInput::MotionVectorMaxTileNeighbourhood)
+			motionBuffer = m_renderTargets.motionMaxNeighbourhood;
+		else {
+			vkcv_log(vkcv::LogLevel::ERROR, "Unknown eMotionInput enum value");
+			motionBuffer = m_renderTargets.motionBuffer;
+		}
+
 		vkcv::DescriptorWrites motionBlurDescriptorWrites;
 		motionBlurDescriptorWrites.sampledImageWrites = {
 			vkcv::SampledImageDescriptorWrite(0, m_renderTargets.colorBuffer),
-			vkcv::SampledImageDescriptorWrite(1, m_renderTargets.motionBuffer) };
+			vkcv::SampledImageDescriptorWrite(1, motionBuffer) };
 		motionBlurDescriptorWrites.samplerWrites = {
 			vkcv::SamplerDescriptorWrite(2, m_linearSampler) };
 		motionBlurDescriptorWrites.storageImageWrites = {
@@ -174,7 +279,7 @@ void App::run() {
 
 		m_core.prepareImageForStorage(cmdStream, m_renderTargets.motionBlurOutput);
 		m_core.prepareImageForSampling(cmdStream, m_renderTargets.colorBuffer);
-		m_core.prepareImageForSampling(cmdStream, m_renderTargets.motionBuffer);
+		m_core.prepareImageForSampling(cmdStream, motionBuffer);
 
 		m_core.recordComputeDispatchToCmdStream(
 			cmdStream,
@@ -184,9 +289,18 @@ void App::run() {
 			vkcv::PushConstants(0));
 
 		// gamma correction
-		vkcv::ImageHandle gammaCorrectionInput = m_renderTargets.motionBlurOutput;
-		if (drawMotionVectors) {
+		vkcv::ImageHandle gammaCorrectionInput;
+		if (debugView == eDebugView::None)
+			gammaCorrectionInput = m_renderTargets.motionBlurOutput;
+		else if (debugView == eDebugView::MotionVector)
 			gammaCorrectionInput = m_renderTargets.motionBuffer;
+		else if (debugView == eDebugView::MotionVectorMaxTile)
+			gammaCorrectionInput = m_renderTargets.motionMax;
+		else if (debugView == eDebugView::MotionVectorMaxTileNeighbourhood)
+			gammaCorrectionInput = m_renderTargets.motionMaxNeighbourhood;
+		else {
+			vkcv_log(vkcv::LogLevel::ERROR, "Unknown eDebugView enum value");
+			gammaCorrectionInput = m_renderTargets.motionBlurOutput;
 		}
 
 		vkcv::DescriptorWrites gammaCorrectionDescriptorWrites;
@@ -214,12 +328,27 @@ void App::run() {
 
 		gui.beginGUI();
 		ImGui::Begin("Settings");
-		ImGui::Checkbox("View motion vectors", &drawMotionVectors);
+
+		ImGui::Combo(
+			"Debug view",
+			reinterpret_cast<int*>(&debugView),
+			debugViewLabels,
+			static_cast<int>(eDebugView::OptionCount));
+
+		ImGui::Combo(
+			"Motion blur input",
+			reinterpret_cast<int*>(&motionBlurInput),
+			motionInputLabels,
+			static_cast<int>(eMotionBlurInput::OptionCount));
+
+		ImGui::InputFloat("Object movement speed", &objectVerticalSpeed);
+
 		ImGui::End();
 		gui.endGUI();
 
 		m_core.endFrame();
 
-		previousFrameViewProjection = viewProjection;
+		viewProjectionPrevious  = viewProjection;
+		mvpPrevious             = mvp;
 	}
 }

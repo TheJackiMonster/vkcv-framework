@@ -18,8 +18,6 @@ void main(){
     vec2    uv          = vec2(coord) / textureRes;
 
     vec2    motion      = texture(sampler2D(inMotion, textureSampler), uv).rg;
-    float   blurFactor  = 5;
-    motion              *= blurFactor;
 
     vec3        color       = vec3(0);
     const int   sampleCount = 16;

@@ -28,6 +28,8 @@ private:
 
 	ComputePassHandles m_gammaCorrectionPass;
 	ComputePassHandles m_motionBlurDummyPass;
+	ComputePassHandles m_motionVectorMaxPass;
+	ComputePassHandles m_motionVectorMaxNeighbourhoodPass;
 
 	RenderTargets       m_renderTargets;
 	vkcv::SamplerHandle m_linearSampler;

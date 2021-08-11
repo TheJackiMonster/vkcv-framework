@@ -1,0 +1,36 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+layout(set=0, binding=0)        uniform texture2D   inMotionMax;
+layout(set=0, binding=1)        uniform sampler     textureSampler;
+layout(set=0, binding=2, rgba8) uniform image2D     outMotionMaxNeighbourhood;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+const int motionTileSize = 8;
+
+void main(){
+    
+    ivec2 outImageRes       = imageSize(outMotionMaxNeighbourhood);
+    ivec2 motionTileCoord   = ivec2(gl_GlobalInvocationID.xy);
+    
+    if(any(greaterThanEqual(motionTileCoord, outImageRes)))
+        return;
+    
+    float   velocityMax = 0;
+    vec2    motionMax   = vec2(0);
+    
+    for(int x = -1; x <= 1; x++){
+        for(int y = -1; y <= 1; y++){
+            ivec2   sampleCoord     = motionTileCoord + ivec2(x, y);
+            vec2    motionSample    = texelFetch(sampler2D(inMotionMax, textureSampler), sampleCoord, 0).rg;
+            float   velocitySample  = length(motionSample);
+            if(velocitySample > velocityMax){
+                velocityMax = velocitySample;
+                motionMax   = motionSample;
+            }
+        }
+    }
+
+    imageStore(outMotionMaxNeighbourhood, motionTileCoord, vec4(motionMax, 0, 0));
+}

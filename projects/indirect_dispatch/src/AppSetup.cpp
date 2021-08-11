@@ -269,5 +269,26 @@ RenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const 
 		false,
 		true).getHandle();
 
+	const uint32_t motionTileSize  = 8;
+	// divide and ceil to int
+	const uint32_t motionMaxWidth  = (width  + (motionTileSize - 1)) / motionTileSize;
+	const uint32_t motionMaxheight = (height + (motionTileSize - 1)) / motionTileSize;
+
+	targets.motionMax = core.createImage(
+		AppConfig::motionBufferFormat,
+		motionMaxWidth,
+		motionMaxheight,
+		1,
+		false,
+		true).getHandle();
+
+	targets.motionMaxNeighbourhood = core.createImage(
+		AppConfig::motionBufferFormat,
+		motionMaxWidth,
+		motionMaxheight,
+		1,
+		false,
+		true).getHandle();
+
 	return targets;
 }
