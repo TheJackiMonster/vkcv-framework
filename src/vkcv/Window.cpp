@@ -4,6 +4,7 @@
  * @brief Window class to handle a basic rendering surface and input
  */
 
+#include <thread>
 #include <vector>
 #include <GLFW/glfw3.h>
 
