@@ -11,11 +11,12 @@ void addMeshToIdirectDraw(const std::vector<vkcv::asset::VertexGroup> &meshes,
 
     for (vkcv::asset::VertexGroup mesh : meshes) {
         vk::DrawIndexedIndirectCommand indirectCommand {
-                mesh.indexBuffer.data.size(),
-                1,
-                mesh.indexBuffer.data[0],
-                0,
-                indexedIndirectCommands.size()};
+        	static_cast<uint32_t>(mesh.indexBuffer.data.size()),
+        	1,
+        	mesh.indexBuffer.data[0],
+        	0,
+        	static_cast<uint32_t>(indexedIndirectCommands.size())
+        };
         indexedIndirectCommands.push_back(indirectCommand);
     }
 }
