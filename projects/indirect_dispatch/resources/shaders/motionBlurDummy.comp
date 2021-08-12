@@ -14,7 +14,6 @@ layout( push_constant ) uniform constants{
     float minVelocity;
 };
 
-
 void main(){
 
     if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(outImage))))
@@ -25,6 +24,7 @@ void main(){
     vec2    uv          = vec2(coord) / textureRes;
 
     vec2    motion      = texture(sampler2D(inMotion, textureSampler), uv).rg;
+            motion      *= motionFactor;
     float   velocity    = length(motion);
     
     // early out on little movement
@@ -34,7 +34,11 @@ void main(){
         return;
     }
     
-    motion              *= motionFactor;
+    // TODO: should be configurable by user or computed by velocity tile sizes
+    const float maxBlurDistance = 0.075;
+    if(velocity > maxBlurDistance){
+        motion *= maxBlurDistance / velocity;
+    }
 
     vec3        color       = vec3(0);
     const int   sampleCount = 16;
