@@ -290,7 +290,14 @@ void App::run() {
 
 		const float microsecondToSecond     = 0.000001;
 		const float fDeltatimeSeconds       = microsecondToSecond * std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - frameStartTime).count();
-		const float motionBlurMotionFactor  = 1 / (fDeltatimeSeconds * cameraShutterSpeedInverse);
+
+		// small mouse movements are restricted to pixel level and therefore quite unprecise
+		// therefore extrapolating movement at high framerates results in big jerky movements
+		// this results in wide sudden motion blur, which looks quite bad
+		// as a workaround the time scale is limited to a maximum value
+		const float motionBlurTimeScaleMax  = 1.f / 60;
+		const float deltaTimeMotionBlur     = std::max(fDeltatimeSeconds, motionBlurTimeScaleMax);
+		const float motionBlurMotionFactor  = 1 / (deltaTimeMotionBlur * cameraShutterSpeedInverse);
 
 		vkcv::PushConstants motionBlurPushConstants(sizeof(float) * 2);
 
