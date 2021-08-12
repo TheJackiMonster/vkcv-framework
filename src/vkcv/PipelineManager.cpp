@@ -318,10 +318,11 @@ namespace vkcv
                 0
         );
 
-        // Catch runtime error if the creation of the pipeline fails.
         vk::Pipeline vkPipeline{};
         if (m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess)
         {
+            // Catch runtime error if the creation of the pipeline fails.
+            // Destroy everything to keep the memory clean.
             destroyShaderModules();
             return PipelineHandle();
         }
