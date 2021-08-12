@@ -127,7 +127,7 @@ namespace vkcv::camera {
         GLFWgamepadstate gamepadState;
         glfwGetGamepadState(gamepadIndex, &gamepadState);
 
-        float sensitivity = 100.0f;
+        float sensitivity = 1.0f;
         double threshold = 0.1;
 
         // handle rotations

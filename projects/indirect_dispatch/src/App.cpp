@@ -106,7 +106,7 @@ void App::run() {
 	eDebugView          debugView       = eDebugView::None;
 	eMotionBlurInput    motionBlurInput = eMotionBlurInput::MotionVectorMaxTileNeighbourhood;
 
-	float   objectVerticalSpeed             = 0.005;
+	float   objectVerticalSpeed             = 5;
 	float   motionBlurMinVelocity           = 0.001;
 	int     cameraShutterSpeedInverse       = 30;
 	float   motionVectorVisualisationRange  = 0.008;
@@ -139,7 +139,7 @@ void App::run() {
 		const glm::mat4 viewProjection = m_cameraManager.getActiveCamera().getMVP();
 
 		const auto      time            = frameEndTime - appStartTime;
-		const float     fCurrentTime    = std::chrono::duration_cast<std::chrono::milliseconds>(time).count();
+		const float     fCurrentTime    = std::chrono::duration_cast<std::chrono::milliseconds>(time).count() * 0.001f;
 		const float     currentHeight   = glm::sin(fCurrentTime * objectVerticalSpeed);
 		const glm::mat4 modelMatrix     = glm::translate(glm::mat4(1), glm::vec3(0, currentHeight, 0));
 		const glm::mat4 mvp             = viewProjection * modelMatrix;
