@@ -63,6 +63,8 @@ bool App::initialize() {
 
 	const int cameraIndex = m_cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	m_cameraManager.getCamera(cameraIndex).setPosition(glm::vec3(0, 0, -3));
+	
+	return true;
 }
 
 void App::run() {
