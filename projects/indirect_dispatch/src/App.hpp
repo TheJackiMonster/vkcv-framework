@@ -30,6 +30,7 @@ private:
 	ComputePassHandles m_motionBlurDummyPass;
 	ComputePassHandles m_motionVectorMaxPass;
 	ComputePassHandles m_motionVectorMaxNeighbourhoodPass;
+	ComputePassHandles m_motionVectorVisualisationPass;
 
 	RenderTargets       m_renderTargets;
 	vkcv::SamplerHandle m_linearSampler;

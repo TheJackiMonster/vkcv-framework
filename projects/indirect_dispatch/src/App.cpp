@@ -47,6 +47,9 @@ bool App::initialize() {
 	if (!loadComputePass(m_core, "resources/shaders/motionVectorMaxNeighbourhood.comp", &m_motionVectorMaxNeighbourhoodPass))
 		return false;
 
+	if (!loadComputePass(m_core, "resources/shaders/motionVectorVisualisation.comp", &m_motionVectorVisualisationPass))
+		return false;
+
 	if (!loadMesh(m_core, "resources/models/sphere.gltf", & m_sphereMesh))
 		return false;
 
@@ -103,9 +106,10 @@ void App::run() {
 	eDebugView          debugView       = eDebugView::None;
 	eMotionBlurInput    motionBlurInput = eMotionBlurInput::MotionVectorMaxTileNeighbourhood;
 
-	float   objectVerticalSpeed         = 0.005;
-	float   motionBlurMinVelocity       = 0.001;
-	int     cameraShutterSpeedInverse   = 30;
+	float   objectVerticalSpeed             = 0.005;
+	float   motionBlurMinVelocity           = 0.001;
+	int     cameraShutterSpeedInverse       = 30;
+	float   motionVectorVisualisationRange  = 0.008;
 
 	glm::mat4 mvpPrevious               = glm::mat4(1.f);
 	glm::mat4 viewProjectionPrevious    = m_cameraManager.getActiveCamera().getMVP();
@@ -301,24 +305,51 @@ void App::run() {
 			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_motionBlurDummyPass.descriptorSet).vulkanHandle) },
 			motionBlurPushConstants);
 
-		// gamma correction
-		vkcv::ImageHandle gammaCorrectionInput;
-		if (debugView == eDebugView::None)
-			gammaCorrectionInput = m_renderTargets.motionBlurOutput;
-		else if (debugView == eDebugView::MotionVector)
-			gammaCorrectionInput = m_renderTargets.motionBuffer;
-		else if (debugView == eDebugView::MotionVectorMaxTile)
-			gammaCorrectionInput = m_renderTargets.motionMax;
-		else if (debugView == eDebugView::MotionVectorMaxTileNeighbourhood)
-			gammaCorrectionInput = m_renderTargets.motionMaxNeighbourhood;
-		else {
-			vkcv_log(vkcv::LogLevel::ERROR, "Unknown eDebugView enum value");
-			gammaCorrectionInput = m_renderTargets.motionBlurOutput;
+		// motion vector debug visualisation
+		// writes to motion blur output
+		if (debugView != eDebugView::None) {
+			vkcv::ImageHandle visualisationInput;
+			if (debugView == eDebugView::MotionVector)
+				visualisationInput = m_renderTargets.motionBuffer;
+			else if (debugView == eDebugView::MotionVectorMaxTile)
+				visualisationInput = m_renderTargets.motionMax;
+			else if (debugView == eDebugView::MotionVectorMaxTileNeighbourhood)
+				visualisationInput = m_renderTargets.motionMaxNeighbourhood;
+			else {
+				vkcv_log(vkcv::LogLevel::ERROR, "Unknown eDebugView enum value");
+				visualisationInput = m_renderTargets.motionBlurOutput;
+			}
+
+			vkcv::DescriptorWrites motionVectorVisualisationDescriptorWrites;
+			motionVectorVisualisationDescriptorWrites.sampledImageWrites = {
+				vkcv::SampledImageDescriptorWrite(0, visualisationInput) };
+			motionVectorVisualisationDescriptorWrites.samplerWrites = {
+				vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
+			motionVectorVisualisationDescriptorWrites.storageImageWrites = {
+				vkcv::StorageImageDescriptorWrite(2, m_renderTargets.motionBlurOutput) };
+
+			m_core.writeDescriptorSet(
+				m_motionVectorVisualisationPass.descriptorSet, 
+				motionVectorVisualisationDescriptorWrites);
+
+			m_core.prepareImageForSampling(cmdStream, visualisationInput);
+			m_core.prepareImageForStorage(cmdStream, m_renderTargets.motionBlurOutput);
+
+			vkcv::PushConstants motionVectorVisualisationPushConstants(sizeof(float));
+			motionVectorVisualisationPushConstants.appendDrawcall(motionVectorVisualisationRange);
+
+			m_core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				m_motionVectorVisualisationPass.pipeline,
+				fullScreenImageDispatch,
+				{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_motionVectorVisualisationPass.descriptorSet).vulkanHandle) },
+				motionVectorVisualisationPushConstants);
 		}
 
+		// gamma correction
 		vkcv::DescriptorWrites gammaCorrectionDescriptorWrites;
 		gammaCorrectionDescriptorWrites.sampledImageWrites = {
-			vkcv::SampledImageDescriptorWrite(0, gammaCorrectionInput) };
+			vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionBlurOutput) };
 		gammaCorrectionDescriptorWrites.samplerWrites = {
 			vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
 		gammaCorrectionDescriptorWrites.storageImageWrites = {
@@ -326,7 +357,7 @@ void App::run() {
 
 		m_core.writeDescriptorSet(m_gammaCorrectionPass.descriptorSet, gammaCorrectionDescriptorWrites);
 
-		m_core.prepareImageForSampling(cmdStream, gammaCorrectionInput);
+		m_core.prepareImageForSampling(cmdStream, m_renderTargets.motionBlurOutput);
 		m_core.prepareImageForStorage (cmdStream, swapchainInput);
 
 		m_core.recordComputeDispatchToCmdStream(
@@ -347,6 +378,10 @@ void App::run() {
 			reinterpret_cast<int*>(&debugView),
 			debugViewLabels,
 			static_cast<int>(eDebugView::OptionCount));
+
+		if (debugView != eDebugView::None) {
+			ImGui::InputFloat("Motion vector visualisation range", &motionVectorVisualisationRange);
+		}
 
 		ImGui::Combo(
 			"Motion blur input",

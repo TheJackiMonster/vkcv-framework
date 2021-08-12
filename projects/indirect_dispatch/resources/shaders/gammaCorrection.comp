@@ -18,9 +18,6 @@ void main(){
     vec2 uv             = vec2(coord) / outImageRes;
     vec3 linearColor    = texture(sampler2D(inTexture, textureSampler), uv).rgb;
     
-    // in case of motion vector visualisation negative values are possible
-    linearColor         = abs(linearColor); 
-    
     vec3 gammaCorrected = pow(linearColor, vec3(1 / 2.2));
 
     imageStore(outImage, coord, vec4(gammaCorrected, 0.f));
