@@ -27,7 +27,8 @@ int main(int argc, const char** argv) {
     );
 
     int input[64] = { 0 };
-    vkcv::Buffer<int> inputBuffer = core.createBuffer<int>(vkcv::BufferType::STORAGE, 64);
+    std::fill_n(input, 64, 2);
+    vkcv::Buffer<int> inputBuffer = core.createBuffer<int>(vkcv::BufferType::STORAGE, 64, vkcv::BufferMemoryType::HOST_VISIBLE);
     inputBuffer.fill(input);
 
     vkcv::PassConfig computePassDefinition({});
@@ -64,7 +65,7 @@ int main(int argc, const char** argv) {
     }
 
     auto cmdStream = core.createCommandStream(vkcv::QueueType::Compute);
-    uint32_t computeDispatchCount[3] = {inputBuffer.getSize(),1,1 };
+    uint32_t computeDispatchCount[3] = {64,1,1 };
 
     vkcv::PushConstants pushConstantsCompute(sizeof(int));
     pushConstantsCompute.appendDrawcall(1);
@@ -76,9 +77,13 @@ int main(int argc, const char** argv) {
         pushConstantsCompute);
 
     int output[64] = { 0 };
+    std::fill_n(output, 64, -1);
     core.readBufferMemoryBarrier(cmdStream, inputBuffer.getHandle(), &output);
     core.submitCommandStream(cmdStream);
-
-    std::cout << output << std::endl;
+    std::cout << "[";
+    for (int i = 0; i < 64; i++) {
+        std::cout << output[i] << ", ";
+    }
+    std::cout << "]" << std::endl;
     return 0;
 }

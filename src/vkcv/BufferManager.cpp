@@ -350,9 +350,8 @@ namespace vkcv {
         const size_t max_size = std::min(size, buffer.m_size);
 
         void* mapped = allocator.mapMemory(buffer.m_allocation);
-        memcpy(data, reinterpret_cast<char*>(mapped) , max_size);
+        memcpy(reinterpret_cast<int*>(data), reinterpret_cast<char*>(mapped) , max_size);
         allocator.unmapMemory(buffer.m_allocation);
-
     }
 
     void BufferManager ::readBufferMemoryBarrier(const BufferHandle& handle, vk::CommandBuffer cmdBuffer, void *data) {
@@ -376,8 +375,8 @@ namespace vkcv {
                 buffer.m_size);
 
         cmdBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTopOfPipe,
-                vk::PipelineStageFlagBits::eBottomOfPipe,
+                vk::PipelineStageFlagBits::eComputeShader,
+                vk::PipelineStageFlagBits::eTransfer,
                 {},
                 nullptr,
                 memoryBarrier,
@@ -395,8 +394,8 @@ namespace vkcv {
                 buffer.m_size);
 
         cmdBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTopOfPipe,
-                vk::PipelineStageFlagBits::eBottomOfPipe,
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::PipelineStageFlagBits::eHost,
                 {},
                 nullptr,
                 memoryBarrier2,
