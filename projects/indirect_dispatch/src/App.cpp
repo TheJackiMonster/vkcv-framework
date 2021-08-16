@@ -38,7 +38,7 @@ bool App::initialize() {
 	if (!loadComputePass(m_core, "resources/shaders/gammaCorrection.comp", &m_gammaCorrectionPass))
 		return false;
 
-	if(!loadComputePass(m_core, "resources/shaders/motionBlurDummy.comp", &m_motionBlurDummyPass))
+	if(!loadComputePass(m_core, "resources/shaders/motionBlur.comp", &m_motionBlurPass))
 		return false;
 
 	if (!loadComputePass(m_core, "resources/shaders/motionVectorMax.comp", &m_motionVectorMaxPass))
@@ -283,7 +283,7 @@ void App::run() {
 		motionBlurDescriptorWrites.storageImageWrites = {
 			vkcv::StorageImageDescriptorWrite(3, m_renderTargets.motionBlurOutput) };
 
-		m_core.writeDescriptorSet(m_motionBlurDummyPass.descriptorSet, motionBlurDescriptorWrites);
+		m_core.writeDescriptorSet(m_motionBlurPass.descriptorSet, motionBlurDescriptorWrites);
 
 		uint32_t fullScreenImageDispatch[3] = {
 			static_cast<uint32_t>((m_windowWidth + 7) / 8),
@@ -313,9 +313,9 @@ void App::run() {
 
 		m_core.recordComputeDispatchToCmdStream(
 			cmdStream,
-			m_motionBlurDummyPass.pipeline,
+			m_motionBlurPass.pipeline,
 			fullScreenImageDispatch,
-			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_motionBlurDummyPass.descriptorSet).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_motionBlurPass.descriptorSet).vulkanHandle) },
 			motionBlurPushConstants);
 
 		// motion vector debug visualisation

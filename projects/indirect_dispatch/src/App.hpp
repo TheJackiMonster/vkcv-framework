@@ -27,7 +27,7 @@ private:
 	GraphicPassHandles m_skyPrePass;
 
 	ComputePassHandles m_gammaCorrectionPass;
-	ComputePassHandles m_motionBlurDummyPass;
+	ComputePassHandles m_motionBlurPass;
 	ComputePassHandles m_motionVectorMaxPass;
 	ComputePassHandles m_motionVectorMaxNeighbourhoodPass;
 	ComputePassHandles m_motionVectorVisualisationPass;
