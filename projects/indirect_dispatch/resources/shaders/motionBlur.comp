@@ -43,8 +43,10 @@ void main(){
     vec3        color       = vec3(0);
     const int   sampleCount = 16;
     
-    vec2 uvStart    = uv - motion;
-    vec2 uvEnd      = uv + motion;
+    // clamping start and end points avoids artifacts at image borders
+    // the sampler clamps the sample uvs anyways, but without clamping here, many samples can be stuck at the border
+    vec2 uvStart    = clamp(uv - motion, 0, 1);
+    vec2 uvEnd      = clamp(uv + motion, 0, 1);
     
     for(int i = 0; i < sampleCount; i++){
         vec2 sampleUV   = mix(uvStart, uvEnd, i / float(sampleCount - 1));    
