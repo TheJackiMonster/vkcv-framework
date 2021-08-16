@@ -305,7 +305,6 @@ void App::run() {
 			float minVelocity;
 			float cameraNearPlane;
 			float cameraFarPlane;
-			float time;
 		};
 		MotionBlurConstantData motionBlurConstantData;
 
@@ -323,7 +322,6 @@ void App::run() {
 		m_cameraManager.getActiveCamera().getNearFar(cameraNear, cameraFar);
 		motionBlurConstantData.cameraNearPlane  = cameraNear;
 		motionBlurConstantData.cameraFarPlane   = cameraFar;
-		motionBlurConstantData.time             = fCurrentTime;
 
 		vkcv::PushConstants motionBlurPushConstants(sizeof(motionBlurConstantData));
 		motionBlurPushConstants.appendDrawcall(motionBlurConstantData);
