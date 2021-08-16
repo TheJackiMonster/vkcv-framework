@@ -15,6 +15,7 @@ layout( push_constant ) uniform constants{
     // camera planes are needed to linearize depth
     float cameraNearPlane;
     float cameraFarPlane;
+    float time;
 };
 
 float linearizeDepth(float depth, float near, float far){
@@ -76,6 +77,21 @@ SampleData loadSampleData(vec2 uv){
     return data;
 }
 
+// simple hash/noise function from: https://www.shadertoy.com/view/ttc3zr
+uint murmurHash12(uvec2 src) {
+    const uint M = 0x5bd1e995u;
+    uint h = 1190494759u;
+    src *= M; src ^= src>>24u; src *= M;
+    h *= M; h ^= src.x; h *= M; h ^= src.y;
+    h ^= h>>13u; h *= M; h ^= h>>15u;
+    return h;
+}
+
+float hash12(vec2 src) {
+    uint h = murmurHash12(floatBitsToUint(src));
+    return uintBitsToFloat(h & 0x007fffffu | 0x3f800000u) - 1.0;
+}
+
 void main(){
 
     if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(outImage))))
@@ -89,7 +105,7 @@ void main(){
     
     // early out on little movement
     if(mainPixel.velocity <= minVelocity){
-        vec3 color = texture(sampler2D(inColor, nearestSampler), uv).rgb;
+        vec3 color = texture(sampler2D(inColor, nearestSampler), uv).rgb;        
         imageStore(outImage, coord, vec4(color, 0.f));
         return;
     }
@@ -109,8 +125,11 @@ void main(){
     vec2 uvStart    = clamp(uv - mainPixel.motion, 0, 1);
     vec2 uvEnd      = clamp(uv + mainPixel.motion, 0, 1);
     
+    // samples are placed evenly, but the entire filter is jittered
+    float random = hash12(uv + time) - 0.5; // in range [-0.5, 0.5]
+    
     for(int i = 0; i < sampleCount; i++){
-        vec2    sampleUV    = mix(uvStart, uvEnd, i / float(sampleCount - 1));
+        vec2    sampleUV    = mix(uvStart, uvEnd, (i + random + 1) / float(sampleCount + 1));
         vec3    sampleColor = texture(sampler2D(inColor, nearestSampler), sampleUV).rgb;
         
         SampleData  samplePixel     = loadSampleData(sampleUV);
