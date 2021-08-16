@@ -277,11 +277,12 @@ void App::run() {
 		vkcv::DescriptorWrites motionBlurDescriptorWrites;
 		motionBlurDescriptorWrites.sampledImageWrites = {
 			vkcv::SampledImageDescriptorWrite(0, m_renderTargets.colorBuffer),
-			vkcv::SampledImageDescriptorWrite(1, motionBuffer) };
+			vkcv::SampledImageDescriptorWrite(1, m_renderTargets.depthBuffer),
+			vkcv::SampledImageDescriptorWrite(2, motionBuffer) };
 		motionBlurDescriptorWrites.samplerWrites = {
-			vkcv::SamplerDescriptorWrite(2, m_linearSampler) };
+			vkcv::SamplerDescriptorWrite(3, m_nearestSampler) };
 		motionBlurDescriptorWrites.storageImageWrites = {
-			vkcv::StorageImageDescriptorWrite(3, m_renderTargets.motionBlurOutput) };
+			vkcv::StorageImageDescriptorWrite(4, m_renderTargets.motionBlurOutput) };
 
 		m_core.writeDescriptorSet(m_motionBlurPass.descriptorSet, motionBlurDescriptorWrites);
 
@@ -292,10 +293,20 @@ void App::run() {
 
 		m_core.prepareImageForStorage(cmdStream, m_renderTargets.motionBlurOutput);
 		m_core.prepareImageForSampling(cmdStream, m_renderTargets.colorBuffer);
+		m_core.prepareImageForSampling(cmdStream, m_renderTargets.depthBuffer);
 		m_core.prepareImageForSampling(cmdStream, motionBuffer);
 
 		const float microsecondToSecond     = 0.000001;
 		const float fDeltatimeSeconds       = microsecondToSecond * std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - frameStartTime).count();
+
+		// must match layout in "motionBlur.comp"
+		struct MotionBlurConstantData {
+			float motionFactor;
+			float minVelocity;
+			float cameraNearPlane;
+			float cameraFarPlane;
+		};
+		MotionBlurConstantData motionBlurConstantData;
 
 		// small mouse movements are restricted to pixel level and therefore quite unprecise
 		// therefore extrapolating movement at high framerates results in big jerky movements
@@ -303,12 +314,16 @@ void App::run() {
 		// as a workaround the time scale is limited to a maximum value
 		const float motionBlurTimeScaleMax  = 1.f / 60;
 		const float deltaTimeMotionBlur     = std::max(fDeltatimeSeconds, motionBlurTimeScaleMax);
-		const float motionBlurMotionFactor  = 1 / (deltaTimeMotionBlur * cameraShutterSpeedInverse);
 
-		vkcv::PushConstants motionBlurPushConstants(sizeof(float) * 2);
+		motionBlurConstantData.motionFactor = 1 / (deltaTimeMotionBlur * cameraShutterSpeedInverse);
+		motionBlurConstantData.minVelocity = motionBlurMinVelocity;
 
-		float motionBlurConstantData[2] = { motionBlurMotionFactor, motionBlurMinVelocity };
+		float cameraNear, cameraFar;
+		m_cameraManager.getActiveCamera().getNearFar(cameraNear, cameraFar);
+		motionBlurConstantData.cameraNearPlane = cameraNear;
+		motionBlurConstantData.cameraFarPlane  = cameraFar;
 
+		vkcv::PushConstants motionBlurPushConstants(sizeof(motionBlurConstantData));
 		motionBlurPushConstants.appendDrawcall(motionBlurConstantData);
 
 		m_core.recordComputeDispatchToCmdStream(

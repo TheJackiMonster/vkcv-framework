@@ -2,58 +2,125 @@
 #extension GL_GOOGLE_include_directive : enable
 
 layout(set=0, binding=0)                    uniform texture2D   inColor;
-layout(set=0, binding=1)                    uniform texture2D   inMotion;
-layout(set=0, binding=2)                    uniform sampler     textureSampler;
-layout(set=0, binding=3, r11f_g11f_b10f)    uniform image2D     outImage;
+layout(set=0, binding=1)                    uniform texture2D   inDepth;
+layout(set=0, binding=2)                    uniform texture2D   inMotion;   
+layout(set=0, binding=3)                    uniform sampler     nearestSampler;
+layout(set=0, binding=4, r11f_g11f_b10f)    uniform image2D     outImage;
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout( push_constant ) uniform constants{
-    // computed from delta time and shutter speed
-    float motionFactor;
+    float motionFactor;  // computed from delta time and shutter speed
     float minVelocity;
+    // camera planes are needed to linearize depth
+    float cameraNearPlane;
+    float cameraFarPlane;
 };
+
+float linearizeDepth(float depth, float near, float far){
+    return near * far / (far + depth * (near - far));
+}
+
+struct SampleData{
+    float   depthLinear;
+    vec2    uv;
+    vec2    motion;
+    float   velocity;
+};
+
+// estimates if a points lies within the influence of another point
+// uv1 and uv2 can be interchanged, the velocity belongs to the point whose influence is estimated
+float cone(vec2 uv1, vec2 uv2, float velocity){
+    return clamp(1 - distance(uv1, uv2) / velocity, 0, 1);
+}
+
+// similar to cone, but with a different shape
+// see paper for usage details
+float cylinder(vec2 uv1, vec2 uv2, float velocity){
+    return 1 - smoothstep(0.95 * velocity, 1.05 * velocity, distance(uv1, uv2));
+}
+
+// checks if depth2 is closer than depth1, result within range [0, 1]
+float softDepthCompare(float depth1, float depth2){
+    float softDepthExtent = 0.1;
+    return clamp(1 - (depth1 - depth2) / softDepthExtent, 0, 1);
+}
+
+// reconstruction filter and helper functions from "A Reconstruction Filter for Plausible Motion Blur", McGuire
+float computeSampleWeigth(SampleData mainPixel, SampleData samplePixel){
+    
+    float foreground = softDepthCompare(  mainPixel.depthLinear,  samplePixel.depthLinear);
+    float background = softDepthCompare(samplePixel.depthLinear,    mainPixel.depthLinear);
+    
+    // blurry sample in front of main pixel
+    float weight = foreground * cone(mainPixel.uv, samplePixel.uv, samplePixel.velocity);
+    
+    // any sample behind blurry main pixel: estimate background by using sample
+    weight += background * cone(mainPixel.uv, samplePixel.uv, mainPixel.velocity);
+    
+    // both main pixel and sample are blurry and overlap
+    weight += 2 * cylinder(mainPixel.uv, samplePixel.uv, mainPixel.velocity) * cylinder(mainPixel.uv, samplePixel.uv, samplePixel.velocity);
+    
+    return weight;
+}
+
+SampleData loadSampleData(vec2 uv){
+    
+    SampleData data;
+    data.uv             = uv;
+    data.motion         = texture(sampler2D(inMotion, nearestSampler), uv).rg * motionFactor;
+    data.velocity       = length(data.motion);
+    data.depthLinear    = texture(sampler2D(inDepth, nearestSampler), uv).r;
+    data.depthLinear    = linearizeDepth(data.depthLinear, cameraNearPlane, cameraFarPlane);
+    
+    return data;
+}
 
 void main(){
 
     if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(outImage))))
         return;
    
-    ivec2   textureRes  = textureSize(sampler2D(inColor, textureSampler), 0);
+    ivec2   textureRes  = textureSize(sampler2D(inColor, nearestSampler), 0);
     ivec2   coord       = ivec2(gl_GlobalInvocationID.xy);
-    vec2    uv          = vec2(coord) / textureRes;
+    vec2    uv          = vec2(coord + 0.5) / textureRes;   // + 0.5 to shift uv into pixel center
 
-    vec2    motion      = texture(sampler2D(inMotion, textureSampler), uv).rg;
-            motion      *= motionFactor;
-    float   velocity    = length(motion);
+    SampleData mainPixel = loadSampleData(uv);
     
     // early out on little movement
-    if(velocity < minVelocity){
-        vec3 color = texture(sampler2D(inColor, textureSampler), uv).rgb;
+    if(mainPixel.velocity <= minVelocity){
+        vec3 color = texture(sampler2D(inColor, nearestSampler), uv).rgb;
         imageStore(outImage, coord, vec4(color, 0.f));
         return;
     }
     
-    // TODO: should be configurable by user or computed by velocity tile sizes
-    const float maxBlurDistance = 0.075;
-    if(velocity > maxBlurDistance){
-        motion *= maxBlurDistance / velocity;
-    }
+    // TODO: check if a max velocity is necessary
+    // // TODO: should be configurable by user or computed by velocity tile sizes
+    // const float maxBlurDistance = 0.075;
+    // if(mainPixel.velocity > maxBlurDistance)
+    //     motion *= maxBlurDistance / velocity;
 
     vec3        color       = vec3(0);
-    const int   sampleCount = 16;
+    float       weightSum   = 0;
+    const int   sampleCount = 16; 
     
     // clamping start and end points avoids artifacts at image borders
     // the sampler clamps the sample uvs anyways, but without clamping here, many samples can be stuck at the border
-    vec2 uvStart    = clamp(uv - motion, 0, 1);
-    vec2 uvEnd      = clamp(uv + motion, 0, 1);
+    vec2 uvStart    = clamp(uv - mainPixel.motion, 0, 1);
+    vec2 uvEnd      = clamp(uv + mainPixel.motion, 0, 1);
     
     for(int i = 0; i < sampleCount; i++){
-        vec2 sampleUV   = mix(uvStart, uvEnd, i / float(sampleCount - 1));    
-        color           += texture(sampler2D(inColor, textureSampler), sampleUV).rgb;
+        vec2    sampleUV    = mix(uvStart, uvEnd, i / float(sampleCount - 1));
+        vec3    sampleColor = texture(sampler2D(inColor, nearestSampler), sampleUV).rgb;
+        
+        SampleData  samplePixel     = loadSampleData(sampleUV);
+        float       weightSample    = computeSampleWeigth(mainPixel, samplePixel);
+        
+        weightSum   += weightSample;
+        color       += sampleColor * weightSample;
     }
     
-    color /= sampleCount;
+    color /= weightSum;
 
     imageStore(outImage, coord, vec4(color, 0.f));
 }
