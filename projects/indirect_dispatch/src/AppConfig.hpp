@@ -7,4 +7,5 @@ namespace AppConfig{
 	const vk::Format    depthBufferFormat   = vk::Format::eD32Sfloat;
 	const vk::Format    colorBufferFormat   = vk::Format::eB10G11R11UfloatPack32;
 	const vk::Format    motionBufferFormat  = vk::Format::eR16G16Sfloat;
+    const uint32_t      maxMotionTileSize   = 8;
 }

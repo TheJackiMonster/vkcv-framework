@@ -201,8 +201,8 @@ void App::run() {
 		m_core.prepareImageForStorage(cmdStream, m_renderTargets.motionMax);
 
 		const uint32_t motionTileDispatchCounts[3] = {
-			(m_core.getImageWidth( m_renderTargets.motionMax) + 7) / 8,
-			(m_core.getImageHeight(m_renderTargets.motionMax) + 7) / 8,
+			(m_core.getImageWidth( m_renderTargets.motionMax) + AppConfig::maxMotionTileSize - 1) / AppConfig::maxMotionTileSize,
+			(m_core.getImageHeight(m_renderTargets.motionMax) + AppConfig::maxMotionTileSize - 1) / AppConfig::maxMotionTileSize,
 			1 };
 
 		m_core.recordComputeDispatchToCmdStream(
