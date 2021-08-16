@@ -62,6 +62,12 @@ bool App::initialize() {
 		vkcv::SamplerMipmapMode::LINEAR,
 		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
 
+	m_nearestSampler = m_core.createSampler(
+		vkcv::SamplerFilterType::NEAREST,
+		vkcv::SamplerFilterType::NEAREST,
+		vkcv::SamplerMipmapMode::NEAREST,
+		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
+
 	m_renderTargets = createRenderTargets(m_core, m_windowWidth, m_windowHeight);
 
 	const int cameraIndex = m_cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
@@ -331,7 +337,7 @@ void App::run() {
 			motionVectorVisualisationDescriptorWrites.sampledImageWrites = {
 				vkcv::SampledImageDescriptorWrite(0, visualisationInput) };
 			motionVectorVisualisationDescriptorWrites.samplerWrites = {
-				vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
+				vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
 			motionVectorVisualisationDescriptorWrites.storageImageWrites = {
 				vkcv::StorageImageDescriptorWrite(2, m_renderTargets.motionBlurOutput) };
 

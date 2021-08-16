@@ -34,4 +34,5 @@ private:
 
 	RenderTargets       m_renderTargets;
 	vkcv::SamplerHandle m_linearSampler;
+	vkcv::SamplerHandle m_nearestSampler;
 };
