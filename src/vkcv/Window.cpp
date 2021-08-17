@@ -4,7 +4,9 @@
  * @brief Window class to handle a basic rendering surface and input
  */
 
+#include <vector>
 #include <GLFW/glfw3.h>
+
 #include "vkcv/Window.hpp"
 
 namespace vkcv {

@@ -13,6 +13,8 @@
 #include "vkcv/ImageConfig.hpp"
 
 namespace vkcv {
+	
+	bool isDepthImageFormat(vk::Format format);
 
 	class ImageManager
 	{

@@ -4,6 +4,7 @@
 #include <vk_mem_alloc.hpp>
 
 #include "QueueManager.hpp"
+#include "DrawcallRecording.hpp"
 
 namespace vkcv
 {
@@ -39,9 +40,9 @@ namespace vkcv
         
         static Context create(const char *applicationName,
 							  uint32_t applicationVersion,
-							  std::vector<vk::QueueFlagBits> queueFlags,
-							  std::vector<const char *> instanceExtensions,
-							  std::vector<const char *> deviceExtensions);
+							  const std::vector<vk::QueueFlagBits>& queueFlags,
+							  const std::vector<const char *>& instanceExtensions,
+							  const std::vector<const char *>& deviceExtensions);
 
     private:
         /**

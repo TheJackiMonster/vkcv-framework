@@ -10,6 +10,9 @@ set(vkcv_shader_compiler_include ${PROJECT_SOURCE_DIR}/include)
 
 # Add source and header files to the module
 set(vkcv_shader_compiler_sources
+		${vkcv_shader_compiler_include}/vkcv/shader/Compiler.hpp
+		${vkcv_shader_compiler_source}/vkcv/shader/Compiler.cpp
+		
 		${vkcv_shader_compiler_include}/vkcv/shader/GLSLCompiler.hpp
 		${vkcv_shader_compiler_source}/vkcv/shader/GLSLCompiler.cpp
 )

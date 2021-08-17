@@ -163,13 +163,13 @@ int main(int argc, const char **argv) {
     particleBuffer.fill(particleSystem.getParticles());
 
     vkcv::DescriptorWrites setWrites;
-    setWrites.uniformBufferWrites = {vkcv::UniformBufferDescriptorWrite(0,color.getHandle()),
-                                     vkcv::UniformBufferDescriptorWrite(1,position.getHandle())};
-    setWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(2,particleBuffer.getHandle())};
+    setWrites.uniformBufferWrites = {vkcv::BufferDescriptorWrite(0,color.getHandle()),
+                                     vkcv::BufferDescriptorWrite(1,position.getHandle())};
+    setWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(2,particleBuffer.getHandle())};
     core.writeDescriptorSet(descriptorSet, setWrites);
 
     vkcv::DescriptorWrites computeWrites;
-    computeWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0,particleBuffer.getHandle())};
+    computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,particleBuffer.getHandle())};
     core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
     if (!particlePipeline || !computePipeline)

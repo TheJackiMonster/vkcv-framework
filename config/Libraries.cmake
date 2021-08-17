@@ -3,7 +3,13 @@ set(vkcv_config_lib ${vkcv_config}/lib)
 set(vkcv_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_lib})
 
 if(NOT WIN32)
-	set(vkcv_libraries  stdc++fs)
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		set(vkcv_libraries stdc++fs)
+	endif()
+	
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+		list(APPEND vkcv_flags -Xpreprocessor)
+	endif()
 	
 	# optimization for loading times
 	list(APPEND vkcv_flags -pthread)
@@ -33,6 +39,9 @@ endif ()
 
 # fix dependencies for different Linux distros (looking at you Ubuntu)
 include(${vkcv_config_ext}/CheckLibraries.cmake)
+
+# add custom function to include a file like a shader as string
+include(${vkcv_config_ext}/IncludeShader.cmake)
 
 # cleanup of compiler definitions aka preprocessor variables
 if (vkcv_definitions)
