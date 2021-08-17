@@ -53,9 +53,9 @@ namespace vkcv
     Core Core::create(Window &window,
                       const char *applicationName,
                       uint32_t applicationVersion,
-                      std::vector<vk::QueueFlagBits> queueFlags,
-                      std::vector<const char *> instanceExtensions,
-                      std::vector<const char *> deviceExtensions)
+                      const std::vector<vk::QueueFlagBits>& queueFlags,
+                      const std::vector<const char *>& instanceExtensions,
+                      const std::vector<const char *>& deviceExtensions)
     {
         Context context = Context::create(
         		applicationName, applicationVersion,
@@ -90,8 +90,8 @@ namespace vkcv
     Core::Core(Context &&context, Window &window, const Swapchain& swapChain,  std::vector<vk::ImageView> swapchainImageViews,
         const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
             m_Context(std::move(context)),
+			m_swapchain(swapChain),
             m_window(window),
-            m_swapchain(swapChain),
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
             m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
             m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
@@ -118,7 +118,8 @@ namespace vkcv
 			swapchainImageViews, 
 			swapChain.getExtent().width,
 			swapChain.getExtent().height,
-			swapChain.getFormat());
+			swapChain.getFormat()
+		);
 	}
 
 	Core::~Core() noexcept {
@@ -227,11 +228,113 @@ namespace vkcv
 		return (m_currentSwapchainImageIndex != std::numeric_limits<uint32_t>::max());
 	}
 
+	std::array<uint32_t, 2> getWidthHeightFromRenderTargets(
+		const std::vector<ImageHandle>& renderTargets,
+		const Swapchain& swapchain,
+		const ImageManager& imageManager) {
+
+		std::array<uint32_t, 2> widthHeight;
+
+		if (renderTargets.size() > 0) {
+			const vkcv::ImageHandle firstImage = renderTargets[0];
+			if (firstImage.isSwapchainImage()) {
+				const auto& swapchainExtent = swapchain.getExtent();
+				widthHeight[0] = swapchainExtent.width;
+				widthHeight[1] = swapchainExtent.height;
+			}
+			else {
+				widthHeight[0] = imageManager.getImageWidth(firstImage);
+				widthHeight[1] = imageManager.getImageHeight(firstImage);
+			}
+		}
+		else {
+			widthHeight[0] = 1;
+			widthHeight[1] = 1;
+		}
+		// TODO: validate that width/height match for all attachments
+		return widthHeight;
+	}
+
+	vk::Framebuffer createFramebuffer(
+		const std::vector<ImageHandle>& renderTargets,
+		const ImageManager&             imageManager,
+		const Swapchain&                swapchain,
+		vk::RenderPass                  renderpass,
+		vk::Device                      device) {
+
+		std::vector<vk::ImageView> attachmentsViews;
+		for (const ImageHandle handle : renderTargets) {
+			vk::ImageView targetHandle = imageManager.getVulkanImageView(handle);
+			attachmentsViews.push_back(targetHandle);
+		}
+
+		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, swapchain, imageManager);
+
+		const vk::FramebufferCreateInfo createInfo(
+			{},
+			renderpass,
+			static_cast<uint32_t>(attachmentsViews.size()),
+			attachmentsViews.data(),
+			widthHeight[0],
+			widthHeight[1],
+			1);
+
+		return device.createFramebuffer(createInfo);
+	}
+
+	void transitionRendertargetsToAttachmentLayout(
+		const std::vector<ImageHandle>& renderTargets,
+		ImageManager&                   imageManager,
+		const vk::CommandBuffer         cmdBuffer) {
+
+		for (const ImageHandle handle : renderTargets) {
+			vk::ImageView targetHandle = imageManager.getVulkanImageView(handle);
+			const bool isDepthImage = isDepthFormat(imageManager.getImageFormat(handle));
+			const vk::ImageLayout targetLayout =
+				isDepthImage ? vk::ImageLayout::eDepthStencilAttachmentOptimal : vk::ImageLayout::eColorAttachmentOptimal;
+			imageManager.recordImageLayoutTransition(handle, targetLayout, cmdBuffer);
+		}
+	}
+
+	std::vector<vk::ClearValue> createAttachmentClearValues(const std::vector<AttachmentDescription>& attachments) {
+		std::vector<vk::ClearValue> clearValues;
+		for (const auto& attachment : attachments) {
+			if (attachment.load_operation == AttachmentOperation::CLEAR) {
+				float clear = 0.0f;
+
+				if (isDepthFormat(attachment.format)) {
+					clear = 1.0f;
+				}
+
+				clearValues.emplace_back(std::array<float, 4>{
+					clear,
+						clear,
+						clear,
+						1.f
+				});
+			}
+		}
+		return clearValues;
+	}
+
+	void recordDynamicViewport(vk::CommandBuffer cmdBuffer, uint32_t width, uint32_t height) {
+		vk::Viewport dynamicViewport(
+			0.0f, 0.0f,
+			static_cast<float>(width), static_cast<float>(height),
+			0.0f, 1.0f
+		);
+
+		vk::Rect2D dynamicScissor({ 0, 0 }, { width, height });
+
+		cmdBuffer.setViewport(0, 1, &dynamicViewport);
+		cmdBuffer.setScissor(0, 1, &dynamicScissor);
+	}
+
 	void Core::recordDrawcallsToCmdStream(
 		const CommandStreamHandle       cmdStreamHandle,
 		const PassHandle                renderpassHandle, 
 		const PipelineHandle            pipelineHandle, 
-        const PushConstants             &pushConstants,
+        const PushConstants             &pushConstantData,
         const std::vector<DrawcallInfo> &drawcalls,
 		const std::vector<ImageHandle>  &renderTargets) {
 
@@ -239,118 +342,132 @@ namespace vkcv
 			return;
 		}
 
-		uint32_t width;
-		uint32_t height;
-		if (renderTargets.size() > 0) {
-			const vkcv::ImageHandle firstImage = renderTargets[0];
-			if (firstImage.isSwapchainImage()) {
-				const auto& swapchainExtent = m_swapchain.getExtent();
-				width = swapchainExtent.width;
-				height = swapchainExtent.height;
-			}
-			else {
-				width = m_ImageManager->getImageWidth(firstImage);
-				height = m_ImageManager->getImageHeight(firstImage);
-			}
-		}
-		else {
-			width = 1;
-			height = 1;
-		}
-		// TODO: validate that width/height match for all attachments
+		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_swapchain, *m_ImageManager);
+		const auto width  = widthHeight[0];
+		const auto height = widthHeight[1];
 
-		const vk::RenderPass renderpass = m_PassManager->getVkPass(renderpassHandle);
-		const PassConfig passConfig = m_PassManager->getPassConfig(renderpassHandle);
+		const vk::RenderPass        renderpass      = m_PassManager->getVkPass(renderpassHandle);
+		const PassConfig            passConfig      = m_PassManager->getPassConfig(renderpassHandle);
 
-		const vk::Pipeline pipeline		= m_PipelineManager->getVkPipeline(pipelineHandle);
-		const vk::PipelineLayout pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
-		const vk::Rect2D renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+		const vk::Pipeline          pipeline        = m_PipelineManager->getVkPipeline(pipelineHandle);
+		const vk::PipelineLayout    pipelineLayout  = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
+		const vk::Rect2D            renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
 
-		std::vector<vk::ImageView> attachmentsViews;
-		for (const ImageHandle& handle : renderTargets) {
-			vk::ImageView targetHandle;
-			const auto cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
+		vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
+		transitionRendertargetsToAttachmentLayout(renderTargets, *m_ImageManager, cmdBuffer);
 
-			targetHandle = m_ImageManager->getVulkanImageView(handle);
-			const bool isDepthImage = isDepthFormat(m_ImageManager->getImageFormat(handle));
-			const vk::ImageLayout targetLayout = 
-				isDepthImage ? vk::ImageLayout::eDepthStencilAttachmentOptimal : vk::ImageLayout::eColorAttachmentOptimal;
-			m_ImageManager->recordImageLayoutTransition(handle, targetLayout, cmdBuffer);
-			attachmentsViews.push_back(targetHandle);
-		}
-		
-        const vk::FramebufferCreateInfo createInfo(
-            {},
-            renderpass,
-            static_cast<uint32_t>(attachmentsViews.size()),
-            attachmentsViews.data(),
-            width,
-            height,
-            1
-		);
-		
-		vk::Framebuffer framebuffer = m_Context.m_Device.createFramebuffer(createInfo);
-        
-        if (!framebuffer) {
+		const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_swapchain, renderpass, m_Context.m_Device);
+
+		if (!framebuffer) {
 			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
-            return;
-        }
-
-        vk::Viewport dynamicViewport(
-        		0.0f, 0.0f,
-            	static_cast<float>(width), static_cast<float>(height),
-            0.0f, 1.0f
-		);
-
-        vk::Rect2D dynamicScissor({0, 0}, {width, height});
+			return;
+		}
 
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
-            std::vector<vk::ClearValue> clearValues;
 
-            for (const auto& attachment : passConfig.attachments) {
-                if (attachment.load_operation == AttachmentOperation::CLEAR) {
-                    float clear = 0.0f;
+			const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
 
-                    if (isDepthFormat(attachment.format)) {
-                        clear = 1.0f;
-                    }
+			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
+			cmdBuffer.beginRenderPass(beginInfo, {}, {});
 
-                    clearValues.emplace_back(std::array<float, 4>{
-                            clear,
-                            clear,
-                            clear,
-                            1.f
-                    });
-                }
-            }
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
-            const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
-            const vk::SubpassContents subpassContents = {};
-            cmdBuffer.beginRenderPass(beginInfo, subpassContents, {});
+			const PipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+			if(pipeConfig.m_UseDynamicViewport)
+			{
+				recordDynamicViewport(cmdBuffer, width, height);
+			}
 
-            cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
+			for (int i = 0; i < drawcalls.size(); i++) {
+				recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
+			}
 
-            const PipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
-            if (pipeConfig.m_UseDynamicViewport) {
-                cmdBuffer.setViewport(0, 1, &dynamicViewport);
-                cmdBuffer.setScissor(0, 1, &dynamicScissor);
-            }
+        vk::Rect2D dynamicScissor({0, 0}, {width, height});
+			cmdBuffer.endRenderPass();
+		};
 
-            for (size_t i = 0; i < drawcalls.size(); i++) {
-                recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstants, i);
-            }
+		auto finishFunction = [framebuffer, this]()
+		{
+			m_Context.m_Device.destroy(framebuffer);
+		};
 
-            cmdBuffer.endRenderPass();
-        };
+		recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
+	}
 
-        auto finishFunction = [framebuffer, this]()
-        {
-            m_Context.m_Device.destroy(framebuffer);
-        };
+	void Core::recordMeshShaderDrawcalls(
+		const CommandStreamHandle                           cmdStreamHandle,
+		const PassHandle                                    renderpassHandle,
+		const PipelineHandle                                pipelineHandle,
+		const PushConstants&                                pushConstantData,
+		const std::vector<MeshShaderDrawcall>&              drawcalls,
+		const std::vector<ImageHandle>&                     renderTargets) {
+
+		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
+			return;
+		}
+
+		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_swapchain, *m_ImageManager);
+		const auto width  = widthHeight[0];
+		const auto height = widthHeight[1];
+
+		const vk::RenderPass        renderpass = m_PassManager->getVkPass(renderpassHandle);
+		const PassConfig            passConfig = m_PassManager->getPassConfig(renderpassHandle);
+
+		const vk::Pipeline          pipeline = m_PipelineManager->getVkPipeline(pipelineHandle);
+		const vk::PipelineLayout    pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
+		const vk::Rect2D            renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+
+		vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
+		transitionRendertargetsToAttachmentLayout(renderTargets, *m_ImageManager, cmdBuffer);
+
+		const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_swapchain, renderpass, m_Context.m_Device);
+
+		if (!framebuffer) {
+			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
+			return;
+		}
+
+		SubmitInfo submitInfo;
+		submitInfo.queueType = QueueType::Graphics;
+		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
+
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+
+			const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
+
+			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
+			cmdBuffer.beginRenderPass(beginInfo, {}, {});
+
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
+
+			const PipelineConfig& pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+			if (pipeConfig.m_UseDynamicViewport)
+			{
+				recordDynamicViewport(cmdBuffer, width, height);
+			}
+
+			for (int i = 0; i < drawcalls.size(); i++) {
+                const uint32_t pushConstantOffset = i * pushConstantData.getSizePerDrawcall();
+                recordMeshShaderDrawcall(
+                    cmdBuffer,
+                    pipelineLayout,
+                    pushConstantData,
+                    pushConstantOffset,
+                    drawcalls[i],
+                    0);
+			}
+
+			cmdBuffer.endRenderPass();
+		};
+
+		auto finishFunction = [framebuffer, this]()
+		{
+			m_Context.m_Device.destroy(framebuffer);
+		};
 
 		recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
 	}
@@ -373,7 +490,8 @@ namespace vkcv
 					pipelineLayout,
 					usage.setLocation,
 					{ usage.vulkanHandle },
-					{});
+					usage.dynamicOffsets
+				);
 			}
 			if (pushConstants.getSizePerDrawcall() > 0) {
 				cmdBuffer.pushConstants(
@@ -476,7 +594,7 @@ namespace vkcv
 		}
 	}
 
-	void Core::submitCommandStream(const CommandStreamHandle handle) {
+	void Core::submitCommandStream(const CommandStreamHandle& handle) {
 		std::vector<vk::Semaphore> waitSemaphores;
 		// FIXME: add proper user controllable sync
 		std::vector<vk::Semaphore> signalSemaphores = { m_SyncResources.renderFinished };
@@ -484,8 +602,9 @@ namespace vkcv
 	}
 
 	SamplerHandle Core::createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
-									  SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode) {
-		return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode);
+									  SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode,
+									  float mipLodBias) {
+		return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode, mipLodBias);
 	}
 
 	Image Core::createImage(
@@ -516,14 +635,18 @@ namespace vkcv
 			multisampling);
 	}
 
-	uint32_t Core::getImageWidth(ImageHandle imageHandle)
+	uint32_t Core::getImageWidth(const ImageHandle& image)
 	{
-		return m_ImageManager->getImageWidth(imageHandle);
+		return m_ImageManager->getImageWidth(image);
 	}
 
-	uint32_t Core::getImageHeight(ImageHandle imageHandle)
+	uint32_t Core::getImageHeight(const ImageHandle& image)
 	{
-		return m_ImageManager->getImageHeight(imageHandle);
+		return m_ImageManager->getImageHeight(image);
+	}
+	
+	vk::Format Core::getImageFormat(const ImageHandle& image) {
+		return m_ImageManager->getImageFormat(image);
 	}
 
     DescriptorSetHandle Core::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
@@ -544,32 +667,32 @@ namespace vkcv
 		return m_DescriptorManager->getDescriptorSet(handle);
 	}
 
-	void Core::prepareSwapchainImageForPresent(const CommandStreamHandle cmdStream) {
+	void Core::prepareSwapchainImageForPresent(const CommandStreamHandle& cmdStream) {
 		auto swapchainHandle = ImageHandle::createSwapchainImageHandle();
 		recordCommandsToStream(cmdStream, [swapchainHandle, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordImageLayoutTransition(swapchainHandle, vk::ImageLayout::ePresentSrcKHR, cmdBuffer);
 		}, nullptr);
 	}
 
-	void Core::prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image) {
+	void Core::prepareImageForSampling(const CommandStreamHandle& cmdStream, const ImageHandle& image) {
 		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eShaderReadOnlyOptimal, cmdBuffer);
 		}, nullptr);
 	}
 
-	void Core::prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image) {
+	void Core::prepareImageForStorage(const CommandStreamHandle& cmdStream, const ImageHandle& image) {
 		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eGeneral, cmdBuffer);
 		}, nullptr);
 	}
 
-	void Core::recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image) {
+	void Core::recordImageMemoryBarrier(const CommandStreamHandle& cmdStream, const ImageHandle& image) {
 		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordImageMemoryBarrier(image, cmdBuffer);
 		}, nullptr);
 	}
 
-	void Core::recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer) {
+	void Core::recordBufferMemoryBarrier(const CommandStreamHandle& cmdStream, const BufferHandle& buffer) {
 		recordCommandsToStream(cmdStream, [buffer, this](const vk::CommandBuffer cmdBuffer) {
 			m_BufferManager->recordBufferMemoryBarrier(buffer, cmdBuffer);
 		}, nullptr);
@@ -581,7 +704,7 @@ namespace vkcv
 		}, nullptr);
 	}
 	
-	void Core::resolveMSAAImage(CommandStreamHandle cmdStream, ImageHandle src, ImageHandle dst) {
+	void Core::resolveMSAAImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst) {
 		recordCommandsToStream(cmdStream, [src, dst, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordMSAAResolve(cmdBuffer, src, dst);
 		}, nullptr);
@@ -590,5 +713,86 @@ namespace vkcv
 	vk::ImageView Core::getSwapchainImageView() const {
     	return m_ImageManager->getVulkanImageView(vkcv::ImageHandle::createSwapchainImageHandle());
     }
+    
+    void Core::recordMemoryBarrier(const CommandStreamHandle& cmdStream) {
+		recordCommandsToStream(cmdStream, [](const vk::CommandBuffer cmdBuffer) {
+			vk::MemoryBarrier barrier (
+					vk::AccessFlagBits::eMemoryWrite | vk::AccessFlagBits::eMemoryRead,
+					vk::AccessFlagBits::eMemoryWrite | vk::AccessFlagBits::eMemoryRead
+			);
+			
+			cmdBuffer.pipelineBarrier(
+					vk::PipelineStageFlagBits::eAllCommands,
+					vk::PipelineStageFlagBits::eAllCommands,
+					vk::DependencyFlags(),
+					1, &barrier,
+					0, nullptr,
+					0, nullptr
+			);
+		}, nullptr);
+	}
+	
+	void Core::recordBlitImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst,
+							   SamplerFilterType filterType) {
+		recordCommandsToStream(cmdStream, [&](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordImageLayoutTransition(
+					src, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer
+			);
+			
+			m_ImageManager->recordImageLayoutTransition(
+					dst, vk::ImageLayout::eTransferDstOptimal, cmdBuffer
+			);
+			
+			const std::array<vk::Offset3D, 2> srcOffsets = {
+					vk::Offset3D(0, 0, 0),
+					vk::Offset3D(
+							m_ImageManager->getImageWidth(src),
+							m_ImageManager->getImageHeight(src),
+							1
+					)
+			};
+			
+			const std::array<vk::Offset3D, 2> dstOffsets = {
+					vk::Offset3D(0, 0, 0),
+					vk::Offset3D(
+							m_ImageManager->getImageWidth(dst),
+							m_ImageManager->getImageHeight(dst),
+							1
+					)
+			};
+			
+			const bool srcDepth = isDepthFormat(m_ImageManager->getImageFormat(src));
+			const bool dstDepth = isDepthFormat(m_ImageManager->getImageFormat(dst));
+			
+			const vk::ImageBlit blit = vk::ImageBlit(
+					vk::ImageSubresourceLayers(
+							srcDepth?
+							vk::ImageAspectFlagBits::eDepth :
+							vk::ImageAspectFlagBits::eColor,
+							0, 0, 1
+					),
+					srcOffsets,
+					vk::ImageSubresourceLayers(
+							dstDepth?
+							vk::ImageAspectFlagBits::eDepth :
+							vk::ImageAspectFlagBits::eColor,
+							0, 0, 1
+					),
+					dstOffsets
+			);
+			
+			cmdBuffer.blitImage(
+					m_ImageManager->getVulkanImage(src),
+					vk::ImageLayout::eTransferSrcOptimal,
+					m_ImageManager->getVulkanImage(dst),
+					vk::ImageLayout::eTransferDstOptimal,
+					1,
+					&blit,
+					filterType == SamplerFilterType::LINEAR?
+					vk::Filter::eLinear :
+					vk::Filter::eNearest
+			);
+		}, nullptr);
+	}
 	
 }

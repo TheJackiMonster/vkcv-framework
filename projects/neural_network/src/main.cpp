@@ -55,7 +55,7 @@ int main(int argc, const char** argv) {
     vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, { core.getDescriptorSet(computeDescriptorSet).layout });
 
     vkcv::DescriptorWrites computeWrites;
-    computeWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0,inputBuffer.getHandle()) };
+    computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,inputBuffer.getHandle()) };
     core.writeDescriptorSet(computeDescriptorSet,  computeWrites);
 
     if (!computePipeline)
