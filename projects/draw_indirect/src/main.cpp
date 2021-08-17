@@ -39,10 +39,30 @@ int main(int argc, const char** argv) {
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
 		{},
-		{ "VK_KHR_swapchain" }
+		{ "VK_KHR_swapchain", VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME }
 	);
 
 	vkcv::asset::Scene mesh;
+
+    // TEST DATA
+    std::vector<vkcv::Image> texturesArray;
+    const std::string grassPaths[5] = { "resources/cube/Grass001_1K_AmbientOcclusion.jpg",
+                                        "resources/cube/Grass001_1K_Color.jpg",
+                                        "resources/cube/Grass001_1K_Displacement.jpg",
+                                        "resources/cube/Grass001_1K_Normal.jpg",
+                                        "resources/cube/Grass001_1K_Roughness.jpg" };
+    for(uint32_t i = 0; i < 5; i++)
+    {
+        std::filesystem::path grassPath(grassPaths[i]);
+        vkcv::asset::TextureData grassTexture = vkcv::asset::loadTexture(grassPath);
+
+        vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, grassTexture.width, grassTexture.height);
+        texture.fill(grassTexture.data.data());
+        texture.generateMipChainImmediate();
+        texture.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+        texturesArray.push_back(texture);
+    }
 
 	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
 	int result = vkcv::asset::loadScene(path, mesh);
@@ -131,8 +151,7 @@ int main(int argc, const char** argv) {
 	
 	const vkcv::VertexLayout firstMeshLayout (bindings);
 
-	uint32_t setID = 0;
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[setID] };
+	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[0] };
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
 	const vkcv::PipelineConfig firstMeshPipelineConfig {
@@ -161,6 +180,7 @@ int main(int argc, const char** argv) {
 	texture.fill(tex.data.data());
 	texture.generateMipChainImmediate();
 	texture.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+	texturesArray.push_back(texture);
 
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
@@ -175,8 +195,18 @@ int main(int argc, const char** argv) {
 		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
 	vkcv::DescriptorWrites setWrites;
-	setWrites.sampledImageWrites	= { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
-	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
+	std::vector<vkcv::SampledImageDescriptorWrite> texturesArrayWrites;
+	for(uint32_t i = 0; i < 6; i++)
+	{
+		texturesArrayWrites.push_back(vkcv::SampledImageDescriptorWrite(1,
+																		texturesArray[i].getHandle(),
+																		0,
+																		false,
+																		i));
+	}
+
+	setWrites.sampledImageWrites	= texturesArrayWrites;
+	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(0, sampler) };
 
 	core.writeDescriptorSet(descriptorSet, setWrites);
 
