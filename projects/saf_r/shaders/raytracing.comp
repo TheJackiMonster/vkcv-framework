@@ -1,0 +1,10 @@
+#version 450 core
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(std430, binding = 0) coherent buffer safrBuffers{
+	int inumbers[];
+};
+
+void main(){
+	int i = 42;
+}

@@ -35,8 +35,37 @@ int main(int argc, const char** argv) {
 		{ "VK_KHR_swapchain" }
 	);
 
+	//configuring the compute Shader
+	vkcv::PassConfig computePassDefinition({});
+	vkcv::PassHandle computePass = core.createPass(computePassDefinition);
+
+	if (!computePass)
+	{
+		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	std::string shaderPathCompute = "shaders/raytracing.comp";
+
 	vkcv::ShaderProgram safrShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
+	vkcv::ShaderProgram computeShaderProgram{};
+
+	compiler.compile(vkcv::ShaderStage::COMPUTE, shaderPathCompute, [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		computeShaderProgram.addShader(shaderStage, path);
+	});
+
+	//Out of range Problem
+	vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
+
+	const std::vector<vkcv::VertexAttachment> computeVertexAttachments = computeShaderProgram.getVertexAttachments();
+
+	std::vector<vkcv::VertexBinding> computeBindings;
+	for (size_t i = 0; i < computeVertexAttachments.size(); i++) {
+		computeBindings.push_back(vkcv::VertexBinding(i, { computeVertexAttachments[i] }));
+	}
+	const vkcv::VertexLayout computeLayout(computeBindings);
+	
 
 	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/shader.vert"),
 		[&safrShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
@@ -85,12 +114,23 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
+	vkcv::Buffer<int> safrBuffer = core.createBuffer<int>(
+		vkcv::BufferType::STORAGE,
+		2
+		);
+
+	std::vector<int> vec = { 42, 1337 };
+	safrBuffer.fill(vec);
+	//particleBuffer.fill(particleSystem.getParticles());
 
 	vkcv::DescriptorWrites setWrites;
 	setWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
 	setWrites.samplerWrites = { vkcv::SamplerDescriptorWrite(1, sampler) };
-
 	core.writeDescriptorSet(descriptorSet, setWrites);
+
+	vkcv::DescriptorWrites computeWrites;
+	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,safrBuffer.getHandle()) };
+	core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
 	const auto& context = core.getContext();
 
@@ -114,7 +154,6 @@ int main(int argc, const char** argv) {
 	}
 
 
-
 	const vkcv::PipelineConfig safrPipelineDefinition{
 			safrShaderProgram,
 			(uint32_t)windowWidth,
@@ -126,8 +165,9 @@ int main(int argc, const char** argv) {
 	};
 
 	vkcv::PipelineHandle safrPipeline = core.createGraphicsPipeline(safrPipelineDefinition);
+	vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, { core.getDescriptorSet(computeDescriptorSet).layout });
 
-	if (!safrPipeline)
+	if (!safrPipeline || !computePipeline)
 	{
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
@@ -158,6 +198,7 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 
+
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		start = end;
@@ -170,6 +211,18 @@ int main(int argc, const char** argv) {
 		pushConstants.appendDrawcall(std::array<glm::mat4, 2>{ mvp, proj });
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+
+		vkcv::PushConstants pushConstantsCompute(0);
+		//pushConstantsCompute.appendDrawcall(pushData);
+
+		uint32_t computeDispatchCount[3] = { 2,1,1 };
+		core.recordComputeDispatchToCmdStream(cmdStream,
+			computePipeline,
+			computeDispatchCount,
+			{ vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet).vulkanHandle) },
+			pushConstantsCompute);
+
+		core.recordBufferMemoryBarrier(cmdStream, safrBuffer.getHandle());
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
