@@ -34,7 +34,7 @@ public:
 		const float                     cameraShutterSpeedInverse,
 		const float                     motionBlurMinVelocity);
 
-	vkcv::ImageHandle MotionBlur::renderMotionVectorVisualisation(
+	vkcv::ImageHandle renderMotionVectorVisualisation(
 		const vkcv::CommandStreamHandle cmdStream,
 		const vkcv::ImageHandle         motionBuffer,
 		const eMotionVectorMode         debugView,
