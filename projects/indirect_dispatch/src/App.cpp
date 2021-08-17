@@ -44,6 +44,9 @@ bool App::initialize() {
 	if (!loadMesh(m_core, "resources/models/cube.gltf", &m_cubeMesh))
 		return false;
 
+	if (!loadMesh(m_core, "resources/models/ground.gltf", &m_groundMesh))
+		return false;
+
 	if (!m_motionBlur.initialize(&m_core, m_windowWidth, m_windowHeight))
 		return false;
 
@@ -56,7 +59,8 @@ bool App::initialize() {
 	m_renderTargets = createRenderTargets(m_core, m_windowWidth, m_windowHeight);
 
 	const int cameraIndex = m_cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-	m_cameraManager.getCamera(cameraIndex).setPosition(glm::vec3(0, 0, -3));
+	m_cameraManager.getCamera(cameraIndex).setPosition(glm::vec3(0, 1, -3));
+	m_cameraManager.getCamera(cameraIndex).setNearFar(0.1f, 30.f);
 	
 	return true;
 }
@@ -66,7 +70,8 @@ void App::run() {
 	auto                        frameStartTime = std::chrono::system_clock::now();
 	const auto                  appStartTime   = std::chrono::system_clock::now();
 	const vkcv::ImageHandle     swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-	const vkcv::DrawcallInfo    sphereDrawcall(m_sphereMesh.mesh, {}, 1);
+	const vkcv::DrawcallInfo    drawcallSphere(m_sphereMesh.mesh, {}, 1);
+	const vkcv::DrawcallInfo    drawcallGround(m_groundMesh.mesh, {}, 1);
 	const vkcv::DrawcallInfo    cubeDrawcall(m_cubeMesh.mesh, {}, 1);
 
 	vkcv::gui::GUI gui(m_core, m_window);
@@ -92,8 +97,10 @@ void App::run() {
 	int     cameraShutterSpeedInverse       = 24;
 	float   motionVectorVisualisationRange  = 0.008;
 
-	glm::mat4 mvpPrevious               = glm::mat4(1.f);
+	glm::mat4 mvpSpherePrevious         = glm::mat4(1.f);
+    glm::mat4 mvpGroundPrevious         = glm::mat4(1.f);
 	glm::mat4 viewProjectionPrevious    = m_cameraManager.getActiveCamera().getMVP();
+	const glm::mat4 modelMatrixGround   = glm::mat4(1.f);
 
 	while (m_window.isWindowOpen()) {
 		vkcv::Window::pollEvents();
@@ -120,20 +127,27 @@ void App::run() {
 		m_cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 		const glm::mat4 viewProjection = m_cameraManager.getActiveCamera().getMVP();
 
-		const auto      time            = frameEndTime - appStartTime;
-		const float     fCurrentTime    = std::chrono::duration_cast<std::chrono::milliseconds>(time).count() * 0.001f;
-		const float     currentHeight   = glm::sin(fCurrentTime * objectVerticalSpeed);
-		const glm::mat4 modelMatrix     = glm::translate(glm::mat4(1), glm::vec3(0, currentHeight, 0));
-		const glm::mat4 mvp             = viewProjection * modelMatrix;
+		const auto      time                = frameEndTime - appStartTime;
+		const float     fCurrentTime        = std::chrono::duration_cast<std::chrono::milliseconds>(time).count() * 0.001f;
+		const float     currentHeight       = glm::sin(fCurrentTime * objectVerticalSpeed);
+		const glm::mat4 modelMatrixSphere   = glm::translate(glm::mat4(1), glm::vec3(0, currentHeight, 0));
+		const glm::mat4 mvpSphere           = viewProjection * modelMatrixSphere;
+		const glm::mat4 mvpGround           = viewProjection * modelMatrixGround;
 
 		const vkcv::CommandStreamHandle cmdStream = m_core.createCommandStream(vkcv::QueueType::Graphics);
 
 		// prepass
-		glm::mat4 prepassMatrices[2] = {
-			mvp,
-			mvpPrevious };
-		vkcv::PushConstants prepassPushConstants(sizeof(glm::mat4)*2);
-		prepassPushConstants.appendDrawcall(prepassMatrices);
+		vkcv::PushConstants prepassPushConstants(sizeof(glm::mat4) * 2);
+
+		glm::mat4 sphereMatricesPrepass[2] = {
+			mvpSphere,
+			mvpSpherePrevious };
+		prepassPushConstants.appendDrawcall(sphereMatricesPrepass);
+
+		glm::mat4 groundMatricesPrepass[2] = {
+			mvpGround,
+			mvpGroundPrevious };
+		prepassPushConstants.appendDrawcall(groundMatricesPrepass);
 
 		const std::vector<vkcv::ImageHandle> prepassRenderTargets = {
 			m_renderTargets.motionBuffer,
@@ -144,7 +158,7 @@ void App::run() {
 			m_prePass.renderPass,
 			m_prePass.pipeline,
 			prepassPushConstants,
-			{ sphereDrawcall },
+			{ drawcallSphere, drawcallGround },
 			prepassRenderTargets);
 
 		// sky prepass
@@ -168,14 +182,15 @@ void App::run() {
 			m_renderTargets.depthBuffer };
 
 		vkcv::PushConstants meshPushConstants(sizeof(glm::mat4));
-		meshPushConstants.appendDrawcall(mvp);
+		meshPushConstants.appendDrawcall(mvpSphere);
+		meshPushConstants.appendDrawcall(mvpGround);
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
 			m_meshPass.renderPass,
 			m_meshPass.pipeline,
 			meshPushConstants,
-			{ sphereDrawcall },
+			{ drawcallSphere, drawcallGround },
 			renderTargets);
 
 		// sky
@@ -290,7 +305,8 @@ void App::run() {
 		m_core.endFrame();
 
 		viewProjectionPrevious  = viewProjection;
-		mvpPrevious             = mvp;
+		mvpSpherePrevious       = mvpSphere;
+		mvpGroundPrevious       = mvpGround;
 		frameStartTime          = frameEndTime;
 	}
 }

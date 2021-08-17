@@ -63,27 +63,29 @@ vkcv::ImageHandle MotionBlur::render(
 
 	computeMotionTiles(cmdStream, motionBufferFullRes);
 
-	vkcv::ImageHandle inputMotionBuffer;
+	// usually this is the neighbourhood max, but other modes can be used for comparison/debugging
+	vkcv::ImageHandle inputMotionTiles;
 	if (motionVectorMode == eMotionVectorMode::FullResolution)
-		inputMotionBuffer = motionBufferFullRes;
+		inputMotionTiles = motionBufferFullRes;
 	else if (motionVectorMode == eMotionVectorMode::MaxTile)
-		inputMotionBuffer = m_renderTargets.motionMax;
+		inputMotionTiles = m_renderTargets.motionMax;
 	else if (motionVectorMode == eMotionVectorMode::MaxTileNeighbourhood)
-		inputMotionBuffer = m_renderTargets.motionMaxNeighbourhood;
+		inputMotionTiles = m_renderTargets.motionMaxNeighbourhood;
 	else {
 		vkcv_log(vkcv::LogLevel::ERROR, "Unknown eMotionInput enum value");
-		inputMotionBuffer = motionBufferFullRes;
+		inputMotionTiles = m_renderTargets.motionMaxNeighbourhood;
 	}
 
 	vkcv::DescriptorWrites motionBlurDescriptorWrites;
 	motionBlurDescriptorWrites.sampledImageWrites = {
 		vkcv::SampledImageDescriptorWrite(0, colorBuffer),
 		vkcv::SampledImageDescriptorWrite(1, depthBuffer),
-		vkcv::SampledImageDescriptorWrite(2, inputMotionBuffer) };
+		vkcv::SampledImageDescriptorWrite(2, motionBufferFullRes),
+		vkcv::SampledImageDescriptorWrite(3, inputMotionTiles) };
 	motionBlurDescriptorWrites.samplerWrites = {
-		vkcv::SamplerDescriptorWrite(3, m_nearestSampler) };
+		vkcv::SamplerDescriptorWrite(4, m_nearestSampler) };
 	motionBlurDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(4, m_renderTargets.outputColor) };
+		vkcv::StorageImageDescriptorWrite(5, m_renderTargets.outputColor) };
 
 	m_core->writeDescriptorSet(m_motionBlurPass.descriptorSet, motionBlurDescriptorWrites);
 
@@ -109,7 +111,7 @@ vkcv::ImageHandle MotionBlur::render(
 	m_core->prepareImageForStorage(cmdStream, m_renderTargets.outputColor);
 	m_core->prepareImageForSampling(cmdStream, colorBuffer);
 	m_core->prepareImageForSampling(cmdStream, depthBuffer);
-	m_core->prepareImageForSampling(cmdStream, inputMotionBuffer);
+	m_core->prepareImageForSampling(cmdStream, inputMotionTiles);
 
 	const auto fullscreenDispatchSizes = computeFullscreenDispatchSize(
 		m_core->getImageWidth(m_renderTargets.outputColor),

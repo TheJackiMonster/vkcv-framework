@@ -4,9 +4,10 @@
 
 layout(set=0, binding=0)                    uniform texture2D   inColor;
 layout(set=0, binding=1)                    uniform texture2D   inDepth;
-layout(set=0, binding=2)                    uniform texture2D   inMotion;   
-layout(set=0, binding=3)                    uniform sampler     nearestSampler;
-layout(set=0, binding=4, r11f_g11f_b10f)    uniform image2D     outImage;
+layout(set=0, binding=2)                    uniform texture2D   inMotionFullRes;
+layout(set=0, binding=3)                    uniform texture2D   inMotionNeighbourhoodMax;  
+layout(set=0, binding=4)                    uniform sampler     nearestSampler;
+layout(set=0, binding=5, r11f_g11f_b10f)    uniform image2D     outImage;
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -23,6 +24,7 @@ float linearizeDepth(float depth, float near, float far){
 }
 
 struct SampleData{
+    vec3    color;
     float   depthLinear;
     vec2    uv;
     vec2    motion;
@@ -41,32 +43,34 @@ float cylinder(vec2 uv1, vec2 uv2, float velocity){
     return 1 - smoothstep(0.95 * velocity, 1.05 * velocity, distance(uv1, uv2));
 }
 
-// checks if depth2 is closer than depth1, result within range [0, 1]
+// checks if depth1 is closer than depth2, result within range [0, 1]
 float softDepthCompare(float depth1, float depth2){
-    float softDepthExtent = 0.1;
+    float softDepthExtent = 0.0001;
     return clamp(1 - (depth1 - depth2) / softDepthExtent, 0, 1);
 }
 
 // reconstruction filter and helper functions from "A Reconstruction Filter for Plausible Motion Blur", McGuire
 float computeSampleWeigth(SampleData mainPixel, SampleData samplePixel){
     
-    float foreground = softDepthCompare(  mainPixel.depthLinear,  samplePixel.depthLinear);
-    float background = softDepthCompare(samplePixel.depthLinear,    mainPixel.depthLinear);
+    float foreground = softDepthCompare(samplePixel.depthLinear,    mainPixel.depthLinear);
+    float background = softDepthCompare(  mainPixel.depthLinear,  samplePixel.depthLinear);
+    
+    float weight = 0;
     
     // blurry sample in front of main pixel
-    float weight = foreground * cone(mainPixel.uv, samplePixel.uv, samplePixel.velocity);
+    weight += foreground * cone(mainPixel.uv, samplePixel.uv, samplePixel.velocity);
     
     // any sample behind blurry main pixel: estimate background by using sample
     weight += background * cone(mainPixel.uv, samplePixel.uv, mainPixel.velocity);
     
     // both main pixel and sample are blurry and overlap
     weight += 2 * cylinder(mainPixel.uv, samplePixel.uv, mainPixel.velocity) * cylinder(mainPixel.uv, samplePixel.uv, samplePixel.velocity);
-    
+
     return weight;
 }
 
 // see "A Reconstruction Filter for Plausible Motion Blur", section 2.2
-vec2 rescaleMotion(vec2 motion){
+vec2 processMotionVector(vec2 motion){
     // every frame a pixel should blur over the distance it moves
     // as we blur in two directions (where it was and where it will be) we must half the motion 
     vec2 motionHalf     = motion * 0.5;
@@ -83,8 +87,9 @@ vec2 rescaleMotion(vec2 motion){
 SampleData loadSampleData(vec2 uv){
     
     SampleData data;
-    data.uv             = uv;
-    data.motion         = rescaleMotion(texture(sampler2D(inMotion, nearestSampler), uv).rg);
+    data.color          = texture(sampler2D(inColor, nearestSampler), uv).rgb;
+    data.uv             = (ivec2(uv * imageSize(outImage)) + 0.5) / imageSize(outImage);    // quantize to integer coordinates, then move to pixel center and compute final uv
+    data.motion         = processMotionVector(texture(sampler2D(inMotionFullRes, nearestSampler), uv).rg);
     data.velocity       = length(data.motion);
     data.depthLinear    = texture(sampler2D(inDepth, nearestSampler), uv).r;
     data.depthLinear    = linearizeDepth(data.depthLinear, cameraNearPlane, cameraFarPlane);
@@ -112,24 +117,33 @@ void main(){
     ivec2   textureRes  = textureSize(sampler2D(inColor, nearestSampler), 0);
     ivec2   coord       = ivec2(gl_GlobalInvocationID.xy);
     vec2    uv          = vec2(coord + 0.5) / textureRes;   // + 0.5 to shift uv into pixel center
-
+    
+    vec2 motionNeighbourhoodMax = processMotionVector(texture(sampler2D(inMotionNeighbourhoodMax, nearestSampler), uv).rg);
+    
     SampleData mainPixel = loadSampleData(uv);
     
     // early out on little movement
-    if(mainPixel.velocity <= minVelocity){
-        vec3 color = texture(sampler2D(inColor, nearestSampler), uv).rgb;        
-        imageStore(outImage, coord, vec4(color, 0.f));
+    if(length(motionNeighbourhoodMax) <= minVelocity){
+        imageStore(outImage, coord, vec4(mainPixel.color, 0.f));
         return;
     }
-
-    vec3        color       = vec3(0);
-    float       weightSum   = 0;
-    const int   sampleCount = 16; 
+    
+    // the main pixel always contributes to the motion blur
+    // however if it is spread across multiple pixels, it should distribute it's color evenly among all of them (assuming a linear motion)
+    // because of this the pixel motion is translated into pixels
+    // for example if a pixel covers a five pixel distance, then it's weight is 1 / 5
+    float   mainPixelCoverageLength = max(length(mainPixel.motion * imageSize(outImage)), 1);   // max 1 because a pixel can't cover less than it's size
+    float   mainPixelWeight         = 1.f / mainPixelCoverageLength;
+    
+    vec3    color           = mainPixel.color * mainPixelWeight;
+    float   weightSum       = mainPixelWeight;
+    
+    const int sampleCount = 15; 
     
     // clamping start and end points avoids artifacts at image borders
     // the sampler clamps the sample uvs anyways, but without clamping here, many samples can be stuck at the border
-    vec2 uvStart    = clamp(uv - mainPixel.motion, 0, 1);
-    vec2 uvEnd      = clamp(uv + mainPixel.motion, 0, 1);
+    vec2 uvStart    = clamp(uv - motionNeighbourhoodMax, 0, 1);
+    vec2 uvEnd      = clamp(uv + motionNeighbourhoodMax, 0, 1);
     
     // samples are placed evenly, but the entire filter is jittered
     // dither returns either 0 or 1
@@ -137,14 +151,13 @@ void main(){
     float random = dither(coord) * 0.5 - 0.25;
     
     for(int i = 0; i < sampleCount; i++){
-        vec2    sampleUV    = mix(uvStart, uvEnd, (i + random + 1) / float(sampleCount + 1));
-        vec3    sampleColor = texture(sampler2D(inColor, nearestSampler), sampleUV).rgb;
+        vec2 sampleUV = mix(uvStart, uvEnd, (i + random + 1) / float(sampleCount + 1));
         
         SampleData  samplePixel     = loadSampleData(sampleUV);
         float       weightSample    = computeSampleWeigth(mainPixel, samplePixel);
-        
+
         weightSum   += weightSample;
-        color       += sampleColor * weightSample;
+        color       += samplePixel.color * weightSample;
     }
     
     color /= weightSum;

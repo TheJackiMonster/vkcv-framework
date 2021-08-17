@@ -23,6 +23,7 @@ private:
 
 	MeshResources m_sphereMesh;
 	MeshResources m_cubeMesh;
+	MeshResources m_groundMesh;
 
 	GraphicPassHandles m_meshPass;
 	GraphicPassHandles m_skyPass;

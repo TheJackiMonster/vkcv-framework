@@ -7,6 +7,8 @@ layout(location = 1) in vec3 passPos;
 layout(location = 0) out vec3 outColor;
 
 void main()	{
-	// outColor = passNormal * 0.5 + 0.5;
-    outColor = vec3(sin(passPos.y * 100) * 0.5 + 0.5);
+    vec3    albedo  = vec3(sin(passPos.y * 100) * 0.5 + 0.5);
+    vec3    N       = normalize(passNormal);
+    float   light   = max(N.y * 0.5 + 0.5, 0);
+    outColor = light * albedo;
 }
