@@ -91,6 +91,7 @@ struct Sampler {
  * RGB or is grayscale. In the case where the glTF-file does not provide a URI
  * but references a buffer view for the raw data, the path member will be empty
  * even though the rest is initialized properly.
+ * NOTE: Loading textures without URI is untested.
  */
 struct Texture {
 	std::filesystem::path path;	// URI to the encoded texture data
