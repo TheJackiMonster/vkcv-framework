@@ -1,4 +1,5 @@
 #pragma once
+#include <vkcv/Core.hpp>
 #include "AppSetup.hpp"
 #include "MotionBlurSetup.hpp"
 
