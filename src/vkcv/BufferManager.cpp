@@ -330,33 +330,15 @@ namespace vkcv {
 			nullptr);
 	}
 
-    void BufferManager::readBuffer(const BufferHandle& handle, void *data) {
-        const uint64_t id = handle.getId();
-        size_t size = getBufferSize(handle);
 
-        if (size == 0) {
-            size = SIZE_MAX;
-        }
-
-        if (id >= m_buffers.size()) {
-            return;
-        }
-
-        auto& buffer = m_buffers[id];
-
-        const vma::Allocator& allocator = m_core->getContext().getAllocator();
-
-
-        const size_t max_size = std::min(size, buffer.m_size);
-
-        void* mapped = allocator.mapMemory(buffer.m_allocation);
-        memcpy(reinterpret_cast<int*>(data), reinterpret_cast<char*>(mapped) , max_size);
-        allocator.unmapMemory(buffer.m_allocation);
-    }
-
-    void BufferManager ::readBufferMemoryBarrier(const BufferHandle& handle, vk::CommandBuffer cmdBuffer, void *data) {
+    void BufferManager ::readBuffer(const BufferHandle& handle, vk::CommandBuffer cmdBuffer, void *data) {
 
         const uint64_t id = handle.getId();
+		size_t size = getBufferSize(handle);
+
+		if (size == 0) {
+			size = SIZE_MAX;
+		}
 
         if (id >= m_buffers.size()) {
             vkcv_log(vkcv::LogLevel::ERROR, "Invalid buffer handle");
@@ -382,7 +364,14 @@ namespace vkcv {
                 memoryBarrier,
                 nullptr);
 
-        readBuffer(handle, data);
+		const vma::Allocator& allocator = m_core->getContext().getAllocator();
+
+
+		const size_t max_size = std::min(size, buffer.m_size);
+
+		void* mapped = allocator.mapMemory(buffer.m_allocation);
+		memcpy(reinterpret_cast<int*>(data), reinterpret_cast<char*>(mapped), max_size);
+		allocator.unmapMemory(buffer.m_allocation);
 
         vk::BufferMemoryBarrier memoryBarrier2(
                 vk::AccessFlagBits::eTransferWrite,

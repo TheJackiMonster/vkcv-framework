@@ -63,7 +63,7 @@ int main(int argc, const char** argv) {
         std::cout << "Error. Could not create compute pipeline. Exiting." << std::endl;
         return EXIT_FAILURE;
     }
-
+    for(int i =0;i<3;i++){
     auto cmdStream = core.createCommandStream(vkcv::QueueType::Compute);
     uint32_t computeDispatchCount[3] = {64,1,1 };
 
@@ -78,12 +78,13 @@ int main(int argc, const char** argv) {
 
     int output[64] = { 0 };
     std::fill_n(output, 64, -1);
-    core.readBufferMemoryBarrier(cmdStream, inputBuffer.getHandle(), &output);
+    core.recordReadBuffer(cmdStream, inputBuffer.getHandle(), &output);
     core.submitCommandStream(cmdStream);
     std::cout << "[";
     for (int i = 0; i < 64; i++) {
         std::cout << output[i] << ", ";
     }
     std::cout << "]" << std::endl;
+    }
     return 0;
 }

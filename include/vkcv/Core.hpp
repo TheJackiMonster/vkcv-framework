@@ -303,7 +303,7 @@ namespace vkcv
 		void prepareImageForStorage(const CommandStreamHandle& cmdStream, const ImageHandle& image);
 		void recordImageMemoryBarrier(const CommandStreamHandle& cmdStream, const ImageHandle& image);
 		void recordBufferMemoryBarrier(const CommandStreamHandle& cmdStream, const BufferHandle& buffer);
-		void readBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer, void *data);
+		void recordReadBuffer(const CommandStreamHandle cmdStream, const BufferHandle buffer, void *data);
 		void resolveMSAAImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst);
 
 		[[nodiscard]]

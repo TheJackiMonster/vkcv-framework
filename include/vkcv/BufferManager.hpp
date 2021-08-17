@@ -136,12 +136,21 @@ namespace vkcv
 			const BufferHandle& handle,
 			vk::CommandBuffer cmdBuffer);
 
-		void readBufferMemoryBarrier(
+
+		/**
+		 * Reads buffer data from GPU for a given buffer handle
+		 * and writes it to data pointer. Uses cmdBuffer to
+		 * create neccessary memory barriers.
+		 * 
+		 * @param handle Buffer handle to read
+		 * @param cmdBuffer commandbuffer to execute memory barriers
+		 * @param data data pointer to which result will be written
+		 *
+		 */
+		void readBuffer(
 		    const BufferHandle& handle,
 		    vk::CommandBuffer cmdBuffer,
 		    void* data);
-
-        void readBuffer(const BufferHandle& handle, void *data);
 	};
 	
 }

@@ -698,9 +698,9 @@ namespace vkcv
 		}, nullptr);
 	}
 
-	void Core::readBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer, void *data) {
+	void Core::recordReadBuffer(const CommandStreamHandle cmdStream, const BufferHandle buffer, void *data) {
 		recordCommandsToStream(cmdStream, [buffer, this, data](const vk::CommandBuffer cmdBuffer) {
-			m_BufferManager->readBufferMemoryBarrier(buffer, cmdBuffer, data);
+			m_BufferManager->readBuffer(buffer, cmdBuffer, data);
 		}, nullptr);
 	}
 	
