@@ -242,74 +242,76 @@ struct Mesh {
 	std::vector<int> vertexGroups;
 };
 
-	/**
-	 * The scene struct is simply a collection of objects in the scene as well as
-	 * the resources used by those objects.
-	 * Note that parent-child relations are not yet possible.
-	 */
-	struct Scene {
-		std::vector<Mesh> meshes;
-		std::vector<VertexGroup> vertexGroups;
-		std::vector<Material> materials;
-		std::vector<Texture> textures;
-		std::vector<Sampler> samplers;
-		std::vector<std::string> uris;
-	};
+/**
+ * The scene struct is simply a collection of objects in the scene as well as
+ * the resources used by those objects.
+ * Note that parent-child relations are not yet possible.
+ */
+struct Scene {
+	std::vector<Mesh> meshes;
+	std::vector<VertexGroup> vertexGroups;
+	std::vector<Material> materials;
+	std::vector<Texture> textures;
+	std::vector<Sampler> samplers;
+	std::vector<std::string> uris;
+};
 
-	/**
-	 * Parse the given glTF file and create a shallow description of the content.
-	 * Only the meta-data of the objects in the scene is loaded, not the binary
-	 * content. The rationale is to provide a means of probing the content of a
-	 * glTF file without the costly process of loading and decoding large amounts
-	 * of data. The returned Scene struct can be used to search for specific meshes
-	 * in the scene, that can then be loaded on their own using the loadMesh()
-	 * function. Note that the Scene struct received as output argument will be
-	 * overwritten by this function.
-	 * After this function completes, the returned Scene struct is completely
-	 * initialized and all information is final, except for the missing binary
-	 * data. This means that indices to vectors will remain valid even when the
-	 * shallow scene struct is filled with data by loadMesh().
-	 * Note that for URIs only (local) filesystem paths are supported, no
-	 * URLs using network protocols etc.
-	 *
-	 * @param path	must be the path to a glTF- or glb-file.
-	 * @param scene	is a reference to a Scene struct that will be filled with the
-	 * 	meta-data of all objects described in the glTF file.
-	 */
-	int probeScene(const std::filesystem::path &path, Scene &scene);
+/**
+ * Parse the given glTF file and create a shallow description of the content.
+ * Only the meta-data of the objects in the scene is loaded, not the binary
+ * content. The rationale is to provide a means of probing the content of a
+ * glTF file without the costly process of loading and decoding large amounts
+ * of data. The returned Scene struct can be used to search for specific meshes
+ * in the scene, that can then be loaded on their own using the loadMesh()
+ * function. Note that the Scene struct received as output argument will be
+ * overwritten by this function.
+ * After this function completes, the returned Scene struct is completely
+ * initialized and all information is final, except for the missing binary
+ * data. This means that indices to vectors will remain valid even when the
+ * shallow scene struct is filled with data by loadMesh().
+ * Note that for URIs only (local) filesystem paths are supported, no
+ * URLs using network protocols etc.
+ *
+ * @param path	must be the path to a glTF- or glb-file.
+ * @param scene	is a reference to a Scene struct that will be filled with the
+ * 	meta-data of all objects described in the glTF file.
+ */
+int probeScene(const std::filesystem::path &path, Scene &scene);
 
-	/**
-	 * This function loads a single mesh from the given file and adds it to the
-	 * given scene. The scene must already be initialized (via probeScene()).
-	 * The mesh_index refers to the Scenes meshes array and identifies the mesh to
-	 * load. To find the mesh you want, iterate over the probed scene and check the
-	 * meshes details (eg. name).
-	 * Besides the mesh, this function will also add any associated data to the
-	 * Scene struct such as Materials and Textures required by the Mesh.
-	 *
-	 * @param path	must be the path to a glTF- or glb-file.
-	 * @param scene	is the scene struct to which the results will be written.
-	 */
-	int loadMesh(Scene &scene, int mesh_index);
-	
-	/**
-	 * Load every mesh from the glTF file, as well as materials, textures and other
-	 * associated objects.
-	 *
-	 * @param path	must be the path to a glTF- or glb-file.
-	 * @param scene is a reference to a Scene struct that will be filled with the
-	 * 	content of the glTF file being loaded.
-	 */
-	int loadScene(const std::filesystem::path &path, Scene &scene);
+/**
+ * This function loads a single mesh from the given file and adds it to the
+ * given scene. The scene must already be initialized (via probeScene()).
+ * The mesh_index refers to the Scenes meshes array and identifies the mesh to
+ * load. To find the mesh you want, iterate over the probed scene and check the
+ * meshes details (eg. name).
+ * Besides the mesh, this function will also add any associated data to the
+ * Scene struct such as Materials and Textures required by the Mesh.
+ *
+ * @param path	must be the path to a glTF- or glb-file.
+ * @param scene	is the scene struct to which the results will be written.
+ */
+int loadMesh(Scene &scene, int mesh_index);
 
-	/**
-	 * Simply loads a single image at the given path and returns a Texture
-	 * struct describing it. This is for special use cases only (eg.
-	 * loading a font atlas) and not meant to be used for regular assets.
-	 * The sampler is set to -1, signalling that this Texture was loaded
-	 * outside the context of a glTF-file.
-	 *
-	 * @param path	must be the path to an image file
-	 */
-	Texture loadTexture(const std::filesystem::path& path);
-}
+/**
+ * Load every mesh from the glTF file, as well as materials, textures and other
+ * associated objects.
+ *
+ * @param path	must be the path to a glTF- or glb-file.
+ * @param scene is a reference to a Scene struct that will be filled with the
+ * 	content of the glTF file being loaded.
+ */
+int loadScene(const std::filesystem::path &path, Scene &scene);
+
+/**
+ * Simply loads a single image at the given path and returns a Texture
+ * struct describing it. This is for special use cases only (eg.
+ * loading a font atlas) and not meant to be used for regular assets.
+ * The sampler is set to -1, signalling that this Texture was loaded
+ * outside the context of a glTF-file.
+ *
+ * @param path	must be the path to an image file.
+ * @return	Texture struct describing the loaded image.
+ */
+Texture loadTexture(const std::filesystem::path& path);
+
+}	// end namespace vkcv::asset
