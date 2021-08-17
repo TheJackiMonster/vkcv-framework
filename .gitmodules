@@ -28,3 +28,6 @@
 [submodule "lib/VulkanMemoryAllocator-Hpp"]
 	path = lib/VulkanMemoryAllocator-Hpp
 	url = https://github.com/malte-v/VulkanMemoryAllocator-Hpp.git
+[submodule "modules/upscaling/lib/FidelityFX-FSR"]
+	path = modules/upscaling/lib/FidelityFX-FSR
+	url = https://github.com/GPUOpen-Effects/FidelityFX-FSR.git

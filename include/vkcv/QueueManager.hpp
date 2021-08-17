@@ -32,8 +32,8 @@ namespace vkcv {
         const std::vector<Queue> &getTransferQueues() const;
 
         static void queueCreateInfosQueueHandles(vk::PhysicalDevice &physicalDevice,
-                std::vector<float> &queuePriorities,
-                std::vector<vk::QueueFlagBits> &queueFlags,
+                const std::vector<float> &queuePriorities,
+                const std::vector<vk::QueueFlagBits> &queueFlags,
                 std::vector<vk::DeviceQueueCreateInfo> &queueCreateInfos,
                 std::vector<std::pair<int, int>> &queuePairsGraphics,
                 std::vector<std::pair<int, int>> &queuePairsCompute,

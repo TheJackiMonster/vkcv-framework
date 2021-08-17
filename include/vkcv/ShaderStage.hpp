@@ -9,7 +9,11 @@ namespace vkcv {
 		TESS_EVAL,
 		GEOMETRY,
 		FRAGMENT,
-		COMPUTE
+		COMPUTE,
+		TASK,
+		MESH
 	};
+
+
 
 }
