@@ -1,5 +1,6 @@
 #version 440
 #extension GL_GOOGLE_include_directive : enable
+#include "motionBlurConfig.inc"
 
 layout(set=0, binding=0)                    uniform texture2D   inColor;
 layout(set=0, binding=1)                    uniform texture2D   inDepth;
@@ -10,7 +11,7 @@ layout(set=0, binding=4, r11f_g11f_b10f)    uniform image2D     outImage;
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout( push_constant ) uniform constants{
-    float motionFactor;  // computed from delta time and shutter speed
+    float motionScaleFactor;  // computed from delta time and shutter speed
     float minVelocity;
     // camera planes are needed to linearize depth
     float cameraNearPlane;
@@ -64,11 +65,26 @@ float computeSampleWeigth(SampleData mainPixel, SampleData samplePixel){
     return weight;
 }
 
+// see "A Reconstruction Filter for Plausible Motion Blur", section 2.2
+vec2 rescaleMotion(vec2 motion){
+    // every frame a pixel should blur over the distance it moves
+    // as we blur in two directions (where it was and where it will be) we must half the motion 
+    vec2 motionHalf     = motion * 0.5;
+    vec2 motionScaled   = motionHalf * motionScaleFactor; // scale factor contains shutter speed and delta time
+    
+    // pixels are anisotropic so the smaller dimension is used, so the clamping is conservative
+    float pixelSize     = 1.f / max(imageSize(outImage).x, imageSize(outImage).y);
+    float velocity      = length(motionScaled);
+    float epsilon       = 0.0001;
+    // this clamps the motion to not exceed the radius given by the motion tile size
+    return motionScaled * max(0.5 * pixelSize, min(velocity, motionTileSize * pixelSize)) / (velocity + epsilon);
+}
+
 SampleData loadSampleData(vec2 uv){
     
     SampleData data;
     data.uv             = uv;
-    data.motion         = texture(sampler2D(inMotion, nearestSampler), uv).rg * motionFactor;
+    data.motion         = rescaleMotion(texture(sampler2D(inMotion, nearestSampler), uv).rg);
     data.velocity       = length(data.motion);
     data.depthLinear    = texture(sampler2D(inDepth, nearestSampler), uv).r;
     data.depthLinear    = linearizeDepth(data.depthLinear, cameraNearPlane, cameraFarPlane);
@@ -105,12 +121,6 @@ void main(){
         imageStore(outImage, coord, vec4(color, 0.f));
         return;
     }
-    
-    // TODO: check if a max velocity is necessary
-    // // TODO: should be configurable by user or computed by velocity tile sizes
-    // const float maxBlurDistance = 0.075;
-    // if(mainPixel.velocity > maxBlurDistance)
-    //     motion *= maxBlurDistance / velocity;
 
     vec3        color       = vec3(0);
     float       weightSum   = 0;

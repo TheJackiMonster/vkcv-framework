@@ -89,7 +89,7 @@ void App::run() {
 
 	float   objectVerticalSpeed             = 5;
 	float   motionBlurMinVelocity           = 0.001;
-	int     cameraShutterSpeedInverse       = 30;
+	int     cameraShutterSpeedInverse       = 24;
 	float   motionVectorVisualisationRange  = 0.008;
 
 	glm::mat4 mvpPrevious               = glm::mat4(1.f);

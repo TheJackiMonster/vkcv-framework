@@ -1,0 +1,1 @@
+const int motionTileSize = 20;
