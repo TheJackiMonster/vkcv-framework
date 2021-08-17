@@ -760,7 +760,11 @@ namespace vkcv::asset {
 		Texture texture;
 		texture.path = path;
 		texture.sampler = -1;
-		loadTextureData(texture);
+		if (loadTextureData(texture) != ASSET_SUCCESS) {
+			texture.path.clear();
+			texture.w = texture.h = texture.channels = 0;
+			texture.data.clear();
+		}
 		return texture;
 	}
 

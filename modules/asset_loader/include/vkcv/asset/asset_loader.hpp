@@ -308,6 +308,9 @@ int loadScene(const std::filesystem::path &path, Scene &scene);
  * loading a font atlas) and not meant to be used for regular assets.
  * The sampler is set to -1, signalling that this Texture was loaded
  * outside the context of a glTF-file.
+ * If there was an error loading or decoding the image, the returned struct
+ * will be cleared to all 0 with path and data being empty; make sure to always
+ * check that !data.empty() before using the struct.
  *
  * @param path	must be the path to an image file.
  * @return	Texture struct describing the loaded image.
