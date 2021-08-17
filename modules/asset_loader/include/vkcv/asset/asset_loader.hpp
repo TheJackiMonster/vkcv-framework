@@ -303,7 +303,13 @@ struct Mesh {
 	int loadScene(const std::filesystem::path &path, Scene &scene);
 
 	/**
-	 * TODO document
+	 * Simply loads a single image at the given path and returns a Texture
+	 * struct describing it. This is for special use cases only (eg.
+	 * loading a font atlas) and not meant to be used for regular assets.
+	 * The sampler is set to -1, signalling that this Texture was loaded
+	 * outside the context of a glTF-file.
+	 *
+	 * @param path	must be the path to an image file
 	 */
 	Texture loadTexture(const std::filesystem::path& path);
 }
