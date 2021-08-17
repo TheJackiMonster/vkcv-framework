@@ -16,10 +16,17 @@ target_sources(indirect_dispatch PRIVATE
     src/App.cpp
 
     src/AppConfig.hpp
+    src/MotionBlurConfig.hpp
     
     src/AppSetup.hpp
-    src/AppSetup.cpp)
-
+    src/AppSetup.cpp
+    
+    src/MotionBlur.hpp
+    src/MotionBlur.cpp
+    
+    src/MotionBlurSetup.hpp
+    src/MotionBlurSetup.cpp)
+    
 # this should fix the execution path to load local files from the project (for MSVC)
 if(MSVC)
 	set_target_properties(indirect_dispatch PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})

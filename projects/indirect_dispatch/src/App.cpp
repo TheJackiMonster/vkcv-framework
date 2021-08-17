@@ -38,34 +38,19 @@ bool App::initialize() {
 	if (!loadComputePass(m_core, "resources/shaders/gammaCorrection.comp", &m_gammaCorrectionPass))
 		return false;
 
-	if(!loadComputePass(m_core, "resources/shaders/motionBlur.comp", &m_motionBlurPass))
-		return false;
-
-	if (!loadComputePass(m_core, "resources/shaders/motionVectorMax.comp", &m_motionVectorMaxPass))
-		return false;
-
-	if (!loadComputePass(m_core, "resources/shaders/motionVectorMaxNeighbourhood.comp", &m_motionVectorMaxNeighbourhoodPass))
-		return false;
-
-	if (!loadComputePass(m_core, "resources/shaders/motionVectorVisualisation.comp", &m_motionVectorVisualisationPass))
-		return false;
-
 	if (!loadMesh(m_core, "resources/models/sphere.gltf", & m_sphereMesh))
 		return false;
 
 	if (!loadMesh(m_core, "resources/models/cube.gltf", &m_cubeMesh))
 		return false;
 
+	if (!m_motionBlur.initialize(&m_core, m_windowWidth, m_windowHeight))
+		return false;
+
 	m_linearSampler = m_core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
-
-	m_nearestSampler = m_core.createSampler(
-		vkcv::SamplerFilterType::NEAREST,
-		vkcv::SamplerFilterType::NEAREST,
-		vkcv::SamplerMipmapMode::NEAREST,
 		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
 
 	m_renderTargets = createRenderTargets(m_core, m_windowWidth, m_windowHeight);
@@ -85,32 +70,22 @@ void App::run() {
 	const vkcv::DrawcallInfo    cubeDrawcall(m_cubeMesh.mesh, {}, 1);
 
 	vkcv::gui::GUI gui(m_core, m_window);
-	enum class eDebugView : int { 
-		None                                = 0, 
-		MotionVector                        = 1, 
-		MotionVectorMaxTile                 = 2, 
-		MotionVectorMaxTileNeighbourhood    = 3,
-		OptionCount                         = 4 };
 
-	const char* debugViewLabels[] = {
+	enum class eMotionVectorVisualisationMode : int {
+		None                    = 0,
+		FullResolution          = 1,
+		MaxTile                 = 2,
+		MaxTileNeighbourhood    = 3,
+		OptionCount             = 4 };
+
+	const char* motionVectorVisualisationModeLabels[] = {
 		"None",
-		"Motion vectors",
-		"Motion vector max tiles",
-		"Motion vector tile neighbourhood max" };
+		"Full resolution",
+		"Max tiles",
+		"Tile neighbourhood max" };
 
-	enum class eMotionBlurInput : int {
-		MotionVector                        = 0,
-		MotionVectorMaxTile                 = 1,
-		MotionVectorMaxTileNeighbourhood    = 2,
-		OptionCount                         = 3 };
-
-	const char* motionInputLabels[] = {
-		"Motion vectors",
-		"Motion vector max tiles",
-		"Motion vector tile neighbourhood max" };
-
-	eDebugView          debugView       = eDebugView::None;
-	eMotionBlurInput    motionBlurInput = eMotionBlurInput::MotionVectorMaxTileNeighbourhood;
+	eMotionVectorVisualisationMode  motionVectorVisualisationMode   = eMotionVectorVisualisationMode::None;
+	eMotionVectorMode               motionBlurMotionMode            = eMotionVectorMode::MaxTileNeighbourhood;
 
 	float   objectVerticalSpeed             = 5;
 	float   motionBlurMinVelocity           = 0.001;
@@ -136,6 +111,7 @@ void App::run() {
 			m_windowHeight = swapchainHeight;
 
 			m_renderTargets = createRenderTargets(m_core, m_windowWidth, m_windowHeight);
+			m_motionBlur.setResolution(m_windowWidth, m_windowHeight);
 		}
 
 		auto frameEndTime   = std::chrono::system_clock::now();
@@ -186,53 +162,6 @@ void App::run() {
 			{ cubeDrawcall },
 			prepassRenderTargets);
 
-		// motion vector max tiles
-		vkcv::DescriptorWrites motionVectorMaxTilesDescriptorWrites;
-		motionVectorMaxTilesDescriptorWrites.sampledImageWrites = {
-			vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionBuffer) };
-		motionVectorMaxTilesDescriptorWrites.samplerWrites = {
-			vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
-		motionVectorMaxTilesDescriptorWrites.storageImageWrites = {
-			vkcv::StorageImageDescriptorWrite(2, m_renderTargets.motionMax)};
-
-		m_core.writeDescriptorSet(m_motionVectorMaxPass.descriptorSet, motionVectorMaxTilesDescriptorWrites);
-
-		m_core.prepareImageForSampling(cmdStream, m_renderTargets.motionBuffer);
-		m_core.prepareImageForStorage(cmdStream, m_renderTargets.motionMax);
-
-		const uint32_t motionTileDispatchCounts[3] = {
-			(m_core.getImageWidth( m_renderTargets.motionMax) + 7) / 8,
-			(m_core.getImageHeight(m_renderTargets.motionMax) + 7) / 8,
-			1 };
-
-		m_core.recordComputeDispatchToCmdStream(
-			cmdStream,
-			m_motionVectorMaxPass.pipeline,
-			motionTileDispatchCounts,
-			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_motionVectorMaxPass.descriptorSet).vulkanHandle) },
-			vkcv::PushConstants(0));
-
-		// motion vector max neighbourhood
-		vkcv::DescriptorWrites motionVectorMaxNeighbourhoodDescriptorWrites;
-		motionVectorMaxNeighbourhoodDescriptorWrites.sampledImageWrites = {
-			vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionMax) };
-		motionVectorMaxNeighbourhoodDescriptorWrites.samplerWrites = {
-			vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
-		motionVectorMaxNeighbourhoodDescriptorWrites.storageImageWrites = {
-			vkcv::StorageImageDescriptorWrite(2, m_renderTargets.motionMaxNeighbourhood) };
-
-		m_core.writeDescriptorSet(m_motionVectorMaxNeighbourhoodPass.descriptorSet, motionVectorMaxNeighbourhoodDescriptorWrites);
-
-		m_core.prepareImageForSampling(cmdStream, m_renderTargets.motionMax);
-		m_core.prepareImageForStorage(cmdStream, m_renderTargets.motionMaxNeighbourhood);
-
-		m_core.recordComputeDispatchToCmdStream(
-			cmdStream,
-			m_motionVectorMaxNeighbourhoodPass.pipeline,
-			motionTileDispatchCounts,
-			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_motionVectorMaxNeighbourhoodPass.descriptorSet).vulkanHandle) },
-			vkcv::PushConstants(0));
-
 		// main pass
 		const std::vector<vkcv::ImageHandle> renderTargets   = { 
 			m_renderTargets.colorBuffer, 
@@ -262,122 +191,52 @@ void App::run() {
 			renderTargets);
 
 		// motion blur
-		vkcv::ImageHandle motionBuffer;
-		if (motionBlurInput == eMotionBlurInput::MotionVector)
-			motionBuffer = m_renderTargets.motionBuffer;
-		else if (motionBlurInput == eMotionBlurInput::MotionVectorMaxTile)
-			motionBuffer = m_renderTargets.motionMax;
-		else if (motionBlurInput == eMotionBlurInput::MotionVectorMaxTileNeighbourhood)
-			motionBuffer = m_renderTargets.motionMaxNeighbourhood;
-		else {
-			vkcv_log(vkcv::LogLevel::ERROR, "Unknown eMotionInput enum value");
-			motionBuffer = m_renderTargets.motionBuffer;
+		vkcv::ImageHandle motionBlurOutput;
+
+		if (motionVectorVisualisationMode == eMotionVectorVisualisationMode::None) {
+			const float microsecondToSecond = 0.000001;
+			const float fDeltaTimeSeconds = microsecondToSecond * std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - frameStartTime).count();
+
+			float cameraNear;
+			float cameraFar;
+			m_cameraManager.getActiveCamera().getNearFar(cameraNear, cameraFar);
+
+			motionBlurOutput = m_motionBlur.render(
+				cmdStream,
+				m_renderTargets.motionBuffer,
+				m_renderTargets.colorBuffer,
+				m_renderTargets.depthBuffer,
+				motionBlurMotionMode,
+				cameraNear,
+				cameraFar,
+				fDeltaTimeSeconds,
+				cameraShutterSpeedInverse,
+				motionBlurMinVelocity);
 		}
-
-		vkcv::DescriptorWrites motionBlurDescriptorWrites;
-		motionBlurDescriptorWrites.sampledImageWrites = {
-			vkcv::SampledImageDescriptorWrite(0, m_renderTargets.colorBuffer),
-			vkcv::SampledImageDescriptorWrite(1, m_renderTargets.depthBuffer),
-			vkcv::SampledImageDescriptorWrite(2, motionBuffer) };
-		motionBlurDescriptorWrites.samplerWrites = {
-			vkcv::SamplerDescriptorWrite(3, m_nearestSampler) };
-		motionBlurDescriptorWrites.storageImageWrites = {
-			vkcv::StorageImageDescriptorWrite(4, m_renderTargets.motionBlurOutput) };
-
-		m_core.writeDescriptorSet(m_motionBlurPass.descriptorSet, motionBlurDescriptorWrites);
-
-		uint32_t fullScreenImageDispatch[3] = {
-			static_cast<uint32_t>((m_windowWidth + 7) / 8),
-			static_cast<uint32_t>((m_windowHeight + 7) / 8),
-			static_cast<uint32_t>(1) };
-
-		m_core.prepareImageForStorage(cmdStream, m_renderTargets.motionBlurOutput);
-		m_core.prepareImageForSampling(cmdStream, m_renderTargets.colorBuffer);
-		m_core.prepareImageForSampling(cmdStream, m_renderTargets.depthBuffer);
-		m_core.prepareImageForSampling(cmdStream, motionBuffer);
-
-		const float microsecondToSecond     = 0.000001;
-		const float fDeltatimeSeconds       = microsecondToSecond * std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - frameStartTime).count();
-
-		// must match layout in "motionBlur.comp"
-		struct MotionBlurConstantData {
-			float motionFactor;
-			float minVelocity;
-			float cameraNearPlane;
-			float cameraFarPlane;
-		};
-		MotionBlurConstantData motionBlurConstantData;
-
-		// small mouse movements are restricted to pixel level and therefore quite unprecise
-		// therefore extrapolating movement at high framerates results in big jerky movements
-		// this results in wide sudden motion blur, which looks quite bad
-		// as a workaround the time scale is limited to a maximum value
-		const float motionBlurTimeScaleMax  = 1.f / 60;
-		const float deltaTimeMotionBlur     = std::max(fDeltatimeSeconds, motionBlurTimeScaleMax);
-
-		motionBlurConstantData.motionFactor = 1 / (deltaTimeMotionBlur * cameraShutterSpeedInverse);
-		motionBlurConstantData.minVelocity = motionBlurMinVelocity;
-
-		float cameraNear, cameraFar;
-		m_cameraManager.getActiveCamera().getNearFar(cameraNear, cameraFar);
-		motionBlurConstantData.cameraNearPlane  = cameraNear;
-		motionBlurConstantData.cameraFarPlane   = cameraFar;
-
-		vkcv::PushConstants motionBlurPushConstants(sizeof(motionBlurConstantData));
-		motionBlurPushConstants.appendDrawcall(motionBlurConstantData);
-
-		m_core.recordComputeDispatchToCmdStream(
-			cmdStream,
-			m_motionBlurPass.pipeline,
-			fullScreenImageDispatch,
-			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_motionBlurPass.descriptorSet).vulkanHandle) },
-			motionBlurPushConstants);
-
-		// motion vector debug visualisation
-		// writes to motion blur output
-		if (debugView != eDebugView::None) {
-			vkcv::ImageHandle visualisationInput;
-			if (debugView == eDebugView::MotionVector)
-				visualisationInput = m_renderTargets.motionBuffer;
-			else if (debugView == eDebugView::MotionVectorMaxTile)
-				visualisationInput = m_renderTargets.motionMax;
-			else if (debugView == eDebugView::MotionVectorMaxTileNeighbourhood)
-				visualisationInput = m_renderTargets.motionMaxNeighbourhood;
+		else {
+			eMotionVectorMode debugViewMode;
+			if (motionVectorVisualisationMode == eMotionVectorVisualisationMode::FullResolution)
+				debugViewMode = eMotionVectorMode::FullResolution;
+			else if(motionVectorVisualisationMode == eMotionVectorVisualisationMode::MaxTile)
+				debugViewMode = eMotionVectorMode::MaxTile;
+			else if (motionVectorVisualisationMode == eMotionVectorVisualisationMode::MaxTileNeighbourhood)
+				debugViewMode = eMotionVectorMode::MaxTileNeighbourhood;
 			else {
-				vkcv_log(vkcv::LogLevel::ERROR, "Unknown eDebugView enum value");
-				visualisationInput = m_renderTargets.motionBlurOutput;
+				vkcv_log(vkcv::LogLevel::ERROR, "Unknown eMotionVectorMode enum option");
+				debugViewMode = eMotionVectorMode::FullResolution;
 			}
 
-			vkcv::DescriptorWrites motionVectorVisualisationDescriptorWrites;
-			motionVectorVisualisationDescriptorWrites.sampledImageWrites = {
-				vkcv::SampledImageDescriptorWrite(0, visualisationInput) };
-			motionVectorVisualisationDescriptorWrites.samplerWrites = {
-				vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
-			motionVectorVisualisationDescriptorWrites.storageImageWrites = {
-				vkcv::StorageImageDescriptorWrite(2, m_renderTargets.motionBlurOutput) };
-
-			m_core.writeDescriptorSet(
-				m_motionVectorVisualisationPass.descriptorSet, 
-				motionVectorVisualisationDescriptorWrites);
-
-			m_core.prepareImageForSampling(cmdStream, visualisationInput);
-			m_core.prepareImageForStorage(cmdStream, m_renderTargets.motionBlurOutput);
-
-			vkcv::PushConstants motionVectorVisualisationPushConstants(sizeof(float));
-			motionVectorVisualisationPushConstants.appendDrawcall(motionVectorVisualisationRange);
-
-			m_core.recordComputeDispatchToCmdStream(
+			motionBlurOutput = m_motionBlur.renderMotionVectorVisualisation(
 				cmdStream,
-				m_motionVectorVisualisationPass.pipeline,
-				fullScreenImageDispatch,
-				{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_motionVectorVisualisationPass.descriptorSet).vulkanHandle) },
-				motionVectorVisualisationPushConstants);
+				m_renderTargets.motionBuffer,
+				debugViewMode,
+				motionVectorVisualisationRange);
 		}
 
 		// gamma correction
 		vkcv::DescriptorWrites gammaCorrectionDescriptorWrites;
 		gammaCorrectionDescriptorWrites.sampledImageWrites = {
-			vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionBlurOutput) };
+			vkcv::SampledImageDescriptorWrite(0, motionBlurOutput) };
 		gammaCorrectionDescriptorWrites.samplerWrites = {
 			vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
 		gammaCorrectionDescriptorWrites.storageImageWrites = {
@@ -385,8 +244,13 @@ void App::run() {
 
 		m_core.writeDescriptorSet(m_gammaCorrectionPass.descriptorSet, gammaCorrectionDescriptorWrites);
 
-		m_core.prepareImageForSampling(cmdStream, m_renderTargets.motionBlurOutput);
+		m_core.prepareImageForSampling(cmdStream, motionBlurOutput);
 		m_core.prepareImageForStorage (cmdStream, swapchainInput);
+
+		const uint32_t fullScreenImageDispatch[3] = {
+			static_cast<uint32_t>((m_windowWidth  + 7) / 8),
+			static_cast<uint32_t>((m_windowHeight + 7) / 8),
+			static_cast<uint32_t>(1) };
 
 		m_core.recordComputeDispatchToCmdStream(
 			cmdStream,
@@ -403,19 +267,18 @@ void App::run() {
 
 		ImGui::Combo(
 			"Debug view",
-			reinterpret_cast<int*>(&debugView),
-			debugViewLabels,
-			static_cast<int>(eDebugView::OptionCount));
+			reinterpret_cast<int*>(&motionVectorVisualisationMode),
+			motionVectorVisualisationModeLabels,
+			static_cast<int>(eMotionVectorVisualisationMode::OptionCount));
 
-		if (debugView != eDebugView::None) {
+		if (motionVectorVisualisationMode != eMotionVectorVisualisationMode::None)
 			ImGui::InputFloat("Motion vector visualisation range", &motionVectorVisualisationRange);
-		}
 
 		ImGui::Combo(
 			"Motion blur input",
-			reinterpret_cast<int*>(&motionBlurInput),
-			motionInputLabels,
-			static_cast<int>(eMotionBlurInput::OptionCount));
+			reinterpret_cast<int*>(&motionBlurMotionMode),
+			MotionVectorModeLabels,
+			static_cast<int>(eMotionVectorMode::OptionCount));
 
 		ImGui::InputFloat("Object movement speed", &objectVerticalSpeed);
 		ImGui::InputInt("Camera shutter speed inverse", &cameraShutterSpeedInverse);

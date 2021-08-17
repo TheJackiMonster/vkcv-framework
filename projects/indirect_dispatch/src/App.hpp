@@ -2,6 +2,7 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include "AppSetup.hpp"
+#include "MotionBlur.hpp"
 
 class App {
 public:
@@ -18,6 +19,8 @@ private:
 	vkcv::Core                  m_core;
 	vkcv::camera::CameraManager m_cameraManager;
 
+	MotionBlur m_motionBlur;
+
 	MeshResources m_sphereMesh;
 	MeshResources m_cubeMesh;
 
@@ -27,12 +30,7 @@ private:
 	GraphicPassHandles m_skyPrePass;
 
 	ComputePassHandles m_gammaCorrectionPass;
-	ComputePassHandles m_motionBlurPass;
-	ComputePassHandles m_motionVectorMaxPass;
-	ComputePassHandles m_motionVectorMaxNeighbourhoodPass;
-	ComputePassHandles m_motionVectorVisualisationPass;
 
-	RenderTargets       m_renderTargets;
+	AppRenderTargets    m_renderTargets;
 	vkcv::SamplerHandle m_linearSampler;
-	vkcv::SamplerHandle m_nearestSampler;
 };

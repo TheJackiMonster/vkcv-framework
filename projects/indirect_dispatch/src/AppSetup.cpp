@@ -232,9 +232,9 @@ bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, Comput
 	return true;
 }
 
-RenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const uint32_t height) {
+AppRenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const uint32_t height) {
 
-	RenderTargets targets;
+	AppRenderTargets targets;
 
 	targets.depthBuffer = core.createImage(
 		AppConfig::depthBufferFormat,
@@ -252,40 +252,12 @@ RenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const 
 		false,
 		true).getHandle();
 
-	targets.motionBlurOutput = core.createImage(
-		AppConfig::colorBufferFormat,
-		width,
-		height,
-		1,
-		false,
-		true).getHandle();
-
 	targets.motionBuffer = core.createImage(
 		AppConfig::motionBufferFormat,
 		width,
 		height,
 		1,
 		false,
-		false,
-		true).getHandle();
-
-	// divide and ceil to int
-	const uint32_t motionMaxWidth  = (width  + (AppConfig::maxMotionTileSize - 1)) / AppConfig::maxMotionTileSize;
-	const uint32_t motionMaxheight = (height + (AppConfig::maxMotionTileSize - 1)) / AppConfig::maxMotionTileSize;
-
-	targets.motionMax = core.createImage(
-		AppConfig::motionBufferFormat,
-		motionMaxWidth,
-		motionMaxheight,
-		1,
-		false,
-		true).getHandle();
-
-	targets.motionMaxNeighbourhood = core.createImage(
-		AppConfig::motionBufferFormat,
-		motionMaxWidth,
-		motionMaxheight,
-		1,
 		false,
 		true).getHandle();
 

@@ -1,13 +1,10 @@
 #pragma once
 #include <vkcv/Core.hpp>
 
-struct RenderTargets {
+struct AppRenderTargets {
 	vkcv::ImageHandle depthBuffer;
 	vkcv::ImageHandle colorBuffer;
-	vkcv::ImageHandle motionBlurOutput;
 	vkcv::ImageHandle motionBuffer;
-	vkcv::ImageHandle motionMax;
-	vkcv::ImageHandle motionMaxNeighbourhood;
 };
 
 struct GraphicPassHandles {
@@ -44,4 +41,4 @@ bool loadSkyPrePass(vkcv::Core& core, GraphicPassHandles* outHandles);
 
 bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, ComputePassHandles* outComputePass);
 
-RenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const uint32_t height);
+AppRenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const uint32_t height);
