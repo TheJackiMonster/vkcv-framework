@@ -73,7 +73,6 @@ int main(int argc, const char** argv) {
 	safrScene scene;
 	vkcv::asset::TextureData texData = scene.render(spheres, lights);
 
-	//  texData = vkcv::asset::loadTexture("textures/texture.png");
 	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Unorm, texData.width, texData.height);
 	texture.fill(texData.data.data());
 	texture.generateMipChainImmediate();
