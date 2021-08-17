@@ -350,7 +350,7 @@ namespace vkcv::asset {
 								Scene &scene, Mesh &mesh) {
 		mesh.vertexGroups.reserve(objectMesh.primitives.size());
 	
-		for (const auto & objectPrimitive : objectMesh.primitives) {
+		for (const auto &objectPrimitive : objectMesh.primitives) {
 			VertexGroup vertexGroup;
 			
 			vertexGroup.vertexBuffer.attributes.reserve(
@@ -397,7 +397,7 @@ namespace vkcv::asset {
 				const fx::gltf::Buffer& indexBuffer = sceneObjects.buffers[indexBufferView.buffer];
 				
 				// Because the buffers are already preloaded into the memory by the gltf-library,
-				// it makes no sense to later them later on manually again into memory.
+				// it makes no sense to load them later on manually again into memory.
 				vertexGroup.indexBuffer.data.resize(indexBufferView.byteLength);
 				memcpy(vertexGroup.indexBuffer.data.data(),
 					   indexBuffer.data.data() + indexBufferView.byteOffset,
@@ -413,7 +413,17 @@ namespace vkcv::asset {
 				return ASSET_ERROR;
 			}
 	
+			if (posAccessor.bufferView >= sceneObjects.bufferViews.size()) {
+				vkcv_log(LogLevel::ERROR, "Access to bufferView out of bounds: %lu",
+						posAccessor.bufferView);
+				return ASSET_ERROR;
+			}
 			const fx::gltf::BufferView& vertexBufferView = sceneObjects.bufferViews[posAccessor.bufferView];
+			if (vertexBufferView.buffer >= sceneObjects.buffers.size()) {
+				vkcv_log(LogLevel::ERROR, "Access to buffer out of bounds: %lu",
+						vertexBufferView.buffer);
+				return ASSET_ERROR;
+			}
 			const fx::gltf::Buffer& vertexBuffer = sceneObjects.buffers[vertexBufferView.buffer];
 			
 			// only copy relevant part of vertex data
