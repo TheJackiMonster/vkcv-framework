@@ -96,7 +96,8 @@ void App::run() {
 	eMotionVectorVisualisationMode  motionVectorVisualisationMode   = eMotionVectorVisualisationMode::None;
 	eMotionVectorMode               motionBlurMotionMode            = eMotionVectorMode::MaxTileNeighbourhood;
 
-    bool    freezeFrame                     = false;
+	bool    freezeFrame                     = false;
+	float   motionBlurTileOffsetLength      = 10;
 	float   objectVerticalSpeed             = 5;
 	float   objectAmplitude                 = 0;
 	float   objectMeanHeight                = 1;
@@ -276,7 +277,8 @@ void App::run() {
 				cameraNear,
 				cameraFar,
 				fDeltaTimeSeconds,
-				cameraShutterSpeedInverse);
+				cameraShutterSpeedInverse,
+				motionBlurTileOffsetLength);
 		}
 		else {
 			eMotionVectorMode debugViewMode;
@@ -331,6 +333,7 @@ void App::run() {
 		ImGui::Begin("Settings");
 
 		ImGui::Checkbox("Freeze frame", &freezeFrame);
+		ImGui::InputFloat("Motion tile offset length", &motionBlurTileOffsetLength);
 
 		ImGui::Combo(
 			"Debug view",

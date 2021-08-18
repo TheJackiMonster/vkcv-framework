@@ -58,7 +58,8 @@ vkcv::ImageHandle MotionBlur::render(
 	const float                     cameraNear,
 	const float                     cameraFar,
 	const float                     deltaTimeSeconds,
-	const float                     cameraShutterSpeedInverse) {
+	const float                     cameraShutterSpeedInverse,
+	const float                     motionTileOffsetLength) {
 
 	computeMotionTiles(cmdStream, motionBufferFullRes);
 
@@ -93,14 +94,16 @@ vkcv::ImageHandle MotionBlur::render(
 		float motionFactor;
 		float cameraNearPlane;
 		float cameraFarPlane;
+		float motionTileOffsetLength;
 	};
 	MotionBlurConstantData motionBlurConstantData;
 
 	const float deltaTimeMotionBlur = deltaTimeSeconds;
 
-	motionBlurConstantData.motionFactor     = 1 / (deltaTimeMotionBlur * cameraShutterSpeedInverse);
-	motionBlurConstantData.cameraNearPlane  = cameraNear;
-	motionBlurConstantData.cameraFarPlane   = cameraFar;
+	motionBlurConstantData.motionFactor             = 1 / (deltaTimeMotionBlur * cameraShutterSpeedInverse);
+	motionBlurConstantData.cameraNearPlane          = cameraNear;
+	motionBlurConstantData.cameraFarPlane           = cameraFar;
+	motionBlurConstantData.motionTileOffsetLength   = motionTileOffsetLength;
 
 	vkcv::PushConstants motionBlurPushConstants(sizeof(motionBlurConstantData));
 	motionBlurPushConstants.appendDrawcall(motionBlurConstantData);

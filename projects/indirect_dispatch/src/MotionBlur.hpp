@@ -31,7 +31,8 @@ public:
 		const float                     cameraNear,
 		const float                     cameraFar,
 		const float                     deltaTimeSeconds,
-		const float                     cameraShutterSpeedInverse);
+		const float                     cameraShutterSpeedInverse,
+		const float                     motionTileOffsetLength);
 
 	vkcv::ImageHandle renderMotionVectorVisualisation(
 		const vkcv::CommandStreamHandle cmdStream,
