@@ -12,8 +12,8 @@ layout(set=0, binding=5, r11f_g11f_b10f)    uniform image2D     outImage;
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout( push_constant ) uniform constants{
-    float motionScaleFactor;  // computed from delta time and shutter speed
-    float minVelocity;
+    // computed from delta time and shutter speed
+    float motionScaleFactor;
     // camera planes are needed to linearize depth
     float cameraNearPlane;
     float cameraFarPlane;
@@ -76,12 +76,14 @@ vec2 processMotionVector(vec2 motion){
     vec2 motionHalf     = motion * 0.5;
     vec2 motionScaled   = motionHalf * motionScaleFactor; // scale factor contains shutter speed and delta time
     
-    // pixels are anisotropic so the smaller dimension is used, so the clamping is conservative
-    float pixelSize     = 1.f / max(imageSize(outImage).x, imageSize(outImage).y);
-    float velocity      = length(motionScaled);
-    float epsilon       = 0.0001;
+    float velocityPixels    = length(motionScaled * imageSize(outImage));
+    float epsilon           = 0.0001;
+    
+    // pixels are anisotropic, so the ratio for clamping the velocity is computed in pixels instead of uv coordinates
+    vec2 motionPixel = motionScaled * imageSize(outImage);
+    
     // this clamps the motion to not exceed the radius given by the motion tile size
-    return motionScaled * max(0.5 * pixelSize, min(velocity, motionTileSize * pixelSize)) / (velocity + epsilon);
+    return motionScaled * max(0.5, min(velocityPixels, motionTileSize)) / (velocityPixels + epsilon);
 }
 
 SampleData loadSampleData(vec2 uv){
@@ -122,8 +124,8 @@ void main(){
     
     SampleData mainPixel = loadSampleData(uv);
     
-    // early out on little movement
-    if(length(motionNeighbourhoodMax) <= minVelocity){
+    // early out on movement less than half a pixel
+    if(length(motionNeighbourhoodMax * imageSize(outImage)) <= 0.5){
         imageStore(outImage, coord, vec4(mainPixel.color, 0.f));
         return;
     }

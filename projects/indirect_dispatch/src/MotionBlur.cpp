@@ -58,8 +58,7 @@ vkcv::ImageHandle MotionBlur::render(
 	const float                     cameraNear,
 	const float                     cameraFar,
 	const float                     deltaTimeSeconds,
-	const float                     cameraShutterSpeedInverse,
-	const float                     motionBlurMinVelocity) {
+	const float                     cameraShutterSpeedInverse) {
 
 	computeMotionTiles(cmdStream, motionBufferFullRes);
 
@@ -92,16 +91,14 @@ vkcv::ImageHandle MotionBlur::render(
 	// must match layout in "motionBlur.comp"
 	struct MotionBlurConstantData {
 		float motionFactor;
-		float minVelocity;
 		float cameraNearPlane;
 		float cameraFarPlane;
 	};
 	MotionBlurConstantData motionBlurConstantData;
 
-	const float deltaTimeMotionBlur = std::max(deltaTimeSeconds, MotionBlurConfig::timeScaleMax);
+	const float deltaTimeMotionBlur = deltaTimeSeconds;
 
 	motionBlurConstantData.motionFactor     = 1 / (deltaTimeMotionBlur * cameraShutterSpeedInverse);
-	motionBlurConstantData.minVelocity      = motionBlurMinVelocity;
 	motionBlurConstantData.cameraNearPlane  = cameraNear;
 	motionBlurConstantData.cameraFarPlane   = cameraFar;
 
