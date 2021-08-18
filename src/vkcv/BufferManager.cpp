@@ -48,6 +48,9 @@ namespace vkcv {
 			case BufferType::INDEX:
 				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
 				break;
+		    case BufferType::RT_ACCELERATION:
+		        usageFlags = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+		        break;
 			default:
 				// TODO: maybe an issue
 				break;
