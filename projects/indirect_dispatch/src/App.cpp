@@ -39,13 +39,13 @@ bool App::initialize() {
 	if (!loadComputePass(m_core, "resources/shaders/gammaCorrection.comp", &m_gammaCorrectionPass))
 		return false;
 
-	if (!loadMesh(m_core, "resources/models/sphere.gltf", & m_sphereMesh))
-		return false;
-
 	if (!loadMesh(m_core, "resources/models/cube.gltf", &m_cubeMesh))
 		return false;
 
 	if (!loadMesh(m_core, "resources/models/ground.gltf", &m_groundMesh))
+		return false;
+
+	if(!loadImage(m_core, "resources/models/grid.png", &m_gridTexture))
 		return false;
 
 	if (!m_motionBlur.initialize(&m_core, m_windowWidth, m_windowHeight))
@@ -63,6 +63,11 @@ bool App::initialize() {
 	m_cameraManager.getCamera(cameraIndex).setPosition(glm::vec3(0, 1, -3));
 	m_cameraManager.getCamera(cameraIndex).setNearFar(0.1f, 30.f);
 	
+	vkcv::DescriptorWrites meshPassDescriptorWrites;
+	meshPassDescriptorWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(0, m_gridTexture) };
+	meshPassDescriptorWrites.samplerWrites = { vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
+	m_core.writeDescriptorSet(m_meshPass.descriptorSet, meshPassDescriptorWrites);
+
 	return true;
 }
 
@@ -100,6 +105,8 @@ void App::run() {
 	float   motionVectorVisualisationRange  = 0.008;
 
 	glm::mat4 viewProjectionPrevious    = m_cameraManager.getActiveCamera().getMVP();
+
+
 
 	struct Object {
 		MeshResources meshResources;
@@ -175,9 +182,9 @@ void App::run() {
 			m_renderTargets.motionBuffer,
 			m_renderTargets.depthBuffer };
 
-		std::vector<vkcv::DrawcallInfo> sceneDrawcalls;
+		std::vector<vkcv::DrawcallInfo> prepassSceneDrawcalls;
 		for (const Object& obj : sceneObjects) {
-			sceneDrawcalls.push_back(vkcv::DrawcallInfo(obj.meshResources.mesh, {}));
+			prepassSceneDrawcalls.push_back(vkcv::DrawcallInfo(obj.meshResources.mesh, {}));
 		}
 
 		m_core.recordDrawcallsToCmdStream(
@@ -185,7 +192,7 @@ void App::run() {
 			m_prePass.renderPass,
 			m_prePass.pipeline,
 			prepassPushConstants,
-			sceneDrawcalls,
+			prepassSceneDrawcalls,
 			prepassRenderTargets);
 
 		// sky prepass
@@ -214,12 +221,19 @@ void App::run() {
 			meshPushConstants.appendDrawcall(matrices);
 		}
 
+		std::vector<vkcv::DrawcallInfo> forwardSceneDrawcalls;
+		for (const Object& obj : sceneObjects) {
+			forwardSceneDrawcalls.push_back(vkcv::DrawcallInfo(
+				obj.meshResources.mesh, 
+				{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_meshPass.descriptorSet).vulkanHandle) }));
+		}
+
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
 			m_meshPass.renderPass,
 			m_meshPass.pipeline,
 			meshPushConstants,
-			sceneDrawcalls,
+			forwardSceneDrawcalls,
 			renderTargets);
 
 		// sky

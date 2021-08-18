@@ -48,10 +48,37 @@ bool loadMesh(vkcv::Core& core, const std::filesystem::path& path, MeshResources
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
 		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()) };
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
 	outMesh->mesh = vkcv::Mesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), scene.vertexGroups[0].numIndices);
 
+	return true;
+}
+
+bool loadImage(vkcv::Core& core, const std::filesystem::path& path, vkcv::ImageHandle* outImage) {
+
+	assert(outImage);
+
+	const vkcv::asset::TextureData textureData = vkcv::asset::loadTexture(path);
+
+	if (textureData.componentCount != 4) {
+		vkcv_log(vkcv::LogLevel::ERROR, "Expecting image with four components");
+		return false;
+	}
+
+	vkcv::Image image = core.createImage(
+		vk::Format::eR8G8B8A8Srgb, 
+		textureData.width, 
+		textureData.height, 
+		1, 
+		true);
+
+	image.fill(textureData.data.data(), textureData.data.size());
+	image.generateMipChainImmediate();
+	image.switchLayout(vk::ImageLayout::eReadOnlyOptimalKHR);
+
+	*outImage = image.getHandle();
 	return true;
 }
 
@@ -93,13 +120,22 @@ bool loadGraphicPass(
 
 	const vkcv::VertexLayout vertexLayout(bindings);
 
+	const auto descriptorBindings = shaderProgram.getReflectedDescriptors();
+	const bool hasDescriptor = descriptorBindings.size() > 0;
+	if (hasDescriptor)
+		outPassHandles->descriptorSet = core.createDescriptorSet(descriptorBindings[0]);
+
+	std::vector<vk::DescriptorSetLayout> descriptorLayouts;
+	if (hasDescriptor)
+		descriptorLayouts.push_back(core.getDescriptorSet(outPassHandles->descriptorSet).layout);
+
 	vkcv::PipelineConfig pipelineConfig{
 		shaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
 		outPassHandles->renderPass,
 		{ vertexLayout },
-		{},
+		descriptorLayouts,
 		true };
 	pipelineConfig.m_depthTest  = depthTest;
 	outPassHandles->pipeline    = core.createGraphicsPipeline(pipelineConfig);

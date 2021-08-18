@@ -8,8 +8,9 @@ struct AppRenderTargets {
 };
 
 struct GraphicPassHandles {
-	vkcv::PipelineHandle    pipeline;
-	vkcv::PassHandle        renderPass;
+	vkcv::PipelineHandle        pipeline;
+	vkcv::PassHandle            renderPass;
+	vkcv::DescriptorSetHandle   descriptorSet;
 };
 
 struct ComputePassHandles {
@@ -23,8 +24,10 @@ struct MeshResources {
 	vkcv::BufferHandle  indexBuffer;
 };
 
-// loads position and normal of the first mesh in a scene
+// loads position, uv and normal of the first mesh in a scene
 bool loadMesh(vkcv::Core& core, const std::filesystem::path& path, MeshResources* outMesh);
+
+bool loadImage(vkcv::Core& core, const std::filesystem::path& path, vkcv::ImageHandle* outImage);
 
 bool loadGraphicPass(
 	vkcv::Core& core,

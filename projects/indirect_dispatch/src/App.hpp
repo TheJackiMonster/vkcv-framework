@@ -21,7 +21,8 @@ private:
 
 	MotionBlur m_motionBlur;
 
-	MeshResources m_sphereMesh;
+	vkcv::ImageHandle m_gridTexture;
+
 	MeshResources m_cubeMesh;
 	MeshResources m_groundMesh;
 
