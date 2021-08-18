@@ -92,6 +92,8 @@ void App::run() {
 	eMotionVectorMode               motionBlurMotionMode            = eMotionVectorMode::MaxTileNeighbourhood;
 
 	float   objectVerticalSpeed             = 5;
+	float   objectAmplitude                 = 1;
+	float   objectMeanHeight                = 1;
 	float   motionBlurMinVelocity           = 0.001;
 	int     cameraShutterSpeedInverse       = 24;
 	float   motionVectorVisualisationRange  = 0.008;
@@ -113,8 +115,8 @@ void App::run() {
 
 	Object sphere;
 	sphere.meshResources = m_sphereMesh;
-	sphere.modelMatrixUpdate = [&objectVerticalSpeed](float time, Object& obj) {
-		const float currentHeight   = glm::sin(time * objectVerticalSpeed);
+	sphere.modelMatrixUpdate = [&](float time, Object& obj) {
+		const float currentHeight   = objectMeanHeight + objectAmplitude * glm::sin(time * objectVerticalSpeed);
 		obj.modelMatrix             = glm::translate(glm::mat4(1), glm::vec3(0, currentHeight, 0));
 	};
 	sceneObjects.push_back(sphere);
@@ -317,9 +319,12 @@ void App::run() {
 			MotionVectorModeLabels,
 			static_cast<int>(eMotionVectorMode::OptionCount));
 
-		ImGui::InputFloat("Object movement speed", &objectVerticalSpeed);
 		ImGui::InputInt("Camera shutter speed inverse", &cameraShutterSpeedInverse);
 		ImGui::DragFloat("Motion blur min velocity", &motionBlurMinVelocity, 0.01, 0, 1);
+
+		ImGui::InputFloat("Object movement speed",      &objectVerticalSpeed);
+		ImGui::InputFloat("Object movement amplitude",  &objectAmplitude);
+		ImGui::InputFloat("Object mean height",         &objectMeanHeight);
 
 		ImGui::End();
 		gui.endGUI();
