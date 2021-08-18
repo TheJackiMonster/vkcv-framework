@@ -133,10 +133,37 @@ void App::run() {
 	};
 	sceneObjects.push_back(sphere);
 
+	bool spaceWasPressed = false;
+
+	m_window.e_key.add([&](int key, int scancode, int action, int mods) {
+		if (key == GLFW_KEY_SPACE) {
+			if (action == GLFW_PRESS) {
+				if (!spaceWasPressed) {
+					freezeFrame = !freezeFrame;
+				}
+				spaceWasPressed = true;
+			}
+			else if (action == GLFW_RELEASE) {
+				spaceWasPressed = false;
+			}
+		}
+	});
+
 	auto frameEndTime = std::chrono::system_clock::now();
 
 	while (m_window.isWindowOpen()) {
+
 		vkcv::Window::pollEvents();
+
+		if (!freezeFrame) {
+
+			frameStartTime          = frameEndTime;
+			viewProjectionPrevious  = viewProjection;
+
+			for (Object& obj : sceneObjects) {
+				obj.mvpPrevious = obj.mvp;
+			}
+		}
 
 		if (m_window.getHeight() == 0 || m_window.getWidth() == 0)
 			continue;
@@ -154,12 +181,13 @@ void App::run() {
 			m_motionBlur.setResolution(m_windowWidth, m_windowHeight);
 		}
 
-		if (!freezeFrame) {
+		if(!freezeFrame)
 			frameEndTime = std::chrono::system_clock::now();
-		}
-		auto deltatime      = std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - frameStartTime);
 
-		m_cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		const float microsecondToSecond = 0.000001;
+		const float fDeltaTimeSeconds = microsecondToSecond * std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - frameStartTime).count();
+
+		m_cameraManager.update(fDeltaTimeSeconds);
 
 		const auto      time                = frameEndTime - appStartTime;
 		const float     fCurrentTime        = std::chrono::duration_cast<std::chrono::milliseconds>(time).count() * 0.001f;
@@ -261,9 +289,6 @@ void App::run() {
 		vkcv::ImageHandle motionBlurOutput;
 
 		if (motionVectorVisualisationMode == eMotionVectorVisualisationMode::None) {
-			const float microsecondToSecond = 0.000001;
-			const float fDeltaTimeSeconds = microsecondToSecond * std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - frameStartTime).count();
-
 			float cameraNear;
 			float cameraFar;
 			m_cameraManager.getActiveCamera().getNearFar(cameraNear, cameraFar);
@@ -362,14 +387,5 @@ void App::run() {
 		gui.endGUI();
 
 		m_core.endFrame();
-
-		if (!freezeFrame) {
-			viewProjectionPrevious = viewProjection;
-			frameStartTime = frameEndTime;
-
-			for (Object& obj : sceneObjects) {
-				obj.mvpPrevious = obj.mvp;
-			}
-		}
 	}
 }
