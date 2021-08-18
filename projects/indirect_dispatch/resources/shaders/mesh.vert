@@ -5,14 +5,15 @@ layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
 
 layout(location = 0) out vec3 passNormal;
-layout(location = 1) out vec3 passPos;
+layout(location = 1) out vec3 passPosObject;
 
 layout( push_constant ) uniform constants{
     mat4 mvp;
+    mat4 model;
 };
 
 void main()	{
-	gl_Position = mvp * vec4(inPosition, 1.0);
-	passNormal  = inNormal;
-    passPos     = inPosition;
+	gl_Position     = mvp * vec4(inPosition, 1.0);
+	passNormal      = (model * vec4(inNormal, 0)).xyz;
+    passPosObject   = inPosition;
 }

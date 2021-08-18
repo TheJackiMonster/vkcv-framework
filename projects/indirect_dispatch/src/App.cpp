@@ -92,8 +92,10 @@ void App::run() {
 	eMotionVectorMode               motionBlurMotionMode            = eMotionVectorMode::MaxTileNeighbourhood;
 
 	float   objectVerticalSpeed             = 5;
-	float   objectAmplitude                 = 1;
+	float   objectAmplitude                 = 0;
 	float   objectMeanHeight                = 1;
+	float   objectRotationSpeedX            = 5;
+	float   objectRotationSpeedY            = 5;
 	int     cameraShutterSpeedInverse       = 24;
 	float   motionVectorVisualisationRange  = 0.008;
 
@@ -116,7 +118,10 @@ void App::run() {
 	sphere.meshResources = m_cubeMesh;
 	sphere.modelMatrixUpdate = [&](float time, Object& obj) {
 		const float currentHeight   = objectMeanHeight + objectAmplitude * glm::sin(time * objectVerticalSpeed);
-		obj.modelMatrix             = glm::translate(glm::mat4(1), glm::vec3(0, currentHeight, 0));
+		const glm::mat4 translation = glm::translate(glm::mat4(1), glm::vec3(0, currentHeight, 0));
+		const glm::mat4 rotationX   = glm::rotate(glm::mat4(1), objectRotationSpeedX * time, glm::vec3(1, 0, 0));
+		const glm::mat4 rotationY   = glm::rotate(glm::mat4(1), objectRotationSpeedY * time, glm::vec3(0, 1, 0));
+		obj.modelMatrix             = translation * rotationX * rotationY;
 	};
 	sceneObjects.push_back(sphere);
 
@@ -203,9 +208,10 @@ void App::run() {
 			m_renderTargets.colorBuffer, 
 			m_renderTargets.depthBuffer };
 
-		vkcv::PushConstants meshPushConstants(sizeof(glm::mat4));
+		vkcv::PushConstants meshPushConstants(2 * sizeof(glm::mat4));
 		for (const Object& obj : sceneObjects) {
-			meshPushConstants.appendDrawcall(obj.mvp);
+			glm::mat4 matrices[2] = { obj.mvp, obj.modelMatrix };
+			meshPushConstants.appendDrawcall(matrices);
 		}
 
 		m_core.recordDrawcallsToCmdStream(
@@ -322,6 +328,8 @@ void App::run() {
 		ImGui::InputFloat("Object movement speed",      &objectVerticalSpeed);
 		ImGui::InputFloat("Object movement amplitude",  &objectAmplitude);
 		ImGui::InputFloat("Object mean height",         &objectMeanHeight);
+		ImGui::InputFloat("Object rotation speed X",    &objectRotationSpeedX);
+		ImGui::InputFloat("Object rotation speed Y",    &objectRotationSpeedY);
 
 		ImGui::End();
 		gui.endGUI();
