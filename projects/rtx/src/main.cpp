@@ -6,6 +6,7 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/scene/Scene.hpp>
+#include <vkcv/rtx/RTX.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Scene";
@@ -30,28 +31,18 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
 
 	// prepare raytracing extensions. IMPORTANT: configure compiler to build in 64 bit mode
-	std::vector<const char*> raytracingInstanceExtensions = {
-        "VK_KHR_get_physical_device_properties2"
-	};
-    std::vector<const char*> raytracingDeviceExtensions = {
-        "VK_KHR_maintenance3",
-        "VK_EXT_descriptor_indexing",
-        "VK_KHR_buffer_device_address",
-        "VK_KHR_deferred_host_operations",
-        "VK_KHR_acceleration_structure",
-        "VK_KHR_spirv_1_4",
-        "VK_KHR_ray_tracing_pipeline",
-        "VK_KHR_ray_query",
-        "VK_KHR_pipeline_library"
-    };
+    vkcv::rtx::RTXModule rtxModule;
+    std::vector<const char*> raytracingInstanceExtensions = rtxModule.getInstanceExtensions();
+    std::vector<const char*> raytracingDeviceExtensions = rtxModule.getDeviceExtensions();
 
-    std::vector<const char*> instanceExtensions = {};
-    instanceExtensions.insert(instanceExtensions.end(), raytracingInstanceExtensions.begin(), raytracingInstanceExtensions.end());
+    std::vector<const char*> instanceExtensions = {};   // add some more instance extensions, if needed
+    instanceExtensions.insert(instanceExtensions.end(), raytracingInstanceExtensions.begin(), raytracingInstanceExtensions.end());  // merge together all instance extensions
 
     std::vector<const char*> deviceExtensions = {
         "VK_KHR_swapchain"
     };
-    deviceExtensions.insert(deviceExtensions.end(), raytracingDeviceExtensions.begin(), raytracingDeviceExtensions.end());
+    deviceExtensions.insert(deviceExtensions.end(), raytracingDeviceExtensions.begin(), raytracingDeviceExtensions.end());  // merge together all device extensions
+
 
 	vkcv::Core core = vkcv::Core::create(
 		window,
@@ -61,6 +52,10 @@ int main(int argc, const char** argv) {
         instanceExtensions,
 		deviceExtensions
 	);
+
+	// init RTXModule
+	vk::PhysicalDevice physicalDevice = core.getContext().getPhysicalDevice();
+	rtxModule.init(physicalDevice);
 
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
 			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
