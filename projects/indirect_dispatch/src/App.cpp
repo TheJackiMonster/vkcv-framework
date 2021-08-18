@@ -96,6 +96,7 @@ void App::run() {
 	eMotionVectorVisualisationMode  motionVectorVisualisationMode   = eMotionVectorVisualisationMode::None;
 	eMotionVectorMode               motionBlurMotionMode            = eMotionVectorMode::MaxTileNeighbourhood;
 
+    bool    freezeFrame                     = false;
 	float   objectVerticalSpeed             = 5;
 	float   objectAmplitude                 = 0;
 	float   objectMeanHeight                = 1;
@@ -104,9 +105,8 @@ void App::run() {
 	int     cameraShutterSpeedInverse       = 24;
 	float   motionVectorVisualisationRange  = 0.008;
 
+	glm::mat4 viewProjection            = m_cameraManager.getActiveCamera().getMVP();
 	glm::mat4 viewProjectionPrevious    = m_cameraManager.getActiveCamera().getMVP();
-
-
 
 	struct Object {
 		MeshResources meshResources;
@@ -132,6 +132,8 @@ void App::run() {
 	};
 	sceneObjects.push_back(sphere);
 
+	auto frameEndTime = std::chrono::system_clock::now();
+
 	while (m_window.isWindowOpen()) {
 		vkcv::Window::pollEvents();
 
@@ -151,21 +153,27 @@ void App::run() {
 			m_motionBlur.setResolution(m_windowWidth, m_windowHeight);
 		}
 
-		auto frameEndTime   = std::chrono::system_clock::now();
+		if (!freezeFrame) {
+			frameEndTime = std::chrono::system_clock::now();
+		}
 		auto deltatime      = std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - frameStartTime);
 
 		m_cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
-		const glm::mat4 viewProjection = m_cameraManager.getActiveCamera().getMVP();
 
 		const auto      time                = frameEndTime - appStartTime;
 		const float     fCurrentTime        = std::chrono::duration_cast<std::chrono::milliseconds>(time).count() * 0.001f;
 
 		// update matrices
-		for (Object& obj : sceneObjects) {
-			if (obj.modelMatrixUpdate) {
-				obj.modelMatrixUpdate(fCurrentTime, obj);
+		if (!freezeFrame) {
+
+			viewProjection = m_cameraManager.getActiveCamera().getMVP();
+
+			for (Object& obj : sceneObjects) {
+				if (obj.modelMatrixUpdate) {
+					obj.modelMatrixUpdate(fCurrentTime, obj);
+				}
+				obj.mvp = viewProjection * obj.modelMatrix;
 			}
-			obj.mvp = viewProjection * obj.modelMatrix;
 		}
 
 		const vkcv::CommandStreamHandle cmdStream = m_core.createCommandStream(vkcv::QueueType::Graphics);
@@ -322,6 +330,8 @@ void App::run() {
 		gui.beginGUI();
 		ImGui::Begin("Settings");
 
+		ImGui::Checkbox("Freeze frame", &freezeFrame);
+
 		ImGui::Combo(
 			"Debug view",
 			reinterpret_cast<int*>(&motionVectorVisualisationMode),
@@ -350,11 +360,13 @@ void App::run() {
 
 		m_core.endFrame();
 
-		viewProjectionPrevious  = viewProjection;
-		frameStartTime = frameEndTime;
+		if (!freezeFrame) {
+			viewProjectionPrevious = viewProjection;
+			frameStartTime = frameEndTime;
 
-		for (Object& obj : sceneObjects) {
-			obj.mvpPrevious = obj.mvp;
+			for (Object& obj : sceneObjects) {
+				obj.mvpPrevious = obj.mvp;
+			}
 		}
 	}
 }
