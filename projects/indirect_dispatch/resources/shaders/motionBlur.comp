@@ -27,47 +27,60 @@ float linearizeDepth(float depth, float near, float far){
 struct SampleData{
     vec3    color;
     float   depthLinear;
-    vec2    uv;
+    vec2    coordinate;
     vec2    motion;
-    float   velocity;
+    float   velocityPixels;
 };
 
-// estimates if a points lies within the influence of another point
-// uv1 and uv2 can be interchanged, the velocity belongs to the point whose influence is estimated
-float cone(vec2 uv1, vec2 uv2, float velocity){
-    return clamp(1 - distance(uv1, uv2) / velocity, 0, 1);
+struct PointSpreadCompare{
+    float foreground;
+    float background;
+};
+
+// results in range [0, 1]
+// computes if the sample pixel in the foreground would blur over the main pixel and if the sample pixel in the background would be part of the main pixel background
+// contribution depends on if the distance between pixels is smaller than it's velocity
+// note that compared to the constant falloff used in McGuire's papers this function from Jimenez is constant until the last pixel
+// this is important for the later gradient computation
+PointSpreadCompare samplePointSpreadCompare(SampleData mainPixel, SampleData samplePixel){
+    
+    float sampleOffset = distance(mainPixel.coordinate, samplePixel.coordinate);
+    
+    PointSpreadCompare pointSpread;
+    pointSpread.foreground = clamp(1 - sampleOffset + samplePixel.velocityPixels, 0, 1);
+    pointSpread.background = clamp(1 - sampleOffset +   mainPixel.velocityPixels, 0, 1);
+    
+    return pointSpread;
 }
 
-// similar to cone, but with a different shape
-// see paper for usage details
-float cylinder(vec2 uv1, vec2 uv2, float velocity){
-    return 1 - smoothstep(0.95 * velocity, 1.05 * velocity, distance(uv1, uv2));
+struct DepthClassification{
+    float foreground;
+    float background;
+};
+
+// classifies depthSample compared to depthMain in regards to being in the fore- or background
+// the range is [0, 1] and sums to 1
+DepthClassification sampleDepthClassification(SampleData mainPixel, SampleData samplePixel){
+    
+    const float softDepthExtent = 0.1;
+    
+    DepthClassification classification;
+    // only the sign is different, so the latter term will cancel out on addition, so only two times 0.5 remains which sums to one
+    classification.foreground = clamp(0.5 + (mainPixel.depthLinear - samplePixel.depthLinear) / softDepthExtent, 0, 1);
+    classification.background = clamp(0.5 - (mainPixel.depthLinear - samplePixel.depthLinear) / softDepthExtent, 0, 1);
+    return classification;
 }
 
-// checks if depth1 is closer than depth2, result within range [0, 1]
-float softDepthCompare(float depth1, float depth2){
-    float softDepthExtent = 0.0001;
-    return clamp(1 - (depth1 - depth2) / softDepthExtent, 0, 1);
-}
-
-// reconstruction filter and helper functions from "A Reconstruction Filter for Plausible Motion Blur", McGuire
+// reconstruction filter and helper functions from "Next Generation Post Processing in Call of Duty Advanced Warfare", Jimenez
+// returns value in range [0, 1]
 float computeSampleWeigth(SampleData mainPixel, SampleData samplePixel){
     
-    float foreground = softDepthCompare(samplePixel.depthLinear,    mainPixel.depthLinear);
-    float background = softDepthCompare(  mainPixel.depthLinear,  samplePixel.depthLinear);
+    PointSpreadCompare  pointSpread         = samplePointSpreadCompare( mainPixel, samplePixel);
+    DepthClassification depthClassification = sampleDepthClassification(mainPixel, samplePixel);
     
-    float weight = 0;
-    
-    // blurry sample in front of main pixel
-    weight += foreground * cone(mainPixel.uv, samplePixel.uv, samplePixel.velocity);
-    
-    // any sample behind blurry main pixel: estimate background by using sample
-    weight += background * cone(mainPixel.uv, samplePixel.uv, mainPixel.velocity);
-    
-    // both main pixel and sample are blurry and overlap
-    weight += 2 * cylinder(mainPixel.uv, samplePixel.uv, mainPixel.velocity) * cylinder(mainPixel.uv, samplePixel.uv, samplePixel.velocity);
-
-    return weight;
+    return 
+        depthClassification.foreground * pointSpread.foreground + 
+        depthClassification.background * pointSpread.background;
 }
 
 // see "A Reconstruction Filter for Plausible Motion Blur", section 2.2
@@ -91,9 +104,9 @@ SampleData loadSampleData(vec2 uv){
     
     SampleData data;
     data.color          = texture(sampler2D(inColor, nearestSampler), uv).rgb;
-    data.uv             = (ivec2(uv * imageSize(outImage)) + 0.5) / imageSize(outImage);    // quantize to integer coordinates, then move to pixel center and compute final uv
+    data.coordinate     = ivec2(uv * imageSize(outImage)); 
     data.motion         = processMotionVector(texture(sampler2D(inMotionFullRes, nearestSampler), uv).rg);
-    data.velocity       = length(data.motion);
+    data.velocityPixels = length(data.motion * imageSize(outImage));
     data.depthLinear    = texture(sampler2D(inDepth, nearestSampler), uv).r;
     data.depthLinear    = linearizeDepth(data.depthLinear, cameraNearPlane, cameraFarPlane);
     
@@ -149,17 +162,8 @@ void main(){
         return;
     }
     
-    // the main pixel always contributes to the motion blur
-    // however if it is spread across multiple pixels, it should distribute it's color evenly among all of them (assuming a linear motion)
-    // because of this the pixel motion is translated into pixels
-    // for example if a pixel covers a five pixel distance, then it's weight is 1 / 5
-    float   mainPixelCoverageLength = max(length(mainPixel.motion * imageSize(outImage)), 1);   // max 1 because a pixel can't cover less than it's size
-    float   mainPixelWeight         = 1.f / mainPixelCoverageLength;
-    
-    vec3    color           = mainPixel.color * mainPixelWeight;
-    float   weightSum       = mainPixelWeight;
-    
-    const int sampleCount = 15; 
+    vec3    color           = vec3(0);
+    float   weightSum       = 0;      
     
     // clamping start and end points avoids artifacts at image borders
     // the sampler clamps the sample uvs anyways, but without clamping here, many samples can be stuck at the border
@@ -171,17 +175,25 @@ void main(){
     // the sampleUV code expects an offset in range [-0.5, 0.5], so the dither is rescaled to a binary -0.25/0.25
     float random = dither(coord) * 0.5 - 0.25;
     
+    const int sampleCount = 15; 
+    
     for(int i = 0; i < sampleCount; i++){
         vec2 sampleUV = mix(uvStart, uvEnd, (i + random + 1) / float(sampleCount + 1));
         
         SampleData  samplePixel     = loadSampleData(sampleUV);
         float       weightSample    = computeSampleWeigth(mainPixel, samplePixel);
-
+        
         weightSum   += weightSample;
         color       += samplePixel.color * weightSample;
     }
     
-    color /= weightSum;
+    // normalize color and weight
+    weightSum   /= sampleCount;
+    color       /= sampleCount;
+    
+    // the main color is considered the background
+    // the weight sum can be interpreted as the alpha of the combined samples, see Jimenez paper
+    color += (1 - weightSum) * mainPixel.color;
 
     imageStore(outImage, coord, vec4(color, 0.f));
 }
