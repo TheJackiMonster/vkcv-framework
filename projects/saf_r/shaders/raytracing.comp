@@ -1,8 +1,27 @@
 #version 450 core
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(std430, binding = 0) coherent buffer safrBuffers{
-	int inumbers[];
+struct Material {
+	vec3 diffuse_color;
+	vec3 albedo;
+	float specular_exponent;
+};
+
+layout(std430, binding = 0) coherent buffer Lights{
+	vec3 position [];
+	float intensity [];
+};
+
+layout(std430, binding = 1) coherent buffer Materials{
+	vec3 diffuse_color;
+	vec3 albedo;
+	float specular_exponent;
+};
+
+layout(std430, binding = 2) coherent buffer Spheres{
+	vec3 center;
+	float radius;
+	Material material;
 };
 
 void main(){

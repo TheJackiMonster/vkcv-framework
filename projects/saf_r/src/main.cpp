@@ -12,8 +12,6 @@
 #include "safrScene.hpp"
 
 
-
-
 int main(int argc, const char** argv) {
 	const char* applicationName = "SAF_R";
 
@@ -55,7 +53,6 @@ int main(int argc, const char** argv) {
 		computeShaderProgram.addShader(shaderStage, path);
 	});
 
-	//Out of range Problem
 	vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
 
 	const std::vector<vkcv::VertexAttachment> computeVertexAttachments = computeShaderProgram.getVertexAttachments();
@@ -82,9 +79,13 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
 
 	//materials for the spheres
+	std::vector<safrScene::Material> materials;
 	safrScene::Material ivory(glm::vec3(0.6, 0.3, 0.1), glm::vec3(0.4, 0.4, 0.3), 50.);
 	safrScene::Material red_rubber(glm::vec3(0.9, 0.1, 0.0), glm::vec3(0.3, 0.1, 0.1), 10.);
 	safrScene::Material mirror(glm::vec3(0.0, 10.0, 0.8), glm::vec3(1.0, 1.0, 1.0), 1425.);
+	materials.push_back(ivory);
+	materials.push_back(red_rubber);
+	materials.push_back(mirror);
 
 	//spheres for the scene
 	std::vector<safrScene::Sphere> spheres;
@@ -114,14 +115,25 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
-	vkcv::Buffer<int> safrBuffer = core.createBuffer<int>(
+	//create Buffer for compute shader
+	vkcv::Buffer<safrScene::Light> lightsBuffer = core.createBuffer<safrScene::Light>(
 		vkcv::BufferType::STORAGE,
-		2
+		lights.size()
 		);
+	lightsBuffer.fill(lights);
 
-	std::vector<int> vec = { 42, 1337 };
-	safrBuffer.fill(vec);
-	//particleBuffer.fill(particleSystem.getParticles());
+	vkcv::Buffer<safrScene::Sphere> sphereBuffer = core.createBuffer<safrScene::Sphere>(
+		vkcv::BufferType::STORAGE,
+		spheres.size()
+		);
+	sphereBuffer.fill(spheres);
+
+	vkcv::Buffer<safrScene::Material> materialBuffer = core.createBuffer<safrScene::Material>(
+		vkcv::BufferType::STORAGE,
+		materials.size()
+		);
+	materialBuffer.fill(materials);
+
 
 	vkcv::DescriptorWrites setWrites;
 	setWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
@@ -129,7 +141,9 @@ int main(int argc, const char** argv) {
 	core.writeDescriptorSet(descriptorSet, setWrites);
 
 	vkcv::DescriptorWrites computeWrites;
-	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,safrBuffer.getHandle()) };
+	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,lightsBuffer.getHandle()) };
+	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(1,materialBuffer.getHandle()) };
+	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(2,sphereBuffer.getHandle()) };
 	core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
 	const auto& context = core.getContext();
@@ -222,7 +236,7 @@ int main(int argc, const char** argv) {
 			{ vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet).vulkanHandle) },
 			pushConstantsCompute);
 
-		core.recordBufferMemoryBarrier(cmdStream, safrBuffer.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, lightsBuffer.getHandle());
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
