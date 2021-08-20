@@ -97,7 +97,7 @@ void App::run() {
 	eMotionVectorMode               motionBlurMotionMode            = eMotionVectorMode::MaxTileNeighbourhood;
 
 	bool    freezeFrame                     = false;
-	float   motionBlurTileOffsetLength      = 10;
+	float   motionBlurTileOffsetLength      = 3;
 	float   objectVerticalSpeed             = 5;
 	float   objectAmplitude                 = 0;
 	float   objectMeanHeight                = 1;
