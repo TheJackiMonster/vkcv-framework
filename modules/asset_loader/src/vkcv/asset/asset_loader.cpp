@@ -565,19 +565,22 @@ namespace vkcv::asset {
 			scene.textures.reserve(sceneObjects.textures.size());
 			
 			for (const auto& textureObject : sceneObjects.textures) {
-				if ((textureObject.sampler < 0) ||
-					(static_cast<size_t>(textureObject.sampler) >= scene.samplers.size())) {
-					vkcv_log(LogLevel::WARNING, "Sampler of texture '%s' missing (%s)",
+				Texture texture;
+				
+				if (textureObject.sampler < 0) {
+					texture.sampler = -1;
+				} else
+				if (static_cast<size_t>(textureObject.sampler) >= scene.samplers.size()) {
+					vkcv_log(LogLevel::ERROR, "Sampler of texture '%s' missing (%s) %d",
 							 textureObject.name.c_str(), path.c_str());
 					return ASSET_ERROR;
+				} else {
+					texture.sampler = textureObject.sampler;
 				}
-				
-				Texture texture;
-				texture.sampler = textureObject.sampler;
 				
 				if ((textureObject.source < 0) ||
 					(static_cast<size_t>(textureObject.source) >= sceneObjects.images.size())) {
-					vkcv_log(LogLevel::WARNING, "Failed to load texture '%s' (%s)",
+					vkcv_log(LogLevel::ERROR, "Failed to load texture '%s' (%s)",
 							 textureObject.name.c_str(), path.c_str());
 					return ASSET_ERROR;
 				}

@@ -27,8 +27,8 @@ namespace vkcv {
      * @throws std::runtime_error If the requested queues from @p queueFlags are not creatable due to insufficient availability.
      */
     void QueueManager::queueCreateInfosQueueHandles(vk::PhysicalDevice &physicalDevice,
-                                      std::vector<float> &queuePriorities,
-                                      std::vector<vk::QueueFlagBits> &queueFlags,
+                                      const std::vector<float> &queuePriorities,
+                                      const std::vector<vk::QueueFlagBits> &queueFlags,
                                       std::vector<vk::DeviceQueueCreateInfo> &queueCreateInfos,
                                       std::vector<std::pair<int, int>> &queuePairsGraphics,
                                       std::vector<std::pair<int, int>> &queuePairsCompute,

@@ -138,9 +138,9 @@ namespace vkcv
         static Core create(Window &window,
                            const char *applicationName,
                            uint32_t applicationVersion,
-                           std::vector<vk::QueueFlagBits> queueFlags    = {},
-                           std::vector<const char*> instanceExtensions  = {},
-                           std::vector<const char*> deviceExtensions    = {});
+                           const std::vector<vk::QueueFlagBits>& queueFlags    = {},
+                           const std::vector<const char*>& instanceExtensions  = {},
+                           const std::vector<const char*>& deviceExtensions    = {});
 
         /**
          * Creates a basic vulkan graphics pipeline using @p config from the pipeline config class and returns it using the @p handle.
@@ -163,7 +163,7 @@ namespace vkcv
          */
         [[nodiscard]]
         PipelineHandle createComputePipeline(
-            const ShaderProgram &config, 
+            const ShaderProgram &shaderProgram,
             const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
 
         /**
@@ -196,11 +196,13 @@ namespace vkcv
          * @param minFilter Minimizing filter
          * @param mipmapMode Mipmapping filter
          * @param addressMode Address mode
+         * @param mipLodBias Mip level of detail bias
          * @return Sampler handle
          */
         [[nodiscard]]
         SamplerHandle createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
-									SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode);
+									SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode,
+									float mipLodBias = 0.0f);
 
         /**
          * Creates an #Image with a given format, width, height and depth.
@@ -223,9 +225,13 @@ namespace vkcv
 			Multisampling   multisampling = Multisampling::None);
 
         [[nodiscard]]
-        uint32_t getImageWidth(ImageHandle imageHandle);
+        uint32_t getImageWidth(const ImageHandle& image);
+        
         [[nodiscard]]
-        uint32_t getImageHeight(ImageHandle imageHandle);
+        uint32_t getImageHeight(const ImageHandle& image);
+	
+		[[nodiscard]]
+		vk::Format getImageFormat(const ImageHandle& image);
 
         /** TODO:
          *   @param setDescriptions
@@ -243,12 +249,20 @@ namespace vkcv
 		bool beginFrame(uint32_t& width, uint32_t& height);
 
 		void recordDrawcallsToCmdStream(
-            const CommandStreamHandle       cmdStreamHandle,
+			const CommandStreamHandle       cmdStreamHandle,
 			const PassHandle                renderpassHandle, 
 			const PipelineHandle            pipelineHandle,
 			const PushConstants             &pushConstants,
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets);
+
+		void recordMeshShaderDrawcalls(
+			const CommandStreamHandle               cmdStreamHandle,
+			const PassHandle                        renderpassHandle,
+			const PipelineHandle                    pipelineHandle,
+			const PushConstants&                    pushConstantData,
+            const std::vector<MeshShaderDrawcall>&  drawcalls,
+			const std::vector<ImageHandle>&         renderTargets);
 
 		void recordComputeDispatchToCmdStream(
 			CommandStreamHandle cmdStream,
@@ -283,15 +297,21 @@ namespace vkcv
 			const RecordCommandFunction &record,
 			const FinishCommandFunction &finish);
 
-		void submitCommandStream(const CommandStreamHandle handle);
-		void prepareSwapchainImageForPresent(const CommandStreamHandle handle);
-		void prepareImageForSampling(const CommandStreamHandle cmdStream, const ImageHandle image);
-		void prepareImageForStorage(const CommandStreamHandle cmdStream, const ImageHandle image);
-		void recordImageMemoryBarrier(const CommandStreamHandle cmdStream, const ImageHandle image);
-		void recordBufferMemoryBarrier(const CommandStreamHandle cmdStream, const BufferHandle buffer);
-		void resolveMSAAImage(CommandStreamHandle cmdStream, ImageHandle src, ImageHandle dst);
+		void submitCommandStream(const CommandStreamHandle& handle);
+		void prepareSwapchainImageForPresent(const CommandStreamHandle& handle);
+		void prepareImageForSampling(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+		void prepareImageForStorage(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+		void recordImageMemoryBarrier(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+		void recordBufferMemoryBarrier(const CommandStreamHandle& cmdStream, const BufferHandle& buffer);
+		void resolveMSAAImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst);
 
+		[[nodiscard]]
 		vk::ImageView getSwapchainImageView() const;
+	
+		void recordMemoryBarrier(const CommandStreamHandle& cmdStream);
+		
+		void recordBlitImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst,
+							 SamplerFilterType filterType);
 		
     };
 }
