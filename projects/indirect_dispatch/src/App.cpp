@@ -95,6 +95,7 @@ void App::run() {
 
 	eMotionVectorVisualisationMode  motionVectorVisualisationMode   = eMotionVectorVisualisationMode::None;
 	eMotionVectorMode               motionBlurMotionMode            = eMotionVectorMode::MaxTileNeighbourhood;
+    eMotionBlurMode                 motionBlurMode                  = eMotionBlurMode::Default;
 
 	bool    freezeFrame                     = false;
 	float   motionBlurTileOffsetLength      = 3;
@@ -299,6 +300,7 @@ void App::run() {
 				m_renderTargets.colorBuffer,
 				m_renderTargets.depthBuffer,
 				motionBlurMotionMode,
+				motionBlurMode,
 				cameraNear,
 				cameraFar,
 				fDeltaTimeSeconds,
@@ -359,6 +361,12 @@ void App::run() {
 
 		ImGui::Checkbox("Freeze frame", &freezeFrame);
 		ImGui::InputFloat("Motion tile offset length", &motionBlurTileOffsetLength);
+
+		ImGui::Combo(
+			"Motion blur mode",
+			reinterpret_cast<int*>(&motionBlurMode),
+			MotionBlurModeLabels,
+			static_cast<int>(eMotionBlurMode::OptionCount));
 
 		ImGui::Combo(
 			"Debug view",

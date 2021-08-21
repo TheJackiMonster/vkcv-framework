@@ -5,16 +5,24 @@
 
 // selection for motion blur input and visualisation
 enum class eMotionVectorMode : int {
-	FullResolution = 0,
-	MaxTile = 1,
-	MaxTileNeighbourhood = 2,
-	OptionCount = 3
-};
+	FullResolution          = 0,
+	MaxTile                 = 1,
+	MaxTileNeighbourhood    = 2,
+	OptionCount             = 3 };
 
 static const char* MotionVectorModeLabels[3] = {
 	"Full resolution",
 	"Max tile",
 	"Tile neighbourhood max" };
+
+enum class eMotionBlurMode : int {
+	Default     = 0,
+	Disabled    = 1,
+	OptionCount = 2 };
+
+static const char* MotionBlurModeLabels[2] = {
+	"Default",
+	"Disabled" };
 
 class MotionBlur {
 public:
@@ -28,6 +36,7 @@ public:
 		const vkcv::ImageHandle         colorBuffer,
 		const vkcv::ImageHandle         depthBuffer,
 		const eMotionVectorMode         motionVectorMode,
+		const eMotionBlurMode           mode,
 		const float                     cameraNear,
 		const float                     cameraFar,
 		const float                     deltaTimeSeconds,
@@ -56,6 +65,7 @@ private:
 	ComputePassHandles m_motionVectorMaxNeighbourhoodPass;
 	ComputePassHandles m_motionVectorVisualisationPass;
 	ComputePassHandles m_indirectArgumentPass;
+	ComputePassHandles m_colorCopyPass;
 
 	vkcv::BufferHandle m_indirectArgumentBuffer;
 };

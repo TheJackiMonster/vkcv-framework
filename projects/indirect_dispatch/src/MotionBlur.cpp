@@ -39,6 +39,9 @@ bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, con
 	if (!loadComputePass(*m_core, "resources/shaders/motionBlurIndirectArguments.comp", &m_indirectArgumentPass))
 		return false;
 
+	if (!loadComputePass(*m_core, "resources/shaders/motionBlurColorCopy.comp", &m_colorCopyPass))
+		return false;
+
 	m_indirectArgumentBuffer = m_core->createBuffer<uint32_t>(vkcv::BufferType::STORAGE, 3, vkcv::BufferMemoryType::DEVICE_LOCAL, true).getHandle();
 
 	vkcv::DescriptorWrites indirectArgumentDescriptorWrites;
@@ -67,6 +70,7 @@ vkcv::ImageHandle MotionBlur::render(
 	const vkcv::ImageHandle         colorBuffer,
 	const vkcv::ImageHandle         depthBuffer,
 	const eMotionVectorMode         motionVectorMode,
+	const eMotionBlurMode           mode,
 	const float                     cameraNear,
 	const float                     cameraFar,
 	const float                     deltaTimeSeconds,
@@ -121,6 +125,17 @@ vkcv::ImageHandle MotionBlur::render(
 
 	m_core->writeDescriptorSet(m_motionBlurPass.descriptorSet, motionBlurDescriptorWrites);
 
+
+	vkcv::DescriptorWrites colorCopyDescriptorWrites;
+	colorCopyDescriptorWrites.sampledImageWrites = {
+		vkcv::SampledImageDescriptorWrite(0, colorBuffer) };
+	colorCopyDescriptorWrites.samplerWrites = {
+		vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
+	colorCopyDescriptorWrites.storageImageWrites = {
+		vkcv::StorageImageDescriptorWrite(2, m_renderTargets.outputColor) };
+
+	m_core->writeDescriptorSet(m_colorCopyPass.descriptorSet, colorCopyDescriptorWrites);
+
 	// must match layout in "motionBlur.comp"
 	struct MotionBlurConstantData {
 		float motionFactor;
@@ -145,13 +160,34 @@ vkcv::ImageHandle MotionBlur::render(
 	m_core->prepareImageForSampling(cmdStream, depthBuffer);
 	m_core->prepareImageForSampling(cmdStream, inputMotionTiles);
 
-	m_core->recordComputeIndirectDispatchToCmdStream(
-		cmdStream,
-		m_motionBlurPass.pipeline,
-		m_indirectArgumentBuffer,
-		0,
-		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionBlurPass.descriptorSet).vulkanHandle) },
-		motionBlurPushConstants);
+	if (mode == eMotionBlurMode::Default) {
+		m_core->recordComputeIndirectDispatchToCmdStream(
+			cmdStream,
+			m_motionBlurPass.pipeline,
+			m_indirectArgumentBuffer,
+			0,
+			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionBlurPass.descriptorSet).vulkanHandle) },
+			motionBlurPushConstants);
+	}
+	else if(mode == eMotionBlurMode::Disabled) {
+		m_core->recordComputeIndirectDispatchToCmdStream(
+			cmdStream,
+			m_colorCopyPass.pipeline,
+			m_indirectArgumentBuffer,
+			0,
+			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_colorCopyPass.descriptorSet).vulkanHandle) },
+			vkcv::PushConstants(0));
+	}
+	else {
+		vkcv_log(vkcv::LogLevel::ERROR, "Unknown eMotionBlurMode enum option");
+		m_core->recordComputeIndirectDispatchToCmdStream(
+			cmdStream,
+			m_colorCopyPass.pipeline,
+			m_indirectArgumentBuffer,
+			0,
+			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_colorCopyPass.descriptorSet).vulkanHandle) },
+			vkcv::PushConstants(0));
+	}
 
 	return m_renderTargets.outputColor;
 }
