@@ -36,6 +36,16 @@ bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, con
 	if (!loadComputePass(*m_core, "resources/shaders/motionVectorVisualisation.comp", &m_motionVectorVisualisationPass))
 		return false;
 
+	if (!loadComputePass(*m_core, "resources/shaders/motionBlurIndirectArguments.comp", &m_indirectArgumentPass))
+		return false;
+
+	m_indirectArgumentBuffer = m_core->createBuffer<uint32_t>(vkcv::BufferType::STORAGE, 3, vkcv::BufferMemoryType::DEVICE_LOCAL, true).getHandle();
+
+	vkcv::DescriptorWrites indirectArgumentDescriptorWrites;
+	indirectArgumentDescriptorWrites.storageBufferWrites = 
+		{ vkcv::BufferDescriptorWrite(0, m_indirectArgumentBuffer) };
+	m_core->writeDescriptorSet(m_indirectArgumentPass.descriptorSet, indirectArgumentDescriptorWrites);
+
 	m_renderTargets = MotionBlurSetup::createRenderTargets(targetWidth, targetHeight, *m_core);
 
 	m_nearestSampler = m_core->createSampler(
@@ -62,6 +72,26 @@ vkcv::ImageHandle MotionBlur::render(
 	const float                     motionTileOffsetLength) {
 
 	computeMotionTiles(cmdStream, motionBufferFullRes);
+
+	// write indirect dispatch argument buffer
+	struct IndirectArgumentConstants {
+		uint32_t width;
+		uint32_t height;
+	};
+	vkcv::PushConstants indirectArgumentPassPushConstants(sizeof(IndirectArgumentConstants));
+	IndirectArgumentConstants indirectArgumentConstants;
+	indirectArgumentConstants.width  = m_core->getImageWidth( m_renderTargets.outputColor);
+	indirectArgumentConstants.height = m_core->getImageHeight(m_renderTargets.outputColor);
+	indirectArgumentPassPushConstants.appendDrawcall(indirectArgumentConstants);
+
+	const uint32_t dispatchSizeOne[3] = { 1, 1, 1 };
+
+	m_core->recordComputeDispatchToCmdStream(
+		cmdStream,
+		m_indirectArgumentPass.pipeline,
+		dispatchSizeOne,
+		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_indirectArgumentPass.descriptorSet).vulkanHandle) },
+		indirectArgumentPassPushConstants);
 
 	// usually this is the neighbourhood max, but other modes can be used for comparison/debugging
 	vkcv::ImageHandle inputMotionTiles;
@@ -113,15 +143,11 @@ vkcv::ImageHandle MotionBlur::render(
 	m_core->prepareImageForSampling(cmdStream, depthBuffer);
 	m_core->prepareImageForSampling(cmdStream, inputMotionTiles);
 
-	const auto fullscreenDispatchSizes = computeFullscreenDispatchSize(
-		m_core->getImageWidth(m_renderTargets.outputColor),
-		m_core->getImageHeight(m_renderTargets.outputColor),
-		8);
-
-	m_core->recordComputeDispatchToCmdStream(
+	m_core->recordComputeIndirectDispatchToCmdStream(
 		cmdStream,
 		m_motionBlurPass.pipeline,
-		fullscreenDispatchSizes.data(),
+		m_indirectArgumentBuffer,
+		0,
 		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionBlurPass.descriptorSet).vulkanHandle) },
 		motionBlurPushConstants);
 

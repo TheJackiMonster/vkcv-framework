@@ -55,4 +55,7 @@ private:
 	ComputePassHandles m_motionVectorMaxPass;
 	ComputePassHandles m_motionVectorMaxNeighbourhoodPass;
 	ComputePassHandles m_motionVectorVisualisationPass;
+	ComputePassHandles m_indirectArgumentPass;
+
+	vkcv::BufferHandle m_indirectArgumentBuffer;
 };
