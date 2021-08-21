@@ -53,6 +53,8 @@ bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, con
 		vkcv::SamplerFilterType::NEAREST,
 		vkcv::SamplerMipmapMode::NEAREST,
 		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
+	
+	return true;
 }
 
 void MotionBlur::setResolution(const uint32_t targetWidth, const uint32_t targetHeight) {

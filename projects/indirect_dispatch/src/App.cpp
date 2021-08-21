@@ -31,7 +31,7 @@ bool App::initialize() {
 		return false;
 
 	if (!loadPrePass(m_core, &m_prePass))
-		false;
+		return false;
 
 	if (!loadSkyPrePass(m_core, &m_skyPrePass))
 		return false;
