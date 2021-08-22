@@ -1,0 +1,43 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+#include "motionBlurWorkTile.inc"
+
+layout(set=0, binding=0) uniform texture2D  inVelocityTile;
+layout(set=0, binding=1) uniform sampler    nearestSampler;
+
+layout(set=0, binding=2) buffer fullPathTileBuffer {
+    WorkTiles fullPathTiles;
+};
+
+layout(set=0, binding=3) buffer copyPathTileBuffer {
+    WorkTiles copyPathTiles;
+};
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout( push_constant ) uniform constants{
+    uint width;
+    uint height;
+};
+
+void main(){
+    
+    ivec2 tileCoord = ivec2(gl_GlobalInvocationID.xy);
+    
+    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, textureSize(sampler2D(inVelocityTile, nearestSampler), 0))))
+        return;
+    
+    vec2    motion          = texelFetch(sampler2D(inVelocityTile, nearestSampler), tileCoord, 0).rg;
+    vec2    motionPixel     = motion * vec2(width, height);
+    float   velocityPixel   = length(motionPixel);
+    
+    if(velocityPixel > 0.5){
+        uint index                  = atomicAdd(fullPathTiles.tileCount, 1);
+        fullPathTiles.tileXY[index] = tileCoord;
+    }
+    else{
+        uint index                  = atomicAdd(copyPathTiles.tileCount, 1);
+        copyPathTiles.tileXY[index] = tileCoord;
+    }
+}

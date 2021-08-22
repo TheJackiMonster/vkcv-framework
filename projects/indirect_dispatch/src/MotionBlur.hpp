@@ -16,13 +16,15 @@ static const char* MotionVectorModeLabels[3] = {
 	"Tile neighbourhood max" };
 
 enum class eMotionBlurMode : int {
-	Default     = 0,
-	Disabled    = 1,
-	OptionCount = 2 };
+	Default             = 0,
+	Disabled            = 1,
+	TileVisualisation   = 2,
+	OptionCount         = 3 };
 
-static const char* MotionBlurModeLabels[2] = {
+static const char* MotionBlurModeLabels[3] = {
 	"Default",
-	"Disabled" };
+	"Disabled",
+	"Tile visualisation" };
 
 class MotionBlur {
 public:
@@ -64,8 +66,11 @@ private:
 	ComputePassHandles m_motionVectorMaxPass;
 	ComputePassHandles m_motionVectorMaxNeighbourhoodPass;
 	ComputePassHandles m_motionVectorVisualisationPass;
-	ComputePassHandles m_indirectArgumentPass;
 	ComputePassHandles m_colorCopyPass;
+	ComputePassHandles m_tileClassificationPass;
+	ComputePassHandles m_tileResetPass;
+	ComputePassHandles m_tileVisualisationPass;
 
-	vkcv::BufferHandle m_indirectArgumentBuffer;
+	vkcv::BufferHandle m_fullPathWorkTileBuffer;
+	vkcv::BufferHandle m_copyPathWorkTileBuffer;
 };

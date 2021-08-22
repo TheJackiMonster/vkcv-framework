@@ -10,8 +10,8 @@ std::array<uint32_t, 3> computeFullscreenDispatchSize(
 
 	// optimized divide and ceil
 	return std::array<uint32_t, 3>{
-		static_cast<uint32_t>(imageWidth  + (localGroupSize - 1) / localGroupSize),
-		static_cast<uint32_t>(imageHeight + (localGroupSize - 1) / localGroupSize),
+		static_cast<uint32_t>(imageWidth  + (localGroupSize - 1)) / localGroupSize,
+		static_cast<uint32_t>(imageHeight + (localGroupSize - 1)) / localGroupSize,
 		static_cast<uint32_t>(1) };
 }
 
@@ -36,18 +36,42 @@ bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, con
 	if (!loadComputePass(*m_core, "resources/shaders/motionVectorVisualisation.comp", &m_motionVectorVisualisationPass))
 		return false;
 
-	if (!loadComputePass(*m_core, "resources/shaders/motionBlurIndirectArguments.comp", &m_indirectArgumentPass))
-		return false;
-
 	if (!loadComputePass(*m_core, "resources/shaders/motionBlurColorCopy.comp", &m_colorCopyPass))
 		return false;
 
-	m_indirectArgumentBuffer = m_core->createBuffer<uint32_t>(vkcv::BufferType::STORAGE, 3, vkcv::BufferMemoryType::DEVICE_LOCAL, true).getHandle();
+	if (!loadComputePass(*m_core, "resources/shaders/motionBlurTileClassification.comp", &m_tileClassificationPass))
+		return false;
 
-	vkcv::DescriptorWrites indirectArgumentDescriptorWrites;
-	indirectArgumentDescriptorWrites.storageBufferWrites = 
-		{ vkcv::BufferDescriptorWrite(0, m_indirectArgumentBuffer) };
-	m_core->writeDescriptorSet(m_indirectArgumentPass.descriptorSet, indirectArgumentDescriptorWrites);
+	if (!loadComputePass(*m_core, "resources/shaders/motionBlurWorkTileReset.comp", &m_tileResetPass))
+		return false;
+
+	if (!loadComputePass(*m_core, "resources/shaders/motionBlurTileClassificationVis.comp", &m_tileVisualisationPass))
+		return false;
+
+	// work tile buffers and descriptors
+	const uint32_t workTileBufferSize = static_cast<uint32_t>(2 * sizeof(uint32_t)) * (3 +
+		((MotionBlurConfig::maxWidth + MotionBlurConfig::maxMotionTileSize - 1) / MotionBlurConfig::maxMotionTileSize) *
+		((MotionBlurConfig::maxHeight + MotionBlurConfig::maxMotionTileSize - 1) / MotionBlurConfig::maxMotionTileSize));
+
+	m_copyPathWorkTileBuffer = m_core->createBuffer<uint32_t>(
+		vkcv::BufferType::STORAGE, 
+		workTileBufferSize, 
+		vkcv::BufferMemoryType::DEVICE_LOCAL, 
+		true).getHandle();
+
+	m_fullPathWorkTileBuffer = m_core->createBuffer<uint32_t>(
+		vkcv::BufferType::STORAGE, 
+		workTileBufferSize, 
+		vkcv::BufferMemoryType::DEVICE_LOCAL, 
+		true).getHandle();
+
+	vkcv::DescriptorWrites tileResetDescriptorWrites;
+	tileResetDescriptorWrites.storageBufferWrites = {
+		vkcv::BufferDescriptorWrite(0, m_fullPathWorkTileBuffer),
+		vkcv::BufferDescriptorWrite(1, m_copyPathWorkTileBuffer) };
+
+	m_core->writeDescriptorSet(m_tileResetPass.descriptorSet, tileResetDescriptorWrites);
+
 
 	m_renderTargets = MotionBlurSetup::createRenderTargets(targetWidth, targetHeight, *m_core);
 
@@ -79,25 +103,57 @@ vkcv::ImageHandle MotionBlur::render(
 
 	computeMotionTiles(cmdStream, motionBufferFullRes);
 
-	// write indirect dispatch argument buffer
-	struct IndirectArgumentConstants {
-		uint32_t width;
-		uint32_t height;
-	};
-	vkcv::PushConstants indirectArgumentPassPushConstants(sizeof(IndirectArgumentConstants));
-	IndirectArgumentConstants indirectArgumentConstants;
-	indirectArgumentConstants.width  = m_core->getImageWidth( m_renderTargets.outputColor);
-	indirectArgumentConstants.height = m_core->getImageHeight(m_renderTargets.outputColor);
-	indirectArgumentPassPushConstants.appendDrawcall(indirectArgumentConstants);
-
+	// work tile reset
 	const uint32_t dispatchSizeOne[3] = { 1, 1, 1 };
 
 	m_core->recordComputeDispatchToCmdStream(
 		cmdStream,
-		m_indirectArgumentPass.pipeline,
+		m_tileResetPass.pipeline,
 		dispatchSizeOne,
-		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_indirectArgumentPass.descriptorSet).vulkanHandle) },
-		indirectArgumentPassPushConstants);
+		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_tileResetPass.descriptorSet).vulkanHandle) },
+		vkcv::PushConstants(0));
+
+	m_core->recordBufferMemoryBarrier(cmdStream, m_fullPathWorkTileBuffer);
+	m_core->recordBufferMemoryBarrier(cmdStream, m_copyPathWorkTileBuffer);
+
+	// work tile classification
+	vkcv::DescriptorWrites tileClassificationDescriptorWrites;
+	tileClassificationDescriptorWrites.sampledImageWrites = {
+		vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionMaxNeighbourhood) };
+	tileClassificationDescriptorWrites.samplerWrites = {
+		vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
+	tileClassificationDescriptorWrites.storageBufferWrites = {
+		vkcv::BufferDescriptorWrite(2, m_fullPathWorkTileBuffer),
+		vkcv::BufferDescriptorWrite(3, m_copyPathWorkTileBuffer) };
+
+	m_core->writeDescriptorSet(m_tileClassificationPass.descriptorSet, tileClassificationDescriptorWrites);
+
+	const auto tileClassificationDispatch = computeFullscreenDispatchSize(
+		m_core->getImageWidth(m_renderTargets.motionMaxNeighbourhood), 
+		m_core->getImageHeight(m_renderTargets.motionMaxNeighbourhood),
+		8);
+
+	struct ResolutionConstants {
+		uint32_t width;
+		uint32_t height;
+	};
+	vkcv::PushConstants resolutionPushConstants(sizeof(ResolutionConstants));
+	ResolutionConstants resolutionConstants;
+	resolutionConstants.width = m_core->getImageWidth(m_renderTargets.outputColor);
+	resolutionConstants.height = m_core->getImageHeight(m_renderTargets.outputColor);
+	resolutionPushConstants.appendDrawcall(resolutionConstants);
+
+	m_core->prepareImageForSampling(cmdStream, m_renderTargets.motionMaxNeighbourhood);
+
+	m_core->recordComputeDispatchToCmdStream(
+		cmdStream,
+		m_tileClassificationPass.pipeline,
+		tileClassificationDispatch.data(),
+		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_tileClassificationPass.descriptorSet).vulkanHandle) },
+		resolutionPushConstants);
+
+	m_core->recordBufferMemoryBarrier(cmdStream, m_fullPathWorkTileBuffer);
+	m_core->recordBufferMemoryBarrier(cmdStream, m_copyPathWorkTileBuffer);
 
 	// usually this is the neighbourhood max, but other modes can be used for comparison/debugging
 	vkcv::ImageHandle inputMotionTiles;
@@ -122,6 +178,8 @@ vkcv::ImageHandle MotionBlur::render(
 		vkcv::SamplerDescriptorWrite(4, m_nearestSampler) };
 	motionBlurDescriptorWrites.storageImageWrites = {
 		vkcv::StorageImageDescriptorWrite(5, m_renderTargets.outputColor) };
+	motionBlurDescriptorWrites.storageBufferWrites = {
+		vkcv::BufferDescriptorWrite(6, m_fullPathWorkTileBuffer)};
 
 	m_core->writeDescriptorSet(m_motionBlurPass.descriptorSet, motionBlurDescriptorWrites);
 
@@ -133,6 +191,8 @@ vkcv::ImageHandle MotionBlur::render(
 		vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
 	colorCopyDescriptorWrites.storageImageWrites = {
 		vkcv::StorageImageDescriptorWrite(2, m_renderTargets.outputColor) };
+	colorCopyDescriptorWrites.storageBufferWrites = {
+		vkcv::BufferDescriptorWrite(3, m_copyPathWorkTileBuffer) };
 
 	m_core->writeDescriptorSet(m_colorCopyPass.descriptorSet, colorCopyDescriptorWrites);
 
@@ -164,29 +224,56 @@ vkcv::ImageHandle MotionBlur::render(
 		m_core->recordComputeIndirectDispatchToCmdStream(
 			cmdStream,
 			m_motionBlurPass.pipeline,
-			m_indirectArgumentBuffer,
+			m_fullPathWorkTileBuffer,
 			0,
 			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionBlurPass.descriptorSet).vulkanHandle) },
 			motionBlurPushConstants);
-	}
-	else if(mode == eMotionBlurMode::Disabled) {
+
 		m_core->recordComputeIndirectDispatchToCmdStream(
 			cmdStream,
 			m_colorCopyPass.pipeline,
-			m_indirectArgumentBuffer,
+			m_copyPathWorkTileBuffer,
 			0,
 			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_colorCopyPass.descriptorSet).vulkanHandle) },
+			vkcv::PushConstants(0));
+	}
+	else if(mode == eMotionBlurMode::Disabled) {
+		return colorBuffer;
+	}
+	else if (mode == eMotionBlurMode::TileVisualisation) {
+
+		vkcv::DescriptorWrites visualisationDescriptorWrites;
+		visualisationDescriptorWrites.sampledImageWrites = { 
+			vkcv::SampledImageDescriptorWrite(0, colorBuffer) };
+		visualisationDescriptorWrites.samplerWrites = {
+			vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
+		visualisationDescriptorWrites.storageImageWrites = {
+			vkcv::StorageImageDescriptorWrite(2, m_renderTargets.outputColor)};
+		visualisationDescriptorWrites.storageBufferWrites = {
+			vkcv::BufferDescriptorWrite(3, m_fullPathWorkTileBuffer),
+			vkcv::BufferDescriptorWrite(4, m_copyPathWorkTileBuffer)};
+
+		m_core->writeDescriptorSet(m_tileVisualisationPass.descriptorSet, visualisationDescriptorWrites);
+
+		const uint32_t tileCount = 
+			(m_core->getImageWidth(m_renderTargets.outputColor)  + MotionBlurConfig::maxMotionTileSize - 1) / MotionBlurConfig::maxMotionTileSize * 
+			(m_core->getImageHeight(m_renderTargets.outputColor) + MotionBlurConfig::maxMotionTileSize - 1) / MotionBlurConfig::maxMotionTileSize;
+
+		const uint32_t dispatchCounts[3] = {
+			tileCount,
+			1,
+			1 };
+
+		m_core->recordComputeDispatchToCmdStream(
+			cmdStream,
+			m_tileVisualisationPass.pipeline,
+			dispatchCounts,
+			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_tileVisualisationPass.descriptorSet).vulkanHandle) },
 			vkcv::PushConstants(0));
 	}
 	else {
 		vkcv_log(vkcv::LogLevel::ERROR, "Unknown eMotionBlurMode enum option");
-		m_core->recordComputeIndirectDispatchToCmdStream(
-			cmdStream,
-			m_colorCopyPass.pipeline,
-			m_indirectArgumentBuffer,
-			0,
-			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_colorCopyPass.descriptorSet).vulkanHandle) },
-			vkcv::PushConstants(0));
+		return colorBuffer;
 	}
 
 	return m_renderTargets.outputColor;
