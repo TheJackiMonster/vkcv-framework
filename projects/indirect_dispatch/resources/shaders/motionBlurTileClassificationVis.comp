@@ -8,12 +8,16 @@ layout(set=0, binding=0)                    uniform texture2D   inColor;
 layout(set=0, binding=1)                    uniform sampler     nearestSampler;
 layout(set=0, binding=2, r11f_g11f_b10f)    uniform image2D     outImage;
 
-layout(set=0, binding=3) buffer fullPathTileBuffer {
+layout(set=0, binding=3) buffer FullPathTileBuffer {
     WorkTiles fullPathTiles;
 };
 
-layout(set=0, binding=4) buffer copyPathTileBuffer {
+layout(set=0, binding=4) buffer CopyPathTileBuffer {
     WorkTiles copyPathTiles;
+};
+
+layout(set=0, binding=5) buffer FastPathTileBuffer {
+    WorkTiles fastPathTiles;
 };
 
 layout(local_size_x = motionTileSize, local_size_y = motionTileSize, local_size_z = 1) in;
@@ -22,6 +26,7 @@ void main(){
     
     uint tileIndexFullPath = gl_WorkGroupID.x;
     uint tileIndexCopyPath = gl_WorkGroupID.x - fullPathTiles.tileCount;
+    uint tileIndexFastPath = gl_WorkGroupID.x - fullPathTiles.tileCount - copyPathTiles.tileCount;
     
     vec3    debugColor;
     ivec2   tileCoordinates;
@@ -33,6 +38,10 @@ void main(){
     else if(tileIndexCopyPath < copyPathTiles.tileCount){
         debugColor      = vec3(0, 1, 0);
         tileCoordinates = copyPathTiles.tileXY[tileIndexCopyPath];
+    }
+    else if(tileIndexFastPath < fastPathTiles.tileCount){
+        debugColor      = vec3(0, 0, 1);
+        tileCoordinates = fastPathTiles.tileXY[tileIndexFastPath];
     }
     else{
         return;

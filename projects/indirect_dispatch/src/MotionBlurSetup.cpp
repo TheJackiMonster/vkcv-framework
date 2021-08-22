@@ -27,6 +27,22 @@ MotionBlurRenderTargets createRenderTargets(const uint32_t width, const uint32_t
 		false,
 		true).getHandle();
 
+	targets.motionMin = core.createImage(
+		MotionBlurConfig::motionVectorTileFormat,
+		motionMaxWidth,
+		motionMaxheight,
+		1,
+		false,
+		true).getHandle();
+
+	targets.motionMinNeighbourhood = core.createImage(
+		MotionBlurConfig::motionVectorTileFormat,
+		motionMaxWidth,
+		motionMaxheight,
+		1,
+		false,
+		true).getHandle();
+
 	targets.outputColor = core.createImage(
 		MotionBlurConfig::outputColorFormat,
 		width,

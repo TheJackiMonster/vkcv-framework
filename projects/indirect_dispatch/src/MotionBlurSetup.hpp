@@ -5,6 +5,8 @@ struct MotionBlurRenderTargets {
 	vkcv::ImageHandle outputColor;
 	vkcv::ImageHandle motionMax;
 	vkcv::ImageHandle motionMaxNeighbourhood;
+	vkcv::ImageHandle motionMin;
+	vkcv::ImageHandle motionMinNeighbourhood;
 };
 
 namespace MotionBlurSetup {

@@ -4,16 +4,22 @@
 #include "MotionBlurSetup.hpp"
 
 // selection for motion blur input and visualisation
-enum class eMotionVectorMode : int {
-	FullResolution          = 0,
-	MaxTile                 = 1,
-	MaxTileNeighbourhood    = 2,
-	OptionCount             = 3 };
+enum class eMotionVectorVisualisationMode : int {
+	None                    = 0,
+	FullResolution          = 1,
+	MaxTile                 = 2,
+	MaxTileNeighbourhood    = 3,
+	MinTile                 = 4,
+	MinTileNeighbourhood    = 5,
+	OptionCount             = 6 };
 
-static const char* MotionVectorModeLabels[3] = {
+static const char* MotionVectorVisualisationModeLabels[6] = {
+	"None",
 	"Full resolution",
 	"Max tile",
-	"Tile neighbourhood max" };
+	"Tile neighbourhood max",
+	"Min Tile",
+	"Tile neighbourhood min"};
 
 enum class eMotionBlurMode : int {
 	Default             = 0,
@@ -37,19 +43,19 @@ public:
 		const vkcv::ImageHandle         motionBufferFullRes,
 		const vkcv::ImageHandle         colorBuffer,
 		const vkcv::ImageHandle         depthBuffer,
-		const eMotionVectorMode         motionVectorMode,
 		const eMotionBlurMode           mode,
 		const float                     cameraNear,
 		const float                     cameraFar,
 		const float                     deltaTimeSeconds,
 		const float                     cameraShutterSpeedInverse,
-		const float                     motionTileOffsetLength);
+		const float                     motionTileOffsetLength,
+		const float                     fastPathThreshold);
 
 	vkcv::ImageHandle renderMotionVectorVisualisation(
-		const vkcv::CommandStreamHandle cmdStream,
-		const vkcv::ImageHandle         motionBuffer,
-		const eMotionVectorMode         debugView,
-		const float                     velocityRange);
+		const vkcv::CommandStreamHandle         cmdStream,
+		const vkcv::ImageHandle                 motionBuffer,
+		const eMotionVectorVisualisationMode    mode,
+		const float                             velocityRange);
 
 private:
 	// computes max per tile and neighbourhood tile max
@@ -63,14 +69,16 @@ private:
 	vkcv::SamplerHandle     m_nearestSampler;
 
 	ComputePassHandles m_motionBlurPass;
-	ComputePassHandles m_motionVectorMaxPass;
-	ComputePassHandles m_motionVectorMaxNeighbourhoodPass;
+	ComputePassHandles m_motionVectorMinMaxPass;
+	ComputePassHandles m_motionVectorMinMaxNeighbourhoodPass;
 	ComputePassHandles m_motionVectorVisualisationPass;
 	ComputePassHandles m_colorCopyPass;
 	ComputePassHandles m_tileClassificationPass;
 	ComputePassHandles m_tileResetPass;
 	ComputePassHandles m_tileVisualisationPass;
+	ComputePassHandles m_motionBlurFastPathPass;
 
 	vkcv::BufferHandle m_fullPathWorkTileBuffer;
 	vkcv::BufferHandle m_copyPathWorkTileBuffer;
+	vkcv::BufferHandle m_fastPathWorkTileBuffer;
 };

@@ -80,22 +80,8 @@ void App::run() {
 
 	vkcv::gui::GUI gui(m_core, m_window);
 
-	enum class eMotionVectorVisualisationMode : int {
-		None                    = 0,
-		FullResolution          = 1,
-		MaxTile                 = 2,
-		MaxTileNeighbourhood    = 3,
-		OptionCount             = 4 };
-
-	const char* motionVectorVisualisationModeLabels[] = {
-		"None",
-		"Full resolution",
-		"Max tiles",
-		"Tile neighbourhood max" };
-
 	eMotionVectorVisualisationMode  motionVectorVisualisationMode   = eMotionVectorVisualisationMode::None;
-	eMotionVectorMode               motionBlurMotionMode            = eMotionVectorMode::MaxTileNeighbourhood;
-    eMotionBlurMode                 motionBlurMode                  = eMotionBlurMode::Default;
+	eMotionBlurMode                 motionBlurMode                  = eMotionBlurMode::Default;
 
 	bool    freezeFrame                     = false;
 	float   motionBlurTileOffsetLength      = 3;
@@ -106,6 +92,7 @@ void App::run() {
 	float   objectRotationSpeedY            = 5;
 	int     cameraShutterSpeedInverse       = 24;
 	float   motionVectorVisualisationRange  = 0.008;
+	float   motionBlurFastPathThreshold     = 1;
 
 	glm::mat4 viewProjection            = m_cameraManager.getActiveCamera().getMVP();
 	glm::mat4 viewProjectionPrevious    = m_cameraManager.getActiveCamera().getMVP();
@@ -299,31 +286,19 @@ void App::run() {
 				m_renderTargets.motionBuffer,
 				m_renderTargets.colorBuffer,
 				m_renderTargets.depthBuffer,
-				motionBlurMotionMode,
 				motionBlurMode,
 				cameraNear,
 				cameraFar,
 				fDeltaTimeSeconds,
 				cameraShutterSpeedInverse,
-				motionBlurTileOffsetLength);
+				motionBlurTileOffsetLength,
+				motionBlurFastPathThreshold);
 		}
 		else {
-			eMotionVectorMode debugViewMode;
-			if (motionVectorVisualisationMode == eMotionVectorVisualisationMode::FullResolution)
-				debugViewMode = eMotionVectorMode::FullResolution;
-			else if(motionVectorVisualisationMode == eMotionVectorVisualisationMode::MaxTile)
-				debugViewMode = eMotionVectorMode::MaxTile;
-			else if (motionVectorVisualisationMode == eMotionVectorVisualisationMode::MaxTileNeighbourhood)
-				debugViewMode = eMotionVectorMode::MaxTileNeighbourhood;
-			else {
-				vkcv_log(vkcv::LogLevel::ERROR, "Unknown eMotionVectorMode enum option");
-				debugViewMode = eMotionVectorMode::FullResolution;
-			}
-
 			motionBlurOutput = m_motionBlur.renderMotionVectorVisualisation(
 				cmdStream,
 				m_renderTargets.motionBuffer,
-				debugViewMode,
+				motionVectorVisualisationMode,
 				motionVectorVisualisationRange);
 		}
 
@@ -361,6 +336,7 @@ void App::run() {
 
 		ImGui::Checkbox("Freeze frame", &freezeFrame);
 		ImGui::InputFloat("Motion tile offset length", &motionBlurTileOffsetLength);
+		ImGui::InputFloat("Motion blur fast path threshold", &motionBlurFastPathThreshold);
 
 		ImGui::Combo(
 			"Motion blur mode",
@@ -371,17 +347,11 @@ void App::run() {
 		ImGui::Combo(
 			"Debug view",
 			reinterpret_cast<int*>(&motionVectorVisualisationMode),
-			motionVectorVisualisationModeLabels,
+			MotionVectorVisualisationModeLabels,
 			static_cast<int>(eMotionVectorVisualisationMode::OptionCount));
 
 		if (motionVectorVisualisationMode != eMotionVectorVisualisationMode::None)
 			ImGui::InputFloat("Motion vector visualisation range", &motionVectorVisualisationRange);
-
-		ImGui::Combo(
-			"Motion blur input",
-			reinterpret_cast<int*>(&motionBlurMotionMode),
-			MotionVectorModeLabels,
-			static_cast<int>(eMotionVectorMode::OptionCount));
 
 		ImGui::InputInt("Camera shutter speed inverse", &cameraShutterSpeedInverse);
 

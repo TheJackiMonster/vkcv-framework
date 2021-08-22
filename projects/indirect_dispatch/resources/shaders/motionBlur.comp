@@ -1,6 +1,7 @@
 #version 440
 #extension GL_GOOGLE_include_directive : enable
 
+#include "motionBlur.inc"
 #include "motionBlurConfig.inc"
 #include "motionBlurWorkTile.inc"
 
@@ -11,7 +12,7 @@ layout(set=0, binding=3)                    uniform texture2D   inMotionNeighbou
 layout(set=0, binding=4)                    uniform sampler     nearestSampler;
 layout(set=0, binding=5, r11f_g11f_b10f)    uniform image2D     outImage;
 
-layout(set=0, binding=6) buffer copyPathTileBuffer {
+layout(set=0, binding=6) buffer WorkTileBuffer {
     WorkTiles workTiles;
 };
 
@@ -89,46 +90,17 @@ float computeSampleWeigth(SampleData mainPixel, SampleData samplePixel){
         depthClassification.background * pointSpread.background;
 }
 
-// see "A Reconstruction Filter for Plausible Motion Blur", section 2.2
-vec2 processMotionVector(vec2 motion){
-    // every frame a pixel should blur over the distance it moves
-    // as we blur in two directions (where it was and where it will be) we must half the motion 
-    vec2 motionHalf     = motion * 0.5;
-    vec2 motionScaled   = motionHalf * motionScaleFactor; // scale factor contains shutter speed and delta time
-    
-    float velocityPixels    = length(motionScaled * imageSize(outImage));
-    float epsilon           = 0.0001;
-    
-    // pixels are anisotropic, so the ratio for clamping the velocity is computed in pixels instead of uv coordinates
-    vec2 motionPixel = motionScaled * imageSize(outImage);
-    
-    // this clamps the motion to not exceed the radius given by the motion tile size
-    return motionScaled * max(0.5, min(velocityPixels, motionTileSize)) / (velocityPixels + epsilon);
-}
-
 SampleData loadSampleData(vec2 uv){
     
     SampleData data;
     data.color          = texture(sampler2D(inColor, nearestSampler), uv).rgb;
     data.coordinate     = ivec2(uv * imageSize(outImage)); 
-    data.motion         = processMotionVector(texture(sampler2D(inMotionFullRes, nearestSampler), uv).rg);
+    data.motion         = processMotionVector(texture(sampler2D(inMotionFullRes, nearestSampler), uv).rg, motionScaleFactor, imageSize(outImage));
     data.velocityPixels = length(data.motion * imageSize(outImage));
     data.depthLinear    = texture(sampler2D(inDepth, nearestSampler), uv).r;
     data.depthLinear    = linearizeDepth(data.depthLinear, cameraNearPlane, cameraFarPlane);
     
     return data;
-}
-
-const int ditherSize = 4;
-
-// simple binary dither pattern
-// could be optimized to avoid modulo and branch
-float dither(ivec2 coord){
-    
-    bool x = coord.x % ditherSize < (ditherSize / 2);
-    bool y = coord.y % ditherSize < (ditherSize / 2);
-    
-    return x ^^ y ? 1 : 0;
 }
 
 void main(){
@@ -146,7 +118,7 @@ void main(){
     // the motion tile lookup is jittered, so the hard edges in the blur are replaced by noise
     // dither is shifted, so it does not line up with motion tiles
     vec2 motionOffset           = motionTileOffsetLength * (dither(coord + ivec2(ditherSize / 2)) * 2 - 1) / textureRes;
-    vec2 motionNeighbourhoodMax = processMotionVector(texture(sampler2D(inMotionNeighbourhoodMax, nearestSampler), uv + motionOffset).rg);
+    vec2 motionNeighbourhoodMax = processMotionVector(texture(sampler2D(inMotionNeighbourhoodMax, nearestSampler), uv + motionOffset).rg, motionScaleFactor, imageSize(outImage));
     
     SampleData mainPixel = loadSampleData(uv);
     

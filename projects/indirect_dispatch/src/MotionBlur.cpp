@@ -27,10 +27,10 @@ bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, con
 	if (!loadComputePass(*m_core, "resources/shaders/motionBlur.comp", &m_motionBlurPass))
 		return false;
 
-	if (!loadComputePass(*m_core, "resources/shaders/motionVectorMax.comp", &m_motionVectorMaxPass))
+	if (!loadComputePass(*m_core, "resources/shaders/motionVectorMinMax.comp", &m_motionVectorMinMaxPass))
 		return false;
 
-	if (!loadComputePass(*m_core, "resources/shaders/motionVectorMaxNeighbourhood.comp", &m_motionVectorMaxNeighbourhoodPass))
+	if (!loadComputePass(*m_core, "resources/shaders/motionVectorMinMaxNeighbourhood.comp", &m_motionVectorMinMaxNeighbourhoodPass))
 		return false;
 
 	if (!loadComputePass(*m_core, "resources/shaders/motionVectorVisualisation.comp", &m_motionVectorVisualisationPass))
@@ -46,6 +46,9 @@ bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, con
 		return false;
 
 	if (!loadComputePass(*m_core, "resources/shaders/motionBlurTileClassificationVis.comp", &m_tileVisualisationPass))
+		return false;
+
+	if (!loadComputePass(*m_core, "resources/shaders/motionBlurFastPath.comp", &m_motionBlurFastPathPass))
 		return false;
 
 	// work tile buffers and descriptors
@@ -65,10 +68,17 @@ bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, con
 		vkcv::BufferMemoryType::DEVICE_LOCAL, 
 		true).getHandle();
 
+	m_fastPathWorkTileBuffer = m_core->createBuffer<uint32_t>(
+		vkcv::BufferType::STORAGE,
+		workTileBufferSize,
+		vkcv::BufferMemoryType::DEVICE_LOCAL,
+		true).getHandle();
+
 	vkcv::DescriptorWrites tileResetDescriptorWrites;
 	tileResetDescriptorWrites.storageBufferWrites = {
 		vkcv::BufferDescriptorWrite(0, m_fullPathWorkTileBuffer),
-		vkcv::BufferDescriptorWrite(1, m_copyPathWorkTileBuffer) };
+		vkcv::BufferDescriptorWrite(1, m_copyPathWorkTileBuffer),
+		vkcv::BufferDescriptorWrite(2, m_fastPathWorkTileBuffer) };
 
 	m_core->writeDescriptorSet(m_tileResetPass.descriptorSet, tileResetDescriptorWrites);
 
@@ -93,13 +103,13 @@ vkcv::ImageHandle MotionBlur::render(
 	const vkcv::ImageHandle         motionBufferFullRes,
 	const vkcv::ImageHandle         colorBuffer,
 	const vkcv::ImageHandle         depthBuffer,
-	const eMotionVectorMode         motionVectorMode,
 	const eMotionBlurMode           mode,
 	const float                     cameraNear,
 	const float                     cameraFar,
 	const float                     deltaTimeSeconds,
 	const float                     cameraShutterSpeedInverse,
-	const float                     motionTileOffsetLength) {
+	const float                     motionTileOffsetLength,
+	const float                     fastPathThreshold) {
 
 	computeMotionTiles(cmdStream, motionBufferFullRes);
 
@@ -115,16 +125,19 @@ vkcv::ImageHandle MotionBlur::render(
 
 	m_core->recordBufferMemoryBarrier(cmdStream, m_fullPathWorkTileBuffer);
 	m_core->recordBufferMemoryBarrier(cmdStream, m_copyPathWorkTileBuffer);
+	m_core->recordBufferMemoryBarrier(cmdStream, m_fastPathWorkTileBuffer);
 
 	// work tile classification
 	vkcv::DescriptorWrites tileClassificationDescriptorWrites;
 	tileClassificationDescriptorWrites.sampledImageWrites = {
-		vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionMaxNeighbourhood) };
+		vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionMaxNeighbourhood),
+		vkcv::SampledImageDescriptorWrite(1, m_renderTargets.motionMinNeighbourhood) };
 	tileClassificationDescriptorWrites.samplerWrites = {
-		vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
+		vkcv::SamplerDescriptorWrite(2, m_nearestSampler) };
 	tileClassificationDescriptorWrites.storageBufferWrites = {
-		vkcv::BufferDescriptorWrite(2, m_fullPathWorkTileBuffer),
-		vkcv::BufferDescriptorWrite(3, m_copyPathWorkTileBuffer) };
+		vkcv::BufferDescriptorWrite(3, m_fullPathWorkTileBuffer),
+		vkcv::BufferDescriptorWrite(4, m_copyPathWorkTileBuffer),
+		vkcv::BufferDescriptorWrite(5, m_fastPathWorkTileBuffer) };
 
 	m_core->writeDescriptorSet(m_tileClassificationPass.descriptorSet, tileClassificationDescriptorWrites);
 
@@ -133,47 +146,39 @@ vkcv::ImageHandle MotionBlur::render(
 		m_core->getImageHeight(m_renderTargets.motionMaxNeighbourhood),
 		8);
 
-	struct ResolutionConstants {
-		uint32_t width;
-		uint32_t height;
+	struct ClassificationConstants {
+		uint32_t    width;
+		uint32_t    height;
+		float       fastPathThreshold;
 	};
-	vkcv::PushConstants resolutionPushConstants(sizeof(ResolutionConstants));
-	ResolutionConstants resolutionConstants;
-	resolutionConstants.width = m_core->getImageWidth(m_renderTargets.outputColor);
-	resolutionConstants.height = m_core->getImageHeight(m_renderTargets.outputColor);
-	resolutionPushConstants.appendDrawcall(resolutionConstants);
+	ClassificationConstants classificationConstants;
+	classificationConstants.width               = m_core->getImageWidth(m_renderTargets.outputColor);
+	classificationConstants.height              = m_core->getImageHeight(m_renderTargets.outputColor);
+	classificationConstants.fastPathThreshold   = fastPathThreshold;
+
+	vkcv::PushConstants classificationPushConstants(sizeof(ClassificationConstants));
+    classificationPushConstants.appendDrawcall(classificationConstants);
 
 	m_core->prepareImageForSampling(cmdStream, m_renderTargets.motionMaxNeighbourhood);
+	m_core->prepareImageForSampling(cmdStream, m_renderTargets.motionMinNeighbourhood);
 
 	m_core->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_tileClassificationPass.pipeline,
 		tileClassificationDispatch.data(),
 		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_tileClassificationPass.descriptorSet).vulkanHandle) },
-		resolutionPushConstants);
+		classificationPushConstants);
 
 	m_core->recordBufferMemoryBarrier(cmdStream, m_fullPathWorkTileBuffer);
 	m_core->recordBufferMemoryBarrier(cmdStream, m_copyPathWorkTileBuffer);
-
-	// usually this is the neighbourhood max, but other modes can be used for comparison/debugging
-	vkcv::ImageHandle inputMotionTiles;
-	if (motionVectorMode == eMotionVectorMode::FullResolution)
-		inputMotionTiles = motionBufferFullRes;
-	else if (motionVectorMode == eMotionVectorMode::MaxTile)
-		inputMotionTiles = m_renderTargets.motionMax;
-	else if (motionVectorMode == eMotionVectorMode::MaxTileNeighbourhood)
-		inputMotionTiles = m_renderTargets.motionMaxNeighbourhood;
-	else {
-		vkcv_log(vkcv::LogLevel::ERROR, "Unknown eMotionInput enum value");
-		inputMotionTiles = m_renderTargets.motionMaxNeighbourhood;
-	}
+	m_core->recordBufferMemoryBarrier(cmdStream, m_fastPathWorkTileBuffer);
 
 	vkcv::DescriptorWrites motionBlurDescriptorWrites;
 	motionBlurDescriptorWrites.sampledImageWrites = {
 		vkcv::SampledImageDescriptorWrite(0, colorBuffer),
 		vkcv::SampledImageDescriptorWrite(1, depthBuffer),
 		vkcv::SampledImageDescriptorWrite(2, motionBufferFullRes),
-		vkcv::SampledImageDescriptorWrite(3, inputMotionTiles) };
+		vkcv::SampledImageDescriptorWrite(3, m_renderTargets.motionMaxNeighbourhood) };
 	motionBlurDescriptorWrites.samplerWrites = {
 		vkcv::SamplerDescriptorWrite(4, m_nearestSampler) };
 	motionBlurDescriptorWrites.storageImageWrites = {
@@ -195,6 +200,20 @@ vkcv::ImageHandle MotionBlur::render(
 		vkcv::BufferDescriptorWrite(3, m_copyPathWorkTileBuffer) };
 
 	m_core->writeDescriptorSet(m_colorCopyPass.descriptorSet, colorCopyDescriptorWrites);
+
+
+	vkcv::DescriptorWrites fastPathDescriptorWrites;
+	fastPathDescriptorWrites.sampledImageWrites = {
+		vkcv::SampledImageDescriptorWrite(0, colorBuffer),
+		vkcv::SampledImageDescriptorWrite(1, m_renderTargets.motionMaxNeighbourhood) };
+	fastPathDescriptorWrites.samplerWrites = {
+		vkcv::SamplerDescriptorWrite(2, m_nearestSampler) };
+	fastPathDescriptorWrites.storageImageWrites = {
+		vkcv::StorageImageDescriptorWrite(3, m_renderTargets.outputColor) };
+	fastPathDescriptorWrites.storageBufferWrites = {
+		vkcv::BufferDescriptorWrite(4, m_fastPathWorkTileBuffer) };
+
+	m_core->writeDescriptorSet(m_motionBlurFastPathPass.descriptorSet, fastPathDescriptorWrites);
 
 	// must match layout in "motionBlur.comp"
 	struct MotionBlurConstantData {
@@ -218,7 +237,7 @@ vkcv::ImageHandle MotionBlur::render(
 	m_core->prepareImageForStorage(cmdStream, m_renderTargets.outputColor);
 	m_core->prepareImageForSampling(cmdStream, colorBuffer);
 	m_core->prepareImageForSampling(cmdStream, depthBuffer);
-	m_core->prepareImageForSampling(cmdStream, inputMotionTiles);
+	m_core->prepareImageForSampling(cmdStream, m_renderTargets.motionMaxNeighbourhood);
 
 	if (mode == eMotionBlurMode::Default) {
 		m_core->recordComputeIndirectDispatchToCmdStream(
@@ -236,6 +255,14 @@ vkcv::ImageHandle MotionBlur::render(
 			0,
 			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_colorCopyPass.descriptorSet).vulkanHandle) },
 			vkcv::PushConstants(0));
+
+		m_core->recordComputeIndirectDispatchToCmdStream(
+			cmdStream,
+			m_motionBlurFastPathPass.pipeline,
+			m_fastPathWorkTileBuffer,
+			0,
+			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionBlurFastPathPass.descriptorSet).vulkanHandle) },
+			vkcv::PushConstants(0));
 	}
 	else if(mode == eMotionBlurMode::Disabled) {
 		return colorBuffer;
@@ -251,7 +278,8 @@ vkcv::ImageHandle MotionBlur::render(
 			vkcv::StorageImageDescriptorWrite(2, m_renderTargets.outputColor)};
 		visualisationDescriptorWrites.storageBufferWrites = {
 			vkcv::BufferDescriptorWrite(3, m_fullPathWorkTileBuffer),
-			vkcv::BufferDescriptorWrite(4, m_copyPathWorkTileBuffer)};
+			vkcv::BufferDescriptorWrite(4, m_copyPathWorkTileBuffer),
+			vkcv::BufferDescriptorWrite(5, m_fastPathWorkTileBuffer) };
 
 		m_core->writeDescriptorSet(m_tileVisualisationPass.descriptorSet, visualisationDescriptorWrites);
 
@@ -280,20 +308,28 @@ vkcv::ImageHandle MotionBlur::render(
 }
 
 vkcv::ImageHandle MotionBlur::renderMotionVectorVisualisation(
-	const vkcv::CommandStreamHandle cmdStream,
-	const vkcv::ImageHandle         motionBuffer,
-	const eMotionVectorMode         debugView,
-	const float                     velocityRange) {
+	const vkcv::CommandStreamHandle         cmdStream,
+	const vkcv::ImageHandle                 motionBuffer,
+	const eMotionVectorVisualisationMode    mode,
+	const float                             velocityRange) {
 
 	computeMotionTiles(cmdStream, motionBuffer);
 
 	vkcv::ImageHandle visualisationInput;
-	if (     debugView == eMotionVectorMode::FullResolution)
+	if (     mode == eMotionVectorVisualisationMode::FullResolution)
 		visualisationInput = motionBuffer;
-	else if (debugView == eMotionVectorMode::MaxTile)
+	else if (mode == eMotionVectorVisualisationMode::MaxTile)
 		visualisationInput = m_renderTargets.motionMax;
-	else if (debugView == eMotionVectorMode::MaxTileNeighbourhood)
+	else if (mode == eMotionVectorVisualisationMode::MaxTileNeighbourhood)
 		visualisationInput = m_renderTargets.motionMaxNeighbourhood;
+	else if (mode == eMotionVectorVisualisationMode::MinTile)
+		visualisationInput = m_renderTargets.motionMin;
+	else if (mode == eMotionVectorVisualisationMode::MinTileNeighbourhood)
+		visualisationInput = m_renderTargets.motionMinNeighbourhood;
+	else if (mode == eMotionVectorVisualisationMode::None) {
+		vkcv_log(vkcv::LogLevel::ERROR, "renderMotionVectorVisualisation called with visualisation mode 'None'");
+		return motionBuffer;
+	}
 	else {
 		vkcv_log(vkcv::LogLevel::ERROR, "Unknown eDebugView enum value");
 		return motionBuffer;
@@ -336,19 +372,21 @@ void MotionBlur::computeMotionTiles(
 	const vkcv::CommandStreamHandle cmdStream,
 	const vkcv::ImageHandle         motionBufferFullRes) {
 
-	// motion vector max tiles
+	// motion vector min max tiles
 	vkcv::DescriptorWrites motionVectorMaxTilesDescriptorWrites;
 	motionVectorMaxTilesDescriptorWrites.sampledImageWrites = {
 		vkcv::SampledImageDescriptorWrite(0, motionBufferFullRes) };
 	motionVectorMaxTilesDescriptorWrites.samplerWrites = {
 		vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
 	motionVectorMaxTilesDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(2, m_renderTargets.motionMax) };
+		vkcv::StorageImageDescriptorWrite(2, m_renderTargets.motionMax),
+		vkcv::StorageImageDescriptorWrite(3, m_renderTargets.motionMin) };
 
-	m_core->writeDescriptorSet(m_motionVectorMaxPass.descriptorSet, motionVectorMaxTilesDescriptorWrites);
+	m_core->writeDescriptorSet(m_motionVectorMinMaxPass.descriptorSet, motionVectorMaxTilesDescriptorWrites);
 
 	m_core->prepareImageForSampling(cmdStream, motionBufferFullRes);
 	m_core->prepareImageForStorage(cmdStream, m_renderTargets.motionMax);
+	m_core->prepareImageForStorage(cmdStream, m_renderTargets.motionMin);
 
 	const std::array<uint32_t, 3> motionTileDispatchCounts = computeFullscreenDispatchSize(
 		m_core->getImageWidth( m_renderTargets.motionMax),
@@ -357,29 +395,34 @@ void MotionBlur::computeMotionTiles(
 
 	m_core->recordComputeDispatchToCmdStream(
 		cmdStream,
-		m_motionVectorMaxPass.pipeline,
+		m_motionVectorMinMaxPass.pipeline,
 		motionTileDispatchCounts.data(),
-		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionVectorMaxPass.descriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionVectorMinMaxPass.descriptorSet).vulkanHandle) },
 		vkcv::PushConstants(0));
 
-	// motion vector max neighbourhood
+	// motion vector min max neighbourhood
 	vkcv::DescriptorWrites motionVectorMaxNeighbourhoodDescriptorWrites;
 	motionVectorMaxNeighbourhoodDescriptorWrites.sampledImageWrites = {
-		vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionMax) };
+		vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionMax),
+		vkcv::SampledImageDescriptorWrite(1, m_renderTargets.motionMin) };
 	motionVectorMaxNeighbourhoodDescriptorWrites.samplerWrites = {
-		vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
+		vkcv::SamplerDescriptorWrite(2, m_nearestSampler) };
 	motionVectorMaxNeighbourhoodDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(2, m_renderTargets.motionMaxNeighbourhood) };
+		vkcv::StorageImageDescriptorWrite(3, m_renderTargets.motionMaxNeighbourhood),
+		vkcv::StorageImageDescriptorWrite(4, m_renderTargets.motionMinNeighbourhood) };
 
-	m_core->writeDescriptorSet(m_motionVectorMaxNeighbourhoodPass.descriptorSet, motionVectorMaxNeighbourhoodDescriptorWrites);
+	m_core->writeDescriptorSet(m_motionVectorMinMaxNeighbourhoodPass.descriptorSet, motionVectorMaxNeighbourhoodDescriptorWrites);
 
 	m_core->prepareImageForSampling(cmdStream, m_renderTargets.motionMax);
+	m_core->prepareImageForSampling(cmdStream, m_renderTargets.motionMin);
+
 	m_core->prepareImageForStorage(cmdStream, m_renderTargets.motionMaxNeighbourhood);
+	m_core->prepareImageForStorage(cmdStream, m_renderTargets.motionMinNeighbourhood);
 
 	m_core->recordComputeDispatchToCmdStream(
 		cmdStream,
-		m_motionVectorMaxNeighbourhoodPass.pipeline,
+		m_motionVectorMinMaxNeighbourhoodPass.pipeline,
 		motionTileDispatchCounts.data(),
-		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionVectorMaxNeighbourhoodPass.descriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionVectorMinMaxNeighbourhoodPass.descriptorSet).vulkanHandle) },
 		vkcv::PushConstants(0));
 }
