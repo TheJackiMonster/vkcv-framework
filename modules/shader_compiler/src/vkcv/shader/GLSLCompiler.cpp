@@ -2,7 +2,7 @@
 #include "vkcv/shader/GLSLCompiler.hpp"
 
 #include <fstream>
-#include <strstream>
+#include <sstream>
 #include <glslang/SPIRV/GlslangToSpv.h>
 #include <glslang/StandAlone/DirStackFileIncluder.h>
 
@@ -219,7 +219,7 @@ namespace vkcv::shader {
 		std::string source (shaderSource);
 		
 		if (!m_defines.empty()) {
-			std::strstream defines;
+			std::stringstream defines;
 			for (const auto& define : m_defines) {
 				defines << "#define " << define.first << " " << define.second << std::endl;
 			}
