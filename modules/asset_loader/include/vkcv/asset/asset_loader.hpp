@@ -101,7 +101,7 @@ struct Texture {
 	union { int height; int h; };
 	int channels;
 	
-	std::vector<char*> data;	// binary data of the decoded texture
+	std::vector<uint8_t> data;	// binary data of the decoded texture
 };
 
 /**
