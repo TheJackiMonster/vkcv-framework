@@ -276,6 +276,7 @@ struct Scene {
  * @param path	must be the path to a glTF- or glb-file.
  * @param scene	is a reference to a Scene struct that will be filled with the
  * 	meta-data of all objects described in the glTF file.
+ * @return ASSET_ERROR on failure, otherwise ASSET_SUCCESS
  */
 int probeScene(const std::filesystem::path &path, Scene &scene);
 
@@ -290,6 +291,7 @@ int probeScene(const std::filesystem::path &path, Scene &scene);
  *
  * @param path	must be the path to a glTF- or glb-file.
  * @param scene	is the scene struct to which the results will be written.
+ * @return ASSET_ERROR on failure, otherwise ASSET_SUCCESS
  */
 int loadMesh(Scene &scene, int mesh_index);
 
@@ -300,6 +302,7 @@ int loadMesh(Scene &scene, int mesh_index);
  * @param path	must be the path to a glTF- or glb-file.
  * @param scene is a reference to a Scene struct that will be filled with the
  * 	content of the glTF file being loaded.
+ * @return ASSET_ERROR on failure, otherwise ASSET_SUCCESS
  */
 int loadScene(const std::filesystem::path &path, Scene &scene);
 
