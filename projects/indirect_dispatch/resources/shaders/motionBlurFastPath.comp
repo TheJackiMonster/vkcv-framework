@@ -33,7 +33,7 @@ void main(){
     ivec2   textureRes  = textureSize(sampler2D(inColor, nearestSampler), 0);
     vec2    uv          = vec2(coord + 0.5) / textureRes;   // + 0.5 to shift uv into pixel center
     
-    vec2 motionNeighbourhoodMax = processMotionVector(texture(sampler2D(inMotionNeighbourhoodMax, nearestSampler), uv).rg, motionScaleFactor, imageSize(outImage));
+    vec2    motionNeighbourhoodMax  = processMotionVector(texelFetch(sampler2D(inMotionNeighbourhoodMax, nearestSampler), coord / motionTileSize, 0).rg, motionScaleFactor, imageSize(outImage));
     
     // early out on movement less than half a pixel
     if(length(motionNeighbourhoodMax * imageSize(outImage)) <= 0.5){

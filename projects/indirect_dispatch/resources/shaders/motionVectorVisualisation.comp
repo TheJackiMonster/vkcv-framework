@@ -1,6 +1,8 @@
 #version 440
 #extension GL_GOOGLE_include_directive : enable
 
+#include "motionBlurConfig.inc"
+
 layout(set=0, binding=0)                    uniform texture2D   inMotion;
 layout(set=0, binding=1)                    uniform sampler     textureSampler;
 layout(set=0, binding=2, r11f_g11f_b10f)    uniform image2D     outImage;
@@ -18,9 +20,8 @@ void main(){
 
     if(any(greaterThanEqual(coord, outImageRes)))
         return;
-   
-    vec2 uv                     = vec2(coord) / outImageRes;
-    vec2 motionVector           = texture(sampler2D(inMotion, textureSampler), uv).rg;
+
+    vec2 motionVector           = texelFetch(sampler2D(inMotion, textureSampler), coord / motionTileSize, 0).rg;
     vec2 motionVectorNormalized = clamp(motionVector / range, -1, 1);
     
     vec2 color  = motionVectorNormalized * 0.5 + 0.5;

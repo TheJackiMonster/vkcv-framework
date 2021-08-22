@@ -234,6 +234,15 @@ vkcv::ImageHandle MotionBlur::render(
 	vkcv::PushConstants motionBlurPushConstants(sizeof(motionBlurConstantData));
 	motionBlurPushConstants.appendDrawcall(motionBlurConstantData);
 
+	struct FastPathConstants {
+		float motionFactor;
+	};
+	FastPathConstants fastPathConstants;
+	fastPathConstants.motionFactor = motionBlurConstantData.motionFactor;
+
+	vkcv::PushConstants fastPathPushConstants(sizeof(FastPathConstants));
+	fastPathPushConstants.appendDrawcall(fastPathConstants);
+
 	m_core->prepareImageForStorage(cmdStream, m_renderTargets.outputColor);
 	m_core->prepareImageForSampling(cmdStream, colorBuffer);
 	m_core->prepareImageForSampling(cmdStream, depthBuffer);
@@ -262,7 +271,7 @@ vkcv::ImageHandle MotionBlur::render(
 			m_fastPathWorkTileBuffer,
 			0,
 			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionBlurFastPathPass.descriptorSet).vulkanHandle) },
-			vkcv::PushConstants(0));
+			fastPathPushConstants);
 	}
 	else if(mode == eMotionBlurMode::Disabled) {
 		return colorBuffer;

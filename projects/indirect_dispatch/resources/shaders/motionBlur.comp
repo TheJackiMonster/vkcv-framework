@@ -117,8 +117,8 @@ void main(){
     
     // the motion tile lookup is jittered, so the hard edges in the blur are replaced by noise
     // dither is shifted, so it does not line up with motion tiles
-    vec2 motionOffset           = motionTileOffsetLength * (dither(coord + ivec2(ditherSize / 2)) * 2 - 1) / textureRes;
-    vec2 motionNeighbourhoodMax = processMotionVector(texture(sampler2D(inMotionNeighbourhoodMax, nearestSampler), uv + motionOffset).rg, motionScaleFactor, imageSize(outImage));
+    float   motionOffset            = motionTileOffsetLength * (dither(coord + ivec2(ditherSize / 2)) * 2 - 1);
+    vec2    motionNeighbourhoodMax  = processMotionVector(texelFetch(sampler2D(inMotionNeighbourhoodMax, nearestSampler), ivec2(coord + motionOffset) / motionTileSize, 0).rg, motionScaleFactor, imageSize(outImage));
     
     SampleData mainPixel = loadSampleData(uv);
     
