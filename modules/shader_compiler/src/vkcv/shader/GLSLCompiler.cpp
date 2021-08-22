@@ -219,12 +219,10 @@ namespace vkcv::shader {
 		std::string source (shaderSource);
 		
 		if (!m_defines.empty()) {
-			std::stringstream defines;
+			std::ostringstream defines;
 			for (const auto& define : m_defines) {
 				defines << "#define " << define.first << " " << define.second << std::endl;
 			}
-			
-			defines << '\0';
 
 			size_t pos = source.find("#version") + 8;
 			if (pos >= source.length()) {
@@ -236,8 +234,10 @@ namespace vkcv::shader {
 				pos = epos;
 			}
 			
+			const auto defines_str = defines.str();
+			
 			pos = source.find('\n', pos) + 1;
-			source = source.insert(pos, defines.str());
+			source = source.insert(pos, defines_str);
 		}
 		
 		const char *shaderStrings [1];
