@@ -60,9 +60,9 @@ bool loadImage(vkcv::Core& core, const std::filesystem::path& path, vkcv::ImageH
 
 	assert(outImage);
 
-	const vkcv::asset::TextureData textureData = vkcv::asset::loadTexture(path);
+	const vkcv::asset::Texture textureData = vkcv::asset::loadTexture(path);
 
-	if (textureData.componentCount != 4) {
+	if (textureData.channels != 4) {
 		vkcv_log(vkcv::LogLevel::ERROR, "Expecting image with four components");
 		return false;
 	}
