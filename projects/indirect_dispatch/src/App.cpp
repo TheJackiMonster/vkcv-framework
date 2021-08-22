@@ -92,7 +92,7 @@ void App::run() {
 	float   objectRotationSpeedY            = 5;
 	int     cameraShutterSpeedInverse       = 24;
 	float   motionVectorVisualisationRange  = 0.008;
-	float   motionBlurFastPathThreshold     = 2;
+	float   motionBlurFastPathThreshold     = 1;
 
 	glm::mat4 viewProjection            = m_cameraManager.getActiveCamera().getMVP();
 	glm::mat4 viewProjectionPrevious    = m_cameraManager.getActiveCamera().getMVP();

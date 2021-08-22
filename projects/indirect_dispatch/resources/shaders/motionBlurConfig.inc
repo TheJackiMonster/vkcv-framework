@@ -1,7 +1,7 @@
 #ifndef MOTION_BLUR_CONFIG
 #define MOTION_BLUR_CONFIG
 
-const int motionTileSize        = 24;
+const int motionTileSize        = 16;
 const int maxMotionBlurWidth    = 3840;
 const int maxMotionBlurHeight   = 2160;
 
