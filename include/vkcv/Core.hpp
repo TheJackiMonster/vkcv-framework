@@ -24,6 +24,9 @@
 #include "Event.hpp"
 #include "DrawcallRecording.hpp"
 #include "CommandRecordingFunctionTypes.hpp"
+#include "WindowManager.hpp"
+#include "SwapchainManager.hpp"
+
 
 namespace vkcv
 {
@@ -36,6 +39,8 @@ namespace vkcv
     class SamplerManager;
     class ImageManager;
 	class CommandStreamManager;
+	class WindowManager;
+	class SwapchainManager;
 
 	struct SubmitInfo {
 		QueueType queueType;
@@ -52,8 +57,7 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, Window &window, const Swapchain& swapChain,  std::vector<vk::ImageView> imageViews,
-			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
+        Core(Context &&context, const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
 
@@ -61,8 +65,8 @@ namespace vkcv
 
         Context m_Context;
 
-        Swapchain                       m_swapchain;
-        Window&                   		m_window;
+		SwapchainHandle 				m_swapchainHandle;
+        WindowHandle					m_windowHandle;
 
         std::unique_ptr<PassManager>            m_PassManager;
         std::unique_ptr<PipelineManager>        m_PipelineManager;
@@ -71,12 +75,16 @@ namespace vkcv
         std::unique_ptr<SamplerManager>         m_SamplerManager;
         std::unique_ptr<ImageManager>           m_ImageManager;
         std::unique_ptr<CommandStreamManager>   m_CommandStreamManager;
+		std::unique_ptr<WindowManager>          m_WindowManager;
+		std::unique_ptr<SwapchainManager>       m_SwapchainManager;
 
 		CommandResources    m_CommandResources;
 		SyncResources       m_SyncResources;
 		uint32_t            m_currentSwapchainImageIndex;
 
 		event_handle<int,int> e_resizeHandle;
+
+		void setSwapchainImages(SwapchainHandle handle);
 
     public:
         /**
@@ -135,8 +143,7 @@ namespace vkcv
              * @param[in] deviceExtensions (optional) Requested device extensions
              * @return New instance of #Context
              */
-        static Core create(Window &window,
-                           const char *applicationName,
+        static Core create(const char *applicationName,
                            uint32_t applicationVersion,
                            const std::vector<vk::QueueFlagBits>& queueFlags    = {},
                            const std::vector<const char*>& instanceExtensions  = {},
@@ -223,6 +230,25 @@ namespace vkcv
 			bool            supportStorage = false,
 			bool            supportColorAttachment = false,
 			Multisampling   multisampling = Multisampling::None);
+
+		[[nodiscard]]
+		WindowHandle createWindow(
+				const char *applicationName,
+				uint32_t windowWidth,
+				uint32_t windowHeight,
+				bool resizeable);
+
+		[[nodiscard]]
+		SwapchainHandle createSwapchain(Window &window);
+
+		[[nodiscard]]
+		Window& getWindow();
+
+		[[nodiscard]]
+		Swapchain getSwapchainOfCurrentWindow();
+
+		[[nodiscard]]
+		Swapchain getSwapchainOfHandle(const SwapchainHandle handle);
 
         [[nodiscard]]
         uint32_t getImageWidth(const ImageHandle& image);
