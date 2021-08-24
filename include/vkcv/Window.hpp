@@ -5,6 +5,7 @@
 #include <string>
 
 #include "Event.hpp"
+#include "Handles.hpp"
 
 struct GLFWwindow;
 
@@ -12,10 +13,12 @@ namespace vkcv {
 
     class Window {
 		friend class WindowManager;
+		friend class SwapchainManager;
 	private:
     	std::string m_title;
     	bool m_resizable;
 		GLFWwindow *m_window;
+		SwapchainHandle m_swapchainHandle;
 
     public:
     	/**
@@ -130,6 +133,12 @@ namespace vkcv {
          * @param height
          */
         void getFramebufferSize(int& width, int& height) const;
+
+        /**
+         * gets the SwapchainHandle corresponding to the swapchain of the window
+         * @return
+         */
+        SwapchainHandle getSwapchainHandle() const;
     };
 
 }

@@ -13,6 +13,8 @@ namespace vkcv
     class Swapchain final {
     private:
     	friend class Core;
+    	friend class Window;
+    	friend class SwapchainManager;
 
         struct Surface
         {

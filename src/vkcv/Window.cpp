@@ -305,4 +305,8 @@ namespace vkcv {
 		Window& window = *static_cast<Window *>(glfwGetWindowUserPointer(*activeWindowIterator));
 		return window;
 	}
+
+	SwapchainHandle Window::getSwapchainHandle() const {
+		return m_swapchainHandle;
+	}
 }
