@@ -5,11 +5,11 @@ namespace vkcv {
 		uint32_t bindingID,
 		DescriptorType descriptorType,
 		uint32_t descriptorCount,
-		ShaderStage shaderStage) noexcept
+		ShaderStages shaderStages) noexcept
 		:
 		bindingID(bindingID),
 		descriptorType(descriptorType),
 		descriptorCount(descriptorCount),
-		shaderStage(shaderStage) {}
+		shaderStages(shaderStages) {}
 	
 }
