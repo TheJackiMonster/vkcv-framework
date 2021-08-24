@@ -5,12 +5,14 @@
 namespace vkcv {
 
 	enum class ShaderStage : VkShaderStageFlags {
-		VERTEX = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eVertex),
-		TESS_CONTROL = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eTessellationControl),
-		TESS_EVAL = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eTessellationEvaluation),
-		GEOMETRY = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eGeometry),
-		FRAGMENT = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eFragment),
-		COMPUTE = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eCompute)
+		VERTEX          = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eVertex),
+		TESS_CONTROL    = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eTessellationControl),
+		TESS_EVAL       = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eTessellationEvaluation),
+		GEOMETRY        = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eGeometry),
+		FRAGMENT        = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eFragment),
+		COMPUTE         = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eCompute),
+		TASK            = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eTaskNV),
+		MESH            = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eMeshNV)
 	};
 	
 	using ShaderStages = vk::Flags<ShaderStage>;
