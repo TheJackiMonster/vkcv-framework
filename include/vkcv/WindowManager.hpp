@@ -5,9 +5,11 @@
 
 #include "vkcv/Window.hpp"
 #include "vkcv/Handles.hpp"
+#include "vkcv/SwapchainManager.hpp"
 
 namespace vkcv {
-	class Core;
+	class Context;
+	class SwapchainManager;
 
 	class WindowManager {
 		friend class Core;
@@ -29,7 +31,7 @@ namespace vkcv {
 
 		WindowManager &operator=(const WindowManager &other) = delete;
 
-		WindowHandle createWindow(Core &core, const char *applicationName, uint32_t windowWidth, uint32_t windowHeight,
+		WindowHandle createWindow( SwapchainManager &swapchainManager, const char *applicationName, uint32_t windowWidth, uint32_t windowHeight,
 								  bool resizeable);
 
 		[[nodiscard]]

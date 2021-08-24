@@ -13,13 +13,15 @@ namespace vkcv {
 		m_swapchains.clear();
 	}
 
-	[[maybe_unused]] SwapchainHandle SwapchainManager::createSwapchain(Window &window, Context &context) {
+	SwapchainHandle SwapchainManager::createSwapchain(Window &window) {
 		const uint64_t id = m_swapchains.size();
 
-		Swapchain swapchain = Swapchain::create(window, context);
+		Swapchain swapchain = Swapchain::create(window, *m_context);
 
 		m_swapchains.push_back(swapchain);
-		return SwapchainHandle(id, [&](uint64_t id) { destroySwapchainById(id); });
+		SwapchainHandle swapchainHandle = SwapchainHandle(id, [&](uint64_t id) { destroySwapchainById(id); });
+		window.m_swapchainHandle = swapchainHandle;
+		return swapchainHandle;
 	}
 
 	Swapchain &SwapchainManager::getSwapchain(const SwapchainHandle handle) const {
@@ -32,5 +34,45 @@ namespace vkcv {
 			vkcv_log(LogLevel::ERROR, "Invalid id");
 			return;
 		}
+		m_context->getDevice().destroySwapchainKHR(m_swapchains[id].getSwapchain());
+		m_context->getInstance().destroySurfaceKHR(m_swapchains[id].getSurface());
+	}
+
+	void SwapchainManager::signalRecreation(const SwapchainHandle handle) {
+		m_swapchains[handle.getId()].signalSwapchainRecreation();
+	}
+
+	std::vector<vk::Image> SwapchainManager::getSwapchainImages(const SwapchainHandle handle) {
+		return m_context->getDevice().getSwapchainImagesKHR(m_swapchains[handle.getId()].getSwapchain());
+	}
+
+	std::vector<vk::ImageView> SwapchainManager::createSwapchainImageViews(SwapchainHandle handle){
+		std::vector<vk::Image> images = getSwapchainImages(handle);
+		Swapchain &swapchain = m_swapchains[handle.getId()];
+
+		std::vector<vk::ImageView> imageViews;
+		imageViews.reserve( images.size() );
+		//here can be swizzled with vk::ComponentSwizzle if needed
+		vk::ComponentMapping componentMapping(
+				vk::ComponentSwizzle::eR,
+				vk::ComponentSwizzle::eG,
+				vk::ComponentSwizzle::eB,
+				vk::ComponentSwizzle::eA );
+
+		vk::ImageSubresourceRange subResourceRange( vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 );
+
+		for ( auto image : images )
+		{
+			vk::ImageViewCreateInfo imageViewCreateInfo(
+					vk::ImageViewCreateFlags(),
+					image,
+					vk::ImageViewType::e2D,
+					swapchain.getFormat(),
+					componentMapping,
+					subResourceRange);
+
+			imageViews.push_back(m_context->getDevice().createImageView(imageViewCreateInfo));
+		}
+		return imageViews;
 	}
 }

@@ -17,6 +17,7 @@ namespace vkcv {
 
 	private:
 
+		Context *m_context;
 		void destroySwapchainById(uint64_t id);
 
 	public:
@@ -32,10 +33,15 @@ namespace vkcv {
 
 		SwapchainManager &operator=(const SwapchainManager &other) = delete;
 
-		SwapchainHandle createSwapchain(Window &window, Context &context);
+		SwapchainHandle createSwapchain(Window &window);
 
 		[[nodiscard]]
 		Swapchain &getSwapchain(const SwapchainHandle handle) const;
 
+		void signalRecreation(const SwapchainHandle handle);
+
+		std::vector<vk::Image> getSwapchainImages(const SwapchainHandle handle);
+
+		std::vector<vk::ImageView> createSwapchainImageViews(SwapchainHandle handle);
 	};
 }

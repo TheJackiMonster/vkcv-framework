@@ -1,5 +1,5 @@
 #include "vkcv/WindowManager.hpp"
-#include "vkcv/Core.hpp"
+#include "vkcv/Context.hpp"
 
 namespace vkcv {
 	static std::vector<Window> m_windows;
@@ -15,7 +15,7 @@ namespace vkcv {
 	}
 
 	WindowHandle WindowManager::createWindow(
-			Core &core,
+			SwapchainManager &swapchainManager,
 			const char *applicationName,
 			uint32_t windowWidth,
 			uint32_t windowHeight,
@@ -24,11 +24,11 @@ namespace vkcv {
 
 		vkcv::Window window = vkcv::Window(applicationName, windowWidth, windowHeight, resizeable);
 
-		Swapchain swapChain = Swapchain::create(window, core.getContext());
+		SwapchainHandle swapchainHandle = swapchainManager.createSwapchain(window);
 
 		if (resizeable) {
 			window.e_resize.add([&](int width, int height) {
-				// m_swapchain.signalSwapchainRecreation(); // swapchain signal
+				swapchainManager.signalRecreation(swapchainHandle);
 			});
 		}
 
