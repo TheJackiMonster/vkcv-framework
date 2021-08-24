@@ -6,12 +6,15 @@
  */
 #include <vector>
 #include <vulkan/vulkan.hpp>
+#include <vk_mem_alloc.hpp>
 
 #include "vkcv/BufferManager.hpp"
 #include "vkcv/Handles.hpp"
 #include "vkcv/ImageConfig.hpp"
 
 namespace vkcv {
+	
+	bool isDepthImageFormat(vk::Format format);
 
 	class ImageManager
 	{
@@ -20,28 +23,16 @@ namespace vkcv {
 		struct Image
 		{
 			vk::Image                   m_handle;
-			vk::DeviceMemory            m_memory;
+			vma::Allocation             m_allocation;
 			std::vector<vk::ImageView>  m_viewPerMip;
-			uint32_t                    m_width     = 0;
-			uint32_t                    m_height    = 0;
-			uint32_t                    m_depth     = 0;
+			uint32_t                    m_width;
+			uint32_t                    m_height;
+			uint32_t                    m_depth;
 			vk::Format                  m_format;
-			uint32_t                    m_layers    = 1;
-			vk::ImageLayout             m_layout    = vk::ImageLayout::eUndefined;
+			uint32_t                    m_layers;
+			vk::ImageLayout             m_layout;
 		private:
-			// struct is public so utility functions can access members, but only ImageManager can create Image
 			friend ImageManager;
-			Image(
-				vk::Image                   handle,
-				vk::DeviceMemory            memory,
-				std::vector<vk::ImageView>  views,
-				uint32_t                    width,
-				uint32_t                    height,
-				uint32_t                    depth,
-				vk::Format                  format,
-				uint32_t                    layers);
-
-			Image();
 		};
 	private:
 		
@@ -52,7 +43,7 @@ namespace vkcv {
 		std::vector<Image> m_swapchainImages;
 		int m_currentSwapchainInputImage;
 		
-		ImageManager(BufferManager& bufferManager) noexcept;
+		explicit ImageManager(BufferManager& bufferManager) noexcept;
 		
 		/**
 		 * Destroys and deallocates image represented by a given
@@ -82,7 +73,8 @@ namespace vkcv {
 			bool            supportColorAttachment,
 			Multisampling   msaa);
 		
-		ImageHandle createSwapchainImage();
+		[[nodiscard]]
+		ImageHandle createSwapchainImage() const;
 		
 		[[nodiscard]]
 		vk::Image getVulkanImage(const ImageHandle& handle) const;
@@ -91,7 +83,7 @@ namespace vkcv {
 		vk::DeviceMemory getVulkanDeviceMemory(const ImageHandle& handle) const;
 		
 		[[nodiscard]]
-		vk::ImageView getVulkanImageView(const ImageHandle& handle, const size_t mipLevel = 0) const;
+		vk::ImageView getVulkanImageView(const ImageHandle& handle, size_t mipLevel = 0) const;
 
 		void switchImageLayoutImmediate(const ImageHandle& handle, vk::ImageLayout newLayout);
 		void recordImageLayoutTransition(
@@ -103,7 +95,7 @@ namespace vkcv {
 			const ImageHandle& handle,
 			vk::CommandBuffer cmdBuffer);
 
-		void fillImage(const ImageHandle& handle, void* data, size_t size);
+		void fillImage(const ImageHandle& handle, const void* data, size_t size);
 		void generateImageMipChainImmediate(const ImageHandle& handle);
 		void recordImageMipChainGenerationToCmdStream(const vkcv::CommandStreamHandle& cmdStream, const ImageHandle& handle);
 		void recordMSAAResolve(vk::CommandBuffer cmdBuffer, ImageHandle src, ImageHandle dst);
@@ -124,8 +116,9 @@ namespace vkcv {
 		uint32_t getImageMipCount(const ImageHandle& handle) const;
 
 		void setCurrentSwapchainImageIndex(int index);
-		void setSwapchainImages(const std::vector<vk::Image>& images, std::vector<vk::ImageView> views,
-			uint32_t width, uint32_t height, vk::Format format);
+		
+		void setSwapchainImages(const std::vector<vk::Image>& images, const std::vector<vk::ImageView>& views,
+								uint32_t width, uint32_t height, vk::Format format);
 
 	};
 }

@@ -3,7 +3,7 @@
 #include <vulkan/vulkan.hpp>
 
 namespace vkcv {
-	
+
 	enum class ShaderStage : VkShaderStageFlags {
 		VERTEX = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eVertex),
 		TESS_CONTROL = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eTessellationControl),
@@ -34,5 +34,4 @@ namespace vkcv {
 	constexpr ShaderStages operator~(ShaderStage stage) noexcept {
 		return ~(ShaderStages(stage));
 	}
-	
 }

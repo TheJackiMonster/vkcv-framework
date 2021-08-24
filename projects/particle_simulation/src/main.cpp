@@ -58,12 +58,28 @@ int main(int argc, const char **argv) {
         return EXIT_FAILURE;
     }
 
-    // use space or use water
-    bool useSpace = true;
+    // use space or use water or gravity
+    std::string shaderPathCompute = "shaders/shader_space.comp";
+	std::string shaderPathFragment = "shaders/shader_space.frag";
+    
+    for (int i = 1; i < argc; i++) {
+    	if (strcmp(argv[i], "--space") == 0) {
+    		shaderPathCompute = "shaders/shader_space.comp";
+			shaderPathFragment = "shaders/shader_space.frag";
+    	} else
+		if (strcmp(argv[i], "--water") == 0) {
+			shaderPathCompute = "shaders/shader_water.comp";
+			shaderPathFragment = "shaders/shader_water.frag";
+		} else
+		if (strcmp(argv[i], "--gravity") == 0) {
+			shaderPathCompute = "shaders/shader_gravity.comp";
+			shaderPathFragment = "shaders/shader_space.frag";
+		}
+    }
 
     vkcv::shader::GLSLCompiler compiler;
     vkcv::ShaderProgram computeShaderProgram{};
-    compiler.compile(vkcv::ShaderStage::COMPUTE, useSpace ? "shaders/shader_space.comp" : "shaders/shader_water.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+    compiler.compile(vkcv::ShaderStage::COMPUTE, shaderPathCompute, [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
         computeShaderProgram.addShader(shaderStage, path);
     });
 
@@ -81,7 +97,7 @@ int main(int argc, const char **argv) {
     compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/shader.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
         particleShaderProgram.addShader(shaderStage, path);
     });
-    compiler.compile(vkcv::ShaderStage::FRAGMENT, useSpace ? "shaders/shader_space.frag" : "shaders/shader_water.frag", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+    compiler.compile(vkcv::ShaderStage::FRAGMENT, shaderPathFragment, [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
         particleShaderProgram.addShader(shaderStage, path);
     });
 
@@ -147,13 +163,13 @@ int main(int argc, const char **argv) {
     particleBuffer.fill(particleSystem.getParticles());
 
     vkcv::DescriptorWrites setWrites;
-    setWrites.uniformBufferWrites = {vkcv::UniformBufferDescriptorWrite(0,color.getHandle()),
-                                     vkcv::UniformBufferDescriptorWrite(1,position.getHandle())};
-    setWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(2,particleBuffer.getHandle())};
+    setWrites.uniformBufferWrites = {vkcv::BufferDescriptorWrite(0,color.getHandle()),
+                                     vkcv::BufferDescriptorWrite(1,position.getHandle())};
+    setWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(2,particleBuffer.getHandle())};
     core.writeDescriptorSet(descriptorSet, setWrites);
 
     vkcv::DescriptorWrites computeWrites;
-    computeWrites.storageBufferWrites = { vkcv::StorageBufferDescriptorWrite(0,particleBuffer.getHandle())};
+    computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,particleBuffer.getHandle())};
     core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
     if (!particlePipeline || !computePipeline)
@@ -167,38 +183,16 @@ int main(int argc, const char **argv) {
     const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(),
                                 particleIndexBuffer.getCount());
     vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
-    //vkcv::DrawcallInfo drawcalls(renderMesh, {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle)});
 
-    glm::vec2 pos = glm::vec2(0.f);
-    glm::vec3 spawnPosition = glm::vec3(0.f);
-    glm::vec4 tempPosition = glm::vec4(0.f);
+    auto pos = glm::vec2(0.f);
+    auto spawnPosition = glm::vec3(0.f);
 
     window.e_mouseMove.add([&](double offsetX, double offsetY) {
         pos = glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY));
-//        std::cout << offsetX << " , " << offsetY << std::endl;
-        // borders are assumed to be 0.5
-        //pos = glm::vec2((pos.x -0.5f * static_cast<float>(window.getWidth()))/static_cast<float>(window.getWidth()), (pos.y -0.5f * static_cast<float>(window.getHeight()))/static_cast<float>(window.getHeight()));
-        //borders are assumed to be 1
         pos.x = (-2 * pos.x + static_cast<float>(window.getWidth())) / static_cast<float>(window.getWidth());
         pos.y = (-2 * pos.y + static_cast<float>(window.getHeight())) / static_cast<float>(window.getHeight());
-        glm::vec4 row1 = glm::row(cameraManager.getCamera(0).getView(), 0);
-        glm::vec4 row2 = glm::row(cameraManager.getCamera(0).getView(), 1);
-        glm::vec4 row3 = glm::row(cameraManager.getCamera(0).getView(), 2);
-        glm::vec4 camera_pos = glm::column(cameraManager.getCamera(0).getView(), 3);
-//        std::cout << "row1: " << row1.x << ", " << row1.y << ", " << row1.z << std::endl;
-//        std::cout << "row2: " << row2.x << ", " << row2.y << ", " << row2.z << std::endl;
-//        std::cout << "row3: " << row3.x << ", " << row3.y << ", " << row3.z << std::endl;
-//        std::cout << "camerapos: " << camera_pos.x << ", " << camera_pos.y << ", " << camera_pos.z << std::endl;
-//        std::cout << "camerapos: " << camera_pos.x << ", " << camera_pos.y << ", " << camera_pos.z << std::endl;
-        //glm::vec4 view_axis = glm::row(cameraManager.getCamera().getView(), 2);
-        // std::cout << "view_axis: " << view_axis.x << ", " << view_axis.y << ", " << view_axis.z << std::endl;
-        //std::cout << "Front: " << cameraManager.getCamera().getFront().x << ", " << cameraManager.getCamera().getFront().z << ", " << cameraManager.getCamera().getFront().z << std::endl;
-        glm::mat4 viewmat = cameraManager.getCamera(0).getView();
         spawnPosition = glm::vec3(pos.x, pos.y, 0.f);
-        tempPosition = glm::vec4(spawnPosition, 1.0f);
-        spawnPosition = glm::vec3(tempPosition.x, tempPosition.y, tempPosition.z);
         particleSystem.setRespawnPos(glm::vec3(-spawnPosition.x, spawnPosition.y, spawnPosition.z));
-//        std::cout << "respawn pos: " << spawnPosition.x << ", " << spawnPosition.y << ", " << spawnPosition.z << std::endl;
     });
 
     std::vector<glm::mat4> modelMatrices;
@@ -242,7 +236,7 @@ int main(int argc, const char **argv) {
     std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
     std::default_random_engine rdmEngine;
     while (window.isWindowOpen()) {
-        window.pollEvents();
+        vkcv::Window::pollEvents();
 
         uint32_t swapchainWidth, swapchainHeight;
         if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
@@ -255,35 +249,42 @@ int main(int argc, const char **argv) {
         auto end = std::chrono::system_clock::now();
         float deltatime = 0.000001 * static_cast<float>( std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() );
         start = end;
-//        particleSystem.updateParticles(deltatime);
 
         cameraManager.update(deltatime);
 
         // split view and projection to allow for easy billboarding in shader
-        glm::mat4 renderingMatrices[2];
-        renderingMatrices[0] = cameraManager.getActiveCamera().getView();
-        renderingMatrices[1] = cameraManager.getActiveCamera().getProjection();
+        struct {
+			glm::mat4 view;
+			glm::mat4 projection;
+        } renderingMatrices;
+        
+        renderingMatrices.view = cameraManager.getActiveCamera().getView();
+        renderingMatrices.projection = cameraManager.getActiveCamera().getProjection();
 
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
         float random = rdm(rdmEngine);
         glm::vec2 pushData = glm::vec2(deltatime, random);
 
-        vkcv::PushConstantData pushConstantDataCompute( &pushData, sizeof(glm::vec2));
+        vkcv::PushConstants pushConstantsCompute (sizeof(glm::vec2));
+        pushConstantsCompute.appendDrawcall(pushData);
+        
         uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(particleSystem.getParticles().size()/256.f)),1,1};
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline,
                                               computeDispatchCount,
                                               {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet).vulkanHandle)},
-                                              pushConstantDataCompute);
+											  pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer.getHandle());
 
-        vkcv::PushConstantData pushConstantDataDraw((void *) &renderingMatrices[0], 2 * sizeof(glm::mat4));
+        vkcv::PushConstants pushConstantsDraw (sizeof(renderingMatrices));
+        pushConstantsDraw.appendDrawcall(renderingMatrices);
+        
         core.recordDrawcallsToCmdStream(
                 cmdStream,
                 particlePass,
                 particlePipeline,
-                pushConstantDataDraw,
+				pushConstantsDraw,
                 {drawcalls},
                 { colorBuffer });
 
@@ -309,7 +310,7 @@ int main(int argc, const char **argv) {
             tonemappingPipe, 
             tonemappingDispatchCount, 
             {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptor).vulkanHandle) },
-            vkcv::PushConstantData(nullptr, 0));
+            vkcv::PushConstants(0));
 
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);

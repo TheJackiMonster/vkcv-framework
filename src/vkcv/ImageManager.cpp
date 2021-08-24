@@ -12,26 +12,6 @@
 
 namespace vkcv {
 
-	ImageManager::Image::Image(
-		vk::Image                   handle,
-		vk::DeviceMemory            memory,
-		std::vector<vk::ImageView>  views,
-		uint32_t                    width,
-		uint32_t                    height,
-		uint32_t                    depth,
-		vk::Format                  format,
-		uint32_t                    layers)
-		:
-		m_handle(handle),
-		m_memory(memory),
-        m_viewPerMip(views),
-		m_width(width),
-		m_height(height),
-		m_depth(depth),
-		m_format(format),
-		m_layers(layers)
-	{}
-
 	/**
 	 * @brief searches memory type index for image allocation, combines requirements of image and application
 	 * @param physicalMemoryProperties Memory Properties of physical device
@@ -67,7 +47,8 @@ namespace vkcv {
 		for (uint64_t id = 0; id < m_images.size(); id++) {
 			destroyImageById(id);
 		}
-		for (const auto swapchainImage : m_swapchainImages) {
+		
+		for (const auto& swapchainImage : m_swapchainImages) {
 			for (const auto view : swapchainImage.m_viewPerMip) {
 				m_core->getContext().getDevice().destroy(view);
 			}
@@ -123,7 +104,7 @@ namespace vkcv {
 			imageUsageFlags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
 		}
 
-		const vk::Device& device = m_core->getContext().getDevice();
+		const vma::Allocator& allocator = m_core->getContext().getAllocator();
 
 		vk::ImageType imageType = vk::ImageType::e3D;
 		vk::ImageViewType imageViewType = vk::ImageViewType::e3D;
@@ -157,7 +138,7 @@ namespace vkcv {
 
 		vk::SampleCountFlagBits sampleCountFlag = msaaToVkSampleCountFlag(msaa);
 
-		const vk::ImageCreateInfo imageCreateInfo(
+		const vk::ImageCreateInfo imageCreateInfo (
 			createFlags,
 			imageType,
 			format,
@@ -171,21 +152,22 @@ namespace vkcv {
 			{},
 			vk::ImageLayout::eUndefined
 		);
-
-		vk::Image image = device.createImage(imageCreateInfo);
 		
-		const vk::MemoryRequirements requirements = device.getImageMemoryRequirements(image);
-
-		vk::MemoryPropertyFlags memoryTypeFlags = vk::MemoryPropertyFlagBits::eDeviceLocal;
-
-		const uint32_t memoryTypeIndex = searchImageMemoryType(
-			physicalDevice.getMemoryProperties(),
-			requirements.memoryTypeBits,
-			memoryTypeFlags
+		auto imageAllocation = allocator.createImage(
+				imageCreateInfo,
+				vma::AllocationCreateInfo(
+						vma::AllocationCreateFlags(),
+						vma::MemoryUsage::eGpuOnly,
+						vk::MemoryPropertyFlagBits::eDeviceLocal,
+						vk::MemoryPropertyFlagBits::eDeviceLocal,
+						0,
+						vma::Pool(),
+						nullptr
+				)
 		);
 
-		vk::DeviceMemory memory = device.allocateMemory(vk::MemoryAllocateInfo(requirements.size, memoryTypeIndex));
-		device.bindImageMemory(image, memory, 0);
+		vk::Image image = imageAllocation.first;
+		vma::Allocation allocation = imageAllocation.second;
 
 		vk::ImageAspectFlags aspectFlags;
 		
@@ -195,8 +177,10 @@ namespace vkcv {
 			aspectFlags = vk::ImageAspectFlagBits::eColor;
 		}
 		
+		const vk::Device& device = m_core->getContext().getDevice();
+		
 		std::vector<vk::ImageView> views;
-		for (int mip = 0; mip < mipCount; mip++) {
+		for (uint32_t mip = 0; mip < mipCount; mip++) {
 			const vk::ImageViewCreateInfo imageViewCreateInfo(
 				{},
 				image,
@@ -221,11 +205,11 @@ namespace vkcv {
 		}
 		
 		const uint64_t id = m_images.size();
-		m_images.push_back(Image(image, memory, views, width, height, depth, format, arrayLayers));
+		m_images.push_back({ image, allocation, views, width, height, depth, format, arrayLayers, vk::ImageLayout::eUndefined });
 		return ImageHandle(id, [&](uint64_t id) { destroyImageById(id); });
 	}
 	
-	ImageHandle ImageManager::createSwapchainImage() {
+	ImageHandle ImageManager::createSwapchainImage() const {
 		return ImageHandle::createSwapchainImageHandle();
 	}
 	
@@ -261,10 +245,16 @@ namespace vkcv {
 		
 		auto& image = m_images[id];
 		
-		return image.m_memory;
+		const vma::Allocator& allocator = m_core->getContext().getAllocator();
+		
+		auto info = allocator.getAllocationInfo(
+				image.m_allocation
+		);
+		
+		return info.deviceMemory;
 	}
 	
-	vk::ImageView ImageManager::getVulkanImageView(const ImageHandle &handle, const size_t mipLevel) const {
+	vk::ImageView ImageManager::getVulkanImageView(const ImageHandle &handle, size_t mipLevel) const {
 		
 		if (handle.isSwapchainImage()) {
 			return m_swapchainImages[m_currentSwapchainInputImage].m_viewPerMip[0];
@@ -369,7 +359,7 @@ namespace vkcv {
 		}
 	}
 	
-	void ImageManager::fillImage(const ImageHandle& handle, void* data, size_t size)
+	void ImageManager::fillImage(const ImageHandle& handle, const void* data, size_t size)
 	{
 		const uint64_t id = handle.getId();
 		
@@ -397,7 +387,7 @@ namespace vkcv {
 		const size_t max_size = std::min(size, image_size);
 		
 		BufferHandle bufferHandle = m_bufferManager.createBuffer(
-				BufferType::STAGING, max_size, BufferMemoryType::HOST_VISIBLE
+				BufferType::STAGING, max_size, BufferMemoryType::HOST_VISIBLE, false
 		);
 		
 		m_bufferManager.fillBuffer(bufferHandle, data, max_size, 0);
@@ -504,9 +494,6 @@ namespace vkcv {
 	}
 
 	void ImageManager::generateImageMipChainImmediate(const ImageHandle& handle) {
-
-		const auto& device = m_core->getContext().getDevice();
-
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
 
@@ -628,15 +615,14 @@ namespace vkcv {
 				view = nullptr;
 			}
 		}
-
-		if (image.m_memory) {
-			device.freeMemory(image.m_memory);
-			image.m_memory = nullptr;
-		}
+		
+		const vma::Allocator& allocator = m_core->getContext().getAllocator();
 
 		if (image.m_handle) {
-			device.destroyImage(image.m_handle);
+			allocator.destroyImage(image.m_handle, image.m_allocation);
+			
 			image.m_handle = nullptr;
+			image.m_allocation = nullptr;
 		}
 	}
 
@@ -655,7 +641,6 @@ namespace vkcv {
 
 	uint32_t ImageManager::getImageMipCount(const ImageHandle& handle) const {
 		const uint64_t id = handle.getId();
-		const bool isSwapchainFormat = handle.isSwapchainImage();
 
 		if (handle.isSwapchainImage()) {
 			return 1;
@@ -673,11 +658,11 @@ namespace vkcv {
 		m_currentSwapchainInputImage = index;
 	}
 
-	void ImageManager::setSwapchainImages(const std::vector<vk::Image>& images, std::vector<vk::ImageView> views, 
+	void ImageManager::setSwapchainImages(const std::vector<vk::Image>& images, const std::vector<vk::ImageView>& views,
 		uint32_t width, uint32_t height, vk::Format format) {
 
 		// destroy old views
-		for (auto image : m_swapchainImages) {
+		for (const auto& image : m_swapchainImages) {
 			for (const auto& view : image.m_viewPerMip) {
 				m_core->getContext().getDevice().destroyImageView(view);
 			}
@@ -685,8 +670,18 @@ namespace vkcv {
 
 		assert(images.size() == views.size());
 		m_swapchainImages.clear();
-		for (int i = 0; i < images.size(); i++) {
-			m_swapchainImages.push_back(Image(images[i], nullptr, { views[i] }, width, height, 1, format, 1));
+		for (size_t i = 0; i < images.size(); i++) {
+			m_swapchainImages.push_back({
+				images[i],
+				nullptr,
+				{ views[i] },
+				width,
+				height,
+				1,
+				format,
+				1,
+				vk::ImageLayout::eUndefined
+			});
 		}
 	}
 

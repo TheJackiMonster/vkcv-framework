@@ -9,11 +9,13 @@ namespace vkcv
             m_Instance(other.m_Instance),
             m_PhysicalDevice(other.m_PhysicalDevice),
             m_Device(other.m_Device),
-            m_QueueManager(other.m_QueueManager)
+            m_QueueManager(other.m_QueueManager),
+            m_Allocator(other.m_Allocator)
     {
         other.m_Instance        = nullptr;
         other.m_PhysicalDevice  = nullptr;
         other.m_Device          = nullptr;
+		other.m_Allocator		= nullptr;
     }
 
     Context & Context::operator=(Context &&other) noexcept
@@ -22,10 +24,12 @@ namespace vkcv
         m_PhysicalDevice    = other.m_PhysicalDevice;
         m_Device            = other.m_Device;
         m_QueueManager		= other.m_QueueManager;
+        m_Allocator			= other.m_Allocator;
 
         other.m_Instance        = nullptr;
         other.m_PhysicalDevice  = nullptr;
         other.m_Device          = nullptr;
+        other.m_Allocator		= nullptr;
 
         return *this;
     }
@@ -33,15 +37,18 @@ namespace vkcv
     Context::Context(vk::Instance instance,
                      vk::PhysicalDevice physicalDevice,
                      vk::Device device,
-					 QueueManager&& queueManager) noexcept :
-    m_Instance{instance},
-    m_PhysicalDevice{physicalDevice},
-    m_Device{device},
-    m_QueueManager{queueManager}
+					 QueueManager&& queueManager,
+					 vma::Allocator&& allocator) noexcept :
+    m_Instance(instance),
+    m_PhysicalDevice(physicalDevice),
+    m_Device(device),
+    m_QueueManager(queueManager),
+    m_Allocator(allocator)
     {}
 
     Context::~Context() noexcept
     {
+    	m_Allocator.destroy();
         m_Device.destroy();
         m_Instance.destroy();
     }
@@ -63,6 +70,10 @@ namespace vkcv
     
     const QueueManager& Context::getQueueManager() const {
     	return m_QueueManager;
+    }
+    
+    const vma::Allocator& Context::getAllocator() const {
+    	return m_Allocator;
     }
 	
 	/**
@@ -140,7 +151,7 @@ namespace vkcv
 	 * @param check The elements to be checked
 	 * @return True, if all elements in "check" are supported
 	*/
-	bool checkSupport(std::vector<const char*>& supported, std::vector<const char*>& check)
+	bool checkSupport(const std::vector<const char*>& supported, const std::vector<const char*>& check)
 	{
 		for (auto checkElem : check) {
 			bool found = false;
@@ -169,11 +180,20 @@ namespace vkcv
 		return extensions;
 	}
 	
+	bool isPresentInCharPtrVector(const std::vector<const char*>& v, const char* term){
+		for (const auto& entry : v) {
+			if (strcmp(entry, term) != 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	Context Context::create(const char *applicationName,
 							uint32_t applicationVersion,
-							std::vector<vk::QueueFlagBits> queueFlags,
-							std::vector<const char *> instanceExtensions,
-							std::vector<const char *> deviceExtensions) {
+							const std::vector<vk::QueueFlagBits>& queueFlags,
+							const std::vector<const char *>& instanceExtensions,
+							const std::vector<const char *>& deviceExtensions) {
 		// check for layer support
 		
 		const std::vector<vk::LayerProperties>& layerProperties = vk::enumerateInstanceLayerProperties();
@@ -212,7 +232,7 @@ namespace vkcv
 		
 		// for GLFW: get all required extensions
 		std::vector<const char*> requiredExtensions = getRequiredExtensions();
-		instanceExtensions.insert(instanceExtensions.end(), requiredExtensions.begin(), requiredExtensions.end());
+		requiredExtensions.insert(requiredExtensions.end(), instanceExtensions.begin(), instanceExtensions.end());
 		
 		const vk::ApplicationInfo applicationInfo(
 				applicationName,
@@ -227,8 +247,8 @@ namespace vkcv
 				&applicationInfo,
 				0,
 				nullptr,
-				static_cast<uint32_t>(instanceExtensions.size()),
-				instanceExtensions.data()
+				static_cast<uint32_t>(requiredExtensions.size()),
+				requiredExtensions.data()
 		);
 
 #ifndef NDEBUG
@@ -275,13 +295,39 @@ namespace vkcv
 		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
-
+		const bool shaderFloat16 = checkSupport(deviceExtensions, { "VK_KHR_shader_float16_int8" });
+		const bool storage16bit  = checkSupport(deviceExtensions, { "VK_KHR_16bit_storage" });
+		
 		// FIXME: check if device feature is supported
-		vk::PhysicalDeviceFeatures deviceFeatures;
-		deviceFeatures.fragmentStoresAndAtomics = true;
-		deviceFeatures.geometryShader = true;
-		deviceFeatures.depthClamp = true;
-		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+		vk::PhysicalDeviceShaderFloat16Int8Features deviceShaderFloat16Int8Features;
+		deviceShaderFloat16Int8Features.shaderFloat16 = shaderFloat16;
+		
+		vk::PhysicalDevice16BitStorageFeatures device16BitStorageFeatures;
+		device16BitStorageFeatures.storageBuffer16BitAccess = storage16bit;
+		
+		vk::PhysicalDeviceFeatures2 deviceFeatures2;
+		deviceFeatures2.features.fragmentStoresAndAtomics = true;
+		deviceFeatures2.features.geometryShader = true;
+		deviceFeatures2.features.depthClamp = true;
+		deviceFeatures2.features.shaderInt16 = true;
+		
+		const bool usingMeshShaders = isPresentInCharPtrVector(deviceExtensions, VK_NV_MESH_SHADER_EXTENSION_NAME);
+		vk::PhysicalDeviceMeshShaderFeaturesNV meshShadingFeatures;
+		if (usingMeshShaders) {
+			meshShadingFeatures.taskShader = true;
+			meshShadingFeatures.meshShader = true;
+            deviceFeatures2.setPNext(&meshShadingFeatures);
+		}
+		
+		if (shaderFloat16) {
+			deviceFeatures2.setPNext(&deviceShaderFloat16Int8Features);
+		}
+		
+		if (storage16bit) {
+			deviceShaderFloat16Int8Features.setPNext(&device16BitStorageFeatures);
+		}
+		
+		deviceCreateInfo.setPNext(&deviceFeatures2);
 
 		// Ablauf
 		// qCreateInfos erstellen --> braucht das Device
@@ -289,10 +335,50 @@ namespace vkcv
 		// jetzt koennen wir mit dem device die queues erstellen
 		
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
+
+		if (usingMeshShaders)
+		{
+			InitMeshShaderDrawFunctions(device);
+		}
 		
-		QueueManager queueManager = QueueManager::create(device, queuePairsGraphics, queuePairsCompute, queuePairsTransfer);
+		QueueManager queueManager = QueueManager::create(
+				device,
+				queuePairsGraphics,
+				queuePairsCompute,
+				queuePairsTransfer
+		);
 		
-		return Context(instance, physicalDevice, device, std::move(queueManager));
+		const vma::AllocatorCreateInfo allocatorCreateInfo (
+				vma::AllocatorCreateFlags(),
+				physicalDevice,
+				device,
+				0,
+				nullptr,
+				nullptr,
+				0,
+				nullptr,
+				nullptr,
+				nullptr,
+				instance,
+				
+				/* Uses default version when set to 0 (currently VK_VERSION_1_0):
+				 *
+				 * The reason for this is that the allocator restricts the allowed version
+				 * to be at maximum VK_VERSION_1_1 which is already less than
+				 * VK_HEADER_VERSION_COMPLETE at most platforms.
+				 * */
+				0
+		);
+		
+		vma::Allocator allocator = vma::createAllocator(allocatorCreateInfo);
+		
+		return Context(
+				instance,
+				physicalDevice,
+				device,
+				std::move(queueManager),
+				std::move(allocator)
+		);
 	}
  
 }

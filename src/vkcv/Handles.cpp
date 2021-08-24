@@ -1,5 +1,7 @@
 #include "vkcv/Handles.hpp"
 
+#include <iostream>
+
 namespace vkcv {
 	
 	Handle::Handle() :
@@ -11,7 +13,7 @@ namespace vkcv {
 	{}
 	
 	Handle::~Handle() {
-		if ((m_rc) && (--(*m_rc) == 0)) {
+		if ((m_rc) && (*m_rc > 0) && (--(*m_rc) == 0)) {
 			if (m_destroy) {
 				m_destroy(m_id);
 			}
@@ -82,9 +84,9 @@ namespace vkcv {
 	
 	std::ostream& operator << (std::ostream& out, const Handle& handle) {
 		if (handle) {
-			return out << "[Handle: " << handle.getId() << ":" << handle.getRC() << "]";
+			return out << "[" << typeid(handle).name() << ": " << handle.getId() << ":" << handle.getRC() << "]";
 		} else {
-			return out << "[Handle: none]";
+			return out << "[" << typeid(handle).name() << ": none]";
 		}
 	}
 	

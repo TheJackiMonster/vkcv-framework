@@ -56,7 +56,7 @@ namespace vkcv{
 		m_manager->switchImageLayoutImmediate(m_handle, newLayout);
 	}
 
-	vkcv::ImageHandle Image::getHandle() const {
+	const vkcv::ImageHandle& Image::getHandle() const {
 		return m_handle;
 	}
 
@@ -64,7 +64,7 @@ namespace vkcv{
 		return m_manager->getImageMipCount(m_handle);
 	}
 
-	void Image::fill(void *data, size_t size) {
+	void Image::fill(const void *data, size_t size) {
 		m_manager->fillImage(m_handle, data, size);
 	}
 

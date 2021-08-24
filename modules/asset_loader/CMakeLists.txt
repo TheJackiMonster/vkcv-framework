@@ -31,10 +31,10 @@ include(config/FX_GLTF.cmake)
 include(config/STB.cmake)
 
 # link the required libraries to the module
-target_link_libraries(vkcv_asset_loader ${vkcv_asset_loader_libraries} vkcv)
+target_link_libraries(vkcv_asset_loader ${vkcv_asset_loader_libraries} vkcv ${vkcv_libraries})
 
 # including headers of dependencies and the VkCV framework
-target_include_directories(vkcv_asset_loader SYSTEM BEFORE PRIVATE ${vkcv_asset_loader_includes})
+target_include_directories(vkcv_asset_loader SYSTEM BEFORE PRIVATE ${vkcv_asset_loader_includes} ${vkcv_includes})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_asset_loader BEFORE PUBLIC ${vkcv_asset_loader_include})

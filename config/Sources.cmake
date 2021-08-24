@@ -6,6 +6,9 @@ set(vkcv_sources
 
 		${vkcv_include}/vkcv/Core.hpp
 		${vkcv_source}/vkcv/Core.cpp
+		
+		${vkcv_include}/vkcv/File.hpp
+		${vkcv_source}/vkcv/File.cpp
 
 		${vkcv_include}/vkcv/PassConfig.hpp
 		${vkcv_source}/vkcv/PassConfig.cpp
@@ -20,6 +23,8 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/Window.cpp
 
 		${vkcv_include}/vkcv/Buffer.hpp
+		
+		${vkcv_include}/vkcv/PushConstants.hpp
 		
 		${vkcv_include}/vkcv/BufferManager.hpp
 		${vkcv_source}/vkcv/BufferManager.cpp

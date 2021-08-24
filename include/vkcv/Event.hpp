@@ -1,7 +1,12 @@
 #pragma once
 
 #include <functional>
+
+#ifndef __MINGW32__
 #include <mutex>
+#endif
+
+#include <vector>
 
 namespace vkcv {
 	
@@ -27,7 +32,10 @@ namespace vkcv {
     private:
         std::vector< event_function<T...> > m_functions;
         uint32_t m_id_counter;
+	
+#ifndef __MINGW32__
 		std::mutex m_mutex;
+#endif
 
     public:
 
@@ -75,14 +83,18 @@ namespace vkcv {
          * locks the event so its function handles won't be called
          */
         void lock() {
+#ifndef __MINGW32__
 			m_mutex.lock();
+#endif
         }
 	
 		/**
 		* unlocks the event so its function handles can be called after locking
 		*/
         void unlock() {
+#ifndef __MINGW32__
 			m_mutex.unlock();
+#endif
         }
 
         explicit event(bool locked = false) {

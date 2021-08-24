@@ -19,7 +19,7 @@ namespace vkcv {
 			return;
 		}
 		
-		m_stagingBuffer = createBuffer(BufferType::STAGING, 1024 * 1024, BufferMemoryType::HOST_VISIBLE);
+		m_stagingBuffer = createBuffer(BufferType::STAGING, 1024 * 1024, BufferMemoryType::HOST_VISIBLE, false);
 	}
 	
 	BufferManager::~BufferManager() noexcept {
@@ -28,33 +28,7 @@ namespace vkcv {
 		}
 	}
 	
-	/**
-	 * @brief searches memory type index for buffer allocation, combines requirements of buffer and application
-	 * @param physicalMemoryProperties Memory Properties of physical device
-	 * @param typeBits Bit field for suitable memory types
-	 * @param requirements Property flags that are required
-	 * @return memory type index for Buffer
-	 */
-	uint32_t searchBufferMemoryType(const vk::PhysicalDeviceMemoryProperties& physicalMemoryProperties, uint32_t typeBits, vk::MemoryPropertyFlags requirements) {
-		const uint32_t memoryCount = physicalMemoryProperties.memoryTypeCount;
-		for (uint32_t memoryIndex = 0; memoryIndex < memoryCount; ++memoryIndex) {
-			const uint32_t memoryTypeBits = (1 << memoryIndex);
-			const bool isRequiredMemoryType = typeBits & memoryTypeBits;
-
-			const vk::MemoryPropertyFlags properties =
-				physicalMemoryProperties.memoryTypes[memoryIndex].propertyFlags;
-			const bool hasRequiredProperties =
-				(properties & requirements) == requirements;
-
-			if (isRequiredMemoryType && hasRequiredProperties)
-				return static_cast<int32_t>(memoryIndex);
-		}
-
-		// failed to find memory type
-		return -1;
-	}
-	
-	BufferHandle BufferManager::createBuffer(BufferType type, size_t size, BufferMemoryType memoryType) {
+	BufferHandle BufferManager::createBuffer(BufferType type, size_t size, BufferMemoryType memoryType, bool supportIndirect) {
 		vk::BufferCreateFlags createFlags;
 		vk::BufferUsageFlags usageFlags;
 		
@@ -75,51 +49,62 @@ namespace vkcv {
 				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
 				break;
 			default:
-				// TODO: maybe an issue
+				vkcv_log(LogLevel::WARNING, "Unknown buffer type");
 				break;
 		}
 		
 		if (memoryType == BufferMemoryType::DEVICE_LOCAL) {
 			usageFlags |= vk::BufferUsageFlagBits::eTransferDst;
 		}
+		if (supportIndirect)
+			usageFlags |= vk::BufferUsageFlagBits::eIndirectBuffer;
 		
-		const vk::Device& device = m_core->getContext().getDevice();
-		
-		vk::Buffer buffer = device.createBuffer(
-				vk::BufferCreateInfo(createFlags, size, usageFlags)
-		);
-		
-		const vk::MemoryRequirements requirements = device.getBufferMemoryRequirements(buffer);
-		const vk::PhysicalDevice& physicalDevice = m_core->getContext().getPhysicalDevice();
+		const vma::Allocator& allocator = m_core->getContext().getAllocator();
 		
 		vk::MemoryPropertyFlags memoryTypeFlags;
+		vma::MemoryUsage memoryUsage;
 		bool mappable = false;
 		
 		switch (memoryType) {
 			case BufferMemoryType::DEVICE_LOCAL:
 				memoryTypeFlags = vk::MemoryPropertyFlagBits::eDeviceLocal;
+				memoryUsage = vma::MemoryUsage::eGpuOnly;
+				mappable = false;
 				break;
 			case BufferMemoryType::HOST_VISIBLE:
 				memoryTypeFlags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+				memoryUsage = vma::MemoryUsage::eCpuOnly;
 				mappable = true;
 				break;
 			default:
-				// TODO: maybe an issue
+				vkcv_log(LogLevel::WARNING, "Unknown buffer memory type");
+				memoryUsage = vma::MemoryUsage::eUnknown;
+				mappable = false;
 				break;
 		}
 		
-		const uint32_t memoryTypeIndex = searchBufferMemoryType(
-				physicalDevice.getMemoryProperties(),
-				requirements.memoryTypeBits,
-				memoryTypeFlags
+		if (type == BufferType::STAGING) {
+			memoryUsage = vma::MemoryUsage::eCpuToGpu;
+		}
+		
+		auto bufferAllocation = allocator.createBuffer(
+				vk::BufferCreateInfo(createFlags, size, usageFlags),
+				vma::AllocationCreateInfo(
+						vma::AllocationCreateFlags(),
+						memoryUsage,
+						memoryTypeFlags,
+						memoryTypeFlags,
+						0,
+						vma::Pool(),
+						nullptr
+				)
 		);
 		
-		vk::DeviceMemory memory = device.allocateMemory(vk::MemoryAllocateInfo(requirements.size, memoryTypeIndex));
-		
-		device.bindBufferMemory(buffer, memory, 0);
+		vk::Buffer buffer = bufferAllocation.first;
+		vma::Allocation allocation = bufferAllocation.second;
 		
 		const uint64_t id = m_buffers.size();
-		m_buffers.push_back({ buffer, memory, size, nullptr, mappable });
+		m_buffers.push_back({ buffer, allocation, size, mappable });
 		return BufferHandle(id, [&](uint64_t id) { destroyBufferById(id); });
 	}
 	
@@ -130,7 +115,7 @@ namespace vkcv {
 		
 		vk::Buffer buffer;
 		vk::Buffer stagingBuffer;
-		vk::DeviceMemory stagingMemory;
+		vma::Allocation stagingAllocation;
 		
 		size_t stagingLimit;
 		size_t stagingPosition;
@@ -150,11 +135,11 @@ namespace vkcv {
 		const size_t remaining = info.size - info.stagingPosition;
 		const size_t mapped_size = std::min(remaining, info.stagingLimit);
 		
-		const vk::Device& device = core->getContext().getDevice();
+		const vma::Allocator& allocator = core->getContext().getAllocator();
 		
-		void* mapped = device.mapMemory(info.stagingMemory, 0, mapped_size);
+		void* mapped = allocator.mapMemory(info.stagingAllocation);
 		memcpy(mapped, reinterpret_cast<const char*>(info.data) + info.stagingPosition, mapped_size);
-		device.unmapMemory(info.stagingMemory);
+		allocator.unmapMemory(info.stagingAllocation);
 		
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Transfer;
@@ -216,7 +201,13 @@ namespace vkcv {
 		
 		auto& buffer = m_buffers[id];
 		
-		return buffer.m_memory;
+		const vma::Allocator& allocator = m_core->getContext().getAllocator();
+		
+		auto info = allocator.getAllocationInfo(
+				buffer.m_allocation
+		);
+		
+		return info.deviceMemory;
 	}
 	
 	void BufferManager::fillBuffer(const BufferHandle& handle, const void *data, size_t size, size_t offset) {
@@ -232,11 +223,7 @@ namespace vkcv {
 		
 		auto& buffer = m_buffers[id];
 		
-		if (buffer.m_mapped) {
-			return;
-		}
-		
-		const vk::Device& device = m_core->getContext().getDevice();
+		const vma::Allocator& allocator = m_core->getContext().getAllocator();
 		
 		if (offset > buffer.m_size) {
 			return;
@@ -245,9 +232,9 @@ namespace vkcv {
 		const size_t max_size = std::min(size, buffer.m_size - offset);
 		
 		if (buffer.m_mappable) {
-			void* mapped = device.mapMemory(buffer.m_memory, offset, max_size);
-			memcpy(mapped, data, max_size);
-			device.unmapMemory(buffer.m_memory);
+			void* mapped = allocator.mapMemory(buffer.m_allocation);
+			memcpy(reinterpret_cast<char*>(mapped) + offset, data, max_size);
+			allocator.unmapMemory(buffer.m_allocation);
 		} else {
 			auto& stagingBuffer = m_buffers[ m_stagingBuffer.getId() ];
 			
@@ -258,11 +245,9 @@ namespace vkcv {
 			
 			info.buffer = buffer.m_handle;
 			info.stagingBuffer = stagingBuffer.m_handle;
-			info.stagingMemory = stagingBuffer.m_memory;
+			info.stagingAllocation = stagingBuffer.m_allocation;
 			
-			const vk::MemoryRequirements stagingRequirements = device.getBufferMemoryRequirements(stagingBuffer.m_handle);
-			
-			info.stagingLimit = stagingRequirements.size;
+			info.stagingLimit = stagingBuffer.m_size;
 			info.stagingPosition = 0;
 			
 			copyFromStagingBuffer(m_core, info);
@@ -282,19 +267,13 @@ namespace vkcv {
 		
 		auto& buffer = m_buffers[id];
 		
-		if (buffer.m_mapped) {
-			return nullptr;
-		}
-		
-		const vk::Device& device = m_core->getContext().getDevice();
+		const vma::Allocator& allocator = m_core->getContext().getAllocator();
 		
 		if (offset > buffer.m_size) {
 			return nullptr;
 		}
 		
-		const size_t max_size = std::min(size, buffer.m_size - offset);
-		buffer.m_mapped = device.mapMemory(buffer.m_memory, offset, max_size);
-		return buffer.m_mapped;
+		return reinterpret_cast<char*>(allocator.mapMemory(buffer.m_allocation)) + offset;
 	}
 	
 	void BufferManager::unmapBuffer(const BufferHandle& handle) {
@@ -306,14 +285,9 @@ namespace vkcv {
 		
 		auto& buffer = m_buffers[id];
 		
-		if (buffer.m_mapped == nullptr) {
-			return;
-		}
+		const vma::Allocator& allocator = m_core->getContext().getAllocator();
 		
-		const vk::Device& device = m_core->getContext().getDevice();
-		
-		device.unmapMemory(buffer.m_memory);
-		buffer.m_mapped = nullptr;
+		allocator.unmapMemory(buffer.m_allocation);
 	}
 	
 	void BufferManager::destroyBufferById(uint64_t id) {
@@ -323,16 +297,13 @@ namespace vkcv {
 		
 		auto& buffer = m_buffers[id];
 		
-		const vk::Device& device = m_core->getContext().getDevice();
-		
-		if (buffer.m_memory) {
-			device.freeMemory(buffer.m_memory);
-			buffer.m_memory = nullptr;
-		}
+		const vma::Allocator& allocator = m_core->getContext().getAllocator();
 		
 		if (buffer.m_handle) {
-			device.destroyBuffer(buffer.m_handle);
+			allocator.destroyBuffer(buffer.m_handle, buffer.m_allocation);
+			
 			buffer.m_handle = nullptr;
+			buffer.m_allocation = nullptr;
 		}
 	}
 

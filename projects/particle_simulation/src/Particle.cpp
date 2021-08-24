@@ -3,16 +3,17 @@
 
 Particle::Particle(glm::vec3 position, glm::vec3 velocity, float lifeTime)
 : m_position(position),
-m_velocity(velocity),
-m_lifeTime(lifeTime),
-m_reset_velocity(velocity)
+  m_lifeTime(lifeTime),
+  m_velocity(velocity),
+  m_mass(1.0f),
+  m_reset_velocity(velocity)
 {}
 
 const glm::vec3& Particle::getPosition()const{
     return m_position;
 }
 
-const bool Particle::isAlive()const{
+bool Particle::isAlive()const{
     return m_lifeTime > 0.f;
 }
 

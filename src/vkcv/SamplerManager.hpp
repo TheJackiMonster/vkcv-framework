@@ -32,7 +32,8 @@ namespace vkcv {
 		SamplerHandle createSampler(SamplerFilterType magFilter,
 							  		SamplerFilterType minFilter,
 							  		SamplerMipmapMode mipmapMode,
-							  		SamplerAddressMode addressMode);
+							  		SamplerAddressMode addressMode,
+							  		float mipLodBias);
 		
 		[[nodiscard]]
 		vk::Sampler getVulkanSampler(const SamplerHandle& handle) const;

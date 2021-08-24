@@ -9,6 +9,7 @@ namespace vkcv
     {
         vk::DescriptorSet       vulkanHandle;
         vk::DescriptorSetLayout layout;
+        size_t                  poolIndex;
     };
 
     /*
@@ -20,7 +21,9 @@ namespace vkcv
         STORAGE_BUFFER,
         SAMPLER,
         IMAGE_SAMPLED,
-		IMAGE_STORAGE
+		IMAGE_STORAGE,
+        UNIFORM_BUFFER_DYNAMIC,
+        STORAGE_BUFFER_DYNAMIC
     };    
     
     /*
