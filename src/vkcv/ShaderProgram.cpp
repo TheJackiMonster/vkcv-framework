@@ -76,7 +76,7 @@ namespace vkcv {
     m_DescriptorSets{}
 	{}
 
-	bool ShaderProgram::addShader(vk::ShaderStageFlagBits shaderStage, const std::filesystem::path &shaderPath)
+	bool ShaderProgram::addShader(ShaderStage shaderStage, const std::filesystem::path &shaderPath)
 	{
 	    if(m_Shaders.find(shaderStage) != m_Shaders.end()) {
 			vkcv_log(LogLevel::WARNING, "Overwriting existing shader stage");
@@ -94,12 +94,12 @@ namespace vkcv {
         }
 	}
 
-    const Shader &ShaderProgram::getShader(vk::ShaderStageFlagBits shaderStage) const
+    const Shader &ShaderProgram::getShader(ShaderStage shaderStage) const
     {
 	    return m_Shaders.at(shaderStage);
 	}
 
-    bool ShaderProgram::existsShader(vk::ShaderStageFlagBits shaderStage) const
+    bool ShaderProgram::existsShader(ShaderStage shaderStage) const
     {
 	    if(m_Shaders.find(shaderStage) == m_Shaders.end())
 	        return false;
@@ -107,7 +107,7 @@ namespace vkcv {
 	        return true;
     }
 
-    void ShaderProgram::reflectShader(vk::ShaderStageFlagBits shaderStage)
+    void ShaderProgram::reflectShader(ShaderStage shaderStage)
     {
         auto shaderCodeChar = m_Shaders.at(shaderStage).shaderCode;
         std::vector<uint32_t> shaderCode;
@@ -119,7 +119,7 @@ namespace vkcv {
         spirv_cross::ShaderResources resources = comp.get_shader_resources();
 
         //reflect vertex input
-		if (shaderStage == vk::ShaderStageFlagBits::eVertex)
+		if (shaderStage == ShaderStage::VERTEX)
 		{
 			// spirv-cross API (hopefully) returns the stage_inputs in order
 			for (uint32_t i = 0; i < resources.stage_inputs.size(); i++)
@@ -140,195 +140,80 @@ namespace vkcv {
 		}
 
 		//reflect descriptor sets (uniform buffer, storage buffer, sampler, sampled image, storage image)
-        // std::vector<std::pair<uint32_t, DescriptorBinding>> bindings;
+        std::vector<std::pair<uint32_t, DescriptorBinding>> bindings;
         int32_t maxSetID = -1;
         for (uint32_t i = 0; i < resources.uniform_buffers.size(); i++) {
             auto& u = resources.uniform_buffers[i];
             const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
-
-            const uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
-            const uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-
-            const DescriptorBinding binding(bindingID, DescriptorType::UNIFORM_BUFFER, base_type.vecsize, shaderStage);
-
-            auto setIter = m_DescriptorSets.find(setID);
-            if (setIter == m_DescriptorSets.end())
-            {
-                // create a map for this set ID
-                std::unordered_map<uint32_t, DescriptorBinding> setBindings;
-                // insert the binding to this set ID's bindings
-                setBindings.insert(std::make_pair(bindingID, binding));
-                // insert this set ID's map to the descriptor sets
-                m_DescriptorSets.insert(std::make_pair(setID, setBindings));
-            }
-            else
-            {
-                // search for an existing binding for this set
-                auto bindingIter = setIter->second.find(bindingID);
-                if (bindingIter == setIter->second.end())
-                {
-                    // if binding did not exist, insert it
-                    setIter->second.insert(std::make_pair(bindingID, binding));
-                }
-                else
-                {
-                    if(bindingIter->second.descriptorType != DescriptorType::UNIFORM_BUFFER)
-                        vkcv_log(LogLevel::WARNING, "Descriptor type mismatch in shader reflection!");
-                    // if binding exists, append additional shader stage to it
-                    bindingIter->second.shaderStages | shaderStage;
-                }
-            }
+            std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
+                DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::UNIFORM_BUFFER, base_type.vecsize, shaderStage));
+            bindings.push_back(descriptor);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) 
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
         }
 
         for (uint32_t i = 0; i < resources.storage_buffers.size(); i++) {
             auto& u = resources.storage_buffers[i];
             const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
-
-            const uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
-            const uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-
-            const DescriptorBinding binding(bindingID, DescriptorType::STORAGE_BUFFER, base_type.vecsize, shaderStage);
-
-            auto setIter = m_DescriptorSets.find(setID);
-            if (setIter == m_DescriptorSets.end())
-            {
-                // create a map for this set ID
-                std::unordered_map<uint32_t, DescriptorBinding> setBindings;
-                // insert the binding to this set ID's bindings
-                setBindings.insert(std::make_pair(bindingID, binding));
-                // insert this set ID's map to the descriptor sets
-                m_DescriptorSets.insert(std::make_pair(setID, setBindings));
-            }
-            else
-            {
-                // search for an existing binding for this set
-                auto bindingIter = setIter->second.find(bindingID);
-                if (bindingIter == setIter->second.end())
-                {
-                    // if binding did not exist, insert it
-                    setIter->second.insert(std::make_pair(bindingID, binding));
-                }
-                else
-                {
-                    if (bindingIter->second.descriptorType != DescriptorType::STORAGE_BUFFER)
-                        vkcv_log(LogLevel::WARNING, "Descriptor type mismatch in shader reflection!");
-                    // if binding exists, append additional shader stage to it
-                    bindingIter->second.shaderStages | shaderStage;
-                }
-            }
+            std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
+                DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::STORAGE_BUFFER, base_type.vecsize, shaderStage));
+            bindings.push_back(descriptor);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) 
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
         }
 
         for (uint32_t i = 0; i < resources.separate_samplers.size(); i++) {
             auto& u = resources.separate_samplers[i];
             const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
-
-            const uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
-            const uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-
-            const DescriptorBinding binding(bindingID, DescriptorType::SAMPLER, base_type.vecsize, shaderStage);
-
-            auto setIter = m_DescriptorSets.find(setID);
-            if (setIter == m_DescriptorSets.end())
-            {
-                // create a map for this set ID
-                std::unordered_map<uint32_t, DescriptorBinding> setBindings;
-                // insert the binding to this set ID's bindings
-                setBindings.insert(std::make_pair(bindingID, binding));
-                // insert this set ID's map to the descriptor sets
-                m_DescriptorSets.insert(std::make_pair(setID, setBindings));
-            }
-            else
-            {
-                // search for an existing binding for this set
-                auto bindingIter = setIter->second.find(bindingID);
-                if (bindingIter == setIter->second.end())
-                {
-                    // if binding did not exist, insert it
-                    setIter->second.insert(std::make_pair(bindingID, binding));
-                }
-                else
-                {
-                    if (bindingIter->second.descriptorType != DescriptorType::SAMPLER)
-                        vkcv_log(LogLevel::WARNING, "Descriptor type mismatch in shader reflection!");
-                    // if binding exists, append additional shader stage to it
-                    bindingIter->second.shaderStages | shaderStage;
-                }
-            }
+            std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
+                DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::SAMPLER, base_type.vecsize, shaderStage));
+            bindings.push_back(descriptor);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID) 
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
         }
 
         for (uint32_t i = 0; i < resources.separate_images.size(); i++) {
             auto& u = resources.separate_images[i];
             const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+            std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
+                DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::IMAGE_SAMPLED, base_type.vecsize, shaderStage));
+            bindings.push_back(descriptor);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID)
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
 
-            const uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
-            const uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-
-            const DescriptorBinding binding(bindingID, DescriptorType::IMAGE_SAMPLED, base_type.vecsize, shaderStage);
-
-            auto setIter = m_DescriptorSets.find(setID);
-            if (setIter == m_DescriptorSets.end())
-            {
-                // create a map for this set ID
-                std::unordered_map<uint32_t, DescriptorBinding> setBindings;
-                // insert the binding to this set ID's bindings
-                setBindings.insert(std::make_pair(bindingID, binding));
-                // insert this set ID's map to the descriptor sets
-                m_DescriptorSets.insert(std::make_pair(setID, setBindings));
-            }
-            else
-            {
-                // search for an existing binding for this set
-                auto bindingIter = setIter->second.find(bindingID);
-                if (bindingIter == setIter->second.end())
-                {
-                    // if binding did not exist, insert it
-                    setIter->second.insert(std::make_pair(bindingID, binding));
-                }
-                else
-                {
-                    if (bindingIter->second.descriptorType != DescriptorType::IMAGE_SAMPLED)
-                        vkcv_log(LogLevel::WARNING, "Descriptor type mismatch in shader reflection!");
-                    // if binding exists, append additional shader stage to it
-                    bindingIter->second.shaderStages | shaderStage;
-                }
-            }
         }
 
         for (uint32_t i = 0; i < resources.storage_images.size(); i++) {
             auto& u = resources.storage_images[i];
             const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
-
-            const uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
-            const uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-
-            const DescriptorBinding binding(bindingID, DescriptorType::IMAGE_STORAGE, base_type.vecsize, shaderStage);
-
-            auto setIter = m_DescriptorSets.find(setID);
-            if (setIter == m_DescriptorSets.end())
-            {
-                // create a map for this set ID
-                std::unordered_map<uint32_t, DescriptorBinding> setBindings;
-                // insert the binding to this set ID's bindings
-                setBindings.insert(std::make_pair(bindingID, binding));
-                // insert this set ID's map to the descriptor sets
-                m_DescriptorSets.insert(std::make_pair(setID, setBindings));
-            }
-            else
-            {
-                // search for an existing binding for this set
-                auto bindingIter = setIter->second.find(bindingID);
-                if (bindingIter == setIter->second.end())
-                {
-                    // if binding did not exist, insert it
-                    setIter->second.insert(std::make_pair(bindingID, binding));
+            std::pair descriptor(comp.get_decoration(u.id, spv::DecorationDescriptorSet),
+                DescriptorBinding(comp.get_decoration(u.id, spv::DecorationBinding), DescriptorType::IMAGE_STORAGE, base_type.vecsize, shaderStage));
+            bindings.push_back(descriptor);
+            if ((int32_t)comp.get_decoration(u.id, spv::DecorationDescriptorSet) > maxSetID)
+                maxSetID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+        }
+        if (maxSetID != -1) {
+            if((int32_t)m_DescriptorSets.size() <= maxSetID) m_DescriptorSets.resize(maxSetID + 1);
+            for (const auto &binding : bindings) {
+                //checking if descriptor has already been reflected in another shader stage
+                bool bindingFound = false;
+                uint32_t pos = 0;
+                for (const auto& descriptor : m_DescriptorSets[binding.first]) {
+                    if (binding.second.bindingID == descriptor.bindingID) {
+                        if (binding.second.descriptorType == descriptor.descriptorType && binding.second.descriptorCount == descriptor.descriptorCount) {
+                            //updating descriptor binding with another shader stage
+                            ShaderStages updatedShaders = descriptor.shaderStages | shaderStage;
+                            DescriptorBinding newBinding = DescriptorBinding(binding.second.bindingID, binding.second.descriptorType, binding.second.descriptorCount, updatedShaders);
+                            m_DescriptorSets[binding.first][pos] = newBinding;
+                            bindingFound = true;
+                            break;
+                        }
+                        else vkcv_log(LogLevel::ERROR, "Included shaders contain resources with same identifier but different type or count");
+                    }
+                    pos++;
                 }
-                else
-                {
-                    if (bindingIter->second.descriptorType != DescriptorType::IMAGE_STORAGE)
-                        vkcv_log(LogLevel::WARNING, "Descriptor type mismatch in shader reflection!");
-                    // if binding exists, append additional shader stage to it
-                    bindingIter->second.shaderStages | shaderStage;
-                }
+                //append new descriptor if it has not been reflected yet
+                if(!bindingFound) m_DescriptorSets[binding.first].push_back(binding.second);
             }
         }
 
@@ -346,7 +231,7 @@ namespace vkcv {
         return m_VertexAttachments;
 	}
 
-    const std::unordered_map<uint32_t, std::unordered_map<uint32_t, DescriptorBinding>>& ShaderProgram::getReflectedDescriptors() const {
+    const std::vector<std::vector<DescriptorBinding>>& ShaderProgram::getReflectedDescriptors() const {
         return m_DescriptorSets;
     }
 

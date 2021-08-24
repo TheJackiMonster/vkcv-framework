@@ -227,13 +227,12 @@ namespace vkcv
         [[nodiscard]]
         const uint32_t getImageHeight(ImageHandle imageHandle);
 
-        /**
-         * Creates a descriptor set from the given bindings
-         * @param bindings an unordered map of descriptor bindings
-         * @return descriptor set handle
+        /** TODO:
+         *   @param setDescriptions
+         *   @return
          */
         [[nodiscard]]
-        DescriptorSetHandle createDescriptorSet(const std::unordered_map<uint32_t, DescriptorBinding> &bindings);
+        DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &bindings);
 		void writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites& writes);
 
 		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;

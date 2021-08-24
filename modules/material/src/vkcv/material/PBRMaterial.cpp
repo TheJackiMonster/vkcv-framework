@@ -41,21 +41,21 @@ namespace vkcv::material
     {
     }
 
-    std::unordered_map<uint32_t, DescriptorBinding> PBRMaterial::getDescriptorBindings() noexcept
+    std::vector<DescriptorBinding> PBRMaterial::getDescriptorBindings() noexcept
     {
-		static std::unordered_map<uint32_t, DescriptorBinding> bindings;
-
+		static std::vector<DescriptorBinding> bindings;
+		
 		if (bindings.empty()) {
-			bindings.insert(std::make_pair(0, DescriptorBinding(0, DescriptorType::IMAGE_SAMPLED, 1, vk::ShaderStageFlagBits::eFragment)));
-			bindings.insert(std::make_pair(1, DescriptorBinding(1, DescriptorType::SAMPLER, 1, vk::ShaderStageFlagBits::eFragment)));
-            bindings.insert(std::make_pair(2, DescriptorBinding(2, DescriptorType::IMAGE_SAMPLED, 1, vk::ShaderStageFlagBits::eFragment)));
-            bindings.insert(std::make_pair(3, DescriptorBinding(3, DescriptorType::SAMPLER, 1, vk::ShaderStageFlagBits::eFragment)));
-            bindings.insert(std::make_pair(4, DescriptorBinding(4, DescriptorType::IMAGE_SAMPLED, 1, vk::ShaderStageFlagBits::eFragment)));
-            bindings.insert(std::make_pair(5, DescriptorBinding(5, DescriptorType::SAMPLER, 1, vk::ShaderStageFlagBits::eFragment)));
-            bindings.insert(std::make_pair(6, DescriptorBinding(6, DescriptorType::IMAGE_SAMPLED, 1, vk::ShaderStageFlagBits::eFragment)));
-            bindings.insert(std::make_pair(7, DescriptorBinding(7, DescriptorType::SAMPLER, 1, vk::ShaderStageFlagBits::eFragment)));
-            bindings.insert(std::make_pair(8, DescriptorBinding(8, DescriptorType::IMAGE_SAMPLED, 1, vk::ShaderStageFlagBits::eFragment)));
-            bindings.insert(std::make_pair(9, DescriptorBinding(9, DescriptorType::SAMPLER, 1, vk::ShaderStageFlagBits::eFragment)));
+			bindings.emplace_back(0, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(1, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(2, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(3, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(4, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(5, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(6, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(7, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(8, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT);
+			bindings.emplace_back(9, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT);
 		}
     	
         return bindings;

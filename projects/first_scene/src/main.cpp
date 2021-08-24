@@ -128,8 +128,8 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::ShaderProgram sceneShaderProgram{};
-	sceneShaderProgram.addShader(vk::ShaderStageFlagBits::eVertex, std::filesystem::path("resources/shaders/vert.spv"));
-	sceneShaderProgram.addShader(vk::ShaderStageFlagBits::eFragment, std::filesystem::path("resources/shaders/frag.spv"));
+	sceneShaderProgram.addShader(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/vert.spv"));
+	sceneShaderProgram.addShader(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/frag.spv"));
 
 	const std::vector<vkcv::VertexAttachment> vertexAttachments = sceneShaderProgram.getVertexAttachments();
 	std::vector<vkcv::VertexBinding> bindings;
@@ -141,6 +141,8 @@ int main(int argc, const char** argv) {
 
 	uint32_t setID = 0;
 
+	std::vector<vkcv::DescriptorBinding> descriptorBindings = { sceneShaderProgram.getReflectedDescriptors()[setID] };
+
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerFilterType::LINEAR,
@@ -151,7 +153,7 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::Image> sceneImages;
 	std::vector<vkcv::DescriptorSetHandle> descriptorSets;
 	for (const auto& vertexGroup : scene.vertexGroups) {
-		descriptorSets.push_back(core.createDescriptorSet(sceneShaderProgram.getReflectedDescriptors().at(setID)));
+		descriptorSets.push_back(core.createDescriptorSet(descriptorBindings));
 
 		const auto& material = scene.materials[vertexGroup.materialIndex];
 

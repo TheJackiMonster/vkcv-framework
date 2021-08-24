@@ -4,12 +4,12 @@
 
 namespace vkcv::shader {
 	
-	typedef typename event_function<vk::ShaderStageFlagBits, const std::filesystem::path&>::type ShaderCompiledFunction;
+	typedef typename event_function<ShaderStage, const std::filesystem::path&>::type ShaderCompiledFunction;
 	
 	class Compiler {
 	private:
 	public:
-		virtual void compile(vk::ShaderStageFlagBits shaderStage, const std::filesystem::path& shaderPath,
+		virtual void compile(ShaderStage shaderStage, const std::filesystem::path& shaderPath,
 							 const ShaderCompiledFunction& compiled, bool update = false) = 0;
 		
 	};

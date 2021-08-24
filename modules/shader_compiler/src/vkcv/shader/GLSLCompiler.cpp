@@ -36,19 +36,19 @@ namespace vkcv::shader {
 		return *this;
 	}
 	
-	constexpr EShLanguage findShaderLanguage(vk::ShaderStageFlagBits shaderStage) {
+	constexpr EShLanguage findShaderLanguage(ShaderStage shaderStage) {
 		switch (shaderStage) {
-			case vk::ShaderStageFlagBits::eVertex:
+			case ShaderStage::VERTEX:
 				return EShLangVertex;
-			case vk::ShaderStageFlagBits::eTessellationControl:
+			case ShaderStage::TESS_CONTROL:
 				return EShLangTessControl;
-			case vk::ShaderStageFlagBits::eTessellationEvaluation:
+			case ShaderStage::TESS_EVAL:
 				return EShLangTessEvaluation;
-			case vk::ShaderStageFlagBits::eGeometry:
+			case ShaderStage::GEOMETRY:
 				return EShLangGeometry;
-			case vk::ShaderStageFlagBits::eFragment:
+			case ShaderStage::FRAGMENT:
 				return EShLangFragment;
-			case vk::ShaderStageFlagBits::eCompute:
+			case ShaderStage::COMPUTE:
 				return EShLangCompute;
 			default:
 				return EShLangCount;
@@ -197,7 +197,7 @@ namespace vkcv::shader {
 		return true;
 	}
 	
-	void GLSLCompiler::compile(vk::ShaderStageFlagBits shaderStage, const std::filesystem::path &shaderPath,
+	void GLSLCompiler::compile(ShaderStage shaderStage, const std::filesystem::path &shaderPath,
 							   const ShaderCompiledFunction& compiled, bool update) {
 		const EShLanguage language = findShaderLanguage(shaderStage);
 		

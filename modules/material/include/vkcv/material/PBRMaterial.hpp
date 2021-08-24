@@ -78,7 +78,7 @@ namespace vkcv::material
         * 8 - emissive texture
         * 9 - emissive sampler
         */
-        static std::unordered_map<uint32_t, DescriptorBinding> getDescriptorBindings() noexcept;
+        static std::vector<DescriptorBinding> getDescriptorBindings() noexcept;
 
         static PBRMaterial create(
             vkcv::Core* core,
