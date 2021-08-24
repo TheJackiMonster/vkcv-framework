@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
-#include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
@@ -12,15 +11,7 @@ int main(int argc, const char** argv) {
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
 
-	vkcv::Window window (
-		applicationName,
-		windowWidth,
-		windowHeight,
-		true
-	);
-
 	vkcv::Core core = vkcv::Core::create(
-		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
@@ -164,17 +155,17 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage },1);
 
-    vkcv::camera::CameraManager cameraManager(window);
+    vkcv::camera::CameraManager cameraManager(core.getWindow());
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
 
     auto start = std::chrono::system_clock::now();
     
-	while (window.isOpen()) {
+	while (vkcv::WindowManager::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 		
-		if(window.getHeight() == 0 || window.getWidth() == 0)
+		if(core.getWindow().getHeight() == 0 || core.getWindow().getWidth() == 0)
 			continue;
 		
 		uint32_t swapchainWidth, swapchainHeight;
