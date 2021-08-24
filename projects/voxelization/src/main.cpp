@@ -5,9 +5,7 @@
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
-#include <vkcv/Logger.hpp>
 #include "Voxelization.hpp"
-#include <glm/glm.hpp>
 #include "vkcv/gui/GUI.hpp"
 #include "ShadowMapping.hpp"
 #include "BloomAndFlares.hpp"
@@ -190,8 +188,8 @@ int main(int argc, const char** argv) {
 	}
 	const vkcv::VertexLayout vertexLayout (vertexBindings);
 
-	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = 
-		core.createDescriptorSet({ forwardProgram.getReflectedDescriptors()[0] });
+	vkcv::DescriptorSetLayoutHandle forwardShadingDescriptorSetLayout = core.createDescriptorSetLayout(forwardProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = core.createDescriptorSet(forwardShadingDescriptorSetLayout);
 
 	// depth prepass config
 	vkcv::ShaderProgram depthPrepassShader;
@@ -228,6 +226,7 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
+	std::vector<vkcv::DescriptorSetLayoutHandle> materialDescriptorSetLayouts;
 	std::vector<vkcv::DescriptorSetHandle> materialDescriptorSets;
 	std::vector<vkcv::Image> sceneImages;
 
@@ -249,7 +248,8 @@ int main(int argc, const char** argv) {
 			specularIndex = 0;
 		}
 
-		materialDescriptorSets.push_back(core.createDescriptorSet(forwardProgram.getReflectedDescriptors()[1]));
+		materialDescriptorSetLayouts.push_back(core.createDescriptorSetLayout(forwardProgram.getReflectedDescriptors().at(1)));
+		materialDescriptorSets.push_back(core.createDescriptorSet(materialDescriptorSetLayouts.back()));
 
 		vkcv::asset::Texture& albedoTexture     = scene.textures[albedoIndex];
 		vkcv::asset::Texture& normalTexture     = scene.textures[normalIndex];
@@ -288,13 +288,16 @@ int main(int argc, const char** argv) {
 		core.writeDescriptorSet(materialDescriptorSets.back(), setWrites);
 	}
 
+	std::vector<vkcv::DescriptorSetLayoutHandle> perMeshDescriptorSetLayouts;
 	std::vector<vkcv::DescriptorSetHandle> perMeshDescriptorSets;
 	for (const auto& vertexGroup : scene.vertexGroups) {
+	    perMeshDescriptorSetLayouts.push_back(materialDescriptorSetLayouts[vertexGroup.materialIndex]);
 		perMeshDescriptorSets.push_back(materialDescriptorSets[vertexGroup.materialIndex]);
 	}
 
 	// prepass pipeline
-	vkcv::DescriptorSetHandle prepassDescriptorSet = core.createDescriptorSet(std::vector<vkcv::DescriptorBinding>());
+	vkcv::DescriptorSetLayoutHandle prepassDescriptorSetLayout = core.createDescriptorSetLayout({});
+	vkcv::DescriptorSetHandle prepassDescriptorSet = core.createDescriptorSet(prepassDescriptorSetLayout);
 
 	vkcv::PipelineConfig prepassPipelineConfig{
 		depthPrepassShader,
@@ -303,8 +306,8 @@ int main(int argc, const char** argv) {
 		prepassPass,
 		vertexLayout,
 		{ 
-			core.getDescriptorSet(prepassDescriptorSet).layout,
-			core.getDescriptorSet(perMeshDescriptorSets[0]).layout },
+		    core.getDescriptorSetLayout(prepassDescriptorSetLayout).vulkanHandle,
+			core.getDescriptorSetLayout(perMeshDescriptorSetLayouts[0]).vulkanHandle },
 		true };
 	prepassPipelineConfig.m_culling         = vkcv::CullMode::Back;
 	prepassPipelineConfig.m_multisampling   = msaa;
@@ -321,8 +324,8 @@ int main(int argc, const char** argv) {
 		forwardPass,
 		vertexLayout,
 		{	
-			core.getDescriptorSet(forwardShadingDescriptorSet).layout, 
-			core.getDescriptorSet(perMeshDescriptorSets[0]).layout },
+		    core.getDescriptorSetLayout(forwardShadingDescriptorSetLayout).vulkanHandle,
+			core.getDescriptorSetLayout(perMeshDescriptorSetLayouts[0]).vulkanHandle },
 		true
 	};
     forwardPipelineConfig.m_culling         = vkcv::CullMode::Back;
@@ -421,11 +424,12 @@ int main(int argc, const char** argv) {
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		tonemappingProgram.addShader(shaderStage, path);
 	});
-	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(
-		tonemappingProgram.getReflectedDescriptors()[0]);
+	vkcv::DescriptorSetLayoutHandle tonemappingDescriptorSetLayout = core.createDescriptorSetLayout(
+	        tonemappingProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(tonemappingDescriptorSetLayout);
 	vkcv::PipelineHandle tonemappingPipeline = core.createComputePipeline(
 		tonemappingProgram,
-		{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
+		{ core.getDescriptorSetLayout(tonemappingDescriptorSetLayout).vulkanHandle });
 	
 	// tonemapping compute shader
 	vkcv::ShaderProgram postEffectsProgram;
@@ -433,11 +437,12 @@ int main(int argc, const char** argv) {
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		postEffectsProgram.addShader(shaderStage, path);
 	});
-	vkcv::DescriptorSetHandle postEffectsDescriptorSet = core.createDescriptorSet(
-			postEffectsProgram.getReflectedDescriptors()[0]);
+	vkcv::DescriptorSetLayoutHandle postEffectsDescriptorSetLayout = core.createDescriptorSetLayout(
+	        postEffectsProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle postEffectsDescriptorSet = core.createDescriptorSet(postEffectsDescriptorSetLayout);
 	vkcv::PipelineHandle postEffectsPipeline = core.createComputePipeline(
 			postEffectsProgram,
-			{ core.getDescriptorSet(postEffectsDescriptorSet).layout });
+			{ core.getDescriptorSetLayout(postEffectsDescriptorSetLayout).vulkanHandle });
 
 	// resolve compute shader
 	vkcv::ShaderProgram resolveProgram;
@@ -445,11 +450,12 @@ int main(int argc, const char** argv) {
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		resolveProgram.addShader(shaderStage, path);
 	});
-	vkcv::DescriptorSetHandle resolveDescriptorSet = core.createDescriptorSet(
-		resolveProgram.getReflectedDescriptors()[0]);
+	vkcv::DescriptorSetLayoutHandle resolveDescriptorSetLayout = core.createDescriptorSetLayout(
+	        resolveProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle resolveDescriptorSet = core.createDescriptorSet(resolveDescriptorSetLayout);
 	vkcv::PipelineHandle resolvePipeline = core.createComputePipeline(
 		resolveProgram,
-		{ core.getDescriptorSet(resolveDescriptorSet).layout });
+		{ core.getDescriptorSetLayout(resolveDescriptorSetLayout).vulkanHandle });
 
 	vkcv::SamplerHandle resolveSampler = core.createSampler(
 		vkcv::SamplerFilterType::NEAREST,
@@ -937,7 +943,7 @@ int main(int argc, const char** argv) {
 				});
 				vkcv::PipelineHandle newPipeline = core.createComputePipeline(
 					newProgram,
-					{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
+					{ core.getDescriptorSetLayout(tonemappingDescriptorSetLayout).vulkanHandle });
 
 				if (newPipeline) {
 					tonemappingPipeline = newPipeline;

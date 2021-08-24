@@ -32,8 +32,11 @@ namespace vkcv::upscaling {
 	private:
 		PipelineHandle m_easuPipeline;
 		PipelineHandle m_rcasPipeline;
-		
+
+		DescriptorSetLayoutHandle m_easuDescriptorSetLayout;
 		DescriptorSetHandle m_easuDescriptorSet;
+
+		DescriptorSetLayoutHandle m_rcasDescriptorSetLayout;
 		DescriptorSetHandle m_rcasDescriptorSet;
 		
 		Buffer<FSRConstants> m_easuConstants;

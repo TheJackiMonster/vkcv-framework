@@ -30,11 +30,14 @@ BloomAndFlares::BloomAndFlares(
                      });
     for(uint32_t mipLevel = 0; mipLevel < m_Blur.getMipCount(); mipLevel++)
     {
+        m_DownsampleDescSetLayouts.push_back(
+                p_Core->createDescriptorSetLayout(dsProg.getReflectedDescriptors().at(0)));
+
 		m_DownsampleDescSets.push_back(
-                p_Core->createDescriptorSet(dsProg.getReflectedDescriptors()[0]));
+		        p_Core->createDescriptorSet(m_DownsampleDescSetLayouts.back()));
     }
     m_DownsamplePipe = p_Core->createComputePipeline(
-            dsProg, { p_Core->getDescriptorSet(m_DownsampleDescSets[0]).layout });
+            dsProg, { p_Core->getDescriptorSetLayout(m_DownsampleDescSetLayouts[0]).vulkanHandle });
 
     // UPSAMPLE
     vkcv::ShaderProgram usProg;
@@ -46,11 +49,13 @@ BloomAndFlares::BloomAndFlares(
                      });
     for(uint32_t mipLevel = 0; mipLevel < m_Blur.getMipCount(); mipLevel++)
     {
+        m_UpsampleDescSetLayouts.push_back(
+                p_Core->createDescriptorSetLayout(usProg.getReflectedDescriptors().at(0)));
         m_UpsampleDescSets.push_back(
-                p_Core->createDescriptorSet(usProg.getReflectedDescriptors()[0]));
+                p_Core->createDescriptorSet(m_UpsampleDescSetLayouts.back()));
     }
     m_UpsamplePipe = p_Core->createComputePipeline(
-            usProg, { p_Core->getDescriptorSet(m_UpsampleDescSets[0]).layout });
+            usProg, { p_Core->getDescriptorSetLayout(m_UpsampleDescSetLayouts[0]).vulkanHandle });
 
     // LENS FEATURES
     vkcv::ShaderProgram lensProg;
@@ -60,9 +65,10 @@ BloomAndFlares::BloomAndFlares(
                      {
                          lensProg.addShader(shaderStage, path);
                      });
-    m_LensFlareDescSet = p_Core->createDescriptorSet(lensProg.getReflectedDescriptors()[0]);
+    m_LensFlareDescSetLayout = p_Core->createDescriptorSetLayout(lensProg.getReflectedDescriptors().at(0));
+    m_LensFlareDescSet = p_Core->createDescriptorSet(m_LensFlareDescSetLayout);
     m_LensFlarePipe = p_Core->createComputePipeline(
-            lensProg, { p_Core->getDescriptorSet(m_LensFlareDescSet).layout });
+            lensProg, { p_Core->getDescriptorSetLayout(m_LensFlareDescSetLayout).vulkanHandle });
 
     // COMPOSITE
     vkcv::ShaderProgram compProg;
@@ -72,9 +78,10 @@ BloomAndFlares::BloomAndFlares(
                      {
                          compProg.addShader(shaderStage, path);
                      });
-    m_CompositeDescSet = p_Core->createDescriptorSet(compProg.getReflectedDescriptors()[0]);
+    m_CompositeDescSetLayout = p_Core->createDescriptorSetLayout(compProg.getReflectedDescriptors().at(0));
+    m_CompositeDescSet = p_Core->createDescriptorSet(m_CompositeDescSetLayout);
     m_CompositePipe = p_Core->createComputePipeline(
-            compProg, { p_Core->getDescriptorSet(m_CompositeDescSet).layout });
+            compProg, { p_Core->getDescriptorSetLayout(m_CompositeDescSetLayout).vulkanHandle });
 }
 
 void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStream,

@@ -106,9 +106,10 @@ int main(int argc, const char** argv) {
 	
 	const vkcv::VertexLayout firstMeshLayout (bindings);
 
-	uint32_t setID = 0;
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[setID] };
-	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+	// since we only use one descriptor set (namely, desc set 0), directly address it
+	std::unordered_map<uint32_t, vkcv::DescriptorBinding> set0Bindings = firstMeshProgram.getReflectedDescriptors().at(0);
+	vkcv::DescriptorSetLayoutHandle setLayoutHandle = core.createDescriptorSetLayout(set0Bindings);
+	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(setLayoutHandle);
 
 	const vkcv::PipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,
@@ -116,7 +117,7 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
         firstMeshPass,
         {firstMeshLayout},
-		{ core.getDescriptorSet(descriptorSet).layout },
+		{ core.getDescriptorSetLayout(setLayoutHandle).vulkanHandle },
 		true
 	};
 	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);

@@ -198,7 +198,8 @@ int main(int argc, const char** argv) {
     }
     const vkcv::VertexLayout bunnyLayout (bindings);
 
-	vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(bunnyShaderProgram.getReflectedDescriptors()[0]);
+    vkcv::DescriptorSetLayoutHandle vertexShaderDescriptorSetLayout = core.createDescriptorSetLayout(bunnyShaderProgram.getReflectedDescriptors().at(0));
+    vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(vertexShaderDescriptorSetLayout);
 
 	const vkcv::PipelineConfig bunnyPipelineDefinition {
 			bunnyShaderProgram,
@@ -206,7 +207,7 @@ int main(int argc, const char** argv) {
 			(uint32_t)windowHeight,
 			renderPass,
 			{ bunnyLayout },
-			{ core.getDescriptorSet(vertexShaderDescriptorSet).layout },
+			{ core.getDescriptorSetLayout(vertexShaderDescriptorSetLayout).vulkanHandle },
 			false
 	};
 
@@ -246,8 +247,8 @@ int main(int argc, const char** argv) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
 
-	uint32_t setID = 0;
-	vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet( meshShaderProgram.getReflectedDescriptors()[setID]);
+	vkcv::DescriptorSetLayoutHandle meshShaderDescriptorSetLayout = core.createDescriptorSetLayout(meshShaderProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet(meshShaderDescriptorSetLayout);
 	const vkcv::VertexLayout meshShaderLayout(bindings);
 
 	const vkcv::PipelineConfig meshShaderPipelineDefinition{
@@ -256,7 +257,7 @@ int main(int argc, const char** argv) {
 		(uint32_t)windowHeight,
 		renderPass,
 		{meshShaderLayout},
-		{core.getDescriptorSet(meshShaderDescriptorSet).layout},
+		{core.getDescriptorSetLayout(meshShaderDescriptorSetLayout).vulkanHandle},
 		false
 	};
 

@@ -685,9 +685,19 @@ namespace vkcv
 		return m_ImageManager->getImageFormat(image);
 	}
 
-    DescriptorSetHandle Core::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
+	DescriptorSetLayoutHandle Core::createDescriptorSetLayout(const std::unordered_map<uint32_t, DescriptorBinding> &bindingsMap)
+	{
+	    return m_DescriptorManager->createDescriptorSetLayout(bindingsMap);
+	}
+
+	DescriptorSetLayout Core::getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const
+	{
+	    return m_DescriptorManager->getDescriptorSetLayout(handle);
+	}
+
+	DescriptorSetHandle Core::createDescriptorSet(const DescriptorSetLayoutHandle &layoutHandle)
     {
-        return m_DescriptorManager->createDescriptorSet(bindings);
+        return m_DescriptorManager->createDescriptorSet(layoutHandle);
     }
 
 	void Core::writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites &writes) {
