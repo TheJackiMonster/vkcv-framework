@@ -1,8 +1,3 @@
-/**
- * @authors Sebastian Gaida
- * @file src/vkcv/Window.cpp
- * @brief Window class to handle a basic rendering surface and input
- */
 
 #include <thread>
 #include <vector>
@@ -63,20 +58,7 @@ namespace vkcv {
 	static std::vector<GLFWwindow*> s_Windows;
 
 	void Window_onGamepadEvent(int gamepadIndex) {
-		size_t activeWindowIndex = std::find_if(
-				s_Windows.begin(),
-				s_Windows.end(),
-				[](GLFWwindow* window){return glfwGetWindowAttrib(window, GLFW_FOCUSED);}
-				) - s_Windows.begin();
-	
-		// fixes index getting out of bounds (e.g. if there is no focused window)
-		activeWindowIndex *= (activeWindowIndex < s_Windows.size());
-  
-		auto window = static_cast<Window *>(glfwGetWindowUserPointer(s_Windows[activeWindowIndex]));
-
-		if (window != nullptr) {
-			window->e_gamepad(gamepadIndex);
-		}
+			Window::getFocusedWindow().e_gamepad(gamepadIndex);
 	}
 	
 	static GLFWwindow* createGLFWWindow(const char *windowTitle, int width, int height, bool resizable) {
@@ -162,6 +144,21 @@ namespace vkcv {
             glfwTerminate();
         }
     }
+
+    void Window::destroyWindow() {
+		Window::e_mouseButton.unlock();
+		Window::e_mouseMove.unlock();
+		Window::e_mouseScroll.unlock();
+		Window::e_resize.unlock();
+		Window::e_key.unlock();
+		Window::e_char.unlock();
+		Window::e_gamepad.unlock();
+
+		if (m_window) {
+			s_Windows.erase(std::find(s_Windows.begin(), s_Windows.end(), m_window));
+			glfwDestroyWindow(m_window);
+		}
+	}
     
     Window::Window(const Window &other) :
     m_title(other.getTitle()),
@@ -291,5 +288,21 @@ namespace vkcv {
 			height = 0;
 		}
     }
-    
+
+	Window& Window::getFocusedWindow() {
+		static Window defaultWindow;
+
+		auto activeWindowIterator = std::find_if(
+				s_Windows.begin(),
+				s_Windows.end(),
+				[](GLFWwindow *window) { return glfwGetWindowAttrib(window, GLFW_FOCUSED); }
+		);
+
+		if( activeWindowIterator == s_Windows.end() )
+		{
+			return defaultWindow;
+		}
+		Window& window = *static_cast<Window *>(glfwGetWindowUserPointer(*activeWindowIterator));
+		return window;
+	}
 }

@@ -1,9 +1,4 @@
 #pragma once
-/**
- * @authors Sebastian Gaida
- * @file src/vkcv/Window.hpp
- * @brief Window class to handle a basic rendering surface and input
- */
 
 #define NOMINMAX
 #include <algorithm>
@@ -16,11 +11,12 @@ struct GLFWwindow;
 namespace vkcv {
 
     class Window {
+		friend class WindowManager;
 	private:
     	std::string m_title;
     	bool m_resizable;
 		GLFWwindow *m_window;
-		
+
     public:
     	/**
     	 * creates an uninitialized #Window
@@ -59,6 +55,13 @@ namespace vkcv {
          */
         [[nodiscard]]
         bool isOpen() const;
+
+		/**
+		 * gets the currently focused window and returns it
+		 * only accessible to WindowManager
+		 * @return
+		 */
+		static Window& getFocusedWindow();
 
         /**
          * polls all events on the GLFWwindow
@@ -115,7 +118,12 @@ namespace vkcv {
          * Destructor of #Window, terminates GLFW
          */
         virtual ~Window();
-        
+
+        /**
+         * destroys the window
+         */
+		void destroyWindow();
+
         /**
          * gets the windows framebuffer size
          * @param width
