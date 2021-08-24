@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-
 #include "vkcv/Handles.hpp"
 #include "vkcv/ShaderStage.hpp"
 
