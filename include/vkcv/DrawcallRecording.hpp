@@ -29,8 +29,19 @@ namespace vkcv {
     };
 
     struct Mesh {
-        inline Mesh(std::vector<VertexBufferBinding> vertexBufferBindings, vk::Buffer indexBuffer, size_t indexCount, IndexBitCount indexBitCount = IndexBitCount::Bit16) noexcept
-            : vertexBufferBindings(vertexBufferBindings), indexBuffer(indexBuffer), indexCount(indexCount), indexBitCount(indexBitCount){}
+
+        inline Mesh(){}
+
+        inline Mesh(
+            std::vector<VertexBufferBinding>    vertexBufferBindings,
+            vk::Buffer                          indexBuffer,
+            size_t                              indexCount,
+            IndexBitCount                       indexBitCount = IndexBitCount::Bit16) noexcept
+            :
+            vertexBufferBindings(vertexBufferBindings),
+            indexBuffer(indexBuffer),
+            indexCount(indexCount),
+            indexBitCount(indexBitCount) {}
 
         std::vector<VertexBufferBinding>    vertexBufferBindings;
         vk::Buffer                          indexBuffer;

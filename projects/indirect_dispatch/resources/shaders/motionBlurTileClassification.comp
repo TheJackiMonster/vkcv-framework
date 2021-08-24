@@ -1,0 +1,58 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+#include "motionBlurWorkTile.inc"
+
+layout(set=0, binding=0) uniform texture2D  inMotionMax;
+layout(set=0, binding=1) uniform texture2D  inMotionMin;
+layout(set=0, binding=2) uniform sampler    nearestSampler;
+
+layout(set=0, binding=3) buffer FullPathTileBuffer {
+    WorkTiles fullPathTiles;
+};
+
+layout(set=0, binding=4) buffer CopyPathTileBuffer {
+    WorkTiles copyPathTiles;
+};
+
+layout(set=0, binding=5) buffer FastPathTileBuffer {
+    WorkTiles fastPathTiles;
+};
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout( push_constant ) uniform constants{
+    uint    width;
+    uint    height;
+    float   fastPathThreshold;
+};
+
+void main(){
+    
+    ivec2 tileCoord = ivec2(gl_GlobalInvocationID.xy);
+    
+    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, textureSize(sampler2D(inMotionMax, nearestSampler), 0))))
+        return;
+    
+    vec2    motionMax           = texelFetch(sampler2D(inMotionMax, nearestSampler), tileCoord, 0).rg;
+    vec2    motionMin           = texelFetch(sampler2D(inMotionMin, nearestSampler), tileCoord, 0).rg;
+    
+    vec2    motionPixelMax      = motionMax * vec2(width, height);
+    vec2    motionPixelMin      = motionMin * vec2(width, height);
+    
+    float   velocityPixelMax    = length(motionPixelMax);
+    float   minMaxDistance      = distance(motionPixelMin, motionPixelMax);
+    
+    if(velocityPixelMax <= 0.5){
+        uint index                  = atomicAdd(copyPathTiles.tileCount, 1);
+        copyPathTiles.tileXY[index] = tileCoord;
+    }
+    else if(minMaxDistance <= fastPathThreshold){
+        uint index                  = atomicAdd(fastPathTiles.tileCount, 1);
+        fastPathTiles.tileXY[index] = tileCoord;
+    }
+    else{
+        uint index                  = atomicAdd(fullPathTiles.tileCount, 1);
+        fullPathTiles.tileXY[index] = tileCoord;
+    }
+}

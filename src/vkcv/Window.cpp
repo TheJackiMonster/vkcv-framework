@@ -4,6 +4,7 @@
  * @brief Window class to handle a basic rendering surface and input
  */
 
+#include <thread>
 #include <vector>
 #include <GLFW/glfw3.h>
 
@@ -214,12 +215,17 @@ namespace vkcv {
 			window->e_key.unlock();
 			window->e_char.unlock();
 			window->e_gamepad.unlock();
-    	}
+		}
 
-        glfwPollEvents();
-    	
-    	for (int gamepadIndex = GLFW_JOYSTICK_1; gamepadIndex <= GLFW_JOYSTICK_LAST; gamepadIndex++) {
-    		if (glfwJoystickPresent(gamepadIndex)) {
+		glfwPollEvents();
+
+		// fixes subtle mouse stutter, which is made visible by motion blur
+		// FIXME: proper solution
+		// probably caused by main thread locking events before glfw callbacks are executed
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+		for (int gamepadIndex = GLFW_JOYSTICK_1; gamepadIndex <= GLFW_JOYSTICK_LAST; gamepadIndex++) {
+			if (glfwJoystickPresent(gamepadIndex)) {
 				Window_onGamepadEvent(gamepadIndex);
 			}
 		}
