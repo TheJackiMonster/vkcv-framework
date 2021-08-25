@@ -43,8 +43,7 @@ namespace vkcv
             case DescriptorType::IMAGE_STORAGE:
                 return vk::DescriptorType::eStorageImage;
             default:
-                vkcv_log(LogLevel::ERROR, "Unknown DescriptorType");
-                return vk::DescriptorType::eUniformBuffer;
+                return vk::DescriptorType::eMutableVALVE;
         }
     }
 
