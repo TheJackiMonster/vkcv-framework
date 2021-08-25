@@ -26,8 +26,6 @@ int main(int argc, const char** argv) {
 		{ "VK_KHR_swapchain" }
 	);
 
-	const auto& context = core.getContext();
-
 	auto triangleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
 	uint16_t indices[3] = { 0, 1, 2 };
 	triangleIndexBuffer.fill(&indices[0], sizeof(indices));

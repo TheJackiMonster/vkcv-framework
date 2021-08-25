@@ -507,6 +507,42 @@ namespace vkcv
 		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);
 	}
 
+	void Core::recordComputeIndirectDispatchToCmdStream(
+		const CommandStreamHandle               cmdStream,
+		const PipelineHandle                    computePipeline,
+		const vkcv::BufferHandle                buffer,
+		const size_t                            bufferArgOffset,
+		const std::vector<DescriptorSetUsage>&  descriptorSetUsages,
+		const PushConstants&                    pushConstants) {
+
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+
+			const auto pipelineLayout = m_PipelineManager->getVkPipelineLayout(computePipeline);
+
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_PipelineManager->getVkPipeline(computePipeline));
+			for (const auto& usage : descriptorSetUsages) {
+				cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eCompute,
+					pipelineLayout,
+					usage.setLocation,
+					{ usage.vulkanHandle },
+					usage.dynamicOffsets
+				);
+			}
+			if (pushConstants.getSizePerDrawcall() > 0) {
+				cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eCompute,
+					0,
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getData());
+			}
+			cmdBuffer.dispatchIndirect(m_BufferManager->getBuffer(buffer), bufferArgOffset);
+		};
+
+		recordCommandsToStream(cmdStream, submitFunction, nullptr);
+	}
+
 	void Core::endFrame() {
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
