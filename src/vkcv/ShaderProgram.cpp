@@ -235,7 +235,7 @@ namespace vkcv {
         return m_VertexAttachments;
 	}
 
-    const std::unordered_map<uint32_t, std::unordered_map<uint32_t, DescriptorBinding>>& ShaderProgram::getReflectedDescriptors() const
+	const std::unordered_map<uint32_t, DescriptorBindings>& ShaderProgram::getReflectedDescriptors() const
     {
         return m_DescriptorSets;
     }

@@ -27,10 +27,10 @@ namespace vkcv::material {
 		return (m_Type == MaterialType::UNKNOWN);
 	}
 	
-	const std::unordered_map<uint32_t, DescriptorBinding>& Material::getDescriptorBindings(MaterialType type)
+	const DescriptorBindings& Material::getDescriptorBindings(MaterialType type)
 	{
-	    static std::unordered_map<uint32_t, DescriptorBinding> pbr_bindings = {};
-	    static std::unordered_map<uint32_t, DescriptorBinding> default_bindings = {};
+		static DescriptorBindings pbr_bindings = {};
+		static DescriptorBindings default_bindings = {};
 		
 		switch (type) {
 			case MaterialType::PBR_MATERIAL:

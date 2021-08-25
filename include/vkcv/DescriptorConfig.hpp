@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "vkcv/Handles.hpp"
 #include "vkcv/ShaderStage.hpp"
 #include "vkcv/Logger.hpp"
@@ -68,11 +70,13 @@ namespace vkcv
         uint32_t descriptorCount;
         ShaderStages shaderStages;
     };
+    
+    typedef std::unordered_map<uint32_t, DescriptorBinding> DescriptorBindings;
 
     struct DescriptorSetLayout
     {
         vk::DescriptorSetLayout vulkanHandle;
-        std::unordered_map<uint32_t, DescriptorBinding> descriptorBindings;
+        DescriptorBindings descriptorBindings;
     };
 
     struct DescriptorSet

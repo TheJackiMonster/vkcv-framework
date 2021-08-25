@@ -42,7 +42,7 @@ namespace vkcv
 		}
     }
 
-    DescriptorSetLayoutHandle DescriptorManager::createDescriptorSetLayout(const std::unordered_map<uint32_t, DescriptorBinding> &setBindingsMap)
+    DescriptorSetLayoutHandle DescriptorManager::createDescriptorSetLayout(const DescriptorBindings &setBindingsMap)
     {
         //create the descriptor set's layout by iterating over its bindings
         std::vector<vk::DescriptorSetLayoutBinding> bindingsVector = {};

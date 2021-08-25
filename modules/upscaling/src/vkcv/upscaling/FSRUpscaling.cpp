@@ -65,32 +65,36 @@ namespace vkcv::upscaling {
 		}
 	}
 	
-	static std::unordered_map<uint32_t, DescriptorBinding> getDescriptorBindings() {
-	    std::unordered_map<uint32_t, DescriptorBinding> descriptorBindings = {};
+	static DescriptorBindings getDescriptorBindings() {
+		DescriptorBindings descriptorBindings = {};
 
 	    auto binding_0 = DescriptorBinding(
 	            0,
 	            DescriptorType::UNIFORM_BUFFER_DYNAMIC,
 	            1,
-	            ShaderStage::COMPUTE);
+	            ShaderStage::COMPUTE
+		);
 
 	    auto binding_1 = DescriptorBinding(
 	            1,
 	            DescriptorType::IMAGE_SAMPLED,
 	            1,
-	            ShaderStage::COMPUTE);
+	            ShaderStage::COMPUTE
+		);
 
 	    auto binding_2 = DescriptorBinding(
 	            2,
 	            DescriptorType::IMAGE_STORAGE,
 	            1,
-	            ShaderStage::COMPUTE);
+	            ShaderStage::COMPUTE
+		);
 
 	    auto binding_3 = DescriptorBinding(
 	            3,
 	            DescriptorType::SAMPLER,
 	            1,
-	            ShaderStage::COMPUTE);
+	            ShaderStage::COMPUTE
+		);
 
 	    descriptorBindings.insert(std::make_pair(0, binding_0));
 	    descriptorBindings.insert(std::make_pair(1, binding_1));
