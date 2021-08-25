@@ -13,6 +13,17 @@
 class safrScene {
 
 public:
+
+    /**
+     * WORKAROUND
+     * moved the texture data struct from the old asset loader version, because it is necessary for our rendering for now
+     */
+    struct TextureData {
+        int width;
+        int height;
+        int componentCount;
+        std::vector<char*> data;
+    };
 	/*
 	* Light struct with a position and intensity of the light source
 	*/
@@ -68,7 +79,7 @@ public:
 	* @param vector: all light sources in the scene
 	* @return TextureData: texture data for the buffers
 	*/
-	vkcv::asset::TextureData render(const std::vector<Sphere>& spheres, const std::vector<Light>& lights);
+	TextureData render(const std::vector<Sphere>& spheres, const std::vector<Light>& lights);
 
 private:
 	/*

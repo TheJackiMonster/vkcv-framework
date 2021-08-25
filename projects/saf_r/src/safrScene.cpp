@@ -56,7 +56,7 @@ glm::vec3 safrScene::castRay(const glm::vec3& orig, const glm::vec3& dir, const 
 		glm::vec3(1., 1., 1.) * specular_light_intensity * material.albedo[1] + reflect_color * material.albedo[2];
 }
 
-vkcv::asset::TextureData safrScene::render(const std::vector<safrScene::Sphere>& spheres, const std::vector<safrScene::Light>& lights) {
+safrScene::TextureData safrScene::render(const std::vector<safrScene::Sphere>& spheres, const std::vector<safrScene::Light>& lights) {
 	//constants for the image data
 	const int width = 800;
 	const int height = 600;
@@ -86,7 +86,7 @@ vkcv::asset::TextureData safrScene::render(const std::vector<safrScene::Sphere>&
 		data.push_back(static_cast<uint8_t>(255.f));
 	}
 
-	vkcv::asset::TextureData textureData;
+	safrScene::TextureData textureData;
 	textureData.width = width;
 	textureData.height = height;
 	textureData.componentCount = 4;
