@@ -119,19 +119,19 @@ int main(int argc, const char** argv) {
 	vkcv::Buffer<safrScene::Light> lightsBuffer = core.createBuffer<safrScene::Light>(
 		vkcv::BufferType::STORAGE,
 		lights.size()
-		);
+	);
 	lightsBuffer.fill(lights);
 
 	vkcv::Buffer<safrScene::Sphere> sphereBuffer = core.createBuffer<safrScene::Sphere>(
 		vkcv::BufferType::STORAGE,
 		spheres.size()
-		);
+	);
 	sphereBuffer.fill(spheres);
 
 	vkcv::Buffer<safrScene::Material> materialBuffer = core.createBuffer<safrScene::Material>(
 		vkcv::BufferType::STORAGE,
 		materials.size()
-		);
+	);
 	materialBuffer.fill(materials);
 
 
@@ -142,7 +142,9 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorWrites computeWrites;
 	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,lightsBuffer.getHandle()) };
+	core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(1,materialBuffer.getHandle()) };
+	core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(2,sphereBuffer.getHandle()) };
 	core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 

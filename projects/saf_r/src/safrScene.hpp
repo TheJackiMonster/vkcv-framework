@@ -39,8 +39,8 @@ public:
 	struct Material {
 		Material(const glm::vec3& a, const glm::vec3& color, const float& spec) : albedo(a), diffuse_color(color), specular_exponent(spec) {}
 		Material() : albedo(1, 0, 0), diffuse_color(), specular_exponent() {}
-		glm::vec3 diffuse_color;
 		glm::vec3 albedo;
+		alignas(16) glm::vec3 diffuse_color;
 		float specular_exponent;
 	};
 
