@@ -326,7 +326,31 @@ namespace vkcv
 		if (storage16bit) {
 			deviceShaderFloat16Int8Features.setPNext(&device16BitStorageFeatures);
 		}
-		
+
+		// add raytracing features, if available
+		const bool usingRTX = isPresentInCharPtrVector(deviceExtensions, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+		if (usingRTX) {
+		    vk::PhysicalDeviceFeatures2 raytracingFeatures2;    // INFO: vulkan says we can only use one PhysicalDeviceFeatures2 struct -> replace deviceFeatures2 by raytracingFeatures2
+		    vk::PhysicalDeviceVulkan12Features raytracingFeatures12;
+		    vk::PhysicalDeviceVulkan11Features raytracingFeatures11;
+		    vk::PhysicalDeviceAccelerationStructureFeaturesKHR raytracingAccelerationFeatures;
+		    vk::PhysicalDeviceRayTracingPipelineFeaturesKHR raytracingPipelineFeatures;
+
+		    raytracingFeatures2.setPNext(&raytracingFeatures12);
+		    raytracingFeatures12.setPNext(&raytracingFeatures11);
+		    raytracingFeatures11.setPNext(&raytracingAccelerationFeatures);
+		    raytracingAccelerationFeatures.setPNext(&raytracingPipelineFeatures);
+
+		    physicalDevice.getFeatures2(&raytracingFeatures2);  // query supported features
+
+		    // add raytracing features to deviceFeatures2
+		    deviceFeatures2.setFeatures(raytracingFeatures2.features);  // TODO: Ist das so korrekt? Haette sonst an dem letzten pNext Eintrag (leider ein void*) die anderen Features angekettet
+		    deviceFeatures2.features.fragmentStoresAndAtomics = true;   // TODO: Wir koennten hier auch die .features Zeilen von oben runternehmen zu nach den Klammern
+		    deviceFeatures2.features.geometryShader = true;
+		    deviceFeatures2.features.depthClamp = true;
+		    deviceFeatures2.features.shaderInt16 = true;
+		}
+
 		deviceCreateInfo.setPNext(&deviceFeatures2);
 
 		// Ablauf
