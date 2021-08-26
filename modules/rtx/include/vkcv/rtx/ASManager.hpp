@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vkcv/Core.hpp>
-#include <vkcv/scene/Scene.hpp>
 
 namespace vkcv::rtx {
 

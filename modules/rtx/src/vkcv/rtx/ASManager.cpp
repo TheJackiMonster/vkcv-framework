@@ -28,7 +28,7 @@ namespace vkcv::rtx {
                 uint32_t(vertexBuffer.getCount() - 1), // maxVertex (uint32_t)
                 vk::IndexType::eUint8EXT, // indexType (vk::IndexType)
                 indexDeviceOrHostAddressConst, // indexData (vk::DeviceOrHostAddressConstKHR)
-                (vk::DeviceOrHostAddressConstKHR) {} // transformData (vk::DeviceOrHostAddressConstKHR)
+                {} // transformData (vk::DeviceOrHostAddressConstKHR)
         );
 
         // Encapsulate geometry data
