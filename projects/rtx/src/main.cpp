@@ -54,12 +54,44 @@ int main(int argc, const char** argv) {
 	);
 
 	// init RTXModule
-	vk::PhysicalDevice physicalDevice = core.getContext().getPhysicalDevice();
-	rtxModule.init(physicalDevice);
+//	rtxModule.init(&core);
 
-	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
-			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
-	));
+//	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
+//			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
+//	));
+
+    // TODO: replace by bigger scene
+	vkcv::asset::Scene mesh;
+
+	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
+	int result = vkcv::asset::loadScene(path, mesh);
+
+	if (result == 1) {
+	    std::cout << "Mesh loading successful!" << std::endl;
+	} else {
+	    std::cerr << "Mesh loading failed: " << result << std::endl;
+	    return 1;
+	}
+
+	assert(!mesh.vertexGroups.empty());
+	auto vertexBuffer = core.createBuffer<uint8_t>(
+	        vkcv::BufferType::VERTEX,
+	        mesh.vertexGroups[0].vertexBuffer.data.size(),
+	        vkcv::BufferMemoryType::DEVICE_LOCAL
+	        );
+
+	vk::Buffer vertexBufferHandle = vertexBuffer.getVulkanHandle();
+
+
+	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
+
+	auto indexBuffer = core.createBuffer<uint8_t>(
+	        vkcv::BufferType::INDEX,
+	        mesh.vertexGroups[0].indexBuffer.data.size(),
+	        vkcv::BufferMemoryType::DEVICE_LOCAL
+	        );
+
+	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
 
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
