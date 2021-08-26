@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "vulkan/vulkan.hpp"
+#include "vkcv/Core.hpp"
 
 namespace vkcv::rtx {
 
@@ -41,7 +42,7 @@ namespace vkcv::rtx {
          * @param vertexBuffer
          * @param indexBuffer
          */
-        void init(vkcv::Buffer<uint8_t> vertexBuffer, vkcv::Buffer<uint8_t> indexBuffer);
+        void init(Core* core, Buffer<uint8_t> &vertexBuffer, Buffer<uint8_t> &indexBuffer);
     };
 
 }
