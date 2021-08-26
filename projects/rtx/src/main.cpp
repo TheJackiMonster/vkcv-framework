@@ -56,9 +56,9 @@ int main(int argc, const char** argv) {
 	// init RTXModule
 //	rtxModule.init(&core);
 
-//	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
-//			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
-//	));
+	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
+			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
+	));
 
     // TODO: replace by bigger scene
 	vkcv::asset::Scene mesh;
