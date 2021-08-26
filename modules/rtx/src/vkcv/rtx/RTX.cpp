@@ -1,4 +1,5 @@
 #include "vkcv/rtx/RTX.hpp"
+#include "vkcv/rtx/ASManager.hpp"
 
 namespace vkcv::rtx {
 
@@ -19,19 +20,13 @@ namespace vkcv::rtx {
                 "VK_KHR_ray_query",
                 "VK_KHR_pipeline_library"
         };
-
-        // enable raytracing features!
-        vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationFeature(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR);
-        vk::PhysicalDeviceRayTracingPipelineFeaturesKHR raytracingPipelineFeature(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR);
     }
 
-    void RTXModule::init(vk::PhysicalDevice &physicalDevice) {
-        m_physicalDevice = physicalDevice;
+    void RTXModule::init(vkcv::Buffer<uint8_t> vertexBuffer, vkcv::Buffer<uint8_t> indexBuffer) {
 
-        // Requesting ray tracing properties
-        vk::PhysicalDeviceProperties2 prop2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
-        prop2.pNext = &m_rtProperties;
-        m_physicalDevice.getProperties2(&prop2);
+        // build acceleration structures BLAS then TLAS --> see ASManager
+//        ASManager asManager(core);
+
     }
 
     std::vector<const char*> RTXModule::getInstanceExtensions() {
@@ -41,6 +36,5 @@ namespace vkcv::rtx {
     std::vector<const char*> RTXModule::getDeviceExtensions() {
         return m_deviceExtensions;
     }
-
 
 }

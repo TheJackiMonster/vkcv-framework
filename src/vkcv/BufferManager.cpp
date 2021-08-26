@@ -49,7 +49,7 @@ namespace vkcv {
 				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
 				break;
 		    case BufferType::RT_ACCELERATION:
-		        usageFlags = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+		        usageFlags = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer;
 		        break;
 			default:
 				// TODO: maybe an issue

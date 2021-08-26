@@ -10,8 +10,6 @@ namespace vkcv::rtx {
 
         std::vector<const char*> m_instanceExtensions;
         std::vector<const char*> m_deviceExtensions;
-        vk::PhysicalDevice m_physicalDevice;
-        vk::PhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
     public:
 
@@ -39,10 +37,11 @@ namespace vkcv::rtx {
 
         /**
          * @brief TODO
-         * @param physicalDevice
+         * @param core
+         * @param vertexBuffer
+         * @param indexBuffer
          */
-        void init(vk::PhysicalDevice &physicalDevice);
-
+        void init(vkcv::Buffer<uint8_t> vertexBuffer, vkcv::Buffer<uint8_t> indexBuffer);
     };
 
 }
