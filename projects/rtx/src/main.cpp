@@ -53,9 +53,6 @@ int main(int argc, const char** argv) {
 		deviceExtensions
 	);
 
-	// init RTXModule
-//	rtxModule.init(&core);
-
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
 			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
 	));
@@ -92,6 +89,9 @@ int main(int argc, const char** argv) {
 	        );
 
 	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
+
+	// init RTXModule
+    rtxModule.init(&core, vertexBuffer, indexBuffer);
 
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,

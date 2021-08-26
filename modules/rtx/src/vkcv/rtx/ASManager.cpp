@@ -12,6 +12,10 @@ namespace vkcv::rtx {
     }
 
     void ASManager::buildBLAS(Buffer<uint8_t> &vertexBuffer, Buffer<uint8_t> &indexBuffer) {
+        // INFO: Es scheint, dass wir einen DispatchLoaderDynamic brauchen, damit Funktionen wie .getBufferAddressKHR keine Linker Error schmeissen.
+        // Die Frage ist, wieso? und wie koennen wir das problem evtl. anders behandeln? Mit dem DispatchLoaderDynamic gehen zwar die Fehler weg,
+        // aber die Anwendung crasht...
+
         vk::BufferDeviceAddressInfo vertexBufferDeviceAddressInfo(vertexBuffer.getVulkanHandle());
         vk::DeviceAddress vertexBufferAddress = m_core->getContext().getDevice().getBufferAddressKHR(vertexBufferDeviceAddressInfo);
         vk::DeviceOrHostAddressConstKHR vertexDeviceOrHostAddressConst(vertexBufferAddress);
