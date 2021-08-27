@@ -71,24 +71,34 @@ int main(int argc, const char** argv) {
 	}
 
 	assert(!mesh.vertexGroups.empty());
-	auto vertexBuffer = core.createBuffer<uint8_t>(
-	        vkcv::BufferType::VERTEX,
+	auto vertexBuffer = core.createBuffer<uint16_t>(
+	        vkcv::BufferType::RT_ACCELERATION_VERTEX,
 	        mesh.vertexGroups[0].vertexBuffer.data.size(),
 	        vkcv::BufferMemoryType::DEVICE_LOCAL
 	        );
 
-	vk::Buffer vertexBufferHandle = vertexBuffer.getVulkanHandle();
+	std::vector<uint16_t> vertices = {};
 
+	for (int i=0; i<mesh.vertexGroups[0].vertexBuffer.data.size(); i++) {
+	    vertices.emplace_back((uint16_t)mesh.vertexGroups[0].vertexBuffer.data[i]);
+	}
 
-	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
+	vertexBuffer.fill(vertices);
 
-	auto indexBuffer = core.createBuffer<uint8_t>(
-	        vkcv::BufferType::INDEX,
+	auto indexBuffer = core.createBuffer<uint16_t>(
+	        vkcv::BufferType::RT_ACCELERATION_INDEX,
 	        mesh.vertexGroups[0].indexBuffer.data.size(),
 	        vkcv::BufferMemoryType::DEVICE_LOCAL
 	        );
 
-	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
+	std::vector<uint16_t> indices = {};
+
+	for (int i=0; i<mesh.vertexGroups[0].vertexBuffer.data.size(); i++) {
+	    indices.emplace_back((uint16_t)mesh.vertexGroups[0].indexBuffer.data[i]);
+	}
+
+	indexBuffer.fill(indices);
+
 
 	// init RTXModule
     rtxModule.init(&core, vertexBuffer, indexBuffer);

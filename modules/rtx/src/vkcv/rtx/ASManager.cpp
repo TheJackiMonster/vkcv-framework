@@ -11,17 +11,17 @@ namespace vkcv::rtx {
 
     }
 
-    void ASManager::buildBLAS(Buffer<uint8_t> &vertexBuffer, Buffer<uint8_t> &indexBuffer) {
-        // INFO: Es scheint, dass wir einen DispatchLoaderDynamic brauchen, damit Funktionen wie .getBufferAddressKHR keine Linker Error schmeissen.
-        // Die Frage ist, wieso? und wie koennen wir das problem evtl. anders behandeln? Mit dem DispatchLoaderDynamic gehen zwar die Fehler weg,
-        // aber die Anwendung crasht...
+    void ASManager::buildBLAS(Buffer<uint16_t> &vertexBuffer, Buffer<uint16_t> &indexBuffer) {
+        // INFO: It seems that we need a dynamic dispatch loader because Vulkan is an ASs ...
+        vk::DispatchLoaderDynamic dld( (PFN_vkGetInstanceProcAddr) m_core->getContext().getInstance().getProcAddr("vkGetInstanceProcAddr") );
+        dld.init(m_core->getContext().getInstance());
 
         vk::BufferDeviceAddressInfo vertexBufferDeviceAddressInfo(vertexBuffer.getVulkanHandle());
-        vk::DeviceAddress vertexBufferAddress = m_core->getContext().getDevice().getBufferAddressKHR(vertexBufferDeviceAddressInfo);
+        vk::DeviceAddress vertexBufferAddress = m_core->getContext().getDevice().getBufferAddressKHR(vertexBufferDeviceAddressInfo, dld);
         vk::DeviceOrHostAddressConstKHR vertexDeviceOrHostAddressConst(vertexBufferAddress);
 
         vk::BufferDeviceAddressInfo indexBufferDeviceAddressInfo(indexBuffer.getVulkanHandle());
-        vk::DeviceAddress indexBufferAddress = m_core->getContext().getDevice().getBufferAddressKHR(indexBufferDeviceAddressInfo);
+        vk::DeviceAddress indexBufferAddress = m_core->getContext().getDevice().getBufferAddressKHR(indexBufferDeviceAddressInfo, dld);
         vk::DeviceOrHostAddressConstKHR indexDeviceOrHostAddressConst(indexBufferAddress);
 
         // Specify triangle mesh data // TODO: Check if valid entries ...
@@ -30,7 +30,7 @@ namespace vkcv::rtx {
                 vertexDeviceOrHostAddressConst, // vertex buffer address (vk::DeviceOrHostAddressConstKHR)
                 3 * sizeof(float), // vertex stride (vk::DeviceSize)
                 uint32_t(vertexBuffer.getCount() - 1), // maxVertex (uint32_t)
-                vk::IndexType::eUint8EXT, // indexType (vk::IndexType)
+                vk::IndexType::eUint16, // indexType (vk::IndexType) --> INFO: UINT16 oder UINT32!
                 indexDeviceOrHostAddressConst, // indexData (vk::DeviceOrHostAddressConstKHR)
                 {} // transformData (vk::DeviceOrHostAddressConstKHR)
         );
@@ -65,11 +65,12 @@ namespace vkcv::rtx {
                 vk::AccelerationStructureBuildTypeKHR::eDevice, // build on device instead of host
                 &asBuildInfo, // pointer to build info
                 &asRangeInfo.primitiveCount, // array of number of primitives per geometry
-                &asBuildSizesInfo  // output pointer to store sizes
+                &asBuildSizesInfo,  // output pointer to store sizes
+                dld
                 );
 
         // Allocate the AS TODO: which type do we need for the buffer??
-        Buffer<vk::AccelerationStructureKHR> asBuffer = m_core->createBuffer<vk::AccelerationStructureKHR>(BufferType::RT_ACCELERATION, asBuildSizesInfo.accelerationStructureSize, BufferMemoryType::DEVICE_LOCAL);
+        Buffer<vk::AccelerationStructureKHR> asBuffer = m_core->createBuffer<vk::AccelerationStructureKHR>(BufferType::RT_ACCELERATION_VERTEX, asBuildSizesInfo.accelerationStructureSize, BufferMemoryType::DEVICE_LOCAL);
         //        core->createBuffer<>()
 
         // Create an empty AS object
@@ -86,12 +87,15 @@ namespace vkcv::rtx {
         vk::Result res = m_core->getContext().getDevice().createAccelerationStructureKHR(
                 &asCreateInfo, // AS create info
                 nullptr, // allocator callbacks
-                &blas // the AS
+                &blas, // the AS
+                dld
         );
         if(res != vk::Result::eSuccess) {
             vkcv_log(vkcv::LogLevel::ERROR, "The Bottom Level Acceleration Structure could not be builded!");
         }
         asBuildInfo.setDstAccelerationStructure(blas);
+
+        // TODO: destroy accelerationstructure when closing app
     }
 
 }

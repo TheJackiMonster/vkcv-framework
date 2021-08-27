@@ -42,7 +42,7 @@ namespace vkcv::rtx {
          * @param vertexBuffer
          * @param indexBuffer
          */
-        void init(Core* core, Buffer<uint8_t> &vertexBuffer, Buffer<uint8_t> &indexBuffer);
+        void init(Core* core, Buffer<uint16_t> &vertexBuffer, Buffer<uint16_t> &indexBuffer);
     };
 
 }

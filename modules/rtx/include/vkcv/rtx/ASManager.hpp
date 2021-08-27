@@ -6,7 +6,6 @@ namespace vkcv::rtx {
 
     class ASManager {
     private:
-        vkcv::BufferHandle m_buffer;
         Core* m_core;
 
     public:
@@ -21,6 +20,6 @@ namespace vkcv::rtx {
          * @param[in] vertexBuffer The vertex buffer.
          * @param[in] indexBuffer The index buffer.
          */
-        void buildBLAS(Buffer<uint8_t> &vertexBuffer, Buffer<uint8_t> &indexBuffer);
+        void buildBLAS(Buffer<uint16_t> &vertexBuffer, Buffer<uint16_t> &indexBuffer);
     };
 }
