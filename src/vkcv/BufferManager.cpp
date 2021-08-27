@@ -48,10 +48,13 @@ namespace vkcv {
 			case BufferType::INDEX:
 				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
 				break;
-		    case BufferType::RT_ACCELERATION:
-		        usageFlags = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer;
+		    case BufferType::RT_ACCELERATION_VERTEX:
+		        usageFlags = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR | vk::BufferUsageFlagBits::eStorageBuffer;
 		        break;
-			default:
+		    case BufferType::RT_ACCELERATION_INDEX:
+		        usageFlags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR | vk::BufferUsageFlagBits::eStorageBuffer;
+			    break;
+            default:
 				vkcv_log(LogLevel::WARNING, "Unknown buffer type");
 				break;
 		}
@@ -89,7 +92,8 @@ namespace vkcv {
 		if (type == BufferType::STAGING) {
 			memoryUsage = vma::MemoryUsage::eCpuToGpu;
 		}
-		
+
+		// TODO ?vma::AllocatorCreateFlagBits::eKhrDedicatedAllocation?
 		auto bufferAllocation = allocator.createBuffer(
 				vk::BufferCreateInfo(createFlags, size, usageFlags),
 				vma::AllocationCreateInfo(

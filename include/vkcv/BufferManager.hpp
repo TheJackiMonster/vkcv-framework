@@ -14,7 +14,8 @@ namespace vkcv
 		UNIFORM,
 		STORAGE,
 		STAGING,
-		RT_ACCELERATION
+		RT_ACCELERATION_VERTEX,
+		RT_ACCELERATION_INDEX
 	};
 	
 	enum class BufferMemoryType {
