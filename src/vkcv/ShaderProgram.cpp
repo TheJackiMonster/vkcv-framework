@@ -195,7 +195,25 @@ namespace vkcv {
         if (maxSetID != -1) {
             if((int32_t)m_DescriptorSets.size() <= maxSetID) m_DescriptorSets.resize(maxSetID + 1);
             for (const auto &binding : bindings) {
-                m_DescriptorSets[binding.first].push_back(binding.second);
+                //checking if descriptor has already been reflected in another shader stage
+                bool bindingFound = false;
+                uint32_t pos = 0;
+                for (const auto& descriptor : m_DescriptorSets[binding.first]) {
+                    if (binding.second.bindingID == descriptor.bindingID) {
+                        if (binding.second.descriptorType == descriptor.descriptorType && binding.second.descriptorCount == descriptor.descriptorCount) {
+                            //updating descriptor binding with another shader stage
+                            ShaderStages updatedShaders = descriptor.shaderStages | shaderStage;
+                            DescriptorBinding newBinding = DescriptorBinding(binding.second.bindingID, binding.second.descriptorType, binding.second.descriptorCount, updatedShaders);
+                            m_DescriptorSets[binding.first][pos] = newBinding;
+                            bindingFound = true;
+                            break;
+                        }
+                        else vkcv_log(LogLevel::ERROR, "Included shaders contain resources with same identifier but different type or count");
+                    }
+                    pos++;
+                }
+                //append new descriptor if it has not been reflected yet
+                if(!bindingFound) m_DescriptorSets[binding.first].push_back(binding.second);
             }
         }
 
