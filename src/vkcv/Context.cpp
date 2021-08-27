@@ -346,10 +346,10 @@ namespace vkcv
 		    // add raytracing features to deviceFeatures2
 //		    deviceFeatures2.setFeatures(raytracingFeatures2.features);  // TODO: Ist das so korrekt? Haette sonst an dem letzten pNext Eintrag (leider ein void*) die anderen Features angekettet
             deviceFeatures2 = raytracingFeatures2;
-//            deviceFeatures2.features.fragmentStoresAndAtomics = true;   // TODO: Wir koennten hier auch die .features Zeilen von oben runternehmen zu nach den Klammern
+            deviceFeatures2.features.fragmentStoresAndAtomics = true;   // TODO: Wir koennten hier auch die .features Zeilen von oben runternehmen zu nach den Klammern
 		    deviceFeatures2.features.geometryShader = true;
 		    deviceFeatures2.features.depthClamp = true;
-//		    deviceFeatures2.features.shaderInt16 = true;
+		    deviceFeatures2.features.shaderInt16 = true;
 
 		}
 
