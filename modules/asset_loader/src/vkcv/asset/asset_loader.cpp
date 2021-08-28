@@ -107,7 +107,7 @@ namespace vkcv::asset {
 									const std::vector<fx::gltf::BufferView> &bufferViews,
 									std::vector<VertexAttribute> &dst) {
 		for (const auto &attrib : src) {
-			VertexAttribute att;
+			VertexAttribute att {};
 			
 			if (attrib.first == "POSITION") {
 				att.type = PrimitiveType::POSITION;
@@ -282,7 +282,7 @@ namespace vkcv::asset {
 	 * modes, default is repeat, the other modes aren't available.
 	 */
 	static vkcv::asset::Sampler loadSampler(const fx::gltf::Sampler &src) {
-		Sampler dst;
+		Sampler dst {};
 		
 		dst.minLOD = 0;
 		dst.maxLOD = VK_LOD_CLAMP_NONE;
@@ -414,13 +414,13 @@ namespace vkcv::asset {
 			}
 	
 			if (posAccessor.bufferView >= sceneObjects.bufferViews.size()) {
-				vkcv_log(LogLevel::ERROR, "Access to bufferView out of bounds: %lu",
+				vkcv_log(LogLevel::ERROR, "Access to bufferView out of bounds: %d",
 						posAccessor.bufferView);
 				return ASSET_ERROR;
 			}
 			const fx::gltf::BufferView& vertexBufferView = sceneObjects.bufferViews[posAccessor.bufferView];
 			if (vertexBufferView.buffer >= sceneObjects.buffers.size()) {
-				vkcv_log(LogLevel::ERROR, "Access to buffer out of bounds: %lu",
+				vkcv_log(LogLevel::ERROR, "Access to buffer out of bounds: %d",
 						vertexBufferView.buffer);
 				return ASSET_ERROR;
 			}
@@ -571,7 +571,7 @@ namespace vkcv::asset {
 					texture.sampler = -1;
 				} else
 				if (static_cast<size_t>(textureObject.sampler) >= scene.samplers.size()) {
-					vkcv_log(LogLevel::ERROR, "Sampler of texture '%s' missing (%s) %d",
+					vkcv_log(LogLevel::ERROR, "Sampler of texture '%s' missing (%s)",
 							 textureObject.name.c_str(), path.c_str());
 					return ASSET_ERROR;
 				} else {
