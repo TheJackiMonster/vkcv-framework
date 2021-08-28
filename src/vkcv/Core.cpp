@@ -832,4 +832,141 @@ namespace vkcv
 		}, nullptr);
 	}
 	
+	static void setDebugObjectLabel(const vk::Device& device, const vk::ObjectType& type,
+									uint64_t handle, const std::string& label) {
+#ifndef NDEBUG
+		static PFN_vkSetDebugUtilsObjectNameEXT setDebugLabel = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
+				device.getProcAddr("vkSetDebugUtilsObjectNameEXT")
+		);
+		
+		if (!setDebugLabel) {
+			return;
+		}
+		
+		const vk::DebugUtilsObjectNameInfoEXT debug (
+				type,
+				handle,
+				label.c_str()
+		);
+		
+		setDebugLabel(device, &(static_cast<const VkDebugUtilsObjectNameInfoEXT&>(debug)));
+#endif
+	}
+	
+	void Core::setDebugLabel(const BufferHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::eBuffer,
+				reinterpret_cast<uint64_t>(static_cast<VkBuffer>(
+						m_BufferManager->getBuffer(handle)
+				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const PassHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::eRenderPass,
+				reinterpret_cast<uint64_t>(static_cast<VkRenderPass>(
+						m_PassManager->getVkPass(handle)
+				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const PipelineHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::ePipeline,
+				reinterpret_cast<uint64_t>(static_cast<VkPipeline>(
+						m_PipelineManager->getVkPipeline(handle)
+				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const DescriptorSetHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::eDescriptorSet,
+				reinterpret_cast<uint64_t>(static_cast<VkDescriptorSet>(
+						m_DescriptorManager->getDescriptorSet(handle).vulkanHandle
+				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const SamplerHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::eSampler,
+				reinterpret_cast<uint64_t>(static_cast<VkSampler>(
+						m_SamplerManager->getVulkanSampler(handle)
+				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const ImageHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		} else
+		if (handle.isSwapchainImage()) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to swapchain image");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::eImage,
+				reinterpret_cast<uint64_t>(static_cast<VkImage>(
+						m_ImageManager->getVulkanImage(handle)
+				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const CommandStreamHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::eCommandBuffer,
+				reinterpret_cast<uint64_t>(static_cast<VkCommandBuffer>(
+						m_CommandStreamManager->getStreamCommandBuffer(handle)
+				)),
+				label
+		);
+	}
+	
 }

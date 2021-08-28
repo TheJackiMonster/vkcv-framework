@@ -318,6 +318,14 @@ namespace vkcv
 		
 		void recordBlitImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst,
 							 SamplerFilterType filterType);
+	
+		void setDebugLabel(const BufferHandle &handle, const std::string &label);
+		void setDebugLabel(const PassHandle &handle, const std::string &label);
+		void setDebugLabel(const PipelineHandle &handle, const std::string &label);
+		void setDebugLabel(const DescriptorSetHandle &handle, const std::string &label);
+		void setDebugLabel(const SamplerHandle &handle, const std::string &label);
+		void setDebugLabel(const ImageHandle &handle, const std::string &label);
+		void setDebugLabel(const CommandStreamHandle &handle, const std::string &label);
 		
     };
 }
