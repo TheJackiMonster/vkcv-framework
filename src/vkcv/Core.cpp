@@ -263,9 +263,8 @@ namespace vkcv
 		vk::Device                      device) {
 
 		std::vector<vk::ImageView> attachmentsViews;
-		for (const ImageHandle handle : renderTargets) {
-			vk::ImageView targetHandle = imageManager.getVulkanImageView(handle);
-			attachmentsViews.push_back(targetHandle);
+		for (const ImageHandle& handle : renderTargets) {
+			attachmentsViews.push_back(imageManager.getVulkanImageView(handle));
 		}
 
 		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, swapchain, imageManager);
@@ -287,8 +286,7 @@ namespace vkcv
 		ImageManager&                   imageManager,
 		const vk::CommandBuffer         cmdBuffer) {
 
-		for (const ImageHandle handle : renderTargets) {
-			vk::ImageView targetHandle = imageManager.getVulkanImageView(handle);
+		for (const ImageHandle& handle : renderTargets) {
 			const bool isDepthImage = isDepthFormat(imageManager.getImageFormat(handle));
 			const vk::ImageLayout targetLayout =
 				isDepthImage ? vk::ImageLayout::eDepthStencilAttachmentOptimal : vk::ImageLayout::eColorAttachmentOptimal;
@@ -382,7 +380,7 @@ namespace vkcv
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
 
-			for (int i = 0; i < drawcalls.size(); i++) {
+			for (size_t i = 0; i < drawcalls.size(); i++) {
 				recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
 			}
 
@@ -450,7 +448,7 @@ namespace vkcv
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
 
-			for (int i = 0; i < drawcalls.size(); i++) {
+			for (size_t i = 0; i < drawcalls.size(); i++) {
                 const uint32_t pushConstantOffset = i * pushConstantData.getSizePerDrawcall();
                 recordMeshShaderDrawcall(
                     cmdBuffer,
@@ -550,6 +548,42 @@ namespace vkcv
 #endif
 	}
 	
+	void Core::recordComputeIndirectDispatchToCmdStream(
+		const CommandStreamHandle               cmdStream,
+		const PipelineHandle                    computePipeline,
+		const vkcv::BufferHandle                buffer,
+		const size_t                            bufferArgOffset,
+		const std::vector<DescriptorSetUsage>&  descriptorSetUsages,
+		const PushConstants&                    pushConstants) {
+
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+
+			const auto pipelineLayout = m_PipelineManager->getVkPipelineLayout(computePipeline);
+
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_PipelineManager->getVkPipeline(computePipeline));
+			for (const auto& usage : descriptorSetUsages) {
+				cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eCompute,
+					pipelineLayout,
+					usage.setLocation,
+					{ usage.vulkanHandle },
+					usage.dynamicOffsets
+				);
+			}
+			if (pushConstants.getSizePerDrawcall() > 0) {
+				cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eCompute,
+					0,
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getData());
+			}
+			cmdBuffer.dispatchIndirect(m_BufferManager->getBuffer(buffer), bufferArgOffset);
+		};
+
+		recordCommandsToStream(cmdStream, submitFunction, nullptr);
+	}
+
 	void Core::endFrame() {
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;

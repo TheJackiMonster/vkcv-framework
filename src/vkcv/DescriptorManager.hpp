@@ -51,12 +51,6 @@ namespace vkcv
 		* @return vk flag of the DescriptorType
 		*/
 		static vk::DescriptorType convertDescriptorTypeFlag(DescriptorType type);
-		/**
-		* Converts the flags of the shader stages from VulkanCV (vkcv) to Vulkan (vk).
-		* @param[in] vkcv flag of the ShaderStage (see ShaderProgram.hpp)
-		* @return vk flag of the ShaderStage
-		*/
-		static vk::ShaderStageFlagBits convertShaderStageFlag(ShaderStage stage);
 		
 		/**
 		* Destroys a specific resource description

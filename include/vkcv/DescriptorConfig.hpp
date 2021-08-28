@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-
 #include "vkcv/Handles.hpp"
 #include "vkcv/ShaderStage.hpp"
 
@@ -41,12 +39,12 @@ namespace vkcv
             uint32_t bindingID,
             DescriptorType descriptorType,
             uint32_t descriptorCount,
-            ShaderStage shaderStage
+            ShaderStages shaderStages
         ) noexcept;
         
         uint32_t bindingID;
         DescriptorType descriptorType;
         uint32_t descriptorCount;
-        ShaderStage shaderStage;
+        ShaderStages shaderStages;
     };
 }
