@@ -245,6 +245,10 @@ namespace vkcv::upscaling {
 	void FSRUpscaling::recordUpscaling(const CommandStreamHandle& cmdStream,
 									   const ImageHandle& input,
 									   const ImageHandle& output) {
+		m_core.recordBeginDebugLabel(cmdStream, "vkcv::upscaling::FSRUpscaling", {
+			1.0f, 0.0f, 0.0f, 1.0f
+		});
+		
 		const uint32_t inputWidth = m_core.getImageWidth(input);
 		const uint32_t inputHeight = m_core.getImageHeight(input);
 		
@@ -361,6 +365,8 @@ namespace vkcv::upscaling {
 					PushConstants(0)
 			);
 		}
+		
+		m_core.recordEndDebugLabel(cmdStream);
 	}
 	
 	bool FSRUpscaling::isHdrEnabled() const {
