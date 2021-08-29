@@ -185,8 +185,8 @@ namespace vkcv
             * return Buffer-Object
             */
         template<typename T>
-        Buffer<T> createBuffer(vkcv::BufferType type, size_t count, BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL) {
-        	return Buffer<T>::create(m_BufferManager.get(), type, count, memoryType);
+        Buffer<T> createBuffer(vkcv::BufferType type, size_t count, BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL, bool supportIndirect = false) {
+        	return Buffer<T>::create(m_BufferManager.get(), type, count, memoryType, supportIndirect);
         }
         
         /**
@@ -270,6 +270,14 @@ namespace vkcv
 			const uint32_t dispatchCount[3],
 			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
 			const PushConstants& pushConstants);
+
+		void recordComputeIndirectDispatchToCmdStream(
+			const CommandStreamHandle               cmdStream,
+			const PipelineHandle                    computePipeline,
+			const vkcv::BufferHandle                buffer,
+			const size_t                            bufferArgOffset,
+			const std::vector<DescriptorSetUsage>&  descriptorSetUsages,
+			const PushConstants&                    pushConstants);
 
 		/**
 		 * @brief end recording and present image

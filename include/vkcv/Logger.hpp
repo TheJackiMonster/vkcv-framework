@@ -53,9 +53,10 @@ namespace vkcv {
     VKCV_DEBUG_MESSAGE_LEN,                \
     __VA_ARGS__                            \
   );                                       \
+  auto output = getLogOutput(level);       \
   if (level != vkcv::LogLevel::RAW_INFO) { \
     fprintf(                               \
-      getLogOutput(level),                 \
+      output,                              \
       "[%s]: %s [%s, line %d: %s]\n",      \
       vkcv::getLogName(level),             \
       output_message,                      \
@@ -65,12 +66,13 @@ namespace vkcv {
     );                                     \
   } else {                                 \
     fprintf(                               \
-      getLogOutput(level),                 \
+      output,                              \
       "[%s]: %s\n",                        \
       vkcv::getLogName(level),             \
       output_message                       \
     );                                     \
   }                                        \
+  fflush(output);                          \
 }
 
 #else

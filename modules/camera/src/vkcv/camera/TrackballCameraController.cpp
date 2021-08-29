@@ -23,10 +23,10 @@ namespace vkcv::camera {
         }
 
         // handle yaw rotation
-        m_yaw = m_yaw + static_cast<float>(xOffset) * m_cameraSpeed;
+        m_yaw = m_yaw + static_cast<float>(xOffset) * 90.0f * m_cameraSpeed;
 
         // handle pitch rotation
-        m_pitch = m_pitch + static_cast<float>(yOffset) * m_cameraSpeed;
+        m_pitch = m_pitch + static_cast<float>(yOffset) * 90.0f * m_cameraSpeed;
     }
 
     void TrackballCameraController::updateRadius(double offset, Camera &camera) {
@@ -67,15 +67,10 @@ namespace vkcv::camera {
     }
 
     void TrackballCameraController::mouseMoveCallback(double xoffset, double yoffset, Camera &camera) {
-        if(!m_rotationActive){
-            return;
-        }
+        xoffset *= static_cast<float>(m_rotationActive);
+        yoffset *= static_cast<float>(m_rotationActive);
 
-        float sensitivity = 0.025f;
-        xoffset *= sensitivity;
-        yoffset *= sensitivity;
-
-        panView(xoffset , yoffset, camera);
+        panView(xoffset, yoffset, camera);
     }
 
     void TrackballCameraController::mouseButtonCallback(int button, int action, int mods, Camera &camera) {
@@ -91,7 +86,7 @@ namespace vkcv::camera {
         GLFWgamepadstate gamepadState;
         glfwGetGamepadState(gamepadIndex, &gamepadState);
 
-        float sensitivity = 100.0f;
+        float sensitivity = 1.0f;
         double threshold = 0.1;
 
         // handle rotations

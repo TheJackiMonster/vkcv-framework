@@ -76,8 +76,8 @@ namespace vkcv {
 		{}
 		
 		[[nodiscard]]
-		static Buffer<T> create(BufferManager* manager, BufferType type, size_t count, BufferMemoryType memoryType) {
-			return Buffer<T>(manager, manager->createBuffer(type, count * sizeof(T), memoryType), type, count, memoryType);
+		static Buffer<T> create(BufferManager* manager, BufferType type, size_t count, BufferMemoryType memoryType, bool supportIndirect) {
+			return Buffer<T>(manager, manager->createBuffer(type, count * sizeof(T), memoryType, supportIndirect), type, count, memoryType);
 		}
 		
 	};

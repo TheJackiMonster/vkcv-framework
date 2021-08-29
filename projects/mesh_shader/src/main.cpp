@@ -105,11 +105,6 @@ int main(int argc, const char** argv) {
 
     vkcv::gui::GUI gui (core, window);
 
-    const auto& context = core.getContext();
-    const vk::Instance& instance = context.getInstance();
-    const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
-    const vk::Device& device = context.getDevice();
-
     vkcv::asset::Scene mesh;
     const char* path = argc > 1 ? argv[1] : "resources/Bunny/Bunny.glb";
     vkcv::asset::loadScene(path, mesh);
