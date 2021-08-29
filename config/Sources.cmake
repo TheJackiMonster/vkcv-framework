@@ -1,6 +1,9 @@
 
 # adding all source files and header files of the framework:
 set(vkcv_sources
+		${vkcv_include}/vkcv/Features.hpp
+		${vkcv_source}/vkcv/Features.cpp
+		
 		${vkcv_include}/vkcv/FeatureManager.hpp
 		${vkcv_source}/vkcv/FeatureManager.cpp
 		

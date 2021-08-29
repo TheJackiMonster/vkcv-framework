@@ -93,12 +93,12 @@ namespace vkcv {
 		FeatureManager& operator=(FeatureManager&& other) noexcept;
 		
 		[[nodiscard]]
-		bool isExtensionSupported(const char *extension) const;
+		bool isExtensionSupported(const std::string& extension) const;
 		
-		bool useExtension(const char *extension, bool required = true);
+		bool useExtension(const std::string& extension, bool required = true);
 		
 		[[nodiscard]]
-		bool isExtensionActive(const char *extension) const;
+		bool isExtensionActive(const std::string& extension) const;
 		
 		[[nodiscard]]
 		const std::vector<const char*>& getActiveExtensions() const;

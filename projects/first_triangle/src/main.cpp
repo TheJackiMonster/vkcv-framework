@@ -16,14 +16,16 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		false
 	);
+	
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		{},
-		{ "VK_KHR_swapchain" }
+		features
 	);
 
 	const auto& context = core.getContext();

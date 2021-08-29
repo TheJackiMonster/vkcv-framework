@@ -29,13 +29,15 @@ int main(int argc, const char** argv) {
 	
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
 
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
-		{},
-		{ "VK_KHR_swapchain" }
+		features
 	);
 	
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(

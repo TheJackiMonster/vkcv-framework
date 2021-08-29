@@ -5,7 +5,7 @@
 
 #include "QueueManager.hpp"
 #include "DrawcallRecording.hpp"
-#include "FeatureManager.hpp"
+#include "Features.hpp"
 
 namespace vkcv
 {
@@ -45,8 +45,8 @@ namespace vkcv
         static Context create(const char *applicationName,
 							  uint32_t applicationVersion,
 							  const std::vector<vk::QueueFlagBits>& queueFlags,
-							  const std::vector<const char *>& instanceExtensions,
-							  const std::vector<const char *>& deviceExtensions);
+							  const Features& features,
+							  const std::vector<const char*>& instanceExtensions = {});
 
     private:
         /**

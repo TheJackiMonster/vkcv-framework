@@ -190,8 +190,8 @@ namespace vkcv
 	Context Context::create(const char *applicationName,
 							uint32_t applicationVersion,
 							const std::vector<vk::QueueFlagBits>& queueFlags,
-							const std::vector<const char *>& instanceExtensions,
-							const std::vector<const char *>& deviceExtensions) {
+							const Features& features,
+							const std::vector<const char*>& instanceExtensions) {
 		// check for layer support
 		
 		const std::vector<vk::LayerProperties>& layerProperties = vk::enumerateInstanceLayerProperties();
@@ -282,8 +282,8 @@ namespace vkcv
 			features.setShaderInt16(true);
 		});
 		
-		for (const auto& extension : deviceExtensions) {
-			featureManager.useExtension(extension);
+		for (const auto& feature : features.getList()) {
+			feature(featureManager);
 		}
 		
 		const auto& extensions = featureManager.getActiveExtensions();
@@ -312,16 +312,6 @@ namespace vkcv
 		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
-		
-		for (const auto& extension : deviceExtensions) {
-			if (0 == strcmp(extension, VK_NV_MESH_SHADER_EXTENSION_NAME)) {
-				featureManager.useFeatures<vk::PhysicalDeviceMeshShaderFeaturesNV>(
-						[](vk::PhysicalDeviceMeshShaderFeaturesNV& features) {
-					features.setTaskShader(true);
-					features.setMeshShader(true);
-				});
-			}
-		}
 		
 		deviceCreateInfo.setPNext(&(featureManager.getFeatures()));
 		

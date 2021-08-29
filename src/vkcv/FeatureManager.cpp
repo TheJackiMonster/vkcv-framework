@@ -372,9 +372,9 @@ m_physicalDevice.getFeatures2(&query)
 		return *this;
 	}
 	
-	bool FeatureManager::isExtensionSupported(const char *extension) const {
+	bool FeatureManager::isExtensionSupported(const std::string& extension) const {
 		for (const auto& supported : m_supportedExtensions) {
-			if (0 == strcmp(supported, extension)) {
+			if (0 == strcmp(supported, extension.c_str())) {
 				return true;
 			}
 		}
@@ -382,16 +382,17 @@ m_physicalDevice.getFeatures2(&query)
 		return false;
 	}
 	
-	bool FeatureManager::useExtension(const char *extension, bool required) {
-		const char* clone = strclone(extension);
+	bool FeatureManager::useExtension(const std::string& extension, bool required) {
+		const char* clone = strclone(extension.c_str());
 		
 		if (!clone) {
-			vkcv_log(LogLevel::WARNING, "Extension '%s' is not valid", extension);
+			vkcv_log(LogLevel::WARNING, "Extension '%s' is not valid", extension.c_str());
 			return false;
 		}
 		
 		if (!isExtensionSupported(extension)) {
-			vkcv_log((required? LogLevel::ERROR : LogLevel::WARNING), "Extension '%s' is not supported", extension);
+			vkcv_log((required? LogLevel::ERROR : LogLevel::WARNING), "Extension '%s' is not supported",
+					 extension.c_str());
 			
 			delete[] clone;
 			return false;
@@ -401,9 +402,9 @@ m_physicalDevice.getFeatures2(&query)
 		return true;
 	}
 	
-	bool FeatureManager::isExtensionActive(const char *extension) const {
+	bool FeatureManager::isExtensionActive(const std::string& extension) const {
 		for (const auto& supported : m_activeExtensions) {
-			if (0 == strcmp(supported, extension)) {
+			if (0 == strcmp(supported, extension.c_str())) {
 				return true;
 			}
 		}

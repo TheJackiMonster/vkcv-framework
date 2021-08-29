@@ -54,14 +54,14 @@ namespace vkcv
                       const char *applicationName,
                       uint32_t applicationVersion,
                       const std::vector<vk::QueueFlagBits>& queueFlags,
-                      const std::vector<const char *>& instanceExtensions,
-                      const std::vector<const char *>& deviceExtensions)
+					  const Features& features,
+                      const std::vector<const char *>& instanceExtensions)
     {
         Context context = Context::create(
         		applicationName, applicationVersion,
         		queueFlags,
-        		instanceExtensions,
-        		deviceExtensions
+				features,
+        		instanceExtensions
 		);
 
         Swapchain swapChain = Swapchain::create(window, context);
