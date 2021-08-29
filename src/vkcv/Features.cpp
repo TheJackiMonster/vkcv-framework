@@ -11,7 +11,7 @@ namespace vkcv {
 	
 	void Features::requireExtensionFeature(const std::string &extension,
 										   const std::function<void(vk::PhysicalDeviceFeatures &)> &featureFunction) {
-		m_features.emplace_back([extension, &featureFunction](FeatureManager& featureManager) {
+		m_features.emplace_back([extension, featureFunction](FeatureManager& featureManager) {
 			if (featureManager.useExtension(extension, true)) {
 				return featureManager.useFeatures(featureFunction, true);
 			} else {
@@ -21,7 +21,7 @@ namespace vkcv {
 	}
 	
 	void Features::requireFeature(const std::function<void(vk::PhysicalDeviceFeatures &)> &featureFunction) {
-		m_features.emplace_back([&featureFunction](FeatureManager& featureManager) {
+		m_features.emplace_back([featureFunction](FeatureManager& featureManager) {
 			return featureManager.useFeatures(featureFunction, true);
 		});
 	}
@@ -34,7 +34,7 @@ namespace vkcv {
 	
 	void Features::tryExtensionFeature(const std::string &extension,
 									   const std::function<void(vk::PhysicalDeviceFeatures &)> &featureFunction) {
-		m_features.emplace_back([extension, &featureFunction](FeatureManager& featureManager) {
+		m_features.emplace_back([extension, featureFunction](FeatureManager& featureManager) {
 			if (featureManager.useExtension(extension, false)) {
 				return featureManager.useFeatures(featureFunction, false);
 			} else {
@@ -44,7 +44,7 @@ namespace vkcv {
 	}
 	
 	void Features::tryFeature(const std::function<void(vk::PhysicalDeviceFeatures &)> &featureFunction) {
-		m_features.emplace_back([&featureFunction](FeatureManager& featureManager) {
+		m_features.emplace_back([featureFunction](FeatureManager& featureManager) {
 			return featureManager.useFeatures(featureFunction, false);
 		});
 	}
