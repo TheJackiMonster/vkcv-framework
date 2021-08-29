@@ -23,16 +23,13 @@ int main(int argc, const char **argv) {
     );
 
     vkcv::camera::CameraManager cameraManager(window);
-
-	vkcv::Features features;
-	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 	
     vkcv::Core core = vkcv::Core::create(
             window,
             applicationName,
             VK_MAKE_VERSION(0, 0, 1),
             {vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
-			features
+			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
     );
 
     auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3,

@@ -3,6 +3,12 @@
 
 namespace vkcv {
 	
+	Features::Features(const std::initializer_list<std::string>& list) : m_features() {
+		for (const auto& extension : list) {
+			requireExtension(extension);
+		}
+	}
+	
 	void Features::requireExtension(const std::string& extension) {
 		m_features.emplace_back([extension](FeatureManager& featureManager) {
 			return featureManager.useExtension(extension, true);

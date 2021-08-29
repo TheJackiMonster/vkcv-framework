@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <vector>
+#include <initializer_list>
 
 #include "FeatureManager.hpp"
 
@@ -15,8 +16,12 @@ namespace vkcv {
 		
 	public:
 		Features() = default;
+		
+		Features(const std::initializer_list<std::string>& list);
+		
 		Features(const Features& other) = default;
 		Features(Features&& other) = default;
+		
 		~Features() = default;
 		
 		Features& operator=(const Features& other) = default;
