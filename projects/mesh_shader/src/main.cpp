@@ -86,14 +86,21 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		false
 	);
+	
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	features.requireExtensionFeature<vk::PhysicalDeviceMeshShaderFeaturesNV>(
+			VK_NV_MESH_SHADER_EXTENSION_NAME, [](vk::PhysicalDeviceMeshShaderFeaturesNV& features) {
+		features.setTaskShader(true);
+		features.setMeshShader(true);
+	});
 
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		{},
-		{ "VK_KHR_swapchain", VK_NV_MESH_SHADER_EXTENSION_NAME }
+		features
 	);
 
     vkcv::gui::GUI gui (core, window);
