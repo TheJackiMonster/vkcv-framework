@@ -44,6 +44,17 @@ namespace vkcv
 
     DescriptorSetLayoutHandle DescriptorManager::createDescriptorSetLayout(const DescriptorBindings &setBindingsMap)
     {
+        for (auto i = 0; i < m_DescriptorSetLayouts.size(); i++)
+        {
+            if(m_DescriptorSetLayouts[i].descriptorBindings.size() != setBindingsMap.size())
+                continue;
+
+            if (m_DescriptorSetLayouts[i].descriptorBindings == setBindingsMap)
+            {
+                return DescriptorSetLayoutHandle(i, [&](uint64_t id) { destroyDescriptorSetLayoutById(id); });
+            }
+        }
+        
         //create the descriptor set's layout by iterating over its bindings
         std::vector<vk::DescriptorSetLayoutBinding> bindingsVector = {};
         for (auto bindingElem : setBindingsMap)

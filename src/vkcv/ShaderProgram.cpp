@@ -155,7 +155,14 @@ namespace vkcv {
                     base_type.vecsize,
                     shaderStage);
 
-            m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
+            auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
+            if(!insertionResult.second)
+            {
+                vkcv_log(LogLevel::WARNING,
+                         "Attempting to overwrite already existing binding %u at set ID %u.",
+                         bindingID,
+                         setID);
+            }
         }
 
         for (uint32_t i = 0; i < resources.storage_buffers.size(); i++)
@@ -171,7 +178,14 @@ namespace vkcv {
                     base_type.vecsize,
                     shaderStage);
 
-            m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
+            auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
+            if(!insertionResult.second)
+            {
+                vkcv_log(LogLevel::WARNING,
+                         "Attempting to overwrite already existing binding %u at set ID %u.",
+                         bindingID,
+                         setID);
+            }
         }
 
         for (uint32_t i = 0; i < resources.separate_samplers.size(); i++) {
@@ -186,7 +200,14 @@ namespace vkcv {
                     base_type.vecsize,
                     shaderStage);
 
-            m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
+            auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
+            if(!insertionResult.second)
+            {
+                vkcv_log(LogLevel::WARNING,
+                         "Attempting to overwrite already existing binding %u at set ID %u.",
+                         bindingID,
+                         setID);
+            }
         }
 
         for (uint32_t i = 0; i < resources.separate_images.size(); i++) {
@@ -201,7 +222,14 @@ namespace vkcv {
                     base_type.vecsize,
                     shaderStage);
 
-            m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
+            auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
+            if(!insertionResult.second)
+            {
+                vkcv_log(LogLevel::WARNING,
+                         "Attempting to overwrite already existing binding %u at set ID %u.",
+                         bindingID,
+                         setID);
+            }
         }
 
         for (uint32_t i = 0; i < resources.storage_images.size(); i++) {
@@ -216,7 +244,14 @@ namespace vkcv {
                     base_type.vecsize,
                     shaderStage);
 
-            m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
+            auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
+            if(!insertionResult.second)
+            {
+                vkcv_log(LogLevel::WARNING,
+                         "Attempting to overwrite already existing binding %u at set ID %u.",
+                         bindingID,
+                         setID);
+            }
         }
 
         //reflect push constants

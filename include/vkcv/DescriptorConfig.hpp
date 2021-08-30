@@ -65,10 +65,12 @@ namespace vkcv
             ShaderStages shaderStages
         ) noexcept;
         
-        uint32_t bindingID;
-        DescriptorType descriptorType;
-        uint32_t descriptorCount;
-        ShaderStages shaderStages;
+        uint32_t        bindingID;
+        DescriptorType  descriptorType;
+        uint32_t        descriptorCount;
+        ShaderStages    shaderStages;
+
+        bool DescriptorBinding::operator ==(const DescriptorBinding &other) const;
     };
     
     typedef std::unordered_map<uint32_t, DescriptorBinding> DescriptorBindings;
