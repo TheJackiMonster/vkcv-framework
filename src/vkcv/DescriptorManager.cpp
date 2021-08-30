@@ -32,8 +32,13 @@ namespace vkcv
         for (uint64_t id = 0; id < m_DescriptorSets.size(); id++) {
 			destroyDescriptorSetById(id);
         }
+		
+		for (uint64_t id = 0; id < m_DescriptorSetLayouts.size(); id++) {
+			destroyDescriptorSetLayoutById(id);
+		}
         
 		m_DescriptorSets.clear();
+		m_DescriptorSetLayouts.clear();
   
 		for (const auto &pool : m_Pools) {
 			if (pool) {
@@ -285,6 +290,7 @@ namespace vkcv
 		auto& set = m_DescriptorSets[id];
 		if (set.vulkanHandle) {
 			m_Device.freeDescriptorSets(m_Pools[set.poolIndex], 1, &(set.vulkanHandle));
+			set.setLayoutHandle = DescriptorSetLayoutHandle();
 			set.vulkanHandle = nullptr;
 		}
 	}
