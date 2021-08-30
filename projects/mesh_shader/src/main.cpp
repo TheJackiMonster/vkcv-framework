@@ -78,12 +78,10 @@ CameraPlanes computeCameraPlanes(const vkcv::camera::Camera& camera) {
 int main(int argc, const char** argv) {
 	const char* applicationName = "Mesh shader";
 
-	const int windowWidth = 1280;
-	const int windowHeight = 720;
 	vkcv::Window window = vkcv::Window::create(
 		applicationName,
-		windowWidth,
-		windowHeight,
+		1280,
+		720,
 		false
 	);
 	
@@ -207,10 +205,12 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(bunnyShaderProgram.getReflectedDescriptors()[0]);
 
+	auto swapchainExtent = core.getSwapchain().getExtent();
+	
 	const vkcv::PipelineConfig bunnyPipelineDefinition {
 			bunnyShaderProgram,
-			(uint32_t)windowWidth,
-			(uint32_t)windowHeight,
+			swapchainExtent.width,
+			swapchainExtent.height,
 			renderPass,
 			{ bunnyLayout },
 			{ core.getDescriptorSet(vertexShaderDescriptorSet).layout },
@@ -259,8 +259,8 @@ int main(int argc, const char** argv) {
 
 	const vkcv::PipelineConfig meshShaderPipelineDefinition{
 		meshShaderProgram,
-		(uint32_t)windowWidth,
-		(uint32_t)windowHeight,
+		swapchainExtent.width,
+		swapchainExtent.height,
 		renderPass,
 		{meshShaderLayout},
 		{core.getDescriptorSet(meshShaderDescriptorSet).layout},
@@ -291,7 +291,12 @@ int main(int argc, const char** argv) {
 
     core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
 
-    vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
+    vkcv::ImageHandle depthBuffer = core.createImage(
+			vk::Format::eD32Sfloat,
+			swapchainExtent.width,
+			swapchainExtent.height,
+			1, false
+	).getHandle();
 
     auto start = std::chrono::system_clock::now();
 

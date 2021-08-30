@@ -10,13 +10,10 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Scene";
 
-	uint32_t windowWidth = 800;
-	uint32_t windowHeight = 600;
-
 	vkcv::Window window = vkcv::Window::create(
 		applicationName,
-		windowWidth,
-		windowHeight,
+		800,
+		600,
 		true
 	);
 
@@ -98,8 +95,14 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
+	
+	auto swapchainExtent = core.getSwapchain().getExtent();
 
-	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
+	vkcv::ImageHandle depthBuffer = core.createImage(
+			vk::Format::eD32Sfloat,
+			swapchainExtent.width,
+			swapchainExtent.height
+	).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	
@@ -115,11 +118,11 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 		
-		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
+		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
 			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
 			
-			windowWidth = swapchainWidth;
-			windowHeight = swapchainHeight;
+			swapchainExtent.width = swapchainWidth;
+			swapchainExtent.height = swapchainHeight;
 		}
   
 		auto end = std::chrono::system_clock::now();
