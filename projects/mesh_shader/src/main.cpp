@@ -86,22 +86,24 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		false
 	);
+	
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	features.requireExtensionFeature<vk::PhysicalDeviceMeshShaderFeaturesNV>(
+			VK_NV_MESH_SHADER_EXTENSION_NAME, [](vk::PhysicalDeviceMeshShaderFeaturesNV& features) {
+		features.setTaskShader(true);
+		features.setMeshShader(true);
+	});
 
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		{},
-		{ "VK_KHR_swapchain", VK_NV_MESH_SHADER_EXTENSION_NAME }
+		features
 	);
 
     vkcv::gui::GUI gui (core, window);
-
-    const auto& context = core.getContext();
-    const vk::Instance& instance = context.getInstance();
-    const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
-    const vk::Device& device = context.getDevice();
 
     vkcv::asset::Scene mesh;
     const char* path = argc > 1 ? argv[1] : "resources/Bunny/Bunny.glb";

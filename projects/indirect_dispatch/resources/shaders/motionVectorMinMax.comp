@@ -1,0 +1,48 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+#include "motionBlurConfig.inc"
+
+layout(set=0, binding=0)        uniform texture2D   inMotion;
+layout(set=0, binding=1)        uniform sampler     textureSampler;
+layout(set=0, binding=2, rg16)  uniform image2D     outMotionMax;
+layout(set=0, binding=3, rg16)  uniform image2D     outMotionMin;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void main(){
+    
+    ivec2 outImageRes       = imageSize(outMotionMax);
+    ivec2 motionTileCoord   = ivec2(gl_GlobalInvocationID.xy);
+    
+    if(any(greaterThanEqual(motionTileCoord, outImageRes)))
+        return;
+    
+    float   velocityMax = 0;
+    vec2    motionMax   = vec2(0);
+    
+    float   velocityMin = 100000;
+    vec2    motionMin   = vec2(0);
+    
+    ivec2 motionBufferBaseCoord = motionTileCoord * motionTileSize;
+    
+    for(int x = 0; x < motionTileSize; x++){
+        for(int y = 0; y < motionTileSize; y++){
+            ivec2   sampleCoord     = motionBufferBaseCoord + ivec2(x, y);
+            vec2    motionSample    = texelFetch(sampler2D(inMotion, textureSampler), sampleCoord, 0).rg;
+            float   velocitySample  = length(motionSample);
+            
+            if(velocitySample > velocityMax){
+                velocityMax = velocitySample;
+                motionMax   = motionSample;
+            }
+            
+            if(velocitySample < velocityMin){
+                velocityMin = velocitySample;
+                motionMin   = motionSample;
+            }
+        }
+    }
+
+    imageStore(outMotionMax, motionTileCoord, vec4(motionMax, 0, 0));
+    imageStore(outMotionMin, motionTileCoord, vec4(motionMin, 0, 0));
+}

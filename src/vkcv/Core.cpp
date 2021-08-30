@@ -54,14 +54,14 @@ namespace vkcv
                       const char *applicationName,
                       uint32_t applicationVersion,
                       const std::vector<vk::QueueFlagBits>& queueFlags,
-                      const std::vector<const char *>& instanceExtensions,
-                      const std::vector<const char *>& deviceExtensions)
+					  const Features& features,
+                      const std::vector<const char *>& instanceExtensions)
     {
         Context context = Context::create(
         		applicationName, applicationVersion,
         		queueFlags,
-        		instanceExtensions,
-        		deviceExtensions
+				features,
+        		instanceExtensions
 		);
 
         Swapchain swapChain = Swapchain::create(window, context);
@@ -263,9 +263,8 @@ namespace vkcv
 		vk::Device                      device) {
 
 		std::vector<vk::ImageView> attachmentsViews;
-		for (const ImageHandle handle : renderTargets) {
-			vk::ImageView targetHandle = imageManager.getVulkanImageView(handle);
-			attachmentsViews.push_back(targetHandle);
+		for (const ImageHandle& handle : renderTargets) {
+			attachmentsViews.push_back(imageManager.getVulkanImageView(handle));
 		}
 
 		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, swapchain, imageManager);
@@ -287,8 +286,7 @@ namespace vkcv
 		ImageManager&                   imageManager,
 		const vk::CommandBuffer         cmdBuffer) {
 
-		for (const ImageHandle handle : renderTargets) {
-			vk::ImageView targetHandle = imageManager.getVulkanImageView(handle);
+		for (const ImageHandle& handle : renderTargets) {
 			const bool isDepthImage = isDepthFormat(imageManager.getImageFormat(handle));
 			const vk::ImageLayout targetLayout =
 				isDepthImage ? vk::ImageLayout::eDepthStencilAttachmentOptimal : vk::ImageLayout::eColorAttachmentOptimal;
@@ -331,8 +329,8 @@ namespace vkcv
 	}
 
 	void Core::recordDrawcallsToCmdStream(
-		const CommandStreamHandle       cmdStreamHandle,
-		const PassHandle                renderpassHandle, 
+		const CommandStreamHandle&      cmdStreamHandle,
+		const PassHandle&               renderpassHandle,
 		const PipelineHandle            pipelineHandle, 
         const PushConstants             &pushConstantData,
         const std::vector<DrawcallInfo> &drawcalls,
@@ -368,7 +366,6 @@ namespace vkcv
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
-
 			const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
 
 			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
@@ -377,16 +374,14 @@ namespace vkcv
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
 			const PipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
-			if(pipeConfig.m_UseDynamicViewport)
-			{
+			if (pipeConfig.m_UseDynamicViewport) {
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
 
-			for (int i = 0; i < drawcalls.size(); i++) {
+			for (size_t i = 0; i < drawcalls.size(); i++) {
 				recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
 			}
 
-        vk::Rect2D dynamicScissor({0, 0}, {width, height});
 			cmdBuffer.endRenderPass();
 		};
 
@@ -399,8 +394,8 @@ namespace vkcv
 	}
 
 	void Core::recordMeshShaderDrawcalls(
-		const CommandStreamHandle                           cmdStreamHandle,
-		const PassHandle                                    renderpassHandle,
+		const CommandStreamHandle&                          cmdStreamHandle,
+		const PassHandle&                                   renderpassHandle,
 		const PipelineHandle                                pipelineHandle,
 		const PushConstants&                                pushConstantData,
 		const std::vector<MeshShaderDrawcall>&              drawcalls,
@@ -436,7 +431,6 @@ namespace vkcv
 		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
-
 			const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
 
 			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
@@ -445,12 +439,11 @@ namespace vkcv
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
 			const PipelineConfig& pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
-			if (pipeConfig.m_UseDynamicViewport)
-			{
+			if (pipeConfig.m_UseDynamicViewport) {
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
 
-			for (int i = 0; i < drawcalls.size(); i++) {
+			for (size_t i = 0; i < drawcalls.size(); i++) {
                 const uint32_t pushConstantOffset = i * pushConstantData.getSizePerDrawcall();
                 recordMeshShaderDrawcall(
                     cmdBuffer,
@@ -458,14 +451,14 @@ namespace vkcv
                     pushConstantData,
                     pushConstantOffset,
                     drawcalls[i],
-                    0);
+                    0
+				);
 			}
 
 			cmdBuffer.endRenderPass();
 		};
 
-		auto finishFunction = [framebuffer, this]()
-		{
+		auto finishFunction = [framebuffer, this]() {
 			m_Context.m_Device.destroy(framebuffer);
 		};
 
@@ -505,6 +498,85 @@ namespace vkcv
 		};
 
 		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);
+	}
+	
+	void Core::recordBeginDebugLabel(const CommandStreamHandle &cmdStream,
+									 const std::string& label,
+									 const std::array<float, 4>& color) {
+#ifndef NDEBUG
+		static PFN_vkCmdBeginDebugUtilsLabelEXT beginDebugLabel = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(
+				m_Context.getDevice().getProcAddr("vkCmdBeginDebugUtilsLabelEXT")
+		);
+		
+		if (!beginDebugLabel) {
+			return;
+		}
+		
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+			const vk::DebugUtilsLabelEXT debug (
+					label.c_str(),
+					color
+			);
+			
+			beginDebugLabel(cmdBuffer, &(static_cast<const VkDebugUtilsLabelEXT&>(debug)));
+		};
+
+		recordCommandsToStream(cmdStream, submitFunction, nullptr);
+#endif
+	}
+	
+	void Core::recordEndDebugLabel(const CommandStreamHandle &cmdStream) {
+#ifndef NDEBUG
+		static PFN_vkCmdEndDebugUtilsLabelEXT endDebugLabel = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(
+				m_Context.getDevice().getProcAddr("vkCmdEndDebugUtilsLabelEXT")
+		);
+		
+		if (!endDebugLabel) {
+			return;
+		}
+		
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+			endDebugLabel(cmdBuffer);
+		};
+
+		recordCommandsToStream(cmdStream, submitFunction, nullptr);
+#endif
+	}
+	
+	void Core::recordComputeIndirectDispatchToCmdStream(
+		const CommandStreamHandle               cmdStream,
+		const PipelineHandle                    computePipeline,
+		const vkcv::BufferHandle                buffer,
+		const size_t                            bufferArgOffset,
+		const std::vector<DescriptorSetUsage>&  descriptorSetUsages,
+		const PushConstants&                    pushConstants) {
+
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+
+			const auto pipelineLayout = m_PipelineManager->getVkPipelineLayout(computePipeline);
+
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_PipelineManager->getVkPipeline(computePipeline));
+			for (const auto& usage : descriptorSetUsages) {
+				cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eCompute,
+					pipelineLayout,
+					usage.setLocation,
+					{ usage.vulkanHandle },
+					usage.dynamicOffsets
+				);
+			}
+			if (pushConstants.getSizePerDrawcall() > 0) {
+				cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eCompute,
+					0,
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getData());
+			}
+			cmdBuffer.dispatchIndirect(m_BufferManager->getBuffer(buffer), bufferArgOffset);
+		};
+
+		recordCommandsToStream(cmdStream, submitFunction, nullptr);
 	}
 
 	void Core::endFrame() {
@@ -787,6 +859,143 @@ namespace vkcv
 					vk::Filter::eNearest
 			);
 		}, nullptr);
+	}
+	
+	static void setDebugObjectLabel(const vk::Device& device, const vk::ObjectType& type,
+									uint64_t handle, const std::string& label) {
+#ifndef NDEBUG
+		static PFN_vkSetDebugUtilsObjectNameEXT setDebugLabel = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
+				device.getProcAddr("vkSetDebugUtilsObjectNameEXT")
+		);
+		
+		if (!setDebugLabel) {
+			return;
+		}
+		
+		const vk::DebugUtilsObjectNameInfoEXT debug (
+				type,
+				handle,
+				label.c_str()
+		);
+		
+		setDebugLabel(device, &(static_cast<const VkDebugUtilsObjectNameInfoEXT&>(debug)));
+#endif
+	}
+	
+	void Core::setDebugLabel(const BufferHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::eBuffer,
+				reinterpret_cast<uint64_t>(static_cast<VkBuffer>(
+						m_BufferManager->getBuffer(handle)
+				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const PassHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::eRenderPass,
+				reinterpret_cast<uint64_t>(static_cast<VkRenderPass>(
+						m_PassManager->getVkPass(handle)
+				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const PipelineHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::ePipeline,
+				reinterpret_cast<uint64_t>(static_cast<VkPipeline>(
+						m_PipelineManager->getVkPipeline(handle)
+				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const DescriptorSetHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::eDescriptorSet,
+				reinterpret_cast<uint64_t>(static_cast<VkDescriptorSet>(
+						m_DescriptorManager->getDescriptorSet(handle).vulkanHandle
+				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const SamplerHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::eSampler,
+				reinterpret_cast<uint64_t>(static_cast<VkSampler>(
+						m_SamplerManager->getVulkanSampler(handle)
+				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const ImageHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		} else
+		if (handle.isSwapchainImage()) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to swapchain image");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::eImage,
+				reinterpret_cast<uint64_t>(static_cast<VkImage>(
+						m_ImageManager->getVulkanImage(handle)
+				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const CommandStreamHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::eCommandBuffer,
+				reinterpret_cast<uint64_t>(static_cast<VkCommandBuffer>(
+						m_CommandStreamManager->getStreamCommandBuffer(handle)
+				)),
+				label
+		);
 	}
 	
 }

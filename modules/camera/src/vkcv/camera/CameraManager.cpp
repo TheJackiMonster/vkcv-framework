@@ -52,8 +52,8 @@ namespace vkcv::camera {
     }
 
     void CameraManager::mouseMoveCallback(double x, double y){
-        auto xoffset = static_cast<float>(x - m_lastX);
-		auto yoffset = static_cast<float>(y - m_lastY);
+        auto xoffset = static_cast<float>(x - m_lastX) / m_window.getWidth();
+		auto yoffset = static_cast<float>(y - m_lastY) / m_window.getHeight();
         m_lastX = x;
         m_lastY = y;
 		getActiveController().mouseMoveCallback(xoffset, yoffset, getActiveCamera());

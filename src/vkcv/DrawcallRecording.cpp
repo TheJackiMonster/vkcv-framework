@@ -52,8 +52,6 @@ namespace vkcv {
         }
     }
 
-
-
     struct MeshShaderFunctions
     {
         PFN_vkCmdDrawMeshTasksNV cmdDrawMeshTasks                           = nullptr;
