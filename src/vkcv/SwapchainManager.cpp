@@ -34,8 +34,16 @@ namespace vkcv {
 			vkcv_log(LogLevel::ERROR, "Invalid id");
 			return;
 		}
-		m_context->getDevice().destroySwapchainKHR(m_swapchains[id].getSwapchain());
-		m_context->getInstance().destroySurfaceKHR(m_swapchains[id].getSurface());
+		Swapchain& swapchain = m_swapchains[id];
+
+		if(swapchain.m_Swapchain){
+			m_context->getDevice().destroySwapchainKHR(swapchain.m_Swapchain);
+		}
+		if(swapchain.m_Surface.handle) {
+			m_context->getInstance().destroySurfaceKHR(swapchain.m_Surface.handle);
+		}
+		swapchain.m_Swapchain = nullptr;
+		swapchain.m_Surface.handle = nullptr;
 	}
 
 	void SwapchainManager::signalRecreation(const SwapchainHandle handle) {
