@@ -11,6 +11,8 @@ int main(int argc, const char** argv) {
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
 
+	glfwInit();
+
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
