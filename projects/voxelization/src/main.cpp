@@ -21,13 +21,20 @@ int main(int argc, const char** argv) {
 	uint32_t windowHeight = 720;
 	const vkcv::Multisampling   msaa        = vkcv::Multisampling::MSAA4X;
 	const bool                  usingMsaa   = msaa != vkcv::Multisampling::None;
-	
-	vkcv::Window window (
-		applicationName,
-		windowWidth,
-		windowHeight,
-		true
+
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	features.requireExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
+	features.requireExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
+
+	vkcv::Core core = vkcv::Core::create(
+			applicationName,
+			VK_MAKE_VERSION(0, 0, 1),
+			{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
+			features
 	);
+
+	vkcv::Window& window = core.getWindow();
 
 	bool     isFullscreen            = false;
 	uint32_t windowedWidthBackup     = windowWidth;
@@ -80,19 +87,6 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camIndex).setFov(glm::radians(37.8));	// fov of a 35mm lens
 	
 	cameraManager.getCamera(camIndex2).setNearFar(0.1f, 30.0f);
-	
-	vkcv::Features features;
-	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	features.requireExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
-	features.requireExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
-	
-	vkcv::Core core = vkcv::Core::create(
-		window,
-		applicationName,
-		VK_MAKE_VERSION(0, 0, 1),
-		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		features
-	);
 
 	vkcv::asset::Scene mesh;
 

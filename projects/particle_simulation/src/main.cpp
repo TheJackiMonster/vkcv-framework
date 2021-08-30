@@ -6,7 +6,7 @@
 #include "ParticleSystem.hpp"
 #include <random>
 #include <glm/gtc/matrix_access.hpp>
-#include <time.h>
+#include <ctime>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include "BloomAndFlares.hpp"
 
@@ -15,22 +15,15 @@ int main(int argc, const char **argv) {
 
     uint32_t windowWidth = 800;
     uint32_t windowHeight = 600;
-    vkcv::Window window (
-            applicationName,
-            windowWidth,
-            windowHeight,
-            true
-    );
-
-    vkcv::camera::CameraManager cameraManager(window);
 	
     vkcv::Core core = vkcv::Core::create(
-            window,
             applicationName,
             VK_MAKE_VERSION(0, 0, 1),
             {vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
 			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
     );
+    vkcv::Window window = core.getWindow();
+	vkcv::camera::CameraManager cameraManager(window);
 
     auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3,
                                                            vkcv::BufferMemoryType::DEVICE_LOCAL);
@@ -186,7 +179,7 @@ int main(int argc, const char **argv) {
     auto pos = glm::vec2(0.f);
     auto spawnPosition = glm::vec3(0.f);
 
-    window.e_mouseMove.add([&](double offsetX, double offsetY) {
+	window.e_mouseMove.add([&](double offsetX, double offsetY) {
         pos = glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY));
         pos.x = (-2 * pos.x + static_cast<float>(window.getWidth())) / static_cast<float>(window.getWidth());
         pos.y = (-2 * pos.y + static_cast<float>(window.getHeight())) / static_cast<float>(window.getHeight());
@@ -234,7 +227,7 @@ int main(int argc, const char **argv) {
 
     std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
     std::default_random_engine rdmEngine;
-    while (window.isOpen()) {
+    while (vkcv::WindowManager::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 
         uint32_t swapchainWidth, swapchainHeight;

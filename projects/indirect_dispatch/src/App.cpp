@@ -8,17 +8,12 @@ App::App() :
 	m_applicationName("Indirect Dispatch"),
 	m_windowWidth(AppConfig::defaultWindowWidth),
 	m_windowHeight(AppConfig::defaultWindowHeight),
-	m_window(vkcv::Window::create(
-		m_applicationName,
-		m_windowWidth,
-		m_windowHeight,
-		true)),
 	m_core(vkcv::Core::create(
-		m_window,
 		m_applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
 		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME })),
+	m_window(m_core.getWindow()),
 	m_cameraManager(m_window){}
 
 bool App::initialize() {
@@ -138,7 +133,7 @@ void App::run() {
 
 	auto frameEndTime = std::chrono::system_clock::now();
 
-	while (m_window.isWindowOpen()) {
+	while (vkcv::WindowManager::hasOpenWindow()) {
 
 		vkcv::Window::pollEvents();
 

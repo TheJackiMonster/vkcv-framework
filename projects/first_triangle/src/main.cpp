@@ -10,19 +10,15 @@ int main(int argc, const char** argv) {
 
 	const int windowWidth = 800;
 	const int windowHeight = 600;
-	vkcv::Window window (
-		applicationName,
-		windowWidth,
-		windowHeight
-	);
 	
 	vkcv::Core core = vkcv::Core::create(
-		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
 		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
+
+	vkcv::Window window = core.getWindow();
 
 	auto triangleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
 	uint16_t indices[3] = { 0, 1, 2 };
@@ -96,7 +92,7 @@ int main(int argc, const char** argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
 
-	while (window.isOpen())
+	while (vkcv::WindowManager::hasOpenWindow())
 	{
         vkcv::Window::pollEvents();
 

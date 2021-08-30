@@ -13,14 +13,15 @@ int main(int argc, const char** argv) {
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
 
-	vkcv::Window window (
-		applicationName,
-		windowWidth,
-		windowHeight,
-		true
+	vkcv::Core core = vkcv::Core::create(
+			applicationName,
+			VK_MAKE_VERSION(0, 0, 1),
+			{vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
+			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
-
+	vkcv::Window window = core.getWindow();
 	vkcv::camera::CameraManager cameraManager(window);
+
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
@@ -28,15 +29,7 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 30.0f);
 	
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
-	
-	vkcv::Core core = vkcv::Core::create(
-		window,
-		applicationName,
-		VK_MAKE_VERSION(0, 0, 1),
-		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
-		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
-	);
-	
+
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
 			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
 	));
@@ -104,7 +97,7 @@ int main(int argc, const char** argv) {
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	
 	auto start = std::chrono::system_clock::now();
-	while (window.isOpen()) {
+	while (vkcv::WindowManager::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 		
 		if(window.getHeight() == 0 || window.getWidth() == 0)

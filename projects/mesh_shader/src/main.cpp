@@ -80,11 +80,6 @@ int main(int argc, const char** argv) {
 
 	const int windowWidth = 1280;
 	const int windowHeight = 720;
-	vkcv::Window window (
-		applicationName,
-		windowWidth,
-		windowHeight
-	);
 	
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -95,12 +90,13 @@ int main(int argc, const char** argv) {
 	});
 
 	vkcv::Core core = vkcv::Core::create(
-		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
 		features
 	);
+
+	vkcv::Window &window = core.getWindow();
 
     vkcv::gui::GUI gui (core, window);
 

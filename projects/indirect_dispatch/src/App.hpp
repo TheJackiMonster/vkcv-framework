@@ -15,8 +15,8 @@ private:
 	int m_windowWidth;
 	int m_windowHeight;
 
-	vkcv::Window                m_window;
 	vkcv::Core                  m_core;
+	vkcv::Window                m_window;
 	vkcv::camera::CameraManager m_cameraManager;
 
 	MotionBlur m_motionBlur;
