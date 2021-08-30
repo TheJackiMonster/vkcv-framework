@@ -18,6 +18,7 @@ namespace vkcv {
 	private:
 
 		Context *m_context;
+
 		void destroySwapchainById(uint64_t id);
 
 	public:

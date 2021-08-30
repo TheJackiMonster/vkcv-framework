@@ -34,12 +34,12 @@ namespace vkcv {
 			vkcv_log(LogLevel::ERROR, "Invalid id");
 			return;
 		}
-		Swapchain& swapchain = m_swapchains[id];
+		Swapchain &swapchain = m_swapchains[id];
 
-		if(swapchain.m_Swapchain){
+		if (swapchain.m_Swapchain) {
 			m_context->getDevice().destroySwapchainKHR(swapchain.m_Swapchain);
 		}
-		if(swapchain.m_Surface.handle) {
+		if (swapchain.m_Surface.handle) {
 			m_context->getInstance().destroySurfaceKHR(swapchain.m_Surface.handle);
 		}
 		swapchain.m_Swapchain = nullptr;
@@ -54,23 +54,22 @@ namespace vkcv {
 		return m_context->getDevice().getSwapchainImagesKHR(m_swapchains[handle.getId()].getSwapchain());
 	}
 
-	std::vector<vk::ImageView> SwapchainManager::createSwapchainImageViews(SwapchainHandle handle){
+	std::vector<vk::ImageView> SwapchainManager::createSwapchainImageViews(SwapchainHandle handle) {
 		std::vector<vk::Image> images = getSwapchainImages(handle);
 		Swapchain &swapchain = m_swapchains[handle.getId()];
 
 		std::vector<vk::ImageView> imageViews;
-		imageViews.reserve( images.size() );
+		imageViews.reserve(images.size());
 		//here can be swizzled with vk::ComponentSwizzle if needed
 		vk::ComponentMapping componentMapping(
 				vk::ComponentSwizzle::eR,
 				vk::ComponentSwizzle::eG,
 				vk::ComponentSwizzle::eB,
-				vk::ComponentSwizzle::eA );
+				vk::ComponentSwizzle::eA);
 
-		vk::ImageSubresourceRange subResourceRange( vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 );
+		vk::ImageSubresourceRange subResourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 
-		for ( auto image : images )
-		{
+		for (auto image : images) {
 			vk::ImageViewCreateInfo imageViewCreateInfo(
 					vk::ImageViewCreateFlags(),
 					image,
