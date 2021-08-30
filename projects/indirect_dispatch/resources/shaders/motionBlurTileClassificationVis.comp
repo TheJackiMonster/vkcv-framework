@@ -1,0 +1,56 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+#include "motionBlurConfig.inc"
+#include "motionBlurWorkTile.inc"
+
+layout(set=0, binding=0)                    uniform texture2D   inColor;
+layout(set=0, binding=1)                    uniform sampler     nearestSampler;
+layout(set=0, binding=2, r11f_g11f_b10f)    uniform image2D     outImage;
+
+layout(set=0, binding=3) buffer FullPathTileBuffer {
+    WorkTiles fullPathTiles;
+};
+
+layout(set=0, binding=4) buffer CopyPathTileBuffer {
+    WorkTiles copyPathTiles;
+};
+
+layout(set=0, binding=5) buffer FastPathTileBuffer {
+    WorkTiles fastPathTiles;
+};
+
+layout(local_size_x = motionTileSize, local_size_y = motionTileSize, local_size_z = 1) in;
+
+void main(){
+    
+    uint tileIndexFullPath = gl_WorkGroupID.x;
+    uint tileIndexCopyPath = gl_WorkGroupID.x - fullPathTiles.tileCount;
+    uint tileIndexFastPath = gl_WorkGroupID.x - fullPathTiles.tileCount - copyPathTiles.tileCount;
+    
+    vec3    debugColor;
+    ivec2   tileCoordinates;
+    
+    if(tileIndexFullPath < fullPathTiles.tileCount){
+        debugColor      = vec3(1, 0, 0);
+        tileCoordinates = fullPathTiles.tileXY[tileIndexFullPath];
+    }
+    else if(tileIndexCopyPath < copyPathTiles.tileCount){
+        debugColor      = vec3(0, 1, 0);
+        tileCoordinates = copyPathTiles.tileXY[tileIndexCopyPath];
+    }
+    else if(tileIndexFastPath < fastPathTiles.tileCount){
+        debugColor      = vec3(0, 0, 1);
+        tileCoordinates = fastPathTiles.tileXY[tileIndexFastPath];
+    }
+    else{
+        return;
+    }
+    
+    ivec2   coordinate  = ivec2(tileCoordinates * motionTileSize + gl_LocalInvocationID.xy);
+    vec3    color       = texelFetch(sampler2D(inColor, nearestSampler), coordinate, 0).rgb;
+    
+    color = mix(color, debugColor, 0.5);
+    
+    imageStore(outImage, coordinate, vec4(color, 0));
+}

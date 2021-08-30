@@ -65,7 +65,7 @@ add_library(vkcv STATIC ${vkcv_sources})
 
 if(MSVC)
   #enable multicore compilation on visual studio
-  target_compile_options(vkcv PRIVATE "/MP" "/openmp")
+  target_compile_options(vkcv PRIVATE "/MP" "/openmp" "/Zc:offsetof-")
 
   #set source groups to create proper filters in visual studio
   source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${vkcv_sources})

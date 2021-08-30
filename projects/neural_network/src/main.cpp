@@ -22,7 +22,6 @@ int main(int argc, const char** argv) {
         applicationName,
         VK_MAKE_VERSION(0, 0, 1),
         { vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-        {},
         { "VK_KHR_swapchain" }
     );
 

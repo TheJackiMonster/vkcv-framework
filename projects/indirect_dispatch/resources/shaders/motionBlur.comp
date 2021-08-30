@@ -1,0 +1,194 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+#include "motionBlur.inc"
+#include "motionBlurConfig.inc"
+#include "motionBlurWorkTile.inc"
+
+layout(set=0, binding=0)                    uniform texture2D   inColor;
+layout(set=0, binding=1)                    uniform texture2D   inDepth;
+layout(set=0, binding=2)                    uniform texture2D   inMotionFullRes;
+layout(set=0, binding=3)                    uniform texture2D   inMotionNeighbourhoodMax;  
+layout(set=0, binding=4)                    uniform sampler     nearestSampler;
+layout(set=0, binding=5, r11f_g11f_b10f)    uniform image2D     outImage;
+
+layout(set=0, binding=6) buffer WorkTileBuffer {
+    WorkTiles workTiles;
+};
+
+layout(local_size_x = motionTileSize, local_size_y = motionTileSize, local_size_z = 1) in;
+
+layout( push_constant ) uniform constants{
+    // computed from delta time and shutter speed
+    float motionScaleFactor;
+    // camera planes are needed to linearize depth
+    float cameraNearPlane;
+    float cameraFarPlane;
+    float motionTileOffsetLength;
+};
+
+float linearizeDepth(float depth, float near, float far){
+    return near * far / (far + depth * (near - far));
+}
+
+struct SampleData{
+    vec3    color;
+    float   depthLinear;
+    vec2    coordinate;
+    vec2    motion;
+    float   velocityPixels;
+};
+
+struct PointSpreadCompare{
+    float foreground;
+    float background;
+};
+
+// results in range [0, 1]
+// computes if the sample pixel in the foreground would blur over the main pixel and if the sample pixel in the background would be part of the main pixel background
+// contribution depends on if the distance between pixels is smaller than it's velocity
+// note that compared to the constant falloff used in McGuire's papers this function from Jimenez is constant until the last pixel
+// this is important for the later gradient computation
+PointSpreadCompare samplePointSpreadCompare(SampleData mainPixel, SampleData samplePixel){
+    
+    float sampleOffset = distance(mainPixel.coordinate, samplePixel.coordinate);
+    
+    PointSpreadCompare pointSpread;
+    pointSpread.foreground = clamp(1 - sampleOffset + samplePixel.velocityPixels, 0, 1);
+    pointSpread.background = clamp(1 - sampleOffset +   mainPixel.velocityPixels, 0, 1);
+    
+    return pointSpread;
+}
+
+struct DepthClassification{
+    float foreground;
+    float background;
+};
+
+// classifies depthSample compared to depthMain in regards to being in the fore- or background
+// the range is [0, 1] and sums to 1
+DepthClassification sampleDepthClassification(SampleData mainPixel, SampleData samplePixel){
+    
+    const float softDepthExtent = 0.1;
+    
+    DepthClassification classification;
+    // only the sign is different, so the latter term will cancel out on addition, so only two times 0.5 remains which sums to one
+    classification.foreground = clamp(0.5 + (mainPixel.depthLinear - samplePixel.depthLinear) / softDepthExtent, 0, 1);
+    classification.background = clamp(0.5 - (mainPixel.depthLinear - samplePixel.depthLinear) / softDepthExtent, 0, 1);
+    return classification;
+}
+
+// reconstruction filter and helper functions from "Next Generation Post Processing in Call of Duty Advanced Warfare", Jimenez
+// returns value in range [0, 1]
+float computeSampleWeigth(SampleData mainPixel, SampleData samplePixel){
+    
+    PointSpreadCompare  pointSpread         = samplePointSpreadCompare( mainPixel, samplePixel);
+    DepthClassification depthClassification = sampleDepthClassification(mainPixel, samplePixel);
+    
+    return 
+        depthClassification.foreground * pointSpread.foreground + 
+        depthClassification.background * pointSpread.background;
+}
+
+SampleData loadSampleData(vec2 uv){
+    
+    SampleData data;
+    data.color          = texture(sampler2D(inColor, nearestSampler), uv).rgb;
+    data.coordinate     = ivec2(uv * imageSize(outImage)); 
+    data.motion         = processMotionVector(texture(sampler2D(inMotionFullRes, nearestSampler), uv).rg, motionScaleFactor, imageSize(outImage));
+    data.velocityPixels = length(data.motion * imageSize(outImage));
+    data.depthLinear    = texture(sampler2D(inDepth, nearestSampler), uv).r;
+    data.depthLinear    = linearizeDepth(data.depthLinear, cameraNearPlane, cameraFarPlane);
+    
+    return data;
+}
+
+void main(){
+
+    uint    tileIndex       = gl_WorkGroupID.x;
+    ivec2   tileCoordinates = workTiles.tileXY[tileIndex];
+    ivec2   coord           = ivec2(tileCoordinates * motionTileSize + gl_LocalInvocationID.xy);
+
+    if(any(greaterThanEqual(coord, imageSize(outImage))))
+        return;
+   
+    ivec2   textureRes  = textureSize(sampler2D(inColor, nearestSampler), 0);
+    vec2    uv          = vec2(coord + 0.5) / textureRes;   // + 0.5 to shift uv into pixel center
+    
+    // the motion tile lookup is jittered, so the hard edges in the blur are replaced by noise
+    // dither is shifted, so it does not line up with motion tiles
+    float   motionOffset            = motionTileOffsetLength * (dither(coord + ivec2(ditherSize / 2)) * 2 - 1);
+    vec2    motionNeighbourhoodMax  = processMotionVector(texelFetch(sampler2D(inMotionNeighbourhoodMax, nearestSampler), ivec2(coord + motionOffset) / motionTileSize, 0).rg, motionScaleFactor, imageSize(outImage));
+    
+    SampleData mainPixel = loadSampleData(uv);
+    
+    // early out on movement less than half a pixel
+    if(length(motionNeighbourhoodMax * imageSize(outImage)) <= 0.5){
+        imageStore(outImage, coord, vec4(mainPixel.color, 0.f));
+        return;
+    }
+    
+    vec3    color           = vec3(0);
+    float   weightSum       = 0;      
+    
+    // clamping start and end points avoids artifacts at image borders
+    // the sampler clamps the sample uvs anyways, but without clamping here, many samples can be stuck at the border
+    vec2 uvStart    = clamp(uv - motionNeighbourhoodMax, 0, 1);
+    vec2 uvEnd      = clamp(uv + motionNeighbourhoodMax, 0, 1);
+    
+    // samples are placed evenly, but the entire filter is jittered
+    // dither returns either 0 or 1
+    // the sampleUV code expects an offset in range [-0.5, 0.5], so the dither is rescaled to a binary -0.25/0.25
+    float random = dither(coord) * 0.5 - 0.25;
+    
+    const int sampleCountHalf = 8; 
+    
+    // two samples are processed at a time to allow for mirrored background reconstruction
+    for(int i = 0; i < sampleCountHalf; i++){
+        
+        vec2 sampleUV1 = mix(uv, uvEnd,     (i + random + 1) / float(sampleCountHalf + 1));
+        vec2 sampleUV2 = mix(uv, uvStart,   (i + random + 1) / float(sampleCountHalf + 1));
+        
+        SampleData sample1 = loadSampleData(sampleUV1);
+        SampleData sample2 = loadSampleData(sampleUV2);
+        
+        float weight1 = computeSampleWeigth(mainPixel, sample1);
+        float weight2 = computeSampleWeigth(mainPixel, sample2);
+
+        bool mirroredBackgroundReconstruction = true;
+        if(mirroredBackgroundReconstruction){
+            // see Jimenez paper for details and comparison
+            // problem is that in the foreground the background is reconstructed, which is blurry
+            // in the background the background is obviously known, so it is sharper
+            // at the border between fore- and background this causes a discontinuity
+            // to fix this the weights are mirrored on this border, effectively reconstructing the background, even though it is known
+            
+            // these bools check if sample1 is an affected background pixel (further away and slower moving than sample2)
+            bool inBackground = sample1.depthLinear     > sample2.depthLinear;
+            bool blurredOver  = sample1.velocityPixels  < sample2.velocityPixels;
+            
+            // this mirrors the weights depending on the results:
+            // if both conditions are true,   then weight2 is mirrored to weight1
+            // if both conditions are false,  then weight1 is mirrored to weight2, as sample2 is an affected background pixel
+            // if only one condition is true, then the weights are kept as is
+            weight1 = inBackground && blurredOver ? weight2 : weight1;
+            weight2 = inBackground || blurredOver ? weight2 : weight1;
+        }
+        
+        weightSum   += weight1;
+        weightSum   += weight2;
+        
+        color       += sample1.color * weight1;
+        color       += sample2.color * weight2;
+    }
+    
+    // normalize color and weight
+    weightSum   /= sampleCountHalf * 2;
+    color       /= sampleCountHalf * 2;
+    
+    // the main color is considered the background
+    // the weight sum can be interpreted as the alpha of the combined samples, see Jimenez paper
+    color += (1 - weightSum) * mainPixel.color;
+
+    imageStore(outImage, coord, vec4(color, 0.f));
+}

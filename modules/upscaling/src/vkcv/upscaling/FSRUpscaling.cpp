@@ -177,7 +177,7 @@ namespace vkcv::upscaling {
 		vkcv::shader::GLSLCompiler easuCompiler;
 		vkcv::shader::GLSLCompiler rcasCompiler;
 		
-		const auto& features = m_core.getContext().getPhysicalDevice().getFeatures2();
+		const auto& features = m_core.getContext().getFeatureManager().getFeatures();
 		const bool float16Support = (
 				checkFeatures<vk::PhysicalDeviceFloat16Int8FeaturesKHR>(
 						reinterpret_cast<const vk::BaseInStructure*>(&features),
@@ -189,7 +189,7 @@ namespace vkcv::upscaling {
 						vk::StructureType::ePhysicalDevice16BitStorageFeaturesKHR,
 						check16Storage
 				)
-		) || (true); // check doesn't work because chain is empty
+		);
 		
 		if (!float16Support) {
 			easuCompiler.setDefine("SAMPLE_SLOW_FALLBACK", "1");
@@ -245,6 +245,10 @@ namespace vkcv::upscaling {
 	void FSRUpscaling::recordUpscaling(const CommandStreamHandle& cmdStream,
 									   const ImageHandle& input,
 									   const ImageHandle& output) {
+		m_core.recordBeginDebugLabel(cmdStream, "vkcv::upscaling::FSRUpscaling", {
+			1.0f, 0.0f, 0.0f, 1.0f
+		});
+		
 		const uint32_t inputWidth = m_core.getImageWidth(input);
 		const uint32_t inputHeight = m_core.getImageHeight(input);
 		
@@ -361,6 +365,8 @@ namespace vkcv::upscaling {
 					PushConstants(0)
 			);
 		}
+		
+		m_core.recordEndDebugLabel(cmdStream);
 	}
 	
 	bool FSRUpscaling::isHdrEnabled() const {
