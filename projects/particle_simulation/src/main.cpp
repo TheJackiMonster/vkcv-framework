@@ -82,7 +82,8 @@ int main(int argc, const char **argv) {
         computeShaderProgram.addShader(shaderStage, path);
     });
 
-    vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
+    vkcv::DescriptorSetLayoutHandle computeDescriptorSetLayout = core.createDescriptorSetLayout(computeShaderProgram.getReflectedDescriptors().at(0));
+    vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeDescriptorSetLayout);
 
     const std::vector<vkcv::VertexAttachment> computeVertexAttachments = computeShaderProgram.getVertexAttachments();
 
@@ -100,8 +101,9 @@ int main(int argc, const char **argv) {
         particleShaderProgram.addShader(shaderStage, path);
     });
 
-    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(
-            particleShaderProgram.getReflectedDescriptors()[0]);
+    vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(
+            particleShaderProgram.getReflectedDescriptors().at(0));
+    vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
     vkcv::Buffer<glm::vec3> vertexBuffer = core.createBuffer<glm::vec3>(
             vkcv::BufferType::VERTEX,
@@ -125,7 +127,7 @@ int main(int argc, const char **argv) {
             UINT32_MAX,
             particlePass,
             {particleLayout},
-            {core.getDescriptorSet(descriptorSet).layout},
+            {core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle},
             true};
     particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 
@@ -137,7 +139,7 @@ int main(int argc, const char **argv) {
 
     vkcv::PipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
-    vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, {core.getDescriptorSet(computeDescriptorSet).layout} );
+    vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, {core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle} );
 
     vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
             vkcv::BufferType::UNIFORM,
@@ -227,10 +229,11 @@ int main(int argc, const char **argv) {
         tonemappingShader.addShader(shaderStage, path);
     });
 
-    vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingShader.getReflectedDescriptors()[0]);
+    vkcv::DescriptorSetLayoutHandle tonemappingDescriptorLayout = core.createDescriptorSetLayout(tonemappingShader.getReflectedDescriptors().at(0));
+    vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingDescriptorLayout);
     vkcv::PipelineHandle tonemappingPipe = core.createComputePipeline(
         tonemappingShader, 
-        { core.getDescriptorSet(tonemappingDescriptor).layout });
+        { core.getDescriptorSetLayout(tonemappingDescriptorLayout).vulkanHandle });
 
     std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
     std::default_random_engine rdmEngine;

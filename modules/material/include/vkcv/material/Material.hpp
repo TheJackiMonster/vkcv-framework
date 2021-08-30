@@ -23,6 +23,7 @@ namespace vkcv::material {
 		
 		MaterialType m_Type;
 		DescriptorSetHandle m_DescriptorSet;
+		DescriptorSetLayoutHandle m_DescriptorSetLayout;
 		std::vector<Texture> m_Textures;
 		
 	public:
@@ -40,12 +41,15 @@ namespace vkcv::material {
 		
 		[[nodiscard]]
 		const DescriptorSetHandle& getDescriptorSet() const;
+
+		[[nodiscard]]
+		const DescriptorSetLayoutHandle& getDescriptorSetLayout() const;
 		
 		explicit operator bool() const;
 		
 		bool operator!() const;
 		
-		static const std::vector<DescriptorBinding>& getDescriptorBindings(MaterialType type);
+		static const std::unordered_map<uint32_t ,DescriptorBinding>& getDescriptorBindings(MaterialType type);
 		
 		static Material createPBR(Core &core,
 								  const ImageHandle &colorImg,
