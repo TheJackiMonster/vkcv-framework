@@ -123,6 +123,292 @@ namespace vkcv
                 nullptr);
         return true;
     }
+	
+	/**
+	 * Fills Vertex Attribute and Binding Description with the corresponding objects form the Vertex Layout.
+	 * @param vertexAttributeDescriptions
+	 * @param vertexBindingDescriptions
+	 * @param existsVertexShader
+	 * @param config
+	 */
+	void fillVertexInputDescription(
+			std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
+			std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions,
+			const bool existsVertexShader,
+			const PipelineConfig &config) {
+		
+		if (existsVertexShader) {
+			const VertexLayout& layout = config.m_VertexLayout;
+			
+			// iterate over the layout's specified, mutually exclusive buffer bindings that make up a vertex buffer
+			for (const auto& vertexBinding : layout.vertexBindings)
+			{
+				vertexBindingDescriptions.emplace_back(vertexBinding.bindingLocation,
+													   vertexBinding.stride,
+													   vk::VertexInputRate::eVertex);
+				
+				// iterate over the bindings' specified, mutually exclusive vertex input attachments that make up a vertex
+				for (const auto& vertexAttachment : vertexBinding.vertexAttachments)
+				{
+					vertexAttributeDescriptions.emplace_back(vertexAttachment.inputLocation,
+															 vertexBinding.bindingLocation,
+															 vertexFormatToVulkanFormat(vertexAttachment.format),
+															 vertexAttachment.offset % vertexBinding.stride);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Creates a Pipeline Vertex Input State Create Info Struct and fills it with Attribute and Binding data.
+	 * @param vertexAttributeDescriptions
+	 * @param vertexBindingDescriptions
+	 * @return Pipeline Vertex Input State Create Info Struct
+	 */
+	vk::PipelineVertexInputStateCreateInfo createPipelineVertexInputStateCreateInfo(
+			std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
+			std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions) {
+		
+		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
+				{},
+				vertexBindingDescriptions.size(),
+				vertexBindingDescriptions.data(),
+				vertexAttributeDescriptions.size(),
+				vertexAttributeDescriptions.data()
+		);
+		return pipelineVertexInputStateCreateInfo;
+	}
+	
+	/**
+	 * Creates a Pipeline Input Assembly State Create Info Struct with 'Primitive Restart' disabled.
+	 * @param config provides data for primitive topology.
+	 * @return Pipeline Input Assembly State Create Info Struct
+	 */
+	vk::PipelineInputAssemblyStateCreateInfo createPipelineInputAssemblyStateCreateInfo(const PipelineConfig &config) {
+		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
+				{},
+				primitiveTopologyToVulkanPrimitiveTopology(config.m_PrimitiveTopology),
+				false
+		);
+		
+		return pipelineInputAssemblyStateCreateInfo;
+	}
+	
+	/**
+	 * Creates a Pipeline Viewport State Create Info Struct with default set viewport and scissor settings.
+	 * @param config provides with and height of the output window
+	 * @return Pipeline Viewport State Create Info Struct
+	 */
+	vk::PipelineViewportStateCreateInfo createPipelineViewportStateCreateInfo(const PipelineConfig &config) {
+		static vk::Viewport viewport;
+		static vk::Rect2D scissor;
+		
+		viewport = vk::Viewport(
+				0.f, 0.f,
+				static_cast<float>(config.m_Width),
+				static_cast<float>(config.m_Height),
+				0.f, 1.f
+		);
+		
+		scissor = vk::Rect2D(
+				{ 0,0 },
+				{ config.m_Width, config.m_Height }
+		);
+		
+		vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo(
+				{},
+				1,
+				&viewport,
+				1,
+				&scissor
+		);
+		
+		return pipelineViewportStateCreateInfo;
+	}
+	
+	/**
+	 * Creates a Pipeline Rasterization State Create Info Struct with default values set to:
+	 * Rasterizer Discard: Disabled
+	 * Polygon Mode: Fill
+	 * Front Face: Counter Clockwise
+	 * Depth Bias: Disabled
+	 * Line Width: 1.0
+	 * Depth Clamping and Culling Mode ist set by the Pipeline Config
+	 * @param config sets Depth Clamping and Culling Mode
+	 * @return Pipeline Rasterization State Create Info Struct
+	 */
+	vk::PipelineRasterizationStateCreateInfo createPipelineRasterizationStateCreateInfo(const PipelineConfig &config) {
+		vk::CullModeFlags cullMode;
+		switch (config.m_culling) {
+			case CullMode::None:
+				cullMode = vk::CullModeFlagBits::eNone;
+				break;
+			case CullMode::Front:
+				cullMode = vk::CullModeFlagBits::eFront;
+				break;
+			case CullMode::Back:
+				cullMode = vk::CullModeFlagBits::eBack;
+				break;
+			default:
+			vkcv_log(LogLevel::ERROR, "Unknown CullMode");
+				cullMode = vk::CullModeFlagBits::eNone;
+		}
+		
+		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo (
+				{},
+				config.m_EnableDepthClamping,
+				false,
+				vk::PolygonMode::eFill,
+				cullMode,
+				vk::FrontFace::eCounterClockwise,
+				false,
+				0.f,
+				0.f,
+				0.f,
+				1.f
+		);
+		
+		static vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterization;
+		
+		if (config.m_UseConservativeRasterization) {
+			conservativeRasterization = vk::PipelineRasterizationConservativeStateCreateInfoEXT(
+					{},
+					vk::ConservativeRasterizationModeEXT::eOverestimate,
+					0.f
+			);
+			
+			pipelineRasterizationStateCreateInfo.pNext = &conservativeRasterization;
+		}
+		
+		return pipelineRasterizationStateCreateInfo;
+	}
+	
+	/**
+	 * Creates a Pipeline Multisample State Create Info Struct.
+	 * @param config set MSAA Sample Count Flag
+	 * @return Pipeline Multisample State Create Info Struct
+	 */
+	vk::PipelineMultisampleStateCreateInfo createPipelineMultisampleStateCreateInfo(const PipelineConfig &config) {
+		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
+				{},
+				msaaToVkSampleCountFlag(config.m_multisampling),
+				false,
+				0.f,
+				nullptr,
+				config.m_alphaToCoverage,
+				false
+		);
+		
+		return pipelineMultisampleStateCreateInfo;
+	}
+	
+	/**
+	 * Creates a Pipeline Color Blend State Create Info Struct.
+	 * Currently only one blend mode is supported! There for, blending is set to additive.
+	 * @param config sets blend mode
+	 * @return
+	 */
+	vk::PipelineColorBlendStateCreateInfo createPipelineColorBlendStateCreateInfo(const PipelineConfig &config) {
+		// currently set to additive, if not disabled
+		// BlendFactors must be set as soon as additional BlendModes are added
+		static vk::PipelineColorBlendAttachmentState colorBlendAttachmentState (
+				config.m_blendMode != BlendMode::None,
+				vk::BlendFactor::eOne,
+				vk::BlendFactor::eOne,
+				vk::BlendOp::eAdd,
+				vk::BlendFactor::eOne,
+				vk::BlendFactor::eOne,
+				vk::BlendOp::eAdd,
+				vk::ColorComponentFlags(
+						VK_COLOR_COMPONENT_R_BIT |
+						VK_COLOR_COMPONENT_G_BIT |
+						VK_COLOR_COMPONENT_B_BIT |
+						VK_COLOR_COMPONENT_A_BIT
+				)
+		);
+		
+		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
+				{},
+				false,
+				vk::LogicOp::eClear,
+				1,	//TODO: hardcoded to one
+				&colorBlendAttachmentState,
+				{ 1.f,1.f,1.f,1.f }
+		);
+		
+		return pipelineColorBlendStateCreateInfo;
+	}
+	
+	/**
+	 * Creates a Pipeline Layout Create Info Struct.
+	 * @param config sets Push Constant Size and Descriptor Layouts.
+	 * @return Pipeline Layout Create Info Struct
+	 */
+	vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(const PipelineConfig &config) {
+		static vk::PushConstantRange pushConstantRange;
+		
+		const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
+		pushConstantRange = vk::PushConstantRange(
+				vk::ShaderStageFlagBits::eAll, 0, pushConstantSize
+		);
+		
+		vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
+				{},
+				(config.m_DescriptorLayouts),
+				(pushConstantRange)
+		);
+		
+		if (pushConstantSize == 0) {
+			pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+		}
+		
+		return pipelineLayoutCreateInfo;
+	}
+	
+	/**
+	 * Creates a Pipeline Depth Stencil State Create Info Struct.
+	 * @param config sets if depth test in enabled or not.
+	 * @return Pipeline Layout Create Info Struct
+	 */
+	vk::PipelineDepthStencilStateCreateInfo createPipelineDepthStencilStateCreateInfo(const PipelineConfig &config) {
+		const vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilCreateInfo(
+				vk::PipelineDepthStencilStateCreateFlags(),
+				config.m_depthTest != DepthTest::None,
+				config.m_depthWrite,
+				depthTestToVkCompareOp(config.m_depthTest),
+				false,
+				false,
+				{},
+				{},
+				0.0f,
+				1.0f
+		);
+		
+		return pipelineDepthStencilCreateInfo;
+	}
+	
+	/**
+	 * Creates a Pipeline Dynamic State Create Info Struct.
+	 * @param config sets whenever a dynamic viewport is used or not.
+	 * @return Pipeline Dynamic State Create Info Struct
+	 */
+	vk::PipelineDynamicStateCreateInfo createPipelineDynamicStateCreateInfo(const PipelineConfig &config) {
+		static std::vector<vk::DynamicState> dynamicStates;
+		dynamicStates.clear();
+		
+		if(config.m_UseDynamicViewport) {
+			dynamicStates.push_back(vk::DynamicState::eViewport);
+			dynamicStates.push_back(vk::DynamicState::eScissor);
+		}
+		
+		vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo(
+				{},
+				static_cast<uint32_t>(dynamicStates.size()),
+				dynamicStates.data()
+		);
+		
+		return dynamicStateCreateInfo;
+	}
 
     PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, PassManager& passManager) {
         const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
@@ -452,215 +738,6 @@ namespace vkcv
         std::vector<char> code = shaderProgram.getShader(stage).shaderCode;
         vk::ShaderModuleCreateInfo moduleInfo({}, code.size(), reinterpret_cast<uint32_t*>(code.data()));
         return m_Device.createShaderModule(&moduleInfo, nullptr, &module);
-    }
-
-    void PipelineManager::fillVertexInputDescription(
-        std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
-        std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions,
-        const bool existsVertexShader,
-        const PipelineConfig &config) {
-
-        if (existsVertexShader) {
-            const VertexLayout& layout = config.m_VertexLayout;
-
-            // iterate over the layout's specified, mutually exclusive buffer bindings that make up a vertex buffer
-            for (const auto& vertexBinding : layout.vertexBindings)
-            {
-                vertexBindingDescriptions.emplace_back(vertexBinding.bindingLocation,
-                                                       vertexBinding.stride,
-                                                       vk::VertexInputRate::eVertex);
-
-                // iterate over the bindings' specified, mutually exclusive vertex input attachments that make up a vertex
-                for (const auto& vertexAttachment : vertexBinding.vertexAttachments)
-                {
-                    vertexAttributeDescriptions.emplace_back(vertexAttachment.inputLocation,
-                                                             vertexBinding.bindingLocation,
-                                                             vertexFormatToVulkanFormat(vertexAttachment.format),
-                                                             vertexAttachment.offset % vertexBinding.stride);
-                }
-            }
-        }
-    }
-
-    vk::PipelineVertexInputStateCreateInfo PipelineManager::createPipelineVertexInputStateCreateInfo(
-            std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
-            std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions) {
-
-        vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
-                {},
-                vertexBindingDescriptions.size(),
-                vertexBindingDescriptions.data(),
-                vertexAttributeDescriptions.size(),
-                vertexAttributeDescriptions.data()
-        );
-        return pipelineVertexInputStateCreateInfo;
-    }
-
-    vk::PipelineInputAssemblyStateCreateInfo
-    PipelineManager::createPipelineInputAssemblyStateCreateInfo(const PipelineConfig &config) {
-        vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
-                {},
-                primitiveTopologyToVulkanPrimitiveTopology(config.m_PrimitiveTopology),
-                false
-        );
-        return pipelineInputAssemblyStateCreateInfo;
-    }
-
-    vk::PipelineViewportStateCreateInfo
-    PipelineManager::createPipelineViewportStateCreateInfo(const PipelineConfig &config) {
-        vk::Viewport viewport(0.f, 0.f,
-                              static_cast<float>(config.m_Width),
-                              static_cast<float>(config.m_Height),
-                              0.f, 1.f);
-
-        vk::Rect2D scissor({ 0,0 },
-                           { config.m_Width,
-                             config.m_Height });
-
-        vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({},
-                                                                            1,
-                                                                            &viewport,
-                                                                            1,
-                                                                            &scissor);
-        return pipelineViewportStateCreateInfo;
-    }
-
-    vk::PipelineRasterizationStateCreateInfo
-    PipelineManager::createPipelineRasterizationStateCreateInfo(const PipelineConfig &config) {
-
-        vk::CullModeFlags cullMode;
-        switch (config.m_culling) {
-            case CullMode::None:
-                cullMode = vk::CullModeFlagBits::eNone;
-                break;
-            case CullMode::Front:
-                cullMode = vk::CullModeFlagBits::eFront;
-                break;
-            case CullMode::Back:
-                cullMode = vk::CullModeFlagBits::eBack;
-                break;
-            default:
-            vkcv_log(LogLevel::ERROR, "Unknown CullMode");
-                cullMode = vk::CullModeFlagBits::eNone;
-        }
-
-        vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo (
-                {},
-                config.m_EnableDepthClamping,
-                false,
-                vk::PolygonMode::eFill,
-                cullMode,
-                vk::FrontFace::eCounterClockwise,
-                false,
-                0.f,
-                0.f,
-                0.f,
-                1.f
-        );
-
-        vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterization;
-        if (config.m_UseConservativeRasterization) {
-            conservativeRasterization = vk::PipelineRasterizationConservativeStateCreateInfoEXT(
-                    {},
-                    vk::ConservativeRasterizationModeEXT::eOverestimate,
-                    0.f);
-            pipelineRasterizationStateCreateInfo.pNext = &conservativeRasterization;
-        }
-
-        return pipelineRasterizationStateCreateInfo;
-    }
-
-    vk::PipelineMultisampleStateCreateInfo
-    PipelineManager::createPipelineMultisampleStateCreateInfo(const PipelineConfig &config) {
-        vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
-                {},
-                msaaToVkSampleCountFlag(config.m_multisampling),
-                false,
-                0.f,
-                nullptr,
-                config.m_alphaToCoverage,
-                false
-        );
-        return pipelineMultisampleStateCreateInfo;
-    }
-
-    vk::PipelineColorBlendStateCreateInfo
-    PipelineManager::createPipelineColorBlendStateCreateInfo(const PipelineConfig &config) {
-        vk::ColorComponentFlags colorWriteMask(VK_COLOR_COMPONENT_R_BIT |
-                                               VK_COLOR_COMPONENT_G_BIT |
-                                               VK_COLOR_COMPONENT_B_BIT |
-                                               VK_COLOR_COMPONENT_A_BIT);
-
-        // currently set to additive, if not disabled
-        // BlendFactors must be set as soon as additional BlendModes are added
-        vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
-                config.m_blendMode != BlendMode::None,
-                vk::BlendFactor::eOne,
-                vk::BlendFactor::eOne,
-                vk::BlendOp::eAdd,
-                vk::BlendFactor::eOne,
-                vk::BlendFactor::eOne,
-                vk::BlendOp::eAdd,
-                colorWriteMask
-        );
-
-        vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
-                {},
-                false,
-                vk::LogicOp::eClear,
-                1,	//TODO: hardcoded to one
-                &colorBlendAttachmentState,
-                { 1.f,1.f,1.f,1.f }
-        );
-        return pipelineColorBlendStateCreateInfo;
-    }
-
-    vk::PipelineLayoutCreateInfo PipelineManager::createPipelineLayoutCreateInfo(const PipelineConfig &config) {
-        const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
-        const vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eAll, 0, pushConstantSize);
-
-        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
-                {},
-                (config.m_DescriptorLayouts),
-                (pushConstantRange));
-        if (pushConstantSize == 0) {
-            pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-        }
-        return pipelineLayoutCreateInfo;
-    }
-
-    vk::PipelineDepthStencilStateCreateInfo
-    PipelineManager::createPipelineDepthStencilStateCreateInfo(const PipelineConfig &config) {
-        const vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilCreateInfo(
-                vk::PipelineDepthStencilStateCreateFlags(),
-                config.m_depthTest != DepthTest::None,
-                config.m_depthWrite,
-                depthTestToVkCompareOp(config.m_depthTest),
-                false,
-                false,
-                {},
-                {},
-                0.0f,
-                1.0f
-        );
-        return pipelineDepthStencilCreateInfo;
-    }
-
-    vk::PipelineDynamicStateCreateInfo
-    PipelineManager::createPipelineDynamicStateCreateInfo(const PipelineConfig &config) {
-        std::vector<vk::DynamicState> dynamicStates = {};
-        if(config.m_UseDynamicViewport)
-        {
-            dynamicStates.push_back(vk::DynamicState::eViewport);
-            dynamicStates.push_back(vk::DynamicState::eScissor);
-        }
-
-        vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo(
-                {},
-                static_cast<uint32_t>(dynamicStates.size()),
-                dynamicStates.data()
-        );
-        return dynamicStateCreateInfo;
     }
 
 }
