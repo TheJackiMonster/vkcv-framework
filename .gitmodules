@@ -31,3 +31,6 @@
 [submodule "modules/upscaling/lib/FidelityFX-FSR"]
 	path = modules/upscaling/lib/FidelityFX-FSR
 	url = https://github.com/GPUOpen-Effects/FidelityFX-FSR.git
+[submodule "modules/compute/lib/NNEF-Tools"]
+	path = modules/compute/lib/NNEF-Tools
+	url = https://github.com/KhronosGroup/NNEF-Tools.git
