@@ -70,7 +70,7 @@ namespace vkcv
         uint32_t        descriptorCount;
         ShaderStages    shaderStages;
 
-        bool DescriptorBinding::operator ==(const DescriptorBinding &other) const;
+        bool operator ==(const DescriptorBinding &other) const;
     };
     
     typedef std::unordered_map<uint32_t, DescriptorBinding> DescriptorBindings;
