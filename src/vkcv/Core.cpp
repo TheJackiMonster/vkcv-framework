@@ -518,7 +518,7 @@ namespace vkcv
 					color
 			);
 			
-			beginDebugLabel((VkCommandBuffer) cmdBuffer, &(static_cast<const VkDebugUtilsLabelEXT&>(debug)));
+			beginDebugLabel(static_cast<VkCommandBuffer>(cmdBuffer), &(static_cast<const VkDebugUtilsLabelEXT&>(debug)));
 		};
 
 		recordCommandsToStream(cmdStream, submitFunction, nullptr);
@@ -536,7 +536,7 @@ namespace vkcv
 		}
 		
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
-			endDebugLabel((VkCommandBuffer) cmdBuffer);
+			endDebugLabel(static_cast<VkCommandBuffer>(cmdBuffer));
 		};
 
 		recordCommandsToStream(cmdStream, submitFunction, nullptr);
@@ -878,7 +878,7 @@ namespace vkcv
 				label.c_str()
 		);
 		
-		setDebugLabel((VkDevice) device, &(static_cast<const VkDebugUtilsObjectNameInfoEXT&>(debug)));
+		setDebugLabel(static_cast<VkDevice>(device), &(static_cast<const VkDebugUtilsObjectNameInfoEXT&>(debug)));
 #endif
 	}
 	
@@ -891,7 +891,7 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::eBuffer,
-				static_cast<uint64_t>(static_cast<VkBuffer>(
+				uint64_t(static_cast<VkBuffer>(
 						m_BufferManager->getBuffer(handle)
 				)),
 				label
@@ -907,7 +907,7 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::eRenderPass,
-				static_cast<uint64_t>(static_cast<VkRenderPass>(
+				uint64_t(static_cast<VkRenderPass>(
 						m_PassManager->getVkPass(handle)
 				)),
 				label
@@ -923,7 +923,7 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::ePipeline,
-				static_cast<uint64_t>(static_cast<VkPipeline>(
+				uint64_t(static_cast<VkPipeline>(
 						m_PipelineManager->getVkPipeline(handle)
 				)),
 				label
@@ -939,7 +939,7 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::eDescriptorSet,
-				static_cast<uint64_t>(static_cast<VkDescriptorSet>(
+				uint64_t(static_cast<VkDescriptorSet>(
 						m_DescriptorManager->getDescriptorSet(handle).vulkanHandle
 				)),
 				label
@@ -955,7 +955,7 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::eSampler,
-				static_cast<uint64_t>(static_cast<VkSampler>(
+				uint64_t(static_cast<VkSampler>(
 						m_SamplerManager->getVulkanSampler(handle)
 				)),
 				label
@@ -975,7 +975,7 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::eImage,
-				static_cast<uint64_t>(static_cast<VkImage>(
+				uint64_t(static_cast<VkImage>(
 						m_ImageManager->getVulkanImage(handle)
 				)),
 				label
@@ -991,7 +991,7 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::eCommandBuffer,
-				reinterpret_cast<uint64_t>(static_cast<VkCommandBuffer>(
+				uint64_t(static_cast<VkCommandBuffer>(
 						m_CommandStreamManager->getStreamCommandBuffer(handle)
 				)),
 				label
