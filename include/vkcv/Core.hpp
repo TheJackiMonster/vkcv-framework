@@ -79,8 +79,6 @@ namespace vkcv
 		SyncResources       m_SyncResources;
 		uint32_t            m_currentSwapchainImageIndex;
 
-		event_handle<int,int> e_resizeHandle;
-
 		void setSwapchainImages(SwapchainHandle handle);
 
     public:
