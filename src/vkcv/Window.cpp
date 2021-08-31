@@ -136,7 +136,7 @@ namespace vkcv {
         Window::e_key.unlock();
         Window::e_char.unlock();
         Window::e_gamepad.unlock();
-        
+		Window::e_resize.remove(m_resizeHandle);
         if (m_window) {
         	s_Windows.erase(std::find(s_Windows.begin(), s_Windows.end(), m_window));
         	glfwDestroyWindow(m_window);

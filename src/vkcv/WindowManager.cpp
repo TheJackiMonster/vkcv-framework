@@ -26,9 +26,10 @@ namespace vkcv {
 		SwapchainHandle swapchainHandle = swapchainManager.createSwapchain(*window);
 
 		if (resizeable) {
-			window->e_resize.add([&](int width, int height) {
+			const event_handle<int, int> &resizeHandle = window->e_resize.add([&](int width, int height) {
 				swapchainManager.signalRecreation(swapchainHandle);
 			});
+			window->m_resizeHandle = resizeHandle;
 		}
 
 		m_windows.push_back(window);

@@ -21,6 +21,7 @@ namespace vkcv {
 		GLFWwindow *m_window;
 		SwapchainHandle m_swapchainHandle;
 		bool m_shouldClose;
+		event_handle<int, int> m_resizeHandle;
 
     public:
     	/**
