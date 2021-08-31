@@ -44,7 +44,7 @@ namespace vkcv {
         std::vector<int> prios;
         for(auto flag: queueFlags) {
             int prioCount = 0;
-            for (int i = 0; i < qFamilyProperties.size(); i++) {
+            for (size_t i = 0; i < qFamilyProperties.size(); i++) {
                 prioCount += (static_cast<uint32_t>(flag & qFamilyProperties[i].queueFlags) != 0) * qFamilyProperties[i].queueCount;
             }
             prios.push_back(prioCount);
@@ -65,10 +65,14 @@ namespace vkcv {
         std::vector<std::vector<int>> queueFamilyStatus, initialQueueFamilyStatus;
 
         for (auto qFamily : qFamilyProperties) {
-            int graphicsCount = int(static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eGraphics) != 0) * qFamily.queueCount;
-            int computeCount = int(static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eCompute) != 0) * qFamily.queueCount;
-            int transferCount = int(static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eTransfer) != 0) * qFamily.queueCount;
-            queueFamilyStatus.push_back({graphicsCount, computeCount, transferCount});
+            auto graphicsCount = static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eGraphics) != 0? qFamily.queueCount : 0;
+			auto computeCount = static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eCompute) != 0? qFamily.queueCount : 0;
+			auto transferCount = static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eTransfer) != 0? qFamily.queueCount : 0;
+            queueFamilyStatus.push_back({
+				static_cast<int>(graphicsCount),
+				static_cast<int>(computeCount),
+				static_cast<int>(transferCount)
+			});
         }
 
         initialQueueFamilyStatus = queueFamilyStatus;

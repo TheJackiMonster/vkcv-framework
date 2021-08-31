@@ -7,14 +7,14 @@
 #include <memory>
 #include <vulkan/vulkan.hpp>
 
-#include "vkcv/Context.hpp"
-#include "vkcv/Swapchain.hpp"
-#include "vkcv/Window.hpp"
-#include "vkcv/PassConfig.hpp"
-#include "vkcv/Handles.hpp"
-#include "vkcv/Buffer.hpp"
-#include "vkcv/Image.hpp"
-#include "vkcv/PipelineConfig.hpp"
+#include "Context.hpp"
+#include "Swapchain.hpp"
+#include "Window.hpp"
+#include "PassConfig.hpp"
+#include "Handles.hpp"
+#include "Buffer.hpp"
+#include "Image.hpp"
+#include "PipelineConfig.hpp"
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "Result.hpp"
@@ -139,8 +139,8 @@ namespace vkcv
                            const char *applicationName,
                            uint32_t applicationVersion,
                            const std::vector<vk::QueueFlagBits>& queueFlags    = {},
-                           const std::vector<const char*>& instanceExtensions  = {},
-                           const std::vector<const char*>& deviceExtensions    = {});
+						   const Features& features = {},
+						   const std::vector<const char *>& instanceExtensions = {});
 
         /**
          * Creates a basic vulkan graphics pipeline using @p config from the pipeline config class and returns it using the @p handle.
@@ -233,15 +233,25 @@ namespace vkcv
 		[[nodiscard]]
 		vk::Format getImageFormat(const ImageHandle& image);
 
+		/** TODO:
+		 * @param bindings
+		 * @return
+		 */
+		[[nodiscard]]
+		DescriptorSetLayoutHandle createDescriptorSetLayout(const std::unordered_map<uint32_t, DescriptorBinding> &bindingsMap);
+		DescriptorSetLayout getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const;
+
+		// TODO: existsDescriptorSetLayout function that checks and returns fitting layout upon existence.
+
         /** TODO:
          *   @param setDescriptions
          *   @return
          */
         [[nodiscard]]
-        DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &bindings);
+        DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle &layoutHandle);
 		void writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites& writes);
-
 		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
+
 
 		/**
 		 * @brief start recording command buffers and increment frame index
@@ -249,16 +259,16 @@ namespace vkcv
 		bool beginFrame(uint32_t& width, uint32_t& height);
 
 		void recordDrawcallsToCmdStream(
-			const CommandStreamHandle       cmdStreamHandle,
-			const PassHandle                renderpassHandle, 
+			const CommandStreamHandle&      cmdStreamHandle,
+			const PassHandle&               renderpassHandle,
 			const PipelineHandle            pipelineHandle,
 			const PushConstants             &pushConstants,
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets);
 
 		void recordMeshShaderDrawcalls(
-			const CommandStreamHandle               cmdStreamHandle,
-			const PassHandle                        renderpassHandle,
+			const CommandStreamHandle&              cmdStreamHandle,
+			const PassHandle&                       renderpassHandle,
 			const PipelineHandle                    pipelineHandle,
 			const PushConstants&                    pushConstantData,
             const std::vector<MeshShaderDrawcall>&  drawcalls,
@@ -270,6 +280,12 @@ namespace vkcv
 			const uint32_t dispatchCount[3],
 			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
 			const PushConstants& pushConstants);
+		
+		void recordBeginDebugLabel(const CommandStreamHandle &cmdStream,
+								   const std::string& label,
+								   const std::array<float, 4>& color);
+		
+		void recordEndDebugLabel(const CommandStreamHandle &cmdStream);
 
 		void recordComputeIndirectDispatchToCmdStream(
 			const CommandStreamHandle               cmdStream,
@@ -320,6 +336,14 @@ namespace vkcv
 		
 		void recordBlitImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst,
 							 SamplerFilterType filterType);
+	
+		void setDebugLabel(const BufferHandle &handle, const std::string &label);
+		void setDebugLabel(const PassHandle &handle, const std::string &label);
+		void setDebugLabel(const PipelineHandle &handle, const std::string &label);
+		void setDebugLabel(const DescriptorSetHandle &handle, const std::string &label);
+		void setDebugLabel(const SamplerHandle &handle, const std::string &label);
+		void setDebugLabel(const ImageHandle &handle, const std::string &label);
+		void setDebugLabel(const CommandStreamHandle &handle, const std::string &label);
 		
     };
 }
