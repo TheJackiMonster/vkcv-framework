@@ -9,6 +9,7 @@
 #include "vkcv/Core.hpp"
 #include "PassManager.hpp"
 #include "PipelineManager.hpp"
+#include "ComputePipelineManager.hpp"
 #include "vkcv/BufferManager.hpp"
 #include "SamplerManager.hpp"
 #include "ImageManager.hpp"
