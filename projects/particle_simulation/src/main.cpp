@@ -22,7 +22,8 @@ int main(int argc, const char **argv) {
             {vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
 			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
     );
-    vkcv::Window window = core.getWindow();
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+    vkcv::Window& window = core.getWindow(windowHandle);
 	vkcv::camera::CameraManager cameraManager(window);
 
     auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3,
@@ -231,7 +232,7 @@ int main(int argc, const char **argv) {
         vkcv::Window::pollEvents();
 
         uint32_t swapchainWidth, swapchainHeight;
-        if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+        if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
             continue;
         }
 
@@ -278,7 +279,8 @@ int main(int argc, const char **argv) {
                 particlePipeline,
 				pushConstantsDraw,
                 {drawcalls},
-                { colorBuffer });
+                { colorBuffer },
+                windowHandle);
 
         bloomAndFlares.execWholePipeline(cmdStream, colorBuffer);
 
@@ -306,7 +308,7 @@ int main(int argc, const char **argv) {
 
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);
-        core.endFrame();
+        core.endFrame(windowHandle);
     }
 
     return 0;

@@ -61,7 +61,8 @@ namespace vkcv::scene {
 							 const PipelineHandle             &pipeline,
 							 size_t							  pushConstantsSizePerDrawcall,
 							 const RecordMeshDrawcallFunction &record,
-							 const std::vector<ImageHandle>   &renderTargets);
+							 const std::vector<ImageHandle>   &renderTargets,
+							 const WindowHandle               &windowHandle);
 		
 		static Scene create(Core& core);
 		

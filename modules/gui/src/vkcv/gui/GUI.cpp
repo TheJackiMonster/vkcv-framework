@@ -15,31 +15,33 @@ namespace vkcv::gui {
 		vkcv_log(LogLevel::ERROR, "ImGui has a problem with Vulkan! (%s)", vk::to_string(result).c_str());
 	}
 	
-	GUI::GUI(Core& core, Window& window) :
-	m_window(window),
+	GUI::GUI(Core& core, WindowHandle& windowHandle) :
+	m_windowHandle(windowHandle),
 	m_core(core),
 	m_context(m_core.getContext()),
 	m_gui_context(nullptr) {
 		IMGUI_CHECKVERSION();
 		
 		m_gui_context = ImGui::CreateContext();
+
+		Window& window = m_core.getWindow(windowHandle);
+
+		ImGui_ImplGlfw_InitForVulkan(window.getWindow(), false);
 		
-		ImGui_ImplGlfw_InitForVulkan(m_window.getWindow(), false);
-		
-		f_mouseButton = m_window.e_mouseButton.add([&](int button, int action, int mods) {
-			ImGui_ImplGlfw_MouseButtonCallback(m_window.getWindow(), button, action, mods);
+		f_mouseButton = window.e_mouseButton.add([&](int button, int action, int mods) {
+			ImGui_ImplGlfw_MouseButtonCallback(window.getWindow(), button, action, mods);
 		});
 		
-		f_mouseScroll = m_window.e_mouseScroll.add([&](double xoffset, double yoffset) {
-			ImGui_ImplGlfw_ScrollCallback(m_window.getWindow(), xoffset, yoffset);
+		f_mouseScroll = window.e_mouseScroll.add([&](double xoffset, double yoffset) {
+			ImGui_ImplGlfw_ScrollCallback(window.getWindow(), xoffset, yoffset);
 		});
 		
-		f_key = m_window.e_key.add([&](int key, int scancode, int action, int mods) {
-			ImGui_ImplGlfw_KeyCallback(m_window.getWindow(), key, scancode, action, mods);
+		f_key = window.e_key.add([&](int key, int scancode, int action, int mods) {
+			ImGui_ImplGlfw_KeyCallback(window.getWindow(), key, scancode, action, mods);
 		});
 		
-		f_char = m_window.e_char.add([&](unsigned int c) {
-			ImGui_ImplGlfw_CharCallback(m_window.getWindow(), c);
+		f_char = window.e_char.add([&](unsigned int c) {
+			ImGui_ImplGlfw_CharCallback(window.getWindow(), c);
 		});
 		
 		vk::DescriptorPoolSize pool_sizes[] = {
@@ -66,7 +68,7 @@ namespace vkcv::gui {
 		m_descriptor_pool = m_context.getDevice().createDescriptorPool(descriptorPoolCreateInfo);
 		
 		const vk::PhysicalDevice& physicalDevice = m_context.getPhysicalDevice();
-		const Swapchain& swapchain = m_core.getSwapchain();
+		const Swapchain& swapchain = m_core.getSwapchain(m_windowHandle);
 		
 		const uint32_t graphicsQueueFamilyIndex = (
 				m_context.getQueueManager().getGraphicsQueues()[0].familyIndex
@@ -152,18 +154,19 @@ namespace vkcv::gui {
 	
 	GUI::~GUI() {
 		m_context.getDevice().waitIdle();
-		
+		Window& window = m_core.getWindow(m_windowHandle);
+
 		ImGui_ImplVulkan_Shutdown();
 		
 		m_context.getDevice().destroyRenderPass(m_render_pass);
 		m_context.getDevice().destroyDescriptorPool(m_descriptor_pool);
 		
 		ImGui_ImplGlfw_Shutdown();
-		
-		m_window.e_mouseButton.remove(f_mouseButton);
-		m_window.e_mouseScroll.remove(f_mouseScroll);
-		m_window.e_key.remove(f_key);
-		m_window.e_char.remove(f_char);
+
+		window.e_mouseButton.remove(f_mouseButton);
+		window.e_mouseScroll.remove(f_mouseScroll);
+		window.e_key.remove(f_key);
+		window.e_char.remove(f_char);
 		
 		if (m_gui_context) {
 			ImGui::DestroyContext(m_gui_context);
@@ -171,7 +174,7 @@ namespace vkcv::gui {
 	}
 	
 	void GUI::beginGUI() {
-		const Swapchain& swapchain = m_core.getSwapchain();
+		const Swapchain& swapchain = m_core.getSwapchain(m_windowHandle);
 		const auto extent = swapchain.getExtent();
 		
 		if ((extent.width > 0) && (extent.height > 0)) {
@@ -194,7 +197,7 @@ namespace vkcv::gui {
 			return;
 		}
 		
-		const Swapchain& swapchain = m_core.getSwapchain();
+		const Swapchain& swapchain = m_core.getSwapchain(m_windowHandle);
 		const auto extent = swapchain.getExtent();
 		
 		const vk::ImageView swapchainImageView = m_core.getSwapchainImageView();

@@ -19,7 +19,8 @@ int main(int argc, const char** argv) {
 			{vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
 			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
-	vkcv::Window window = core.getWindow();
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+	vkcv::Window& window = core.getWindow(windowHandle);
 	vkcv::camera::CameraManager cameraManager(window);
 
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
@@ -37,7 +38,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain().getFormat()
+		core.getSwapchain(windowHandle).getFormat()
 	);
 
 	const vkcv::AttachmentDescription depth_attachment(
@@ -104,7 +105,7 @@ int main(int argc, const char** argv) {
 			continue;
 		
 		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight,windowHandle)) {
 			continue;
 		}
 		
@@ -136,11 +137,12 @@ int main(int argc, const char** argv) {
 							  scenePipeline,
 							  sizeof(glm::mat4),
 							  recordMesh,
-							  renderTargets);
+							  renderTargets,
+							  windowHandle);
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-		core.endFrame();
+		core.endFrame(windowHandle);
 	}
 	
 	return 0;

@@ -231,7 +231,8 @@ void ShadowMapping::recordShadowMapRendering(
 	const std::vector<glm::mat4>&       modelMatrices,
 	const vkcv::camera::Camera&         camera,
 	const glm::vec3&                    voxelVolumeOffset,
-	float                               voxelVolumeExtent) {
+	float                               voxelVolumeExtent,
+	const vkcv::WindowHandle&           windowHandle) {
 
 	LightInfo lightInfo;
 	lightInfo.sunColor = lightColor;
@@ -267,7 +268,8 @@ void ShadowMapping::recordShadowMapRendering(
 		m_shadowMapPipe,
 		shadowPushConstants,
 		drawcalls,
-		{ m_shadowMapDepth.getHandle() });
+		{ m_shadowMapDepth.getHandle() },
+		windowHandle);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMapDepth.getHandle());
 
 	// depth to moments

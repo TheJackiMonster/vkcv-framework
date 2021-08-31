@@ -217,7 +217,8 @@ void Voxelization::voxelizeMeshes(
 	vkcv::CommandStreamHandle                       cmdStream,
 	const std::vector<vkcv::Mesh>&                  meshes,
 	const std::vector<glm::mat4>&                   modelMatrices,
-	const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets) {
+	const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets,
+	const vkcv::WindowHandle&                       windowHandle) {
 
 	m_voxelInfoBuffer.fill({ m_voxelInfo });
 
@@ -275,7 +276,8 @@ void Voxelization::voxelizeMeshes(
 		m_voxelizationPipe,
 		voxelizationPushConstants,
 		drawcalls,
-		{ m_dummyRenderTarget.getHandle() });
+		{ m_dummyRenderTarget.getHandle() },
+		windowHandle);
 
 	// buffer to image
 	const uint32_t bufferToImageGroupSize[3] = { 4, 4, 4 };
@@ -319,7 +321,8 @@ void Voxelization::renderVoxelVisualisation(
 	vkcv::CommandStreamHandle               cmdStream, 
 	const glm::mat4&                        viewProjectin,
 	const std::vector<vkcv::ImageHandle>&   renderTargets,
-	uint32_t                                mipLevel) {
+	uint32_t                                mipLevel,
+	const vkcv::WindowHandle&               windowHandle) {
 
 	vkcv::PushConstants voxelVisualisationPushConstants (sizeof(glm::mat4));
 	voxelVisualisationPushConstants.appendDrawcall(viewProjectin);
@@ -347,7 +350,8 @@ void Voxelization::renderVoxelVisualisation(
 		m_visualisationPipe,
 		voxelVisualisationPushConstants,
 		{ drawcall },
-		renderTargets);
+		renderTargets,
+		windowHandle);
 }
 
 void Voxelization::updateVoxelOffset(const vkcv::camera::Camera& camera) {

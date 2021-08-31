@@ -95,10 +95,10 @@ int main(int argc, const char** argv) {
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
 		features
 	);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+	vkcv::Window &window = core.getWindow(windowHandle);
 
-	vkcv::Window &window = core.getWindow();
-
-    vkcv::gui::GUI gui (core, window);
+    vkcv::gui::GUI gui (core, windowHandle);
 
     vkcv::asset::Scene mesh;
     const char* path = argc > 1 ? argv[1] : "resources/Bunny/Bunny.glb";
@@ -163,7 +163,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain().getFormat());
+		core.getSwapchain(windowHandle).getFormat());
 
     const vkcv::AttachmentDescription depth_attachment(
             vkcv::AttachmentOperation::STORE,
@@ -309,7 +309,7 @@ int main(int argc, const char** argv) {
 		vkcv::Window::pollEvents();
 
 		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight,windowHandle)) {
 			continue;
 		}
 		
@@ -355,7 +355,8 @@ int main(int argc, const char** argv) {
 				meshShaderPipeline,
 				pushConstantData,
 				{ vkcv::MeshShaderDrawcall({descriptorUsage}, taskCount)},
-				{ renderTargets });
+				{ renderTargets },
+				windowHandle);
 		}
 		else {
 
@@ -367,7 +368,8 @@ int main(int argc, const char** argv) {
 				bunnyPipeline,
 				pushConstantData,
 				{ vkcv::DrawcallInfo(renderMesh, { descriptorUsage }) },
-				{ renderTargets });
+				{ renderTargets },
+				windowHandle);
 		}
 
 		core.prepareSwapchainImageForPresent(cmdStream);
@@ -383,7 +385,7 @@ int main(int argc, const char** argv) {
 		
 		gui.endGUI();
 
-		core.endFrame();
+		core.endFrame(windowHandle);
 	}
 	return 0;
 }

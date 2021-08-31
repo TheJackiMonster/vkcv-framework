@@ -11,7 +11,7 @@ namespace vkcv::gui {
 
 	class GUI final {
 	private:
-		Window& m_window;
+		WindowHandle m_windowHandle;
 		Core& m_core;
 		
 		const Context& m_context;
@@ -33,7 +33,7 @@ namespace vkcv::gui {
 		 * @param core Valid #Core instance of the framework
 		 * @param window Valid #Window instance of the framework
 		 */
-		GUI(Core& core, Window& window);
+		GUI(Core& core, WindowHandle& windowHandle);
 		
 		GUI(const GUI& other) = delete;
 		GUI(GUI&& other) = delete;
