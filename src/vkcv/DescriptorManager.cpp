@@ -301,7 +301,7 @@ namespace vkcv
 	        return;
 	    }
 
-	    auto layout = m_DescriptorSetLayouts[id];
+	    auto& layout = m_DescriptorSetLayouts[id];
 	    if (layout.vulkanHandle){
 	        m_Device.destroy(layout.vulkanHandle);
 	        layout.vulkanHandle = nullptr;
