@@ -13,7 +13,7 @@
 #include "SamplerManager.hpp"
 #include "ImageManager.hpp"
 #include "DescriptorManager.hpp"
-#include "vkcv/WindowManager.hpp"
+#include "WindowManager.hpp"
 #include "ImageLayoutTransitions.hpp"
 #include "vkcv/CommandStreamManager.hpp"
 #include <cmath>
@@ -57,12 +57,12 @@ namespace vkcv
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
             m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
             m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
-			m_WindowManager(std::make_unique<WindowManager>()),
-			m_SwapchainManager(std::make_unique<SwapchainManager>()),
             m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
             m_SamplerManager(std::unique_ptr<SamplerManager>(new SamplerManager(m_Context.m_Device))),
             m_ImageManager{std::unique_ptr<ImageManager>(new ImageManager(*m_BufferManager))},
             m_CommandStreamManager{std::unique_ptr<CommandStreamManager>(new CommandStreamManager)},
+			m_WindowManager(std::make_unique<WindowManager>()),
+			m_SwapchainManager(std::make_unique<SwapchainManager>()),
             m_CommandResources(commandResources),
             m_SyncResources(syncResources)
 	{
@@ -73,7 +73,7 @@ namespace vkcv
 		m_ImageManager->m_core = this;
 
 		m_windowHandle = m_WindowManager->createWindow(*m_SwapchainManager ,"First Mesh", 800, 600, false);
-		m_swapchainHandle = m_SwapchainManager->createSwapchain(m_WindowManager->getWindow(m_windowHandle));
+		m_swapchainHandle = m_WindowManager->getWindow(m_windowHandle).getSwapchainHandle();
 		setSwapchainImages( m_swapchainHandle );
 	}
 
@@ -676,8 +676,7 @@ namespace vkcv
 	}
 
 	Swapchain Core::getSwapchainOfCurrentWindow() {
-		SwapchainHandle swapchainHandle = m_WindowManager->getFocusedWindow().getSwapchainHandle();
-		return m_SwapchainManager->getSwapchain(swapchainHandle);
+		return m_SwapchainManager->getSwapchain(Window::getFocusedWindow().getSwapchainHandle());
 	}
 
 	Swapchain Core::getSwapchainOfHandle(const SwapchainHandle handle) {

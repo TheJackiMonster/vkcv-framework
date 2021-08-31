@@ -1,11 +1,12 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 #include <GLFW/glfw3.h>
 
 #include "vkcv/Window.hpp"
 #include "vkcv/Handles.hpp"
-#include "vkcv/SwapchainManager.hpp"
+#include "SwapchainManager.hpp"
 
 namespace vkcv {
 	class Context;
@@ -16,7 +17,8 @@ namespace vkcv {
 		friend class Core;
 
 	private:
-
+		std::vector<Window*> m_windows;
+		
 		void destroyWindowById(uint64_t id);
 
 	public:
@@ -38,14 +40,6 @@ namespace vkcv {
 
 		[[nodiscard]]
 		Window &getWindow(const WindowHandle handle) const;
-
-		/**
-		 * Forwards the event poll to "vkcv/Window.hpp"
-		 */
-		static void pollEvents();
-
-		static bool hasOpenWindow();
-
-		static const Window getFocusedWindow();
+		
 	};
 }

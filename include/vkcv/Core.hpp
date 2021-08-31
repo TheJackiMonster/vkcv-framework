@@ -24,8 +24,8 @@
 #include "Event.hpp"
 #include "DrawcallRecording.hpp"
 #include "CommandRecordingFunctionTypes.hpp"
-#include "WindowManager.hpp"
-#include "SwapchainManager.hpp"
+#include "../../src/vkcv/WindowManager.hpp"
+#include "../../src/vkcv/SwapchainManager.hpp"
 
 
 namespace vkcv
@@ -65,9 +65,6 @@ namespace vkcv
 
         Context m_Context;
 
-		SwapchainHandle 				m_swapchainHandle;
-        WindowHandle					m_windowHandle;
-
         std::unique_ptr<PassManager>            m_PassManager;
         std::unique_ptr<PipelineManager>        m_PipelineManager;
         std::unique_ptr<DescriptorManager>      m_DescriptorManager;
@@ -77,6 +74,9 @@ namespace vkcv
         std::unique_ptr<CommandStreamManager>   m_CommandStreamManager;
 		std::unique_ptr<WindowManager>          m_WindowManager;
 		std::unique_ptr<SwapchainManager>       m_SwapchainManager;
+	
+		SwapchainHandle 				m_swapchainHandle;
+		WindowHandle					m_windowHandle;
 
 		CommandResources    m_CommandResources;
 		SyncResources       m_SyncResources;

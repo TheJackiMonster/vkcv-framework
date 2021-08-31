@@ -1,7 +1,6 @@
-#include <vkcv/SwapchainManager.hpp>
+#include "SwapchainManager.hpp"
 
 namespace vkcv {
-	static std::vector<Swapchain> m_swapchains;
 
 	SwapchainManager::SwapchainManager() noexcept {
 	}
@@ -24,7 +23,7 @@ namespace vkcv {
 		return swapchainHandle;
 	}
 
-	Swapchain &SwapchainManager::getSwapchain(const SwapchainHandle handle) const {
+	Swapchain& SwapchainManager::getSwapchain(const SwapchainHandle& handle) {
 		return m_swapchains[handle.getId()];
 	}
 
@@ -38,23 +37,24 @@ namespace vkcv {
 
 		if (swapchain.m_Swapchain) {
 			m_context->getDevice().destroySwapchainKHR(swapchain.m_Swapchain);
+			swapchain.m_Swapchain = nullptr;
 		}
+		
 		if (swapchain.m_Surface.handle) {
 			m_context->getInstance().destroySurfaceKHR(swapchain.m_Surface.handle);
+			swapchain.m_Surface.handle = nullptr;
 		}
-		swapchain.m_Swapchain = nullptr;
-		swapchain.m_Surface.handle = nullptr;
 	}
 
-	void SwapchainManager::signalRecreation(const SwapchainHandle handle) {
+	void SwapchainManager::signalRecreation(const SwapchainHandle& handle) {
 		m_swapchains[handle.getId()].signalSwapchainRecreation();
 	}
 
-	std::vector<vk::Image> SwapchainManager::getSwapchainImages(const SwapchainHandle handle) {
+	std::vector<vk::Image> SwapchainManager::getSwapchainImages(const SwapchainHandle& handle) {
 		return m_context->getDevice().getSwapchainImagesKHR(m_swapchains[handle.getId()].getSwapchain());
 	}
 
-	std::vector<vk::ImageView> SwapchainManager::createSwapchainImageViews(SwapchainHandle handle) {
+	std::vector<vk::ImageView> SwapchainManager::createSwapchainImageViews(SwapchainHandle& handle) {
 		std::vector<vk::Image> images = getSwapchainImages(handle);
 		Swapchain &swapchain = m_swapchains[handle.getId()];
 

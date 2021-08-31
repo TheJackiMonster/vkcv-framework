@@ -14,11 +14,13 @@ namespace vkcv {
     class Window {
 		friend class WindowManager;
 		friend class SwapchainManager;
+		
 	private:
     	std::string m_title;
     	bool m_resizable;
 		GLFWwindow *m_window;
 		SwapchainHandle m_swapchainHandle;
+		bool m_shouldClose;
 
     public:
     	/**
@@ -34,22 +36,22 @@ namespace vkcv {
          * @param[in] height height of the window (optional)
          * @param[in] resizable resize ability of the window (optional)
          */
-    	Window(const char* title, int width = -1, int height = -1, bool resizable = false);
-    	
-    	/**
+    	explicit Window(const char* title, int width = -1, int height = -1, bool resizable = false);
+	
+		/**
 		* Copy-constructor of #Window
 		*
 		* @param other Other instance of #Window
 		*/
-    	Window(const Window& other);
-    	
-    	/**
+		Window(const Window& other) = delete;
+	
+		/**
 		* Copy-operator of #Window
 		*
 		* @param other Other instance of #Window
 		* @return Reference to itself
 		*/
-    	Window &operator=(const Window &other);
+		Window &operator=(const Window &other) = delete;
         
         /**
          * checks if the window is still open, or the close event was called
@@ -65,6 +67,12 @@ namespace vkcv {
 		 * @return
 		 */
 		static Window& getFocusedWindow();
+		
+		/**
+		 *
+		 * @return
+		 */
+		static bool hasOpenWindow();
 
         /**
          * polls all events on the GLFWwindow
@@ -125,7 +133,7 @@ namespace vkcv {
         /**
          * destroys the window
          */
-		void destroyWindow();
+		//void destroyWindow();
 
         /**
          * gets the windows framebuffer size

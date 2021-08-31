@@ -18,7 +18,7 @@ int main(int argc, const char** argv) {
 		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
 
-	vkcv::Window window = core.getWindow();
+	vkcv::Window& window = core.getWindow();
 
 	auto triangleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
 	uint16_t indices[3] = { 0, 1, 2 };
@@ -92,7 +92,7 @@ int main(int argc, const char** argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
 
-	while (vkcv::WindowManager::hasOpenWindow())
+	while (vkcv::Window::hasOpenWindow())
 	{
         vkcv::Window::pollEvents();
 

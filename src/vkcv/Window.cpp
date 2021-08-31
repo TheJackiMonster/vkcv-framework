@@ -145,7 +145,7 @@ namespace vkcv {
         }
     }
 
-    void Window::destroyWindow() {
+    /*void Window::destroyWindow() {
 		Window::e_mouseButton.unlock();
 		Window::e_mouseMove.unlock();
 		Window::e_mouseScroll.unlock();
@@ -158,9 +158,9 @@ namespace vkcv {
 			s_Windows.erase(std::find(s_Windows.begin(), s_Windows.end(), m_window));
 			glfwDestroyWindow(m_window);
 		}
-	}
+	}*/
     
-    Window::Window(const Window &other) :
+    /*Window::Window(const Window &other) :
     m_title(other.getTitle()),
     m_resizable(other.isResizable()),
     m_window(createGLFWWindow(
@@ -198,7 +198,19 @@ namespace vkcv {
 		bindGLFWWindow(m_window, this);
     	
     	return *this;
-    }
+    }*/
+
+	bool Window::hasOpenWindow() {
+		for (auto glfwWindow : s_Windows) {
+			auto window = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
+			
+			if (window->isOpen()) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
 
     void Window::pollEvents() {
 
@@ -237,6 +249,8 @@ namespace vkcv {
 			window->e_key.lock();
 			window->e_char.lock();
 			window->e_gamepad.lock();
+			
+			window->m_shouldClose |= glfwWindowShouldClose(glfwWindow);
 		}
     }
 
@@ -245,7 +259,7 @@ namespace vkcv {
 			return false;
 		}
 		
-        return !glfwWindowShouldClose(m_window);
+        return !m_shouldClose;
     }
     
     const std::string& Window::getTitle() const {

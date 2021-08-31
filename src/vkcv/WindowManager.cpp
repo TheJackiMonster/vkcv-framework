@@ -1,9 +1,8 @@
-#include "vkcv/WindowManager.hpp"
+#include "WindowManager.hpp"
 #include "vkcv/Context.hpp"
 
 namespace vkcv {
-	static std::vector<Window> m_windows;
-
+	
 	WindowManager::WindowManager() noexcept {
 	}
 
@@ -11,6 +10,7 @@ namespace vkcv {
 		for (uint64_t id = 0; id < m_windows.size(); id++) {
 			destroyWindowById(id);
 		}
+		
 		m_windows.clear();
 	}
 
@@ -22,12 +22,12 @@ namespace vkcv {
 			bool resizeable) {
 		const uint64_t id = m_windows.size();
 
-		vkcv::Window window = vkcv::Window(applicationName, windowWidth, windowHeight, resizeable);
+		auto window = new Window(applicationName, windowWidth, windowHeight, resizeable);
 
-		SwapchainHandle swapchainHandle = swapchainManager.createSwapchain(window);
+		SwapchainHandle swapchainHandle = swapchainManager.createSwapchain(*window);
 
 		if (resizeable) {
-			window.e_resize.add([&](int width, int height) {
+			window->e_resize.add([&](int width, int height) {
 				swapchainManager.signalRecreation(swapchainHandle);
 			});
 		}
@@ -37,7 +37,7 @@ namespace vkcv {
 	}
 
 	Window &WindowManager::getWindow(const WindowHandle handle) const {
-		return m_windows[handle.getId()];
+		return *m_windows[handle.getId()];
 	}
 
 	void WindowManager::destroyWindowById(uint64_t id) {
@@ -47,25 +47,21 @@ namespace vkcv {
 			return;
 		}
 
-		Window &window = m_windows[id];
-		window.destroyWindow();
-		m_windows[id] = nullptr;
+		if (m_windows[id] != nullptr) {
+			delete m_windows[id];
+			m_windows[id] = nullptr;
+		}
 	}
 
-	void WindowManager::pollEvents() {
+	/*void WindowManager::pollEvents() {
 		Window::pollEvents();
 	}
 
 	bool WindowManager::hasOpenWindow() {
-		for (auto &window : m_windows) {
-			if (window.isOpen()) {
-				return true;
-			}
-		}
-		return false;
+	
 	}
 
-	const Window WindowManager::getFocusedWindow() {
+	Window& WindowManager::getFocusedWindow() {
 		return Window::getFocusedWindow();
-	}
+	}*/
 }

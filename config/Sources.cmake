@@ -82,10 +82,10 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/SamplerManager.hpp
 		${vkcv_source}/vkcv/SamplerManager.cpp
 
-		${vkcv_include}/vkcv/WindowManager.hpp
+		${vkcv_source}/vkcv/WindowManager.hpp
 		${vkcv_source}/vkcv/WindowManager.cpp
 
-		${vkcv_include}/vkcv/SwapchainManager.hpp
+		${vkcv_source}/vkcv/SwapchainManager.hpp
 		${vkcv_source}/vkcv/SwapchainManager.cpp
         
         ${vkcv_include}/vkcv/DescriptorWrites.hpp

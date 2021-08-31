@@ -3,7 +3,7 @@
 #include <vector>
 #include <GLFW/glfw3.h>
 
-#include "vkcv/WindowManager.hpp"
+#include "WindowManager.hpp"
 #include "vkcv/Swapchain.hpp"
 #include "vkcv/Handles.hpp"
 
@@ -16,6 +16,7 @@ namespace vkcv {
 		friend class WindowManager;
 
 	private:
+		std::vector<Swapchain> m_swapchains;
 
 		Context *m_context;
 
@@ -37,12 +38,12 @@ namespace vkcv {
 		SwapchainHandle createSwapchain(Window &window);
 
 		[[nodiscard]]
-		Swapchain &getSwapchain(const SwapchainHandle handle) const;
+		Swapchain &getSwapchain(const SwapchainHandle& handle);
 
-		void signalRecreation(const SwapchainHandle handle);
+		void signalRecreation(const SwapchainHandle& handle);
 
-		std::vector<vk::Image> getSwapchainImages(const SwapchainHandle handle);
+		std::vector<vk::Image> getSwapchainImages(const SwapchainHandle& handle);
 
-		std::vector<vk::ImageView> createSwapchainImageViews(SwapchainHandle handle);
+		std::vector<vk::ImageView> createSwapchainImageViews(SwapchainHandle& handle);
 	};
 }
