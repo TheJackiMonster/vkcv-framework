@@ -52,16 +52,4 @@ namespace vkcv {
 			m_windows[id] = nullptr;
 		}
 	}
-
-	/*void WindowManager::pollEvents() {
-		Window::pollEvents();
-	}
-
-	bool WindowManager::hasOpenWindow() {
-	
-	}
-
-	Window& WindowManager::getFocusedWindow() {
-		return Window::getFocusedWindow();
-	}*/
 }

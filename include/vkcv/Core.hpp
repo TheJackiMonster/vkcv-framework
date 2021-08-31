@@ -61,7 +61,7 @@ namespace vkcv
         // explicit destruction of default constructor
         Core() = delete;
 
-		Result acquireSwapchainImage();
+		Result acquireSwapchainImage(const SwapchainHandle &swapchainHandle);
 
         Context m_Context;
 
@@ -74,9 +74,6 @@ namespace vkcv
         std::unique_ptr<CommandStreamManager>   m_CommandStreamManager;
 		std::unique_ptr<WindowManager>          m_WindowManager;
 		std::unique_ptr<SwapchainManager>       m_SwapchainManager;
-	
-		SwapchainHandle 				m_swapchainHandle;
-		WindowHandle					m_windowHandle;
 
 		CommandResources    m_CommandResources;
 		SyncResources       m_SyncResources;
@@ -124,9 +121,6 @@ namespace vkcv
 
         [[nodiscard]]
         const Context &getContext() const;
-        
-        [[nodiscard]]
-        const Swapchain& getSwapchain() const;
 
         /**
              * Creates a #Core with given @p applicationName and @p applicationVersion for your application.
@@ -239,16 +233,16 @@ namespace vkcv
 				bool resizeable);
 
 		[[nodiscard]]
-		SwapchainHandle createSwapchain(Window &window);
-
-		[[nodiscard]]
-		Window& getWindow();
+		Window& getWindow(const WindowHandle& handle );
 
 		[[nodiscard]]
 		Swapchain getSwapchainOfCurrentWindow();
 
 		[[nodiscard]]
-		Swapchain getSwapchainOfHandle(const SwapchainHandle handle);
+		Swapchain& getSwapchain(const SwapchainHandle& handle);
+
+		[[nodiscard]]
+		Swapchain& getSwapchain(const WindowHandle& handle);
 
         [[nodiscard]]
         uint32_t getImageWidth(const ImageHandle& image);
@@ -272,7 +266,7 @@ namespace vkcv
 		/**
 		 * @brief start recording command buffers and increment frame index
 		*/
-		bool beginFrame(uint32_t& width, uint32_t& height);
+		bool beginFrame(uint32_t& width, uint32_t& height, const WindowHandle &windowHandle);
 
 		void recordDrawcallsToCmdStream(
 			const CommandStreamHandle&      cmdStreamHandle,
@@ -280,7 +274,8 @@ namespace vkcv
 			const PipelineHandle            pipelineHandle,
 			const PushConstants             &pushConstants,
 			const std::vector<DrawcallInfo> &drawcalls,
-			const std::vector<ImageHandle>  &renderTargets);
+			const std::vector<ImageHandle>  &renderTargets,
+			const WindowHandle              &windowHandle);
 
 		void recordMeshShaderDrawcalls(
 			const CommandStreamHandle&              cmdStreamHandle,
@@ -288,7 +283,8 @@ namespace vkcv
 			const PipelineHandle                    pipelineHandle,
 			const PushConstants&                    pushConstantData,
             const std::vector<MeshShaderDrawcall>&  drawcalls,
-			const std::vector<ImageHandle>&         renderTargets);
+			const std::vector<ImageHandle>&         renderTargets,
+			const WindowHandle&                     windowHandle);
 
 		void recordComputeDispatchToCmdStream(
 			CommandStreamHandle cmdStream,
@@ -314,7 +310,7 @@ namespace vkcv
 		/**
 		 * @brief end recording and present image
 		*/
-		void endFrame();
+		void endFrame( const WindowHandle& windowHandle );
 
 		/**
 		 * Submit a command buffer to any queue of selected type. The recording can be customized by a

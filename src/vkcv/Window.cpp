@@ -108,7 +108,8 @@ namespace vkcv {
 	e_resize(true),
 	e_key(true),
 	e_char(true),
-	e_gamepad(true)
+	e_gamepad(true),
+	m_shouldClose(false)
 	{}
 
 	Window::Window(const char* title, int width, int height, bool resizable) :
@@ -121,7 +122,8 @@ namespace vkcv {
 	e_resize(true),
 	e_key(true),
 	e_char(true),
-	e_gamepad(true)
+	e_gamepad(true),
+	m_shouldClose(false)
     {
 		bindGLFWWindow(m_window, this);
     }
