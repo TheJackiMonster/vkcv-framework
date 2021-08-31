@@ -78,7 +78,6 @@ int main(int argc, const char** argv) {
 
 	const vkcv::DescriptorBindings& descriptorBindings = safrShaderProgram.getReflectedDescriptors().at(0);
 	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
-	
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
 	//materials for the spheres
@@ -236,7 +235,7 @@ int main(int argc, const char** argv) {
 		vkcv::PushConstants pushConstantsCompute(0);
 		//pushConstantsCompute.appendDrawcall(pushData);
 
-		uint32_t computeDispatchCount[3] = { 2,1,1 };
+		uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil( windowWidth/16.f)), static_cast<uint32_t> (std::ceil(windowHeight/16.f)), 1 }; // Anzahl workgroups
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			computePipeline,
 			computeDispatchCount,
