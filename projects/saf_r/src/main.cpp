@@ -29,7 +29,6 @@ int main(int argc, const char** argv) {
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		{},
 		{ "VK_KHR_swapchain" }
 	);
 
@@ -53,7 +52,10 @@ int main(int argc, const char** argv) {
 		computeShaderProgram.addShader(shaderStage, path);
 	});
 
-	vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeShaderProgram.getReflectedDescriptors()[0]);
+	const vkcv::DescriptorBindings& computeDescriptorBindings = computeShaderProgram.getReflectedDescriptors().at(0);
+	
+	vkcv::DescriptorSetLayoutHandle computeDescriptorSetLayout = core.createDescriptorSetLayout(computeDescriptorBindings);
+	vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeDescriptorSetLayout);
 
 	const std::vector<vkcv::VertexAttachment> computeVertexAttachments = computeShaderProgram.getVertexAttachments();
 
@@ -74,9 +76,10 @@ int main(int argc, const char** argv) {
 			safrShaderProgram.addShader(shaderStage, path);
 		});
 
-	uint32_t setID = 0;
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = { safrShaderProgram.getReflectedDescriptors()[setID] };
-	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+	const vkcv::DescriptorBindings& descriptorBindings = safrShaderProgram.getReflectedDescriptors().at(0);
+	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
+	
+	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
 	//materials for the spheres
 	std::vector<safrScene::Material> materials;
@@ -176,12 +179,14 @@ int main(int argc, const char** argv) {
 			(uint32_t)windowHeight,
 			safrPass,
 			{},
-			{ core.getDescriptorSet(descriptorSet).layout },
+			{ core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle },
 			false
 	};
 
 	vkcv::PipelineHandle safrPipeline = core.createGraphicsPipeline(safrPipelineDefinition);
-	vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, { core.getDescriptorSet(computeDescriptorSet).layout });
+	vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, {
+		core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle
+	});
 
 	if (!safrPipeline || !computePipeline)
 	{
