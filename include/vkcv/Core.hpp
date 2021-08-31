@@ -79,6 +79,10 @@ namespace vkcv
 		SyncResources       m_SyncResources;
 		uint32_t            m_currentSwapchainImageIndex;
 
+		/**
+		 * sets up swapchain images
+		 * @param swapchainHandles of swapchain
+		 */
 		void setSwapchainImages(SwapchainHandle handle);
 
     public:
@@ -223,6 +227,14 @@ namespace vkcv
 			bool            supportColorAttachment = false,
 			Multisampling   multisampling = Multisampling::None);
 
+        /**
+         * creates a new window and returns it's handle
+         * @param applicationName window name
+         * @param windowWidth
+         * @param windowHeight
+         * @param resizeable resizeability bool
+         * @return windowHandle
+         */
 		[[nodiscard]]
 		WindowHandle createWindow(
 				const char *applicationName,
@@ -230,24 +242,58 @@ namespace vkcv
 				uint32_t windowHeight,
 				bool resizeable);
 
+		/**
+		 * getter for window reference
+		 * @param handle of the window
+		 * @return the window
+		 */
 		[[nodiscard]]
 		Window& getWindow(const WindowHandle& handle );
 
+		/**
+		 * gets the swapchain of the current focused window
+		 * @return swapchain
+		 */
 		[[nodiscard]]
-		Swapchain getSwapchainOfCurrentWindow();
+		Swapchain& getSwapchainOfCurrentWindow();
 
+		/**
+		 * returns the swapchain reference
+		 * @param handle of the swapchain
+		 * @return swapchain
+		 */
 		[[nodiscard]]
 		Swapchain& getSwapchain(const SwapchainHandle& handle);
 
+		/**
+		 * gets the swapchain handle from the window
+		 * @param handle of the window
+		 * @return the swapchain from getSwapchain( SwapchainHandle )
+		 */
 		[[nodiscard]]
 		Swapchain& getSwapchain(const WindowHandle& handle);
 
+		/**
+		 * returns the image width
+		 * @param image handle
+		 * @return imageWidth
+		 */
         [[nodiscard]]
         uint32_t getImageWidth(const ImageHandle& image);
-        
+
+        /**
+         * returns the image height
+         * @param image handle
+         * @return imageHeight
+         */
         [[nodiscard]]
         uint32_t getImageHeight(const ImageHandle& image);
-	
+
+        /**
+         * returns the image format of the image
+         * @param image handle
+         * @return imageFormat
+         */
 		[[nodiscard]]
 		vk::Format getImageFormat(const ImageHandle& image);
 

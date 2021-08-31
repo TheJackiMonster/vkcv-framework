@@ -680,7 +680,7 @@ namespace vkcv
 		return m_ImageManager->getImageFormat(image);
 	}
 
-	Swapchain Core::getSwapchainOfCurrentWindow() {
+	Swapchain& Core::getSwapchainOfCurrentWindow() {
 		return m_SwapchainManager->getSwapchain(Window::getFocusedWindow().getSwapchainHandle());
 	}
 

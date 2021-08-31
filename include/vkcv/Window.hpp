@@ -69,8 +69,8 @@ namespace vkcv {
 		static Window& getFocusedWindow();
 		
 		/**
-		 *
-		 * @return
+		 * checks if any GLFWWindows are open
+		 * @return bool if a window is open
 		 */
 		static bool hasOpenWindow();
 

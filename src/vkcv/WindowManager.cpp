@@ -1,5 +1,4 @@
 #include "WindowManager.hpp"
-#include "vkcv/Context.hpp"
 
 namespace vkcv {
 	

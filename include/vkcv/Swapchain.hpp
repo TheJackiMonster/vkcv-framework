@@ -36,15 +36,18 @@ namespace vkcv
 	
 		std::atomic<bool> m_RecreationRequired;
 
-        /**
-         * Constructor of a SwapChain object
-         * glfw is not initialized in this class because ist must be sure that there exists a context first
-         * glfw is already initialized by the window class
-         * @param surface used by the swapchain
-         * @param swapchain to show images in the window
-         * @param format
-         */
-         // TODO:
+		/**
+		 * Constructor of a SwapChain object
+		 * glfw is not initialized in this class because ist must be sure that there exists a context first
+		 * glfw is already initialized by the window class
+		 * @param surface used by the swapchain
+		 * @param swapchain to show images in the window
+		 * @param format of the swapchain
+		 * @param colorSpace of the swapchain
+		 * @param presentMode of the swapchain
+		 * @param imageCount of the swapchain
+		 * @param extent of the swapchain
+		 */
         Swapchain(const Surface &surface,
                   vk::SwapchainKHR swapchain,
                   vk::Format format,
@@ -54,22 +57,20 @@ namespace vkcv
 				  vk::Extent2D extent) noexcept;
 	
 		/**
-		 * TODO
-		 *
-		 * @return
+		 * checks if the update flag is true
+		 * @return if an update is needed
 		 */
 		bool shouldUpdateSwapchain() const;
 	
 		/**
-		 * TODO
-		 *
+		 * recreates the swapchain
 		 * context
 		 * window
 		 */
 		void updateSwapchain(const Context &context, const Window &window);
 	
 		/**
-		 *
+		 * signal that the swapchain needs to be recreated
 		 */
 		void signalSwapchainRecreation();
 
@@ -116,9 +117,7 @@ namespace vkcv
 		uint32_t getImageCount() const;
 	
         /**
-         * TODO
-         *
-         * @return
+         * @return the 2d extent of the swapchain
          */
         [[nodiscard]]
 		const vk::Extent2D& getExtent() const;
