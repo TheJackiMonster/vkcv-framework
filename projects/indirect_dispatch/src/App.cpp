@@ -13,7 +13,7 @@ App::App() :
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
 		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME })),
-	m_windowHandle(m_core.createWindow(m_applicationName,m_windowWidth,m_windowHeight,false)),
+	m_windowHandle(m_core.createWindow(m_applicationName, m_windowWidth, m_windowHeight, false)),
 	m_cameraManager(m_core.getWindow(m_windowHandle)){}
 
 bool App::initialize() {

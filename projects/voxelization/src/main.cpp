@@ -31,7 +31,7 @@ int main(int argc, const char** argv) {
 			{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
 			features
 	);
-	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
 	vkcv::Window& window = core.getWindow(windowHandle);
 
 	bool     isFullscreen            = false;

@@ -101,6 +101,7 @@ namespace vkcv {
 	Window::Window() :
 	m_title(),
 	m_resizable(false),
+	m_shouldClose(false),
 	m_window(nullptr),
 	e_mouseButton(true),
 	e_mouseMove(true),
@@ -108,13 +109,13 @@ namespace vkcv {
 	e_resize(true),
 	e_key(true),
 	e_char(true),
-	e_gamepad(true),
-	m_shouldClose(false)
+	e_gamepad(true)
 	{}
 
 	Window::Window(const char* title, int width, int height, bool resizable) :
     m_title(title),
     m_resizable(resizable),
+	m_shouldClose(false),
     m_window(createGLFWWindow(title, width, height, resizable)),
 	e_mouseButton(true),
 	e_mouseMove(true),
@@ -122,8 +123,7 @@ namespace vkcv {
 	e_resize(true),
 	e_key(true),
 	e_char(true),
-	e_gamepad(true),
-	m_shouldClose(false)
+	e_gamepad(true)
     {
 		bindGLFWWindow(m_window, this);
     }
