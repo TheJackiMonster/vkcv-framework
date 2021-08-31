@@ -31,6 +31,7 @@ namespace vkcv
     // forward declarations
     class PassManager;
     class PipelineManager;
+    class ComputePipelineManager;
     class DescriptorManager;
     class BufferManager;
     class SamplerManager;
@@ -66,6 +67,7 @@ namespace vkcv
 
         std::unique_ptr<PassManager>            m_PassManager;
         std::unique_ptr<PipelineManager>        m_PipelineManager;
+        std::unique_ptr<ComputePipelineManager> m_ComputePipelineManager;
         std::unique_ptr<DescriptorManager>      m_DescriptorManager;
         std::unique_ptr<BufferManager>          m_BufferManager;
         std::unique_ptr<SamplerManager>         m_SamplerManager;
@@ -162,7 +164,7 @@ namespace vkcv
          * @return True if pipeline creation was successful, False if not
          */
         [[nodiscard]]
-        PipelineHandle createComputePipeline(
+        ComputePipelineHandle createComputePipeline(
             const ShaderProgram &shaderProgram,
             const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
 
@@ -266,7 +268,7 @@ namespace vkcv
 
 		void recordComputeDispatchToCmdStream(
 			CommandStreamHandle cmdStream,
-			PipelineHandle computePipeline,
+            ComputePipelineHandle computePipeline,
 			const uint32_t dispatchCount[3],
 			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
 			const PushConstants& pushConstants);
@@ -279,7 +281,7 @@ namespace vkcv
 
 		void recordComputeIndirectDispatchToCmdStream(
 			const CommandStreamHandle               cmdStream,
-			const PipelineHandle                    computePipeline,
+			const ComputePipelineHandle             computePipeline,
 			const vkcv::BufferHandle                buffer,
 			const size_t                            bufferArgOffset,
 			const std::vector<DescriptorSetUsage>&  descriptorSetUsages,
