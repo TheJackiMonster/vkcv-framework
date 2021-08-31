@@ -86,22 +86,24 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		false
 	);
+	
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	features.requireExtensionFeature<vk::PhysicalDeviceMeshShaderFeaturesNV>(
+			VK_NV_MESH_SHADER_EXTENSION_NAME, [](vk::PhysicalDeviceMeshShaderFeaturesNV& features) {
+		features.setTaskShader(true);
+		features.setMeshShader(true);
+	});
 
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		{},
-		{ "VK_KHR_swapchain", VK_NV_MESH_SHADER_EXTENSION_NAME }
+		features
 	);
 
     vkcv::gui::GUI gui (core, window);
-
-    const auto& context = core.getContext();
-    const vk::Instance& instance = context.getInstance();
-    const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
-    const vk::Device& device = context.getDevice();
 
     vkcv::asset::Scene mesh;
     const char* path = argc > 1 ? argv[1] : "resources/Bunny/Bunny.glb";
@@ -203,7 +205,8 @@ int main(int argc, const char** argv) {
     }
     const vkcv::VertexLayout bunnyLayout (bindings);
 
-	vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(bunnyShaderProgram.getReflectedDescriptors()[0]);
+    vkcv::DescriptorSetLayoutHandle vertexShaderDescriptorSetLayout = core.createDescriptorSetLayout(bunnyShaderProgram.getReflectedDescriptors().at(0));
+    vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(vertexShaderDescriptorSetLayout);
 
 	const vkcv::PipelineConfig bunnyPipelineDefinition {
 			bunnyShaderProgram,
@@ -211,7 +214,7 @@ int main(int argc, const char** argv) {
 			(uint32_t)windowHeight,
 			renderPass,
 			{ bunnyLayout },
-			{ core.getDescriptorSet(vertexShaderDescriptorSet).layout },
+			{ core.getDescriptorSetLayout(vertexShaderDescriptorSetLayout).vulkanHandle },
 			false
 	};
 
@@ -251,8 +254,8 @@ int main(int argc, const char** argv) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
 
-	uint32_t setID = 0;
-	vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet( meshShaderProgram.getReflectedDescriptors()[setID]);
+	vkcv::DescriptorSetLayoutHandle meshShaderDescriptorSetLayout = core.createDescriptorSetLayout(meshShaderProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet(meshShaderDescriptorSetLayout);
 	const vkcv::VertexLayout meshShaderLayout(bindings);
 
 	const vkcv::PipelineConfig meshShaderPipelineDefinition{
@@ -261,7 +264,7 @@ int main(int argc, const char** argv) {
 		(uint32_t)windowHeight,
 		renderPass,
 		{meshShaderLayout},
-		{core.getDescriptorSet(meshShaderDescriptorSet).layout},
+		{core.getDescriptorSetLayout(meshShaderDescriptorSetLayout).vulkanHandle},
 		false
 	};
 

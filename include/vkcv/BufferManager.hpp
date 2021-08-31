@@ -71,7 +71,7 @@ namespace vkcv
 		 * @param memoryType Type of buffers memory
 		 * @return New buffer handle
 		 */
-		BufferHandle createBuffer(BufferType type, size_t size, BufferMemoryType memoryType);
+		BufferHandle createBuffer(BufferType type, size_t size, BufferMemoryType memoryType, bool supportIndirect);
 		
 		/**
 		 * Returns the Vulkan buffer handle of a buffer

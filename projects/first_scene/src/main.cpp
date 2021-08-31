@@ -28,14 +28,13 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 30.0f);
 	
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
-
+	
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
-		{},
-		{ "VK_KHR_swapchain" }
+		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
 	
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
@@ -85,15 +84,15 @@ int main(int argc, const char** argv) {
 	
 	const auto& material0 = scene.getMaterial(0);
 
-	const vkcv::PipelineConfig scenePipelineDefsinition{
+	const vkcv::PipelineConfig scenePipelineDefinition{
 		sceneShaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
 		scenePass,
 		{sceneLayout},
-		{ core.getDescriptorSet(material0.getDescriptorSet()).layout },
+		{ core.getDescriptorSetLayout(material0.getDescriptorSetLayout()).vulkanHandle },
 		true };
-	vkcv::PipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefsinition);
+	vkcv::PipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
 	
 	if (!scenePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;

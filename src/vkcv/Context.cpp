@@ -9,8 +9,9 @@ namespace vkcv
             m_Instance(other.m_Instance),
             m_PhysicalDevice(other.m_PhysicalDevice),
             m_Device(other.m_Device),
-            m_QueueManager(other.m_QueueManager),
-            m_Allocator(other.m_Allocator)
+			m_FeatureManager(std::move(other.m_FeatureManager)),
+			m_QueueManager(std::move(other.m_QueueManager)),
+			m_Allocator(other.m_Allocator)
     {
         other.m_Instance        = nullptr;
         other.m_PhysicalDevice  = nullptr;
@@ -23,7 +24,8 @@ namespace vkcv
         m_Instance          = other.m_Instance;
         m_PhysicalDevice    = other.m_PhysicalDevice;
         m_Device            = other.m_Device;
-        m_QueueManager		= other.m_QueueManager;
+        m_FeatureManager	= std::move(other.m_FeatureManager);
+        m_QueueManager		= std::move(other.m_QueueManager);
         m_Allocator			= other.m_Allocator;
 
         other.m_Instance        = nullptr;
@@ -37,12 +39,14 @@ namespace vkcv
     Context::Context(vk::Instance instance,
                      vk::PhysicalDevice physicalDevice,
                      vk::Device device,
+                     FeatureManager&& featureManager,
 					 QueueManager&& queueManager,
 					 vma::Allocator&& allocator) noexcept :
     m_Instance(instance),
     m_PhysicalDevice(physicalDevice),
     m_Device(device),
-    m_QueueManager(queueManager),
+    m_FeatureManager(std::move(featureManager)),
+    m_QueueManager(std::move(queueManager)),
     m_Allocator(allocator)
     {}
 
@@ -66,6 +70,10 @@ namespace vkcv
     const vk::Device &Context::getDevice() const
     {
         return m_Device;
+    }
+    
+    const FeatureManager& Context::getFeatureManager() const {
+    	return m_FeatureManager;
     }
     
     const QueueManager& Context::getQueueManager() const {
@@ -166,7 +174,6 @@ namespace vkcv
 		return true;
 	}
 
-	
 	std::vector<const char*> getRequiredExtensions() {
 		uint32_t glfwExtensionCount = 0;
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -178,14 +185,12 @@ namespace vkcv
 		
 		return extensions;
 	}
-	
 
-	
 	Context Context::create(const char *applicationName,
 							uint32_t applicationVersion,
 							const std::vector<vk::QueueFlagBits>& queueFlags,
-							const std::vector<const char *>& instanceExtensions,
-							const std::vector<const char *>& deviceExtensions) {
+							const Features& features,
+							const std::vector<const char*>& instanceExtensions) {
 		// check for layer support
 		
 		const std::vector<vk::LayerProperties>& layerProperties = vk::enumerateInstanceLayerProperties();
@@ -218,13 +223,13 @@ namespace vkcv
 			supportedExtensions.push_back(elem.extensionName);
 		}
 		
-		if (!checkSupport(supportedExtensions, instanceExtensions)) {
-			throw std::runtime_error("The requested instance extensions are not supported!");
-		}
-		
 		// for GLFW: get all required extensions
 		std::vector<const char*> requiredExtensions = getRequiredExtensions();
 		requiredExtensions.insert(requiredExtensions.end(), instanceExtensions.begin(), instanceExtensions.end());
+		
+		if (!checkSupport(supportedExtensions, requiredExtensions)) {
+			throw std::runtime_error("The requested instance extensions are not supported!");
+		}
 		
 		const vk::ApplicationInfo applicationInfo(
 				applicationName,
@@ -253,17 +258,35 @@ namespace vkcv
 		std::vector<vk::PhysicalDevice> physicalDevices = instance.enumeratePhysicalDevices();
 		vk::PhysicalDevice physicalDevice = pickPhysicalDevice(instance);
 		
-		// check for physical device extension support
-		std::vector<vk::ExtensionProperties> deviceExtensionProperties = physicalDevice.enumerateDeviceExtensionProperties();
-		supportedExtensions.clear();
-		for (auto& elem : deviceExtensionProperties) {
-			supportedExtensions.push_back(elem.extensionName);
+		FeatureManager featureManager (physicalDevice);
+		
+		if (featureManager.useExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME, false)) {
+			featureManager.useFeatures<vk::PhysicalDeviceShaderFloat16Int8Features>(
+					[](vk::PhysicalDeviceShaderFloat16Int8Features& features) {
+				features.setShaderFloat16(true);
+			}, false);
 		}
-		if (!checkSupport(supportedExtensions, deviceExtensions)) {
-			throw std::runtime_error("The requested device extensions are not supported by the physical device!");
+		
+		if (featureManager.useExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME, false)) {
+			featureManager.useFeatures<vk::PhysicalDevice16BitStorageFeatures>(
+					[](vk::PhysicalDevice16BitStorageFeatures& features) {
+				features.setStorageBuffer16BitAccess(true);
+			}, false);
 		}
 
-		// create required queue structs
+		featureManager.useFeatures([](vk::PhysicalDeviceFeatures& features) {
+			features.setFragmentStoresAndAtomics(true);
+			features.setGeometryShader(true);
+			features.setDepthClamp(true);
+			features.setShaderInt16(true);
+		});
+		
+		for (const auto& feature : features.getList()) {
+			feature(featureManager);
+		}
+		
+		const auto& extensions = featureManager.getActiveExtensions();
+
 		std::vector<vk::DeviceQueueCreateInfo> qCreateInfos;
 		std::vector<float> qPriorities;
 		qPriorities.resize(queueFlags.size(), 1.f);
@@ -277,9 +300,9 @@ namespace vkcv
 				qCreateInfos.data(),
 				0,
 				nullptr,
-				deviceExtensions.size(),
-				deviceExtensions.data(),
-				nullptr		// Should our device use some features??? If yes: TODO
+				extensions.size(),
+				extensions.data(),
+				nullptr
 		);
 
 #ifndef NDEBUG
@@ -287,60 +310,11 @@ namespace vkcv
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
 
-		vk::PhysicalDeviceFeatures2 deviceFeatures2;
-		deviceFeatures2.features.fragmentStoresAndAtomics = true;
-		deviceFeatures2.features.geometryShader = true;
-		deviceFeatures2.features.depthClamp = true;
-		deviceFeatures2.features.shaderInt16 = true;
-
-		// TODO: proper feature management
-		// TODO: check whether these features are ACTUALLY SUPPORTED
-		// -------------- HARD CODED LIST OF DEVICE FEATURES THAT ARE CHECKED AGAINST AND IF USED, ENABLED ------------
-
-		const bool usingMeshShaders = checkSupport(deviceExtensions, { VK_NV_MESH_SHADER_EXTENSION_NAME });
-		vk::PhysicalDeviceMeshShaderFeaturesNV meshShadingFeatures;
-		if (usingMeshShaders) {
-			meshShadingFeatures.taskShader = true;
-			meshShadingFeatures.meshShader = true;
-            deviceFeatures2.setPNext(&meshShadingFeatures);
-		}
-
-		const bool shaderFloat16 = checkSupport(deviceExtensions, { "VK_KHR_shader_float16_int8" });
-		vk::PhysicalDeviceShaderFloat16Int8Features deviceShaderFloat16Int8Features;
-		if (shaderFloat16) {
-		    deviceShaderFloat16Int8Features.shaderFloat16 = true;
-			deviceFeatures2.setPNext(&deviceShaderFloat16Int8Features);
-		}
-
-		const bool storage16bit  = checkSupport(deviceExtensions, { "VK_KHR_16bit_storage" });
-		vk::PhysicalDevice16BitStorageFeatures device16BitStorageFeatures;
-		if (storage16bit) {
-		    device16BitStorageFeatures.storageBuffer16BitAccess = true;
-			deviceShaderFloat16Int8Features.setPNext(&device16BitStorageFeatures);
-		}
-
-		const bool descriptorIndexing = checkSupport(deviceExtensions, { VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME });
-        vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures;
-        if (descriptorIndexing) {
-            // NOTE: what about
-            // shaderSampledImageArrayNonUniformIndexing ?
-            descriptorIndexingFeatures.descriptorBindingPartiallyBound = true;
-            descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = true;
-            descriptorIndexingFeatures.runtimeDescriptorArray = true;
-            deviceFeatures2.setPNext(&descriptorIndexingFeatures);
-        }
-
-		deviceCreateInfo.setPNext(&deviceFeatures2);
-
-		// Ablauf
-		// qCreateInfos erstellen --> braucht das Device
-		// device erstellen
-		// jetzt koennen wir mit dem device die queues erstellen
+		deviceCreateInfo.setPNext(&(featureManager.getFeatures()));
 		
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
 
-		if (usingMeshShaders)
-		{
+		if (featureManager.isExtensionActive(VK_NV_MESH_SHADER_EXTENSION_NAME)) {
 			InitMeshShaderDrawFunctions(device);
 		}
 		
@@ -379,6 +353,7 @@ namespace vkcv
 				instance,
 				physicalDevice,
 				device,
+				std::move(featureManager),
 				std::move(queueManager),
 				std::move(allocator)
 		);

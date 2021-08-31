@@ -18,14 +18,13 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		true
 	);
-
+	
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
-		{},
-		{ "VK_KHR_swapchain" }
+		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
 
 	vkcv::asset::Scene mesh;
@@ -106,9 +105,16 @@ int main(int argc, const char** argv) {
 	
 	const vkcv::VertexLayout firstMeshLayout (bindings);
 
-	uint32_t setID = 0;
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[setID] };
-	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+
+	// since we only use one descriptor set (namely, desc set 0), directly address it
+	// recreate copies of the bindings and the handles (to check whether they are properly reused instead of actually recreated)
+	std::unordered_map<uint32_t, vkcv::DescriptorBinding> set0Bindings = firstMeshProgram.getReflectedDescriptors().at(0);
+    auto set0BindingsExplicitCopy = set0Bindings;
+
+	vkcv::DescriptorSetLayoutHandle setLayoutHandle = core.createDescriptorSetLayout(set0Bindings);
+	vkcv::DescriptorSetLayoutHandle setLayoutHandleCopy = core.createDescriptorSetLayout(set0BindingsExplicitCopy);
+
+	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(setLayoutHandle);
 
 	const vkcv::PipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,
@@ -116,7 +122,7 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
         firstMeshPass,
         {firstMeshLayout},
-		{ core.getDescriptorSet(descriptorSet).layout },
+		{ core.getDescriptorSetLayout(setLayoutHandle).vulkanHandle },
 		true
 	};
 	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
@@ -166,7 +172,6 @@ int main(int argc, const char** argv) {
 
     vkcv::camera::CameraManager cameraManager(window);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
 

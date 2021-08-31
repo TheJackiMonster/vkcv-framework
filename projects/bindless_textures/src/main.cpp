@@ -19,13 +19,41 @@ int main(int argc, const char** argv) {
 		true
 	);
 
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	features.requireExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+    features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
+            VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, [](vk::PhysicalDeviceDescriptorIndexingFeatures &features) {
+                features.setShaderInputAttachmentArrayDynamicIndexing(true);
+                features.setShaderUniformTexelBufferArrayDynamicIndexing(true);
+                features.setShaderStorageTexelBufferArrayDynamicIndexing(true);
+                features.setShaderUniformBufferArrayNonUniformIndexing(true);
+                features.setShaderSampledImageArrayNonUniformIndexing(true);
+                features.setShaderStorageBufferArrayNonUniformIndexing(true);
+                features.setShaderStorageImageArrayNonUniformIndexing(true);
+                features.setShaderInputAttachmentArrayNonUniformIndexing(true);
+                features.setShaderUniformTexelBufferArrayNonUniformIndexing(true);
+                features.setShaderStorageTexelBufferArrayNonUniformIndexing(true);
+
+                features.setDescriptorBindingUniformBufferUpdateAfterBind(true);
+                features.setDescriptorBindingSampledImageUpdateAfterBind(true);
+                features.setDescriptorBindingStorageImageUpdateAfterBind(true);
+                features.setDescriptorBindingStorageBufferUpdateAfterBind(true);
+                features.setDescriptorBindingUniformTexelBufferUpdateAfterBind(true);
+                features.setDescriptorBindingStorageTexelBufferUpdateAfterBind(true);
+
+                features.setDescriptorBindingUpdateUnusedWhilePending(true);
+                features.setDescriptorBindingPartiallyBound(true);
+                features.setDescriptorBindingVariableDescriptorCount(true);
+                features.setRuntimeDescriptorArray(true);
+            });
+
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
-		{},
-		{ "VK_KHR_swapchain", VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME }
+		features
 	);
 
 	vkcv::asset::Scene mesh;
@@ -40,7 +68,7 @@ int main(int argc, const char** argv) {
     for(uint32_t i = 0; i < 5; i++)
     {
         std::filesystem::path grassPath(grassPaths[i]);
-        vkcv::asset::TextureData grassTexture = vkcv::asset::loadTexture(grassPath);
+        vkcv::asset::Texture grassTexture = vkcv::asset::loadTexture(grassPath);
 
         vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, grassTexture.width, grassTexture.height);
         texture.fill(grassTexture.data.data());
@@ -126,8 +154,9 @@ int main(int argc, const char** argv) {
 	
 	const vkcv::VertexLayout firstMeshLayout (bindings);
 
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[0] };
-	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+	std::unordered_map<uint32_t, vkcv::DescriptorBinding> descriptorBindings = firstMeshProgram.getReflectedDescriptors().at(0);
+	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
+	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
 	const vkcv::PipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,
@@ -135,7 +164,7 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
         firstMeshPass,
         {firstMeshLayout},
-		{ core.getDescriptorSet(descriptorSet).layout },
+		{ core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle },
 		true
 	};
 	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
