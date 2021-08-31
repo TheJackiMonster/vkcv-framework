@@ -1,17 +1,17 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-#include <vector>
-#include "vkcv/Handles.hpp"
-#include "PassManager.hpp"
-
 /**
- *  * @authors Mark Mints
+ * @authors Mark Mints
  * @file src/vkcv/ComputePipelineManager.hpp
  * @brief Creation and handling of Compute Pipelines
  */
 
-namespace vkcv {
+#include <vulkan/vulkan.hpp>
+#include <vector>
+#include "vkcv/Handles.hpp"
+
+namespace vkcv
+{
 
     class ComputePipelineManager
     {
@@ -25,6 +25,22 @@ namespace vkcv {
 
         ComputePipelineManager & operator=(const ComputePipelineManager &other) = delete; // copy-assign op
         ComputePipelineManager & operator=(ComputePipelineManager &&other) = delete; // move-assign op
+
+        /**
+        * Returns a vk::Pipeline object by handle.
+        * @param handle Directing to the requested pipeline.
+        * @return vk::Pipeline.
+        */
+        [[nodiscard]]
+        vk::Pipeline getVkPipeline(const ComputePipelineHandle &handle) const;
+
+        /**
+         * Returns a vk::PipelineLayout object by handle.
+         * @param handle Directing to the requested pipeline.
+         * @return vk::PipelineLayout.
+         */
+        [[nodiscard]]
+        vk::PipelineLayout getVkPipelineLayout(const ComputePipelineHandle &handle) const;
 
         ComputePipelineHandle createComputePipeline(
                 const ShaderProgram& shaderProgram,
@@ -42,7 +58,6 @@ namespace vkcv {
 
         void destroyPipelineById(uint64_t id);
 
-        // TODO: Move to ComputePipelineManager
         vk::Result createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, ShaderStage stage);
 
     };

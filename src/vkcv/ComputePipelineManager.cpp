@@ -1,7 +1,7 @@
 #include "ComputePipelineManager.hpp"
-#include "vkcv/Logger.hpp"
 
-namespace vkcv {
+namespace vkcv
+{
 
     ComputePipelineManager::ComputePipelineManager(vk::Device device) noexcept :
             m_Device{device},
@@ -15,6 +15,31 @@ namespace vkcv {
         }
     }
 
+    vk::Pipeline ComputePipelineManager::getVkPipeline(const ComputePipelineHandle &handle) const
+    {
+        const uint64_t id = handle.getId();
+
+        if (id >= m_Pipelines.size()) {
+            return nullptr;
+        }
+
+        auto& pipeline = m_Pipelines[id];
+
+        return pipeline.m_handle;
+    }
+
+    vk::PipelineLayout ComputePipelineManager::getVkPipelineLayout(const ComputePipelineHandle &handle) const
+    {
+        const uint64_t id = handle.getId();
+
+        if (id >= m_Pipelines.size()) {
+            return nullptr;
+        }
+
+        auto& pipeline = m_Pipelines[id];
+
+        return pipeline.m_layout;
+    }
 
     ComputePipelineHandle ComputePipelineManager::createComputePipeline(
             const ShaderProgram &shaderProgram,
@@ -23,7 +48,7 @@ namespace vkcv {
         // Temporally handing over the Shader Program instead of a pipeline config
         vk::ShaderModule computeModule{};
         if (createShaderModule(computeModule, shaderProgram, ShaderStage::COMPUTE) != vk::Result::eSuccess)
-            return PipelineHandle();
+            return ComputePipelineHandle();
 
         vk::PipelineShaderStageCreateInfo pipelineComputeShaderStageInfo(
                 {},
@@ -46,7 +71,7 @@ namespace vkcv {
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) !=
             vk::Result::eSuccess) {
             m_Device.destroy(computeModule);
-            return PipelineHandle();
+            return ComputePipelineHandle();
         }
 
         vk::ComputePipelineCreateInfo computePipelineCreateInfo{};
@@ -57,7 +82,7 @@ namespace vkcv {
         if (m_Device.createComputePipelines(nullptr, 1, &computePipelineCreateInfo, nullptr, &vkPipeline) !=
             vk::Result::eSuccess) {
             m_Device.destroy(computeModule);
-            return PipelineHandle();
+            return ComputePipelineHandle();
         }
 
         m_Device.destroy(computeModule);
@@ -65,9 +90,8 @@ namespace vkcv {
         const uint64_t id = m_Pipelines.size();
         m_Pipelines.push_back({vkPipeline, vkPipelineLayout, PipelineConfig()});
 
-        return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
+        return ComputePipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }
-
 
     void vkcv::ComputePipelineManager::destroyPipelineById(uint64_t id) {
         if (id >= m_Pipelines.size()) {
@@ -93,5 +117,4 @@ namespace vkcv {
         vk::ShaderModuleCreateInfo moduleInfo({}, code.size(), reinterpret_cast<uint32_t*>(code.data()));
         return m_Device.createShaderModule(&moduleInfo, nullptr, &module);
     }
-
 }
