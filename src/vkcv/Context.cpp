@@ -1,7 +1,6 @@
 
-#include <GLFW/glfw3.h>
-
 #include "vkcv/Context.hpp"
+#include "vkcv/Window.hpp"
 
 namespace vkcv
 {
@@ -175,15 +174,13 @@ namespace vkcv
 		return true;
 	}
 	
-	std::vector<const char*> getRequiredExtensions() {
-		glfwInit();
-		uint32_t glfwExtensionCount = 0;
-		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-		glfwTerminate();
+	std::vector<std::string> getRequiredExtensions() {
+		std::vector<std::string> extensions = Window::getExtensions();
+		
 #ifndef NDEBUG
-		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
+		
 		return extensions;
 	}
 	
@@ -225,7 +222,13 @@ namespace vkcv
 		}
 		
 		// for GLFW: get all required extensions
-		std::vector<const char*> requiredExtensions = getRequiredExtensions();
+		auto requiredStrings = getRequiredExtensions();
+		std::vector<const char*> requiredExtensions;
+		
+		for (const auto& extension : requiredStrings) {
+			requiredExtensions.push_back(extension.c_str());
+		}
+		
 		requiredExtensions.insert(requiredExtensions.end(), instanceExtensions.begin(), instanceExtensions.end());
 		
 		if (!checkSupport(supportedExtensions, requiredExtensions)) {

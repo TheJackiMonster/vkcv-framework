@@ -78,6 +78,12 @@ namespace vkcv {
          * polls all events on the GLFWwindow
          */
         static void pollEvents();
+		
+		/**
+		 *
+		 * @return
+		 */
+		static const std::vector<std::string>& getExtensions();
 
         /**
          * basic events of the window

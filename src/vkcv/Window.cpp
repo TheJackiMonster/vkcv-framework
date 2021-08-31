@@ -145,61 +145,6 @@ namespace vkcv {
         }
     }
 
-    /*void Window::destroyWindow() {
-		Window::e_mouseButton.unlock();
-		Window::e_mouseMove.unlock();
-		Window::e_mouseScroll.unlock();
-		Window::e_resize.unlock();
-		Window::e_key.unlock();
-		Window::e_char.unlock();
-		Window::e_gamepad.unlock();
-
-		if (m_window) {
-			s_Windows.erase(std::find(s_Windows.begin(), s_Windows.end(), m_window));
-			glfwDestroyWindow(m_window);
-		}
-	}*/
-    
-    /*Window::Window(const Window &other) :
-    m_title(other.getTitle()),
-    m_resizable(other.isResizable()),
-    m_window(createGLFWWindow(
-    		other.getTitle().c_str(),
-    		other.getWidth(),
-    		other.getHeight(),
-    		other.isResizable()
-	)),
-    e_mouseButton(true),
-    e_mouseMove(true),
-    e_mouseScroll(true),
-    e_resize(true),
-    e_key(true),
-    e_char(true),
-    e_gamepad(true)
-    {
-		bindGLFWWindow(m_window, this);
-    }
-	
-	Window &Window::operator=(const Window &other) {
-		if (m_window) {
-			s_Windows.erase(std::find(s_Windows.begin(), s_Windows.end(), m_window));
-			glfwDestroyWindow(m_window);
-		}
-		
-		m_title = other.getTitle();
-		m_resizable = other.isResizable();
-		m_window = createGLFWWindow(
-				m_title.c_str(),
-				other.getWidth(),
-				other.getHeight(),
-				m_resizable
-		);
-		
-		bindGLFWWindow(m_window, this);
-    	
-    	return *this;
-    }*/
-
 	bool Window::hasOpenWindow() {
 		for (auto glfwWindow : s_Windows) {
 			auto window = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
@@ -253,6 +198,29 @@ namespace vkcv {
 			window->m_shouldClose |= glfwWindowShouldClose(glfwWindow);
 		}
     }
+	
+	const std::vector<std::string>& Window::getExtensions() {
+		static std::vector<std::string> extensions;
+		
+		if (extensions.empty()) {
+			if(s_Windows.empty()) {
+				glfwInit();
+			}
+			
+			uint32_t glfwExtensionCount = 0;
+			const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+			
+			for (uint32_t i = 0; i < glfwExtensionCount; i++) {
+				extensions.emplace_back(glfwExtensions[i]);
+			}
+			
+			if (s_Windows.empty()) {
+				glfwTerminate();
+			}
+		}
+		
+		return extensions;
+	}
 
     bool Window::isOpen() const {
 		if (!m_window) {
