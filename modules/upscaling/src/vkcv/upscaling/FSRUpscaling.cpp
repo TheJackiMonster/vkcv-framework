@@ -65,25 +65,44 @@ namespace vkcv::upscaling {
 		}
 	}
 	
-	static std::vector<DescriptorBinding> getDescriptorBindings() {
-		return std::vector<DescriptorBinding>({
-			DescriptorBinding(
-					0, DescriptorType::UNIFORM_BUFFER_DYNAMIC,
-					1, ShaderStage::COMPUTE
-			),
-			DescriptorBinding(
-					1, DescriptorType::IMAGE_SAMPLED,
-					1, ShaderStage::COMPUTE
-			),
-			DescriptorBinding(
-					2, DescriptorType::IMAGE_STORAGE,
-					1, ShaderStage::COMPUTE
-			),
-			DescriptorBinding(
-					3, DescriptorType::SAMPLER,
-					1, ShaderStage::COMPUTE
-			)
-		});
+	static DescriptorBindings getDescriptorBindings() {
+		DescriptorBindings descriptorBindings = {};
+
+	    auto binding_0 = DescriptorBinding(
+	            0,
+	            DescriptorType::UNIFORM_BUFFER_DYNAMIC,
+	            1,
+	            ShaderStage::COMPUTE
+		);
+
+	    auto binding_1 = DescriptorBinding(
+	            1,
+	            DescriptorType::IMAGE_SAMPLED,
+	            1,
+	            ShaderStage::COMPUTE
+		);
+
+	    auto binding_2 = DescriptorBinding(
+	            2,
+	            DescriptorType::IMAGE_STORAGE,
+	            1,
+	            ShaderStage::COMPUTE
+		);
+
+	    auto binding_3 = DescriptorBinding(
+	            3,
+	            DescriptorType::SAMPLER,
+	            1,
+	            ShaderStage::COMPUTE
+		);
+
+	    descriptorBindings.insert(std::make_pair(0, binding_0));
+	    descriptorBindings.insert(std::make_pair(1, binding_1));
+	    descriptorBindings.insert(std::make_pair(2, binding_2));
+	    descriptorBindings.insert(std::make_pair(3, binding_3));
+
+	    return descriptorBindings;
+
 	}
 	
 	template<typename T>
@@ -155,8 +174,13 @@ namespace vkcv::upscaling {
 	Upscaling(core),
 	m_easuPipeline(),
 	m_rcasPipeline(),
-	m_easuDescriptorSet(m_core.createDescriptorSet(getDescriptorBindings())),
-	m_rcasDescriptorSet(m_core.createDescriptorSet(getDescriptorBindings())),
+
+	m_easuDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings())),
+	m_easuDescriptorSet(m_core.createDescriptorSet(m_easuDescriptorSetLayout)),
+
+	m_rcasDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings())),
+	m_rcasDescriptorSet(m_core.createDescriptorSet(m_rcasDescriptorSetLayout)),
+
 	m_easuConstants(m_core.createBuffer<FSRConstants>(
 			BufferType::UNIFORM,1,
 			BufferMemoryType::HOST_VISIBLE
@@ -177,7 +201,7 @@ namespace vkcv::upscaling {
 		vkcv::shader::GLSLCompiler easuCompiler;
 		vkcv::shader::GLSLCompiler rcasCompiler;
 		
-		const auto& features = m_core.getContext().getPhysicalDevice().getFeatures2();
+		const auto& features = m_core.getContext().getFeatureManager().getFeatures();
 		const bool float16Support = (
 				checkFeatures<vk::PhysicalDeviceFloat16Int8FeaturesKHR>(
 						reinterpret_cast<const vk::BaseInStructure*>(&features),
@@ -189,7 +213,7 @@ namespace vkcv::upscaling {
 						vk::StructureType::ePhysicalDevice16BitStorageFeaturesKHR,
 						check16Storage
 				)
-		) || (true); // check doesn't work because chain is empty
+		);
 		
 		if (!float16Support) {
 			easuCompiler.setDefine("SAMPLE_SLOW_FALLBACK", "1");
@@ -207,7 +231,7 @@ namespace vkcv::upscaling {
 			});
 			
 			m_easuPipeline = m_core.createComputePipeline(program, {
-				m_core.getDescriptorSet(m_easuDescriptorSet).layout
+				m_core.getDescriptorSetLayout(m_easuDescriptorSetLayout).vulkanHandle
 			});
 			
 			DescriptorWrites writes;
@@ -228,7 +252,7 @@ namespace vkcv::upscaling {
 			});
 			
 			m_rcasPipeline = m_core.createComputePipeline(program, {
-				m_core.getDescriptorSet(m_rcasDescriptorSet).layout
+			    m_core.getDescriptorSetLayout(m_rcasDescriptorSetLayout).vulkanHandle
 			});
 			
 			DescriptorWrites writes;
@@ -245,6 +269,10 @@ namespace vkcv::upscaling {
 	void FSRUpscaling::recordUpscaling(const CommandStreamHandle& cmdStream,
 									   const ImageHandle& input,
 									   const ImageHandle& output) {
+		m_core.recordBeginDebugLabel(cmdStream, "vkcv::upscaling::FSRUpscaling", {
+			1.0f, 0.0f, 0.0f, 1.0f
+		});
+		
 		const uint32_t inputWidth = m_core.getImageWidth(input);
 		const uint32_t inputHeight = m_core.getImageHeight(input);
 		
@@ -361,6 +389,8 @@ namespace vkcv::upscaling {
 					PushConstants(0)
 			);
 		}
+		
+		m_core.recordEndDebugLabel(cmdStream);
 	}
 	
 	bool FSRUpscaling::isHdrEnabled() const {

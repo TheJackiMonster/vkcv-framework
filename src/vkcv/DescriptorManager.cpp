@@ -1,7 +1,5 @@
 #include "DescriptorManager.hpp"
 
-#include "vkcv/Logger.hpp"
-
 namespace vkcv
 {
     DescriptorManager::DescriptorManager(vk::Device device) noexcept:
@@ -34,8 +32,13 @@ namespace vkcv
         for (uint64_t id = 0; id < m_DescriptorSets.size(); id++) {
 			destroyDescriptorSetById(id);
         }
+		
+		for (uint64_t id = 0; id < m_DescriptorSetLayouts.size(); id++) {
+			destroyDescriptorSetLayoutById(id);
+		}
         
 		m_DescriptorSets.clear();
+		m_DescriptorSetLayouts.clear();
   
 		for (const auto &pool : m_Pools) {
 			if (pool) {
@@ -44,55 +47,77 @@ namespace vkcv
 		}
     }
 
-    DescriptorSetHandle DescriptorManager::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
+    DescriptorSetLayoutHandle DescriptorManager::createDescriptorSetLayout(const DescriptorBindings &setBindingsMap)
     {
-        std::vector<vk::DescriptorSetLayoutBinding> setBindings = {};
+        for (auto i = 0; i < m_DescriptorSetLayouts.size(); i++)
+        {
+            if(m_DescriptorSetLayouts[i].descriptorBindings.size() != setBindingsMap.size())
+                continue;
 
-        //create each set's binding
-        for (auto binding : bindings) {
+            if (m_DescriptorSetLayouts[i].descriptorBindings == setBindingsMap)
+            {
+                return DescriptorSetLayoutHandle(i, [&](uint64_t id) { destroyDescriptorSetLayoutById(id); });
+            }
+        }
+        
+        //create the descriptor set's layout by iterating over its bindings
+        std::vector<vk::DescriptorSetLayoutBinding> bindingsVector = {};
+        for (auto bindingElem : setBindingsMap)
+        {
+            DescriptorBinding binding = bindingElem.second;
+            uint32_t bindingID = bindingElem.first;
+
             vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding(
-                binding.bindingID,
-                convertDescriptorTypeFlag(binding.descriptorType),
-                binding.descriptorCount,
-                getShaderStageFlags(binding.shaderStages));
-            setBindings.push_back(descriptorSetLayoutBinding);
+                    bindingID,
+                    getVkDescriptorType(binding.descriptorType),
+                    binding.descriptorCount,
+                    getShaderStageFlags(binding.shaderStages),
+                    nullptr
+                    );
+
+            bindingsVector.push_back(descriptorSetLayoutBinding);
         }
 
-        DescriptorSet set;
-
-        //create the descriptor set's layout from the bindings gathered above
-        vk::DescriptorSetLayoutCreateInfo layoutInfo({}, setBindings);
-        if (m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &set.layout) != vk::Result::eSuccess) {
-			vkcv_log(LogLevel::ERROR, "Failed to create descriptor set layout");
-            return DescriptorSetHandle();
+        //create the descriptor set's layout from the binding data gathered above
+        vk::DescriptorSetLayout vulkanHandle = VK_NULL_HANDLE;
+        vk::DescriptorSetLayoutCreateInfo layoutInfo({}, bindingsVector);
+        auto result = m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &vulkanHandle);
+        if (result != vk::Result::eSuccess) {
+            vkcv_log(LogLevel::ERROR, "Failed to create descriptor set layout");
+            return DescriptorSetLayoutHandle();
         };
-        
-        //create and allocate the set based on the layout that have been gathered above
-        vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), 1, &set.layout);
-        auto result = m_Device.allocateDescriptorSets(&allocInfo, &set.vulkanHandle);
+
+        const uint64_t id = m_DescriptorSetLayouts.size();
+        m_DescriptorSetLayouts.push_back({vulkanHandle, setBindingsMap});
+        return DescriptorSetLayoutHandle(id, [&](uint64_t id) { destroyDescriptorSetLayoutById(id); });
+    }
+
+    DescriptorSetHandle DescriptorManager::createDescriptorSet(const DescriptorSetLayoutHandle &setLayoutHandle)
+    {
+        //create and allocate the set based on the layout provided
+        DescriptorSetLayout setLayout = m_DescriptorSetLayouts[setLayoutHandle.getId()];
+        vk::DescriptorSet vulkanHandle = VK_NULL_HANDLE;
+        vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), 1, &setLayout.vulkanHandle);
+        auto result = m_Device.allocateDescriptorSets(&allocInfo, &vulkanHandle);
         if(result != vk::Result::eSuccess)
         {
 			//create a new descriptor pool if the previous one ran out of memory
 			if (result == vk::Result::eErrorOutOfPoolMemory) {
 				allocateDescriptorPool();
 				allocInfo.setDescriptorPool(m_Pools.back());
-				result = m_Device.allocateDescriptorSets(&allocInfo, &set.vulkanHandle);
+				result = m_Device.allocateDescriptorSets(&allocInfo, &vulkanHandle);
 			}
 			
 			if (result != vk::Result::eSuccess) {
 				vkcv_log(LogLevel::ERROR, "Failed to create descriptor set (%s)",
 						 vk::to_string(result).c_str());
-				
-				m_Device.destroy(set.layout);
 				return DescriptorSetHandle();
 			}
         };
 	
-		set.poolIndex = (m_Pools.size() - 1);
-
+		size_t poolIndex = (m_Pools.size() - 1);
         const uint64_t id = m_DescriptorSets.size();
-
-        m_DescriptorSets.push_back(set);
+        m_DescriptorSets.push_back({vulkanHandle, setLayoutHandle, poolIndex});
         return DescriptorSetHandle(id, [&](uint64_t id) { destroyDescriptorSetById(id); });
     }
     
@@ -247,33 +272,15 @@ namespace vkcv
 		m_Device.updateDescriptorSets(vulkanWrites, nullptr);
 	}
 
+	DescriptorSetLayout DescriptorManager::getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const
+	{
+	    return m_DescriptorSetLayouts[handle.getId()];
+	}
+
 	DescriptorSet DescriptorManager::getDescriptorSet(const DescriptorSetHandle handle) const {
 		return m_DescriptorSets[handle.getId()];
 	}
 
-    vk::DescriptorType DescriptorManager::convertDescriptorTypeFlag(DescriptorType type) {
-        switch (type)
-        {
-            case DescriptorType::UNIFORM_BUFFER:
-                return vk::DescriptorType::eUniformBuffer;
-			case DescriptorType::UNIFORM_BUFFER_DYNAMIC:
-				return vk::DescriptorType::eUniformBufferDynamic;
-            case DescriptorType::STORAGE_BUFFER:
-                return vk::DescriptorType::eStorageBuffer;
-			case DescriptorType::STORAGE_BUFFER_DYNAMIC:
-				return vk::DescriptorType::eStorageBufferDynamic;
-            case DescriptorType::SAMPLER:
-                return vk::DescriptorType::eSampler;
-            case DescriptorType::IMAGE_SAMPLED:
-                return vk::DescriptorType::eSampledImage;
-			case DescriptorType::IMAGE_STORAGE:
-				return vk::DescriptorType::eStorageImage;
-            default:
-				vkcv_log(LogLevel::ERROR, "Unknown DescriptorType");
-                return vk::DescriptorType::eUniformBuffer;
-        }
-    }
-    
     void DescriptorManager::destroyDescriptorSetById(uint64_t id) {
 		if (id >= m_DescriptorSets.size()) {
 			vkcv_log(LogLevel::ERROR, "Invalid id");
@@ -281,15 +288,24 @@ namespace vkcv
 		}
 		
 		auto& set = m_DescriptorSets[id];
-		if (set.layout) {
-			m_Device.destroyDescriptorSetLayout(set.layout);
-			set.layout = nullptr;
-		}
-		
 		if (set.vulkanHandle) {
 			m_Device.freeDescriptorSets(m_Pools[set.poolIndex], 1, &(set.vulkanHandle));
+			set.setLayoutHandle = DescriptorSetLayoutHandle();
 			set.vulkanHandle = nullptr;
 		}
+	}
+
+	void DescriptorManager::destroyDescriptorSetLayoutById(uint64_t id) {
+	    if (id >= m_DescriptorSets.size()) {
+	        vkcv_log(LogLevel::ERROR, "Invalid id");
+	        return;
+	    }
+
+	    auto layout = m_DescriptorSetLayouts[id];
+	    if (layout.vulkanHandle){
+	        m_Device.destroy(layout.vulkanHandle);
+	        layout.vulkanHandle = nullptr;
+	    }
 	}
 
 	vk::DescriptorPool DescriptorManager::allocateDescriptorPool() {

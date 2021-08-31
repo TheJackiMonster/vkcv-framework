@@ -16,20 +16,21 @@ int main(int argc, const char** argv) {
 		windowHeight,
 		false
 	);
-
+	
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		{},
-		{ "VK_KHR_swapchain" }
+		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
 
 	auto triangleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
 	uint16_t indices[3] = { 0, 1, 2 };
 	triangleIndexBuffer.fill(&indices[0], sizeof(indices));
 
+	core.setDebugLabel(triangleIndexBuffer.getHandle(), "Triangle Index Buffer");
+	
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
@@ -44,6 +45,8 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
+	
+	core.setDebugLabel(trianglePass, "Triangle Pass");
 
 	vkcv::ShaderProgram triangleShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
@@ -76,12 +79,15 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
+	core.setDebugLabel(trianglePipeline, "Triangle Pipeline");
+	
 	auto start = std::chrono::system_clock::now();
 
 	const vkcv::Mesh renderMesh({}, triangleIndexBuffer.getVulkanHandle(), 3);
 	vkcv::DrawcallInfo drawcall(renderMesh, {},1);
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+	core.setDebugLabel(swapchainInput, "Swapchain Image");
 
     vkcv::camera::CameraManager cameraManager(window);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
@@ -111,6 +117,7 @@ int main(int argc, const char** argv) {
 		pushConstants.appendDrawcall(mvp);
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+		core.setDebugLabel(cmdStream, "Render Commands");
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
