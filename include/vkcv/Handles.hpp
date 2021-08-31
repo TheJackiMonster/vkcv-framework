@@ -78,6 +78,12 @@ namespace vkcv
 	private:
 		using Handle::Handle;
 	};
+
+    class ComputePipelineHandle : public Handle {
+        friend class ComputePipelineManager;
+    private:
+        using Handle::Handle;
+    };
 	
 	class DescriptorSetHandle : public Handle {
 		friend class DescriptorManager;

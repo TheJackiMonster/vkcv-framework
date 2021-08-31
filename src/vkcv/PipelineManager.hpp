@@ -3,7 +3,7 @@
 /**
  *  * @authors Mark Mints
  * @file src/vkcv/PipelineManager.hpp
- * @brief Creation and handling of pipelines
+ * @brief Creation and handling of Graphic Pipelines
  */
 // TODO: Edit @brief: add graphics pipeline, but only then when the compute part is in an own class.
 // TODO: More authors? Do we need authors (general question)?
