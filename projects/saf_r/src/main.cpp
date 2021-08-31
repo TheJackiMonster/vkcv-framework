@@ -101,7 +101,7 @@ int main(int argc, const char** argv) {
 	lights.push_back(safrScene::Light(glm::vec3(30, 20, 30), 1.7));
 	//create the raytracer image for rendering
 	safrScene scene;
-	safrScene::TextureData texData = scene.render(spheres, lights);
+	vkcv::asset::Texture texData = scene.render(spheres, lights);
 
 	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Unorm, texData.width, texData.height);
 	texture.fill(texData.data.data());
