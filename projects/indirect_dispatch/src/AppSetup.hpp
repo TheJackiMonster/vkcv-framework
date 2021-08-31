@@ -8,14 +8,16 @@ struct AppRenderTargets {
 };
 
 struct GraphicPassHandles {
-	vkcv::PipelineHandle        pipeline;
-	vkcv::PassHandle            renderPass;
-	vkcv::DescriptorSetHandle   descriptorSet;
+	vkcv::PipelineHandle                pipeline;
+	vkcv::PassHandle                    renderPass;
+	vkcv::DescriptorSetLayoutHandle     descriptorSetLayout;
+	vkcv::DescriptorSetHandle           descriptorSet;
 };
 
 struct ComputePassHandles {
-	vkcv::PipelineHandle        pipeline;
-	vkcv::DescriptorSetHandle   descriptorSet;
+	vkcv::PipelineHandle                pipeline;
+	vkcv::DescriptorSetLayoutHandle     descriptorSetLayout;
+	vkcv::DescriptorSetHandle           descriptorSet;
 };
 
 struct MeshResources {

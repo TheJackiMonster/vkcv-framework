@@ -693,9 +693,19 @@ namespace vkcv
 		return getSwapchain(swapchainHandle);
 	}
 
-    DescriptorSetHandle Core::createDescriptorSet(const std::vector<DescriptorBinding>& bindings)
+	DescriptorSetLayoutHandle Core::createDescriptorSetLayout(const DescriptorBindings &bindingsMap)
+	{
+	    return m_DescriptorManager->createDescriptorSetLayout(bindingsMap);
+	}
+
+	DescriptorSetLayout Core::getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const
+	{
+	    return m_DescriptorManager->getDescriptorSetLayout(handle);
+	}
+
+	DescriptorSetHandle Core::createDescriptorSet(const DescriptorSetLayoutHandle &layoutHandle)
     {
-        return m_DescriptorManager->createDescriptorSet(bindings);
+        return m_DescriptorManager->createDescriptorSet(layoutHandle);
     }
 
 	void Core::writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites &writes) {
