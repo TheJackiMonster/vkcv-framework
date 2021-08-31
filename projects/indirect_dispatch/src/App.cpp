@@ -133,7 +133,7 @@ void App::run() {
 
 	auto frameEndTime = std::chrono::system_clock::now();
 
-	while (vkcv::WindowManager::hasOpenWindow()) {
+	while (vkcv::Window::hasOpenWindow()) {
 
 		vkcv::Window::pollEvents();
 

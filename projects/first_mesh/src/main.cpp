@@ -161,7 +161,7 @@ int main(int argc, const char** argv) {
 
     auto start = std::chrono::system_clock::now();
     
-	while (vkcv::WindowManager::hasOpenWindow()) {
+	while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 		
 		if(core.getWindow().getHeight() == 0 || core.getWindow().getWidth() == 0)

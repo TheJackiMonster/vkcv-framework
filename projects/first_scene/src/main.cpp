@@ -97,7 +97,7 @@ int main(int argc, const char** argv) {
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	
 	auto start = std::chrono::system_clock::now();
-	while (vkcv::WindowManager::hasOpenWindow()) {
+	while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 		
 		if(window.getHeight() == 0 || window.getWidth() == 0)

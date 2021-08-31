@@ -304,7 +304,7 @@ int main(int argc, const char** argv) {
 	bool useMeshShader          = true;
 	bool updateFrustumPlanes    = true;
 
-	while (window.isOpen())
+	while (vkcv::Window::hasOpenWindow())
 	{
 		vkcv::Window::pollEvents();
 
