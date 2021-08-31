@@ -137,7 +137,7 @@ int main(int argc, const char **argv) {
 
     vkcv::PipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
-    vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, {core.getDescriptorSet(computeDescriptorSet).layout} );
+    vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, {core.getDescriptorSet(computeDescriptorSet).layout} );
 
     vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
             vkcv::BufferType::UNIFORM,
@@ -228,7 +228,7 @@ int main(int argc, const char **argv) {
     });
 
     vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingShader.getReflectedDescriptors()[0]);
-    vkcv::PipelineHandle tonemappingPipe = core.createComputePipeline(
+    vkcv::ComputePipelineHandle tonemappingPipe = core.createComputePipeline(
         tonemappingShader, 
         { core.getDescriptorSet(tonemappingDescriptor).layout });
 

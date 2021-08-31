@@ -1,7 +1,7 @@
 #pragma once
 
 /**
- *  * @authors Mark Mints
+ * @authors Mark Mints
  * @file src/vkcv/PipelineManager.hpp
  * @brief Creation and handling of Graphic Pipelines
  */
