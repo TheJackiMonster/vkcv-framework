@@ -81,8 +81,20 @@ int main(int argc, const char** argv) {
 	
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	features.requireExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
-	features.requireExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
+	
+	features.tryExtensionFeature<vk::PhysicalDevice16BitStorageFeatures>(
+			VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME,
+			[](vk::PhysicalDevice16BitStorageFeatures& features) {
+				features.setStorageBuffer16BitAccess(true);
+			}
+	);
+	
+	features.tryExtensionFeature<vk::PhysicalDeviceShaderFloat16Int8Features>(
+			VK_KHR_16BIT_STORAGE_EXTENSION_NAME,
+			[](vk::PhysicalDeviceShaderFloat16Int8Features& features) {
+				features.setShaderFloat16(true);
+			}
+	);
 	
 	vkcv::Core core = vkcv::Core::create(
 		window,
