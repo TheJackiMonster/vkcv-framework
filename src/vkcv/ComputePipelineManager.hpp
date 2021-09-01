@@ -8,7 +8,9 @@
 
 #include <vulkan/vulkan.hpp>
 #include <vector>
+
 #include "vkcv/Handles.hpp"
+#include "vkcv/ShaderProgram.hpp"
 
 namespace vkcv
 {
@@ -50,7 +52,6 @@ namespace vkcv
         struct ComputePipeline {
             vk::Pipeline m_handle;
             vk::PipelineLayout m_layout;
-            PipelineConfig m_config;
         };
 
         vk::Device m_Device;

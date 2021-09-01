@@ -88,7 +88,7 @@ namespace vkcv
         m_Device.destroy(computeModule);
 
         const uint64_t id = m_Pipelines.size();
-        m_Pipelines.push_back({vkPipeline, vkPipelineLayout, PipelineConfig()});
+        m_Pipelines.push_back({vkPipeline, vkPipelineLayout});
 
         return ComputePipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }
