@@ -60,35 +60,36 @@ namespace vkcv
             }
         }
         
-        //create the descriptor set's layout by iterating over its bindings
+        //create the descriptor set's layout and binding flags by iterating over its bindings
         std::vector<vk::DescriptorSetLayoutBinding> bindingsVector = {};
+		std::vector<vk::DescriptorBindingFlags> bindingsFlags = {};
+		
         for (auto bindingElem : setBindingsMap)
         {
             DescriptorBinding binding = bindingElem.second;
             uint32_t bindingID = bindingElem.first;
-
-            vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding(
-                    bindingID,
-                    getVkDescriptorType(binding.descriptorType),
-                    binding.descriptorCount,
-                    getShaderStageFlags(binding.shaderStages),
-                    nullptr
-                    );
+	
+			bindingsVector.emplace_back(
+					bindingID,
+					getVkDescriptorType(binding.descriptorType),
+					binding.descriptorCount,
+					getShaderStageFlags(binding.shaderStages),
+					nullptr
+			);
+			
+			if (binding.variableCount) {
+				bindingsFlags.push_back(
+						vk::DescriptorBindingFlagBits::eVariableDescriptorCount |
+						vk::DescriptorBindingFlagBits::ePartiallyBound
+				);
+			} else {
+				bindingsFlags.push_back(vk::DescriptorBindingFlags());
+			}
         }
-
-        vk::DescriptorBindingFlags bindingFlags = {};
-        // create binding flags
-        for (auto bindingElem : setBindingsMap)
-        {
-            DescriptorBinding binding = bindingElem.second;
-
-            if (binding.variableCount)
-            {
-                bindingFlags = vk::DescriptorBindingFlagBitsEXT::eVariableDescriptorCount | vk::DescriptorBindingFlagBitsEXT::ePartiallyBound;
-                break;
-            }
-        }
-        vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo(1, &bindingFlags);
+		
+        vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo (
+				bindingsFlags.size(), bindingsFlags.data()
+		);
 
         //create the descriptor set's layout from the binding data gathered above
         vk::DescriptorSetLayout vulkanHandle = VK_NULL_HANDLE;
@@ -308,6 +309,7 @@ namespace vkcv
 		}
 		
 		auto& set = m_DescriptorSets[id];
+		
 		if (set.vulkanHandle) {
 			m_Device.freeDescriptorSets(m_Pools[set.poolIndex], 1, &(set.vulkanHandle));
 			set.setLayoutHandle = DescriptorSetLayoutHandle();
@@ -316,12 +318,13 @@ namespace vkcv
 	}
 
 	void DescriptorManager::destroyDescriptorSetLayoutById(uint64_t id) {
-	    if (id >= m_DescriptorSets.size()) {
+	    if (id >= m_DescriptorSetLayouts.size()) {
 	        vkcv_log(LogLevel::ERROR, "Invalid id");
 	        return;
 	    }
 
-	    auto layout = m_DescriptorSetLayouts[id];
+	    auto& layout = m_DescriptorSetLayouts[id];
+		
 	    if (layout.vulkanHandle){
 	        m_Device.destroy(layout.vulkanHandle);
 	        layout.vulkanHandle = nullptr;
