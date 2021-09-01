@@ -83,7 +83,7 @@ namespace vkcv
 						vk::DescriptorBindingFlagBits::ePartiallyBound
 				);
 			} else {
-				bindingsFlags.push_back(vk::DescriptorBindingFlags());
+				bindingsFlags.emplace_back();
 			}
         }
 		
@@ -93,8 +93,9 @@ namespace vkcv
 
         //create the descriptor set's layout from the binding data gathered above
         vk::DescriptorSetLayout vulkanHandle = VK_NULL_HANDLE;
-        vk::DescriptorSetLayoutCreateInfo layoutInfo({}, bindingsVector);
+        vk::DescriptorSetLayoutCreateInfo layoutInfo(vk::DescriptorSetLayoutCreateFlags(), bindingsVector);
         layoutInfo.setPNext(&bindingFlagsInfo);
+		
         auto result = m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &vulkanHandle);
         if (result != vk::Result::eSuccess) {
             vkcv_log(LogLevel::ERROR, "Failed to create descriptor set layout");
