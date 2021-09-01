@@ -33,24 +33,19 @@ int main(int argc, const char** argv) {
 	// prepare raytracing extensions. IMPORTANT: configure compiler to build in 64 bit mode
     vkcv::rtx::RTXModule rtxModule;
     std::vector<const char*> raytracingInstanceExtensions = rtxModule.getInstanceExtensions();
-    std::vector<const char*> raytracingDeviceExtensions = rtxModule.getDeviceExtensions();
 
     std::vector<const char*> instanceExtensions = {};   // add some more instance extensions, if needed
     instanceExtensions.insert(instanceExtensions.end(), raytracingInstanceExtensions.begin(), raytracingInstanceExtensions.end());  // merge together all instance extensions
 
-    std::vector<const char*> deviceExtensions = {
-        "VK_KHR_swapchain"
-    };
-    deviceExtensions.insert(deviceExtensions.end(), raytracingDeviceExtensions.begin(), raytracingDeviceExtensions.end());  // merge together all device extensions
-
-
+    vkcv::Features features = rtxModule.getFeatures();  // all features required by the RTX device extensions
+    features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 	vkcv::Core core = vkcv::Core::create(
 		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
-        instanceExtensions,
-		deviceExtensions
+		features,
+        instanceExtensions
 	);
 
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
@@ -71,32 +66,27 @@ int main(int argc, const char** argv) {
 	}
 
 	assert(!mesh.vertexGroups.empty());
+
 	auto vertexBuffer = core.createBuffer<uint16_t>(
 	        vkcv::BufferType::RT_ACCELERATION_VERTEX,
 	        mesh.vertexGroups[0].vertexBuffer.data.size(),
 	        vkcv::BufferMemoryType::DEVICE_LOCAL
 	        );
-
 	std::vector<uint16_t> vertices = {};
-
-	for (int i=0; i<mesh.vertexGroups[0].vertexBuffer.data.size(); i++) {
+	for (size_t i=0; i<mesh.vertexGroups[0].vertexBuffer.data.size(); i++) {
 	    vertices.emplace_back((uint16_t)mesh.vertexGroups[0].vertexBuffer.data[i]);
 	}
-
 	vertexBuffer.fill(vertices);
 
 	auto indexBuffer = core.createBuffer<uint16_t>(
 	        vkcv::BufferType::RT_ACCELERATION_INDEX,
 	        mesh.vertexGroups[0].indexBuffer.data.size(),
 	        vkcv::BufferMemoryType::DEVICE_LOCAL
-	        );
-
+    );
 	std::vector<uint16_t> indices = {};
-
-	for (int i=0; i<mesh.vertexGroups[0].vertexBuffer.data.size(); i++) {
+	for (size_t i=0; i<mesh.vertexGroups[0].indexBuffer.data.size(); i++) {
 	    indices.emplace_back((uint16_t)mesh.vertexGroups[0].indexBuffer.data[i]);
 	}
-
 	indexBuffer.fill(indices);
 
 
@@ -146,15 +136,15 @@ int main(int argc, const char** argv) {
 	
 	const auto& material0 = scene.getMaterial(0);
 
-	const vkcv::PipelineConfig scenePipelineDefsinition{
+	const vkcv::PipelineConfig scenePipelineDefinition{
 		sceneShaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
 		scenePass,
 		{sceneLayout},
-		{ core.getDescriptorSet(material0.getDescriptorSet()).layout },
+		{ core.getDescriptorSetLayout(material0.getDescriptorSetLayout()).vulkanHandle },
 		true };
-	vkcv::PipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefsinition);
+	vkcv::PipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
 	
 	if (!scenePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;

@@ -11,6 +11,7 @@ namespace vkcv::rtx {
 
         std::vector<const char*> m_instanceExtensions;
         std::vector<const char*> m_deviceExtensions;
+        vkcv::Features m_features;
 
     public:
 
@@ -35,6 +36,12 @@ namespace vkcv::rtx {
          * @return The raytracing device extensions.
          */
         std::vector<const char*> getDeviceExtensions();
+
+        /**
+         * @brief TODO
+         * @return
+         */
+        vkcv::Features getFeatures();
 
         /**
          * @brief TODO
