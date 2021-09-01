@@ -14,7 +14,7 @@ struct GraphicPassHandles {
 };
 
 struct ComputePassHandles {
-	vkcv::PipelineHandle        pipeline;
+	vkcv::ComputePipelineHandle        pipeline;
 	vkcv::DescriptorSetHandle   descriptorSet;
 };
 
@@ -31,10 +31,10 @@ bool loadImage(vkcv::Core& core, const std::filesystem::path& path, vkcv::ImageH
 
 bool loadGraphicPass(
 	vkcv::Core& core,
-	const std::filesystem::path vertexPath,
-	const std::filesystem::path fragmentPath,
+	std::filesystem::path vertexPath,
+	std::filesystem::path fragmentPath,
 	const vkcv::PassConfig&     passConfig,
-	const vkcv::DepthTest       depthTest,
+	vkcv::DepthTest       		depthTest,
 	GraphicPassHandles*         outPassHandles);
 
 bool loadMeshPass  (vkcv::Core& core, GraphicPassHandles* outHandles);

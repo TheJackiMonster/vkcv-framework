@@ -45,12 +45,12 @@ private:
 	vkcv::PassHandle            m_shadowMapPass;
 	vkcv::PipelineHandle        m_shadowMapPipe;
 
-	vkcv::PipelineHandle        m_depthToMomentsPipe;
+	vkcv::ComputePipelineHandle m_depthToMomentsPipe;
 	vkcv::DescriptorSetHandle   m_depthToMomentsDescriptorSet;
 
-	vkcv::PipelineHandle        m_shadowBlurXPipe;
+	vkcv::ComputePipelineHandle m_shadowBlurXPipe;
 	vkcv::DescriptorSetHandle   m_shadowBlurXDescriptorSet;
 
-	vkcv::PipelineHandle        m_shadowBlurYPipe;
+	vkcv::ComputePipelineHandle m_shadowBlurYPipe;
 	vkcv::DescriptorSetHandle   m_shadowBlurYDescriptorSet;
 };

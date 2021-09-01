@@ -427,7 +427,7 @@ int main(int argc, const char** argv) {
 	});
 	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(
 		tonemappingProgram.getReflectedDescriptors()[0]);
-	vkcv::PipelineHandle tonemappingPipeline = core.createComputePipeline(
+	vkcv::ComputePipelineHandle tonemappingPipeline = core.createComputePipeline(
 		tonemappingProgram,
 		{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
 	
@@ -439,7 +439,7 @@ int main(int argc, const char** argv) {
 	});
 	vkcv::DescriptorSetHandle postEffectsDescriptorSet = core.createDescriptorSet(
 			postEffectsProgram.getReflectedDescriptors()[0]);
-	vkcv::PipelineHandle postEffectsPipeline = core.createComputePipeline(
+	vkcv::ComputePipelineHandle postEffectsPipeline = core.createComputePipeline(
 			postEffectsProgram,
 			{ core.getDescriptorSet(postEffectsDescriptorSet).layout });
 
@@ -451,7 +451,7 @@ int main(int argc, const char** argv) {
 	});
 	vkcv::DescriptorSetHandle resolveDescriptorSet = core.createDescriptorSet(
 		resolveProgram.getReflectedDescriptors()[0]);
-	vkcv::PipelineHandle resolvePipeline = core.createComputePipeline(
+	vkcv::ComputePipelineHandle resolvePipeline = core.createComputePipeline(
 		resolveProgram,
 		{ core.getDescriptorSet(resolveDescriptorSet).layout });
 
@@ -939,7 +939,7 @@ int main(int argc, const char** argv) {
 					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 					newProgram.addShader(shaderStage, path);
 				});
-				vkcv::PipelineHandle newPipeline = core.createComputePipeline(
+				vkcv::ComputePipelineHandle newPipeline = core.createComputePipeline(
 					newProgram,
 					{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
 

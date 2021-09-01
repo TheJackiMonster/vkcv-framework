@@ -30,8 +30,8 @@ namespace vkcv::upscaling {
 	
 	class FSRUpscaling : public Upscaling {
 	private:
-		PipelineHandle m_easuPipeline;
-		PipelineHandle m_rcasPipeline;
+		ComputePipelineHandle m_easuPipeline;
+		ComputePipelineHandle m_rcasPipeline;
 		
 		DescriptorSetHandle m_easuDescriptorSet;
 		DescriptorSetHandle m_rcasDescriptorSet;
