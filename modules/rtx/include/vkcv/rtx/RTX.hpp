@@ -46,10 +46,10 @@ namespace vkcv::rtx {
         /**
          * @brief TODO
          * @param core
-         * @param vertexBuffer
-         * @param indexBuffer
+         * @param vertices
+         * @param indices
          */
-        void init(Core* core, Buffer<uint16_t> &vertexBuffer, Buffer<uint16_t> &indexBuffer);
+        void init(Core* core, std::vector<uint8_t> &vertices, std::vector<uint8_t> &indices);
     };
 
 }

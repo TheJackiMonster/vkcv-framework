@@ -16,10 +16,23 @@ namespace vkcv::rtx {
         ASManager(vkcv::Core *core);
 
         /**
-         * @brief Build a Bottom Level Acceleration Structure object from given @p vertexBuffer and @p indexBuffer.
-         * @param[in] vertexBuffer The vertex buffer.
-         * @param[in] indexBuffer The index buffer.
+         * @brief TODO
+         * TODO: kill AS, kill buffers, free memory of buffers
          */
-        void buildBLAS(Buffer<uint16_t> &vertexBuffer, Buffer<uint16_t> &indexBuffer);
+        ~ASManager() {};
+
+        /**
+         * @brief Build a Bottom Level Acceleration Structure object from given @p vertices and @p indices.
+         * @param[in] vertices The vertex data of type uint8_t.
+         * @param[in] indices The index data of type uint8_t.
+         */
+        void buildBLAS(std::vector<uint8_t> &vertices, std::vector<uint8_t> &indices);
+
+        /**
+         * @brief TODO
+         * @param data
+         * @return
+         */
+        vk::Buffer makeBuffer(std::vector<uint8_t> &data);
     };
 }

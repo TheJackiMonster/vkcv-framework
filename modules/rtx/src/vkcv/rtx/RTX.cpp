@@ -113,11 +113,11 @@ namespace vkcv::rtx {
                 });
     }
 
-    void RTXModule::init(Core* core, Buffer<uint16_t> &vertexBuffer, Buffer<uint16_t> &indexBuffer) {
+    void RTXModule::init(Core* core, std::vector<uint8_t> &vertices, std::vector<uint8_t> &indices) {
 
         // build acceleration structures BLAS then TLAS --> see ASManager
         ASManager asManager(core);
-        asManager.buildBLAS(vertexBuffer, indexBuffer);
+        asManager.buildBLAS(vertices, indices);
 
     }
 
