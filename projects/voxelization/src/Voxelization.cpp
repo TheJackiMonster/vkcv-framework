@@ -6,15 +6,15 @@
 vkcv::ShaderProgram loadVoxelizationShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelization.vert",
+	compiler.compile(vkcv::ShaderStage::VERTEX, "assets/shaders/voxelization.vert",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelization.geom",
+	compiler.compile(vkcv::ShaderStage::GEOMETRY, "assets/shaders/voxelization.geom",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelization.frag",
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, "assets/shaders/voxelization.frag",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -24,15 +24,15 @@ vkcv::ShaderProgram loadVoxelizationShader() {
 vkcv::ShaderProgram loadVoxelVisualisationShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelVisualisation.vert",
+	compiler.compile(vkcv::ShaderStage::VERTEX, "assets/shaders/voxelVisualisation.vert",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelVisualisation.geom",
+	compiler.compile(vkcv::ShaderStage::GEOMETRY, "assets/shaders/voxelVisualisation.geom",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelVisualisation.frag",
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, "assets/shaders/voxelVisualisation.frag",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -42,7 +42,7 @@ vkcv::ShaderProgram loadVoxelVisualisationShader() {
 vkcv::ShaderProgram loadVoxelResetShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelReset.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/voxelReset.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -52,7 +52,7 @@ vkcv::ShaderProgram loadVoxelResetShader() {
 vkcv::ShaderProgram loadVoxelBufferToImageShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelBufferToImage.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/voxelBufferToImage.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -62,7 +62,7 @@ vkcv::ShaderProgram loadVoxelBufferToImageShader() {
 vkcv::ShaderProgram loadSecondaryBounceShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelSecondaryBounce.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/voxelSecondaryBounce.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});

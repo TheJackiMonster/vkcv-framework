@@ -26,7 +26,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::asset::Scene mesh;
 
-	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
+	const char* path = argc > 1 ? argv[1] : "assets/cube/cube.gltf";
 	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
@@ -77,12 +77,12 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram firstMeshProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		firstMeshProgram.addShader(shaderStage, path);
 	});
 	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		firstMeshProgram.addShader(shaderStage, path);
 	});

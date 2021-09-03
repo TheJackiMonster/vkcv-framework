@@ -94,7 +94,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::asset::Scene mesh;
 
-	const char* path = argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf";
+	const char* path = argc > 1 ? argv[1] : "assets/Sponza/Sponza.gltf";
 	vkcv::asset::Scene scene;
 	int result = vkcv::asset::loadScene(path, scene);
 
@@ -175,11 +175,11 @@ int main(int argc, const char** argv) {
 	vkcv::shader::GLSLCompiler compiler;
 
 	vkcv::ShaderProgram forwardProgram;
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"), 
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"), 
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		forwardProgram.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		forwardProgram.addShader(shaderStage, path);
 	});
@@ -197,11 +197,11 @@ int main(int argc, const char** argv) {
 
 	// depth prepass config
 	vkcv::ShaderProgram depthPrepassShader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/depthPrepass.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/depthPrepass.vert"),
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		depthPrepassShader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/depthPrepass.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/depthPrepass.frag"),
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		depthPrepassShader.addShader(shaderStage, path);
 	});
@@ -364,11 +364,11 @@ int main(int argc, const char** argv) {
 	vkcv::PassHandle skyPass = core.createPass(skyPassConfig);
 
 	vkcv::ShaderProgram skyShader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/sky.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/sky.vert"),
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		skyShader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/sky.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/sky.frag"),
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		skyShader.addShader(shaderStage, path);
 	});
@@ -447,7 +447,7 @@ int main(int argc, const char** argv) {
 
 	// tonemapping compute shader
 	vkcv::ShaderProgram tonemappingProgram;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/tonemapping.comp", 
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/tonemapping.comp", 
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		tonemappingProgram.addShader(shaderStage, path);
 	});
@@ -459,7 +459,7 @@ int main(int argc, const char** argv) {
 	
 	// tonemapping compute shader
 	vkcv::ShaderProgram postEffectsProgram;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/postEffects.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/postEffects.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		postEffectsProgram.addShader(shaderStage, path);
 	});
@@ -471,7 +471,7 @@ int main(int argc, const char** argv) {
 
 	// resolve compute shader
 	vkcv::ShaderProgram resolveProgram;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/msaa4XResolve.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/msaa4XResolve.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		resolveProgram.addShader(shaderStage, path);
 	});
@@ -943,11 +943,11 @@ int main(int argc, const char** argv) {
 			if (ImGui::Button("Reload forward pass")) {
 
 				vkcv::ShaderProgram newForwardProgram;
-				compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+				compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 					newForwardProgram.addShader(shaderStage, path);
 				});
-				compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+				compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 					newForwardProgram.addShader(shaderStage, path);
 				});
@@ -961,7 +961,7 @@ int main(int argc, const char** argv) {
 			if (ImGui::Button("Reload tonemapping")) {
 
 				vkcv::ShaderProgram newProgram;
-				compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("resources/shaders/tonemapping.comp"),
+				compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("assets/shaders/tonemapping.comp"),
 					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 					newProgram.addShader(shaderStage, path);
 				});

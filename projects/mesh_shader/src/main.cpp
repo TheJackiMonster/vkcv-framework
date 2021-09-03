@@ -104,7 +104,7 @@ int main(int argc, const char** argv) {
     vkcv::gui::GUI gui (core, window);
 
     vkcv::asset::Scene mesh;
-    const char* path = argc > 1 ? argv[1] : "resources/Bunny/Bunny.glb";
+    const char* path = argc > 1 ? argv[1] : "assets/Bunny/Bunny.glb";
     vkcv::asset::loadScene(path, mesh);
 
     assert(!mesh.vertexGroups.empty());
@@ -186,12 +186,12 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram bunnyShaderProgram{};
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					 [&bunnyShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		 bunnyShaderProgram.addShader(shaderStage, path);
 	});
 	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 					 [&bunnyShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		bunnyShaderProgram.addShader(shaderStage, path);
 	});
@@ -238,17 +238,17 @@ int main(int argc, const char** argv) {
 
 	// mesh shader
 	vkcv::ShaderProgram meshShaderProgram;
-	compiler.compile(vkcv::ShaderStage::TASK, std::filesystem::path("resources/shaders/shader.task"),
+	compiler.compile(vkcv::ShaderStage::TASK, std::filesystem::path("assets/shaders/shader.task"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
 
-	compiler.compile(vkcv::ShaderStage::MESH, std::filesystem::path("resources/shaders/shader.mesh"),
+	compiler.compile(vkcv::ShaderStage::MESH, std::filesystem::path("assets/shaders/shader.mesh"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
 
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});

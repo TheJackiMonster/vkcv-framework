@@ -164,8 +164,8 @@ bool loadMeshPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 
 	return loadGraphicPass(
 		core,
-		"resources/shaders/mesh.vert",
-		"resources/shaders/mesh.frag",
+		"assets/shaders/mesh.vert",
+		"assets/shaders/mesh.frag",
 		vkcv::PassConfig({ colorAttachment, depthAttachment }),
 		vkcv::DepthTest::Equal,
 		outHandles);
@@ -187,8 +187,8 @@ bool loadSkyPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 
 	return loadGraphicPass(
 		core,
-		"resources/shaders/sky.vert",
-		"resources/shaders/sky.frag",
+		"assets/shaders/sky.vert",
+		"assets/shaders/sky.frag",
 		vkcv::PassConfig({ colorAttachment, depthAttachment }),
 		vkcv::DepthTest::Equal,
 		outHandles);
@@ -209,8 +209,8 @@ bool loadPrePass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 
 	return loadGraphicPass(
 		core,
-		"resources/shaders/prepass.vert",
-		"resources/shaders/prepass.frag",
+		"assets/shaders/prepass.vert",
+		"assets/shaders/prepass.frag",
 		vkcv::PassConfig({ motionAttachment, depthAttachment }),
 		vkcv::DepthTest::LessEqual,
 		outHandles);
@@ -231,8 +231,8 @@ bool loadSkyPrePass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 
 	return loadGraphicPass(
 		core,
-		"resources/shaders/skyPrepass.vert",
-		"resources/shaders/skyPrepass.frag",
+		"assets/shaders/skyPrepass.vert",
+		"assets/shaders/skyPrepass.frag",
 		vkcv::PassConfig({ motionAttachment, depthAttachment }),
 		vkcv::DepthTest::LessEqual,
 		outHandles);

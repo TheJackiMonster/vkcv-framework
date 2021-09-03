@@ -35,7 +35,7 @@ int main(int argc, const char** argv) {
 	);
 	
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
-			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
+			argc > 1 ? argv[1] : "assets/Sponza/Sponza.gltf"
 	));
 
 	const vkcv::AttachmentDescription present_color_attachment(
@@ -61,12 +61,12 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram sceneShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					 [&sceneShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		sceneShaderProgram.addShader(shaderStage, path);
 	});
 	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 					 [&sceneShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		sceneShaderProgram.addShader(shaderStage, path);
 	});

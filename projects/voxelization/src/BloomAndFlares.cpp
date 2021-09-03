@@ -3,7 +3,7 @@
 #include <vkcv/asset/asset_loader.hpp>
 
 vkcv::Image loadLenseDirtTexture(vkcv::Core* corePtr) {
-    const auto texture = vkcv::asset::loadTexture("resources/lensDirt.jpg");
+    const auto texture = vkcv::asset::loadTexture("assets/lensDirt.jpg");
     vkcv::Image image = corePtr->createImage(vk::Format::eR8G8B8A8Unorm, texture.width, texture.height);
     image.fill((void*)texture.data.data(), texture.data.size());
     return image;
@@ -37,7 +37,7 @@ BloomAndFlares::BloomAndFlares(
     // DOWNSAMPLE
     vkcv::ShaderProgram dsProg;
     compiler.compile(vkcv::ShaderStage::COMPUTE,
-                     "resources/shaders/bloomDownsample.comp",
+                     "assets/shaders/bloomDownsample.comp",
                      [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path)
                      {
                          dsProg.addShader(shaderStage, path);
@@ -53,7 +53,7 @@ BloomAndFlares::BloomAndFlares(
     // UPSAMPLE
     vkcv::ShaderProgram usProg;
     compiler.compile(vkcv::ShaderStage::COMPUTE,
-                     "resources/shaders/bloomUpsample.comp",
+                     "assets/shaders/bloomUpsample.comp",
                      [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path)
                      {
                          usProg.addShader(shaderStage, path);
@@ -74,7 +74,7 @@ BloomAndFlares::BloomAndFlares(
     // LENS FEATURES
     vkcv::ShaderProgram lensProg;
     compiler.compile(vkcv::ShaderStage::COMPUTE,
-                     "resources/shaders/lensFlares.comp",
+                     "assets/shaders/lensFlares.comp",
                      [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path)
                      {
                          lensProg.addShader(shaderStage, path);
@@ -86,7 +86,7 @@ BloomAndFlares::BloomAndFlares(
     // COMPOSITE
     vkcv::ShaderProgram compProg;
     compiler.compile(vkcv::ShaderStage::COMPUTE,
-                     "resources/shaders/bloomFlaresComposite.comp",
+                     "assets/shaders/bloomFlaresComposite.comp",
                      [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path)
                      {
                          compProg.addShader(shaderStage, path);
@@ -96,7 +96,7 @@ BloomAndFlares::BloomAndFlares(
             compProg, { p_Core->getDescriptorSet(m_CompositeDescSet).layout });
 
     // radial LUT
-    const auto texture = vkcv::asset::loadTexture("resources/RadialLUT.png");
+    const auto texture = vkcv::asset::loadTexture("assets/RadialLUT.png");
 
     m_radialLut.fill((void*)texture.data.data(), texture.data.size());
 }
