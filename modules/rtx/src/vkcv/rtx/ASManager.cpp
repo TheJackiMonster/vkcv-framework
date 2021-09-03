@@ -74,7 +74,7 @@ namespace vkcv::rtx {
                 dld
                 );
 
-        // Allocate the AS TODO: which type do we need for the buffer??
+        // Allocate the AS TODO: which type do we need for the buffer?? !!!
         Buffer<vk::AccelerationStructureKHR> asBuffer = m_core->createBuffer<vk::AccelerationStructureKHR>(BufferType::RT_ACCELERATION_VERTEX, asBuildSizesInfo.accelerationStructureSize, BufferMemoryType::DEVICE_LOCAL);
         //        core->createBuffer<>()
 
@@ -104,12 +104,17 @@ namespace vkcv::rtx {
     }
 
     vk::Buffer ASManager::makeBuffer(std::vector<uint8_t> &data) {
-        // make vk::Buffer of type uint16_t
+        // convert uint8_t data into unit16_t
+        std::vector<uint16_t> data_converted;
+        for (size_t i=0; i<data.size(); i++) {
+            data_converted.push_back((uint16_t)data[i]);
+        }
 
+        // now create a vk::Buffer of type uint16_t for the data
         vk::Device device = m_core->getContext().getDevice();
 
         // first: Staging Buffer creation
-        vk::DeviceSize deviceSize = sizeof(data[0]) * data.size();
+        vk::DeviceSize deviceSize = sizeof(data_converted[0]) * data_converted.size();
         vk::BufferUsageFlags bufferUsageFlagBits = vk::BufferUsageFlagBits::eTransferSrc;
         vk::BufferCreateInfo bufferCreateInfo(
                 vk::BufferCreateFlags(),  // vk::BufferCreateFlags
@@ -149,7 +154,7 @@ namespace vkcv::rtx {
 
         // fill staging buffer
         void* mapped = device.mapMemory(deviceMemory, memoryOffset, deviceSize);
-        std::memcpy(mapped, data.data(), deviceSize);
+        std::memcpy(mapped, data_converted.data(), deviceSize);
         device.unmapMemory(deviceMemory);
 
         // second: GPU Buffer creation
