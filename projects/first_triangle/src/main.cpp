@@ -56,11 +56,13 @@ int main(int argc, const char** argv) {
 					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		triangleShaderProgram.addShader(shaderStage, path);
 	});
+	
+	const auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 
 	const vkcv::PipelineConfig trianglePipelineDefinition {
 		triangleShaderProgram,
-		(uint32_t)windowWidth,
-		(uint32_t)windowHeight,
+		swapchainExtent.width,
+		swapchainExtent.height,
 		trianglePass,
 		{},
 		{},

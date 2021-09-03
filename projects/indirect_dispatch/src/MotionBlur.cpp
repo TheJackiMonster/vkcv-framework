@@ -24,31 +24,31 @@ bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, con
 
 	m_core = corePtr;
 
-	if (!loadComputePass(*m_core, "resources/shaders/motionBlur.comp", &m_motionBlurPass))
+	if (!loadComputePass(*m_core, "assets/shaders/motionBlur.comp", &m_motionBlurPass))
 		return false;
 
-	if (!loadComputePass(*m_core, "resources/shaders/motionVectorMinMax.comp", &m_motionVectorMinMaxPass))
+	if (!loadComputePass(*m_core, "assets/shaders/motionVectorMinMax.comp", &m_motionVectorMinMaxPass))
 		return false;
 
-	if (!loadComputePass(*m_core, "resources/shaders/motionVectorMinMaxNeighbourhood.comp", &m_motionVectorMinMaxNeighbourhoodPass))
+	if (!loadComputePass(*m_core, "assets/shaders/motionVectorMinMaxNeighbourhood.comp", &m_motionVectorMinMaxNeighbourhoodPass))
 		return false;
 
-	if (!loadComputePass(*m_core, "resources/shaders/motionVectorVisualisation.comp", &m_motionVectorVisualisationPass))
+	if (!loadComputePass(*m_core, "assets/shaders/motionVectorVisualisation.comp", &m_motionVectorVisualisationPass))
 		return false;
 
-	if (!loadComputePass(*m_core, "resources/shaders/motionBlurColorCopy.comp", &m_colorCopyPass))
+	if (!loadComputePass(*m_core, "assets/shaders/motionBlurColorCopy.comp", &m_colorCopyPass))
 		return false;
 
-	if (!loadComputePass(*m_core, "resources/shaders/motionBlurTileClassification.comp", &m_tileClassificationPass))
+	if (!loadComputePass(*m_core, "assets/shaders/motionBlurTileClassification.comp", &m_tileClassificationPass))
 		return false;
 
-	if (!loadComputePass(*m_core, "resources/shaders/motionBlurWorkTileReset.comp", &m_tileResetPass))
+	if (!loadComputePass(*m_core, "assets/shaders/motionBlurWorkTileReset.comp", &m_tileResetPass))
 		return false;
 
-	if (!loadComputePass(*m_core, "resources/shaders/motionBlurTileClassificationVis.comp", &m_tileVisualisationPass))
+	if (!loadComputePass(*m_core, "assets/shaders/motionBlurTileClassificationVis.comp", &m_tileVisualisationPass))
 		return false;
 
-	if (!loadComputePass(*m_core, "resources/shaders/motionBlurFastPath.comp", &m_motionBlurFastPathPass))
+	if (!loadComputePass(*m_core, "assets/shaders/motionBlurFastPath.comp", &m_motionBlurFastPathPass))
 		return false;
 
 	// work tile buffers and descriptors

@@ -9,11 +9,11 @@ const vkcv::Multisampling   msaa                    = vkcv::Multisampling::MSAA8
 vkcv::ShaderProgram loadShadowShader() {
 	vkcv::ShaderProgram shader;
 	vkcv::shader::GLSLCompiler compiler;
-	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/shadow.vert",
+	compiler.compile(vkcv::ShaderStage::VERTEX, "assets/shaders/shadow.vert",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/shadow.frag",
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, "assets/shaders/shadow.frag",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -23,7 +23,7 @@ vkcv::ShaderProgram loadShadowShader() {
 vkcv::ShaderProgram loadDepthToMomentsShader() {
 	vkcv::ShaderProgram shader;
 	vkcv::shader::GLSLCompiler compiler;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/depthToMoments.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/depthToMoments.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -33,7 +33,7 @@ vkcv::ShaderProgram loadDepthToMomentsShader() {
 vkcv::ShaderProgram loadShadowBlurXShader() {
 	vkcv::ShaderProgram shader;
 	vkcv::shader::GLSLCompiler compiler;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/shadowBlurX.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/shadowBlurX.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -43,7 +43,7 @@ vkcv::ShaderProgram loadShadowBlurXShader() {
 vkcv::ShaderProgram loadShadowBlurYShader() {
 	vkcv::ShaderProgram shader;
 	vkcv::shader::GLSLCompiler compiler;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/shadowBlurY.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/shadowBlurY.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});

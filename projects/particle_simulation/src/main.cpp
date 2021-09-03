@@ -209,12 +209,23 @@ int main(int argc, const char **argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
-    vkcv::ImageHandle colorBuffer = core.createImage(colorFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
-    BloomAndFlares bloomAndFlares(&core, colorFormat, windowWidth, windowHeight);
+	auto swapchainExtent = core.getSwapchain().getExtent();
+	
+    vkcv::ImageHandle colorBuffer = core.createImage(
+			colorFormat,
+			swapchainExtent.width,
+			swapchainExtent.height,
+			1, false, true, true
+	).getHandle();
+    BloomAndFlares bloomAndFlares(&core, colorFormat, swapchainExtent.width, swapchainExtent.height);
     window.e_resize.add([&](int width, int height) {
-        windowWidth = width;
-        windowHeight = height;
-        colorBuffer = core.createImage(colorFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
+		swapchainExtent = core.getSwapchain().getExtent();
+        colorBuffer = core.createImage(
+				colorFormat,
+				swapchainExtent.width,
+				swapchainExtent.height,
+				1, false, true, true
+		).getHandle();
         bloomAndFlares.updateImageDimensions(width, height);
     });
 
@@ -298,8 +309,8 @@ int main(int argc, const char **argv) {
         core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
 
         uint32_t tonemappingDispatchCount[3];
-        tonemappingDispatchCount[0] = std::ceil(windowWidth / 8.f);
-        tonemappingDispatchCount[1] = std::ceil(windowHeight / 8.f);
+        tonemappingDispatchCount[0] = std::ceil(swapchainExtent.width / 8.f);
+        tonemappingDispatchCount[1] = std::ceil(swapchainExtent.height / 8.f);
         tonemappingDispatchCount[2] = 1;
 
         core.recordComputeDispatchToCmdStream(

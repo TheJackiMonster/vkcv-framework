@@ -22,7 +22,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::asset::Scene mesh;
 
-	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
+	const char* path = argc > 1 ? argv[1] : "assets/cube/cube.gltf";
 	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
@@ -73,12 +73,12 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram firstMeshProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		firstMeshProgram.addShader(shaderStage, path);
 	});
 	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		firstMeshProgram.addShader(shaderStage, path);
 	});
@@ -153,8 +153,15 @@ int main(int argc, const char** argv) {
 	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
 
 	core.writeDescriptorSet(descriptorSet, setWrites);
-
-	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
+	
+	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
+	
+	vkcv::ImageHandle depthBuffer = core.createImage(
+			vk::Format::eD32Sfloat,
+			swapchainExtent.width,
+			swapchainExtent.height,
+			1, false
+	).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -181,11 +188,11 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 		
-		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
+		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
 			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
 			
-			windowWidth = swapchainWidth;
-			windowHeight = swapchainHeight;
+			swapchainExtent.width = swapchainWidth;
+			swapchainExtent.height = swapchainHeight;
 		}
   
 		auto end = std::chrono::system_clock::now();

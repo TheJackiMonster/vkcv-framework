@@ -32,7 +32,7 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
 
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
-			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
+			argc > 1 ? argv[1] : "assets/Sponza/Sponza.gltf"
 	));
 
 	const vkcv::AttachmentDescription present_color_attachment(
@@ -58,12 +58,12 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram sceneShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					 [&sceneShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		sceneShaderProgram.addShader(shaderStage, path);
 	});
 	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 					 [&sceneShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		sceneShaderProgram.addShader(shaderStage, path);
 	});
@@ -92,8 +92,14 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
+	
+	auto swapchainExtent = core.getSwapchain().getExtent();
 
-	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
+	vkcv::ImageHandle depthBuffer = core.createImage(
+			vk::Format::eD32Sfloat,
+			swapchainExtent.width,
+			swapchainExtent.height
+	).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	
@@ -109,11 +115,11 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 		
-		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
+		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
 			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
 			
-			windowWidth = swapchainWidth;
-			windowHeight = swapchainHeight;
+			swapchainExtent.width = swapchainWidth;
+			swapchainExtent.height = swapchainHeight;
 		}
   
 		auto end = std::chrono::system_clock::now();
