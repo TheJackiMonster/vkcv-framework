@@ -545,7 +545,7 @@ namespace vkcv
 		vk::Result result;
 		
 		try {
-			result = queueManager.getPresentQueue().handle.presentKHR(presentInfo);
+			result = m_Context.getDevice().getQueue(m_SwapchainManager->getSwapchain(swapchainHandle).getPresentQueueIndex(),0).presentKHR(presentInfo);
 		} catch (const vk::OutOfDateKHRError& e) {
 			result = vk::Result::eErrorOutOfDateKHR;
 		} catch (const vk::DeviceLostError& e) {

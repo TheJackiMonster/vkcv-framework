@@ -5,6 +5,7 @@
 
 #include "vkcv/QueueManager.hpp"
 #include "vkcv/Logger.hpp"
+#include "vkcv/Swapchain.hpp"
 
 namespace vkcv {
 
@@ -197,6 +198,24 @@ namespace vkcv {
         std::vector<Queue> transferQueues = getQueues(device, queuePairsTransfer);
 
     	return QueueManager( std::move(graphicsQueues), std::move(computeQueues), std::move(transferQueues), 0);
+	}
+
+	uint32_t QueueManager::checkSurfaceSupport(
+			const vk::PhysicalDevice &physicalDevice,
+			vk::SurfaceKHR &surface
+	) {
+		std::vector<vk::QueueFamilyProperties> qFamilyProperties = physicalDevice.getQueueFamilyProperties();
+		std::vector<vk::Bool32> presentSupport(qFamilyProperties.size(),-1);
+
+		for(uint32_t i = 0; i < qFamilyProperties.size(); i++)
+		{
+			physicalDevice.getSurfaceSupportKHR(i,surface,&presentSupport[i]);
+			if(presentSupport[i] == VK_TRUE){
+				return i;
+			}
+		}
+		vkcv_log(LogLevel::WARNING, "no supported present queueQ");
+		return 0;
 	}
 
 	QueueManager::QueueManager(std::vector<Queue>&& graphicsQueues, std::vector<Queue>&& computeQueues, std::vector<Queue>&& transferQueues, size_t presentIndex)
