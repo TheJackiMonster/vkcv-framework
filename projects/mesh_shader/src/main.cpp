@@ -203,7 +203,7 @@ int main(int argc, const char** argv) {
     vkcv::DescriptorSetLayoutHandle vertexShaderDescriptorSetLayout = core.createDescriptorSetLayout(bunnyShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(vertexShaderDescriptorSetLayout);
 
-	auto swapchainExtent = core.getSwapchain().getExtent();
+	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 	
 	const vkcv::PipelineConfig bunnyPipelineDefinition {
 			bunnyShaderProgram,

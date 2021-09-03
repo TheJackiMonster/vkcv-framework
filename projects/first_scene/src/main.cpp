@@ -93,7 +93,7 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	auto swapchainExtent = core.getSwapchain().getExtent();
+	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 
 	vkcv::ImageHandle depthBuffer = core.createImage(
 			vk::Format::eD32Sfloat,

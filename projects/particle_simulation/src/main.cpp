@@ -209,7 +209,7 @@ int main(int argc, const char **argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
-	auto swapchainExtent = core.getSwapchain().getExtent();
+	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 	
     vkcv::ImageHandle colorBuffer = core.createImage(
 			colorFormat,
@@ -219,7 +219,7 @@ int main(int argc, const char **argv) {
 	).getHandle();
     BloomAndFlares bloomAndFlares(&core, colorFormat, swapchainExtent.width, swapchainExtent.height);
     window.e_resize.add([&](int width, int height) {
-		swapchainExtent = core.getSwapchain().getExtent();
+		swapchainExtent = core.getSwapchain(windowHandle).getExtent();
         colorBuffer = core.createImage(
 				colorFormat,
 				swapchainExtent.width,

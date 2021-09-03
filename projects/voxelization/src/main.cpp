@@ -23,6 +23,9 @@ int main(int argc, const char** argv) {
 	features.requireExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
 	features.requireExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
 
+	const uint32_t windowWidth = 1280;
+	const uint32_t windowHeight = 720;
+
 	vkcv::Core core = vkcv::Core::create(
 			applicationName,
 			VK_MAKE_VERSION(0, 0, 1),
@@ -295,7 +298,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetLayoutHandle prepassDescriptorSetLayout = core.createDescriptorSetLayout({});
 	vkcv::DescriptorSetHandle prepassDescriptorSet = core.createDescriptorSet(prepassDescriptorSetLayout);
 
-	auto swapchainExtent = core.getSwapchain().getExtent();
+	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 	
 	vkcv::PipelineConfig prepassPipelineConfig{
 		depthPrepassShader,
