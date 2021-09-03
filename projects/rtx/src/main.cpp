@@ -67,28 +67,15 @@ int main(int argc, const char** argv) {
 
 	assert(!mesh.vertexGroups.empty());
 
-	auto vertexBuffer = core.createBuffer<uint8_t>(
-	        vkcv::BufferType::RT_ACCELERATION_VERTEX,
-	        mesh.vertexGroups[0].vertexBuffer.data.size(),
-	        vkcv::BufferMemoryType::DEVICE_LOCAL
-	        );
 	std::vector<uint8_t> vertices = {};
 	for (size_t i=0; i<mesh.vertexGroups[0].vertexBuffer.data.size(); i++) {
-	    vertices.emplace_back(mesh.vertexGroups[0].vertexBuffer.data[i]);
+	    vertices.push_back(mesh.vertexGroups[0].vertexBuffer.data[i]);
 	}
-	vertexBuffer.fill(vertices);
 
-	auto indexBuffer = core.createBuffer<uint8_t>(
-	        vkcv::BufferType::RT_ACCELERATION_INDEX,
-	        mesh.vertexGroups[0].indexBuffer.data.size(),
-	        vkcv::BufferMemoryType::DEVICE_LOCAL
-    );
 	std::vector<uint8_t> indices = {};
 	for (size_t i=0; i<mesh.vertexGroups[0].indexBuffer.data.size(); i++) {
-	    indices.emplace_back(mesh.vertexGroups[0].indexBuffer.data[i]);
+	    indices.push_back(mesh.vertexGroups[0].indexBuffer.data[i]);
 	}
-	indexBuffer.fill(indices);
-
 
 	// init RTXModule
     rtxModule.init(&core, vertices, indices);
