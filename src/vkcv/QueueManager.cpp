@@ -85,7 +85,7 @@ namespace vkcv {
                     found = false;
                     for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                         if (queueFamilyStatus[i][0] > 0) {
-                            queuePairsGraphics.push_back(std::pair(i, initialQueueFamilyStatus[i][0] - queueFamilyStatus[i][0]));
+                            queuePairsGraphics.emplace_back(std::pair(i, initialQueueFamilyStatus[i][0] - queueFamilyStatus[i][0]));
                             queueFamilyStatus[i][0]--;
                             queueFamilyStatus[i][1]--;
                             queueFamilyStatus[i][2]--;
@@ -95,7 +95,7 @@ namespace vkcv {
                     if (!found) {
                         for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                             if (initialQueueFamilyStatus[i][0] > 0) {
-                                queuePairsGraphics.push_back(std::pair(i, 0));
+                                queuePairsGraphics.emplace_back(std::pair(i, 0));
                                 found = true;
                             }
                         }
@@ -107,7 +107,7 @@ namespace vkcv {
                     found = false;
                     for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                         if (queueFamilyStatus[i][1] > 0) {
-                            queuePairsCompute.push_back(std::pair(i, initialQueueFamilyStatus[i][1] - queueFamilyStatus[i][1]));
+                            queuePairsCompute.emplace_back(std::pair(i, initialQueueFamilyStatus[i][1] - queueFamilyStatus[i][1]));
                             queueFamilyStatus[i][0]--;
                             queueFamilyStatus[i][1]--;
                             queueFamilyStatus[i][2]--;
@@ -117,7 +117,7 @@ namespace vkcv {
                     if (!found) {
                         for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                             if (initialQueueFamilyStatus[i][1] > 0) {
-                                queuePairsCompute.push_back(std::pair(i, 0));
+                                queuePairsCompute.emplace_back(std::pair(i, 0));
                                 found = true;
                             }
                         }
@@ -129,7 +129,7 @@ namespace vkcv {
                     found = false;
                     for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                         if (queueFamilyStatus[i][2] > 0) {
-                            queuePairsTransfer.push_back(std::pair(i, initialQueueFamilyStatus[i][2] - queueFamilyStatus[i][2]));
+                            queuePairsTransfer.emplace_back(std::pair(i, initialQueueFamilyStatus[i][2] - queueFamilyStatus[i][2]));
                             queueFamilyStatus[i][0]--;
                             queueFamilyStatus[i][1]--;
                             queueFamilyStatus[i][2]--;
@@ -139,7 +139,7 @@ namespace vkcv {
                     if (!found) {
                         for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                             if (initialQueueFamilyStatus[i][2] > 0) {
-                                queuePairsTransfer.push_back(std::pair(i, 0));
+                                queuePairsTransfer.emplace_back(std::pair(i, 0));
                                 found = true;
                             }
                         }
