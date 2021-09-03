@@ -78,12 +78,10 @@ CameraPlanes computeCameraPlanes(const vkcv::camera::Camera& camera) {
 int main(int argc, const char** argv) {
 	const char* applicationName = "Mesh shader";
 
-	const int windowWidth = 1280;
-	const int windowHeight = 720;
 	vkcv::Window window = vkcv::Window::create(
 		applicationName,
-		windowWidth,
-		windowHeight,
+		1280,
+		720,
 		false
 	);
 	
@@ -106,7 +104,7 @@ int main(int argc, const char** argv) {
     vkcv::gui::GUI gui (core, window);
 
     vkcv::asset::Scene mesh;
-    const char* path = argc > 1 ? argv[1] : "resources/Bunny/Bunny.glb";
+    const char* path = argc > 1 ? argv[1] : "assets/Bunny/Bunny.glb";
     vkcv::asset::loadScene(path, mesh);
 
     assert(!mesh.vertexGroups.empty());
@@ -188,12 +186,12 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram bunnyShaderProgram{};
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					 [&bunnyShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		 bunnyShaderProgram.addShader(shaderStage, path);
 	});
 	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 					 [&bunnyShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		bunnyShaderProgram.addShader(shaderStage, path);
 	});
@@ -208,10 +206,12 @@ int main(int argc, const char** argv) {
     vkcv::DescriptorSetLayoutHandle vertexShaderDescriptorSetLayout = core.createDescriptorSetLayout(bunnyShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(vertexShaderDescriptorSetLayout);
 
+	auto swapchainExtent = core.getSwapchain().getExtent();
+	
 	const vkcv::PipelineConfig bunnyPipelineDefinition {
 			bunnyShaderProgram,
-			(uint32_t)windowWidth,
-			(uint32_t)windowHeight,
+			swapchainExtent.width,
+			swapchainExtent.height,
 			renderPass,
 			{ bunnyLayout },
 			{ core.getDescriptorSetLayout(vertexShaderDescriptorSetLayout).vulkanHandle },
@@ -239,17 +239,17 @@ int main(int argc, const char** argv) {
 
 	// mesh shader
 	vkcv::ShaderProgram meshShaderProgram;
-	compiler.compile(vkcv::ShaderStage::TASK, std::filesystem::path("resources/shaders/shader.task"),
+	compiler.compile(vkcv::ShaderStage::TASK, std::filesystem::path("assets/shaders/shader.task"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
 
-	compiler.compile(vkcv::ShaderStage::MESH, std::filesystem::path("resources/shaders/shader.mesh"),
+	compiler.compile(vkcv::ShaderStage::MESH, std::filesystem::path("assets/shaders/shader.mesh"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
 
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
@@ -260,8 +260,8 @@ int main(int argc, const char** argv) {
 
 	const vkcv::PipelineConfig meshShaderPipelineDefinition{
 		meshShaderProgram,
-		(uint32_t)windowWidth,
-		(uint32_t)windowHeight,
+		swapchainExtent.width,
+		swapchainExtent.height,
 		renderPass,
 		{meshShaderLayout},
 		{core.getDescriptorSetLayout(meshShaderDescriptorSetLayout).vulkanHandle},
@@ -292,7 +292,12 @@ int main(int argc, const char** argv) {
 
     core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
 
-    vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
+    vkcv::ImageHandle depthBuffer = core.createImage(
+			vk::Format::eD32Sfloat,
+			swapchainExtent.width,
+			swapchainExtent.height,
+			1, false
+	).getHandle();
 
     auto start = std::chrono::system_clock::now();
 
