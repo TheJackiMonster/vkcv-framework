@@ -261,4 +261,8 @@ namespace vkcv
 	uint32_t Swapchain::getImageCount() const {
 		return m_ImageCount;
 	}
+
+	const uint32_t &Swapchain::getPresentQueueIndex() const {
+		return m_Surface.presentQueueIndex;
+	}
 }

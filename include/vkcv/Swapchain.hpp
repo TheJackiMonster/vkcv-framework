@@ -22,6 +22,7 @@ namespace vkcv
             std::vector<vk::SurfaceFormatKHR> formats;
             vk::SurfaceCapabilitiesKHR capabilities;
             std::vector<vk::PresentModeKHR> presentModes;
+			uint32_t presentQueueIndex;
         };
         
         Surface m_Surface;
@@ -121,7 +122,13 @@ namespace vkcv
          */
         [[nodiscard]]
 		const vk::Extent2D& getExtent() const;
-    
-    };
+
+		/**
+		 * @return the familyQueueIndex for the surface
+		 */
+		[[nodiscard]]
+		const uint32_t& getPresentQueueIndex() const;
+
+	};
     
 }
