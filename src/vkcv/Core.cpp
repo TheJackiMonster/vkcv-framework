@@ -141,11 +141,9 @@ namespace vkcv
         return m_PipelineManager->createPipeline(config, *m_PassManager);
     }
 
-    ComputePipelineHandle Core::createComputePipeline(
-        const ShaderProgram &shaderProgram, 
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    ComputePipelineHandle Core::createComputePipeline(const ComputePipelineConfig &config)
     {
-        return m_ComputePipelineManager->createComputePipeline(shaderProgram, descriptorSetLayouts);
+        return m_ComputePipelineManager->createComputePipeline(config);
     }
 
     PassHandle Core::createPass(const PassConfig &config)

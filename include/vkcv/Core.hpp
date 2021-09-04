@@ -15,6 +15,7 @@
 #include "Buffer.hpp"
 #include "Image.hpp"
 #include "PipelineConfig.hpp"
+#include "ComputePipelineConfig.hpp"
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "Result.hpp"
@@ -159,14 +160,11 @@ namespace vkcv
          * Creates a basic vulkan compute pipeline using @p shader program and returns it using the @p handle.
          * Fixed Functions for pipeline are set with standard values.
          *
-         * @param shader program that hold the compiles compute shader
-         * @param handle a handle to return the created vulkan handle
+         * @param config Contains the compiles compute shader and the corresponding descriptor set layout
          * @return True if pipeline creation was successful, False if not
          */
         [[nodiscard]]
-        ComputePipelineHandle createComputePipeline(
-            const ShaderProgram &shaderProgram,
-            const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
+        ComputePipelineHandle createComputePipeline(const ComputePipelineConfig &config);
 
         /**
          * Creates a basic vulkan render pass using @p config from the render pass config class and returns it using the @p handle.
