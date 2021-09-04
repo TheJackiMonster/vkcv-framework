@@ -148,7 +148,8 @@ namespace vkcv {
                     }
                     break;
                 default:
-                    throw std::runtime_error("Invalid input for queue flag bits. Valid inputs are 'vk::QueueFlagBits::eGraphics', 'vk::QueueFlagBits::eCompute' and 'vk::QueueFlagBits::eTransfer'.");
+					vkcv_log(LogLevel::ERROR, "Invalid input for queue flag bits: %s", vk::to_string(qFlag).c_str());
+					break;
             }
         }
 

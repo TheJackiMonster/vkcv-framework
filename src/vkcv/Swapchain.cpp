@@ -73,12 +73,7 @@ namespace vkcv
      * @param window of the current application
      * @return chosen Extent for the surface
      */
-    vk::Extent2D chooseExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, const Window &window){
-        vk::SurfaceCapabilitiesKHR surfaceCapabilities;
-        if(physicalDevice.getSurfaceCapabilitiesKHR(surface,&surfaceCapabilities) != vk::Result::eSuccess){
-            throw std::runtime_error("cannot get surface capabilities. There is an issue with the surface.");
-        }
-        
+    vk::Extent2D chooseExtent(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface, const Window &window) {
         int fb_width, fb_height;
         window.getFramebufferSize(fb_width, fb_height);
         
@@ -86,9 +81,17 @@ namespace vkcv
                 static_cast<uint32_t>(fb_width),
                 static_cast<uint32_t>(fb_height)
         };
-        
-        extent2D.width = std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, extent2D.width));
-        extent2D.height = std::max(surfaceCapabilities.minImageExtent.height, std::min(surfaceCapabilities.maxImageExtent.height, extent2D.height));
+	
+		vk::SurfaceCapabilitiesKHR surfaceCapabilities;
+		if(physicalDevice.getSurfaceCapabilitiesKHR(surface, &surfaceCapabilities) != vk::Result::eSuccess) {
+			vkcv_log(LogLevel::WARNING, "The capabilities of the surface can not be retrieved");
+			
+			extent2D.width = std::max(MIN_SWAPCHAIN_SIZE, extent2D.width);
+			extent2D.height = std::max(MIN_SWAPCHAIN_SIZE, extent2D.height);
+		} else {
+			extent2D.width = std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, extent2D.width));
+			extent2D.height = std::max(surfaceCapabilities.minImageExtent.height, std::min(surfaceCapabilities.maxImageExtent.height, extent2D.height));
+		}
 
         return extent2D;
     }
