@@ -34,14 +34,12 @@ set(vkcv_flags ${CMAKE_CXX_FLAGS})
 if (vkcv_build_debug)
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		#set(vkcv_flags ${vkcv_flags} " -Weverything")
-		set(vkcv_flags ${vkcv_flags} " -Wextra -Wall")
+		set(vkcv_flags ${vkcv_flags} " -Wextra -Wall -Wno-unused-parameter")
 	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-		set(vkcv_flags ${vkcv_flags} " -Wextra -Wall -pedantic")
+		set(vkcv_flags ${vkcv_flags} " -Wextra -Wall -pedantic -Wno-unused-parameter")
 	else()
 		set(vkcv_flags ${vkcv_flags} " -W4")
 	endif()
-	
-	set(vkcv_flags ${vkcv_flags} " -Wno-unused-parameter")
 endif()
 
 # configure everything to use the required dependencies

@@ -99,6 +99,7 @@ namespace vkcv
 
 	class ImageHandle : public Handle {
 		friend class ImageManager;
+	private:
 		using Handle::Handle;
 	public:
 		[[nodiscard]]
