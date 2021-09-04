@@ -20,17 +20,25 @@ namespace vkcv::rtx {
         vk::Buffer vulkanHandle;
     };
 
-    struct AccelerationStructure {
+    struct BottomLevelAccelerationStructure {
         RTXBuffer vertexBuffer;
         RTXBuffer indexBuffer;
         RTXBuffer accelerationBuffer;
         vk::AccelerationStructureKHR vulkanHandle;
     };
 
+    struct TopLevelAccelerationStructure {
+        RTXBuffer gpuBufferInstances;
+        RTXBuffer tlasBuffer;
+        RTXBuffer tempBuildDataBuffer;  // scratch buffer
+        vk::AccelerationStructureKHR vulkanHandle;
+    };
+
     class ASManager {
     private:
         Core* m_core;
-        std::vector<AccelerationStructure> m_accelerationStructures;
+        std::vector<BottomLevelAccelerationStructure> m_bottomLevelAccelerationStructures;
+        TopLevelAccelerationStructure m_topLevelAccelerationStructure;
         vk::DispatchLoaderDynamic m_rtxDispatcher;
 
 
@@ -52,6 +60,7 @@ namespace vkcv::rtx {
         /**
          * @brief Copies @p cpuBuffer data into a @p gpuBuffer. Typical use case is a staging buffer (namely,
          * @p cpuBuffer) used to fill a @p gpuBuffer with vk::MemoryPropertyFlagBits::eDeviceLocal flag set.
+         * @p cpuBuffer is destroyed and freed after copying.
          * @param cpuBuffer
          * @param gpuBuffer
          */
