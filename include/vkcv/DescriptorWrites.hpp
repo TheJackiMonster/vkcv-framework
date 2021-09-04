@@ -37,11 +37,17 @@ namespace vkcv {
 		SamplerHandle	sampler;
 	};
 
+	struct AccelerationDescriptorWrite {
+	    inline AccelerationDescriptorWrite(uint32_t binding) : binding(binding) {};
+	    uint32_t    binding;
+	};
+
 	struct DescriptorWrites {
 		std::vector<SampledImageDescriptorWrite>		sampledImageWrites;
 		std::vector<StorageImageDescriptorWrite>		storageImageWrites;
 		std::vector<BufferDescriptorWrite>	    		uniformBufferWrites;
 		std::vector<BufferDescriptorWrite>	    		storageBufferWrites;
 		std::vector<SamplerDescriptorWrite>			    samplerWrites;
+		std::vector<AccelerationDescriptorWrite>        accelerationWrites;
 	};
 }
