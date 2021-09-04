@@ -40,11 +40,6 @@ namespace vkcv
          */
         PipelineHandle createPipeline(const PipelineConfig &config, PassManager& passManager);
 
-        // TODO: Move to ComputePipelineManager
-        PipelineHandle createComputePipeline(
-                const ShaderProgram& shaderProgram,
-                const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
-
         /**
          * Returns a vk::Pipeline object by handle.
          * @param handle Directing to the requested pipeline.
@@ -80,9 +75,6 @@ namespace vkcv
         std::vector<Pipeline> m_Pipelines;
 
         void destroyPipelineById(uint64_t id);
-
-        // TODO: Move to ComputePipelineManager
-        vk::Result createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, ShaderStage stage);
 
     };
 }
