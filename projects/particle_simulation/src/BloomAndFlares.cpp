@@ -33,8 +33,13 @@ BloomAndFlares::BloomAndFlares(
 		m_DownsampleDescSets.push_back(
                 p_Core->createDescriptorSet(dsProg.getReflectedDescriptors()[0]));
     }
-    m_DownsamplePipe = p_Core->createComputePipeline(
-            dsProg, { p_Core->getDescriptorSet(m_DownsampleDescSets[0]).layout });
+
+    vkcv::ComputePipelineConfig dsComputePipelineConfig {
+        dsProg,
+        {p_Core->getDescriptorSet(m_DownsampleDescSets[0]).layout}
+    };
+
+    m_DownsamplePipe = p_Core->createComputePipeline(dsComputePipelineConfig);
 
     // UPSAMPLE
     vkcv::ShaderProgram usProg;
@@ -49,8 +54,15 @@ BloomAndFlares::BloomAndFlares(
         m_UpsampleDescSets.push_back(
                 p_Core->createDescriptorSet(usProg.getReflectedDescriptors()[0]));
     }
-    m_UpsamplePipe = p_Core->createComputePipeline(
-            usProg, { p_Core->getDescriptorSet(m_UpsampleDescSets[0]).layout });
+
+
+    vkcv::ComputePipelineConfig usComputePipelineConfig {
+            usProg,
+            {p_Core->getDescriptorSet(m_UpsampleDescSets[0]).layout}
+    };
+
+
+    m_UpsamplePipe = p_Core->createComputePipeline(usComputePipelineConfig);
 
     // LENS FEATURES
     vkcv::ShaderProgram lensProg;
@@ -60,9 +72,15 @@ BloomAndFlares::BloomAndFlares(
                      {
                          lensProg.addShader(shaderStage, path);
                      });
+
     m_LensFlareDescSet = p_Core->createDescriptorSet(lensProg.getReflectedDescriptors()[0]);
-    m_LensFlarePipe = p_Core->createComputePipeline(
-            lensProg, { p_Core->getDescriptorSet(m_LensFlareDescSet).layout });
+
+    vkcv::ComputePipelineConfig lensComputePipelineConfig {
+            lensProg,
+            {p_Core->getDescriptorSet(m_LensFlareDescSet).layout}
+    };
+
+    m_LensFlarePipe = p_Core->createComputePipeline(lensComputePipelineConfig);
 
     // COMPOSITE
     vkcv::ShaderProgram compProg;
@@ -72,9 +90,15 @@ BloomAndFlares::BloomAndFlares(
                      {
                          compProg.addShader(shaderStage, path);
                      });
+
     m_CompositeDescSet = p_Core->createDescriptorSet(compProg.getReflectedDescriptors()[0]);
-    m_CompositePipe = p_Core->createComputePipeline(
-            compProg, { p_Core->getDescriptorSet(m_CompositeDescSet).layout });
+
+    vkcv::ComputePipelineConfig compComputePipelineConfig{
+        compProg,
+        { p_Core->getDescriptorSet(m_CompositeDescSet).layout }
+    };
+
+    m_CompositePipe = p_Core->createComputePipeline(compComputePipelineConfig);
 }
 
 void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStream,

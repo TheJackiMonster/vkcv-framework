@@ -1,4 +1,3 @@
-
 #include "vkcv/upscaling/FSRUpscaling.hpp"
 
 #include <stdint.h>
@@ -205,10 +204,13 @@ namespace vkcv::upscaling {
 					const std::filesystem::path& path) {
 				program.addShader(shaderStage, path);
 			});
-			
-			m_easuPipeline = m_core.createComputePipeline(program, {
-				m_core.getDescriptorSet(m_easuDescriptorSet).layout
-			});
+
+			ComputePipelineConfig easuComputePipelineConfig {
+			    program,
+                { m_core.getDescriptorSet(m_easuDescriptorSet).layout }
+			};
+
+			m_easuPipeline = m_core.createComputePipeline(easuComputePipelineConfig);
 			
 			DescriptorWrites writes;
 			writes.uniformBufferWrites.emplace_back(
@@ -226,10 +228,13 @@ namespace vkcv::upscaling {
 					const std::filesystem::path& path) {
 				program.addShader(shaderStage, path);
 			});
-			
-			m_rcasPipeline = m_core.createComputePipeline(program, {
-				m_core.getDescriptorSet(m_rcasDescriptorSet).layout
-			});
+
+			ComputePipelineConfig rcasComputePipelineConfig {
+			    program,
+                { m_core.getDescriptorSet(m_rcasDescriptorSet).layout }
+			};
+
+			m_rcasPipeline = m_core.createComputePipeline(rcasComputePipelineConfig);
 			
 			DescriptorWrites writes;
 			writes.uniformBufferWrites.emplace_back(

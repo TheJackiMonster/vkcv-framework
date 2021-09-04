@@ -173,11 +173,14 @@ Voxelization::Voxelization(
 	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle);
 
 	vkcv::ShaderProgram resetVoxelShader = loadVoxelResetShader();
-
 	m_voxelResetDescriptorSet = m_corePtr->createDescriptorSet(resetVoxelShader.getReflectedDescriptors()[0]);
-	m_voxelResetPipe = m_corePtr->createComputePipeline(
-		resetVoxelShader,
-		{ m_corePtr->getDescriptorSet(m_voxelResetDescriptorSet).layout });
+
+	const vkcv::ComputePipelineConfig resetVoxelPipeConfig {
+            resetVoxelShader,
+            { m_corePtr->getDescriptorSet(m_voxelResetDescriptorSet).layout }
+	};
+
+	m_voxelResetPipe = m_corePtr->createComputePipeline(resetVoxelPipeConfig);
 
 	vkcv::DescriptorWrites resetVoxelWrites;
 	resetVoxelWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
@@ -185,11 +188,14 @@ Voxelization::Voxelization(
 
 	// buffer to image
 	vkcv::ShaderProgram bufferToImageShader = loadVoxelBufferToImageShader();
-
 	m_bufferToImageDescriptorSet = m_corePtr->createDescriptorSet(bufferToImageShader.getReflectedDescriptors()[0]);
-	m_bufferToImagePipe = m_corePtr->createComputePipeline(
-		bufferToImageShader,
-		{ m_corePtr->getDescriptorSet(m_bufferToImageDescriptorSet).layout });
+
+	const vkcv::ComputePipelineConfig bufferToImagePipeConfig {
+            bufferToImageShader,
+            { m_corePtr->getDescriptorSet(m_bufferToImageDescriptorSet).layout }
+    };
+
+	m_bufferToImagePipe = m_corePtr->createComputePipeline(bufferToImagePipeConfig);
 
 	vkcv::DescriptorWrites bufferToImageDescriptorWrites;
 	bufferToImageDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
@@ -198,11 +204,14 @@ Voxelization::Voxelization(
 
 	// secondary bounce
 	vkcv::ShaderProgram secondaryBounceShader = loadSecondaryBounceShader();
-
 	m_secondaryBounceDescriptorSet = m_corePtr->createDescriptorSet(secondaryBounceShader.getReflectedDescriptors()[0]);
-	m_secondaryBouncePipe = m_corePtr->createComputePipeline(
-		secondaryBounceShader,
-		{ m_corePtr->getDescriptorSet(m_secondaryBounceDescriptorSet).layout });
+
+	const vkcv::ComputePipelineConfig secondaryBouncePipeConfig {
+            secondaryBounceShader,
+            { m_corePtr->getDescriptorSet(m_secondaryBounceDescriptorSet).layout }
+	};
+
+	m_secondaryBouncePipe = m_corePtr->createComputePipeline(secondaryBouncePipeConfig);
 
 	vkcv::DescriptorWrites secondaryBounceDescriptorWrites;
 	secondaryBounceDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };

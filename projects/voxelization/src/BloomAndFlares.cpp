@@ -47,8 +47,13 @@ BloomAndFlares::BloomAndFlares(
 		m_DownsampleDescSets.push_back(
                 p_Core->createDescriptorSet(dsProg.getReflectedDescriptors()[0]));
     }
-    m_DownsamplePipe = p_Core->createComputePipeline(
-            dsProg, { p_Core->getDescriptorSet(m_DownsampleDescSets[0]).layout });
+
+    vkcv::ComputePipelineConfig dsCompPipeConfig {
+        dsProg,
+        { p_Core->getDescriptorSet(m_DownsampleDescSets[0]).layout }
+    };
+
+    m_DownsamplePipe = p_Core->createComputePipeline(dsCompPipeConfig);
 
     // UPSAMPLE
     vkcv::ShaderProgram usProg;
@@ -68,8 +73,12 @@ BloomAndFlares::BloomAndFlares(
             p_Core->createDescriptorSet(usProg.getReflectedDescriptors()[0]));
     }
 
-    m_UpsamplePipe = p_Core->createComputePipeline(
-            usProg, { p_Core->getDescriptorSet(m_UpsampleDescSets[0]).layout });
+    vkcv::ComputePipelineConfig usCompPipeConfig {
+            usProg,
+            { p_Core->getDescriptorSet(m_UpsampleDescSets[0]).layout }
+    };
+
+    m_UpsamplePipe = p_Core->createComputePipeline(usCompPipeConfig);
 
     // LENS FEATURES
     vkcv::ShaderProgram lensProg;
@@ -80,8 +89,13 @@ BloomAndFlares::BloomAndFlares(
                          lensProg.addShader(shaderStage, path);
                      });
     m_LensFlareDescSet = p_Core->createDescriptorSet(lensProg.getReflectedDescriptors()[0]);
-    m_LensFlarePipe = p_Core->createComputePipeline(
-            lensProg, { p_Core->getDescriptorSet(m_LensFlareDescSet).layout });
+
+    vkcv::ComputePipelineConfig lensCompPipeConfig {
+            lensProg,
+            { p_Core->getDescriptorSet(m_LensFlareDescSet).layout }
+    };
+
+    m_LensFlarePipe = p_Core->createComputePipeline(lensCompPipeConfig);
 
     // COMPOSITE
     vkcv::ShaderProgram compProg;
@@ -92,8 +106,13 @@ BloomAndFlares::BloomAndFlares(
                          compProg.addShader(shaderStage, path);
                      });
     m_CompositeDescSet = p_Core->createDescriptorSet(compProg.getReflectedDescriptors()[0]);
-    m_CompositePipe = p_Core->createComputePipeline(
-            compProg, { p_Core->getDescriptorSet(m_CompositeDescSet).layout });
+
+    vkcv::ComputePipelineConfig compPipeConfig {
+            compProg,
+            { p_Core->getDescriptorSet(m_CompositeDescSet).layout }
+    };
+
+    m_CompositePipe = p_Core->createComputePipeline(compPipeConfig);
 
     // radial LUT
     const auto texture = vkcv::asset::loadTexture("resources/RadialLUT.png");
@@ -340,5 +359,3 @@ void BloomAndFlares::updateImageDimensions(uint32_t width, uint32_t height)
     m_Blur = p_Core->createImage(m_ColorBufferFormat, m_Width, m_Height, 1, true, true, false);
     m_LensFeatures = p_Core->createImage(m_ColorBufferFormat, m_Width, m_Height, 1, true, true, false);
 }
-
-

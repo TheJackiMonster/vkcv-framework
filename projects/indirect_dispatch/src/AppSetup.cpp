@@ -256,9 +256,12 @@ bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, Comput
 
 	outComputePass->descriptorSet = core.createDescriptorSet(shaderProgram.getReflectedDescriptors()[0]);
 
-	outComputePass->pipeline = core.createComputePipeline(
-		shaderProgram,
-		{ core.getDescriptorSet(outComputePass->descriptorSet).layout });
+	vkcv::ComputePipelineConfig computePipelineConfig {
+            shaderProgram,
+            { core.getDescriptorSet(outComputePass->descriptorSet).layout }
+	};
+
+	outComputePass->pipeline = core.createComputePipeline(computePipelineConfig);
 
 	if (!outComputePass->pipeline) {
 		vkcv_log(vkcv::LogLevel::ERROR, "Compute shader pipeline creation failed");
