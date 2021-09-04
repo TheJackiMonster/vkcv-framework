@@ -93,7 +93,6 @@ namespace vkcv {
 			memoryUsage = vma::MemoryUsage::eCpuToGpu;
 		}
 
-		// TODO ?vma::AllocatorCreateFlagBits::eKhrDedicatedAllocation?
 		auto bufferAllocation = allocator.createBuffer(
 				vk::BufferCreateInfo(createFlags, size, usageFlags),
 				vma::AllocationCreateInfo(
