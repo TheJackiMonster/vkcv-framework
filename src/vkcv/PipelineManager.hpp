@@ -36,7 +36,7 @@ namespace vkcv
          * On application level it is necessary first to fill a PipelineConfig Struct.
          * @param config Hands over all needed information for pipeline creation.
          * @param passManager Hands over the corresponding render pass.
-         * @return A Handler to the created Pipeline Object.
+         * @return A Handler to the created Graphics Pipeline Object.
          */
         PipelineHandle createPipeline(const PipelineConfig &config, PassManager& passManager);
 
