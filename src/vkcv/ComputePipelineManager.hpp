@@ -11,6 +11,7 @@
 
 #include "vkcv/Handles.hpp"
 #include "vkcv/ShaderProgram.hpp"
+#include "vkcv/ComputePipelineConfig.hpp"
 
 namespace vkcv
 {
@@ -44,9 +45,14 @@ namespace vkcv
         [[nodiscard]]
         vk::PipelineLayout getVkPipelineLayout(const ComputePipelineHandle &handle) const;
 
-        ComputePipelineHandle createComputePipeline(
-                const ShaderProgram& shaderProgram,
-                const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
+        /**
+         * Creates a Compute Pipeline based on the set shader stages in the Config Struct.
+         * This function is wrapped in /src/vkcv/Core.cpp by Core::createComputePipeline(const ComputePipelineConfig &config).
+         * On application level it is necessary first to fill a ComputePipelineConfig Struct.
+         * @param config Hands over all needed information for pipeline creation.
+         * @return A Handler to the created Compute Pipeline Object.
+         */
+        ComputePipelineHandle createComputePipeline(const ComputePipelineConfig& config);
 
     private:
         struct ComputePipeline {

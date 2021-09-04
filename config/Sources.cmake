@@ -52,6 +52,7 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/ShaderProgram.cpp
 
 		${vkcv_include}/vkcv/PipelineConfig.hpp
+		${vkcv_include}/vkcv/ComputePipelineConfig.hpp
 
 		${vkcv_source}/vkcv/ComputePipelineManager.hpp
 		${vkcv_source}/vkcv/ComputePipelineManager.cpp
