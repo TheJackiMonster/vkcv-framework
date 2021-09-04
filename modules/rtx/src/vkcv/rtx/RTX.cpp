@@ -78,7 +78,6 @@ namespace vkcv::rtx {
                     features.setShaderOutputViewportIndex(true);
                     features.setShaderOutputLayer(true);
                     features.setSubgroupBroadcastDynamicId(true);
-                    features.setBufferDeviceAddress(true);
                 });
         m_features.requireFeature<vk::PhysicalDeviceVulkan11Features>(
                 [](vk::PhysicalDeviceVulkan11Features &features) {
@@ -114,11 +113,9 @@ namespace vkcv::rtx {
     }
 
     void RTXModule::init(Core* core, std::vector<uint8_t> &vertices, std::vector<uint8_t> &indices) {
-
         // build acceleration structures BLAS then TLAS --> see ASManager
         ASManager asManager(core);
         asManager.buildBLAS(vertices, indices);
-
     }
 
     std::vector<const char*> RTXModule::getInstanceExtensions() {

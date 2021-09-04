@@ -9,19 +9,19 @@ namespace vkcv::rtx {
     class RTXModule {
     private:
 
-        std::vector<const char*> m_instanceExtensions;
-        std::vector<const char*> m_deviceExtensions;
-        vkcv::Features m_features;
+        std::vector<const char*> m_instanceExtensions;  // the instance extensions needed for using RTX
+        std::vector<const char*> m_deviceExtensions;    // the device extensions needed for using RTX
+        vkcv::Features m_features;                      // the features needed to be enabled for using RTX
 
     public:
 
         /**
-         * @brief TODO
+         * @brief Default #RTXModule constructor.
          */
         RTXModule();
 
         /**
-         * @brief TODO
+         * @brief Default #RTXModule destructor.
          */
         ~RTXModule() {};
 
@@ -38,16 +38,16 @@ namespace vkcv::rtx {
         std::vector<const char*> getDeviceExtensions();
 
         /**
-         * @brief TODO
-         * @return
+         * @brief Returns the raytracing features.
+         * @return The raytracing features.
          */
         vkcv::Features getFeatures();
 
         /**
-         * @brief TODO
-         * @param core
-         * @param vertices
-         * @param indices
+         * @brief Initializes the RTXModule with scene data.
+         * @param core The reference to the #Core.
+         * @param vertices The scene vertex data of type uint8_t.
+         * @param indices The scene index data of type uint8_t.
          */
         void init(Core* core, std::vector<uint8_t> &vertices, std::vector<uint8_t> &indices);
     };
