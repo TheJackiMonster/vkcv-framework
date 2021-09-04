@@ -116,6 +116,7 @@ namespace vkcv::rtx {
         // build acceleration structures BLAS then TLAS --> see ASManager
         ASManager asManager(core);
         asManager.buildBLAS(vertices, indices);
+        asManager.buildTLAS();
     }
 
     std::vector<const char*> RTXModule::getInstanceExtensions() {

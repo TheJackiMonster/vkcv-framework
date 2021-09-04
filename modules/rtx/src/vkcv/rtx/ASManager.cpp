@@ -1,4 +1,5 @@
 #include "vkcv/rtx/ASManager.hpp"
+#include <array>
 
 namespace vkcv::rtx {
 
@@ -13,23 +14,210 @@ namespace vkcv::rtx {
     }
 
     ASManager::~ASManager() noexcept {
-        // destroy every acceleration structure, its data containers and free used memory blocks
-        for (size_t i=0; i < m_accelerationStructures.size(); i++) {
-            AccelerationStructure as = m_accelerationStructures[i];
-            m_core->getContext().getDevice().destroy(as.vulkanHandle, nullptr, m_rtxDispatcher);
-            m_core->getContext().getDevice().destroy(as.accelerationBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
-            m_core->getContext().getDevice().destroy(as.indexBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
-            m_core->getContext().getDevice().destroy(as.vertexBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
+        // destroy every BLAS, its data containers and free used memory blocks
+        for (size_t i=0; i < m_bottomLevelAccelerationStructures.size(); i++) {
+            BottomLevelAccelerationStructure blas = m_bottomLevelAccelerationStructures[i];
+            m_core->getContext().getDevice().destroyAccelerationStructureKHR(blas.vulkanHandle, nullptr, m_rtxDispatcher);
+            m_core->getContext().getDevice().destroy(blas.accelerationBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
+            m_core->getContext().getDevice().destroy(blas.indexBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
+            m_core->getContext().getDevice().destroy(blas.vertexBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
 
-            m_core->getContext().getDevice().freeMemory(as.accelerationBuffer.deviceMemory, nullptr, m_rtxDispatcher);
-            m_core->getContext().getDevice().freeMemory(as.indexBuffer.deviceMemory, nullptr, m_rtxDispatcher);
-            m_core->getContext().getDevice().freeMemory(as.vertexBuffer.deviceMemory, nullptr, m_rtxDispatcher);
+            m_core->getContext().getDevice().freeMemory(blas.accelerationBuffer.deviceMemory, nullptr, m_rtxDispatcher);
+            m_core->getContext().getDevice().freeMemory(blas.indexBuffer.deviceMemory, nullptr, m_rtxDispatcher);
+            m_core->getContext().getDevice().freeMemory(blas.vertexBuffer.deviceMemory, nullptr, m_rtxDispatcher);
         }
+
+        // destroy the TLAS, its data containers and free used memory blocks
+        TopLevelAccelerationStructure tlas = m_topLevelAccelerationStructure;
+        m_core->getContext().getDevice().destroyAccelerationStructureKHR(tlas.vulkanHandle, nullptr, m_rtxDispatcher);
+        m_core->getContext().getDevice().destroy(tlas.tempBuildDataBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
+        m_core->getContext().getDevice().destroy(tlas.tlasBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
+        m_core->getContext().getDevice().destroy(tlas.gpuBufferInstances.vulkanHandle, nullptr, m_rtxDispatcher);
+
+        m_core->getContext().getDevice().freeMemory(tlas.tempBuildDataBuffer.deviceMemory, nullptr, m_rtxDispatcher);
+        m_core->getContext().getDevice().freeMemory(tlas.tlasBuffer.deviceMemory, nullptr, m_rtxDispatcher);
+        m_core->getContext().getDevice().freeMemory(tlas.gpuBufferInstances.deviceMemory, nullptr, m_rtxDispatcher);
     }
 
     void ASManager::buildTLAS() {
-        // TODO
+        // We need an the device address of each BLAS --> TODO: for loop
+        vk::AccelerationStructureDeviceAddressInfoKHR addressInfo(
+                m_bottomLevelAccelerationStructures[0].vulkanHandle
+                );
+        vk::DeviceAddress blasAddress = m_core->getContext().getDevice().getAccelerationStructureAddressKHR(&addressInfo, m_rtxDispatcher);
+
+        std::array<std::array<float,4>,3> transformMatrix = {
+                std::array<float, 4>{1.f, 0.f, 0.f, 0.f},
+                std::array<float, 4>{0.f, 1.f, 0.f, 0.f},
+                std::array<float, 4>{0.f, 0.f, 1.f, 0.f},
+        };
+
+        vk::TransformMatrixKHR transformMatrixKhr(
+                transformMatrix   // std::array<std::array<float,4>,3> const&
+                );
+
+        vk::AccelerationStructureInstanceKHR accelerationStructureInstanceKhr (
+                transformMatrixKhr,    // vk::TransformMatrixKHR transform_ = {},
+                0,   // uint32_t instanceCustomIndex,
+                0xFF,    //uint32_t mask_ = {},
+                0,  // uint32_t instanceShaderBindingTableRecordOffset,
+                vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable,    // vk::GeometryInstanceFlagsKHR
+                blasAddress // uint64_t accelerationStructureReference (the device address of the BLAS)
+        );
+
+        // create a buffer of instances on the device and upload the array of instances to it
+        RTXBuffer cpuBufferInstances;
+        cpuBufferInstances.bufferType = RTXBufferType::CPU;
+        cpuBufferInstances.deviceSize = sizeof(accelerationStructureInstanceKhr);
+        cpuBufferInstances.data = &accelerationStructureInstanceKhr;
+        cpuBufferInstances.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddressKHR
+                | vk::BufferUsageFlagBits::eTransferSrc;
+        cpuBufferInstances.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eHostCoherent
+                | vk::MemoryPropertyFlagBits::eHostVisible;
+
+        createBuffer(cpuBufferInstances);
+
+        RTXBuffer gpuBufferInstances;
+        gpuBufferInstances.bufferType = RTXBufferType::GPU;
+        gpuBufferInstances.deviceSize = sizeof(accelerationStructureInstanceKhr);
+        gpuBufferInstances.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddressKHR
+                | vk::BufferUsageFlagBits::eTransferDst;
+        gpuBufferInstances.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eDeviceLocal;
+
+        createBuffer(gpuBufferInstances);
+        copyFromCPUToGPU(cpuBufferInstances, gpuBufferInstances);   // automatically deletes and frees memory of cpuBufferInstances
+
+        // ranging information for TLAS build
+        vk::AccelerationStructureBuildRangeInfoKHR asRangeInfo(
+                1, // primitiveCount -> number of instances
+                0, // primitiveOffset
+                0, // firstVertex
+                0 //transformOffset
+                );
+
+        vk::BufferDeviceAddressInfo bufferInstancesDeviceAddressInfo(gpuBufferInstances.vulkanHandle);
+        vk::DeviceAddress bufferInstancesAddress = m_core->getContext().getDevice().getBufferAddressKHR(bufferInstancesDeviceAddressInfo, m_rtxDispatcher);
+        vk::DeviceOrHostAddressConstKHR bufferInstancesDeviceOrHostAddressConst(bufferInstancesAddress);
+
+        vk::AccelerationStructureGeometryInstancesDataKHR asInstances(
+                false,    // vk::Bool32 arrayOfPointers
+                bufferInstancesDeviceOrHostAddressConst    // vk::DeviceOrHostAddressConstKHR data_ = {}
+                );
+
+        // Like creating the BLAS, point to the geometry (in this case, the instances) in a polymorphic object.
+        vk::AccelerationStructureGeometryKHR asGeometry(
+                vk::GeometryTypeKHR::eInstances,    // vk::GeometryTypeKHR geometryType_ = vk::GeometryTypeKHR::eTriangles
+                asInstances,    // vk::AccelerationStructureGeometryDataKHR geometry_ = {}
+                {}    // vk::GeometryFlagsKHR flags_ = {}
+                );
+
+        // Finally, create the TLAS (--> ASs)
+        vk::AccelerationStructureBuildGeometryInfoKHR asBuildInfo(
+                vk::AccelerationStructureTypeKHR::eTopLevel, // type of the AS: bottom vs. top
+                vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace, // some flags for different purposes, e.g. efficiency
+                vk::BuildAccelerationStructureModeKHR::eBuild, // AS mode: build vs. update
+                {}, // src AS (this seems to be for copying AS)
+                {}, // dst AS (this seems to be for copying AS)
+                1, // the geometryCount. TODO: how many do we need?
+                &asGeometry // the next input entry would be a pointer to a pointer to geometries. Maybe geometryCount depends on the next entry?
+                );
+
+        // Query the worst -case AS size and scratch space size based on the number of instances (in this case, 1).
+        vk::AccelerationStructureBuildSizesInfoKHR asSizeInfo;
+        m_core->getContext().getDevice().getAccelerationStructureBuildSizesKHR(
+                vk::AccelerationStructureBuildTypeKHR::eDevice,
+                &asBuildInfo,
+                &asRangeInfo.primitiveCount,
+                &asSizeInfo,
+                m_rtxDispatcher
+                );
+
+        // Allocate a buffer for the acceleration structure.
+        RTXBuffer tlasBuffer;
+        tlasBuffer.bufferType = RTXBufferType::ACCELERATION;
+        tlasBuffer.deviceSize = asSizeInfo.accelerationStructureSize;
+        tlasBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
+                | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR
+                | vk::BufferUsageFlagBits::eStorageBuffer;
+
+        createBuffer(tlasBuffer);
+
+        // Create the acceleration structure object. (Data has not yet been set.)
+        vk::AccelerationStructureCreateInfoKHR asCreateInfo(
+                {}, // creation flags
+                tlasBuffer.vulkanHandle, // allocated AS buffer.
+                0,
+                asSizeInfo.accelerationStructureSize, // size of the AS
+                asBuildInfo.type // type of the AS
+                );
+
+        vk::AccelerationStructureKHR tlas;
+        vk::Result res = m_core->getContext().getDevice().createAccelerationStructureKHR(&asCreateInfo, nullptr, &tlas, m_rtxDispatcher);
+        if (res != vk::Result::eSuccess) {
+            vkcv_log(LogLevel::ERROR, "Top Level Acceleration Structure could not be created!");
+        }
+        asBuildInfo.setDstAccelerationStructure(tlas);
+
+        // Allocate the scratch buffer holding temporary build data.
+        RTXBuffer tempBuildDataBuffer;  // scratch buffer
+        tempBuildDataBuffer.bufferType = RTXBufferType::ACCELERATION;
+        tempBuildDataBuffer.deviceSize = asSizeInfo.buildScratchSize;
+        tempBuildDataBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddressKHR
+                | vk::BufferUsageFlagBits::eStorageBuffer;
+
+        createBuffer(tempBuildDataBuffer);
+
+        vk::BufferDeviceAddressInfo tempBuildDataBufferDeviceAddressInfo(tempBuildDataBuffer.vulkanHandle);
+        vk::DeviceAddress tempBuildBufferDataAddress = m_core->getContext().getDevice().getBufferAddressKHR(tempBuildDataBufferDeviceAddressInfo, m_rtxDispatcher);
+        asBuildInfo.scratchData.deviceAddress = tempBuildBufferDataAddress;
+
+        // Create a one-element array of pointers to range info objects.
+        vk::AccelerationStructureBuildRangeInfoKHR* pRangeInfo = &asRangeInfo;
+
+        // Build the TLAS.
+        vk::CommandPool commandPool;
+
+        vk::CommandPoolCreateInfo commandPoolCreateInfo;
+        commandPoolCreateInfo.queueFamilyIndex = m_core->getContext().getQueueManager().getGraphicsQueues()[0].familyIndex;
+
+        if (m_core->getContext().getDevice().createCommandPool(&commandPoolCreateInfo, nullptr, &commandPool) != vk::Result::eSuccess) {
+            vkcv_log(LogLevel::ERROR, "ASManager: command pool could not be created.");
+        }
+
+        vk::CommandBufferAllocateInfo bufferAllocateInfo;
+        bufferAllocateInfo.level = vk::CommandBufferLevel::ePrimary;
+        bufferAllocateInfo.commandPool = commandPool;
+        bufferAllocateInfo.commandBufferCount = 1;
+
+        vk::CommandBuffer commandBuffer;
+        if (m_core->getContext().getDevice().allocateCommandBuffers(&bufferAllocateInfo, &commandBuffer) != vk::Result::eSuccess) {
+            vkcv_log(LogLevel::ERROR, "ASManager: command buffer could not be allocated.");
+        }
+
+        beginCommandBuffer(commandBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+        commandBuffer.buildAccelerationStructuresKHR(1, &asBuildInfo, &pRangeInfo, m_rtxDispatcher);
+        commandBuffer.end();
+
+        vk::SubmitInfo submitInfo;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &commandBuffer;
+
+        Queue graphicsQueue = m_core->getContext().getQueueManager().getGraphicsQueues()[0];
+
+        graphicsQueue.handle.submit(submitInfo);
+        graphicsQueue.handle.waitIdle();
+
+        m_core->getContext().getDevice().freeCommandBuffers(commandPool, 1, &commandBuffer, m_rtxDispatcher);
+        m_core->getContext().getDevice().destroyCommandPool(commandPool, nullptr, m_rtxDispatcher);
+
+        m_topLevelAccelerationStructure = {
+                gpuBufferInstances,
+                tlasBuffer,
+                tempBuildDataBuffer,
+                tlas
+        };
     }
+
 
     void ASManager::buildBLAS(std::vector<uint8_t> &vertices, std::vector<uint8_t> &indices) {
         uint32_t vertexCount = vertices.size();
@@ -91,21 +279,21 @@ namespace vkcv::rtx {
                 );
 
         // create buffer for acceleration structure
-        RTXBuffer accelerationBuffer;
-        accelerationBuffer.bufferType = RTXBufferType::ACCELERATION;
-        accelerationBuffer.deviceSize = asBuildSizesInfo.accelerationStructureSize;
-        accelerationBuffer.data = nullptr;
-        accelerationBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
+        RTXBuffer blasBuffer; // scratch Buffer
+        blasBuffer.bufferType = RTXBufferType::ACCELERATION;
+        blasBuffer.deviceSize = asBuildSizesInfo.accelerationStructureSize;
+        blasBuffer.data = nullptr;
+        blasBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
                 | vk::BufferUsageFlagBits::eShaderDeviceAddress
                 | vk::BufferUsageFlagBits::eStorageBuffer;
-        accelerationBuffer.memoryPropertyFlagBits = {};
+        blasBuffer.memoryPropertyFlagBits = {};
 
-        createBuffer(accelerationBuffer);   // TODO: is this on GPU?
+        createBuffer(blasBuffer);   // TODO: is this on GPU?
 
         // Create an empty AS object
         vk::AccelerationStructureCreateInfoKHR asCreateInfo(
                 {}, // creation flags
-                accelerationBuffer.vulkanHandle, // allocated AS buffer.
+                blasBuffer.vulkanHandle, // allocated AS buffer.
                 0,
                 asBuildSizesInfo.accelerationStructureSize, // size of the AS
                 asBuildInfo.type // type of the AS
@@ -120,17 +308,17 @@ namespace vkcv::rtx {
                 m_rtxDispatcher
         );
         if(res != vk::Result::eSuccess) {
-            vkcv_log(vkcv::LogLevel::ERROR, "The Bottom Level Acceleration Structure could not be builded!");
+            vkcv_log(vkcv::LogLevel::ERROR, "The Bottom Level Acceleration Structure could not be build!");
         }
         asBuildInfo.setDstAccelerationStructure(blasKHR);
 
-        AccelerationStructure blas = {
+        BottomLevelAccelerationStructure blas = {
                 vertexBuffer,
                 indexBuffer,
-                accelerationBuffer,
+                blasBuffer,
                 blasKHR
         };
-        m_accelerationStructures.push_back(blas);
+        m_bottomLevelAccelerationStructures.push_back(blas);
     }
 
     RTXBuffer ASManager::makeBufferFromData(std::vector<uint8_t> &data) {
@@ -156,7 +344,6 @@ namespace vkcv::rtx {
         RTXBuffer gpuBuffer;
         gpuBuffer.bufferType = RTXBufferType::GPU;
         gpuBuffer.deviceSize = sizeof(data_converted[0]) * data_converted.size();
-        gpuBuffer.data = data.data();
         gpuBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
                 | vk::BufferUsageFlagBits::eTransferDst
                 | vk::BufferUsageFlagBits::eStorageBuffer
@@ -207,7 +394,7 @@ namespace vkcv::rtx {
         uint32_t memoryOffset = 0;
         m_core->getContext().getDevice().bindBufferMemory(buffer.vulkanHandle, buffer.deviceMemory, memoryOffset);
 
-        // only fill data in case of CPU buffer TODO: what about acceleration structure buffer?
+        // only fill data in case of CPU buffer
         if (buffer.bufferType == RTXBufferType::CPU) {
             void* mapped = m_core->getContext().getDevice().mapMemory(buffer.deviceMemory, memoryOffset, buffer.deviceSize);
             std::memcpy(mapped, buffer.data, buffer.deviceSize);
