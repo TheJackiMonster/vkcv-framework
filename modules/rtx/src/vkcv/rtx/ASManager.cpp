@@ -154,7 +154,7 @@ namespace vkcv::rtx {
         vk::AccelerationStructureKHR tlas;
         vk::Result res = m_core->getContext().getDevice().createAccelerationStructureKHR(&asCreateInfo, nullptr, &tlas, m_rtxDispatcher);
         if (res != vk::Result::eSuccess) {
-            vkcv_log(LogLevel::ERROR, "Top Level Acceleration Structure could not be created!");
+            vkcv_log(LogLevel::ERROR, "Top Level Acceleration Structure could not be created! (%s)", vk::to_string(res).c_str());
         }
         asBuildInfo.setDstAccelerationStructure(tlas);
 
@@ -180,8 +180,9 @@ namespace vkcv::rtx {
         vk::CommandPoolCreateInfo commandPoolCreateInfo;
         commandPoolCreateInfo.queueFamilyIndex = m_core->getContext().getQueueManager().getGraphicsQueues()[0].familyIndex;
 
-        if (m_core->getContext().getDevice().createCommandPool(&commandPoolCreateInfo, nullptr, &commandPool) != vk::Result::eSuccess) {
-            vkcv_log(LogLevel::ERROR, "ASManager: command pool could not be created.");
+        res = m_core->getContext().getDevice().createCommandPool(&commandPoolCreateInfo, nullptr, &commandPool);
+        if (res != vk::Result::eSuccess) {
+            vkcv_log(LogLevel::ERROR, "ASManager: command pool could not be created! (%s)", vk::to_string(res).c_str());
         }
 
         vk::CommandBufferAllocateInfo bufferAllocateInfo;
@@ -190,8 +191,9 @@ namespace vkcv::rtx {
         bufferAllocateInfo.commandBufferCount = 1;
 
         vk::CommandBuffer commandBuffer;
-        if (m_core->getContext().getDevice().allocateCommandBuffers(&bufferAllocateInfo, &commandBuffer) != vk::Result::eSuccess) {
-            vkcv_log(LogLevel::ERROR, "ASManager: command buffer could not be allocated.");
+        res = m_core->getContext().getDevice().allocateCommandBuffers(&bufferAllocateInfo, &commandBuffer);
+        if (res != vk::Result::eSuccess) {
+            vkcv_log(LogLevel::ERROR, "ASManager: command buffer could not be allocated! (%s)", vk::to_string(res).c_str());
         }
 
         beginCommandBuffer(commandBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
@@ -308,7 +310,7 @@ namespace vkcv::rtx {
                 m_rtxDispatcher
         );
         if(res != vk::Result::eSuccess) {
-            vkcv_log(vkcv::LogLevel::ERROR, "The Bottom Level Acceleration Structure could not be build!");
+            vkcv_log(vkcv::LogLevel::ERROR, "The Bottom Level Acceleration Structure could not be build! (%s)", vk::to_string(res).c_str());
         }
         asBuildInfo.setDstAccelerationStructure(blasKHR);
 
@@ -408,8 +410,9 @@ namespace vkcv::rtx {
         vk::CommandPoolCreateInfo commandPoolCreateInfo;
         commandPoolCreateInfo.queueFamilyIndex = m_core->getContext().getQueueManager().getGraphicsQueues()[0].familyIndex;
 
-        if (m_core->getContext().getDevice().createCommandPool(&commandPoolCreateInfo, nullptr, &commandPool) != vk::Result::eSuccess) {
-            vkcv_log(LogLevel::ERROR, "ASManager: command pool could not be created.");
+        vk::Result res = m_core->getContext().getDevice().createCommandPool(&commandPoolCreateInfo, nullptr, &commandPool);
+        if (res != vk::Result::eSuccess) {
+            vkcv_log(LogLevel::ERROR, "ASManager: command pool could not be created! (%s)", vk::to_string(res).c_str());
         }
 
         vk::CommandBufferAllocateInfo bufferAllocateInfo;
@@ -418,8 +421,9 @@ namespace vkcv::rtx {
         bufferAllocateInfo.commandBufferCount = 1;
 
         vk::CommandBuffer commandBuffer;
-        if (m_core->getContext().getDevice().allocateCommandBuffers(&bufferAllocateInfo, &commandBuffer) != vk::Result::eSuccess) {
-            vkcv_log(LogLevel::ERROR, "ASManager: command buffer could not be allocated.");
+        res = m_core->getContext().getDevice().allocateCommandBuffers(&bufferAllocateInfo, &commandBuffer);
+        if (res != vk::Result::eSuccess) {
+            vkcv_log(LogLevel::ERROR, "ASManager: command buffer could not be allocated! (%s)", vk::to_string(res).c_str());
         }
 
         beginCommandBuffer(commandBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
