@@ -427,9 +427,9 @@ int main(int argc, const char** argv) {
 	});
 	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(
 		tonemappingProgram.getReflectedDescriptors()[0]);
-	vkcv::ComputePipelineHandle tonemappingPipeline = core.createComputePipeline(
-		tonemappingProgram,
-		{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
+	vkcv::ComputePipelineHandle tonemappingPipeline = core.createComputePipeline({
+		tonemappingProgram, { core.getDescriptorSet(tonemappingDescriptorSet).layout }
+	});
 	
 	// tonemapping compute shader
 	vkcv::ShaderProgram postEffectsProgram;
@@ -439,9 +439,9 @@ int main(int argc, const char** argv) {
 	});
 	vkcv::DescriptorSetHandle postEffectsDescriptorSet = core.createDescriptorSet(
 			postEffectsProgram.getReflectedDescriptors()[0]);
-	vkcv::ComputePipelineHandle postEffectsPipeline = core.createComputePipeline(
-			postEffectsProgram,
-			{ core.getDescriptorSet(postEffectsDescriptorSet).layout });
+	vkcv::ComputePipelineHandle postEffectsPipeline = core.createComputePipeline({
+		postEffectsProgram, { core.getDescriptorSet(postEffectsDescriptorSet).layout }
+	});
 
 	// resolve compute shader
 	vkcv::ShaderProgram resolveProgram;
@@ -451,9 +451,9 @@ int main(int argc, const char** argv) {
 	});
 	vkcv::DescriptorSetHandle resolveDescriptorSet = core.createDescriptorSet(
 		resolveProgram.getReflectedDescriptors()[0]);
-	vkcv::ComputePipelineHandle resolvePipeline = core.createComputePipeline(
-		resolveProgram,
-		{ core.getDescriptorSet(resolveDescriptorSet).layout });
+	vkcv::ComputePipelineHandle resolvePipeline = core.createComputePipeline({
+		resolveProgram, { core.getDescriptorSet(resolveDescriptorSet).layout }
+	});
 
 	vkcv::SamplerHandle resolveSampler = core.createSampler(
 		vkcv::SamplerFilterType::NEAREST,
@@ -939,9 +939,9 @@ int main(int argc, const char** argv) {
 					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 					newProgram.addShader(shaderStage, path);
 				});
-				vkcv::ComputePipelineHandle newPipeline = core.createComputePipeline(
-					newProgram,
-					{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
+				vkcv::ComputePipelineHandle newPipeline = core.createComputePipeline({
+					newProgram, { core.getDescriptorSet(tonemappingDescriptorSet).layout }
+				});
 
 				if (newPipeline) {
 					tonemappingPipeline = newPipeline;

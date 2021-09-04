@@ -40,6 +40,8 @@ if (vkcv_build_debug)
 	else()
 		set(vkcv_flags ${vkcv_flags} " -W4")
 	endif()
+	
+	set(vkcv_flags ${vkcv_flags} " -Wno-unused-parameter")
 endif()
 
 # configure everything to use the required dependencies

@@ -83,12 +83,12 @@ Voxelization::Voxelization(
 	vkcv::SamplerHandle voxelSampler,
 	vkcv::Multisampling msaa)
 	:
-	m_corePtr(corePtr), 
-	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
+	m_corePtr(corePtr),
 	m_voxelImageIntermediate(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
+	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
+	m_voxelBuffer(m_corePtr->createBuffer<VoxelBufferContent>(vkcv::BufferType::STORAGE, voxelCount)),
 	m_dummyRenderTarget(m_corePtr->createImage(voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, false, true)),
-	m_voxelInfoBuffer(m_corePtr->createBuffer<VoxelizationInfo>(vkcv::BufferType::UNIFORM, 1)),
-	m_voxelBuffer(m_corePtr->createBuffer<VoxelBufferContent>(vkcv::BufferType::STORAGE, voxelCount)){
+	m_voxelInfoBuffer(m_corePtr->createBuffer<VoxelizationInfo>(vkcv::BufferType::UNIFORM, 1)) {
 
 	const vkcv::ShaderProgram voxelizationShader = loadVoxelizationShader();
 
@@ -166,8 +166,8 @@ Voxelization::Voxelization(
 	m_visualisationPipe = m_corePtr->createGraphicsPipeline(voxelVisualisationPipeConfig);
 
 	std::vector<uint16_t> voxelIndexData;
-	for (int i = 0; i < voxelCount; i++) {
-		voxelIndexData.push_back(i);
+	for (uint32_t i = 0; i < voxelCount; i++) {
+		voxelIndexData.push_back(static_cast<uint16_t>(i));
 	}
 
 	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle);
@@ -175,9 +175,9 @@ Voxelization::Voxelization(
 	vkcv::ShaderProgram resetVoxelShader = loadVoxelResetShader();
 
 	m_voxelResetDescriptorSet = m_corePtr->createDescriptorSet(resetVoxelShader.getReflectedDescriptors()[0]);
-	m_voxelResetPipe = m_corePtr->createComputePipeline(
-		resetVoxelShader,
-		{ m_corePtr->getDescriptorSet(m_voxelResetDescriptorSet).layout });
+	m_voxelResetPipe = m_corePtr->createComputePipeline({
+		resetVoxelShader, { m_corePtr->getDescriptorSet(m_voxelResetDescriptorSet).layout }
+	});
 
 	vkcv::DescriptorWrites resetVoxelWrites;
 	resetVoxelWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
@@ -187,9 +187,9 @@ Voxelization::Voxelization(
 	vkcv::ShaderProgram bufferToImageShader = loadVoxelBufferToImageShader();
 
 	m_bufferToImageDescriptorSet = m_corePtr->createDescriptorSet(bufferToImageShader.getReflectedDescriptors()[0]);
-	m_bufferToImagePipe = m_corePtr->createComputePipeline(
-		bufferToImageShader,
-		{ m_corePtr->getDescriptorSet(m_bufferToImageDescriptorSet).layout });
+	m_bufferToImagePipe = m_corePtr->createComputePipeline({
+		bufferToImageShader, { m_corePtr->getDescriptorSet(m_bufferToImageDescriptorSet).layout }
+	});
 
 	vkcv::DescriptorWrites bufferToImageDescriptorWrites;
 	bufferToImageDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
@@ -200,9 +200,9 @@ Voxelization::Voxelization(
 	vkcv::ShaderProgram secondaryBounceShader = loadSecondaryBounceShader();
 
 	m_secondaryBounceDescriptorSet = m_corePtr->createDescriptorSet(secondaryBounceShader.getReflectedDescriptors()[0]);
-	m_secondaryBouncePipe = m_corePtr->createComputePipeline(
-		secondaryBounceShader,
-		{ m_corePtr->getDescriptorSet(m_secondaryBounceDescriptorSet).layout });
+	m_secondaryBouncePipe = m_corePtr->createComputePipeline({
+		secondaryBounceShader, { m_corePtr->getDescriptorSet(m_secondaryBounceDescriptorSet).layout }
+	});
 
 	vkcv::DescriptorWrites secondaryBounceDescriptorWrites;
 	secondaryBounceDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };

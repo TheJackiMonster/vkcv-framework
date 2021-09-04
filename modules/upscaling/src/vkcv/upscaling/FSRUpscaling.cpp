@@ -206,9 +206,9 @@ namespace vkcv::upscaling {
 				program.addShader(shaderStage, path);
 			});
 			
-			m_easuPipeline = m_core.createComputePipeline(program, {
+			m_easuPipeline = m_core.createComputePipeline({ program, {
 				m_core.getDescriptorSet(m_easuDescriptorSet).layout
-			});
+			}});
 			
 			DescriptorWrites writes;
 			writes.uniformBufferWrites.emplace_back(
@@ -227,9 +227,9 @@ namespace vkcv::upscaling {
 				program.addShader(shaderStage, path);
 			});
 			
-			m_rcasPipeline = m_core.createComputePipeline(program, {
+			m_rcasPipeline = m_core.createComputePipeline({ program, {
 				m_core.getDescriptorSet(m_rcasDescriptorSet).layout
-			});
+			}});
 			
 			DescriptorWrites writes;
 			writes.uniformBufferWrites.emplace_back(
