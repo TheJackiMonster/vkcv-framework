@@ -9,7 +9,7 @@
 #include <vkcv/rtx/RTX.hpp>
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "First Scene";
+	const char* applicationName = "RTX";
 
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
