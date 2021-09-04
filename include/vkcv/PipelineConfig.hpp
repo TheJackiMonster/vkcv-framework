@@ -1,8 +1,8 @@
 #pragma once
 /**
  * @authors Mara Vogt, Mark Mints
- * @file src/vkcv/Pipeline.hpp
- * @brief Pipeline class to handle shader stages
+ * @file src/vkcv/PipelineConfig.hpp
+ * @brief Graphics Pipeline Config Struct to hand over required information to Pipeline Creation
  */
 
 #include <vector>

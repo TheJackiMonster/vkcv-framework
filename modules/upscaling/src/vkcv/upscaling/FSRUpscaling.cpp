@@ -1,4 +1,3 @@
-
 #include "vkcv/upscaling/FSRUpscaling.hpp"
 
 #include <stdint.h>

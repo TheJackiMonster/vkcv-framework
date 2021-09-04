@@ -173,7 +173,6 @@ Voxelization::Voxelization(
 	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle);
 
 	vkcv::ShaderProgram resetVoxelShader = loadVoxelResetShader();
-
 	m_voxelResetDescriptorSet = m_corePtr->createDescriptorSet(resetVoxelShader.getReflectedDescriptors()[0]);
 	m_voxelResetPipe = m_corePtr->createComputePipeline({
 		resetVoxelShader, { m_corePtr->getDescriptorSet(m_voxelResetDescriptorSet).layout }
@@ -185,7 +184,6 @@ Voxelization::Voxelization(
 
 	// buffer to image
 	vkcv::ShaderProgram bufferToImageShader = loadVoxelBufferToImageShader();
-
 	m_bufferToImageDescriptorSet = m_corePtr->createDescriptorSet(bufferToImageShader.getReflectedDescriptors()[0]);
 	m_bufferToImagePipe = m_corePtr->createComputePipeline({
 		bufferToImageShader, { m_corePtr->getDescriptorSet(m_bufferToImageDescriptorSet).layout }
@@ -198,7 +196,6 @@ Voxelization::Voxelization(
 
 	// secondary bounce
 	vkcv::ShaderProgram secondaryBounceShader = loadSecondaryBounceShader();
-
 	m_secondaryBounceDescriptorSet = m_corePtr->createDescriptorSet(secondaryBounceShader.getReflectedDescriptors()[0]);
 	m_secondaryBouncePipe = m_corePtr->createComputePipeline({
 		secondaryBounceShader, { m_corePtr->getDescriptorSet(m_secondaryBounceDescriptorSet).layout }

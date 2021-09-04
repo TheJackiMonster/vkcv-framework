@@ -62,6 +62,7 @@ BloomAndFlares::BloomAndFlares(
                      {
                          lensProg.addShader(shaderStage, path);
                      });
+
     m_LensFlareDescSet = p_Core->createDescriptorSet(lensProg.getReflectedDescriptors()[0]);
     m_LensFlarePipe = p_Core->createComputePipeline({
 		lensProg, { p_Core->getDescriptorSet(m_LensFlareDescSet).layout }
@@ -75,6 +76,7 @@ BloomAndFlares::BloomAndFlares(
                      {
                          compProg.addShader(shaderStage, path);
                      });
+
     m_CompositeDescSet = p_Core->createDescriptorSet(compProg.getReflectedDescriptors()[0]);
     m_CompositePipe = p_Core->createComputePipeline({
 		compProg, { p_Core->getDescriptorSet(m_CompositeDescSet).layout }

@@ -344,5 +344,3 @@ void BloomAndFlares::updateImageDimensions(uint32_t width, uint32_t height)
     m_Blur = p_Core->createImage(m_ColorBufferFormat, m_Width, m_Height, 1, true, true, false);
     m_LensFeatures = p_Core->createImage(m_ColorBufferFormat, m_Width, m_Height, 1, true, true, false);
 }
-
-

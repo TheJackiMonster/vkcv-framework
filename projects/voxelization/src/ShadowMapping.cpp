@@ -220,7 +220,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 		shadowBlurYShader, { corePtr->getDescriptorSet(m_shadowBlurYDescriptorSet).layout }
 	});
 
-	vkcv::DescriptorWrites shadowBlurYDescriptorWrites;
+    vkcv::DescriptorWrites shadowBlurYDescriptorWrites;
 	shadowBlurYDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(0, m_shadowMapIntermediate.getHandle()) };
 	shadowBlurYDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(1, m_shadowSampler) };
 	shadowBlurYDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, m_shadowMap.getHandle()) };
