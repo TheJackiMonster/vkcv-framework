@@ -123,9 +123,35 @@ int main(int argc, const char** argv) {
 
 	const auto& material0 = scene.getMaterial(0);
 
-	// TODO
-//	vkcv::DescriptorSetLayoutHandle vertexShaderDescriptorSetLayout = core.createDescriptorSetLayout(bunnyShaderProgram.getReflectedDescriptors().at(0));
-//	vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(vertexShaderDescriptorSetLayout);
+	/*
+	vkcv::ShaderProgram rayGenShaderProgram;
+	compiler.compile(vkcv::ShaderStage::RAY_GEN, std::filesystem::path("resources/shaders/raytrace.rgen"),
+		[&rayGenShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+			rayGenShaderProgram.addShader(shaderStage, path);
+		});
+
+	vkcv::ShaderProgram rayClosestHitShaderProgram;
+	compiler.compile(vkcv::ShaderStage::RAY_CLOSEST_HIT, std::filesystem::path("resources/shaders/raytrace.rchit"),
+		[&rayClosestHitShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+			rayClosestHitShaderProgram.addShader(shaderStage, path);
+		});
+
+	vkcv::ShaderProgram rayMissShaderProgram;
+	compiler.compile(vkcv::ShaderStage::RAY_MISS, std::filesystem::path("resources/shaders/raytrace.rmiss"),
+		[&rayMissShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+			rayMissShaderProgram.addShader(shaderStage, path);
+		});
+	*/
+
+	//TODO
+//	vkcv::DescriptorSetLayoutHandle rayGenShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayGenShaderProgram.getReflectedDescriptors().at(0));
+//	vkcv::DescriptorSetHandle rayGenShaderDescriptorSet = core.createDescriptorSet(rayGenShaderDescriptorSetLayout);
+
+//	vkcv::DescriptorSetLayoutHandle rayClosestHitShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayClosestHitShaderProgram.getReflectedDescriptors().at(0));
+//	vkcv::DescriptorSetHandle rayGenShaderDescriptorSet = core.createDescriptorSet(rayClosestHitShaderDescriptorSetLayout);
+
+//	vkcv::DescriptorSetLayoutHandle rayMissShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayMissShaderProgram.getReflectedDescriptors().at(0));
+//	vkcv::DescriptorSetHandle rayGenShaderDescriptorSet = core.createDescriptorSet(rayMissShaderDescriptorSetLayout);
 
 	const vkcv::PipelineConfig scenePipelineDefinition{
 		sceneShaderProgram,

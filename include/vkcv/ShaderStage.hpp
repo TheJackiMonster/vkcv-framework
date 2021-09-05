@@ -13,12 +13,12 @@ namespace vkcv {
 		COMPUTE         = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eCompute),
 		TASK            = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eTaskNV),
 		MESH            = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eMeshNV),
-		RAYGEN          = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eRaygenKHR),
-		ANY_HIT         = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eAnyHitKHR),
-		CLOSEST_HIT     = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eClosestHitKHR),
-		MISS            = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eMissKHR),
-		INTERSECTION    = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eIntersectionKHR),
-		CALLABLE        = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eCallableKHR)
+		RAY_GEN          = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eRaygenKHR),
+		RAY_ANY_HIT         = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eAnyHitKHR),
+		RAY_CLOSEST_HIT     = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eClosestHitKHR),
+		RAY_MISS            = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eMissKHR),
+		RAY_INTERSECTION    = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eIntersectionKHR),
+		RAY_CALLABLE        = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eCallableKHR)
 	};
 	
 	using ShaderStages = vk::Flags<ShaderStage>;
