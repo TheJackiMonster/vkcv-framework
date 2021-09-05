@@ -123,7 +123,7 @@ int main(int argc, const char** argv) {
 
 	const auto& material0 = scene.getMaterial(0);
 
-	/*
+
 	vkcv::ShaderProgram rayGenShaderProgram;
 	compiler.compile(vkcv::ShaderStage::RAY_GEN, std::filesystem::path("resources/shaders/raytrace.rgen"),
 		[&rayGenShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
@@ -141,7 +141,7 @@ int main(int argc, const char** argv) {
 		[&rayMissShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 			rayMissShaderProgram.addShader(shaderStage, path);
 		});
-	*/
+
 
 	//TODO
 //	vkcv::DescriptorSetLayoutHandle rayGenShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayGenShaderProgram.getReflectedDescriptors().at(0));
