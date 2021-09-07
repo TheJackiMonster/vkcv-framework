@@ -144,13 +144,9 @@ int main(int argc, const char** argv) {
 	core.writeDescriptorSet(descriptorSet, setWrites);
 
 	vkcv::DescriptorWrites computeWrites;
-	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,lightsBuffer.getHandle()) };
-	core.writeDescriptorSet(computeDescriptorSet, computeWrites);
-	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(1,materialBuffer.getHandle()) };
-	core.writeDescriptorSet(computeDescriptorSet, computeWrites);
-	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(2,sphereBuffer.getHandle()) };
-	core.writeDescriptorSet(computeDescriptorSet, computeWrites);
-	computeWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(3, swapchainInput)};
+	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,lightsBuffer.getHandle()),
+                                          vkcv::BufferDescriptorWrite(1,materialBuffer.getHandle()),
+                                          vkcv::BufferDescriptorWrite(2,sphereBuffer.getHandle())};
     core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
 	const auto& context = core.getContext();
@@ -238,7 +234,14 @@ int main(int argc, const char** argv) {
 		vkcv::PushConstants pushConstantsCompute(0);
 		//pushConstantsCompute.appendDrawcall(pushData);
 
-		uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil( windowWidth/16.f)), static_cast<uint32_t> (std::ceil(windowHeight/16.f)), 1 }; // Anzahl workgroups
+        computeWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(3, swapchainInput)};
+        core.writeDescriptorSet(computeDescriptorSet, computeWrites);
+
+        core.prepareImageForStorage (cmdStream, swapchainInput);
+
+		uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil( windowWidth/16.f)),
+                                            static_cast<uint32_t> (std::ceil(windowHeight/16.f)),
+                                            1 }; // Anzahl workgroups
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			computePipeline,
 			computeDispatchCount,
@@ -247,13 +250,13 @@ int main(int argc, const char** argv) {
 
 		core.recordBufferMemoryBarrier(cmdStream, lightsBuffer.getHandle());
 
-		core.recordDrawcallsToCmdStream(
+		/*core.recordDrawcallsToCmdStream(
 			cmdStream,
 			safrPass,
 			safrPipeline,
 			pushConstants,
 			{ drawcall },
-			{ swapchainInput });
+			{ swapchainInput });*/
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
