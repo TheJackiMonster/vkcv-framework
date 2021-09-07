@@ -133,12 +133,6 @@ int main(int argc, const char** argv) {
 	);
 	sphereBuffer.fill(spheres);
 
-	vkcv::Buffer<safrScene::Material> materialBuffer = core.createBuffer<safrScene::Material>(
-		vkcv::BufferType::STORAGE,
-		materials.size()
-	);
-	materialBuffer.fill(materials);
-
 	glm::vec3 pushData = glm::vec3((lights.size()), (materials.size()), (spheres.size()));
 	vkcv::PushConstants pushConstantsCompute(sizeof(glm::vec3));
 	pushConstantsCompute.appendDrawcall(pushData);
@@ -150,8 +144,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorWrites computeWrites;
 	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,lightsBuffer.getHandle()),
-                                          vkcv::BufferDescriptorWrite(1,materialBuffer.getHandle()),
-                                          vkcv::BufferDescriptorWrite(2,sphereBuffer.getHandle())};
+                                          vkcv::BufferDescriptorWrite(1,sphereBuffer.getHandle())};
     core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
 	const auto& context = core.getContext();
@@ -222,7 +215,6 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 
-
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		start = end;
@@ -236,7 +228,7 @@ int main(int argc, const char** argv) {
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-        computeWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(3, swapchainInput)};
+        computeWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(2, swapchainInput)};
         core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
         core.prepareImageForStorage (cmdStream, swapchainInput);
@@ -251,14 +243,6 @@ int main(int argc, const char** argv) {
 			pushConstantsCompute);
 
 		core.recordBufferMemoryBarrier(cmdStream, lightsBuffer.getHandle());
-
-		/*core.recordDrawcallsToCmdStream(
-			cmdStream,
-			safrPass,
-			safrPipeline,
-			pushConstants,
-			{ drawcall },
-			{ swapchainInput });*/
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
