@@ -163,6 +163,8 @@ int main(int argc, const char** argv) {
 	const vkcv::VertexLayout firstMeshLayout (bindings);
 
 	vkcv::DescriptorBindings descriptorBindings = firstMeshProgram.getReflectedDescriptors().at(0);
+	descriptorBindings[1].descriptorCount = 6;
+	
 	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
