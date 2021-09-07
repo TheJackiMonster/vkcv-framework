@@ -9,13 +9,10 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
 
-	uint32_t windowWidth = 800;
-	uint32_t windowHeight = 600;
-
 	vkcv::Window window = vkcv::Window::create(
 		applicationName,
-		windowWidth,
-		windowHeight,
+		800,
+		600,
 		true
 	);
 	
@@ -29,7 +26,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::asset::Scene mesh;
 
-	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
+	const char* path = argc > 1 ? argv[1] : "assets/cube/cube.gltf";
 	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
@@ -80,12 +77,12 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram firstMeshProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		firstMeshProgram.addShader(shaderStage, path);
 	});
 	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		firstMeshProgram.addShader(shaderStage, path);
 	});
@@ -105,9 +102,16 @@ int main(int argc, const char** argv) {
 	
 	const vkcv::VertexLayout firstMeshLayout (bindings);
 
-	uint32_t setID = 0;
-	std::vector<vkcv::DescriptorBinding> descriptorBindings = { firstMeshProgram.getReflectedDescriptors()[setID] };
-	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorBindings);
+
+	// since we only use one descriptor set (namely, desc set 0), directly address it
+	// recreate copies of the bindings and the handles (to check whether they are properly reused instead of actually recreated)
+	std::unordered_map<uint32_t, vkcv::DescriptorBinding> set0Bindings = firstMeshProgram.getReflectedDescriptors().at(0);
+    auto set0BindingsExplicitCopy = set0Bindings;
+
+	vkcv::DescriptorSetLayoutHandle setLayoutHandle = core.createDescriptorSetLayout(set0Bindings);
+	vkcv::DescriptorSetLayoutHandle setLayoutHandleCopy = core.createDescriptorSetLayout(set0BindingsExplicitCopy);
+
+	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(setLayoutHandle);
 
 	const vkcv::PipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,
@@ -115,7 +119,7 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
         firstMeshPass,
         {firstMeshLayout},
-		{ core.getDescriptorSet(descriptorSet).layout },
+		{ core.getDescriptorSetLayout(setLayoutHandle).vulkanHandle },
 		true
 	};
 	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
@@ -153,8 +157,15 @@ int main(int argc, const char** argv) {
 	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
 
 	core.writeDescriptorSet(descriptorSet, setWrites);
-
-	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
+	
+	auto swapchainExtent = core.getSwapchain().getExtent();
+	
+	vkcv::ImageHandle depthBuffer = core.createImage(
+			vk::Format::eD32Sfloat,
+			swapchainExtent.width,
+			swapchainExtent.height,
+			1, false
+	).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -181,11 +192,11 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 		
-		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
+		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
 			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
 			
-			windowWidth = swapchainWidth;
-			windowHeight = swapchainHeight;
+			swapchainExtent.width = swapchainWidth;
+			swapchainExtent.height = swapchainHeight;
 		}
   
 		auto end = std::chrono::system_clock::now();

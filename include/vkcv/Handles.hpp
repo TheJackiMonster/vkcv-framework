@@ -90,6 +90,12 @@ namespace vkcv
 	private:
 		using Handle::Handle;
 	};
+
+	class DescriptorSetLayoutHandle : public Handle {
+	    friend class DescriptorManager;
+	private:
+	    using Handle::Handle;
+	};
 	
 	class SamplerHandle : public Handle {
 		friend class SamplerManager;

@@ -24,18 +24,21 @@ private:
     vkcv::Image m_Blur;
     vkcv::Image m_LensFeatures;
 
-
     vkcv::ComputePipelineHandle                     m_DownsamplePipe;
-    std::vector<vkcv::DescriptorSetHandle>   m_DownsampleDescSets; // per mip desc set
+    std::vector<vkcv::DescriptorSetLayoutHandle>    m_DownsampleDescSetLayouts;
+    std::vector<vkcv::DescriptorSetHandle>          m_DownsampleDescSets; // per mip desc set
 
     vkcv::ComputePipelineHandle                     m_UpsamplePipe;
-    std::vector<vkcv::DescriptorSetHandle>   m_UpsampleDescSets;   // per mip desc set
+    std::vector<vkcv::DescriptorSetLayoutHandle>    m_UpsampleDescSetLayouts;
+    std::vector<vkcv::DescriptorSetHandle>          m_UpsampleDescSets;   // per mip desc set
 
     vkcv::ComputePipelineHandle                     m_LensFlarePipe;
-    vkcv::DescriptorSetHandle                m_LensFlareDescSet;
+    vkcv::DescriptorSetLayoutHandle                 m_LensFlareDescSetLayout;
+    vkcv::DescriptorSetHandle                       m_LensFlareDescSet;
 
     vkcv::ComputePipelineHandle                     m_CompositePipe;
-    vkcv::DescriptorSetHandle                m_CompositeDescSet;
+    vkcv::DescriptorSetLayoutHandle                 m_CompositeDescSetLayout;
+    vkcv::DescriptorSetHandle                       m_CompositeDescSet;
 
     void execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStream, const vkcv::ImageHandle &colorAttachment);
     void execUpsamplePipe(const vkcv::CommandStreamHandle &cmdStream);

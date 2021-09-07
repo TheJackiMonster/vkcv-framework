@@ -36,21 +36,24 @@ public:
 private:
 	vkcv::Core* m_corePtr;
 
-	vkcv::Image                 m_shadowMap;
-	vkcv::Image                 m_shadowMapIntermediate;
-	vkcv::Image                 m_shadowMapDepth;
-	vkcv::SamplerHandle         m_shadowSampler;
-	vkcv::Buffer<LightInfo>     m_lightInfoBuffer;
+	vkcv::Image                         m_shadowMap;
+	vkcv::Image                         m_shadowMapIntermediate;
+	vkcv::Image                         m_shadowMapDepth;
+	vkcv::SamplerHandle                 m_shadowSampler;
+	vkcv::Buffer<LightInfo>             m_lightInfoBuffer;
 
-	vkcv::PassHandle            m_shadowMapPass;
-	vkcv::PipelineHandle        m_shadowMapPipe;
+	vkcv::PassHandle                    m_shadowMapPass;
+	vkcv::PipelineHandle                m_shadowMapPipe;
 
-	vkcv::ComputePipelineHandle m_depthToMomentsPipe;
-	vkcv::DescriptorSetHandle   m_depthToMomentsDescriptorSet;
+	vkcv::ComputePipelineHandle         m_depthToMomentsPipe;
+	vkcv::DescriptorSetLayoutHandle     m_depthToMomentsDescriptorSetLayout;
+	vkcv::DescriptorSetHandle           m_depthToMomentsDescriptorSet;
 
-	vkcv::ComputePipelineHandle m_shadowBlurXPipe;
-	vkcv::DescriptorSetHandle   m_shadowBlurXDescriptorSet;
+	vkcv::ComputePipelineHandle         m_shadowBlurXPipe;
+	vkcv::DescriptorSetLayoutHandle     m_shadowBlurXDescriptorSetLayout;
+	vkcv::DescriptorSetHandle           m_shadowBlurXDescriptorSet;
 
-	vkcv::ComputePipelineHandle m_shadowBlurYPipe;
-	vkcv::DescriptorSetHandle   m_shadowBlurYDescriptorSet;
+	vkcv::ComputePipelineHandle         m_shadowBlurYPipe;
+	vkcv::DescriptorSetLayoutHandle     m_shadowBlurYDescriptorSetLayout;
+	vkcv::DescriptorSetHandle           m_shadowBlurYDescriptorSet;
 };

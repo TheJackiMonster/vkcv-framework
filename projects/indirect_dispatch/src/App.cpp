@@ -50,16 +50,16 @@ bool App::initialize() {
 	if (!loadSkyPrePass(m_core, &m_skyPrePass))
 		return false;
 
-	if (!loadComputePass(m_core, "resources/shaders/gammaCorrection.comp", &m_gammaCorrectionPass))
+	if (!loadComputePass(m_core, "assets/shaders/gammaCorrection.comp", &m_gammaCorrectionPass))
 		return false;
 
-	if (!loadMesh(m_core, "resources/models/cube.gltf", &m_cubeMesh))
+	if (!loadMesh(m_core, "assets/models/cube.gltf", &m_cubeMesh))
 		return false;
 
-	if (!loadMesh(m_core, "resources/models/ground.gltf", &m_groundMesh))
+	if (!loadMesh(m_core, "assets/models/ground.gltf", &m_groundMesh))
 		return false;
 
-	if(!loadImage(m_core, "resources/models/grid.png", &m_gridTexture))
+	if(!loadImage(m_core, "assets/models/grid.png", &m_gridTexture))
 		return false;
 
 	if (!m_motionBlur.initialize(&m_core, m_windowWidth, m_windowHeight))

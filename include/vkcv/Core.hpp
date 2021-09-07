@@ -233,15 +233,25 @@ namespace vkcv
 		[[nodiscard]]
 		vk::Format getImageFormat(const ImageHandle& image);
 
+		/** TODO:
+		 * @param bindings
+		 * @return
+		 */
+		[[nodiscard]]
+		DescriptorSetLayoutHandle createDescriptorSetLayout(const std::unordered_map<uint32_t, DescriptorBinding> &bindingsMap);
+		DescriptorSetLayout getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const;
+
+		// TODO: existsDescriptorSetLayout function that checks and returns fitting layout upon existence.
+
         /** TODO:
          *   @param setDescriptions
          *   @return
          */
         [[nodiscard]]
-        DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &bindings);
+        DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle &layoutHandle);
 		void writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites& writes);
-
 		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
+
 
 		/**
 		 * @brief start recording command buffers and increment frame index

@@ -6,15 +6,15 @@
 vkcv::ShaderProgram loadVoxelizationShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelization.vert",
+	compiler.compile(vkcv::ShaderStage::VERTEX, "assets/shaders/voxelization.vert",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelization.geom",
+	compiler.compile(vkcv::ShaderStage::GEOMETRY, "assets/shaders/voxelization.geom",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelization.frag",
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, "assets/shaders/voxelization.frag",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -24,15 +24,15 @@ vkcv::ShaderProgram loadVoxelizationShader() {
 vkcv::ShaderProgram loadVoxelVisualisationShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/voxelVisualisation.vert",
+	compiler.compile(vkcv::ShaderStage::VERTEX, "assets/shaders/voxelVisualisation.vert",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::GEOMETRY, "resources/shaders/voxelVisualisation.geom",
+	compiler.compile(vkcv::ShaderStage::GEOMETRY, "assets/shaders/voxelVisualisation.geom",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/voxelVisualisation.frag",
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, "assets/shaders/voxelVisualisation.frag",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -42,7 +42,7 @@ vkcv::ShaderProgram loadVoxelVisualisationShader() {
 vkcv::ShaderProgram loadVoxelResetShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelReset.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/voxelReset.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -52,7 +52,7 @@ vkcv::ShaderProgram loadVoxelResetShader() {
 vkcv::ShaderProgram loadVoxelBufferToImageShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelBufferToImage.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/voxelBufferToImage.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -62,7 +62,7 @@ vkcv::ShaderProgram loadVoxelBufferToImageShader() {
 vkcv::ShaderProgram loadSecondaryBounceShader() {
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram shader;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/voxelSecondaryBounce.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/voxelSecondaryBounce.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -98,12 +98,11 @@ Voxelization::Voxelization(
 		voxelizationDummyFormat) });
 	m_voxelizationPass = m_corePtr->createPass(voxelizationPassConfig);
 
-	std::vector<vkcv::DescriptorBinding> voxelizationDescriptorBindings = 
-	{ voxelizationShader.getReflectedDescriptors()[0] };
-	m_voxelizationDescriptorSet = m_corePtr->createDescriptorSet(voxelizationDescriptorBindings);
+	m_voxelizationDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(voxelizationShader.getReflectedDescriptors().at(0));
+	m_voxelizationDescriptorSet = m_corePtr->createDescriptorSet(m_voxelizationDescriptorSetLayout);
 
-	vkcv::DescriptorSetHandle dummyPerMeshDescriptorSet =
-		m_corePtr->createDescriptorSet({ voxelizationShader.getReflectedDescriptors()[1] });
+	vkcv::DescriptorSetLayoutHandle dummyPerMeshDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(voxelizationShader.getReflectedDescriptors().at(1));
+	vkcv::DescriptorSetHandle dummyPerMeshDescriptorSet = m_corePtr->createDescriptorSet(dummyPerMeshDescriptorSetLayout);
 
 	const vkcv::PipelineConfig voxelizationPipeConfig{
 		voxelizationShader,
@@ -112,8 +111,8 @@ Voxelization::Voxelization(
 		m_voxelizationPass,
 		dependencies.vertexLayout,
 		{ 
-			m_corePtr->getDescriptorSet(m_voxelizationDescriptorSet).layout,
-			m_corePtr->getDescriptorSet(dummyPerMeshDescriptorSet).layout},
+		    m_corePtr->getDescriptorSetLayout(m_voxelizationDescriptorSetLayout).vulkanHandle,
+		    m_corePtr->getDescriptorSetLayout(dummyPerMeshDescriptorSetLayout).vulkanHandle},
 		false,
 		true };
 	m_voxelizationPipe = m_corePtr->createGraphicsPipeline(voxelizationPipeConfig);
@@ -131,9 +130,8 @@ Voxelization::Voxelization(
 
 	vkcv::ShaderProgram voxelVisualisationShader = loadVoxelVisualisationShader();
 
-	const std::vector<vkcv::DescriptorBinding> voxelVisualisationDescriptorBindings = 
-		{ voxelVisualisationShader.getReflectedDescriptors()[0] };
-	m_visualisationDescriptorSet = m_corePtr->createDescriptorSet(voxelVisualisationDescriptorBindings);
+	m_visualisationDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(voxelVisualisationShader.getReflectedDescriptors().at(0));
+	m_visualisationDescriptorSet = m_corePtr->createDescriptorSet(m_visualisationDescriptorSetLayout);
 
 	const vkcv::AttachmentDescription voxelVisualisationColorAttachments(
 		vkcv::AttachmentOperation::STORE,
@@ -158,7 +156,7 @@ Voxelization::Voxelization(
 		0,
 		m_visualisationPass,
 		{},
-		{ m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).layout },
+		{ m_corePtr->getDescriptorSetLayout(m_visualisationDescriptorSetLayout).vulkanHandle },
 		true,
 		false,
 		vkcv::PrimitiveTopology::PointList };	// points are extended to cubes in the geometry shader
@@ -173,10 +171,12 @@ Voxelization::Voxelization(
 	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle);
 
 	vkcv::ShaderProgram resetVoxelShader = loadVoxelResetShader();
-	m_voxelResetDescriptorSet = m_corePtr->createDescriptorSet(resetVoxelShader.getReflectedDescriptors()[0]);
+
+	m_voxelResetDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(resetVoxelShader.getReflectedDescriptors().at(0));
+	m_voxelResetDescriptorSet = m_corePtr->createDescriptorSet(m_voxelResetDescriptorSetLayout);
 	m_voxelResetPipe = m_corePtr->createComputePipeline({
-		resetVoxelShader, { m_corePtr->getDescriptorSet(m_voxelResetDescriptorSet).layout }
-	});
+		resetVoxelShader,
+		{ m_corePtr->getDescriptorSetLayout(m_voxelResetDescriptorSetLayout).vulkanHandle }});
 
 	vkcv::DescriptorWrites resetVoxelWrites;
 	resetVoxelWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
@@ -184,10 +184,12 @@ Voxelization::Voxelization(
 
 	// buffer to image
 	vkcv::ShaderProgram bufferToImageShader = loadVoxelBufferToImageShader();
-	m_bufferToImageDescriptorSet = m_corePtr->createDescriptorSet(bufferToImageShader.getReflectedDescriptors()[0]);
+
+	m_bufferToImageDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(bufferToImageShader.getReflectedDescriptors().at(0));
+	m_bufferToImageDescriptorSet = m_corePtr->createDescriptorSet(m_bufferToImageDescriptorSetLayout);
 	m_bufferToImagePipe = m_corePtr->createComputePipeline({
-		bufferToImageShader, { m_corePtr->getDescriptorSet(m_bufferToImageDescriptorSet).layout }
-	});
+		bufferToImageShader,
+		{ m_corePtr->getDescriptorSetLayout(m_bufferToImageDescriptorSetLayout).vulkanHandle }});
 
 	vkcv::DescriptorWrites bufferToImageDescriptorWrites;
 	bufferToImageDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
@@ -196,10 +198,12 @@ Voxelization::Voxelization(
 
 	// secondary bounce
 	vkcv::ShaderProgram secondaryBounceShader = loadSecondaryBounceShader();
-	m_secondaryBounceDescriptorSet = m_corePtr->createDescriptorSet(secondaryBounceShader.getReflectedDescriptors()[0]);
+
+	m_secondaryBounceDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(secondaryBounceShader.getReflectedDescriptors().at(0));
+	m_secondaryBounceDescriptorSet = m_corePtr->createDescriptorSet(m_secondaryBounceDescriptorSetLayout);
 	m_secondaryBouncePipe = m_corePtr->createComputePipeline({
-		secondaryBounceShader, { m_corePtr->getDescriptorSet(m_secondaryBounceDescriptorSet).layout }
-	});
+		secondaryBounceShader,
+		{ m_corePtr->getDescriptorSetLayout(m_secondaryBounceDescriptorSetLayout).vulkanHandle }});
 
 	vkcv::DescriptorWrites secondaryBounceDescriptorWrites;
 	secondaryBounceDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
