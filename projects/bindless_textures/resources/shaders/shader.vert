@@ -19,6 +19,9 @@ void main()
 	passNormal  = inNormal;
     passUV      = inUV;
 
+    passTextureIndex = (gl_VertexIndex / 4);
+
+    /*
     if(inNormal.x > 0.9)
         passTextureIndex = 0;
 
@@ -36,4 +39,5 @@ void main()
 
     if(inNormal.z < -0.9)
         passTextureIndex = 5;
+    */
 }
