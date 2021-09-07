@@ -34,9 +34,9 @@ layout(std430, binding = 1) coherent buffer spheres{
 layout(set=0, binding = 2, rgba8) uniform image2D outImage;
 
 layout( push_constant ) uniform constants{
-    float lightCount;
-    float matCount;
-    float sphereCount;
+    int lightCount;
+    int matCount;
+    int sphereCount;
 };
 
 bool ray_intersect(const vec3 origin, const vec3 dir, out float t0, const int id){
@@ -125,7 +125,6 @@ vec3 computeHitLighting(Intersection intersection, vec3 V, out float outReflecti
 vec3 castRay(const vec3 initialOrigin, const vec3 initialDirection, int max_depth) {
     
     vec3 skyColor = vec3(0.2, 0.7, 0.8);
-
     vec3 rayOrigin    = initialOrigin;
     vec3 rayDirection = initialDirection;
     
