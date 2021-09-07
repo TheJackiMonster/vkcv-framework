@@ -139,8 +139,8 @@ int main(int argc, const char** argv) {
 	);
 	materialBuffer.fill(materials);
 
-	glm::vec3 pushData = glm::vec3((lights.size()), (materials.size()), (spheres.size()));
-	vkcv::PushConstants pushConstantsCompute(sizeof(glm::vec3));
+	glm::ivec3 pushData = glm::ivec3((lights.size()), (materials.size()), (spheres.size()));
+	vkcv::PushConstants pushConstantsCompute(sizeof(glm::ivec3));
 	pushConstantsCompute.appendDrawcall(pushData);
 
 	vkcv::DescriptorWrites setWrites;
