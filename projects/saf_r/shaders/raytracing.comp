@@ -32,6 +32,10 @@ layout(std430, binding = 2) coherent buffer spheres{
     Sphere inSpheres[];
 };
 
+layout(set=0, binding=3, rgba8) uniform image2D outImage;
+
+
+
 vec3 safr_reflect(const vec3 dir, const vec3 hit_center) {
     return dir - hit_center * 2.f * (dot(dir, hit_center));
 }
@@ -100,7 +104,6 @@ vec3 castRay(const vec3 orig, const vec3 dir, int max_depth) {
         direction = reflect_dir;
     }
 
-    //TODO: Warum wollten wir nochmal einene Sphere Index haben?
     if(intersect != -1){
         vec3 reflect_color = result;
         for(int i = 0; i < depth; i++){
@@ -130,7 +133,21 @@ vec3 castRay(const vec3 orig, const vec3 dir, int max_depth) {
     return result;
 }
 
+vec3 computeDirection(ivec2 coord){
+
+    //float x = (2 * (i + 0.5f) / (float)width - 1) * tan(fov / 2.f) * width / (float)height;
+    //float y = -(2 * (j + 0.5f) / (float)height - 1) * tan(fov / 2.f);
+    //glm::vec3 dir = glm::normalize(glm::vec3(x, y, -1));
+
+    return vec3(1,1,1);
+}
+
 
 void main(){
-    int i = 42;
+    //ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+   // int max_depth = 4;
+    //vec3 direction = computeDirection(coord);
+    //vec3 color = castRay(vec3(0,0,0), direction, max_depth);
+   // vec3 color = vec3(1,0,0);
+    //imageStore(outImage, coord, vec4(color, 0));
 }

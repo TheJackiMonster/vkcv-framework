@@ -67,7 +67,7 @@ vkcv::asset::Texture safrScene::render(const std::vector<safrScene::Sphere>& sph
 #pragma omp parallel for
 	for (size_t j = 0; j < height; j++) {
 		for (size_t i = 0; i < width; i++) {
-			framebuffer[i + j * width] = glm::vec3(j / float(height), i / float(width), 0);
+			//framebuffer[i + j * width] = glm::vec3(j / float(height), i / float(width), 0);
 			float x = (2 * (i + 0.5f) / (float)width - 1) * tan(fov / 2.f) * width / (float)height;
 			float y = -(2 * (j + 0.5f) / (float)height - 1) * tan(fov / 2.f);
 			glm::vec3 dir = glm::normalize(glm::vec3(x, y, -1));

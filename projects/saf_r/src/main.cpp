@@ -79,6 +79,7 @@ int main(int argc, const char** argv) {
 	const vkcv::DescriptorBindings& descriptorBindings = safrShaderProgram.getReflectedDescriptors().at(0);
 	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
+    vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
 	//materials for the spheres
 	std::vector<safrScene::Material> materials;
@@ -149,6 +150,8 @@ int main(int argc, const char** argv) {
 	core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(2,sphereBuffer.getHandle()) };
 	core.writeDescriptorSet(computeDescriptorSet, computeWrites);
+	computeWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(3, swapchainInput)};
+    core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
 	const auto& context = core.getContext();
 
@@ -199,7 +202,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 	vkcv::DrawcallInfo drawcall(renderMesh, { descriptorUsage }, 1);
 
-	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+	//const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
 	vkcv::camera::CameraManager cameraManager(window);
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
