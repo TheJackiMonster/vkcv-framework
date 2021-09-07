@@ -71,6 +71,7 @@ int main(int argc, const char **argv) {
         computeBindings1.push_back(vkcv::VertexBinding(i, { computeVertexAttachments1[i] }));
     }
     const vkcv::VertexLayout computeLayout1(computeBindings1);
+	vkcv::PipelineHandle computePipeline1 = core.createComputePipeline(computeShaderProgram1, {core.getDescriptorSetLayout(computeDescriptorSetLayout1).vulkanHandle} );
 
 // comp shader 2
 	vkcv::ShaderProgram computeShaderProgram2{};
@@ -88,6 +89,7 @@ int main(int argc, const char **argv) {
 		computeBindings2.push_back(vkcv::VertexBinding(i, { computeVertexAttachments2[i] }));
 	}
 	const vkcv::VertexLayout computeLayout2(computeBindings2);
+	vkcv::PipelineHandle computePipeline2 = core.createComputePipeline(computeShaderProgram2, {core.getDescriptorSetLayout(computeDescriptorSetLayout2).vulkanHandle} );
 
 // shader
     vkcv::ShaderProgram particleShaderProgram{};
@@ -135,9 +137,6 @@ int main(int argc, const char **argv) {
     vertexBuffer.fill(vertices);
 
     vkcv::PipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
-
-    vkcv::PipelineHandle computePipeline1 = core.createComputePipeline(computeShaderProgram1, {core.getDescriptorSetLayout(computeDescriptorSetLayout1).vulkanHandle} );
-	vkcv::PipelineHandle computePipeline2 = core.createComputePipeline(computeShaderProgram2, {core.getDescriptorSetLayout(computeDescriptorSetLayout2).vulkanHandle} );
 
     vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
             vkcv::BufferType::UNIFORM,
