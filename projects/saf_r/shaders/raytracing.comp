@@ -94,7 +94,7 @@ vec3 castRay(const vec3 orig, const vec3 dir, int max_depth) {
     vec3 reflect_dir = direction;
     vec3 reflect_orig = orig;
 
-    for(int i = 0; i < depth;i++){
+    for(int i = 0; i < max_depth;i++){
         depth++;
         intersect = sceneIntersect(reflect_orig, reflect_dir, point, hit_center, material);
         if(intersect != -1){
