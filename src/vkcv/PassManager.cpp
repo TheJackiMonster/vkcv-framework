@@ -3,26 +3,6 @@
 
 namespace vkcv
 {
-    static vk::ImageLayout getVkLayoutFromAttachLayout(AttachmentLayout layout)
-    {
-        switch(layout)
-        {
-            case AttachmentLayout::GENERAL:
-                return vk::ImageLayout::eGeneral;
-            case AttachmentLayout::COLOR_ATTACHMENT:
-                return vk::ImageLayout::eColorAttachmentOptimal;
-            case AttachmentLayout::SHADER_READ_ONLY:
-                return vk::ImageLayout::eShaderReadOnlyOptimal;
-            case AttachmentLayout::DEPTH_STENCIL_ATTACHMENT:
-                return vk::ImageLayout::eDepthStencilAttachmentOptimal;
-            case AttachmentLayout::DEPTH_STENCIL_READ_ONLY:
-                return vk::ImageLayout::eDepthStencilReadOnlyOptimal;
-            case AttachmentLayout::PRESENTATION:
-                return vk::ImageLayout::ePresentSrcKHR;
-            default:
-                return vk::ImageLayout::eUndefined;
-        }
-    }
 
     static vk::AttachmentStoreOp getVkStoreOpFromAttachOp(AttachmentOperation op)
     {

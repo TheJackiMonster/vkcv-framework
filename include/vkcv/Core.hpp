@@ -14,7 +14,8 @@
 #include "Handles.hpp"
 #include "Buffer.hpp"
 #include "Image.hpp"
-#include "PipelineConfig.hpp"
+#include "GraphicsPipelineConfig.hpp"
+#include "ComputePipelineConfig.hpp"
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "Result.hpp"
@@ -33,7 +34,8 @@ namespace vkcv
 
     // forward declarations
     class PassManager;
-    class PipelineManager;
+    class GraphicsPipelineManager;
+    class ComputePipelineManager;
     class DescriptorManager;
     class BufferManager;
     class SamplerManager;
@@ -65,15 +67,16 @@ namespace vkcv
 
         Context m_Context;
 
-        std::unique_ptr<PassManager>            m_PassManager;
-        std::unique_ptr<PipelineManager>        m_PipelineManager;
-        std::unique_ptr<DescriptorManager>      m_DescriptorManager;
-        std::unique_ptr<BufferManager>          m_BufferManager;
-        std::unique_ptr<SamplerManager>         m_SamplerManager;
-        std::unique_ptr<ImageManager>           m_ImageManager;
-        std::unique_ptr<CommandStreamManager>   m_CommandStreamManager;
-		std::unique_ptr<WindowManager>          m_WindowManager;
-		std::unique_ptr<SwapchainManager>       m_SwapchainManager;
+        std::unique_ptr<PassManager>             m_PassManager;
+        std::unique_ptr<GraphicsPipelineManager> m_PipelineManager;
+        std::unique_ptr<ComputePipelineManager>  m_ComputePipelineManager;
+        std::unique_ptr<DescriptorManager>       m_DescriptorManager;
+        std::unique_ptr<BufferManager>           m_BufferManager;
+        std::unique_ptr<SamplerManager>          m_SamplerManager;
+        std::unique_ptr<ImageManager>            m_ImageManager;
+        std::unique_ptr<CommandStreamManager>    m_CommandStreamManager;
+        std::unique_ptr<WindowManager>           m_WindowManager;
+        std::unique_ptr<SwapchainManager>        m_SwapchainManager;
 
 		CommandResources    m_CommandResources;
 		SyncResources       m_SyncResources;
@@ -154,20 +157,17 @@ namespace vkcv
          * @return True if pipeline creation was successful, False if not
          */
         [[nodiscard]]
-        PipelineHandle createGraphicsPipeline(const PipelineConfig &config);
+		GraphicsPipelineHandle createGraphicsPipeline(const GraphicsPipelineConfig &config);
 
         /**
          * Creates a basic vulkan compute pipeline using @p shader program and returns it using the @p handle.
          * Fixed Functions for pipeline are set with standard values.
          *
-         * @param shader program that hold the compiles compute shader
-         * @param handle a handle to return the created vulkan handle
+         * @param config Contains the compiles compute shader and the corresponding descriptor set layout
          * @return True if pipeline creation was successful, False if not
          */
         [[nodiscard]]
-        PipelineHandle createComputePipeline(
-            const ShaderProgram &shaderProgram,
-            const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
+        ComputePipelineHandle createComputePipeline(const ComputePipelineConfig &config);
 
         /**
          * Creates a basic vulkan render pass using @p config from the render pass config class and returns it using the @p handle.
@@ -325,7 +325,7 @@ namespace vkcv
 		void recordDrawcallsToCmdStream(
 			const CommandStreamHandle&      cmdStreamHandle,
 			const PassHandle&               renderpassHandle,
-			const PipelineHandle            pipelineHandle,
+			const GraphicsPipelineHandle    &pipelineHandle,
 			const PushConstants             &pushConstants,
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets,
@@ -334,7 +334,7 @@ namespace vkcv
 		void recordMeshShaderDrawcalls(
 			const CommandStreamHandle&              cmdStreamHandle,
 			const PassHandle&                       renderpassHandle,
-			const PipelineHandle                    pipelineHandle,
+			const GraphicsPipelineHandle            &pipelineHandle,
 			const PushConstants&                    pushConstantData,
             const std::vector<MeshShaderDrawcall>&  drawcalls,
 			const std::vector<ImageHandle>&         renderTargets,
@@ -342,7 +342,7 @@ namespace vkcv
 
 		void recordComputeDispatchToCmdStream(
 			CommandStreamHandle cmdStream,
-			PipelineHandle computePipeline,
+            ComputePipelineHandle computePipeline,
 			const uint32_t dispatchCount[3],
 			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
 			const PushConstants& pushConstants);
@@ -355,7 +355,7 @@ namespace vkcv
 
 		void recordComputeIndirectDispatchToCmdStream(
 			const CommandStreamHandle               cmdStream,
-			const PipelineHandle                    computePipeline,
+			const ComputePipelineHandle             computePipeline,
 			const vkcv::BufferHandle                buffer,
 			const size_t                            bufferArgOffset,
 			const std::vector<DescriptorSetUsage>&  descriptorSetUsages,
@@ -405,7 +405,8 @@ namespace vkcv
 	
 		void setDebugLabel(const BufferHandle &handle, const std::string &label);
 		void setDebugLabel(const PassHandle &handle, const std::string &label);
-		void setDebugLabel(const PipelineHandle &handle, const std::string &label);
+		void setDebugLabel(const GraphicsPipelineHandle &handle, const std::string &label);
+		void setDebugLabel(const ComputePipelineHandle &handle, const std::string &label);
 		void setDebugLabel(const DescriptorSetHandle &handle, const std::string &label);
 		void setDebugLabel(const SamplerHandle &handle, const std::string &label);
 		void setDebugLabel(const ImageHandle &handle, const std::string &label);

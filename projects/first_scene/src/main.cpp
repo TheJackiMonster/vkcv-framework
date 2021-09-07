@@ -78,7 +78,7 @@ int main(int argc, const char** argv) {
 	
 	const auto& material0 = scene.getMaterial(0);
 
-	const vkcv::PipelineConfig scenePipelineDefinition{
+	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
 		sceneShaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
@@ -86,7 +86,7 @@ int main(int argc, const char** argv) {
 		{sceneLayout},
 		{ core.getDescriptorSetLayout(material0.getDescriptorSetLayout()).vulkanHandle },
 		true };
-	vkcv::PipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
+	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
 	
 	if (!scenePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;

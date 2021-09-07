@@ -4,6 +4,21 @@
 #include <vkcv/gui/GUI.hpp>
 #include <functional>
 
+const char* MotionVectorVisualisationModeLabels[6] = {
+		"None",
+		"Full resolution",
+		"Max tile",
+		"Tile neighbourhood max",
+		"Min Tile",
+		"Tile neighbourhood min"
+};
+
+const char* MotionBlurModeLabels[3] = {
+		"Default",
+		"Disabled",
+		"Tile visualisation"
+};
+
 App::App() : 
 	m_applicationName("Indirect Dispatch"),
 	m_windowWidth(AppConfig::defaultWindowWidth),

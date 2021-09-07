@@ -49,7 +49,7 @@ namespace vkcv
 
     DescriptorSetLayoutHandle DescriptorManager::createDescriptorSetLayout(const DescriptorBindings &setBindingsMap)
     {
-        for (auto i = 0; i < m_DescriptorSetLayouts.size(); i++)
+        for (size_t i = 0; i < m_DescriptorSetLayouts.size(); i++)
         {
             if(m_DescriptorSetLayouts[i].descriptorBindings.size() != setBindingsMap.size())
                 continue;
@@ -296,7 +296,7 @@ namespace vkcv
 	}
 
 	void DescriptorManager::destroyDescriptorSetLayoutById(uint64_t id) {
-	    if (id >= m_DescriptorSets.size()) {
+	    if (id >= m_DescriptorSetLayouts.size()) {
 	        vkcv_log(LogLevel::ERROR, "Invalid id");
 	        return;
 	    }

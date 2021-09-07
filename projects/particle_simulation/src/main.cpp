@@ -115,7 +115,7 @@ int main(int argc, const char **argv) {
 
     const vkcv::VertexLayout particleLayout(bindings);
 
-    vkcv::PipelineConfig particlePipelineDefinition{
+    vkcv::GraphicsPipelineConfig particlePipelineDefinition{
             particleShaderProgram,
             UINT32_MAX,
             UINT32_MAX,
@@ -131,9 +131,9 @@ int main(int argc, const char **argv) {
 
     vertexBuffer.fill(vertices);
 
-    vkcv::PipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
+    vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
-    vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, {core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle} );
+    vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline({ computeShaderProgram, {core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle} });
 
     vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
             vkcv::BufferType::UNIFORM,
@@ -236,9 +236,9 @@ int main(int argc, const char **argv) {
 
     vkcv::DescriptorSetLayoutHandle tonemappingDescriptorLayout = core.createDescriptorSetLayout(tonemappingShader.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingDescriptorLayout);
-    vkcv::PipelineHandle tonemappingPipe = core.createComputePipeline(
+    vkcv::ComputePipelineHandle tonemappingPipe = core.createComputePipeline({
         tonemappingShader, 
-        { core.getDescriptorSetLayout(tonemappingDescriptorLayout).vulkanHandle });
+        { core.getDescriptorSetLayout(tonemappingDescriptorLayout).vulkanHandle }});
 
     std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
     std::default_random_engine rdmEngine;

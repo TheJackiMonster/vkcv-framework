@@ -109,7 +109,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(setLayoutHandle);
 
-	const vkcv::PipelineConfig firstMeshPipelineConfig {
+	const vkcv::GraphicsPipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,
         UINT32_MAX,
         UINT32_MAX,
@@ -118,7 +118,7 @@ int main(int argc, const char** argv) {
 		{ core.getDescriptorSetLayout(setLayoutHandle).vulkanHandle },
 		true
 	};
-	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
+	vkcv::GraphicsPipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
 	
 	if (!firstMeshPipeline) {
 		std::cerr << "Error. Could not create graphics pipeline. Exiting." << std::endl;
