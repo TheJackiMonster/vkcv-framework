@@ -13,14 +13,19 @@ struct Particle
     float padding_3;
 };
 
-layout(std430, binding = 0) coherent buffer buffer_inParticle
+layout(std430, binding = 0) readonly buffer buffer_inParticle
 {
     Particle inParticle[];
 };
 
+layout(std430, binding = 1) writeonly buffer buffer_outParticle
+{
+    Particle outParticle[];
+};
+
 layout( push_constant ) uniform constants{
     float deltaTime;
-    float rand;
+    float particleCount;
 };
 
 vec3 attraction(vec3 pos, vec3 attractPos)
@@ -41,33 +46,40 @@ vec3 repulsion(vec3 pos, vec3 attractPos)
 }
 
 
-const int n = 4;
+const int n = 3;
 vec3 gravity = vec3(0,-9.8,0);
-vec3 gravityPoint[n] = vec3[n](vec3(-0.3, .5, -0.6),vec3(-0.2, 0.6, -0.3),vec3(.4, -0.4, 0.6),vec3(-.4, -0.4, -0.6));
+vec3 gravityPoint[n] = vec3[n](vec3(-0.5, 0.5, 0),vec3(0.5, 0.5, 0),vec3(0, -0.5, 0));
 //vec3 gravityPoint[n] = vec3[n](vec3(-0.5, 0.5, 0));
 void main() {
     uint id = gl_GlobalInvocationID.x;
-    inParticle[id].lifeTime -= deltaTime;
+
+    if(id >= int(particleCount))
+    {
+        return;
+    }
+
+    outParticle[id] = inParticle[id];
+
+    outParticle[id].lifeTime = inParticle[id].lifeTime - deltaTime;
     vec3 pos = inParticle[id].position;
     vec3 vel = inParticle[id].velocity;
     if(inParticle[id].lifeTime < 0.f)
     {
-        inParticle[id].lifeTime = 5.f;
+        outParticle[id].lifeTime = 7.f;
         pos = vec3(0);
+        vel = inParticle[id].reset_velocity;
+        outParticle[id].velocity = inParticle[id].reset_velocity;
     }
-    //    inParticle[id].position += deltaTime * -normalize(max(2 - distance(inParticle[id].position,respawnPos),0.0) * respawnPos - inParticle[id].position);
 
     for(int i = 0; i < n; i++)
     {
-        vel += deltaTime * deltaTime * normalize(max(2 - distance(pos,gravityPoint[i]),0.1) * gravityPoint[i] - pos);
+        vel += deltaTime * deltaTime * deltaTime * normalize(max(2 - distance(pos,gravityPoint[i]),0.1) * gravityPoint[i] - pos);
     }
 
-    if((pos.x <= -2.0) || (pos.x > 2.0) || (pos.y <= -2.0) || (pos.y > 2.0)|| (pos.z <= -2.0) || (pos.z > 2.0)){
-        vel = (-vel * 0.1);
-    }
-
+    vel = (-vel * 0.01);
     pos += normalize(vel) * deltaTime;
-    inParticle[id].position = pos;
-    float rand1 = rand;
-    inParticle[id].velocity = vel;
+    outParticle[id].position = pos;
+
+    float weight = 1.0;
+    outParticle[id].velocity = vel;
 }

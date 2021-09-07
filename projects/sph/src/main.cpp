@@ -11,7 +11,7 @@
 #include "BloomAndFlares.hpp"
 
 int main(int argc, const char **argv) {
-    const char *applicationName = "Particlesystem";
+    const char *applicationName = "SPH";
 
     vkcv::Window window = vkcv::Window::create(
             applicationName,
@@ -54,48 +54,47 @@ int main(int argc, const char **argv) {
         std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
         return EXIT_FAILURE;
     }
-
-    // use space or use water or gravity
-    std::string shaderPathCompute = "shaders/shader_water.comp";
-	std::string shaderPathFragment = "shaders/shader_water.frag";
-
-//    for (int i = 1; i < argc; i++) {
-//    	if (strcmp(argv[i], "--space") == 0) {
-//    		shaderPathCompute = "shaders/shader_space.comp";
-//			shaderPathFragment = "shaders/shader_space.frag";
-//    	} else
-//		if (strcmp(argv[i], "--water") == 0) {
-//			shaderPathCompute = "shaders/shader_water.comp";
-//			shaderPathFragment = "shaders/shader_water.frag";
-//		} else
-//		if (strcmp(argv[i], "--gravity") == 0) {
-//			shaderPathCompute = "shaders/shader_gravity.comp";
-//			shaderPathFragment = "shaders/shader_space.frag";
-//		}
-//    }
-
-    vkcv::shader::GLSLCompiler compiler;
-    vkcv::ShaderProgram computeShaderProgram{};
-    compiler.compile(vkcv::ShaderStage::COMPUTE, shaderPathCompute, [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-        computeShaderProgram.addShader(shaderStage, path);
+	vkcv::shader::GLSLCompiler compiler;
+// comp shader 1
+    vkcv::ShaderProgram computeShaderProgram1{};
+    compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/shader_water1.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+        computeShaderProgram1.addShader(shaderStage, path);
     });
 
-    vkcv::DescriptorSetLayoutHandle computeDescriptorSetLayout = core.createDescriptorSetLayout(computeShaderProgram.getReflectedDescriptors().at(0));
-    vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeDescriptorSetLayout);
+    vkcv::DescriptorSetLayoutHandle computeDescriptorSetLayout1 = core.createDescriptorSetLayout(computeShaderProgram1.getReflectedDescriptors().at(0));
+    vkcv::DescriptorSetHandle computeDescriptorSet1 = core.createDescriptorSet(computeDescriptorSetLayout1);
 
-    const std::vector<vkcv::VertexAttachment> computeVertexAttachments = computeShaderProgram.getVertexAttachments();
+    const std::vector<vkcv::VertexAttachment> computeVertexAttachments1 = computeShaderProgram1.getVertexAttachments();
 
-    std::vector<vkcv::VertexBinding> computeBindings;
-    for (size_t i = 0; i < computeVertexAttachments.size(); i++) {
-        computeBindings.push_back(vkcv::VertexBinding(i, { computeVertexAttachments[i] }));
+    std::vector<vkcv::VertexBinding> computeBindings1;
+    for (size_t i = 0; i < computeVertexAttachments1.size(); i++) {
+        computeBindings1.push_back(vkcv::VertexBinding(i, { computeVertexAttachments1[i] }));
     }
-    const vkcv::VertexLayout computeLayout(computeBindings);
+    const vkcv::VertexLayout computeLayout1(computeBindings1);
 
+// comp shader 2
+	vkcv::ShaderProgram computeShaderProgram2{};
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/shader_water2.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		computeShaderProgram2.addShader(shaderStage, path);
+	});
+
+	vkcv::DescriptorSetLayoutHandle computeDescriptorSetLayout2 = core.createDescriptorSetLayout(computeShaderProgram2.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle computeDescriptorSet2 = core.createDescriptorSet(computeDescriptorSetLayout2);
+
+	const std::vector<vkcv::VertexAttachment> computeVertexAttachments2 = computeShaderProgram2.getVertexAttachments();
+
+	std::vector<vkcv::VertexBinding> computeBindings2;
+	for (size_t i = 0; i < computeVertexAttachments2.size(); i++) {
+		computeBindings2.push_back(vkcv::VertexBinding(i, { computeVertexAttachments2[i] }));
+	}
+	const vkcv::VertexLayout computeLayout2(computeBindings2);
+
+// shader
     vkcv::ShaderProgram particleShaderProgram{};
     compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/shader.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
         particleShaderProgram.addShader(shaderStage, path);
     });
-    compiler.compile(vkcv::ShaderStage::FRAGMENT, shaderPathFragment, [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+    compiler.compile(vkcv::ShaderStage::FRAGMENT, "shaders/shader_water.frag", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
         particleShaderProgram.addShader(shaderStage, path);
     });
 
@@ -137,7 +136,8 @@ int main(int argc, const char **argv) {
 
     vkcv::PipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
-    vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, {core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle} );
+    vkcv::PipelineHandle computePipeline1 = core.createComputePipeline(computeShaderProgram1, {core.getDescriptorSetLayout(computeDescriptorSetLayout1).vulkanHandle} );
+	vkcv::PipelineHandle computePipeline2 = core.createComputePipeline(computeShaderProgram2, {core.getDescriptorSetLayout(computeDescriptorSetLayout2).vulkanHandle} );
 
     vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
             vkcv::BufferType::UNIFORM,
@@ -177,9 +177,10 @@ int main(int argc, const char **argv) {
     vkcv::DescriptorWrites computeWrites;
     computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,particleBuffer1.getHandle()),
 										  vkcv::BufferDescriptorWrite(1,particleBuffer2.getHandle())};
-    core.writeDescriptorSet(computeDescriptorSet, computeWrites);
+    core.writeDescriptorSet(computeDescriptorSet1, computeWrites);
+	core.writeDescriptorSet(computeDescriptorSet2, computeWrites);
 
-    if (!particlePipeline || !computePipeline)
+    if (!particlePipeline || !computePipeline1 || !computePipeline2)
     {
         std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
         return EXIT_FAILURE;
@@ -252,8 +253,6 @@ int main(int argc, const char **argv) {
         tonemappingShader, 
         { core.getDescriptorSetLayout(tonemappingDescriptorLayout).vulkanHandle });
 
-    std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
-    std::default_random_engine rdmEngine;
     while (window.isWindowOpen()) {
         vkcv::Window::pollEvents();
 
@@ -281,20 +280,28 @@ int main(int argc, const char **argv) {
         renderingMatrices.projection = cameraManager.getActiveCamera().getProjection();
 
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
-        float random = rdm(rdmEngine);
-        glm::vec2 pushData = glm::vec2(deltatime, random);
+        glm::vec2 pushData = glm::vec2(deltatime, static_cast<float>(particleSystem.getParticles().size()));
 
         vkcv::PushConstants pushConstantsCompute (sizeof(glm::vec2));
         pushConstantsCompute.appendDrawcall(pushData);
         
         uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(particleSystem.getParticles().size()/256.f)),1,1};
         core.recordComputeDispatchToCmdStream(cmdStream,
-                                              computePipeline,
+                                              computePipeline1,
                                               computeDispatchCount,
-                                              {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet).vulkanHandle)},
+                                              {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet1).vulkanHandle)},
 											  pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
+
+		core.recordComputeDispatchToCmdStream(cmdStream,
+											  computePipeline2,
+											  computeDispatchCount,
+											  {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet2).vulkanHandle)},
+											  pushConstantsCompute);
+
+		core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
         vkcv::PushConstants pushConstantsDraw (sizeof(renderingMatrices));

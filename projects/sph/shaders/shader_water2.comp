@@ -1,0 +1,74 @@
+#version 450 core
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(local_size_x = 256) in;
+
+struct Particle
+{
+    vec3 position;
+    float lifeTime;
+    vec3 velocity;
+    float padding_2;
+    vec3 reset_velocity;
+    float padding_3;
+};
+
+layout(std430, binding = 1) readonly buffer buffer_inParticle
+{
+    Particle inParticle[];
+};
+
+layout(std430, binding = 0) writeonly buffer buffer_outParticle
+{
+    Particle outParticle[];
+};
+
+layout( push_constant ) uniform constants{
+    float deltaTime;
+    float particleCount;
+};
+
+const ivec4 gridSize = ivec4(4);
+const ivec4 origin = ivec4(1);
+const float energyloss = 0.0;
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+
+    if(id >= int(particleCount))
+    {
+        return;
+    }
+
+    outParticle[id] = inParticle[id];
+    //collisition X-Axis
+//    if(inParticle[id].position.x >= gridSize.x - origin.x)
+//    {
+//        outParticle[id].position.x = gridSize.x  - origin.x - 0.001f;
+//        outParticle[id].velocity = reflect(inParticle[id].velocity.xyz,vec3(-1.f,0.f,0.f))* energyloss;
+//    }else if(inParticle[id].position.x < origin.x)
+//    {
+//        outParticle[id].position.x = origin.x + 0.001f;
+//        outParticle[id].velocity = reflect(inParticle[id].velocity.xyz,vec3(1.f,0.f,0.f)) * energyloss;
+//    }
+//    //collisition Y-Axis
+//    if(inParticle[id].position.y >= gridSize.y - origin.y)
+//    {
+//        outParticle[id].position.y = gridSize.y - origin.y - 0.001f;
+//        outParticle[id].velocity = reflect(inParticle[id].velocity.xyz,vec3(0.f,-1.f,0.f)) * energyloss;
+//    }else if(inParticle[id].position.y < origin.y)
+//    {
+//        outParticle[id].position.y = origin.y + 0.001f;
+//        outParticle[id].velocity = reflect(inParticle[id].velocity.xyz,vec3(0.f,1.f,0.f)) * energyloss;
+//    }
+//    //collisition Z-Axis
+//    if(inParticle[id].position.z >= gridSize.z - origin.z)
+//    {
+//        outParticle[id].position.z = gridSize.z - origin.z - 0.001f;
+//        outParticle[id].velocity = reflect(inParticle[id].velocity.xyz,vec3(0.f,0.f,-1.f)) * energyloss;
+//    }else if(inParticle[id].position.z < origin.z)
+//    {
+//        outParticle[id].position.z = origin.z + 0.001f;
+//        outParticle[id].velocity = reflect(inParticle[id].velocity.xyz,vec3(0.f,0.f,1.f)) * energyloss;
+//    }
+}

@@ -65,7 +65,7 @@ int main(int argc, const char **argv) {
 			shaderPathFragment = "shaders/shader_space.frag";
     	} else
 		if (strcmp(argv[i], "--water") == 0) {
-			shaderPathCompute = "shaders/shader_water.comp";
+			shaderPathCompute = "shaders/shader_water1.comp";
 			shaderPathFragment = "shaders/shader_water.frag";
 		} else
 		if (strcmp(argv[i], "--gravity") == 0) {
