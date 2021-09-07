@@ -154,8 +154,12 @@ int main(int argc, const char** argv) {
 	
 	const vkcv::VertexLayout firstMeshLayout (bindings);
 
-	std::unordered_map<uint32_t, vkcv::DescriptorBinding> descriptorBindings = firstMeshProgram.getReflectedDescriptors().at(0);
-	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
+	const std::unordered_map<uint32_t, vkcv::DescriptorBinding> &descriptorBindings = firstMeshProgram.getReflectedDescriptors().at(0);
+
+    std::unordered_map<uint32_t, vkcv::DescriptorBinding> adjustedBindings = descriptorBindings;
+    adjustedBindings[1].descriptorCount = 5;
+
+    vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(adjustedBindings);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
 	const vkcv::PipelineConfig firstMeshPipelineConfig {
