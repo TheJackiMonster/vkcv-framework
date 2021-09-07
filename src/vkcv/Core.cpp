@@ -529,7 +529,6 @@ namespace vkcv
   
 		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_SwapchainManager->getSwapchain(swapchainHandle).getSwapchain());
 
-		const auto& queueManager = m_Context.getQueueManager();
 		std::array<vk::Semaphore, 2> waitSemaphores{
 			m_SyncResources.renderFinished,
 			m_SyncResources.swapchainImageAcquired

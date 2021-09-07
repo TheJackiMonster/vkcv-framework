@@ -194,7 +194,7 @@ namespace vkcv {
                                       std::vector<std::pair<int, int>> &queuePairsTransfer) {
 
         std::vector<Queue> graphicsQueues = getQueues(device, queuePairsGraphics);
-        std::vector<Queue> computeQueues = getQueues(device, queuePairsCompute );
+        std::vector<Queue> computeQueues  = getQueues(device, queuePairsCompute);
         std::vector<Queue> transferQueues = getQueues(device, queuePairsTransfer);
 
     	return QueueManager( std::move(graphicsQueues), std::move(computeQueues), std::move(transferQueues), 0);
@@ -205,20 +205,22 @@ namespace vkcv {
 			vk::SurfaceKHR &surface
 	) {
 		std::vector<vk::QueueFamilyProperties> qFamilyProperties = physicalDevice.getQueueFamilyProperties();
-		std::vector<vk::Bool32> presentSupport(qFamilyProperties.size(),-1);
 
-		for(uint32_t i = 0; i < qFamilyProperties.size(); i++)
-		{
-			physicalDevice.getSurfaceSupportKHR(i,surface,&presentSupport[i]);
-			if(presentSupport[i] == VK_TRUE){
+		for(uint32_t i = 0; i < qFamilyProperties.size(); i++) {
+			vk::Bool32 presentSupport;
+			
+			if ((vk::Result::eSuccess == physicalDevice.getSurfaceSupportKHR(i, surface, &presentSupport)) &&
+				(presentSupport == VK_TRUE)) {
 				return i;
 			}
 		}
-		vkcv_log(LogLevel::WARNING, "no supported present queueQ");
+		
+		vkcv_log(LogLevel::WARNING, "No supported present queue");
 		return 0;
 	}
 
-	QueueManager::QueueManager(std::vector<Queue>&& graphicsQueues, std::vector<Queue>&& computeQueues, std::vector<Queue>&& transferQueues, size_t presentIndex)
+	QueueManager::QueueManager(std::vector<Queue>&& graphicsQueues, std::vector<Queue>&& computeQueues,
+							   std::vector<Queue>&& transferQueues, size_t presentIndex)
 	: m_graphicsQueues(graphicsQueues), m_computeQueues(computeQueues), m_transferQueues(transferQueues), m_presentIndex(presentIndex)
     {}
 
