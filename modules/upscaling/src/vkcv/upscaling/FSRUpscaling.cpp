@@ -68,33 +68,36 @@ namespace vkcv::upscaling {
 	static DescriptorBindings getDescriptorBindings() {
 		DescriptorBindings descriptorBindings = {};
 
-	    auto binding_0 = DescriptorBinding(
+	    auto binding_0 = DescriptorBinding {
 	            0,
 	            DescriptorType::UNIFORM_BUFFER_DYNAMIC,
 	            1,
-	            ShaderStage::COMPUTE
-		);
+	            ShaderStage::COMPUTE,
+				false
+		};
 
-	    auto binding_1 = DescriptorBinding(
-	            1,
-	            DescriptorType::IMAGE_SAMPLED,
-	            1,
-	            ShaderStage::COMPUTE
-		);
+	    auto binding_1 = DescriptorBinding {
+				1,
+				DescriptorType::IMAGE_SAMPLED,
+				1,
+				ShaderStage::COMPUTE,
+				false
+		};
 
-	    auto binding_2 = DescriptorBinding(
-	            2,
-	            DescriptorType::IMAGE_STORAGE,
-	            1,
-	            ShaderStage::COMPUTE
-		);
+	    auto binding_2 = DescriptorBinding{
+				2,
+				DescriptorType::IMAGE_STORAGE,
+				1,
+				ShaderStage::COMPUTE,
+				false
+		};
 
-	    auto binding_3 = DescriptorBinding(
-	            3,
-	            DescriptorType::SAMPLER,
-	            1,
-	            ShaderStage::COMPUTE
-		);
+	    auto binding_3 = DescriptorBinding{
+				3,
+				DescriptorType::SAMPLER,
+				1,
+				ShaderStage::COMPUTE
+		};
 
 	    descriptorBindings.insert(std::make_pair(0, binding_0));
 	    descriptorBindings.insert(std::make_pair(1, binding_1));
