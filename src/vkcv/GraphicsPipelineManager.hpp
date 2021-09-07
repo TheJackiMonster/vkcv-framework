@@ -11,23 +11,23 @@
 #include <vulkan/vulkan.hpp>
 #include <vector>
 #include "vkcv/Handles.hpp"
-#include "vkcv/PipelineConfig.hpp"
+#include "vkcv/GraphicsPipelineConfig.hpp"
 #include "PassManager.hpp"
 
 namespace vkcv
 {
-    class PipelineManager
+    class GraphicsPipelineManager
     {
     public:
-        PipelineManager() = delete; // no default ctor
-        explicit PipelineManager(vk::Device device) noexcept; // ctor
-        ~PipelineManager() noexcept; // dtor
-
-        PipelineManager(const PipelineManager &other) = delete; // copy-ctor
-        PipelineManager(PipelineManager &&other) = delete; // move-ctor;
-
-        PipelineManager & operator=(const PipelineManager &other) = delete; // copy-assign op
-        PipelineManager & operator=(PipelineManager &&other) = delete; // move-assign op
+		GraphicsPipelineManager() = delete; // no default ctor
+        explicit GraphicsPipelineManager(vk::Device device) noexcept; // ctor
+        ~GraphicsPipelineManager() noexcept; // dtor
+	
+		GraphicsPipelineManager(const GraphicsPipelineManager &other) = delete; // copy-ctor
+		GraphicsPipelineManager(GraphicsPipelineManager &&other) = delete; // move-ctor;
+	
+		GraphicsPipelineManager & operator=(const GraphicsPipelineManager &other) = delete; // copy-assign op
+		GraphicsPipelineManager & operator=(GraphicsPipelineManager &&other) = delete; // move-assign op
 
         /**
          * Creates a Graphics Pipeline based on the set shader stages in the Config Struct.
@@ -38,7 +38,7 @@ namespace vkcv
          * @param passManager Hands over the corresponding render pass.
          * @return A Handler to the created Graphics Pipeline Object.
          */
-        PipelineHandle createPipeline(const PipelineConfig &config, PassManager& passManager);
+		GraphicsPipelineHandle createPipeline(const GraphicsPipelineConfig &config, PassManager& passManager);
 
         /**
          * Returns a vk::Pipeline object by handle.
@@ -46,7 +46,7 @@ namespace vkcv
          * @return vk::Pipeline.
          */
         [[nodiscard]]
-        vk::Pipeline getVkPipeline(const PipelineHandle &handle) const;
+        vk::Pipeline getVkPipeline(const GraphicsPipelineHandle &handle) const;
 
         /**
          * Returns a vk::PipelineLayout object by handle.
@@ -54,7 +54,7 @@ namespace vkcv
          * @return vk::PipelineLayout.
          */
         [[nodiscard]]
-        vk::PipelineLayout getVkPipelineLayout(const PipelineHandle &handle) const;
+        vk::PipelineLayout getVkPipelineLayout(const GraphicsPipelineHandle &handle) const;
 
         /**
          * Returns the corresponding Pipeline Config Struct of a pipeline object directed by the given Handler.
@@ -62,17 +62,17 @@ namespace vkcv
          * @return Pipeline Config Struct
          */
         [[nodiscard]]
-        const PipelineConfig &getPipelineConfig(const PipelineHandle &handle) const;
+        const GraphicsPipelineConfig &getPipelineConfig(const GraphicsPipelineHandle &handle) const;
 
     private:
-        struct Pipeline {
+        struct GraphicsPipeline {
             vk::Pipeline m_handle;
             vk::PipelineLayout m_layout;
-            PipelineConfig m_config;
+			GraphicsPipelineConfig m_config;
         };
 
         vk::Device m_Device;
-        std::vector<Pipeline> m_Pipelines;
+        std::vector<GraphicsPipeline> m_Pipelines;
 
         void destroyPipelineById(uint64_t id);
 

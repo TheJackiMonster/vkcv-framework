@@ -131,7 +131,7 @@ bool loadGraphicPass(
 	}
 
 
-	vkcv::PipelineConfig pipelineConfig{
+	vkcv::GraphicsPipelineConfig pipelineConfig{
 		shaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,

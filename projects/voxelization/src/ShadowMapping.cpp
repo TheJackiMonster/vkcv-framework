@@ -166,7 +166,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	m_shadowMapPass = corePtr->createPass(shadowPassConfig);
 
 	// pipeline
-	vkcv::PipelineConfig shadowPipeConfig{
+	vkcv::GraphicsPipelineConfig shadowPipeConfig{
 		shadowShader,
 		shadowMapResolution,
 		shadowMapResolution,

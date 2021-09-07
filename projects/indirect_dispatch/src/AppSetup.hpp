@@ -8,7 +8,7 @@ struct AppRenderTargets {
 };
 
 struct GraphicPassHandles {
-	vkcv::PipelineHandle                pipeline;
+	vkcv::GraphicsPipelineHandle        pipeline;
 	vkcv::PassHandle                    renderPass;
 	vkcv::DescriptorSetLayoutHandle     descriptorSetLayout;
 	vkcv::DescriptorSetHandle           descriptorSet;

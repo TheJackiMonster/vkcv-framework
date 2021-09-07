@@ -303,7 +303,7 @@ int main(int argc, const char** argv) {
 
 	auto swapchainExtent = core.getSwapchain().getExtent();
 	
-	vkcv::PipelineConfig prepassPipelineConfig{
+	vkcv::GraphicsPipelineConfig prepassPipelineConfig{
 		depthPrepassShader,
 		swapchainExtent.width,
 		swapchainExtent.height,
@@ -318,10 +318,10 @@ int main(int argc, const char** argv) {
 	prepassPipelineConfig.m_depthTest       = vkcv::DepthTest::LessEqual;
 	prepassPipelineConfig.m_alphaToCoverage = true;
 
-	vkcv::PipelineHandle prepassPipeline = core.createGraphicsPipeline(prepassPipelineConfig);
+	vkcv::GraphicsPipelineHandle prepassPipeline = core.createGraphicsPipeline(prepassPipelineConfig);
 
 	// forward pipeline
-	vkcv::PipelineConfig forwardPipelineConfig {
+	vkcv::GraphicsPipelineConfig forwardPipelineConfig {
 		forwardProgram,
 		swapchainExtent.width,
 		swapchainExtent.height,
@@ -337,7 +337,7 @@ int main(int argc, const char** argv) {
 	forwardPipelineConfig.m_depthTest       = vkcv::DepthTest::Equal;
 	forwardPipelineConfig.m_depthWrite      = false;
 	
-	vkcv::PipelineHandle forwardPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
+	vkcv::GraphicsPipelineHandle forwardPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
 	
 	if (!forwardPipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
@@ -376,7 +376,7 @@ int main(int argc, const char** argv) {
 		skyShader.addShader(shaderStage, path);
 	});
 
-	vkcv::PipelineConfig skyPipeConfig;
+	vkcv::GraphicsPipelineConfig skyPipeConfig;
 	skyPipeConfig.m_ShaderProgram       = skyShader;
 	skyPipeConfig.m_Width               = swapchainExtent.width;
 	skyPipeConfig.m_Height              = swapchainExtent.height;
@@ -387,7 +387,7 @@ int main(int argc, const char** argv) {
 	skyPipeConfig.m_multisampling       = msaa;
 	skyPipeConfig.m_depthWrite          = false;
 
-	vkcv::PipelineHandle skyPipe = core.createGraphicsPipeline(skyPipeConfig);
+	vkcv::GraphicsPipelineHandle skyPipe = core.createGraphicsPipeline(skyPipeConfig);
 
 	// render targets
 	vkcv::ImageHandle depthBuffer           = core.createImage(
@@ -961,7 +961,7 @@ int main(int argc, const char** argv) {
 					newForwardProgram.addShader(shaderStage, path);
 				});
 				forwardPipelineConfig.m_ShaderProgram = newForwardProgram;
-				vkcv::PipelineHandle newPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
+				vkcv::GraphicsPipelineHandle newPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
 
 				if (newPipeline) {
 					forwardPipeline = newPipeline;

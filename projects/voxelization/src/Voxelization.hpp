@@ -55,7 +55,7 @@ private:
 
 	vkcv::Image                         m_dummyRenderTarget;
 	vkcv::PassHandle                    m_voxelizationPass;
-	vkcv::PipelineHandle                m_voxelizationPipe;
+	vkcv::GraphicsPipelineHandle        m_voxelizationPipe;
 	vkcv::DescriptorSetLayoutHandle     m_voxelizationDescriptorSetLayout;
 	vkcv::DescriptorSetHandle           m_voxelizationDescriptorSet;
 
@@ -68,7 +68,7 @@ private:
 	vkcv::DescriptorSetHandle           m_bufferToImageDescriptorSet;
 
 	vkcv::PassHandle                    m_visualisationPass;
-	vkcv::PipelineHandle                m_visualisationPipe;
+	vkcv::GraphicsPipelineHandle        m_visualisationPipe;
 
 	vkcv::ComputePipelineHandle         m_secondaryBouncePipe;
 	vkcv::DescriptorSetLayoutHandle     m_secondaryBounceDescriptorSetLayout;

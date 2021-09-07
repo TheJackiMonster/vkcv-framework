@@ -208,7 +208,7 @@ int main(int argc, const char** argv) {
 
 	auto swapchainExtent = core.getSwapchain().getExtent();
 	
-	const vkcv::PipelineConfig bunnyPipelineDefinition {
+	const vkcv::GraphicsPipelineConfig bunnyPipelineDefinition {
 			bunnyShaderProgram,
 			swapchainExtent.width,
 			swapchainExtent.height,
@@ -229,7 +229,7 @@ int main(int argc, const char** argv) {
 	vertexShaderDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, matrixBuffer.getHandle()) };
 	core.writeDescriptorSet(vertexShaderDescriptorSet, vertexShaderDescriptorWrites);
 
-	vkcv::PipelineHandle bunnyPipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
+	vkcv::GraphicsPipelineHandle bunnyPipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
 
 	if (!bunnyPipeline)
 	{
@@ -258,7 +258,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet(meshShaderDescriptorSetLayout);
 	const vkcv::VertexLayout meshShaderLayout(bindings);
 
-	const vkcv::PipelineConfig meshShaderPipelineDefinition{
+	const vkcv::GraphicsPipelineConfig meshShaderPipelineDefinition{
 		meshShaderProgram,
 		swapchainExtent.width,
 		swapchainExtent.height,
@@ -268,7 +268,7 @@ int main(int argc, const char** argv) {
 		false
 	};
 
-	vkcv::PipelineHandle meshShaderPipeline = core.createGraphicsPipeline(meshShaderPipelineDefinition);
+	vkcv::GraphicsPipelineHandle meshShaderPipeline = core.createGraphicsPipeline(meshShaderPipelineDefinition);
 
 	if (!meshShaderPipeline)
 	{

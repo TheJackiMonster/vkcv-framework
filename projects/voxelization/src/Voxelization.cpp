@@ -104,7 +104,7 @@ Voxelization::Voxelization(
 	vkcv::DescriptorSetLayoutHandle dummyPerMeshDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(voxelizationShader.getReflectedDescriptors().at(1));
 	vkcv::DescriptorSetHandle dummyPerMeshDescriptorSet = m_corePtr->createDescriptorSet(dummyPerMeshDescriptorSetLayout);
 
-	const vkcv::PipelineConfig voxelizationPipeConfig{
+	const vkcv::GraphicsPipelineConfig voxelizationPipeConfig{
 		voxelizationShader,
 		voxelResolution,
 		voxelResolution,
@@ -150,7 +150,7 @@ Voxelization::Voxelization(
 	voxelVisualisationPassDefinition.msaa = msaa;
 	m_visualisationPass = m_corePtr->createPass(voxelVisualisationPassDefinition);
 
-	vkcv::PipelineConfig voxelVisualisationPipeConfig{
+	vkcv::GraphicsPipelineConfig voxelVisualisationPipeConfig{
 		voxelVisualisationShader,
 		0,
 		0,

@@ -43,7 +43,7 @@ private:
 	vkcv::Buffer<LightInfo>             m_lightInfoBuffer;
 
 	vkcv::PassHandle                    m_shadowMapPass;
-	vkcv::PipelineHandle                m_shadowMapPipe;
+	vkcv::GraphicsPipelineHandle        m_shadowMapPipe;
 
 	vkcv::ComputePipelineHandle         m_depthToMomentsPipe;
 	vkcv::DescriptorSetLayoutHandle     m_depthToMomentsDescriptorSetLayout;

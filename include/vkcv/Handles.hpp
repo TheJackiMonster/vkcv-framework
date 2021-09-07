@@ -73,8 +73,8 @@ namespace vkcv
 		using Handle::Handle;
 	};
 	
-	class PipelineHandle : public Handle {
-		friend class PipelineManager;
+	class GraphicsPipelineHandle : public Handle {
+		friend class GraphicsPipelineManager;
 	private:
 		using Handle::Handle;
 	};

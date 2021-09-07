@@ -1,16 +1,16 @@
-#include "PipelineManager.hpp"
+#include "GraphicsPipelineManager.hpp"
 #include "vkcv/Image.hpp"
 #include "vkcv/Logger.hpp"
 
 namespace vkcv
 {
-
-    PipelineManager::PipelineManager(vk::Device device) noexcept :
+	
+	GraphicsPipelineManager::GraphicsPipelineManager(vk::Device device) noexcept :
             m_Device{device},
             m_Pipelines{}
     {}
-
-    PipelineManager::~PipelineManager() noexcept
+	
+	GraphicsPipelineManager::~GraphicsPipelineManager() noexcept
     {
         for (uint64_t id = 0; id < m_Pipelines.size(); id++) {
             destroyPipelineById(id);
@@ -135,7 +135,7 @@ namespace vkcv
 			std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
 			std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions,
 			const bool existsVertexShader,
-			const PipelineConfig &config) {
+			const GraphicsPipelineConfig &config) {
 		
 		if (existsVertexShader) {
 			const VertexLayout& layout = config.m_VertexLayout;
@@ -184,7 +184,7 @@ namespace vkcv
 	 * @param config provides data for primitive topology.
 	 * @return Pipeline Input Assembly State Create Info Struct
 	 */
-	vk::PipelineInputAssemblyStateCreateInfo createPipelineInputAssemblyStateCreateInfo(const PipelineConfig &config) {
+	vk::PipelineInputAssemblyStateCreateInfo createPipelineInputAssemblyStateCreateInfo(const GraphicsPipelineConfig &config) {
 		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
 				{},
 				primitiveTopologyToVulkanPrimitiveTopology(config.m_PrimitiveTopology),
@@ -199,7 +199,7 @@ namespace vkcv
 	 * @param config provides with and height of the output window
 	 * @return Pipeline Viewport State Create Info Struct
 	 */
-	vk::PipelineViewportStateCreateInfo createPipelineViewportStateCreateInfo(const PipelineConfig &config) {
+	vk::PipelineViewportStateCreateInfo createPipelineViewportStateCreateInfo(const GraphicsPipelineConfig &config) {
 		static vk::Viewport viewport;
 		static vk::Rect2D scissor;
 		
@@ -237,7 +237,7 @@ namespace vkcv
 	 * @param config sets Depth Clamping and Culling Mode
 	 * @return Pipeline Rasterization State Create Info Struct
 	 */
-	vk::PipelineRasterizationStateCreateInfo createPipelineRasterizationStateCreateInfo(const PipelineConfig &config) {
+	vk::PipelineRasterizationStateCreateInfo createPipelineRasterizationStateCreateInfo(const GraphicsPipelineConfig &config) {
 		vk::CullModeFlags cullMode;
 		switch (config.m_culling) {
 			case CullMode::None:
@@ -288,7 +288,7 @@ namespace vkcv
 	 * @param config set MSAA Sample Count Flag
 	 * @return Pipeline Multisample State Create Info Struct
 	 */
-	vk::PipelineMultisampleStateCreateInfo createPipelineMultisampleStateCreateInfo(const PipelineConfig &config) {
+	vk::PipelineMultisampleStateCreateInfo createPipelineMultisampleStateCreateInfo(const GraphicsPipelineConfig &config) {
 		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
 				{},
 				msaaToVkSampleCountFlag(config.m_multisampling),
@@ -308,7 +308,7 @@ namespace vkcv
 	 * @param config sets blend mode
 	 * @return
 	 */
-	vk::PipelineColorBlendStateCreateInfo createPipelineColorBlendStateCreateInfo(const PipelineConfig &config) {
+	vk::PipelineColorBlendStateCreateInfo createPipelineColorBlendStateCreateInfo(const GraphicsPipelineConfig &config) {
 		// currently set to additive, if not disabled
 		// BlendFactors must be set as soon as additional BlendModes are added
 		static vk::PipelineColorBlendAttachmentState colorBlendAttachmentState (
@@ -344,7 +344,7 @@ namespace vkcv
 	 * @param config sets Push Constant Size and Descriptor Layouts.
 	 * @return Pipeline Layout Create Info Struct
 	 */
-	vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(const PipelineConfig &config) {
+	vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(const GraphicsPipelineConfig &config) {
 		static vk::PushConstantRange pushConstantRange;
 		
 		const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
@@ -370,7 +370,7 @@ namespace vkcv
 	 * @param config sets if depth test in enabled or not.
 	 * @return Pipeline Layout Create Info Struct
 	 */
-	vk::PipelineDepthStencilStateCreateInfo createPipelineDepthStencilStateCreateInfo(const PipelineConfig &config) {
+	vk::PipelineDepthStencilStateCreateInfo createPipelineDepthStencilStateCreateInfo(const GraphicsPipelineConfig &config) {
 		const vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilCreateInfo(
 				vk::PipelineDepthStencilStateCreateFlags(),
 				config.m_depthTest != DepthTest::None,
@@ -392,7 +392,7 @@ namespace vkcv
 	 * @param config sets whenever a dynamic viewport is used or not.
 	 * @return Pipeline Dynamic State Create Info Struct
 	 */
-	vk::PipelineDynamicStateCreateInfo createPipelineDynamicStateCreateInfo(const PipelineConfig &config) {
+	vk::PipelineDynamicStateCreateInfo createPipelineDynamicStateCreateInfo(const GraphicsPipelineConfig &config) {
 		static std::vector<vk::DynamicState> dynamicStates;
 		dynamicStates.clear();
 		
@@ -410,7 +410,7 @@ namespace vkcv
 		return dynamicStateCreateInfo;
 	}
 
-    PipelineHandle PipelineManager::createPipeline(const PipelineConfig &config, PassManager& passManager) {
+    GraphicsPipelineHandle GraphicsPipelineManager::createPipeline(const GraphicsPipelineConfig &config, PassManager& passManager) {
         const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
 
         const bool existsTaskShader     = config.m_ShaderProgram.existsShader(ShaderStage::TASK);
@@ -423,12 +423,12 @@ namespace vkcv
         if (!validGeometryStages)
         {
             vkcv_log(LogLevel::ERROR, "Requires vertex or task and mesh shader");
-            return PipelineHandle();
+            return GraphicsPipelineHandle();
         }
 
         if (!existsFragmentShader) {
             vkcv_log(LogLevel::ERROR, "Requires fragment shader code");
-            return PipelineHandle();
+            return GraphicsPipelineHandle();
         }
 
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
@@ -452,7 +452,7 @@ namespace vkcv
             }
             else {
                 destroyShaderModules();
-                return PipelineHandle();
+                return GraphicsPipelineHandle();
             }
         }
 
@@ -469,7 +469,7 @@ namespace vkcv
             }
             else {
                 destroyShaderModules();
-                return PipelineHandle();
+                return GraphicsPipelineHandle();
             }
         }
 
@@ -486,7 +486,7 @@ namespace vkcv
             }
             else {
                 destroyShaderModules();
-                return PipelineHandle();
+                return GraphicsPipelineHandle();
             }
         }
 
@@ -503,7 +503,7 @@ namespace vkcv
             }
             else {
                 destroyShaderModules();
-                return PipelineHandle();
+                return GraphicsPipelineHandle();
             }
         }
 
@@ -520,7 +520,7 @@ namespace vkcv
             }
             else {
                 destroyShaderModules();
-                return PipelineHandle();
+                return GraphicsPipelineHandle();
             }
         }
 
@@ -566,7 +566,7 @@ namespace vkcv
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess) {
             destroyShaderModules();
-            return PipelineHandle();
+            return GraphicsPipelineHandle();
         }
 
         // Depth Stencil
@@ -610,7 +610,7 @@ namespace vkcv
             // Catch runtime error if the creation of the pipeline fails.
             // Destroy everything to keep the memory clean.
             destroyShaderModules();
-            return PipelineHandle();
+            return GraphicsPipelineHandle();
         }
 
         // Clean Up
@@ -619,10 +619,10 @@ namespace vkcv
         // Hand over Handler to main Application
         const uint64_t id = m_Pipelines.size();
         m_Pipelines.push_back({ vkPipeline, vkPipelineLayout, config });
-        return PipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
+        return GraphicsPipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
     }
 
-    vk::Pipeline PipelineManager::getVkPipeline(const PipelineHandle &handle) const
+    vk::Pipeline GraphicsPipelineManager::getVkPipeline(const GraphicsPipelineHandle &handle) const
     {
         const uint64_t id = handle.getId();
 
@@ -635,7 +635,7 @@ namespace vkcv
         return pipeline.m_handle;
     }
 
-    vk::PipelineLayout PipelineManager::getVkPipelineLayout(const PipelineHandle &handle) const
+    vk::PipelineLayout GraphicsPipelineManager::getVkPipelineLayout(const GraphicsPipelineHandle &handle) const
     {
         const uint64_t id = handle.getId();
 
@@ -648,7 +648,7 @@ namespace vkcv
         return pipeline.m_layout;
     }
 
-    void PipelineManager::destroyPipelineById(uint64_t id) {
+    void GraphicsPipelineManager::destroyPipelineById(uint64_t id) {
         if (id >= m_Pipelines.size()) {
             return;
         }
@@ -666,12 +666,12 @@ namespace vkcv
         }
     }
 
-    const PipelineConfig& PipelineManager::getPipelineConfig(const PipelineHandle &handle) const
+    const GraphicsPipelineConfig& GraphicsPipelineManager::getPipelineConfig(const GraphicsPipelineHandle &handle) const
     {
         const uint64_t id = handle.getId();
 
         if (id >= m_Pipelines.size()) {
-            static PipelineConfig dummyConfig;
+            static GraphicsPipelineConfig dummyConfig;
             vkcv_log(LogLevel::ERROR, "Invalid handle");
             return dummyConfig;
         }

@@ -8,7 +8,7 @@
 
 #include "vkcv/Core.hpp"
 #include "PassManager.hpp"
-#include "PipelineManager.hpp"
+#include "GraphicsPipelineManager.hpp"
 #include "ComputePipelineManager.hpp"
 #include "vkcv/BufferManager.hpp"
 #include "SamplerManager.hpp"
@@ -94,7 +94,7 @@ namespace vkcv
 			m_swapchain(swapChain),
             m_window(window),
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
-            m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
+            m_PipelineManager{std::make_unique<GraphicsPipelineManager>(m_Context.m_Device)},
             m_ComputePipelineManager{std::make_unique<ComputePipelineManager>(m_Context.m_Device)},
             m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
             m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
@@ -135,8 +135,8 @@ namespace vkcv
 		m_Context.m_Device.destroySwapchainKHR(m_swapchain.getSwapchain());
 		m_Context.m_Instance.destroySurfaceKHR(m_swapchain.getSurface());
 	}
-
-    PipelineHandle Core::createGraphicsPipeline(const PipelineConfig &config)
+	
+	GraphicsPipelineHandle Core::createGraphicsPipeline(const GraphicsPipelineConfig &config)
     {
         return m_PipelineManager->createPipeline(config, *m_PassManager);
     }
@@ -331,7 +331,7 @@ namespace vkcv
 	void Core::recordDrawcallsToCmdStream(
 		const CommandStreamHandle&      cmdStreamHandle,
 		const PassHandle&               renderpassHandle,
-		const PipelineHandle            pipelineHandle, 
+		const GraphicsPipelineHandle    &pipelineHandle,
         const PushConstants             &pushConstantData,
         const std::vector<DrawcallInfo> &drawcalls,
 		const std::vector<ImageHandle>  &renderTargets) {
@@ -373,7 +373,7 @@ namespace vkcv
 
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
-			const PipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+			const GraphicsPipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
 			if (pipeConfig.m_UseDynamicViewport) {
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
@@ -396,7 +396,7 @@ namespace vkcv
 	void Core::recordMeshShaderDrawcalls(
 		const CommandStreamHandle&                          cmdStreamHandle,
 		const PassHandle&                                   renderpassHandle,
-		const PipelineHandle                                pipelineHandle,
+		const GraphicsPipelineHandle                        &pipelineHandle,
 		const PushConstants&                                pushConstantData,
 		const std::vector<MeshShaderDrawcall>&              drawcalls,
 		const std::vector<ImageHandle>&                     renderTargets) {
@@ -438,7 +438,7 @@ namespace vkcv
 
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
-			const PipelineConfig& pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+			const GraphicsPipelineConfig& pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
 			if (pipeConfig.m_UseDynamicViewport) {
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
@@ -924,7 +924,7 @@ namespace vkcv
 		);
 	}
 	
-	void Core::setDebugLabel(const PipelineHandle &handle, const std::string &label) {
+	void Core::setDebugLabel(const GraphicsPipelineHandle &handle, const std::string &label) {
 		if (!handle) {
 			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
 			return;
@@ -936,6 +936,22 @@ namespace vkcv
 				uint64_t(static_cast<VkPipeline>(
 						m_PipelineManager->getVkPipeline(handle)
 				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const ComputePipelineHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::ePipeline,
+				uint64_t(static_cast<VkPipeline>(
+								 m_ComputePipelineManager->getVkPipeline(handle)
+						 )),
 				label
 		);
 	}

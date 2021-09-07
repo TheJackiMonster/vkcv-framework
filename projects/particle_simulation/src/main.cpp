@@ -119,7 +119,7 @@ int main(int argc, const char **argv) {
 
     const vkcv::VertexLayout particleLayout(bindings);
 
-    vkcv::PipelineConfig particlePipelineDefinition{
+    vkcv::GraphicsPipelineConfig particlePipelineDefinition{
             particleShaderProgram,
             UINT32_MAX,
             UINT32_MAX,
@@ -135,7 +135,7 @@ int main(int argc, const char **argv) {
 
     vertexBuffer.fill(vertices);
 
-    vkcv::PipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
+    vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
     vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline({ computeShaderProgram, {core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle} });
 

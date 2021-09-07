@@ -22,7 +22,7 @@ namespace vkcv {
     // alternatively we could expose the blend factors directly
     enum class BlendMode{ None, Additive };
 
-    struct PipelineConfig {
+    struct GraphicsPipelineConfig {
         ShaderProgram                         	m_ShaderProgram;
         uint32_t                              	m_Width;
 		uint32_t                              	m_Height;
