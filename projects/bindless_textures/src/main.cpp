@@ -157,7 +157,7 @@ int main(int argc, const char** argv) {
 	const std::unordered_map<uint32_t, vkcv::DescriptorBinding> &descriptorBindings = firstMeshProgram.getReflectedDescriptors().at(0);
 
     std::unordered_map<uint32_t, vkcv::DescriptorBinding> adjustedBindings = descriptorBindings;
-    adjustedBindings[1].descriptorCount = 5;
+    adjustedBindings[1].descriptorCount = 6;
 
     vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(adjustedBindings);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);

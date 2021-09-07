@@ -113,6 +113,21 @@ namespace vkcv
         DescriptorSetLayout setLayout = m_DescriptorSetLayouts[setLayoutHandle.getId()];
         vk::DescriptorSet vulkanHandle = VK_NULL_HANDLE;
         vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), 1, &setLayout.vulkanHandle);
+
+        uint32_t sumVariableDescriptorCounts = 0;
+        for (auto bindingElem : setLayout.descriptorBindings)
+        {
+            DescriptorBinding binding = bindingElem.second;
+            uint32_t bindingID = bindingElem.first;
+
+            if(binding.variableCount)
+                sumVariableDescriptorCounts += binding.descriptorCount;
+        }
+
+        vk::DescriptorSetVariableDescriptorCountAllocateInfo variableAllocInfo(1, &sumVariableDescriptorCounts);
+
+        allocInfo.setPNext(&variableAllocInfo);
+
         auto result = m_Device.allocateDescriptorSets(&allocInfo, &vulkanHandle);
         if(result != vk::Result::eSuccess)
         {
