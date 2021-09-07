@@ -8,7 +8,8 @@
 
 #include "vkcv/Core.hpp"
 #include "PassManager.hpp"
-#include "PipelineManager.hpp"
+#include "GraphicsPipelineManager.hpp"
+#include "ComputePipelineManager.hpp"
 #include "vkcv/BufferManager.hpp"
 #include "SamplerManager.hpp"
 #include "ImageManager.hpp"
@@ -93,7 +94,8 @@ namespace vkcv
 			m_swapchain(swapChain),
             m_window(window),
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
-            m_PipelineManager{std::make_unique<PipelineManager>(m_Context.m_Device)},
+            m_PipelineManager{std::make_unique<GraphicsPipelineManager>(m_Context.m_Device)},
+            m_ComputePipelineManager{std::make_unique<ComputePipelineManager>(m_Context.m_Device)},
             m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
             m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
             m_SamplerManager(std::unique_ptr<SamplerManager>(new SamplerManager(m_Context.m_Device))),
@@ -133,17 +135,15 @@ namespace vkcv
 		m_Context.m_Device.destroySwapchainKHR(m_swapchain.getSwapchain());
 		m_Context.m_Instance.destroySurfaceKHR(m_swapchain.getSurface());
 	}
-
-    PipelineHandle Core::createGraphicsPipeline(const PipelineConfig &config)
+	
+	GraphicsPipelineHandle Core::createGraphicsPipeline(const GraphicsPipelineConfig &config)
     {
         return m_PipelineManager->createPipeline(config, *m_PassManager);
     }
 
-    PipelineHandle Core::createComputePipeline(
-        const ShaderProgram &shaderProgram, 
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+    ComputePipelineHandle Core::createComputePipeline(const ComputePipelineConfig &config)
     {
-        return m_PipelineManager->createComputePipeline(shaderProgram, descriptorSetLayouts);
+        return m_ComputePipelineManager->createComputePipeline(config);
     }
 
     PassHandle Core::createPass(const PassConfig &config)
@@ -331,7 +331,7 @@ namespace vkcv
 	void Core::recordDrawcallsToCmdStream(
 		const CommandStreamHandle&      cmdStreamHandle,
 		const PassHandle&               renderpassHandle,
-		const PipelineHandle            pipelineHandle, 
+		const GraphicsPipelineHandle    &pipelineHandle,
         const PushConstants             &pushConstantData,
         const std::vector<DrawcallInfo> &drawcalls,
 		const std::vector<ImageHandle>  &renderTargets) {
@@ -373,7 +373,7 @@ namespace vkcv
 
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
-			const PipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+			const GraphicsPipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
 			if (pipeConfig.m_UseDynamicViewport) {
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
@@ -396,7 +396,7 @@ namespace vkcv
 	void Core::recordMeshShaderDrawcalls(
 		const CommandStreamHandle&                          cmdStreamHandle,
 		const PassHandle&                                   renderpassHandle,
-		const PipelineHandle                                pipelineHandle,
+		const GraphicsPipelineHandle                        &pipelineHandle,
 		const PushConstants&                                pushConstantData,
 		const std::vector<MeshShaderDrawcall>&              drawcalls,
 		const std::vector<ImageHandle>&                     renderTargets) {
@@ -438,7 +438,7 @@ namespace vkcv
 
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
-			const PipelineConfig& pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+			const GraphicsPipelineConfig& pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
 			if (pipeConfig.m_UseDynamicViewport) {
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
@@ -467,16 +467,16 @@ namespace vkcv
 
 	void Core::recordComputeDispatchToCmdStream(
 		CommandStreamHandle cmdStreamHandle,
-		PipelineHandle computePipeline,
+		ComputePipelineHandle computePipeline,
 		const uint32_t dispatchCount[3],
 		const std::vector<DescriptorSetUsage>& descriptorSetUsages,
 		const PushConstants& pushConstants) {
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
 
-			const auto pipelineLayout = m_PipelineManager->getVkPipelineLayout(computePipeline);
+			const auto pipelineLayout = m_ComputePipelineManager->getVkPipelineLayout(computePipeline);
 
-			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_PipelineManager->getVkPipeline(computePipeline));
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_ComputePipelineManager->getVkPipeline(computePipeline));
 			for (const auto& usage : descriptorSetUsages) {
 				cmdBuffer.bindDescriptorSets(
 					vk::PipelineBindPoint::eCompute,
@@ -518,7 +518,7 @@ namespace vkcv
 					color
 			);
 			
-			beginDebugLabel(cmdBuffer, &(static_cast<const VkDebugUtilsLabelEXT&>(debug)));
+			beginDebugLabel(static_cast<VkCommandBuffer>(cmdBuffer), &(static_cast<const VkDebugUtilsLabelEXT&>(debug)));
 		};
 
 		recordCommandsToStream(cmdStream, submitFunction, nullptr);
@@ -536,7 +536,7 @@ namespace vkcv
 		}
 		
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
-			endDebugLabel(cmdBuffer);
+			endDebugLabel(static_cast<VkCommandBuffer>(cmdBuffer));
 		};
 
 		recordCommandsToStream(cmdStream, submitFunction, nullptr);
@@ -545,7 +545,7 @@ namespace vkcv
 	
 	void Core::recordComputeIndirectDispatchToCmdStream(
 		const CommandStreamHandle               cmdStream,
-		const PipelineHandle                    computePipeline,
+		const ComputePipelineHandle             computePipeline,
 		const vkcv::BufferHandle                buffer,
 		const size_t                            bufferArgOffset,
 		const std::vector<DescriptorSetUsage>&  descriptorSetUsages,
@@ -553,9 +553,9 @@ namespace vkcv
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
 
-			const auto pipelineLayout = m_PipelineManager->getVkPipelineLayout(computePipeline);
+			const auto pipelineLayout = m_ComputePipelineManager->getVkPipelineLayout(computePipeline);
 
-			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_PipelineManager->getVkPipeline(computePipeline));
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_ComputePipelineManager->getVkPipeline(computePipeline));
 			for (const auto& usage : descriptorSetUsages) {
 				cmdBuffer.bindDescriptorSets(
 					vk::PipelineBindPoint::eCompute,
@@ -888,7 +888,7 @@ namespace vkcv
 				label.c_str()
 		);
 		
-		setDebugLabel(device, &(static_cast<const VkDebugUtilsObjectNameInfoEXT&>(debug)));
+		setDebugLabel(static_cast<VkDevice>(device), &(static_cast<const VkDebugUtilsObjectNameInfoEXT&>(debug)));
 #endif
 	}
 	
@@ -901,7 +901,7 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::eBuffer,
-				reinterpret_cast<uint64_t>(static_cast<VkBuffer>(
+				uint64_t(static_cast<VkBuffer>(
 						m_BufferManager->getBuffer(handle)
 				)),
 				label
@@ -917,14 +917,14 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::eRenderPass,
-				reinterpret_cast<uint64_t>(static_cast<VkRenderPass>(
+				uint64_t(static_cast<VkRenderPass>(
 						m_PassManager->getVkPass(handle)
 				)),
 				label
 		);
 	}
 	
-	void Core::setDebugLabel(const PipelineHandle &handle, const std::string &label) {
+	void Core::setDebugLabel(const GraphicsPipelineHandle &handle, const std::string &label) {
 		if (!handle) {
 			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
 			return;
@@ -933,9 +933,25 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::ePipeline,
-				reinterpret_cast<uint64_t>(static_cast<VkPipeline>(
+				uint64_t(static_cast<VkPipeline>(
 						m_PipelineManager->getVkPipeline(handle)
 				)),
+				label
+		);
+	}
+	
+	void Core::setDebugLabel(const ComputePipelineHandle &handle, const std::string &label) {
+		if (!handle) {
+			vkcv_log(LogLevel::WARNING, "Can't set debug label to invalid handle");
+			return;
+		}
+		
+		setDebugObjectLabel(
+				m_Context.getDevice(),
+				vk::ObjectType::ePipeline,
+				uint64_t(static_cast<VkPipeline>(
+								 m_ComputePipelineManager->getVkPipeline(handle)
+						 )),
 				label
 		);
 	}
@@ -949,7 +965,7 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::eDescriptorSet,
-				reinterpret_cast<uint64_t>(static_cast<VkDescriptorSet>(
+				uint64_t(static_cast<VkDescriptorSet>(
 						m_DescriptorManager->getDescriptorSet(handle).vulkanHandle
 				)),
 				label
@@ -965,7 +981,7 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::eSampler,
-				reinterpret_cast<uint64_t>(static_cast<VkSampler>(
+				uint64_t(static_cast<VkSampler>(
 						m_SamplerManager->getVulkanSampler(handle)
 				)),
 				label
@@ -985,7 +1001,7 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::eImage,
-				reinterpret_cast<uint64_t>(static_cast<VkImage>(
+				uint64_t(static_cast<VkImage>(
 						m_ImageManager->getVulkanImage(handle)
 				)),
 				label
@@ -1001,7 +1017,7 @@ namespace vkcv
 		setDebugObjectLabel(
 				m_Context.getDevice(),
 				vk::ObjectType::eCommandBuffer,
-				reinterpret_cast<uint64_t>(static_cast<VkCommandBuffer>(
+				uint64_t(static_cast<VkCommandBuffer>(
 						m_CommandStreamManager->getStreamCommandBuffer(handle)
 				)),
 				label

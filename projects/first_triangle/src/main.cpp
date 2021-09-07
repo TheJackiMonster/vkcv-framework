@@ -61,7 +61,7 @@ int main(int argc, const char** argv) {
 	
 	const auto swapchainExtent = core.getSwapchain().getExtent();
 
-	const vkcv::PipelineConfig trianglePipelineDefinition {
+	const vkcv::GraphicsPipelineConfig trianglePipelineDefinition {
 		triangleShaderProgram,
 		swapchainExtent.width,
 		swapchainExtent.height,
@@ -71,7 +71,7 @@ int main(int argc, const char** argv) {
 		false
 	};
 
-	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
+	vkcv::GraphicsPipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 
 	if (!trianglePipeline)
 	{

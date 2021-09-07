@@ -303,7 +303,7 @@ int main(int argc, const char** argv) {
 
 	auto swapchainExtent = core.getSwapchain().getExtent();
 	
-	vkcv::PipelineConfig prepassPipelineConfig{
+	vkcv::GraphicsPipelineConfig prepassPipelineConfig{
 		depthPrepassShader,
 		swapchainExtent.width,
 		swapchainExtent.height,
@@ -318,10 +318,10 @@ int main(int argc, const char** argv) {
 	prepassPipelineConfig.m_depthTest       = vkcv::DepthTest::LessEqual;
 	prepassPipelineConfig.m_alphaToCoverage = true;
 
-	vkcv::PipelineHandle prepassPipeline = core.createGraphicsPipeline(prepassPipelineConfig);
+	vkcv::GraphicsPipelineHandle prepassPipeline = core.createGraphicsPipeline(prepassPipelineConfig);
 
 	// forward pipeline
-	vkcv::PipelineConfig forwardPipelineConfig {
+	vkcv::GraphicsPipelineConfig forwardPipelineConfig {
 		forwardProgram,
 		swapchainExtent.width,
 		swapchainExtent.height,
@@ -337,7 +337,7 @@ int main(int argc, const char** argv) {
 	forwardPipelineConfig.m_depthTest       = vkcv::DepthTest::Equal;
 	forwardPipelineConfig.m_depthWrite      = false;
 	
-	vkcv::PipelineHandle forwardPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
+	vkcv::GraphicsPipelineHandle forwardPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
 	
 	if (!forwardPipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
@@ -376,7 +376,7 @@ int main(int argc, const char** argv) {
 		skyShader.addShader(shaderStage, path);
 	});
 
-	vkcv::PipelineConfig skyPipeConfig;
+	vkcv::GraphicsPipelineConfig skyPipeConfig;
 	skyPipeConfig.m_ShaderProgram       = skyShader;
 	skyPipeConfig.m_Width               = swapchainExtent.width;
 	skyPipeConfig.m_Height              = swapchainExtent.height;
@@ -387,7 +387,7 @@ int main(int argc, const char** argv) {
 	skyPipeConfig.m_multisampling       = msaa;
 	skyPipeConfig.m_depthWrite          = false;
 
-	vkcv::PipelineHandle skyPipe = core.createGraphicsPipeline(skyPipeConfig);
+	vkcv::GraphicsPipelineHandle skyPipe = core.createGraphicsPipeline(skyPipeConfig);
 
 	// render targets
 	vkcv::ImageHandle depthBuffer           = core.createImage(
@@ -454,12 +454,13 @@ int main(int argc, const char** argv) {
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		tonemappingProgram.addShader(shaderStage, path);
 	});
+
 	vkcv::DescriptorSetLayoutHandle tonemappingDescriptorSetLayout = core.createDescriptorSetLayout(
 	        tonemappingProgram.getReflectedDescriptors().at(0));
 	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(tonemappingDescriptorSetLayout);
-	vkcv::PipelineHandle tonemappingPipeline = core.createComputePipeline(
+	vkcv::ComputePipelineHandle tonemappingPipeline = core.createComputePipeline({
 		tonemappingProgram,
-		{ core.getDescriptorSetLayout(tonemappingDescriptorSetLayout).vulkanHandle });
+		{ core.getDescriptorSetLayout(tonemappingDescriptorSetLayout).vulkanHandle }});
 	
 	// tonemapping compute shader
 	vkcv::ShaderProgram postEffectsProgram;
@@ -467,12 +468,13 @@ int main(int argc, const char** argv) {
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		postEffectsProgram.addShader(shaderStage, path);
 	});
+
 	vkcv::DescriptorSetLayoutHandle postEffectsDescriptorSetLayout = core.createDescriptorSetLayout(
 	        postEffectsProgram.getReflectedDescriptors().at(0));
 	vkcv::DescriptorSetHandle postEffectsDescriptorSet = core.createDescriptorSet(postEffectsDescriptorSetLayout);
-	vkcv::PipelineHandle postEffectsPipeline = core.createComputePipeline(
+	vkcv::ComputePipelineHandle postEffectsPipeline = core.createComputePipeline({
 			postEffectsProgram,
-			{ core.getDescriptorSetLayout(postEffectsDescriptorSetLayout).vulkanHandle });
+			{ core.getDescriptorSetLayout(postEffectsDescriptorSetLayout).vulkanHandle }});
 
 	// resolve compute shader
 	vkcv::ShaderProgram resolveProgram;
@@ -480,12 +482,13 @@ int main(int argc, const char** argv) {
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		resolveProgram.addShader(shaderStage, path);
 	});
+
 	vkcv::DescriptorSetLayoutHandle resolveDescriptorSetLayout = core.createDescriptorSetLayout(
-	        resolveProgram.getReflectedDescriptors().at(0));
+		resolveProgram.getReflectedDescriptors().at(0));
 	vkcv::DescriptorSetHandle resolveDescriptorSet = core.createDescriptorSet(resolveDescriptorSetLayout);
-	vkcv::PipelineHandle resolvePipeline = core.createComputePipeline(
+	vkcv::ComputePipelineHandle resolvePipeline = core.createComputePipeline({
 		resolveProgram,
-		{ core.getDescriptorSetLayout(resolveDescriptorSetLayout).vulkanHandle });
+		{ core.getDescriptorSetLayout(resolveDescriptorSetLayout).vulkanHandle }});
 
 	vkcv::SamplerHandle resolveSampler = core.createSampler(
 		vkcv::SamplerFilterType::NEAREST,
@@ -958,7 +961,7 @@ int main(int argc, const char** argv) {
 					newForwardProgram.addShader(shaderStage, path);
 				});
 				forwardPipelineConfig.m_ShaderProgram = newForwardProgram;
-				vkcv::PipelineHandle newPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
+				vkcv::GraphicsPipelineHandle newPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
 
 				if (newPipeline) {
 					forwardPipeline = newPipeline;
@@ -971,9 +974,10 @@ int main(int argc, const char** argv) {
 					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 					newProgram.addShader(shaderStage, path);
 				});
-				vkcv::PipelineHandle newPipeline = core.createComputePipeline(
+
+				vkcv::ComputePipelineHandle newPipeline = core.createComputePipeline({
 					newProgram,
-					{ core.getDescriptorSetLayout(tonemappingDescriptorSetLayout).vulkanHandle });
+					{ core.getDescriptorSetLayout(tonemappingDescriptorSetLayout).vulkanHandle }});
 
 				if (newPipeline) {
 					tonemappingPipeline = newPipeline;

@@ -73,11 +73,17 @@ namespace vkcv
 		using Handle::Handle;
 	};
 	
-	class PipelineHandle : public Handle {
-		friend class PipelineManager;
+	class GraphicsPipelineHandle : public Handle {
+		friend class GraphicsPipelineManager;
 	private:
 		using Handle::Handle;
 	};
+
+    class ComputePipelineHandle : public Handle {
+        friend class ComputePipelineManager;
+    private:
+        using Handle::Handle;
+    };
 	
 	class DescriptorSetHandle : public Handle {
 		friend class DescriptorManager;
@@ -99,6 +105,7 @@ namespace vkcv
 
 	class ImageHandle : public Handle {
 		friend class ImageManager;
+	private:
 		using Handle::Handle;
 	public:
 		[[nodiscard]]

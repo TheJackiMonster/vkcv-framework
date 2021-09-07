@@ -131,7 +131,7 @@ bool loadGraphicPass(
 	}
 
 
-	vkcv::PipelineConfig pipelineConfig{
+	vkcv::GraphicsPipelineConfig pipelineConfig{
 		shaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
@@ -258,9 +258,9 @@ bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, Comput
 
 	outComputePass->descriptorSetLayout = core.createDescriptorSetLayout(shaderProgram.getReflectedDescriptors().at(0));
 	outComputePass->descriptorSet = core.createDescriptorSet(outComputePass->descriptorSetLayout);
-	outComputePass->pipeline = core.createComputePipeline(
+	outComputePass->pipeline = core.createComputePipeline({
 		shaderProgram,
-		{ core.getDescriptorSetLayout(outComputePass->descriptorSetLayout).vulkanHandle });
+		{ core.getDescriptorSetLayout(outComputePass->descriptorSetLayout).vulkanHandle }});
 
 	if (!outComputePass->pipeline) {
 		vkcv_log(vkcv::LogLevel::ERROR, "Compute shader pipeline creation failed");
