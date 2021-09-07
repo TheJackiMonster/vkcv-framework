@@ -189,7 +189,7 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
-
+	
 	auto start = std::chrono::system_clock::now();
 
 	const vkcv::Mesh renderMesh({}, safrIndexBuffer.getVulkanHandle(), 3);
@@ -206,6 +206,8 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 	cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
 
+	float time = 0;
+	
 	while (window.isWindowOpen())
 	{
 		vkcv::Window::pollEvents();
@@ -218,6 +220,13 @@ int main(int argc, const char** argv) {
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		start = end;
+		
+		time += 0.000001f * static_cast<float>(deltatime.count());
+		
+		lights[0].position.x += std::cos(time * 3.0f) * 2.5f;
+		lights[1].position.z += std::cos(time * 2.5f) * 3.0f;
+		lights[2].position.y += std::cos(time * 1.5f) * 4.0f;
+		lightsBuffer.fill(lights);
 
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
@@ -233,8 +242,8 @@ int main(int argc, const char** argv) {
 
         core.prepareImageForStorage (cmdStream, swapchainInput);
 
-		uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil( windowWidth/16.f)),
-                                            static_cast<uint32_t> (std::ceil(windowHeight/16.f)),
+		uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil( swapchainWidth/16.f)),
+                                            static_cast<uint32_t> (std::ceil(swapchainHeight/16.f)),
                                             1 }; // Anzahl workgroups
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			computePipeline,
