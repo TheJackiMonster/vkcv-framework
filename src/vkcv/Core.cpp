@@ -526,9 +526,7 @@ namespace vkcv
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
 		}
-  
-		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_SwapchainManager->getSwapchain(swapchainHandle).getSwapchain());
-
+		
 		std::array<vk::Semaphore, 2> waitSemaphores{
 			m_SyncResources.renderFinished,
 			m_SyncResources.swapchainImageAcquired
