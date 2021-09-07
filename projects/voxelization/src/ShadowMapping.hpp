@@ -27,7 +27,8 @@ public:
 		const std::vector<glm::mat4>&       modelMatrices,
 		const vkcv::camera::Camera&         camera,
 		const glm::vec3&                    voxelVolumeOffset,
-		float                               voxelVolumeExtent);
+		float                               voxelVolumeExtent,
+		const vkcv::WindowHandle&           windowHandle);
 
 	vkcv::ImageHandle   getShadowMap();
 	vkcv::SamplerHandle getShadowSampler();

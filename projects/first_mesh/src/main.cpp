@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
-#include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
@@ -9,20 +8,17 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
 
-	vkcv::Window window = vkcv::Window::create(
-		applicationName,
-		800,
-		600,
-		true
-	);
-	
+	uint32_t windowWidth = 800;
+	uint32_t windowHeight = 600;
+
 	vkcv::Core core = vkcv::Core::create(
-		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
 		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
+
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
 
 	vkcv::asset::Scene mesh;
 
@@ -57,7 +53,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain().getFormat()
+		core.getSwapchain(windowHandle).getFormat()
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment(
@@ -158,7 +154,7 @@ int main(int argc, const char** argv) {
 
 	core.writeDescriptorSet(descriptorSet, setWrites);
 	
-	auto swapchainExtent = core.getSwapchain().getExtent();
+	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 	
 	vkcv::ImageHandle depthBuffer = core.createImage(
 			vk::Format::eD32Sfloat,
@@ -174,21 +170,21 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage },1);
 
-    vkcv::camera::CameraManager cameraManager(window);
+    vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
 
     auto start = std::chrono::system_clock::now();
     
-	while (window.isWindowOpen()) {
+	while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 		
-		if(window.getHeight() == 0 || window.getWidth() == 0)
+		if(core.getWindow(windowHandle).getHeight() == 0 || core.getWindow(windowHandle).getWidth() == 0)
 			continue;
 		
 		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
 			continue;
 		}
 		
@@ -218,10 +214,11 @@ int main(int argc, const char** argv) {
 			firstMeshPipeline,
 			pushConstants,
 			{ drawcall },
-			renderTargets);
+			renderTargets,
+			windowHandle);
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-		core.endFrame();
+		core.endFrame(windowHandle);
 	}
 	
 	return 0;

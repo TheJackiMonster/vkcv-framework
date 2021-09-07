@@ -15,8 +15,8 @@ private:
 	uint32_t m_windowWidth;
 	uint32_t m_windowHeight;
 
-	vkcv::Window                m_window;
 	vkcv::Core                  m_core;
+	vkcv::WindowHandle          m_windowHandle;
 	vkcv::camera::CameraManager m_cameraManager;
 
 	MotionBlur m_motionBlur;

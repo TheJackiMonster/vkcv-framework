@@ -14,6 +14,7 @@
 #include "SamplerManager.hpp"
 #include "ImageManager.hpp"
 #include "DescriptorManager.hpp"
+#include "WindowManager.hpp"
 #include "ImageLayoutTransitions.hpp"
 #include "vkcv/CommandStreamManager.hpp"
 #include <cmath>
@@ -21,38 +22,7 @@
 
 namespace vkcv
 {
-	
-	static std::vector<vk::ImageView> createSwapchainImageViews( Context &context, const std::vector<vk::Image>& images,
-																 vk::Format format){
-		std::vector<vk::ImageView> imageViews;
-		imageViews.reserve( images.size() );
-		//here can be swizzled with vk::ComponentSwizzle if needed
-		vk::ComponentMapping componentMapping(
-				vk::ComponentSwizzle::eR,
-				vk::ComponentSwizzle::eG,
-				vk::ComponentSwizzle::eB,
-				vk::ComponentSwizzle::eA );
-		
-		vk::ImageSubresourceRange subResourceRange( vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 );
-		
-		for ( auto image : images )
-		{
-			vk::ImageViewCreateInfo imageViewCreateInfo(
-					vk::ImageViewCreateFlags(),
-					image,
-					vk::ImageViewType::e2D,
-					format,
-					componentMapping,
-					subResourceRange);
-			
-			imageViews.push_back(context.getDevice().createImageView(imageViewCreateInfo));
-		}
-		
-		return imageViews;
-	}
-
-    Core Core::create(Window &window,
-                      const char *applicationName,
+    Core Core::create(const char *applicationName,
                       uint32_t applicationVersion,
                       const std::vector<vk::QueueFlagBits>& queueFlags,
 					  const Features& features,
@@ -65,34 +35,22 @@ namespace vkcv
         		instanceExtensions
 		);
 
-        Swapchain swapChain = Swapchain::create(window, context);
-	
-		const auto swapchainImages = context.getDevice().getSwapchainImagesKHR(swapChain.getSwapchain());
-		const auto swapchainImageViews = createSwapchainImageViews( context, swapchainImages, swapChain.getFormat());
-
         const auto& queueManager = context.getQueueManager();
         
 		const std::unordered_set<int>	queueFamilySet			= generateQueueFamilyIndexSet(queueManager);
 		const auto						commandResources		= createCommandResources(context.getDevice(), queueFamilySet);
 		const auto						defaultSyncResources	= createSyncResources(context.getDevice());
 
-        return Core(std::move(context) , window, swapChain, swapchainImageViews, commandResources, defaultSyncResources);
+        return Core(std::move(context) , commandResources, defaultSyncResources);
     }
 
     const Context &Core::getContext() const
     {
         return m_Context;
     }
-    
-    const Swapchain& Core::getSwapchain() const {
-    	return m_swapchain;
-    }
 
-    Core::Core(Context &&context, Window &window, const Swapchain& swapChain,  std::vector<vk::ImageView> swapchainImageViews,
-        const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
+    Core::Core(Context &&context, const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
             m_Context(std::move(context)),
-			m_swapchain(swapChain),
-            m_window(window),
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
             m_PipelineManager{std::make_unique<GraphicsPipelineManager>(m_Context.m_Device)},
             m_ComputePipelineManager{std::make_unique<ComputePipelineManager>(m_Context.m_Device)},
@@ -101,39 +59,23 @@ namespace vkcv
             m_SamplerManager(std::unique_ptr<SamplerManager>(new SamplerManager(m_Context.m_Device))),
             m_ImageManager{std::unique_ptr<ImageManager>(new ImageManager(*m_BufferManager))},
             m_CommandStreamManager{std::unique_ptr<CommandStreamManager>(new CommandStreamManager)},
+			m_WindowManager(std::make_unique<WindowManager>()),
+			m_SwapchainManager(std::make_unique<SwapchainManager>()),
             m_CommandResources(commandResources),
             m_SyncResources(syncResources)
 	{
 		m_BufferManager->m_core = this;
 		m_BufferManager->init();
 		m_CommandStreamManager->init(this);
-
+		m_SwapchainManager->m_context = &m_Context;
 		m_ImageManager->m_core = this;
-		
-		e_resizeHandle = m_window.e_resize.add( [&](int width, int height) {
-			m_swapchain.signalSwapchainRecreation();
-		});
-
-		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
-		m_ImageManager->setSwapchainImages(
-			swapchainImages, 
-			swapchainImageViews, 
-			swapChain.getExtent().width,
-			swapChain.getExtent().height,
-			swapChain.getFormat()
-		);
 	}
 
 	Core::~Core() noexcept {
-    	m_window.e_resize.remove(e_resizeHandle);
-    	
 		m_Context.getDevice().waitIdle();
 
 		destroyCommandResources(m_Context.getDevice(), m_CommandResources);
 		destroySyncResources(m_Context.getDevice(), m_SyncResources);
-
-		m_Context.m_Device.destroySwapchainKHR(m_swapchain.getSwapchain());
-		m_Context.m_Instance.destroySurfaceKHR(m_swapchain.getSurface());
 	}
 	
 	GraphicsPipelineHandle Core::createGraphicsPipeline(const GraphicsPipelineConfig &config)
@@ -151,13 +93,13 @@ namespace vkcv
         return m_PassManager->createPass(config);
     }
 
-	Result Core::acquireSwapchainImage() {
+	Result Core::acquireSwapchainImage(const SwapchainHandle &swapchainHandle) {
     	uint32_t imageIndex;
     	vk::Result result;
     	
 		try {
 			result = m_Context.getDevice().acquireNextImageKHR(
-					m_swapchain.getSwapchain(),
+					m_SwapchainManager->getSwapchain(swapchainHandle).getSwapchain(),
 					std::numeric_limits<uint64_t>::max(),
 					m_SyncResources.swapchainImageAcquired,
 					nullptr,
@@ -176,37 +118,29 @@ namespace vkcv
 		} else
 		if (result == vk::Result::eSuboptimalKHR) {
 			vkcv_log(LogLevel::WARNING, "Acquired image is suboptimal");
-			m_swapchain.signalSwapchainRecreation();
+			m_SwapchainManager->getSwapchain(swapchainHandle).signalSwapchainRecreation();
 		}
 		
 		m_currentSwapchainImageIndex = imageIndex;
 		return Result::SUCCESS;
 	}
 
-	bool Core::beginFrame(uint32_t& width, uint32_t& height) {
-		if (m_swapchain.shouldUpdateSwapchain()) {
+	bool Core::beginFrame(uint32_t& width, uint32_t& height, const WindowHandle &windowHandle) {
+		const SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
+
+		if (m_SwapchainManager->getSwapchain(swapchainHandle).shouldUpdateSwapchain()) {
 			m_Context.getDevice().waitIdle();
 
-			m_swapchain.updateSwapchain(m_Context, m_window);
+			m_SwapchainManager->getSwapchain(swapchainHandle).updateSwapchain(m_Context, m_WindowManager->getWindow(windowHandle));
 			
-			if (!m_swapchain.getSwapchain()) {
+			if (!m_SwapchainManager->getSwapchain(swapchainHandle).getSwapchain()) {
 				return false;
 			}
-			
-			const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
-			const auto swapchainViews = createSwapchainImageViews(m_Context, swapchainImages, m_swapchain.getFormat());
-			
-			const auto& extent = m_swapchain.getExtent();
 
-			m_ImageManager->setSwapchainImages(
-					swapchainImages,
-					swapchainViews,
-					extent.width, extent.height,
-					m_swapchain.getFormat()
-			);
+			setSwapchainImages(swapchainHandle);
 		}
 		
-		const auto& extent = m_swapchain.getExtent();
+		const auto& extent = m_SwapchainManager->getSwapchain(swapchainHandle).getExtent();
 		
 		width = extent.width;
 		height = extent.height;
@@ -215,7 +149,7 @@ namespace vkcv
 			return false;
 		}
 		
-    	if (acquireSwapchainImage() != Result::SUCCESS) {
+    	if (acquireSwapchainImage( swapchainHandle ) != Result::SUCCESS) {
 			vkcv_log(LogLevel::ERROR, "Acquire failed");
     		
     		m_currentSwapchainImageIndex = std::numeric_limits<uint32_t>::max();
@@ -334,13 +268,16 @@ namespace vkcv
 		const GraphicsPipelineHandle    &pipelineHandle,
         const PushConstants             &pushConstantData,
         const std::vector<DrawcallInfo> &drawcalls,
-		const std::vector<ImageHandle>  &renderTargets) {
+		const std::vector<ImageHandle>  &renderTargets,
+		const WindowHandle              &windowHandle) {
+
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
 		}
 
-		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_swapchain, *m_ImageManager);
+		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_SwapchainManager->getSwapchain(swapchainHandle), *m_ImageManager);
 		const auto width  = widthHeight[0];
 		const auto height = widthHeight[1];
 
@@ -354,7 +291,7 @@ namespace vkcv
 		vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
 		transitionRendertargetsToAttachmentLayout(renderTargets, *m_ImageManager, cmdBuffer);
 
-		const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_swapchain, renderpass, m_Context.m_Device);
+		const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_SwapchainManager->getSwapchain(swapchainHandle), renderpass, m_Context.m_Device);
 
 		if (!framebuffer) {
 			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
@@ -399,13 +336,16 @@ namespace vkcv
 		const GraphicsPipelineHandle                        &pipelineHandle,
 		const PushConstants&                                pushConstantData,
 		const std::vector<MeshShaderDrawcall>&              drawcalls,
-		const std::vector<ImageHandle>&                     renderTargets) {
+		const std::vector<ImageHandle>&                     renderTargets,
+		const WindowHandle&                                 windowHandle) {
+
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
 		}
 
-		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_swapchain, *m_ImageManager);
+		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_SwapchainManager->getSwapchain(swapchainHandle), *m_ImageManager);
 		const auto width  = widthHeight[0];
 		const auto height = widthHeight[1];
 
@@ -419,7 +359,7 @@ namespace vkcv
 		vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
 		transitionRendertargetsToAttachmentLayout(renderTargets, *m_ImageManager, cmdBuffer);
 
-		const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_swapchain, renderpass, m_Context.m_Device);
+		const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_SwapchainManager->getSwapchain(swapchainHandle), renderpass, m_Context.m_Device);
 
 		if (!framebuffer) {
 			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
@@ -579,20 +519,20 @@ namespace vkcv
 		recordCommandsToStream(cmdStream, submitFunction, nullptr);
 	}
 
-	void Core::endFrame() {
+	void Core::endFrame(const WindowHandle& windowHandle) {
+
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
+
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
 		}
-  
-		const auto swapchainImages = m_Context.getDevice().getSwapchainImagesKHR(m_swapchain.getSwapchain());
-
-		const auto& queueManager = m_Context.getQueueManager();
+		
 		std::array<vk::Semaphore, 2> waitSemaphores{
 			m_SyncResources.renderFinished,
 			m_SyncResources.swapchainImageAcquired
 		};
 
-		const vk::SwapchainKHR& swapchain = m_swapchain.getSwapchain();
+		const vk::SwapchainKHR& swapchain = m_SwapchainManager->getSwapchain(swapchainHandle).getSwapchain();
 		const vk::PresentInfoKHR presentInfo(
 			waitSemaphores,
 			swapchain,
@@ -602,7 +542,7 @@ namespace vkcv
 		vk::Result result;
 		
 		try {
-			result = queueManager.getPresentQueue().handle.presentKHR(presentInfo);
+			result = m_Context.getDevice().getQueue(m_SwapchainManager->getSwapchain(swapchainHandle).getPresentQueueIndex(),0).presentKHR(presentInfo);
 		} catch (const vk::OutOfDateKHRError& e) {
 			result = vk::Result::eErrorOutOfDateKHR;
 		} catch (const vk::DeviceLostError& e) {
@@ -615,7 +555,7 @@ namespace vkcv
 		} else
 		if (result == vk::Result::eSuboptimalKHR) {
 			vkcv_log(LogLevel::WARNING, "Swapchain presentation is suboptimal");
-			m_swapchain.signalSwapchainRecreation();
+			m_SwapchainManager->signalRecreation(swapchainHandle);
 		}
 	}
 	
@@ -707,6 +647,22 @@ namespace vkcv
 			multisampling);
 	}
 
+	WindowHandle Core::createWindow(
+			const char *applicationName,
+			uint32_t windowWidth,
+			uint32_t windowHeight,
+			bool resizeable) {
+
+		WindowHandle windowHandle = m_WindowManager->createWindow(*m_SwapchainManager ,applicationName, windowWidth, windowHeight, resizeable);
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
+		setSwapchainImages( swapchainHandle );
+		return windowHandle;
+	}
+
+	Window& Core::getWindow(const WindowHandle& handle) {
+		return m_WindowManager->getWindow(handle);
+	}
+
 	uint32_t Core::getImageWidth(const ImageHandle& image)
 	{
 		return m_ImageManager->getImageWidth(image);
@@ -719,6 +675,19 @@ namespace vkcv
 	
 	vk::Format Core::getImageFormat(const ImageHandle& image) {
 		return m_ImageManager->getImageFormat(image);
+	}
+
+	Swapchain& Core::getSwapchainOfCurrentWindow() {
+		return m_SwapchainManager->getSwapchain(Window::getFocusedWindow().getSwapchainHandle());
+	}
+
+	Swapchain& Core::getSwapchain(const SwapchainHandle& handle) {
+		return m_SwapchainManager->getSwapchain(handle);
+	}
+
+	Swapchain& Core::getSwapchain(const WindowHandle& handle) {
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(handle).getSwapchainHandle();
+		return getSwapchain(swapchainHandle);
 	}
 
 	DescriptorSetLayoutHandle Core::createDescriptorSetLayout(const DescriptorBindings &bindingsMap)
@@ -869,6 +838,20 @@ namespace vkcv
 					vk::Filter::eNearest
 			);
 		}, nullptr);
+	}
+
+	void Core::setSwapchainImages( SwapchainHandle handle ) {
+		Swapchain swapchain = m_SwapchainManager->getSwapchain(handle);
+		const auto swapchainImages = m_SwapchainManager->getSwapchainImages(handle);
+		const auto swapchainImageViews = m_SwapchainManager->createSwapchainImageViews(handle);
+
+		m_ImageManager->setSwapchainImages(
+				swapchainImages,
+				swapchainImageViews,
+				swapchain.getExtent().width,
+				swapchain.getExtent().height,
+				swapchain.getFormat()
+		);
 	}
 	
 	static void setDebugObjectLabel(const vk::Device& device, const vk::ObjectType& type,
@@ -1023,5 +1006,4 @@ namespace vkcv
 				label
 		);
 	}
-	
 }

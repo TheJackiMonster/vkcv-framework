@@ -115,7 +115,8 @@ namespace vkcv::scene {
 								const GraphicsPipelineHandle     &pipeline,
 								size_t							 pushConstantsSizePerDrawcall,
 								const RecordMeshDrawcallFunction &record,
-								const std::vector<ImageHandle>   &renderTargets) {
+								const std::vector<ImageHandle>   &renderTargets,
+								const WindowHandle               &windowHandle) {
 		m_core->recordBeginDebugLabel(cmdStream, "vkcv::scene::Scene", {
 			0.0f, 1.0f, 0.0f, 1.0f
 		});
@@ -139,7 +140,8 @@ namespace vkcv::scene {
 				pipeline,
 				pushConstants,
 				drawcalls,
-				renderTargets
+				renderTargets,
+				windowHandle
 		);
 		
 		m_core->recordEndDebugLabel(cmdStream);

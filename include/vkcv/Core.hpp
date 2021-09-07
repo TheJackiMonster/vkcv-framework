@@ -25,6 +25,9 @@
 #include "Event.hpp"
 #include "DrawcallRecording.hpp"
 #include "CommandRecordingFunctionTypes.hpp"
+#include "../../src/vkcv/WindowManager.hpp"
+#include "../../src/vkcv/SwapchainManager.hpp"
+
 
 namespace vkcv
 {
@@ -38,6 +41,8 @@ namespace vkcv
     class SamplerManager;
     class ImageManager;
 	class CommandStreamManager;
+	class WindowManager;
+	class SwapchainManager;
 
 	struct SubmitInfo {
 		QueueType queueType;
@@ -54,17 +59,13 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, Window &window, const Swapchain& swapChain,  std::vector<vk::ImageView> imageViews,
-			const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
+        Core(Context &&context, const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
         // explicit destruction of default constructor
         Core() = delete;
 
-		Result acquireSwapchainImage();
+		Result acquireSwapchainImage(const SwapchainHandle &swapchainHandle);
 
         Context m_Context;
-
-        Swapchain                       m_swapchain;
-        Window&                   		m_window;
 
         std::unique_ptr<PassManager>             m_PassManager;
         std::unique_ptr<GraphicsPipelineManager> m_PipelineManager;
@@ -74,12 +75,18 @@ namespace vkcv
         std::unique_ptr<SamplerManager>          m_SamplerManager;
         std::unique_ptr<ImageManager>            m_ImageManager;
         std::unique_ptr<CommandStreamManager>    m_CommandStreamManager;
+        std::unique_ptr<WindowManager>           m_WindowManager;
+        std::unique_ptr<SwapchainManager>        m_SwapchainManager;
 
 		CommandResources    m_CommandResources;
 		SyncResources       m_SyncResources;
 		uint32_t            m_currentSwapchainImageIndex;
 
-		event_handle<int,int> e_resizeHandle;
+		/**
+		 * sets up swapchain images
+		 * @param swapchainHandles of swapchain
+		 */
+		void setSwapchainImages(SwapchainHandle handle);
 
     public:
         /**
@@ -119,9 +126,6 @@ namespace vkcv
 
         [[nodiscard]]
         const Context &getContext() const;
-        
-        [[nodiscard]]
-        const Swapchain& getSwapchain() const;
 
         /**
              * Creates a #Core with given @p applicationName and @p applicationVersion for your application.
@@ -138,8 +142,7 @@ namespace vkcv
              * @param[in] deviceExtensions (optional) Requested device extensions
              * @return New instance of #Context
              */
-        static Core create(Window &window,
-                           const char *applicationName,
+        static Core create(const char *applicationName,
                            uint32_t applicationVersion,
                            const std::vector<vk::QueueFlagBits>& queueFlags    = {},
 						   const Features& features = {},
@@ -224,12 +227,73 @@ namespace vkcv
 			bool            supportColorAttachment = false,
 			Multisampling   multisampling = Multisampling::None);
 
+        /**
+         * creates a new window and returns it's handle
+         * @param applicationName window name
+         * @param windowWidth
+         * @param windowHeight
+         * @param resizeable resizeability bool
+         * @return windowHandle
+         */
+		[[nodiscard]]
+		WindowHandle createWindow(
+				const char *applicationName,
+				uint32_t windowWidth,
+				uint32_t windowHeight,
+				bool resizeable);
+
+		/**
+		 * getter for window reference
+		 * @param handle of the window
+		 * @return the window
+		 */
+		[[nodiscard]]
+		Window& getWindow(const WindowHandle& handle );
+
+		/**
+		 * gets the swapchain of the current focused window
+		 * @return swapchain
+		 */
+		[[nodiscard]]
+		Swapchain& getSwapchainOfCurrentWindow();
+
+		/**
+		 * returns the swapchain reference
+		 * @param handle of the swapchain
+		 * @return swapchain
+		 */
+		[[nodiscard]]
+		Swapchain& getSwapchain(const SwapchainHandle& handle);
+
+		/**
+		 * gets the swapchain handle from the window
+		 * @param handle of the window
+		 * @return the swapchain from getSwapchain( SwapchainHandle )
+		 */
+		[[nodiscard]]
+		Swapchain& getSwapchain(const WindowHandle& handle);
+
+		/**
+		 * returns the image width
+		 * @param image handle
+		 * @return imageWidth
+		 */
         [[nodiscard]]
         uint32_t getImageWidth(const ImageHandle& image);
-        
+
+        /**
+         * returns the image height
+         * @param image handle
+         * @return imageHeight
+         */
         [[nodiscard]]
         uint32_t getImageHeight(const ImageHandle& image);
-	
+
+        /**
+         * returns the image format of the image
+         * @param image handle
+         * @return imageFormat
+         */
 		[[nodiscard]]
 		vk::Format getImageFormat(const ImageHandle& image);
 
@@ -256,7 +320,7 @@ namespace vkcv
 		/**
 		 * @brief start recording command buffers and increment frame index
 		*/
-		bool beginFrame(uint32_t& width, uint32_t& height);
+		bool beginFrame(uint32_t& width, uint32_t& height, const WindowHandle &windowHandle);
 
 		void recordDrawcallsToCmdStream(
 			const CommandStreamHandle&      cmdStreamHandle,
@@ -264,7 +328,8 @@ namespace vkcv
 			const GraphicsPipelineHandle    &pipelineHandle,
 			const PushConstants             &pushConstants,
 			const std::vector<DrawcallInfo> &drawcalls,
-			const std::vector<ImageHandle>  &renderTargets);
+			const std::vector<ImageHandle>  &renderTargets,
+			const WindowHandle              &windowHandle);
 
 		void recordMeshShaderDrawcalls(
 			const CommandStreamHandle&              cmdStreamHandle,
@@ -272,7 +337,8 @@ namespace vkcv
 			const GraphicsPipelineHandle            &pipelineHandle,
 			const PushConstants&                    pushConstantData,
             const std::vector<MeshShaderDrawcall>&  drawcalls,
-			const std::vector<ImageHandle>&         renderTargets);
+			const std::vector<ImageHandle>&         renderTargets,
+			const WindowHandle&                     windowHandle);
 
 		void recordComputeDispatchToCmdStream(
 			CommandStreamHandle cmdStream,
@@ -298,7 +364,7 @@ namespace vkcv
 		/**
 		 * @brief end recording and present image
 		*/
-		void endFrame();
+		void endFrame( const WindowHandle& windowHandle );
 
 		/**
 		 * Submit a command buffer to any queue of selected type. The recording can be customized by a

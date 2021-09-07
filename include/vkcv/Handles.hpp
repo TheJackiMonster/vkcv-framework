@@ -115,6 +115,18 @@ namespace vkcv
 		
 	};
 
+	class WindowHandle : public Handle {
+		friend class WindowManager;
+	private:
+		using Handle::Handle;
+	};
+
+	class SwapchainHandle : public Handle {
+		friend class SwapchainManager;
+	private:
+		using Handle::Handle;
+	};
+
     class CommandStreamHandle : public Handle {
         friend class CommandStreamManager;
     private:

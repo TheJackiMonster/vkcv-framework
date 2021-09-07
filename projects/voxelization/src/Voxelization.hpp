@@ -23,13 +23,15 @@ public:
 		vkcv::CommandStreamHandle                       cmdStream,
 		const std::vector<vkcv::Mesh>&                  meshes,
 		const std::vector<glm::mat4>&                   modelMatrices,
-		const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets);
+		const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets,
+		const vkcv::WindowHandle&                       windowHandle);
 
 	void renderVoxelVisualisation(
 		vkcv::CommandStreamHandle               cmdStream,
 		const glm::mat4&                        viewProjectin,
 		const std::vector<vkcv::ImageHandle>&   renderTargets,
-		uint32_t                                mipLevel);
+		uint32_t                                mipLevel,
+		const vkcv::WindowHandle&               windowHandle);
 
 	void updateVoxelOffset(const vkcv::camera::Camera& camera);
 	void setVoxelExtent(float extent);

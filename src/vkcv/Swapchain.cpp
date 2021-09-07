@@ -163,10 +163,11 @@ namespace vkcv
         const vk::Device& device = context.getDevice();
 
         Surface surface;
-        surface.handle       = createSurface(window.getWindow(), instance, physicalDevice);
-        surface.formats      = physicalDevice.getSurfaceFormatsKHR(surface.handle);
-        surface.capabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface.handle);
-        surface.presentModes = physicalDevice.getSurfacePresentModesKHR(surface.handle);
+        surface.handle            = createSurface(window.getWindow(), instance, physicalDevice);
+        surface.formats           = physicalDevice.getSurfaceFormatsKHR(surface.handle);
+        surface.capabilities      = physicalDevice.getSurfaceCapabilitiesKHR(surface.handle);
+        surface.presentModes      = physicalDevice.getSurfacePresentModesKHR(surface.handle);
+		surface.presentQueueIndex = QueueManager::checkSurfaceSupport(physicalDevice, surface.handle);
 
         vk::Extent2D chosenExtent = chooseExtent(physicalDevice, surface.handle, window);
         vk::SurfaceFormatKHR chosenSurfaceFormat = chooseSurfaceFormat(physicalDevice, surface.handle);
@@ -263,5 +264,9 @@ namespace vkcv
 
 	uint32_t Swapchain::getImageCount() const {
 		return m_ImageCount;
+	}
+
+	const uint32_t &Swapchain::getPresentQueueIndex() const {
+		return m_Surface.presentQueueIndex;
 	}
 }

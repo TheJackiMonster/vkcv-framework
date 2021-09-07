@@ -23,18 +23,13 @@ App::App() :
 	m_applicationName("Indirect Dispatch"),
 	m_windowWidth(AppConfig::defaultWindowWidth),
 	m_windowHeight(AppConfig::defaultWindowHeight),
-	m_window(vkcv::Window::create(
-		m_applicationName,
-		m_windowWidth,
-		m_windowHeight,
-		true)),
 	m_core(vkcv::Core::create(
-		m_window,
 		m_applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
 		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME })),
-	m_cameraManager(m_window){}
+	m_windowHandle(m_core.createWindow(m_applicationName, m_windowWidth, m_windowHeight, false)),
+	m_cameraManager(m_core.getWindow(m_windowHandle)){}
 
 bool App::initialize() {
 
@@ -92,7 +87,7 @@ void App::run() {
 	const vkcv::ImageHandle     swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	const vkcv::DrawcallInfo    skyDrawcall(m_cubeMesh.mesh, {}, 1);
 
-	vkcv::gui::GUI gui(m_core, m_window);
+	vkcv::gui::GUI gui(m_core, m_windowHandle);
 
 	eMotionVectorVisualisationMode  motionVectorVisualisationMode   = eMotionVectorVisualisationMode::None;
 	eMotionBlurMode                 motionBlurMode                  = eMotionBlurMode::Default;
@@ -137,7 +132,7 @@ void App::run() {
 
 	bool spaceWasPressed = false;
 
-	m_window.e_key.add([&](int key, int scancode, int action, int mods) {
+	m_core.getWindow(m_windowHandle).e_key.add([&](int key, int scancode, int action, int mods) {
 		if (key == GLFW_KEY_SPACE) {
 			if (action == GLFW_PRESS) {
 				if (!spaceWasPressed) {
@@ -153,7 +148,7 @@ void App::run() {
 
 	auto frameEndTime = std::chrono::system_clock::now();
 
-	while (m_window.isWindowOpen()) {
+	while (vkcv::Window::hasOpenWindow()) {
 
 		vkcv::Window::pollEvents();
 
@@ -167,11 +162,11 @@ void App::run() {
 			}
 		}
 
-		if (m_window.getHeight() == 0 || m_window.getWidth() == 0)
+		if (m_core.getWindow(m_windowHandle).getHeight() == 0 || m_core.getWindow(m_windowHandle).getWidth() == 0)
 			continue;
 
 		uint32_t swapchainWidth, swapchainHeight;
-		if (!m_core.beginFrame(swapchainWidth, swapchainHeight))
+		if (!m_core.beginFrame(swapchainWidth, swapchainHeight,m_windowHandle))
 			continue;
 
 		const bool hasResolutionChanged = (swapchainWidth != m_windowWidth) || (swapchainHeight != m_windowHeight);
@@ -232,7 +227,8 @@ void App::run() {
 			m_prePass.pipeline,
 			prepassPushConstants,
 			prepassSceneDrawcalls,
-			prepassRenderTargets);
+			prepassRenderTargets,
+			m_windowHandle);
 
 		// sky prepass
 		glm::mat4 skyPrepassMatrices[2] = {
@@ -247,7 +243,8 @@ void App::run() {
 			m_skyPrePass.pipeline,
 			skyPrepassPushConstants,
 			{ skyDrawcall },
-			prepassRenderTargets);
+			prepassRenderTargets,
+			m_windowHandle);
 
 		// main pass
 		const std::vector<vkcv::ImageHandle> renderTargets   = { 
@@ -273,7 +270,8 @@ void App::run() {
 			m_meshPass.pipeline,
 			meshPushConstants,
 			forwardSceneDrawcalls,
-			renderTargets);
+			renderTargets,
+			m_windowHandle);
 
 		// sky
 		vkcv::PushConstants skyPushConstants(sizeof(glm::mat4));
@@ -285,7 +283,8 @@ void App::run() {
 			m_skyPass.pipeline,
 			skyPushConstants,
 			{ skyDrawcall },
-			renderTargets);
+			renderTargets,
+			m_windowHandle);
 
 		// motion blur
 		vkcv::ImageHandle motionBlurOutput;
@@ -378,6 +377,6 @@ void App::run() {
 		ImGui::End();
 		gui.endGUI();
 
-		m_core.endFrame();
+		m_core.endFrame(m_windowHandle);
 	}
 }

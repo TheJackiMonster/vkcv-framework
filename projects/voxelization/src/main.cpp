@@ -17,13 +17,23 @@ int main(int argc, const char** argv) {
 
 	const vkcv::Multisampling   msaa        = vkcv::Multisampling::MSAA4X;
 	const bool                  usingMsaa   = msaa != vkcv::Multisampling::None;
-	
-	vkcv::Window window = vkcv::Window::create(
-		applicationName,
-		1280,
-		720,
-		true
+
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	features.requireExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
+	features.requireExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
+
+	const uint32_t windowWidth = 1280;
+	const uint32_t windowHeight = 720;
+
+	vkcv::Core core = vkcv::Core::create(
+			applicationName,
+			VK_MAKE_VERSION(0, 0, 1),
+			{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
+			features
 	);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
+	vkcv::Window& window = core.getWindow(windowHandle);
 
 	bool     isFullscreen            = false;
 	uint32_t windowedWidthBackup     = window.getWidth();
@@ -76,19 +86,6 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camIndex).setFov(glm::radians(37.8));	// fov of a 35mm lens
 	
 	cameraManager.getCamera(camIndex2).setNearFar(0.1f, 30.0f);
-	
-	vkcv::Features features;
-	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	features.requireExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
-	features.requireExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
-	
-	vkcv::Core core = vkcv::Core::create(
-		window,
-		applicationName,
-		VK_MAKE_VERSION(0, 0, 1),
-		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		features
-	);
 
 	vkcv::asset::Scene mesh;
 
@@ -301,7 +298,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetLayoutHandle prepassDescriptorSetLayout = core.createDescriptorSetLayout({});
 	vkcv::DescriptorSetHandle prepassDescriptorSet = core.createDescriptorSet(prepassDescriptorSetLayout);
 
-	auto swapchainExtent = core.getSwapchain().getExtent();
+	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 	
 	vkcv::GraphicsPipelineConfig prepassPipelineConfig{
 		depthPrepassShader,
@@ -602,7 +599,7 @@ int main(int argc, const char** argv) {
 	
 	bool bilinearUpscaling = false;
 	
-	vkcv::gui::GUI gui(core, window);
+	vkcv::gui::GUI gui(core, windowHandle);
 
 	glm::vec2   lightAnglesDegree               = glm::vec2(90.f, 0.f);
 	glm::vec3   lightColor                      = glm::vec3(1);
@@ -622,11 +619,11 @@ int main(int argc, const char** argv) {
 
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
-	while (window.isWindowOpen()) {
+	while (vkcv::Window::hasOpenWindow()) {
 		vkcv::Window::pollEvents();
 
 		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
 			continue;
 		}
 		
@@ -743,7 +740,8 @@ int main(int argc, const char** argv) {
 			modelMatrices,
 			cameraManager.getActiveCamera(),
 			voxelization.getVoxelOffset(),
-			voxelization.getVoxelExtent());
+			voxelization.getVoxelExtent(),
+			windowHandle);
 
 		// voxelization
 		voxelization.setVoxelExtent(voxelizationExtent);
@@ -751,7 +749,8 @@ int main(int argc, const char** argv) {
 			cmdStream,
 			meshes, 
 			modelMatrices,
-			perMeshDescriptorSets);
+			perMeshDescriptorSets,
+			windowHandle);
 
 		// depth prepass
 		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();
@@ -772,7 +771,8 @@ int main(int argc, const char** argv) {
 			prepassPipeline,
 			prepassPushConstants,
 			prepassDrawcalls,
-			prepassRenderTargets);
+			prepassRenderTargets,
+			windowHandle);
 
 		core.recordImageMemoryBarrier(cmdStream, depthBuffer);
 		
@@ -797,10 +797,11 @@ int main(int argc, const char** argv) {
 			forwardPipeline,
 			pushConstants,
 			drawcalls,
-			renderTargets);
+			renderTargets,
+			windowHandle);
 
 		if (renderVoxelVis) {
-			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets, voxelVisualisationMip);
+			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets, voxelVisualisationMip, windowHandle);
 		}
 		
 		vkcv::PushConstants skySettingsPushConstants (sizeof(skySettings));
@@ -813,7 +814,8 @@ int main(int argc, const char** argv) {
 			skyPipe,
 			skySettingsPushConstants,
 			{ vkcv::DrawcallInfo(vkcv::Mesh({}, nullptr, 3), {}) },
-			renderTargets);
+			renderTargets,
+			windowHandle);
 
 		const uint32_t fullscreenLocalGroupSize = 8;
 		
@@ -988,7 +990,7 @@ int main(int argc, const char** argv) {
 
 		gui.endGUI();
 
-		core.endFrame();
+		core.endFrame(windowHandle);
 	}
 	
 	return 0;
