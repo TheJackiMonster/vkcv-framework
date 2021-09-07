@@ -36,8 +36,12 @@ layout(std430, binding = 2) coherent buffer spheres{
 
 layout(set=0, binding=3, rgba8) uniform image2D outImage;
 
-const int sphereCount = 4;
-const int lightCount  = 3;
+layout( push_constant ) uniform constants{
+    float lightCount;
+    float matCount;
+    float sphereCount;
+};
+
 
 vec3 safr_reflect(const vec3 dir, const vec3 hit_center) {
     return dir - hit_center * 2.f * (dot(dir, hit_center));
@@ -62,9 +66,8 @@ bool ray_intersect(const vec3 origin, const vec3 dir, out float t0, const int id
         return true;
 }
 
-int sceneIntersect(const vec3 orig, const vec3 dir, out vec3 hit, out vec3 hit_center, out Material material) {
+bool sceneIntersect(const vec3 orig, const vec3 dir, out vec3 hit, out vec3 hit_center, out Material material) {
     float spheres_dist = 1.0 / 0.0;
-    int index = -1;
     for (int i = 0; i < sphereCount; i++) {
         float dist_i;
         if (ray_intersect(orig, dir, dist_i, i) && dist_i < spheres_dist) {
@@ -72,14 +75,10 @@ int sceneIntersect(const vec3 orig, const vec3 dir, out vec3 hit, out vec3 hit_c
             hit = orig + dir * dist_i;
             hit_center = normalize(hit - inSpheres[i].center);
             material = inSpheres[i].material;
-            index = i;
             break;
         }
     }
-    if(spheres_dist < 1000){
-        return index;
-    }
-    return -1;
+    return spheres_dist < 1000;
 }
 
 
@@ -89,15 +88,15 @@ vec3 castRay(const vec3 orig, const vec3 dir, int max_depth) {
     vec3 point, hit_center;
     Material material;
     vec3 result = vec3(0.2, 0.7, 0.8);
-    int intersect;
+    bool intersect;
     vec3 direction = dir;
     vec3 reflect_dir = direction;
     vec3 reflect_orig = orig;
 
-    for(int i = 0; i < max_depth;i++){
+    for(int i = 0; i < max_depth; i++){
         depth++;
         intersect = sceneIntersect(reflect_orig, reflect_dir, point, hit_center, material);
-        if(intersect != -1){
+        if(!intersect){
             break;
         }
         //compute recursive directions and origins of rays and then call the function
@@ -105,32 +104,33 @@ vec3 castRay(const vec3 orig, const vec3 dir, int max_depth) {
         reflect_orig = (dot(reflect_dir, hit_center) < 0) ? point - hit_center * float(1e-3) : point + hit_center * float(1e-3);// offset the original point to avoid occlusion by the object itself
         direction = reflect_dir;
     }
+    if (depth == 1){
+        return result;
+    }
 
-    if(intersect != -1){
-        vec3 reflect_color = result;
-        for(int i = 0; i < depth; i++){
+    vec3 reflect_color = result;
+    for(int i = 0; i < depth; i++){
 
-            //compute shadows and other light properties for the returned ray color
-            float diffuse_light_intensity = 0, specular_light_intensity = 0;
+         //compute shadows and other light properties for the returned ray color
+         float diffuse_light_intensity = 0, specular_light_intensity = 0;
 
-            for (int i = 0; i < lightCount; i++) {
-                vec3 light_dir = normalize(inLights[i].position - point);
-                float light_distance = distance(inLights[i].position, point);
+         for (int i = 0; i < lightCount; i++) {
+             vec3 light_dir = normalize(inLights[i].position - point);
+             float light_distance = distance(inLights[i].position, point);
 
-                vec3 shadow_orig = (dot(light_dir, hit_center) < 0) ? point - hit_center * float(1e-3) :
-                point + hit_center * float(1e-3);// checking if the point lies in the shadow of the lights[i]
-                vec3 shadow_pt, shadow_hit_center;
-                Material tmpmaterial;
-                if ((sceneIntersect(shadow_orig, light_dir, shadow_pt, shadow_hit_center, tmpmaterial) != -1)
-                && distance(shadow_pt, shadow_orig) < light_distance){
-                    continue;
-                }
-                diffuse_light_intensity += inLights[i].intensity * max(0.f, dot(light_dir, hit_center));
-                specular_light_intensity += pow(max(0.f, dot(safr_reflect(light_dir, hit_center), dir)), material.specular_exponent) * inLights[i].intensity;
-            }
-            result = material.diffuse_color * diffuse_light_intensity * material.albedo[0] +
-            vec3(1., 1., 1.) * specular_light_intensity * material.albedo[1] + reflect_color * material.albedo[2];
-        }
+             vec3 shadow_orig = (dot(light_dir, hit_center) < 0) ? point - hit_center * float(1e-3) :
+             point + hit_center * float(1e-3);// checking if the point lies in the shadow of the lights[i]
+             vec3 shadow_pt, shadow_hit_center;
+             Material tmpmaterial;
+             if (sceneIntersect(shadow_orig, light_dir, shadow_pt, shadow_hit_center, tmpmaterial)
+             && distance(shadow_pt, shadow_orig) < light_distance){
+                 continue;
+             }
+             diffuse_light_intensity += inLights[i].intensity * max(0.f, dot(light_dir, hit_center));
+             specular_light_intensity += pow(max(0.f, dot(safr_reflect(light_dir, hit_center), dir)), material.specular_exponent) * inLights[i].intensity;
+         }
+         return result = material.diffuse_color * diffuse_light_intensity * material.albedo[0] +
+         vec3(1., 1., 1.) * specular_light_intensity * material.albedo[1] + reflect_color * material.albedo[2];
     }
     return result;
 }

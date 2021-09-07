@@ -118,6 +118,8 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
+	
+
 	//create Buffer for compute shader
 	vkcv::Buffer<safrScene::Light> lightsBuffer = core.createBuffer<safrScene::Light>(
 		vkcv::BufferType::STORAGE,
@@ -137,6 +139,9 @@ int main(int argc, const char** argv) {
 	);
 	materialBuffer.fill(materials);
 
+	glm::vec3 pushData = glm::vec3((lights.size()), (materials.size()), (spheres.size()));
+	vkcv::PushConstants pushConstantsCompute(sizeof(glm::vec3));
+	pushConstantsCompute.appendDrawcall(pushData);
 
 	vkcv::DescriptorWrites setWrites;
 	setWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
@@ -230,9 +235,6 @@ int main(int argc, const char** argv) {
 		pushConstants.appendDrawcall(std::array<glm::mat4, 2>{ mvp, proj });
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
-
-		vkcv::PushConstants pushConstantsCompute(0);
-		//pushConstantsCompute.appendDrawcall(pushData);
 
         computeWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(3, swapchainInput)};
         core.writeDescriptorSet(computeDescriptorSet, computeWrites);
