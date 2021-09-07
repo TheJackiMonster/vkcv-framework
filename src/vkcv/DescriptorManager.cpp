@@ -49,7 +49,7 @@ namespace vkcv
 
     DescriptorSetLayoutHandle DescriptorManager::createDescriptorSetLayout(const DescriptorBindings &setBindingsMap)
     {
-        for (auto i = 0; i < m_DescriptorSetLayouts.size(); i++)
+        for (size_t i = 0; i < m_DescriptorSetLayouts.size(); i++)
         {
             if(m_DescriptorSetLayouts[i].descriptorBindings.size() != setBindingsMap.size())
                 continue;
