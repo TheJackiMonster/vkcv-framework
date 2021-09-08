@@ -34,8 +34,8 @@ layout(std430, binding = 1) coherent buffer spheres{
 layout(set=0, binding = 2, rgba8) uniform image2D outImage;
 
 layout( push_constant ) uniform constants{
+    mat4 viewToWorld;
     int lightCount;
-    int matCount;
     int sphereCount;
 };
 
@@ -160,11 +160,13 @@ vec3 castRay(const vec3 initialOrigin, const vec3 initialDirection, int max_dept
 
 vec3 computeDirection(ivec2 coord){
 
-    ivec2 outImageRes   = imageSize(outImage);
-    float fov           = pi / 2.f;
-    float x             =  (2 * (float(coord.x) + 0.5f) / float(outImageRes.x) - 1) * tan(fov / 2.f) * outImageRes.x / float(outImageRes.y);
-    float y             = -(2 * (float(coord.y) + 0.5f) / float(outImageRes.y) - 1) * tan(fov / 2.f);
-    return normalize(vec3(x, y, -1));
+    ivec2 outImageRes           = imageSize(outImage);
+    float fov                   = pi / 2.f;
+    float x                     =  (2 * (float(coord.x) + 0.5f) / float(outImageRes.x) - 1) * tan(fov / 2.f) * outImageRes.x / float(outImageRes.y);
+    float y                     = -(2 * (float(coord.y) + 0.5f) / float(outImageRes.y) - 1) * tan(fov / 2.f);
+    vec3 directionViewSpace     = normalize(vec3(x, y, 1));
+    vec3 directionWorldSpace    = mat3(viewToWorld) * directionViewSpace;
+    return directionWorldSpace;
 }
 
 
@@ -172,7 +174,8 @@ void main(){
     ivec2 coord     = ivec2(gl_GlobalInvocationID.xy);
     int max_depth   = 4;
     vec3 direction  = computeDirection(coord);
-    vec3 color      = castRay(vec3(0,0,0), direction, max_depth);
+    vec3 cameraPos  = viewToWorld[3].xyz;
+    vec3 color      = castRay(cameraPos, direction, max_depth);
     
     imageStore(outImage, coord, vec4(color, 0.f));
 }

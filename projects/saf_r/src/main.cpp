@@ -92,10 +92,10 @@ int main(int argc, const char** argv) {
 
 	//spheres for the scene
 	std::vector<safrScene::Sphere> spheres;
-	spheres.push_back(safrScene::Sphere(glm::vec3(-3, 0, -16), 2, ivory));
-	spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, -12), 2, mirror));
-	spheres.push_back(safrScene::Sphere(glm::vec3(1.5, -0.5, -18), 3, red_rubber));
-	spheres.push_back(safrScene::Sphere(glm::vec3(7, 5, -18), 4, mirror));
+	spheres.push_back(safrScene::Sphere(glm::vec3(-3.0,  0.0, 16), 2, ivory));
+	spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, 12), 2, mirror));
+	spheres.push_back(safrScene::Sphere(glm::vec3( 1.5, -0.5, 18), 3, red_rubber));
+	spheres.push_back(safrScene::Sphere(glm::vec3( 7.0,  5.0, 18), 4, mirror));
 
 	//lights for the scene
 	std::vector<safrScene::Light> lights;
@@ -132,10 +132,6 @@ int main(int argc, const char** argv) {
 		spheres.size()
 	);
 	sphereBuffer.fill(spheres);
-
-	glm::ivec3 pushData = glm::ivec3((lights.size()), (materials.size()), (spheres.size()));
-	vkcv::PushConstants pushConstantsCompute(sizeof(glm::ivec3));
-	pushConstantsCompute.appendDrawcall(pushData);
 
 	vkcv::DescriptorWrites setWrites;
 	setWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
@@ -241,6 +237,20 @@ int main(int argc, const char** argv) {
         core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
         core.prepareImageForStorage (cmdStream, swapchainInput);
+
+        struct RaytracingPushConstantData {
+            glm::mat4 viewToWorld;
+            int32_t lightCount;
+            int32_t sphereCount;
+        };
+
+        RaytracingPushConstantData raytracingPushData;
+        raytracingPushData.lightCount   = lights.size();
+        raytracingPushData.sphereCount  = spheres.size();
+        raytracingPushData.viewToWorld  = glm::inverse(cameraManager.getActiveCamera().getView());
+
+        vkcv::PushConstants pushConstantsCompute(sizeof(RaytracingPushConstantData));
+        pushConstantsCompute.appendDrawcall(raytracingPushData);
 
 		uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil( swapchainWidth/16.f)),
                                             static_cast<uint32_t> (std::ceil(swapchainHeight/16.f)),
