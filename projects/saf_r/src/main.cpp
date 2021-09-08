@@ -99,9 +99,9 @@ int main(int argc, const char** argv) {
 
 	//lights for the scene
 	std::vector<safrScene::Light> lights;
-	lights.push_back(safrScene::Light(glm::vec3(-20, 20, 20), 1.5));
-	lights.push_back(safrScene::Light(glm::vec3(30, 50, -25), 1.8));
-	lights.push_back(safrScene::Light(glm::vec3(30, 20, 30), 1.7));
+	lights.push_back(safrScene::Light(glm::vec3(-20, 20,  20), 1.5));
+	lights.push_back(safrScene::Light(glm::vec3(30,  50, -25), 1.8));
+	lights.push_back(safrScene::Light(glm::vec3(30,  20,  30), 1.7));
 	//create the raytracer image for rendering
 	safrScene scene;
 	vkcv::asset::Texture texData = scene.render(spheres, lights);
