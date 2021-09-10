@@ -51,6 +51,8 @@ namespace vkcv {
 
     };
 
+    vk::IndexType getIndexType(IndexBitCount indexByteCount);
+
     struct DrawcallInfo {
         inline DrawcallInfo(const Mesh& mesh, const std::vector<DescriptorSetUsage>& descriptorSets, const uint32_t instanceCount = 1)
             : mesh(mesh), descriptorSets(descriptorSets), instanceCount(instanceCount){}

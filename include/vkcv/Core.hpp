@@ -266,7 +266,7 @@ namespace vkcv
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets);
 
-        void recordIndirectDrawcallsToCmdStream(
+        void recordIndexedIndirectDrawcallsToCmdStream(
                 const CommandStreamHandle       cmdStreamHandle,
                 const PassHandle                renderpassHandle,
                 const PipelineHandle            pipelineHandle,

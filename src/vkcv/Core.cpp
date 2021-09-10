@@ -393,7 +393,7 @@ namespace vkcv
 		recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
 	}
 
-    void Core::recordIndirectDrawcallsToCmdStream(
+    void Core::recordIndexedIndirectDrawcallsToCmdStream(
             const CommandStreamHandle                           cmdStreamHandle,
             const PassHandle                                    renderpassHandle,
             const PipelineHandle                                pipelineHandle,
@@ -449,10 +449,44 @@ namespace vkcv
                 recordDynamicViewport(cmdBuffer, width, height);
             }
 
-            for (int i = 0; i < drawcalls.size(); i++) {
-                recordIndirectDrawcall(drawcalls[i], cmdBuffer, indirectBuffer, drawCount, pipelineLayout,
-                                       pushConstantData, i);
+            for (auto i = 0; i < drawcalls.size(); i++)
+            {
+                for (uint32_t i = 0; i < drawcalls[i].mesh.vertexBufferBindings.size(); i++)
+                {
+                    const auto &vertexBinding = drawcalls[i].mesh.vertexBufferBindings[i];
+                    cmdBuffer.bindVertexBuffers(i, vertexBinding.buffer, vertexBinding.offset);
+                }
+
+                for (const auto &descriptorUsage : drawcalls[i].descriptorSets)
+                {
+                    cmdBuffer.bindDescriptorSets(
+                            vk::PipelineBindPoint::eGraphics,
+                            pipelineLayout,
+                            descriptorUsage.setLocation,
+                            descriptorUsage.vulkanHandle,
+                            nullptr);
+                }
+
+                if (pushConstantData.getSizePerDrawcall() > 0)
+                {
+                    cmdBuffer.pushConstants(
+                            pipelineLayout,
+                            vk::ShaderStageFlagBits::eAll,
+                            0,
+                            pushConstantData.getSizePerDrawcall(),
+                            pushConstantData.getDrawcallData(i));
+                }
+
+                if (drawcalls[i].mesh.indexBuffer)
+                    cmdBuffer.bindIndexBuffer(drawcalls[i].mesh.indexBuffer, 0, getIndexType(drawcalls[i].mesh.indexBitCount));
             }
+
+            cmdBuffer.drawIndexedIndirect(
+                    indirectBuffer.getVulkanHandle(),
+                    0,
+                    drawCount,
+                    sizeof(vk::DrawIndexedIndirectCommand));
+
             cmdBuffer.endRenderPass();
         };
 

@@ -7,7 +7,6 @@ layout(location = 2) in vec2 inUV;
 
 layout(location = 0) out vec3 passNormal;
 layout(location = 1) out vec2 passUV;
-layout(location = 2) out flat int passTextureIndex;
 
 layout( push_constant ) uniform constants{
     mat4 mvp;
@@ -15,25 +14,8 @@ layout( push_constant ) uniform constants{
 
 void main()
 {
-	gl_Position = mvp * vec4(inPosition, 1.0);
+    mat4 dumbShit = mvp * mat4(1.0);
+	gl_Position = vec4(inPosition, 1.0);
 	passNormal  = inNormal;
     passUV      = inUV;
-
-    if(inNormal.x > 0.9)
-        passTextureIndex = 0;
-
-    if(inNormal.x < -0.9)
-        passTextureIndex = 1;
-
-    if(inNormal.y > 0.9)
-        passTextureIndex = 2;
-
-    if(inNormal.y < -0.9)
-        passTextureIndex = 3;
-
-    if(inNormal.z > 0.9)
-        passTextureIndex = 4;
-
-    if(inNormal.z < -0.9)
-        passTextureIndex = 5;
 }
