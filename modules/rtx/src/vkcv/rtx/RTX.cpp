@@ -1,9 +1,8 @@
 #include "vkcv/rtx/RTX.hpp"
-#include "vkcv/rtx/ASManager.hpp"
 
 namespace vkcv::rtx {
 
-    RTXModule::RTXModule() {
+    RTXModule::RTXModule(){
 
         // prepare needed raytracing extensions
         m_instanceExtensions = {
@@ -112,11 +111,72 @@ namespace vkcv::rtx {
                 });
     }
 
-    void RTXModule::init(Core* core, std::vector<uint8_t> &vertices, std::vector<uint8_t> &indices) {
+    void RTXModule::init(Core* core, std::vector<uint8_t>& vertices,
+        std::vector<uint8_t>& indices, std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles)
+    {
         // build acceleration structures BLAS then TLAS --> see ASManager
-        ASManager asManager(core);
-        asManager.buildBLAS(vertices, indices);
-        asManager.buildTLAS();
+        //asManager(core);
+        ASManager temp(core);
+        m_asManager = &temp;
+        m_asManager->buildBLAS(vertices, indices);
+        m_asManager->buildTLAS();
+        RTXDescriptors(m_asManager, core, descriptorSetHandles);
+        
+    }
+
+    void RTXModule::RTXDescriptors(ASManager* asManager,Core* core, std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles)
+    {
+        //TLAS-Descriptor-Write
+        TopLevelAccelerationStructure tlas = asManager->getTLAS();
+        RTXBuffer tlasBuffer = tlas.tlasBuffer;
+        vk::WriteDescriptorSetAccelerationStructureKHR AccelerationDescriptor = {};
+        AccelerationDescriptor.accelerationStructureCount = 1;
+        const TopLevelAccelerationStructure constTLAS = tlas;
+        AccelerationDescriptor.pAccelerationStructures = &constTLAS.vulkanHandle;
+
+        vk::WriteDescriptorSet tlasWrite;
+        tlasWrite.setPNext(&AccelerationDescriptor);
+        tlasWrite.setDstSet(core->getDescriptorSet(descriptorSetHandles[0]).vulkanHandle);
+        tlasWrite.setDstBinding(1);
+        tlasWrite.setDstArrayElement(0);
+        tlasWrite.setDescriptorCount(1);
+        tlasWrite.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
+        core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
+
+        //INDEX & VERTEX BUFFER
+        BottomLevelAccelerationStructure blas = asManager->getBLAS(0);//HARD CODED
+
+        //VERTEX BUFFER
+
+        vk::DescriptorBufferInfo vertexInfo = {};
+        vertexInfo.setBuffer(blas.vertexBuffer.vulkanHandle);
+        vertexInfo.setOffset(0);
+        vertexInfo.setRange(blas.vertexBuffer.deviceSize); //maybe check if size is correct
+
+        vk::WriteDescriptorSet vertexWrite;
+        vertexWrite.setDstSet(core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
+        vertexWrite.setDstBinding(3);
+        vertexWrite.setDescriptorCount(1);
+        vertexWrite.setDescriptorType(vk::DescriptorType::eStorageBuffer);
+        vertexWrite.setPBufferInfo(&vertexInfo);
+        core->getContext().getDevice().updateDescriptorSets(vertexWrite, nullptr);
+
+        //INDEXBUFFER
+        vk::DescriptorBufferInfo indexInfo = {};
+        indexInfo.setBuffer(blas.indexBuffer.vulkanHandle);
+        indexInfo.setOffset(0);
+        indexInfo.setRange(blas.indexBuffer.deviceSize); //maybe check if size is correct
+
+        vk::WriteDescriptorSet indexWrite;
+        indexWrite.setDstSet(core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
+        indexWrite.setDstBinding(4);
+        indexWrite.setDescriptorCount(1);
+        indexWrite.setDescriptorType(vk::DescriptorType::eStorageBuffer);
+        indexWrite.setPBufferInfo(&indexInfo);
+        core->getContext().getDevice().updateDescriptorSets(indexWrite, nullptr);
+
+          
+
     }
 
     std::vector<const char*> RTXModule::getInstanceExtensions() {

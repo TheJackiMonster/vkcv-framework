@@ -49,7 +49,7 @@ int main(int argc, const char** argv) {
 	);
 
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
-			argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf"
+			argc > 1 ? argv[1] : "resources/Cube/cube.gltf"
 	));
 
     // TODO: replace by bigger scene
@@ -76,9 +76,6 @@ int main(int argc, const char** argv) {
 	for (size_t i=0; i<mesh.vertexGroups[0].indexBuffer.data.size(); i++) {
 	    indices.push_back(mesh.vertexGroups[0].indexBuffer.data[i]);
 	}
-
-	// init RTXModule
-    rtxModule.init(&core, vertices, indices);
 
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
@@ -129,29 +126,37 @@ int main(int argc, const char** argv) {
 		[&rayGenShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 			rayGenShaderProgram.addShader(shaderStage, path);
 		});
-
+	
 	vkcv::ShaderProgram rayClosestHitShaderProgram;
 	compiler.compile(vkcv::ShaderStage::RAY_CLOSEST_HIT, std::filesystem::path("resources/shaders/raytrace.rchit"),
 		[&rayClosestHitShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 			rayClosestHitShaderProgram.addShader(shaderStage, path);
 		});
-
+	/*
 	vkcv::ShaderProgram rayMissShaderProgram;
 	compiler.compile(vkcv::ShaderStage::RAY_MISS, std::filesystem::path("resources/shaders/raytrace.rmiss"),
 		[&rayMissShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 			rayMissShaderProgram.addShader(shaderStage, path);
 		});
-
-
+	*/
+	std::vector<vkcv::DescriptorSetHandle> descriptorSetHandles;
 	//TODO
-//	vkcv::DescriptorSetLayoutHandle rayGenShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayGenShaderProgram.getReflectedDescriptors().at(0));
-//	vkcv::DescriptorSetHandle rayGenShaderDescriptorSet = core.createDescriptorSet(rayGenShaderDescriptorSetLayout);
+	vkcv::DescriptorSetLayoutHandle rayGenShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayGenShaderProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle rayGenShaderDescriptorSet = core.createDescriptorSet(rayGenShaderDescriptorSetLayout);//
+	descriptorSetHandles.push_back(rayGenShaderDescriptorSet);
 
-//	vkcv::DescriptorSetLayoutHandle rayClosestHitShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayClosestHitShaderProgram.getReflectedDescriptors().at(0));
-//	vkcv::DescriptorSetHandle rayGenShaderDescriptorSet = core.createDescriptorSet(rayClosestHitShaderDescriptorSetLayout);
+	
+	vkcv::DescriptorSetLayoutHandle rayClosestHitShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayClosestHitShaderProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle rayCHITShaderDescriptorSet = core.createDescriptorSet(rayClosestHitShaderDescriptorSetLayout);
+	descriptorSetHandles.push_back(rayCHITShaderDescriptorSet);
+	/*
+	vkcv::DescriptorSetLayoutHandle rayMissShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayMissShaderProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle rayMissShaderDescriptorSet = core.createDescriptorSet(rayMissShaderDescriptorSetLayout);
+	descriptorSetHandles.push_back(rayMissShaderDescriptorSet);
+	*/
 
-//	vkcv::DescriptorSetLayoutHandle rayMissShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayMissShaderProgram.getReflectedDescriptors().at(0));
-//	vkcv::DescriptorSetHandle rayGenShaderDescriptorSet = core.createDescriptorSet(rayMissShaderDescriptorSetLayout);
+	// init RTXModule
+	rtxModule.init(&core, vertices, indices,descriptorSetHandles);
 
 	const vkcv::PipelineConfig scenePipelineDefinition{
 		sceneShaderProgram,
@@ -164,9 +169,9 @@ int main(int argc, const char** argv) {
 	vkcv::PipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
 
 	// TODO
-//	vkcv::DescriptorWrites vertexShaderDescriptorWrites;
-//	vertexShaderDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, matrixBuffer.getHandle()) };
-//	core.writeDescriptorSet(vertexShaderDescriptorSet, vertexShaderDescriptorWrites);
+	//vkcv::RTXDescriptorWrites vertexShaderDescriptorWrites;
+	//vertexShaderDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, matrixBuffer.getHandle()) };
+	//core.writeDescriptorSet(vertexShaderDescriptorSet, vertexShaderDescriptorWrites);
 
 	if (!scenePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;

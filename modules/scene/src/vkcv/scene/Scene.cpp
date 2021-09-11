@@ -131,7 +131,7 @@ namespace vkcv::scene {
 			node.recordDrawcalls(viewProjection, pushConstants, drawcalls, record);
 		}
 		
-		vkcv_log(LogLevel::RAW_INFO, "Frustum culling: %lu / %lu", drawcalls.size(), count);
+		//vkcv_log(LogLevel::RAW_INFO, "Frustum culling: %lu / %lu", drawcalls.size(), count);
 		
 		m_core->recordDrawcallsToCmdStream(
 				cmdStream,

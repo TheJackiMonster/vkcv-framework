@@ -91,5 +91,13 @@ namespace vkcv::rtx {
          * #ASManager::m_accelerationStructures objects.
          */
         void buildTLAS();
+
+        /**
+        * @brief Returns the top level acceleration structure buffer
+        * @return A #TopLevelAccelerationStructure object holding the tlas.
+        */
+        TopLevelAccelerationStructure getTLAS();
+
+        BottomLevelAccelerationStructure getBLAS(uint32_t id);
     };
 }

@@ -220,6 +220,16 @@ namespace vkcv::rtx {
         };
     }
 
+    TopLevelAccelerationStructure ASManager::getTLAS()
+    {
+        return m_topLevelAccelerationStructure;
+    }
+
+    BottomLevelAccelerationStructure ASManager::getBLAS(uint32_t id)
+    {
+        return m_bottomLevelAccelerationStructures[id];
+    }
+
 
     void ASManager::buildBLAS(std::vector<uint8_t> &vertices, std::vector<uint8_t> &indices) {
         uint32_t vertexCount = vertices.size();
