@@ -391,6 +391,16 @@ namespace vkcv
 		void prepareSwapchainImageForPresent(const CommandStreamHandle& handle);
 		void prepareImageForSampling(const CommandStreamHandle& cmdStream, const ImageHandle& image);
 		void prepareImageForStorage(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+
+		// normally layout transitions for attachments are handled by the core
+		// however for manual vulkan use, e.g. ImGui integration, this function is exposed
+		// this is also why the command buffer is passed directly, instead of the command stream handle
+		void prepareImageForAttachmentManually(const vk::CommandBuffer& cmdBuffer, const ImageHandle& image);
+
+		// if manual vulkan work, e.g. ImGui integration, changes an image layout this function must be used
+		// to update the internal image state
+		void updateImageLayoutManual(const vkcv::ImageHandle& image, const vk::ImageLayout layout);
+
 		void recordImageMemoryBarrier(const CommandStreamHandle& cmdStream, const ImageHandle& image);
 		void recordBufferMemoryBarrier(const CommandStreamHandle& cmdStream, const BufferHandle& buffer);
 		void resolveMSAAImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst);
