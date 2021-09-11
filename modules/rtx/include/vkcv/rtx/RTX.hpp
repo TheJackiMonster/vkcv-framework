@@ -3,7 +3,7 @@
 #include <vector>
 #include "vulkan/vulkan.hpp"
 #include "vkcv/Core.hpp"
-#include "RTXDescriptorWrites.hpp"
+//#include "RTXDescriptorWrites.hpp"
 #include "ASManager.hpp"
 
 namespace vkcv::rtx {
