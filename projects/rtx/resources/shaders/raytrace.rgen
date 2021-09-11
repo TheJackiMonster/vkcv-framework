@@ -5,7 +5,7 @@
 // A location for a ray payload (we can have multiple of these)
 //layout(location = 0) rayPayloadEXT RayPayload pay;
 
-//layout(binding = 0, set = 0, rgba32f) uniform image2D outImg;           // the output image -> maybe use 16 bit values?
+layout(binding = 0, set = 0, rgba32f) uniform image2D outImg;           // the output image -> maybe use 16 bit values?
 layout(binding = 1, set = 0) uniform accelerationStructureEXT tlas;     // top level acceleration structure (for the noobs here (you!))
 /*
 layout( push_constant ) uniform constants {     // TODO: add push_constants in main.cpp!

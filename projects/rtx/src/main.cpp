@@ -168,11 +168,6 @@ int main(int argc, const char** argv) {
 		true };
 	vkcv::PipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
 
-	// TODO
-	//vkcv::RTXDescriptorWrites vertexShaderDescriptorWrites;
-	//vertexShaderDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, matrixBuffer.getHandle()) };
-	//core.writeDescriptorSet(vertexShaderDescriptorSet, vertexShaderDescriptorWrites);
-
 	if (!scenePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
@@ -182,7 +177,10 @@ int main(int argc, const char** argv) {
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
+	vkcv::DescriptorWrites rtxWrites;
+
 	auto start = std::chrono::system_clock::now();
+	uint32_t frameCount = 0;
 	while (window.isWindowOpen()) {
         vkcv::Window::pollEvents();
 
@@ -208,7 +206,38 @@ int main(int argc, const char** argv) {
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
+				
+		/*
+		
+		TODO: ADD PUSH CONSTANTS TO SHADER CALL WHEN PIPELINE IS WORKING/FINISHED
+		
+		*/
+
+		struct RaytracingPushConstantData {
+			glm::vec4 camera_position;   // as origin for ray generation
+			glm::vec4 camera_right;      // for computing ray direction
+			glm::vec4 camera_up;         // for computing ray direction
+			glm::vec4 camera_forward;    // for computing ray direction
+			glm::uint frameCount;        // what is this? the actual frame?
+		};
+
+		RaytracingPushConstantData raytracingPushData;
+		raytracingPushData.camera_position = glm::vec4(cameraManager.getActiveCamera().getPosition(),0);
+		raytracingPushData.camera_right = glm::vec4(glm::cross(cameraManager.getActiveCamera().getFront(), cameraManager.getActiveCamera().getUp()), 0);
+		raytracingPushData.camera_up = glm::vec4(cameraManager.getActiveCamera().getUp(),0);
+		raytracingPushData.camera_forward = glm::vec4(cameraManager.getActiveCamera().getFront(),0);
+		raytracingPushData.frameCount = frameCount++;
+
+		vkcv::PushConstants pushConstantsRTX(sizeof(RaytracingPushConstantData));
+		pushConstantsRTX.appendDrawcall(raytracingPushData);
+
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+
+		
+		rtxWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(0, swapchainInput) };
+		core.writeDescriptorSet(rayGenShaderDescriptorSet, rtxWrites);
+
+		core.prepareImageForStorage(cmdStream, swapchainInput);
 
 		auto recordMesh = [](const glm::mat4& MVP, const glm::mat4& M,
 							 vkcv::PushConstants &pushConstants,
