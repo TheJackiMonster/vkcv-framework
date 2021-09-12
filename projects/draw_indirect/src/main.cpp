@@ -7,16 +7,33 @@
 #include <vkcv/shader/GLSLCompiler.hpp>
 
 // Assumes the meshes use index buffers
-void addMeshToIndirectDraw(const std::vector<vkcv::asset::VertexGroup> &meshes,
-                          std::vector<vk::DrawIndexedIndirectCommand> &indexedIndirectCommands)
+
+
+void addMeshToIndirectDraw(const vkcv::asset::Scene &scene,
+                           std::vector<uint8_t> &compiledVertexBuffer,
+                           std::vector<uint8_t> &compiledIndexBuffer,
+                           std::vector<vk::DrawIndexedIndirectCommand> &indexedIndirectCommands)
 {
-    for (vkcv::asset::VertexGroup mesh : meshes)
+    for (const auto &mesh : scene.meshes)
     {
-        indexedIndirectCommands.emplace_back(static_cast<uint32_t>(mesh.indexBuffer.data.size()),
-                                              1,
-                                              0,
-                                              0,
-                                              static_cast<uint32_t>(indexedIndirectCommands.size()));
+        for(auto &vertexGroupIndex : mesh.vertexGroups)
+        {
+            auto &vertexGroup = scene.vertexGroups[vertexGroupIndex];
+
+            indexedIndirectCommands.emplace_back(static_cast<uint32_t>(vertexGroup.indexBuffer.data.size()),
+                                                 1,
+                                                 static_cast<uint32_t>(compiledIndexBuffer.size()),
+                                                 0,
+                                                 static_cast<uint32_t>(indexedIndirectCommands.size()));
+
+            compiledVertexBuffer.insert(compiledVertexBuffer.end(),
+                                        vertexGroup.vertexBuffer.data.begin(),
+                                        vertexGroup.vertexBuffer.data.end());
+
+            compiledIndexBuffer.insert(compiledIndexBuffer.end(),
+                                       vertexGroup.indexBuffer.data.begin(),
+                                       vertexGroup.indexBuffer.data.end());
+        }
     }
 }
 
@@ -87,15 +104,6 @@ int main(int argc, const char** argv) {
         return EXIT_FAILURE;
     }
 
-    std::vector<vk::DrawIndexedIndirectCommand> indexedIndirectCommands;
-    addMeshToIndirectDraw(asset_scene.vertexGroups, indexedIndirectCommands);
-    vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(
-            vkcv::BufferType::INDIRECT,
-            indexedIndirectCommands.size() * sizeof(vk::DrawIndexedIndirectCommand),
-            vkcv::BufferMemoryType::DEVICE_LOCAL);
-    indirectBuffer.fill(indexedIndirectCommands);
-
-
     const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
@@ -140,53 +148,45 @@ int main(int argc, const char** argv) {
     // since these are used in the command buffer to bind and draw from the vertex shaders
 
 
+    std::vector<vk::DrawIndexedIndirectCommand> indexedIndirectCommands;
+    std::vector<uint8_t> compiledVertexBuffer;
+    std::vector<uint8_t> compiledIndexBuffer;
 
-    std::vector<vkcv::Buffer<uint8_t>> vertexBuffers;
-    std::vector<vkcv::Buffer<uint8_t>> indexBuffers;
+    addMeshToIndirectDraw(asset_scene,
+                          compiledVertexBuffer,
+                          compiledIndexBuffer,
+                          indexedIndirectCommands);
 
-    std::vector<vkcv::Mesh> sponzaMeshes;
-    std::vector<vkcv::DrawcallInfo> drawcalls;
+    vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(
+            vkcv::BufferType::INDIRECT,
+            indexedIndirectCommands.size() * sizeof(vk::DrawIndexedIndirectCommand),
+            vkcv::BufferMemoryType::DEVICE_LOCAL);
+    indirectBuffer.fill(indexedIndirectCommands);
 
-    for(const auto &mesh : asset_scene.meshes)
-    {
-        for(auto i = 0; i < mesh.vertexGroups.size(); i++)
-        {
-            auto &vertexGroup = asset_scene.vertexGroups[mesh.vertexGroups[i]];
+    auto vkCompiledVertexBuffer = core.createBuffer<uint8_t>(
+            vkcv::BufferType::VERTEX,
+            compiledVertexBuffer.size(),
+            vkcv::BufferMemoryType::DEVICE_LOCAL);
+    vkCompiledVertexBuffer.fill(compiledVertexBuffer.data());
 
-            auto vertexBuffer = core.createBuffer<uint8_t>(
-                    vkcv::BufferType::VERTEX,
-                    vertexGroup.vertexBuffer.data.size(),
-                    vkcv::BufferMemoryType::DEVICE_LOCAL);
-            vertexBuffer.fill(vertexGroup.vertexBuffer.data);
-            vertexBuffers.push_back(vertexBuffer);
+    auto vkCompiledIndexBuffer = core.createBuffer<uint8_t>(
+            vkcv::BufferType::INDEX,
+            compiledIndexBuffer.size(),
+            vkcv::BufferMemoryType::DEVICE_LOCAL);
+    vkCompiledIndexBuffer.fill(compiledIndexBuffer.data());
 
-            auto indexBuffer = core.createBuffer<uint8_t>(
-                    vkcv::BufferType::INDEX,
-                    vertexGroup.indexBuffer.data.size(),
-                    vkcv::BufferMemoryType::DEVICE_LOCAL);
-            indexBuffer.fill(vertexGroup.indexBuffer.data);
-            indexBuffers.push_back(indexBuffer);
+    std::vector<vkcv::asset::VertexAttribute> attributes = asset_scene.vertexGroups[0].vertexBuffer.attributes;
+    std::sort(attributes.begin(),
+              attributes.end(),
+              [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y)
+              {return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);});
 
-            auto& attributes = vertexGroup.vertexBuffer.attributes;
-            std::sort(attributes.begin(),
-                      attributes.end(),
-                      [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y)
-                      {return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);});
+     const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
+            vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vkCompiledVertexBuffer.getVulkanHandle()),
+            vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vkCompiledVertexBuffer.getVulkanHandle()),
+            vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vkCompiledVertexBuffer.getVulkanHandle()) };
 
-            const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-                    vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-                    vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-                    vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
-
-            const vkcv::Mesh mesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), vertexGroup.numIndices);
-            drawcalls.push_back(vkcv::DrawcallInfo(mesh, {}));
-        }
-    }
-
-
-    //const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
-    //vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
-    //vkcv::DrawcallInfo          drawcall(renderMesh, { },1);
+    const vkcv::Mesh mesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), compiledIndexBuffer.size());
 
 
 	//vkcv::DescriptorBindings descriptorBindings = sponzaProgram.getReflectedDescriptors().at(0);
@@ -284,13 +284,15 @@ int main(int argc, const char** argv) {
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         vkcv::camera::Camera cam = cameraManager.getActiveCamera();
 
-		vkcv::PushConstants pushConstants (sizeof(glm::mat4));
+		vkcv::PushConstants pushConstants(0);
 
+        /*
         for (const auto &mesh : asset_scene.meshes)
         {
             glm::mat4 modelMesh = glm::make_mat4(mesh.modelMatrix.data());
             pushConstants.appendDrawcall(cam.getProjection() * cam.getView() * modelMesh);
         }
+        */
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
@@ -299,8 +301,8 @@ int main(int argc, const char** argv) {
 			cmdStream,
 			passHandle,
             sponzaPipelineHandle,
-			pushConstants,
-			drawcalls,
+            pushConstants,
+			mesh,
 			renderTargets,
 			indirectBuffer,
             1);

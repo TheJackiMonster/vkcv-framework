@@ -398,7 +398,7 @@ namespace vkcv
             const PassHandle                                    renderpassHandle,
             const PipelineHandle                                pipelineHandle,
             const PushConstants                                 &pushConstantData,
-            const std::vector<DrawcallInfo>                     &drawcalls,
+            const vkcv::Mesh                                    &compiledMesh,
             const std::vector<ImageHandle>                      &renderTargets,
             const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
             const uint32_t                                      drawCount) {
@@ -449,37 +449,47 @@ namespace vkcv
                 recordDynamicViewport(cmdBuffer, width, height);
             }
 
-            for (auto i = 0; i < drawcalls.size(); i++)
+            /*
+            for (uint32_t i = 0; i < drawcalls[i].mesh.vertexBufferBindings.size(); i++)
             {
-                for (uint32_t i = 0; i < drawcalls[i].mesh.vertexBufferBindings.size(); i++)
-                {
-                    const auto &vertexBinding = drawcalls[i].mesh.vertexBufferBindings[i];
-                    cmdBuffer.bindVertexBuffers(i, vertexBinding.buffer, vertexBinding.offset);
-                }
-
-                for (const auto &descriptorUsage : drawcalls[i].descriptorSets)
-                {
-                    cmdBuffer.bindDescriptorSets(
-                            vk::PipelineBindPoint::eGraphics,
-                            pipelineLayout,
-                            descriptorUsage.setLocation,
-                            descriptorUsage.vulkanHandle,
-                            nullptr);
-                }
-
-                if (pushConstantData.getSizePerDrawcall() > 0)
-                {
-                    cmdBuffer.pushConstants(
-                            pipelineLayout,
-                            vk::ShaderStageFlagBits::eAll,
-                            0,
-                            pushConstantData.getSizePerDrawcall(),
-                            pushConstantData.getDrawcallData(i));
-                }
-
-                if (drawcalls[i].mesh.indexBuffer)
-                    cmdBuffer.bindIndexBuffer(drawcalls[i].mesh.indexBuffer, 0, getIndexType(drawcalls[i].mesh.indexBitCount));
+                const auto &vertexBinding = drawcalls[i].mesh.vertexBufferBindings[i];
+                cmdBuffer.bindVertexBuffers(i, vertexBinding.buffer, vertexBinding.offset);
             }
+
+
+            for (const auto &descriptorUsage : drawcalls[i].descriptorSets)
+            {
+                cmdBuffer.bindDescriptorSets(
+                        vk::PipelineBindPoint::eGraphics,
+                        pipelineLayout,
+                        descriptorUsage.setLocation,
+                        descriptorUsage.vulkanHandle,
+                        nullptr);
+            }
+
+
+            if (pushConstantData.getSizePerDrawcall() > 0)
+            {
+                cmdBuffer.pushConstants(
+                        pipelineLayout,
+                        vk::ShaderStageFlagBits::eAll,
+                        0,
+                        pushConstantData.getSizePerDrawcall(),
+                        pushConstantData.getDrawcallData(i));
+            }
+
+            if (drawcalls[i].mesh.indexBuffer)
+                cmdBuffer.bindIndexBuffer(drawcalls[i].mesh.indexBuffer, 0, getIndexType(drawcalls[i].mesh.indexBitCount));
+             */
+
+            for (uint32_t i = 0; i < compiledMesh.vertexBufferBindings.size(); i++)
+            {
+                cmdBuffer.bindVertexBuffers(i,
+                                            compiledMesh.vertexBufferBindings[i].buffer,
+                                            compiledMesh.vertexBufferBindings[i].offset);
+            }
+
+            cmdBuffer.bindIndexBuffer(compiledMesh.indexBuffer, 0, getIndexType(compiledMesh.indexBitCount));
 
             cmdBuffer.drawIndexedIndirect(
                     indirectBuffer.getVulkanHandle(),
