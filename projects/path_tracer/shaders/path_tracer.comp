@@ -42,12 +42,12 @@ layout(std430, binding = 1) buffer spheres{
     Sphere inSpheres[];
 };
 
-layout(std430, binding = 2) buffer spheres{
-    Sphere inSpheres[];
+layout(std430, binding = 2) buffer planes{
+    Plane inPlanes[];
 };
 
-layout(std430, binding = 3) buffer planes{
-    Plane inPlanes[];
+layout(std430, binding = 3) buffer materials{
+    Material inMaterials[];
 };
 
 layout(set=0, binding = 4, rgba8) uniform image2D outImage;

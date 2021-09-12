@@ -89,6 +89,9 @@ int main(int argc, const char** argv) {
 	spheres.emplace_back(temp::Sphere(glm::vec3( 1.5, -0.5, 18), 3, rubberIndex));
 	spheres.emplace_back(temp::Sphere(glm::vec3( 7.0,  5.0, 18), 4, mirrorIndex));
 
+	std::vector<temp::Plane> planes;
+	planes.emplace_back(temp::Plane(glm::vec3(-3.0, 0.0, 16), glm::vec3(0, 1, 0), glm::vec2(1)));
+
 	std::vector<temp::Light> lights;
 	lights.emplace_back(temp::Light(glm::vec3(-20, 20, 20), 1.5));
 	lights.emplace_back(temp::Light(glm::vec3(30, 50, -25), 1.8));
@@ -104,6 +107,11 @@ int main(int argc, const char** argv) {
 		spheres.size());
 	sphereBuffer.fill(spheres);
 
+	vkcv::Buffer<temp::Plane> planeBuffer = core.createBuffer<temp::Plane>(
+		vkcv::BufferType::STORAGE,
+		planes.size());
+	planeBuffer.fill(planes);
+
 	vkcv::Buffer<temp::Material> materialBuffer = core.createBuffer<temp::Material>(
 		vkcv::BufferType::STORAGE,
 		materials.size());
@@ -113,7 +121,8 @@ int main(int argc, const char** argv) {
 	traceDescriptorWrites.storageBufferWrites = { 
 		vkcv::BufferDescriptorWrite(0, lightsBuffer.getHandle()),
 		vkcv::BufferDescriptorWrite(1, sphereBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(2, materialBuffer.getHandle()) };
+		vkcv::BufferDescriptorWrite(2, planeBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(3, materialBuffer.getHandle()) };
 	core.writeDescriptorSet(traceDescriptorSet, traceDescriptorWrites);
 
 	vkcv::PipelineHandle tracePipeline = core.createComputePipeline(
@@ -154,7 +163,7 @@ int main(int argc, const char** argv) {
 		const vkcv::CommandStreamHandle cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
 		const vkcv::ImageHandle swapchainInput      = vkcv::ImageHandle::createSwapchainImageHandle();
-		traceDescriptorWrites.storageImageWrites    = { vkcv::StorageImageDescriptorWrite(3, swapchainInput) };
+		traceDescriptorWrites.storageImageWrites    = { vkcv::StorageImageDescriptorWrite(4, swapchainInput) };
 		core.writeDescriptorSet(traceDescriptorSet, traceDescriptorWrites);
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
