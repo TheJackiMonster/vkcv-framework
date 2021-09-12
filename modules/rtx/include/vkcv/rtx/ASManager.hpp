@@ -4,12 +4,18 @@
 
 namespace vkcv::rtx {
 
+    /**
+     * @brief Used for @#RTXBuffer creation depending on the @#RTXBufferType.
+     */
     enum class RTXBufferType {
         CPU,
         GPU,
         ACCELERATION
     };
 
+    /**
+     * @brief Used as a container to handle buffer creation and destruction in RTX-specific use cases.
+     */
     struct RTXBuffer {
         RTXBufferType bufferType;
         void* data;
@@ -20,6 +26,9 @@ namespace vkcv::rtx {
         vk::Buffer vulkanHandle;
     };
 
+    /**
+     * @brief Used as a container to handle bottom-level acceleration structure (BLAS) construction and destruction.
+     */
     struct BottomLevelAccelerationStructure {
         RTXBuffer vertexBuffer;
         RTXBuffer indexBuffer;
@@ -27,6 +36,9 @@ namespace vkcv::rtx {
         vk::AccelerationStructureKHR vulkanHandle;
     };
 
+    /**
+     * @brief Used as a container to handle top-level acceleration structure (TLAS) construction and destruction.
+     */
     struct TopLevelAccelerationStructure {
         RTXBuffer gpuBufferInstances;
         RTXBuffer tlasBuffer;
@@ -34,6 +46,9 @@ namespace vkcv::rtx {
         vk::AccelerationStructureKHR vulkanHandle;
     };
 
+    /**
+     * @brief A class for managing acceleration structures (bottom, top).
+     */
     class ASManager {
     private:
         Core* m_core;
@@ -45,7 +60,7 @@ namespace vkcv::rtx {
         /**
          * @brief Returns a #RTXBuffer object holding data of type uint16_t from given @p data of type uint8_t.
          * @param data The input data of type uint8_t.
-         * @return A #RTXBuffer object holding @p data.
+         * @return A @#RTXBuffer object holding @p data.
          */
         RTXBuffer makeBufferFromData(std::vector<uint8_t> &data);
 
@@ -59,7 +74,7 @@ namespace vkcv::rtx {
 
         /**
          * @brief Copies @p cpuBuffer data into a @p gpuBuffer. Typical use case is a staging buffer (namely,
-         * @p cpuBuffer) used to fill a @p gpuBuffer with vk::MemoryPropertyFlagBits::eDeviceLocal flag set.
+         * @p cpuBuffer) used to fill a @p gpuBuffer with @p vk::MemoryPropertyFlagBits::eDeviceLocal flag set.
          * @p cpuBuffer is destroyed and freed after copying.
          * @param cpuBuffer
          * @param gpuBuffer
@@ -69,13 +84,13 @@ namespace vkcv::rtx {
     public:
 
         /**
-         * @brief Constructor of #ASManager .
+         * @brief Constructor of @#ASManager .
          * @param core
          */
         ASManager(vkcv::Core *core);
 
         /**
-         * @brief Default destructor of #ASManager.
+         * @brief Default destructor of @#ASManager.
          */
         ~ASManager();
 
@@ -88,16 +103,21 @@ namespace vkcv::rtx {
 
         /**
          * @brief Build a Top Level Acceleration Structure (TLAS) object from the created
-         * #ASManager::m_accelerationStructures objects.
+         * @#ASManager::m_accelerationStructures objects.
          */
         void buildTLAS();
 
         /**
-        * @brief Returns the top level acceleration structure buffer
-        * @return A #TopLevelAccelerationStructure object holding the tlas.
+        * @brief Returns the top-level acceleration structure buffer.
+        * @return A @#TopLevelAccelerationStructure object holding the tlas.
         */
         TopLevelAccelerationStructure getTLAS();
 
+        /**
+         * @brief Returns the bottom-level acceleration structure at @p id.
+         * @param id The ID used for indexing.
+         * @return The specified @#BottomLevelAccelerationStructure object.
+         */
         BottomLevelAccelerationStructure getBLAS(uint32_t id);
     };
 }
