@@ -230,6 +230,10 @@ namespace vkcv::rtx {
         return m_bottomLevelAccelerationStructures[id];
     }
 
+    const vk::DispatchLoaderDynamic& ASManager::getDispatcher() {
+        return m_rtxDispatcher;
+    }
+
 
     void ASManager::buildBLAS(std::vector<uint8_t> &vertices, std::vector<uint8_t> &indices) {
         uint32_t vertexCount = vertices.size();

@@ -126,37 +126,41 @@ int main(int argc, const char** argv) {
 		[&rayGenShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 			rayGenShaderProgram.addShader(shaderStage, path);
 		});
-	
+
 	vkcv::ShaderProgram rayClosestHitShaderProgram;
 	compiler.compile(vkcv::ShaderStage::RAY_CLOSEST_HIT, std::filesystem::path("resources/shaders/raytrace.rchit"),
 		[&rayClosestHitShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 			rayClosestHitShaderProgram.addShader(shaderStage, path);
 		});
-	/*
-	vkcv::ShaderProgram rayMissShaderProgram;
-	compiler.compile(vkcv::ShaderStage::RAY_MISS, std::filesystem::path("resources/shaders/raytrace.rmiss"),
-		[&rayMissShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-			rayMissShaderProgram.addShader(shaderStage, path);
-		});
-	*/
+	
+//	vkcv::ShaderProgram rayMissShaderProgram;
+//	compiler.compile(vkcv::ShaderStage::RAY_MISS, std::filesystem::path("resources/shaders/raytrace.rmiss"),
+//		[&rayMissShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+//			rayMissShaderProgram.addShader(shaderStage, path);
+//		});
+
 	std::vector<vkcv::DescriptorSetHandle> descriptorSetHandles;
+	std::vector<vkcv::DescriptorSetLayoutHandle> descriptorSetLayoutHandles;
 	//TODO
 	vkcv::DescriptorSetLayoutHandle rayGenShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayGenShaderProgram.getReflectedDescriptors().at(0));
 	vkcv::DescriptorSetHandle rayGenShaderDescriptorSet = core.createDescriptorSet(rayGenShaderDescriptorSetLayout);//
 	descriptorSetHandles.push_back(rayGenShaderDescriptorSet);
+	descriptorSetLayoutHandles.push_back(rayGenShaderDescriptorSetLayout);
 
 	
 	vkcv::DescriptorSetLayoutHandle rayClosestHitShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayClosestHitShaderProgram.getReflectedDescriptors().at(0));
 	vkcv::DescriptorSetHandle rayCHITShaderDescriptorSet = core.createDescriptorSet(rayClosestHitShaderDescriptorSetLayout);
 	descriptorSetHandles.push_back(rayCHITShaderDescriptorSet);
-	/*
-	vkcv::DescriptorSetLayoutHandle rayMissShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayMissShaderProgram.getReflectedDescriptors().at(0));
-	vkcv::DescriptorSetHandle rayMissShaderDescriptorSet = core.createDescriptorSet(rayMissShaderDescriptorSetLayout);
-	descriptorSetHandles.push_back(rayMissShaderDescriptorSet);
-	*/
+	descriptorSetLayoutHandles.push_back(rayClosestHitShaderDescriptorSetLayout);
+
+//	vkcv::DescriptorSetLayoutHandle rayMissShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayMissShaderProgram.getReflectedDescriptors().at(0));
+//	vkcv::DescriptorSetHandle rayMissShaderDescriptorSet = core.createDescriptorSet(rayMissShaderDescriptorSetLayout);
+//	descriptorSetHandles.push_back(rayMissShaderDescriptorSet);
+//	descriptorSetLayoutHandles.push_back(rayMissShaderDescriptorSetLayout);
 
 	// init RTXModule
 	rtxModule.init(&core, vertices, indices,descriptorSetHandles);
+//	vk::Pipeline rtxPipeline = rtxModule.createRTXPipeline(descriptorSetLayoutHandles, rayGenShaderProgram, rayMissShaderProgram, rayClosestHitShaderProgram);
 
 	const vkcv::PipelineConfig scenePipelineDefinition{
 		sceneShaderProgram,
@@ -248,7 +252,7 @@ int main(int argc, const char** argv) {
 		scene.recordDrawcalls(cmdStream,
 							  cameraManager.getActiveCamera(),
 							  scenePass,
-							  scenePipeline,
+							  scenePipeline,    // TODO: here we need our RTX pipeline... but as a vkcv::PipelineHandle!
 							  sizeof(glm::mat4),
 							  recordMesh,
 							  renderTargets);

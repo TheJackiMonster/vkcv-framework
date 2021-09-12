@@ -119,5 +119,11 @@ namespace vkcv::rtx {
          * @return The specified @#BottomLevelAccelerationStructure object.
          */
         BottomLevelAccelerationStructure getBLAS(uint32_t id);
+
+        /**
+         * @brief Returns the dispatcher member variable for access in the @#RTXModule.
+         * @return The dispatcher member variable.
+         */
+        const vk::DispatchLoaderDynamic& getDispatcher();
     };
 }
