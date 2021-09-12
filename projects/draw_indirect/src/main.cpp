@@ -80,9 +80,31 @@ void addMeshToIndirectDraw(const vkcv::asset::Scene &scene,
                                         vertexGroup.vertexBuffer.data.begin(),
                                         vertexGroup.vertexBuffer.data.end());
 
-            compiledIndexBuffer.insert(compiledIndexBuffer.end(),
-                                       vertexGroup.indexBuffer.data.begin(),
-                                       vertexGroup.indexBuffer.data.end());
+			if(vertexGroup.indexBuffer.type == vkcv::asset::IndexType::UINT8){
+				std::vector<uint32_t> indexBuffer;
+				for(auto index : vertexGroup.indexBuffer.data)
+				{
+					indexBuffer.push_back(*reinterpret_cast<uint32_t*>(&index));
+				}
+				compiledIndexBuffer.insert(compiledIndexBuffer.end(),
+										   indexBuffer.begin(),
+										   indexBuffer.end());
+			}else if(vertexGroup.indexBuffer.type == vkcv::asset::IndexType::UINT16){
+				std::vector<uint32_t> indexBuffer;
+				for(int i = 0; i < vertexGroup.indexBuffer.data.size(); i+=2)
+				{
+					indexBuffer.push_back(*reinterpret_cast<const uint32_t*>(&vertexGroup.indexBuffer.data[i]));
+				}
+				compiledIndexBuffer.insert(compiledIndexBuffer.end(),
+										   indexBuffer.begin(),
+										   indexBuffer.end());
+			}
+			else
+			{
+				compiledIndexBuffer.insert(compiledIndexBuffer.end(),
+										   vertexGroup.indexBuffer.data.begin(),
+										   vertexGroup.indexBuffer.data.end());
+			}
         }
     }
 }
