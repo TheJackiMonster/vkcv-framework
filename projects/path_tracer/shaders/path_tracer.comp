@@ -8,6 +8,7 @@ layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 struct Material {
     vec3 albedo;
+	float padding;
     vec3 diffuse_color;
     float specular_exponent;
 };
@@ -18,20 +19,25 @@ struct Light{
 };
 
 struct Sphere{
-    vec3 center;
-    float radius;
-    Material material;
+    vec3 	center;
+    float 	radius;
+    int 	materialIndex;
+	float 	padding[3];
 };
 
-layout(std430, binding = 0) coherent buffer lights{
+layout(std430, binding = 0) buffer lights{
     Light inLights[];
 };
 
-layout(std430, binding = 1) coherent buffer spheres{
+layout(std430, binding = 1) buffer spheres{
     Sphere inSpheres[];
 };
 
-layout(set=0, binding = 2, rgba8) uniform image2D outImage;
+layout(std430, binding = 2) buffer materials{
+    Material inMaterials[];
+};
+
+layout(set=0, binding = 3, rgba8) uniform image2D outImage;
 
 layout( push_constant ) uniform constants{
     mat4 viewToWorld;
@@ -81,7 +87,7 @@ Intersection sceneIntersect(const vec3 rayOrigin, const vec3 rayDirection) {
                 min_d = d;
                 intersection.pos        = rayOrigin + rayDirection * d;
                 intersection.N          = normalize(intersection.pos - inSpheres[i].center);
-                intersection.material   = inSpheres[i].material;
+                intersection.material   = inMaterials[inSpheres[i].materialIndex];
             }
         }
     }
@@ -161,10 +167,10 @@ vec3 castRay(const vec3 initialOrigin, const vec3 initialDirection, int max_dept
 vec3 computeDirection(ivec2 coord){
 
     ivec2 outImageRes   = imageSize(outImage);
-    float fovDegree     = 45;
+    float fovDegree     = 25;
     float fov           = fovDegree * pi / 180;
     
-    vec2 uv     = coord / vec2(outImageRes);
+    vec2 uv     = (coord + 0.5) / vec2(outImageRes);
     vec2 ndc    = 2 * uv - 1;
     
     float tanFovHalf    = tan(fov / 2.f);

@@ -9,24 +9,27 @@ namespace temp {
 
 	struct Light {
 		Light(const glm::vec3& p, const float& i) : position(p), intensity(i) {}
-		glm::vec3 position;
-		float intensity;
+
+		glm::vec3   position;
+		float       intensity;
 	};
 
 	struct Material {
 		Material(const glm::vec3& a, const glm::vec3& color, const float& spec) : albedo(a), diffuse_color(color), specular_exponent(spec) {}
-		Material() : albedo(1, 0, 0), diffuse_color(), specular_exponent() {}
-		glm::vec3 albedo;
-		alignas(16) glm::vec3 diffuse_color;
-		float specular_exponent;
+
+		glm::vec3   albedo;
+		float       padding;
+		glm::vec3   diffuse_color;
+		float       specular_exponent;
 	};
 
 	struct Sphere {
-		glm::vec3 center;
-		float radius;
-		Material material;
+		Sphere(const glm::vec3& c, const float& r, const int m) : center(c), radius(r), materialIndex(m) {}
 
-		Sphere(const glm::vec3& c, const float& r, const Material& m) : center(c), radius(r), material(m) {}
+		glm::vec3   center;
+		float       radius;
+		uint32_t    materialIndex;
+		float       padding[3];
 	};
 };
 
@@ -61,40 +64,45 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle       traceDescriptorSet          = core.createDescriptorSet(traceDescriptorSetLayout);
 
 	std::vector<temp::Material> materials;
-	temp::Material ivory(glm::vec3(0.6, 0.3, 0.1), glm::vec3(0.4, 0.4, 0.3), 50.);
-	temp::Material red_rubber(glm::vec3(0.9, 0.1, 0.0), glm::vec3(0.3, 0.1, 0.1), 10.);
-	temp::Material mirror(glm::vec3(0.0, 10.0, 0.8), glm::vec3(1.0, 1.0, 1.0), 1425.);
-	materials.push_back(ivory);
-	materials.push_back(red_rubber);
-	materials.push_back(mirror);
+	materials.emplace_back(temp::Material(glm::vec3(0.6, 0.3, 0.1),  glm::vec3(0.4, 0.4, 0.3),   50.f));
+	materials.emplace_back(temp::Material(glm::vec3(0.9, 0.1, 0.0),  glm::vec3(0.3, 0.1, 0.1),   10.f));
+	materials.emplace_back(temp::Material(glm::vec3(0.0, 10.0, 0.8), glm::vec3(1.0, 1.0, 1.0), 1425.f));
+
+	const int ivoryIndex  = 0;
+	const int rubberIndex = 1;
+	const int mirrorIndex = 2;
 
 	std::vector<temp::Sphere> spheres;
-	spheres.push_back(temp::Sphere(glm::vec3(-3.0, 0.0, 16), 2, ivory));
-	spheres.push_back(temp::Sphere(glm::vec3(-1.0, -1.5, 12), 2, mirror));
-	spheres.push_back(temp::Sphere(glm::vec3(1.5, -0.5, 18), 3, red_rubber));
-	spheres.push_back(temp::Sphere(glm::vec3(7.0, 5.0, 18), 4, mirror));
+	spheres.emplace_back(temp::Sphere(glm::vec3(-3.0,  0.0, 16), 2, ivoryIndex));
+	spheres.emplace_back(temp::Sphere(glm::vec3(-1.0, -1.5, 12), 2, mirrorIndex));
+	spheres.emplace_back(temp::Sphere(glm::vec3( 1.5, -0.5, 18), 3, rubberIndex));
+	spheres.emplace_back(temp::Sphere(glm::vec3( 7.0,  5.0, 18), 4, mirrorIndex));
 
 	std::vector<temp::Light> lights;
-	lights.push_back(temp::Light(glm::vec3(-20, 20, 20), 1.5));
-	lights.push_back(temp::Light(glm::vec3(30, 50, -25), 1.8));
-	lights.push_back(temp::Light(glm::vec3(30, 20, 30), 1.7));
+	lights.emplace_back(temp::Light(glm::vec3(-20, 20, 20), 1.5));
+	lights.emplace_back(temp::Light(glm::vec3(30, 50, -25), 1.8));
+	lights.emplace_back(temp::Light(glm::vec3(30, 20, 30), 1.7));
 
 	vkcv::Buffer<temp::Light> lightsBuffer = core.createBuffer<temp::Light>(
 		vkcv::BufferType::STORAGE,
-		lights.size()
-		);
+		lights.size());
 	lightsBuffer.fill(lights);
 
 	vkcv::Buffer<temp::Sphere> sphereBuffer = core.createBuffer<temp::Sphere>(
 		vkcv::BufferType::STORAGE,
-		spheres.size()
-		);
+		spheres.size());
 	sphereBuffer.fill(spheres);
+
+	vkcv::Buffer<temp::Material> materialBuffer = core.createBuffer<temp::Material>(
+		vkcv::BufferType::STORAGE,
+		materials.size());
+	materialBuffer.fill(materials);
 
 	vkcv::DescriptorWrites traceDescriptorWrites;
 	traceDescriptorWrites.storageBufferWrites = { 
-		vkcv::BufferDescriptorWrite(0,lightsBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(1,sphereBuffer.getHandle()) };
+		vkcv::BufferDescriptorWrite(0, lightsBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(1, sphereBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(2, materialBuffer.getHandle()) };
 	core.writeDescriptorSet(traceDescriptorSet, traceDescriptorWrites);
 
 	vkcv::PipelineHandle tracePipeline = core.createComputePipeline(
@@ -134,8 +142,8 @@ int main(int argc, const char** argv) {
 
 		const vkcv::CommandStreamHandle cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-		const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-		traceDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(2, swapchainInput) };
+		const vkcv::ImageHandle swapchainInput      = vkcv::ImageHandle::createSwapchainImageHandle();
+		traceDescriptorWrites.storageImageWrites    = { vkcv::StorageImageDescriptorWrite(3, swapchainInput) };
 		core.writeDescriptorSet(traceDescriptorSet, traceDescriptorWrites);
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
