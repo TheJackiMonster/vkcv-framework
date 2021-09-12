@@ -31,6 +31,17 @@ namespace temp {
 		uint32_t    materialIndex;
 		float       padding[3];
 	};
+
+	struct Plane {
+		Plane(const glm::vec3& c, const glm::vec3& n, const glm::vec2 e) : center(c), normal(n), extent(e) {}
+
+		glm::vec3   center;
+		float       padding0;
+		glm::vec3   normal;
+		float       padding1;
+		glm::vec2   extent;
+		glm::vec2   padding3;
+	};
 };
 
 int main(int argc, const char** argv) {
