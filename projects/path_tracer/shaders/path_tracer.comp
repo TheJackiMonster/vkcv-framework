@@ -1,0 +1,197 @@
+#version 450 core
+#extension GL_ARB_separate_shader_objects : enable
+
+const float pi      = 3.1415926535897932384626433832795;
+const float hitBias = 0.0001;   // used to offset hits to avoid self intersection
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+struct Material {
+    vec3 albedo;
+    vec3 diffuse_color;
+    float specular_exponent;
+};
+
+struct Light{
+    vec3 position;
+    float intensity;
+};
+
+struct Sphere{
+    vec3 center;
+    float radius;
+    Material material;
+};
+
+layout(std430, binding = 0) coherent buffer lights{
+    Light inLights[];
+};
+
+layout(std430, binding = 1) coherent buffer spheres{
+    Sphere inSpheres[];
+};
+
+layout(set=0, binding = 2, rgba8) uniform image2D outImage;
+
+layout( push_constant ) uniform constants{
+    mat4 viewToWorld;
+    int lightCount;
+    int sphereCount;
+};
+
+bool ray_intersect(const vec3 origin, const vec3 dir, out float t0, const int id){
+    vec3 L = inSpheres[id].center - origin;
+    float tca = dot(L, dir);
+    float d2 = dot(L, L) - tca * tca;
+    if (d2 > inSpheres[id].radius * inSpheres[id].radius){
+        return false;
+    }
+    float thc = float(sqrt(inSpheres[id].radius * inSpheres[id].radius - d2));
+    t0 = tca - thc;
+    float t1 = tca + thc;
+    if (t0 < 0) {
+        t0 = t1;
+    }
+    if (t0 < 0){
+        return false;
+    }
+    return true;
+}
+
+struct Intersection{
+    bool hit;
+    vec3 pos;
+    vec3 N;
+    Material material;
+};
+
+Intersection sceneIntersect(const vec3 rayOrigin, const vec3 rayDirection) {
+    float   min_d    = 100000;  // lets start with something big
+    
+    Intersection intersection;
+    intersection.hit = false;
+    
+    for (int i = 0; i < sphereCount; i++) {
+        float d;
+        if (ray_intersect(rayOrigin, rayDirection, d, i)) {
+            
+            intersection.hit = true;
+            
+            if(d < min_d){
+                min_d = d;
+                intersection.pos        = rayOrigin + rayDirection * d;
+                intersection.N          = normalize(intersection.pos - inSpheres[i].center);
+                intersection.material   = inSpheres[i].material;
+            }
+        }
+    }
+    return intersection;
+}
+
+vec3 biasHitPosition(vec3 hitPos, vec3 rayDirection, vec3 N){
+    // return hitPos + N * hitBias; // works as long as no refraction/transmission is used and camera is outside sphere
+    return hitPos + sign(dot(rayDirection, N)) * N * hitBias;
+}
+
+vec3 computeHitLighting(Intersection intersection, vec3 V, out float outReflectionThroughput){
+    
+    float lightIntensityDiffuse  = 0;
+    float lightIntensitySpecular = 0;
+
+    for (int i = 0; i < lightCount; i++) {
+        
+        vec3   L = normalize(inLights[i].position - intersection.pos);
+        float  d = distance(inLights[i].position, intersection.pos);
+
+        vec3 shadowOrigin = biasHitPosition(intersection.pos, L, intersection.N);
+        
+        Intersection shadowIntersection = sceneIntersect(shadowOrigin, L);
+        
+        bool isShadowed = false;
+        if(shadowIntersection.hit)
+            isShadowed = distance(shadowIntersection.pos, shadowOrigin) < d;
+		
+        if(isShadowed)
+            continue;        
+        
+        lightIntensityDiffuse  += inLights[i].intensity * max(0.f, dot(L, intersection.N));
+        lightIntensitySpecular += pow(max(0.f, dot(reflect(V, intersection.N), L)), intersection.material.specular_exponent) * inLights[i].intensity;
+    }
+
+    outReflectionThroughput = intersection.material.albedo[2];
+    return intersection.material.diffuse_color * lightIntensityDiffuse * intersection.material.albedo[0] + lightIntensitySpecular * intersection.material.albedo[1];
+}
+
+vec3 castRay(const vec3 initialOrigin, const vec3 initialDirection, int max_depth) {
+    
+    vec3 skyColor = vec3(0.2, 0.7, 0.8);
+    vec3 rayOrigin    = initialOrigin;
+    vec3 rayDirection = initialDirection;
+    
+    float   reflectionThroughput    = 1;
+    vec3    color                   = vec3(0);
+    
+    for(int i = 0; i < max_depth; i++){
+
+        Intersection intersection = sceneIntersect(rayOrigin, rayDirection);
+        
+        vec3 hitColor;
+        float hitReflectionThroughput;
+        
+        if(intersection.hit){
+            hitColor = computeHitLighting(intersection, rayDirection, hitReflectionThroughput);
+        }
+        else{
+            hitColor = skyColor;
+        }
+        
+        color                   += hitColor * reflectionThroughput;
+        reflectionThroughput    *= hitReflectionThroughput;
+        
+        if(!intersection.hit)
+            break;
+
+        rayDirection    = normalize(reflect(rayDirection, intersection.N));
+        rayOrigin       = biasHitPosition(intersection.pos, rayDirection, intersection.N);
+    }
+
+    return color;
+}
+
+vec3 computeDirection(ivec2 coord){
+
+    ivec2 outImageRes   = imageSize(outImage);
+    float fovDegree     = 45;
+    float fov           = fovDegree * pi / 180;
+    
+    vec2 uv     = coord / vec2(outImageRes);
+    vec2 ndc    = 2 * uv - 1;
+    
+    float tanFovHalf    = tan(fov / 2.f);
+    float aspectRatio   = outImageRes.x / float(outImageRes.y);
+    float x             =  ndc.x * tanFovHalf * aspectRatio;
+    float y             = -ndc.y * tanFovHalf;
+    
+    // z component must be chosen so vector length equals 1
+    // setting z=1 and normalizing shortens x and y, changing the fov
+    // the final length must satisfy:
+    //                    1 = |v|                   <=> 
+    //                    1 = sqrt(x^2 + y^2 + z^2) <=>
+    //                    1 = x^2 + y^2 + z^2       <=>
+    //        1 - x^2 - y^2 = z^2                   <=>
+    //  sqrt(1 - x^2 - y^2) = z
+    vec3 directionViewSpace     = vec3(x, y, sqrt(1 - x*x - y*y));
+    vec3 directionWorldSpace    = mat3(viewToWorld) * directionViewSpace;
+    return directionWorldSpace;
+}
+
+
+void main(){
+    ivec2 coord     = ivec2(gl_GlobalInvocationID.xy);
+    int max_depth   = 4;
+    vec3 direction  = computeDirection(coord);
+    vec3 cameraPos  = viewToWorld[3].xyz;
+    vec3 color      = castRay(cameraPos, direction, max_depth);
+    
+    imageStore(outImage, coord, vec4(color, 0.f));
+}
