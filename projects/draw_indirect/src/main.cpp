@@ -6,8 +6,58 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
-// Assumes the meshes use index buffers
+struct Vertex
+{
+	glm::vec3 position;
+	glm::vec3 normal;
+	glm::vec2 uv;
+};
 
+std::vector<std::vector<Vertex>> interleaveScene(vkcv::asset::Scene scene)
+{
+	std::vector<std::vector<Vertex>> returnScene;
+
+	for(auto& vertexGroup : scene.vertexGroups )
+	{
+		const vkcv::asset::VertexAttribute positionAttribute = vertexGroup.vertexBuffer.attributes[0];
+		const vkcv::asset::VertexAttribute normalAttribute   = vertexGroup.vertexBuffer.attributes[1];
+		const vkcv::asset::VertexAttribute uvAttribute       = vertexGroup.vertexBuffer.attributes[2];
+
+		assert(positionAttribute.type   == vkcv::asset::PrimitiveType::POSITION);
+		assert(normalAttribute.type     == vkcv::asset::PrimitiveType::NORMAL);
+		assert(uvAttribute.type         == vkcv::asset::PrimitiveType::TEXCOORD_0);
+
+		const uint64_t &verticesCount          = vertexGroup.numVertices;
+		const std::vector<uint8_t> &vertexData = vertexGroup.vertexBuffer.data;
+
+		std::vector<Vertex> vertices;
+		vertices.reserve(verticesCount);
+
+		const size_t positionStride = positionAttribute.stride == 0 ? sizeof(glm::vec3) : positionAttribute.stride;
+		const size_t normalStride   = normalAttribute.stride   == 0 ? sizeof(glm::vec3) : normalAttribute.stride;
+		const size_t uvStride       = uvAttribute.stride       == 0 ? sizeof(glm::vec2) : uvAttribute.stride;
+
+		for(auto i = 0; i < verticesCount; i++)
+		{
+			const size_t positionOffset = positionAttribute.offset + positionStride * i;
+			const size_t normalOffset   = normalAttribute.offset   + normalStride * i;
+			const size_t uvOffset       = uvAttribute.offset       + uvStride * i;
+
+			Vertex v;
+
+			v.position = *reinterpret_cast<const glm::vec3*>(&(vertexData[positionOffset]));
+			v.normal   = *reinterpret_cast<const glm::vec3*>(&(vertexData[normalOffset]));
+			v.uv       = *reinterpret_cast<const glm::vec3*>(&(vertexData[uvOffset]));
+
+			vertices.push_back(v);
+		}
+		returnScene.push_back(vertices);
+	}
+	assert(returnScene.size() == scene.vertexGroups.size());
+	return returnScene;
+}
+
+// Assumes the meshes use index buffers
 
 void addMeshToIndirectDraw(const vkcv::asset::Scene &scene,
                            std::vector<uint8_t> &compiledVertexBuffer,
@@ -163,18 +213,33 @@ int main(int argc, const char** argv) {
             vkcv::BufferMemoryType::DEVICE_LOCAL);
     indirectBuffer.fill(indexedIndirectCommands);
 
+	std::vector<std::vector<Vertex>> interleavedVertices = interleaveScene(asset_scene);
+
+	std::vector<Vertex> compiledInterleavedBuffer;
+	for(auto& vertexGroup : interleavedVertices )
+	{
+		compiledInterleavedBuffer.insert(compiledInterleavedBuffer.end(),vertexGroup.begin(),vertexGroup.end());
+	}
+/*
     auto vkCompiledVertexBuffer = core.createBuffer<uint8_t>(
             vkcv::BufferType::VERTEX,
             compiledVertexBuffer.size(),
             vkcv::BufferMemoryType::DEVICE_LOCAL);
     vkCompiledVertexBuffer.fill(compiledVertexBuffer.data());
+*/
+	auto compiledInterleavedVertexBuffer = core.createBuffer<Vertex>(
+			vkcv::BufferType::VERTEX,
+			compiledInterleavedBuffer.size(),
+			vkcv::BufferMemoryType::DEVICE_LOCAL
+			);
+	compiledInterleavedVertexBuffer.fill(compiledInterleavedBuffer.data());
 
     auto vkCompiledIndexBuffer = core.createBuffer<uint8_t>(
             vkcv::BufferType::INDEX,
             compiledIndexBuffer.size(),
             vkcv::BufferMemoryType::DEVICE_LOCAL);
     vkCompiledIndexBuffer.fill(compiledIndexBuffer.data());
-
+/*
     std::vector<vkcv::asset::VertexAttribute> attributes = asset_scene.vertexGroups[0].vertexBuffer.attributes;
     std::sort(attributes.begin(),
               attributes.end(),
@@ -185,8 +250,12 @@ int main(int argc, const char** argv) {
             vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vkCompiledVertexBuffer.getVulkanHandle()),
             vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vkCompiledVertexBuffer.getVulkanHandle()),
             vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vkCompiledVertexBuffer.getVulkanHandle()) };
+*/
+	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
+			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize> (0), compiledInterleavedVertexBuffer.getVulkanHandle() )
+	};
 
-    const vkcv::Mesh mesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), compiledIndexBuffer.size());
+	const vkcv::Mesh mesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), compiledIndexBuffer.size());
 
 
 	//vkcv::DescriptorBindings descriptorBindings = sponzaProgram.getReflectedDescriptors().at(0);

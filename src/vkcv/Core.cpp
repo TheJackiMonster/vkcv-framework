@@ -482,13 +482,20 @@ namespace vkcv
                 cmdBuffer.bindIndexBuffer(drawcalls[i].mesh.indexBuffer, 0, getIndexType(drawcalls[i].mesh.indexBitCount));
              */
 
-            for (uint32_t i = 0; i < compiledMesh.vertexBufferBindings.size(); i++)
-            {
-                cmdBuffer.bindVertexBuffers(i,
-                                            compiledMesh.vertexBufferBindings[i].buffer,
-                                            compiledMesh.vertexBufferBindings[i].offset);
-            }
-
+//            for (uint32_t i = 0; i < compiledMesh.vertexBufferBindings.size(); i++)
+//            {
+//                cmdBuffer.bindVertexBuffers(i,
+//                                            compiledMesh.vertexBufferBindings[i].buffer,
+//                                            compiledMesh.vertexBufferBindings[i].offset);
+//            }
+			vk::DeviceSize deviceSize = 0;
+			cmdBuffer.bindVertexBuffers(0, 1, &compiledMesh.vertexBufferBindings[0].buffer,&deviceSize);
+			// sizeof(glm::vec3)
+			deviceSize = 12;
+			cmdBuffer.bindVertexBuffers(1, 1, &compiledMesh.vertexBufferBindings[0].buffer,&deviceSize);
+			// 2 * sizeof(glm::vec3)
+			deviceSize = 24;
+			cmdBuffer.bindVertexBuffers(2, 1, &compiledMesh.vertexBufferBindings[0].buffer,&deviceSize);
             cmdBuffer.bindIndexBuffer(compiledMesh.indexBuffer, 0, getIndexType(compiledMesh.indexBitCount));
 
             cmdBuffer.drawIndexedIndirect(
