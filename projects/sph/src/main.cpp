@@ -9,6 +9,7 @@
 #include <time.h>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include "BloomAndFlares.hpp"
+#include "PipelineInit.hpp"
 
 int main(int argc, const char **argv) {
     const char *applicationName = "SPH";
@@ -55,41 +56,15 @@ int main(int argc, const char **argv) {
         return EXIT_FAILURE;
     }
 	vkcv::shader::GLSLCompiler compiler;
+
 // comp shader 1
-    vkcv::ShaderProgram computeShaderProgram1{};
-    compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/shader_water1.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-        computeShaderProgram1.addShader(shaderStage, path);
-    });
-
-    vkcv::DescriptorSetLayoutHandle computeDescriptorSetLayout1 = core.createDescriptorSetLayout(computeShaderProgram1.getReflectedDescriptors().at(0));
-    vkcv::DescriptorSetHandle computeDescriptorSet1 = core.createDescriptorSet(computeDescriptorSetLayout1);
-
-    const std::vector<vkcv::VertexAttachment> computeVertexAttachments1 = computeShaderProgram1.getVertexAttachments();
-
-    std::vector<vkcv::VertexBinding> computeBindings1;
-    for (size_t i = 0; i < computeVertexAttachments1.size(); i++) {
-        computeBindings1.push_back(vkcv::VertexBinding(i, { computeVertexAttachments1[i] }));
-    }
-    const vkcv::VertexLayout computeLayout1(computeBindings1);
-	vkcv::PipelineHandle computePipeline1 = core.createComputePipeline(computeShaderProgram1, {core.getDescriptorSetLayout(computeDescriptorSetLayout1).vulkanHandle} );
-
+    vkcv::PipelineHandle computePipeline1;
+    vkcv::DescriptorSetHandle computeDescriptorSet1 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
+                                                                          "shaders/shader_water1.comp", computePipeline1);
 // comp shader 2
-	vkcv::ShaderProgram computeShaderProgram2{};
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/shader_water2.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		computeShaderProgram2.addShader(shaderStage, path);
-	});
-
-	vkcv::DescriptorSetLayoutHandle computeDescriptorSetLayout2 = core.createDescriptorSetLayout(computeShaderProgram2.getReflectedDescriptors().at(0));
-	vkcv::DescriptorSetHandle computeDescriptorSet2 = core.createDescriptorSet(computeDescriptorSetLayout2);
-
-	const std::vector<vkcv::VertexAttachment> computeVertexAttachments2 = computeShaderProgram2.getVertexAttachments();
-
-	std::vector<vkcv::VertexBinding> computeBindings2;
-	for (size_t i = 0; i < computeVertexAttachments2.size(); i++) {
-		computeBindings2.push_back(vkcv::VertexBinding(i, { computeVertexAttachments2[i] }));
-	}
-	const vkcv::VertexLayout computeLayout2(computeBindings2);
-	vkcv::PipelineHandle computePipeline2 = core.createComputePipeline(computeShaderProgram2, {core.getDescriptorSetLayout(computeDescriptorSetLayout2).vulkanHandle} );
+    vkcv::PipelineHandle computePipeline2;
+    vkcv::DescriptorSetHandle computeDescriptorSet2 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
+                                                                                        "shaders/shader_water2.comp", computePipeline2);
 
 // shader
     vkcv::ShaderProgram particleShaderProgram{};
@@ -241,16 +216,11 @@ int main(int argc, const char **argv) {
         bloomAndFlares.updateImageDimensions(width, height);
     });
 
-    vkcv::ShaderProgram tonemappingShader;
-    compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/tonemapping.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-        tonemappingShader.addShader(shaderStage, path);
-    });
+    //tone mapping shader & pipeline
+    vkcv::PipelineHandle tonemappingPipe;
+    vkcv::DescriptorSetHandle tonemappingDescriptor = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
+                                                                                        "shaders/tonemapping.comp", tonemappingPipe);
 
-    vkcv::DescriptorSetLayoutHandle tonemappingDescriptorLayout = core.createDescriptorSetLayout(tonemappingShader.getReflectedDescriptors().at(0));
-    vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingDescriptorLayout);
-    vkcv::PipelineHandle tonemappingPipe = core.createComputePipeline(
-        tonemappingShader, 
-        { core.getDescriptorSetLayout(tonemappingDescriptorLayout).vulkanHandle });
 
     while (window.isWindowOpen()) {
         vkcv::Window::pollEvents();

@@ -16,7 +16,9 @@ add_executable(sph
 		src/Particle.hpp 
 		src/Particle.cpp
 		src/BloomAndFlares.hpp
-		src/BloomAndFlares.cpp)
+		src/BloomAndFlares.cpp
+		src/PipelineInit.hpp
+		src/PipelineInit.cpp)
 
 # this should fix the execution path to load local files from the project (for MSVC)
 if(MSVC)
