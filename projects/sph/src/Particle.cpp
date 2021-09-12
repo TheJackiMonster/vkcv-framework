@@ -1,20 +1,17 @@
 
 #include "Particle.hpp"
 
-Particle::Particle(glm::vec3 position, glm::vec3 velocity, float lifeTime)
+Particle::Particle(glm::vec3 position, glm::vec3 velocity)
 : m_position(position),
-  m_lifeTime(lifeTime),
-  m_velocity(velocity),
-  m_mass(1.0f),
-  m_reset_velocity(velocity)
-{}
+  m_velocity(velocity)
+{
+    m_density = 0.f;
+    m_force = glm::vec3(0.f);
+    m_pressure = 0.f;
+}
 
 const glm::vec3& Particle::getPosition()const{
     return m_position;
-}
-
-bool Particle::isAlive()const{
-    return m_lifeTime > 0.f;
 }
 
 void Particle::setPosition( const glm::vec3 pos ){
@@ -29,14 +26,14 @@ void Particle::setVelocity( const glm::vec3 vel ){
     m_velocity = vel;
 }
 
-void Particle::update( const float delta ){
-    m_position += m_velocity * delta;
+const float& Particle::getDensity()const {
+    return m_density;
 }
 
-void Particle::setLifeTime( const float lifeTime ){
-    m_lifeTime = lifeTime;
+const glm::vec3& Particle::getForce()const {
+    return m_force;
 }
 
-const float& Particle::getLifeTime()const{
-    return m_lifeTime;
+const float& Particle::getPressure()const {
+    return m_pressure;
 }

@@ -3,13 +3,13 @@
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
-#include "ParticleSystem.hpp"
 #include <random>
 #include <glm/gtc/matrix_access.hpp>
 #include <time.h>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include "BloomAndFlares.hpp"
 #include "PipelineInit.hpp"
+#include "Particle.hpp"
 
 int main(int argc, const char **argv) {
     const char *applicationName = "SPH";
@@ -60,11 +60,21 @@ int main(int argc, const char **argv) {
 // comp shader 1
     vkcv::PipelineHandle computePipeline1;
     vkcv::DescriptorSetHandle computeDescriptorSet1 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
-                                                                          "shaders/shader_water1.comp", computePipeline1);
+                                                                          "shaders/pressure.comp", computePipeline1);
 // comp shader 2
     vkcv::PipelineHandle computePipeline2;
     vkcv::DescriptorSetHandle computeDescriptorSet2 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
-                                                                                        "shaders/shader_water2.comp", computePipeline2);
+                                                                          "shaders/force.comp", computePipeline2);
+
+//comp shader 3
+    vkcv::PipelineHandle computePipeline3;
+    vkcv::DescriptorSetHandle computeDescriptorSet3 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
+                                                                           "shaders/updateData.comp", computePipeline3);
+
+//comp shader 4
+    vkcv::PipelineHandle computePipeline4;
+    vkcv::DescriptorSetHandle computeDescriptorSet4 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
+                                                                            "shaders/flip.comp", computePipeline4);
 
 // shader
     vkcv::ShaderProgram particleShaderProgram{};
@@ -123,23 +133,30 @@ int main(int argc, const char **argv) {
             1
     );
 
-    glm::vec3 minVelocity = glm::vec3(-0.1f,-0.1f,-0.1f);
-    glm::vec3 maxVelocity = glm::vec3(0.1f,0.1f,0.1f);
-    glm::vec2 lifeTime = glm::vec2(-1.f,8.f);
-    ParticleSystem particleSystem = ParticleSystem( 100000 , minVelocity, maxVelocity, lifeTime);
+    int numberParticles = 10000;
+    std::vector<Particle> particles;
+    for (int i = 0; i < numberParticles; i++) {
+        float randPos = (float)std::rand() / (float)RAND_MAX;
+        glm::vec3 pos = glm::vec3(0.f);
+        float randVel = (float)std::rand() / (float)RAND_MAX;
+        glm::vec3 vel = glm::vec3(0.f);
+
+        particles.push_back(Particle(pos, vel));
+    }
 
     vkcv::Buffer<Particle> particleBuffer1 = core.createBuffer<Particle>(
             vkcv::BufferType::STORAGE,
-            particleSystem.getParticles().size()
+            numberParticles * sizeof(glm::vec4) * 3
+
     );
 
-	vkcv::Buffer<Particle> particleBuffer2 = core.createBuffer<Particle>(
-			vkcv::BufferType::STORAGE,
-			particleSystem.getParticles().size()
-	);
+    vkcv::Buffer<Particle> particleBuffer2 = core.createBuffer<Particle>(
+        vkcv::BufferType::STORAGE,
+        numberParticles * sizeof(glm::vec4) * 3
+    );
 
-    particleBuffer1.fill(particleSystem.getParticles());
-	particleBuffer2.fill(particleSystem.getParticles());
+    particleBuffer1.fill(particles);
+	particleBuffer2.fill(particles);
 
     vkcv::DescriptorWrites setWrites;
     setWrites.uniformBufferWrites = {vkcv::BufferDescriptorWrite(0,color.getHandle()),
@@ -154,7 +171,7 @@ int main(int argc, const char **argv) {
     core.writeDescriptorSet(computeDescriptorSet1, computeWrites);
 	core.writeDescriptorSet(computeDescriptorSet2, computeWrites);
 
-    if (!particlePipeline || !computePipeline1 || !computePipeline2)
+    if (!particlePipeline || !computePipeline1 || !computePipeline2 || !computePipeline3 || !computePipeline4)
     {
         std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
         return EXIT_FAILURE;
@@ -169,17 +186,9 @@ int main(int argc, const char **argv) {
     auto pos = glm::vec2(0.f);
     auto spawnPosition = glm::vec3(0.f);
 
-    window.e_mouseMove.add([&](double offsetX, double offsetY) {
-        pos = glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY));
-        pos.x = (-2 * pos.x + static_cast<float>(window.getWidth())) / static_cast<float>(window.getWidth());
-        pos.y = (-2 * pos.y + static_cast<float>(window.getHeight())) / static_cast<float>(window.getHeight());
-        spawnPosition = glm::vec3(pos.x, pos.y, 0.f);
-        particleSystem.setRespawnPos(glm::vec3(-spawnPosition.x, spawnPosition.y, spawnPosition.z));
-    });
-
     std::vector<glm::mat4> modelMatrices;
     std::vector<vkcv::DrawcallInfo> drawcalls;
-    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}, particleSystem.getParticles().size()));
+    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}, numberParticles * sizeof(glm::vec4) * 3));
 
     auto start = std::chrono::system_clock::now();
 
@@ -249,12 +258,14 @@ int main(int argc, const char **argv) {
         renderingMatrices.projection = cameraManager.getActiveCamera().getProjection();
 
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
-        glm::vec2 pushData = glm::vec2(deltatime, static_cast<float>(particleSystem.getParticles().size()));
+
+        //deltatime wird noch nicht genutzt
+        glm::vec2 pushData = glm::vec2(deltatime, (float)numberParticles);
 
         vkcv::PushConstants pushConstantsCompute (sizeof(glm::vec2));
         pushConstantsCompute.appendDrawcall(pushData);
         
-        uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(particleSystem.getParticles().size()/256.f)),1,1};
+        uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(numberParticles/256.f)),1,1};
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline1,
                                               computeDispatchCount,
@@ -273,6 +284,26 @@ int main(int argc, const char **argv) {
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
+        core.recordComputeDispatchToCmdStream(cmdStream,
+            computePipeline3,
+            computeDispatchCount,
+            { vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet3).vulkanHandle) },
+            pushConstantsCompute);
+
+        core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
+        core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
+
+        core.recordComputeDispatchToCmdStream(cmdStream,
+            computePipeline4,
+            computeDispatchCount,
+            { vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet4).vulkanHandle) },
+            pushConstantsCompute);
+
+        core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
+        core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
+
+
+        //bloomAndFlares & tonemapping
         vkcv::PushConstants pushConstantsDraw (sizeof(renderingMatrices));
         pushConstantsDraw.appendDrawcall(renderingMatrices);
         

@@ -5,7 +5,7 @@
 class Particle {
 
 public:
-    Particle(glm::vec3 position, glm::vec3 velocity, float lifeTime = 1.f);
+    Particle(glm::vec3 position, glm::vec3 velocity);
 
     const glm::vec3& getPosition()const;
 
@@ -15,20 +15,20 @@ public:
 
     void setVelocity( const glm::vec3 vel );
 
-    void update( const float delta );
+    const float& getDensity()const;
 
-    bool isAlive()const;
+    const glm::vec3& getForce()const;
 
-    void setLifeTime( const float lifeTime );
+    const float& getPressure()const;
 
-    const float& getLifeTime()const;
+
 
 private:
     // all properties of the Particle
     glm::vec3 m_position;
-    float m_lifeTime;
+    float m_padding1;
     glm::vec3 m_velocity;
-    float m_mass;
-    glm::vec3 m_reset_velocity;
-    float padding_3;
+    float m_density;
+    glm::vec3 m_force;
+    float m_pressure;
 };
