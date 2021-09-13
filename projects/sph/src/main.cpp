@@ -136,11 +136,18 @@ int main(int argc, const char **argv) {
     int numberParticles = 10000;
     std::vector<Particle> particles;
     for (int i = 0; i < numberParticles; i++) {
-        float randPos = (float)std::rand() / (float)RAND_MAX;
-        glm::vec3 pos = glm::vec3(0.f);
-        float randVel = (float)std::rand() / (float)RAND_MAX;
-        glm::vec3 vel = glm::vec3(0.f);
-
+        const float lo = 0.4;
+        const float hi = 0.6;
+        const float vlo = 0.4;
+        const float vhi = 0.6;
+        float x = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
+        float y = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
+        float z = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
+        float vx = vlo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(vhi-vlo)));
+        float vy = vlo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(vhi-vlo)));
+        float vz = vlo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(vhi-vlo)));
+        glm::vec3 pos = glm::vec3(x,y,z);
+        glm::vec3 vel = glm::vec3(vx,vy,vz);
         particles.push_back(Particle(pos, vel));
     }
 
@@ -264,7 +271,7 @@ int main(int argc, const char **argv) {
 
         vkcv::PushConstants pushConstantsCompute (sizeof(glm::vec2));
         pushConstantsCompute.appendDrawcall(pushData);
-        
+
         uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(numberParticles/256.f)),1,1};
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline1,
