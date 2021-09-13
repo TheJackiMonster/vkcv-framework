@@ -89,7 +89,7 @@ bool rayIntersect(const vec3 origin, const vec3 dir, out float t0, const int id)
 
 Intersection sceneIntersect(const vec3 rayOrigin, const vec3 rayDirection) {
     //distance if spheres will be rendered
-    float   min_d    = 100000;  // lets start with something big
+    float   min_d    = 1.0 / 0.0;  // lets start with something big
     
     Intersection intersection;
     intersection.hit = false;
@@ -107,6 +107,19 @@ Intersection sceneIntersect(const vec3 rayOrigin, const vec3 rayDirection) {
                 intersection.N          = normalize(intersection.pos - inSpheres[i].center);
                 intersection.material   = inSpheres[i].material;
             }
+        }
+    }
+
+    float checkerboard_dist = min_d;
+    if (abs(rayDirection.y)>1e-3)  {
+        float d = -(rayOrigin.y + 4) / rayDirection.y; // the checkerboard plane has equation y = -4
+        vec3 pt = rayOrigin + rayDirection * d;
+        if (d > 0 && abs(pt.x) < 10 && pt.z<-10 && pt.z>-30 && d < min_d) {
+            checkerboard_dist = d;
+            intersection.hit = true;
+            intersection.pos = pt;
+            intersection.N = vec3(0, 1, 0);
+            intersection.material = inSpheres[1].material;
         }
     }
     return intersection;
