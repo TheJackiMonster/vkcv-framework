@@ -33,10 +33,11 @@ namespace temp {
 	};
 
 	struct Plane {
-		Plane(const glm::vec3& c, const glm::vec3& n, const glm::vec2 e) : center(c), normal(n), extent(e) {}
+		Plane(const glm::vec3& c, const glm::vec3& n, const glm::vec2 e, int m) 
+			: center(c), normal(n), extent(e), materialIndex(m) {}
 
 		glm::vec3   center;
-		float       padding0;
+		uint32_t    materialIndex;
 		glm::vec3   normal;
 		float       padding1;
 		glm::vec2   extent;
@@ -79,9 +80,9 @@ int main(int argc, const char** argv) {
 	materials.emplace_back(temp::Material(glm::vec3(0.9, 0.1, 0.0),  glm::vec3(0.3, 0.1, 0.1),   10.f));
 	materials.emplace_back(temp::Material(glm::vec3(0.0, 10.0, 0.8), glm::vec3(1.0, 1.0, 1.0), 1425.f));
 
-	const int ivoryIndex  = 0;
-	const int rubberIndex = 1;
-	const int mirrorIndex = 2;
+	const uint32_t ivoryIndex  = 0;
+	const uint32_t rubberIndex = 1;
+	const uint32_t mirrorIndex = 2;
 
 	std::vector<temp::Sphere> spheres;
 	spheres.emplace_back(temp::Sphere(glm::vec3(-3.0,  0.0, 16), 2, ivoryIndex));
@@ -90,7 +91,7 @@ int main(int argc, const char** argv) {
 	spheres.emplace_back(temp::Sphere(glm::vec3( 7.0,  5.0, 18), 4, mirrorIndex));
 
 	std::vector<temp::Plane> planes;
-	planes.emplace_back(temp::Plane(glm::vec3(-3.0, 0.0, 16), glm::vec3(0, 1, 0), glm::vec2(1)));
+	planes.emplace_back(temp::Plane(glm::vec3(0, -1, 0), glm::vec3(0, 1, 0), glm::vec2(3), ivoryIndex));
 
 	std::vector<temp::Light> lights;
 	lights.emplace_back(temp::Light(glm::vec3(-20, 20, 20), 1.5));
@@ -172,12 +173,14 @@ int main(int argc, const char** argv) {
 			glm::mat4   viewToWorld;
 			int32_t     lightCount;
 			int32_t     sphereCount;
+            int32_t     planeCount;
 		};
 
 		RaytracingPushConstantData raytracingPushData;
+		raytracingPushData.viewToWorld = glm::inverse(cameraManager.getActiveCamera().getView());
 		raytracingPushData.lightCount  = lights.size();
 		raytracingPushData.sphereCount = spheres.size();
-		raytracingPushData.viewToWorld = glm::inverse(cameraManager.getActiveCamera().getView());
+		raytracingPushData.planeCount  = planes.size();
 
 		vkcv::PushConstants pushConstantsCompute(sizeof(RaytracingPushConstantData));
 		pushConstantsCompute.appendDrawcall(raytracingPushData);
