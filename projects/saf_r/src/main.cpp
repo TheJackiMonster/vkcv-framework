@@ -15,6 +15,7 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "SAF_R";
 
+	//window creation
 	const int windowWidth = 800;
 	const int windowHeight = 600;
 	vkcv::Window window = vkcv::Window::create(
@@ -44,13 +45,30 @@ int main(int argc, const char** argv) {
 
 	std::string shaderPathCompute = "shaders/raytracing.comp";
 
+	//creating the shader programs
 	vkcv::ShaderProgram safrShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram computeShaderProgram{};
 
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/shader.vert"),
+		[&safrShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+			safrShaderProgram.addShader(shaderStage, path);
+	});
+
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/shader.frag"),
+		[&safrShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+			safrShaderProgram.addShader(shaderStage, path);
+	});
+
 	compiler.compile(vkcv::ShaderStage::COMPUTE, shaderPathCompute, [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		computeShaderProgram.addShader(shaderStage, path);
 	});
+
+	//create DescriptorSets (...) for every Shader
+	const vkcv::DescriptorBindings& descriptorBindings = safrShaderProgram.getReflectedDescriptors().at(0);
+	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
+	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
+	vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
 	const vkcv::DescriptorBindings& computeDescriptorBindings = computeShaderProgram.getReflectedDescriptors().at(0);
 	
@@ -65,21 +83,9 @@ int main(int argc, const char** argv) {
 	}
 	const vkcv::VertexLayout computeLayout(computeBindings);
 	
-
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/shader.vert"),
-		[&safrShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-			safrShaderProgram.addShader(shaderStage, path);
-		});
-
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/shader.frag"),
-		[&safrShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-			safrShaderProgram.addShader(shaderStage, path);
-		});
-
-	const vkcv::DescriptorBindings& descriptorBindings = safrShaderProgram.getReflectedDescriptors().at(0);
-	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
-	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
-    vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+	/*
+	* create the scene
+	*/
 
 	//materials for the spheres
 	std::vector<safrScene::Material> materials;
@@ -102,14 +108,6 @@ int main(int argc, const char** argv) {
 	lights.push_back(safrScene::Light(glm::vec3(-20, 20,  20), 1.5));
 	lights.push_back(safrScene::Light(glm::vec3(30,  50, -25), 1.8));
 	lights.push_back(safrScene::Light(glm::vec3(30,  20,  30), 1.7));
-	//create the raytracer image for rendering
-	safrScene scene;
-	vkcv::asset::Texture texData = scene.render(spheres, lights);
-
-	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Unorm, texData.width, texData.height);
-	texture.fill(texData.data.data());
-	texture.generateMipChainImmediate();
-	texture.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
@@ -119,7 +117,6 @@ int main(int argc, const char** argv) {
 	);
 
 	
-
 	//create Buffer for compute shader
 	vkcv::Buffer<safrScene::Light> lightsBuffer = core.createBuffer<safrScene::Light>(
 		vkcv::BufferType::STORAGE,
@@ -133,15 +130,11 @@ int main(int argc, const char** argv) {
 	);
 	sphereBuffer.fill(spheres);
 
-	vkcv::DescriptorWrites setWrites;
-	setWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(0, texture.getHandle()) };
-	setWrites.samplerWrites = { vkcv::SamplerDescriptorWrite(1, sampler) };
-	core.writeDescriptorSet(descriptorSet, setWrites);
-
 	vkcv::DescriptorWrites computeWrites;
 	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,lightsBuffer.getHandle()),
                                           vkcv::BufferDescriptorWrite(1,sphereBuffer.getHandle())};
     core.writeDescriptorSet(computeDescriptorSet, computeWrites);
+
 
 	const auto& context = core.getContext();
 
@@ -164,7 +157,7 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-
+	//create the render pipeline + compute pipeline
 	const vkcv::PipelineConfig safrPipelineDefinition{
 			safrShaderProgram,
 			(uint32_t)windowWidth,
@@ -192,8 +185,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 	vkcv::DrawcallInfo drawcall(renderMesh, { descriptorUsage }, 1);
 
-	//const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-
+	//create the camera
 	vkcv::camera::CameraManager cameraManager(window);
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
@@ -213,31 +205,36 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 
+		//configure timer
 		auto end = std::chrono::system_clock::now();
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		start = end;
 		
 		time += 0.000001f * static_cast<float>(deltatime.count());
 		
+		//adjust light position
 		lights[0].position.x += std::cos(time * 3.0f) * 2.5f;
 		lights[1].position.z += std::cos(time * 2.5f) * 3.0f;
 		lights[2].position.y += std::cos(time * 1.5f) * 4.0f;
 		lightsBuffer.fill(lights);
 
+		//update camera
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 		glm::mat4 proj = cameraManager.getActiveCamera().getProjection();
 
+		//create pushconstants for render
 		vkcv::PushConstants pushConstants(sizeof(glm::mat4) * 2);
 		pushConstants.appendDrawcall(std::array<glm::mat4, 2>{ mvp, proj });
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
+		//configure the outImage for compute shader (render into the swapchain image)
         computeWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(2, swapchainInput)};
         core.writeDescriptorSet(computeDescriptorSet, computeWrites);
-
         core.prepareImageForStorage (cmdStream, swapchainInput);
 
+		//fill pushconstants for compute shader
         struct RaytracingPushConstantData {
             glm::mat4 viewToWorld;
             int32_t lightCount;
@@ -252,6 +249,7 @@ int main(int argc, const char** argv) {
         vkcv::PushConstants pushConstantsCompute(sizeof(RaytracingPushConstantData));
         pushConstantsCompute.appendDrawcall(raytracingPushData);
 
+		//dispatch compute shader
 		uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil( swapchainWidth/16.f)),
                                             static_cast<uint32_t> (std::ceil(swapchainHeight/16.f)),
                                             1 }; // Anzahl workgroups

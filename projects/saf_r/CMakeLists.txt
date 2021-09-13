@@ -12,7 +12,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(saf_r
 		src/main.cpp 
 		"src/safrScene.hpp" 
-		"src/safrScene.cpp")
+		)
 
 # this should fix the execution path to load local files from the project (for MSVC)
 if(MSVC)

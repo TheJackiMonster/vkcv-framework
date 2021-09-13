@@ -6,6 +6,7 @@ const float hitBias = 0.0001;   // used to offset hits to avoid self intersectio
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
+//structs of materials, lights, spheres and intersection for use in compute shader
 struct Material {
     vec3 albedo;
     vec3 diffuse_color;
@@ -23,6 +24,15 @@ struct Sphere{
     Material material;
 };
 
+struct Intersection{
+    bool hit;
+    vec3 pos;
+    vec3 N;
+    Material material;
+};
+
+
+//incoming data
 layout(std430, binding = 0) coherent buffer lights{
     Light inLights[];
 };
@@ -38,6 +48,14 @@ layout( push_constant ) uniform constants{
     int lightCount;
     int sphereCount;
 };
+
+/*
+* the ray_intersect function checks, if a ray from the raytracer passes through the sphere, hits the sphere or passes by the the sphere
+* @param vec3: origin of ray
+* @param vec3: direction of ray
+* @param float: distance of the ray to the sphere (out because there are no references in shaders)
+* @return bool: if ray interesects sphere or not (out because there are no references in shaders)
+*/
 
 bool ray_intersect(const vec3 origin, const vec3 dir, out float t0, const int id){
     vec3 L = inSpheres[id].center - origin;
@@ -58,19 +76,20 @@ bool ray_intersect(const vec3 origin, const vec3 dir, out float t0, const int id
     return true;
 }
 
-struct Intersection{
-    bool hit;
-    vec3 pos;
-    vec3 N;
-    Material material;
-};
+/*
+* @param vec3: Origin of the ray
+* @param vec3: direction of the ray
+* @return: Intersection struct with hit(bool) position, normal and material of sphere
+*/
 
 Intersection sceneIntersect(const vec3 rayOrigin, const vec3 rayDirection) {
+    //distance if spheres will be rendered
     float   min_d    = 100000;  // lets start with something big
     
     Intersection intersection;
     intersection.hit = false;
     
+    //go over every sphere, check if sphere is hit by ray, save if hit is near enough into intersection struct
     for (int i = 0; i < sphereCount; i++) {
         float d;
         if (ray_intersect(rayOrigin, rayDirection, d, i)) {
@@ -88,32 +107,45 @@ Intersection sceneIntersect(const vec3 rayOrigin, const vec3 rayDirection) {
     return intersection;
 }
 
+/*
+* @param vec3: Hit Position
+* @param vec3: direction of ray
+* @param vec3: N(ormal)
+* @return vec3: new Hit position depending on hitBias (used to offset hits to avoid self intersection)
+*/
 vec3 biasHitPosition(vec3 hitPos, vec3 rayDirection, vec3 N){
-    // return hitPos + N * hitBias; // works as long as no refraction/transmission is used and camera is outside sphere
     return hitPos + sign(dot(rayDirection, N)) * N * hitBias;
 }
 
+/*
+* @param Intersection: struct with all the data of the intersection
+* @param vec3: ???
+* @param float: material albedo of the intersection
+* @return colour/shadows of sphere with illumination
+*/
 vec3 computeHitLighting(Intersection intersection, vec3 V, out float outReflectionThroughput){
     
     float lightIntensityDiffuse  = 0;
     float lightIntensitySpecular = 0;
 
+    //iterate over every light source to compute sphere colours/shadows
     for (int i = 0; i < lightCount; i++) {
-        
+
+        //compute normal + distance between light and intersection
         vec3   L = normalize(inLights[i].position - intersection.pos);
         float  d = distance(inLights[i].position, intersection.pos);
 
+        //compute shadows
         vec3 shadowOrigin = biasHitPosition(intersection.pos, L, intersection.N);
-        
         Intersection shadowIntersection = sceneIntersect(shadowOrigin, L);
-        
         bool isShadowed = false;
-        if(shadowIntersection.hit)
+        if(shadowIntersection.hit){
             isShadowed = distance(shadowIntersection.pos, shadowOrigin) < d;
-		
-        if(isShadowed)
-            continue;        
-        
+        }
+        if(isShadowed){
+            continue;
+        }
+
         lightIntensityDiffuse  += inLights[i].intensity * max(0.f, dot(L, intersection.N));
         lightIntensitySpecular += pow(max(0.f, dot(reflect(V, intersection.N), L)), intersection.material.specular_exponent) * inLights[i].intensity;
     }
@@ -121,6 +153,13 @@ vec3 computeHitLighting(Intersection intersection, vec3 V, out float outReflecti
     outReflectionThroughput = intersection.material.albedo[2];
     return intersection.material.diffuse_color * lightIntensityDiffuse * intersection.material.albedo[0] + lightIntensitySpecular * intersection.material.albedo[1];
 }
+
+/*
+* @param vec3: initial origin of ray
+* @param vec3: initial direction of ray
+* @param int: max depth o ray reflection
+* @return s
+*/
 
 vec3 castRay(const vec3 initialOrigin, const vec3 initialDirection, int max_depth) {
     
@@ -130,27 +169,30 @@ vec3 castRay(const vec3 initialOrigin, const vec3 initialDirection, int max_dept
     
     float   reflectionThroughput    = 1;
     vec3    color                   = vec3(0);
-    
+
+    //iterate to max depth of reflections
     for(int i = 0; i < max_depth; i++){
 
         Intersection intersection = sceneIntersect(rayOrigin, rayDirection);
-        
+
         vec3 hitColor;
         float hitReflectionThroughput;
-        
+
         if(intersection.hit){
             hitColor = computeHitLighting(intersection, rayDirection, hitReflectionThroughput);
-        }
-        else{
+        }else{
             hitColor = skyColor;
         }
-        
+
         color                   += hitColor * reflectionThroughput;
         reflectionThroughput    *= hitReflectionThroughput;
-        
-        if(!intersection.hit)
-            break;
 
+        //if there is no intersection of a ray with a sphere, break out of the loop
+        if(!intersection.hit){
+            break;
+        }
+
+        //compute new direction and origin of the reflected ray
         rayDirection    = normalize(reflect(rayDirection, intersection.N));
         rayOrigin       = biasHitPosition(intersection.pos, rayDirection, intersection.N);
     }
@@ -158,6 +200,10 @@ vec3 castRay(const vec3 initialOrigin, const vec3 initialDirection, int max_dept
     return color;
 }
 
+/*
+* @param ivec2: coordinates of the camera
+* @return vec3: camera stuff what it sees or something?????
+*/
 vec3 computeDirection(ivec2 coord){
 
     ivec2 outImageRes   = imageSize(outImage);
@@ -172,14 +218,6 @@ vec3 computeDirection(ivec2 coord){
     float x             =  ndc.x * tanFovHalf * aspectRatio;
     float y             = -ndc.y * tanFovHalf;
     
-    // z component must be chosen so vector length equals 1
-    // setting z=1 and normalizing shortens x and y, changing the fov
-    // the final length must satisfy:
-    //                    1 = |v|                   <=> 
-    //                    1 = sqrt(x^2 + y^2 + z^2) <=>
-    //                    1 = x^2 + y^2 + z^2       <=>
-    //        1 - x^2 - y^2 = z^2                   <=>
-    //  sqrt(1 - x^2 - y^2) = z
     vec3 directionViewSpace     = vec3(x, y, sqrt(1 - x*x - y*y));
     vec3 directionWorldSpace    = mat3(viewToWorld) * directionViewSpace;
     return directionWorldSpace;
