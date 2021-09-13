@@ -226,7 +226,7 @@ vec3 castRay(Ray ray, int max_depth) {
     return color;
 }
 
-vec3 computeDirection(ivec2 coord){
+vec3 computeCameraRay(ivec2 coord){
 
     ivec2 outImageRes   = imageSize(outImage);
     float fovDegree     = 45;
@@ -251,7 +251,7 @@ void main(){
     ivec2 coord     = ivec2(gl_GlobalInvocationID.xy);
     int max_depth   = 4;
 	Ray cameraRay;
-    cameraRay.direction = computeDirection(coord);
+    cameraRay.direction = computeCameraRay(coord);
     cameraRay.origin  	= viewToWorld[3].xyz;
     vec3 color      = castRay(cameraRay, max_depth);
     
