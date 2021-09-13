@@ -12,6 +12,19 @@
 #include "safrScene.hpp"
 
 
+void createQuadraticLightCluster(std::vector<safrScene::Light>& lights, int countPerDimension, float dimension, float height, float intensity) {
+    float distance = dimension/countPerDimension;
+
+    for(int x = 0; x <= countPerDimension; x++) {
+        for (int z = 0; z <= countPerDimension; z++) {
+            lights.push_back(safrScene::Light(glm::vec3(x * distance, height,  z * distance),
+                                              float (intensity/countPerDimension) / 10.f) // Divide by 10, because intensity is busting O.o
+                                              );
+        }
+    }
+
+}
+
 int main(int argc, const char** argv) {
 	const char* applicationName = "SAF_R";
 
@@ -101,9 +114,13 @@ int main(int argc, const char** argv) {
 
 	//lights for the scene
 	std::vector<safrScene::Light> lights;
+	/*
 	lights.push_back(safrScene::Light(glm::vec3(-20, 20,  20), 1.5));
 	lights.push_back(safrScene::Light(glm::vec3(30,  50, -25), 1.8));
 	lights.push_back(safrScene::Light(glm::vec3(30,  20,  30), 1.7));
+    */
+    createQuadraticLightCluster(lights, 10, 2.5f, 20, 1.5f);
+
 
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,

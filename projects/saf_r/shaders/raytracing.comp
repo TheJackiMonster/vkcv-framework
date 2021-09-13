@@ -119,7 +119,7 @@ Intersection sceneIntersect(const vec3 rayOrigin, const vec3 rayDirection) {
             intersection.hit = true;
             intersection.pos = pt;
             intersection.N = vec3(0, 1, 0);
-            intersection.material = inSpheres[2].material;
+            intersection.material = inSpheres[0].material;
         }
     }
     return intersection;
