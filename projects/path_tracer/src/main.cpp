@@ -241,7 +241,7 @@ int main(int argc, const char** argv) {
 		float cameraYaw;
 		cameraManager.getActiveCamera().getAngles(cameraPitch, cameraYaw);
 
-		if (cameraPitch != cameraPitchPrevious || cameraYaw != cameraYawPrevious)
+		if (glm::abs(cameraPitch - cameraPitchPrevious) > 0.01 || glm::abs(cameraYaw - cameraYawPrevious) > 0.01)
 			clearMeanImage = true;	// camera rotated
 
 		cameraPitchPrevious = cameraPitch;
@@ -276,9 +276,9 @@ int main(int argc, const char** argv) {
 
 		RaytracingPushConstantData raytracingPushData;
 		raytracingPushData.viewToWorld = glm::inverse(cameraManager.getActiveCamera().getView());
-		raytracingPushData.sphereCount = 0;// spheres.size();
+		raytracingPushData.sphereCount = spheres.size();
 		raytracingPushData.planeCount  = planes.size();
-		raytracingPushData.frameIndex = frameIndex;
+		raytracingPushData.frameIndex  = frameIndex;
 
 		vkcv::PushConstants pushConstantsCompute(sizeof(RaytracingPushConstantData));
 		pushConstantsCompute.appendDrawcall(raytracingPushData);

@@ -169,38 +169,37 @@ vec3 biasHitPosition(vec3 hitPos, vec3 rayDirection, vec3 N){
 }
 
 // ---- noise/hash functions for pseudorandom variables ----
-// from: https://www.shadertoy.com/view/XlGcRh
-
-float g_seed = 0;
 
 // extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences
 vec2 r2Sequence(uint n){
+	n = n % 42000;
 	const float g = 1.32471795724474602596;
 	return fract(vec2(
 		n /  g,
 		n / (g*g)));
 }
 
-float fast(vec2 v)
-{
-    v = (1./4320.) * v + vec2(0.25,0.);
-    float state = fract( dot( v * v, vec2(3571)));
-    return fract( state * state * (3571. * 2.));
+// random() and helpers from: https://www.shadertoy.com/view/XlycWh
+float g_seed = 0;
+
+uint base_hash(uvec2 p) {
+    p = 1103515245U*((p >> 1U)^(p.yx));
+    uint h32 = 1103515245U*((p.x)^(p.y>>3U));
+    return h32^(h32 >> 16);
 }
 
-vec2 hashwithoutsine21(float p)
-{
-	vec3 p3 = fract(vec3(p,p,p) * vec3(.1031, .1030, .0973));
-	p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.xx+p3.yz)*p3.zy);
+vec2 hash2(inout float seed) {
+    uint n = base_hash(floatBitsToUint(vec2(seed+=.1,seed+=.1)));
+    uvec2 rz = uvec2(n, n*48271U);
+    return vec2(rz.xy & uvec2(0x7fffffffU))/float(0x7fffffff);
 }
 
 void initRandom(ivec2 coord){
-	g_seed = fast(vec2(coord) + hashwithoutsine21(frameIndex));
+	g_seed = float(base_hash(coord)/float(0xffffffffU)+frameIndex);
 }
 
 vec2 random(){
-	return hashwithoutsine21(g_seed += 0.1);
+	return hash2(g_seed);
 }
 
 // ---- shading ----
@@ -230,7 +229,7 @@ vec3 cosineDistribution(vec2 xi){
 
 vec3 sampleTangentToWorldSpace(vec3 tangentSpaceSample, vec3 N){
 	Basis tangentBasis = buildBasisAroundNormal(N);
-	return 
+	return
 		tangentBasis.right		* tangentSpaceSample.x +
 		tangentBasis.up			* tangentSpaceSample.y +
 		tangentBasis.forward 	* tangentSpaceSample.z;
@@ -264,9 +263,7 @@ vec3 castRay(Ray ray) {
         }
         
         color       	+= hitLighting * throughput;
-		
-		
-        throughput  	*= brdf * NoL / cosineDistributionPDF(NoL);
+        throughput  	*= brdf * NoL / max(cosineDistributionPDF(NoL), 0.0001);
         
         if(!intersection.hit)
             break;
@@ -311,17 +308,15 @@ void main(){
 	
 	vec3 color = vec3(0);
 	
-	const int samplesPerPixel = 10;
+	const int samplesPerPixel = 1;
 	for(int i = 0; i < samplesPerPixel; i++){
 		vec2 jitter 		= r2Sequence(i + frameIndex) - 0.5;
 		cameraRay.direction = computeCameraRay(coordCentered + jitter);
 		color 				+= castRay(cameraRay);
 	}
 	color /= samplesPerPixel;
-	
-	// FIXME: find reason and fix properly
-	if(any(isnan(color)))
-		color = vec3(0);
+		
+	//color = vec3(random().r, random().r, random().r);
 	
     imageStore(outImage, coord, vec4(color, 1.f));
 }
