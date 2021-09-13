@@ -5,10 +5,10 @@
 // A location for a ray payload (we can have multiple of these)
 //layout(location = 0) rayPayloadEXT RayPayload pay;
 
-layout(binding = 0, set = 0, rgba32f) uniform image2D outImg;           // the output image -> maybe use 16 bit values?
+layout(binding = 0, set = 0, rgba16) uniform image2D outImg;           // the output image -> maybe use 16 bit values?
 layout(binding = 1, set = 0) uniform accelerationStructureEXT tlas;     // top level acceleration structure (for the noobs here (you!))
-/*
-layout( push_constant ) uniform constants {     // TODO: add push_constants in main.cpp!
+
+layout( push_constant ) uniform constants {
     vec4 camera_position;   // as origin for ray generation
     vec4 camera_right;      // for computing ray direction
     vec4 camera_up;         // for computing ray direction
@@ -16,9 +16,11 @@ layout( push_constant ) uniform constants {     // TODO: add push_constants in m
 
     uint frameCount;        // what is this? the actual frame?
 };
-*/
 
-void main() {
-    // TODO
-    int a = 42;
+void main(){
+    int i = 42;
+
+    vec3 color = vec3(1,0,0);
+    ivec2 coord = ivec2(1,1);
+    imageStore(outImg, coord, vec4(color, 1));
 }

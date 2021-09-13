@@ -441,24 +441,30 @@ namespace vkcv
 			vk::DeviceSize closestHitOffset = 2 * shaderGroupBaseAlignment;
 			vk::DeviceSize shaderBindingTableSize = shaderGroupBaseAlignment * 3; //3 hardcoded to rtx-shader count
 
+			auto m_rtxDispatcher = vk::DispatchLoaderDynamic((PFN_vkGetInstanceProcAddr)m_Context.getInstance().getProcAddr("vkGetInstanceProcAddr"));
+			m_rtxDispatcher.init(m_Context.getInstance());
+
 			vk::StridedDeviceAddressRegionKHR rgenRegion;
 			vk::BufferDeviceAddressInfoKHR shaderBindingTableAddressInfo(shaderBindingTable);
-			rgenRegion.deviceAddress = m_Context.getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo) + rayGenOffset;
+			rgenRegion.deviceAddress = m_Context.getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo, m_rtxDispatcher) + rayGenOffset;
 			rgenRegion.setStride(shaderBindingTableSize);
 			rgenRegion.setSize(shaderBindingTableSize);
 			vk::StridedDeviceAddressRegionKHR rmissRegion;
-			rmissRegion.deviceAddress = m_Context.getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo) + missOffset;
+			rmissRegion.deviceAddress = m_Context.getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo, m_rtxDispatcher) + missOffset;
 			rmissRegion.setStride(shaderBindingTableSize);
 			rmissRegion.setSize(shaderBindingTableSize);
 			vk::StridedDeviceAddressRegionKHR rchitRegion;
-			rchitRegion.deviceAddress = m_Context.getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo) + closestHitOffset;
+			rchitRegion.deviceAddress = m_Context.getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo, m_rtxDispatcher) + closestHitOffset;
 			rchitRegion.setStride(shaderBindingTableSize);
 			rchitRegion.setSize(shaderBindingTableSize);
 			vk::StridedDeviceAddressRegionKHR rcallRegion = {};
 
+
 			cmdBuffer.traceRaysKHR(&rgenRegion,&rmissRegion,&rchitRegion,&rcallRegion,
-									getWindow(windowHandle).getWidth(), getWindow(windowHandle).getHeight(),1);
+									getWindow(windowHandle).getWidth(), getWindow(windowHandle).getHeight(),1, m_rtxDispatcher);
+
 		};
+		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);
     }
 
 	void Core::recordComputeDispatchToCmdStream(

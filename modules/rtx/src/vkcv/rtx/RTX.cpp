@@ -80,7 +80,7 @@ namespace vkcv::rtx {
         vk::WriteDescriptorSet tlasWrite2;
         tlasWrite2.setPNext(&AccelerationDescriptor);
         tlasWrite2.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[2]).vulkanHandle);
-        tlasWrite2.setDstBinding(1);
+        tlasWrite2.setDstBinding(5);
         tlasWrite2.setDstArrayElement(0);
         tlasWrite2.setDescriptorCount(1);
         tlasWrite2.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
