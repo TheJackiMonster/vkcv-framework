@@ -10,7 +10,8 @@ namespace vkcv::rtx {
     enum class RTXBufferType {
         CPU,
         GPU,
-        ACCELERATION
+        ACCELERATION,
+        SHADER_BINDING
     };
 
     /**
@@ -65,14 +66,6 @@ namespace vkcv::rtx {
         RTXBuffer makeBufferFromData(std::vector<uint8_t> &data);
 
         /**
-         * @brief A helper function used by #ASManager::makeBufferFromData. Creates a fully initialized #RTXBuffer object
-         * from partially specified @p buffer. All missing data of @p buffer will be completed by this function.
-         * @param buffer The partially specified #RTXBuffer holding that part of information which is required for
-         * successfully creating a vk::Buffer object.
-         */
-        void createBuffer(RTXBuffer &buffer);
-
-        /**
          * @brief Copies @p cpuBuffer data into a @p gpuBuffer. Typical use case is a staging buffer (namely,
          * @p cpuBuffer) used to fill a @p gpuBuffer with @p vk::MemoryPropertyFlagBits::eDeviceLocal flag set.
          * @p cpuBuffer is destroyed and freed after copying.
@@ -93,6 +86,14 @@ namespace vkcv::rtx {
          * @brief Default destructor of @#ASManager.
          */
         ~ASManager();
+
+        /**
+        * @brief A helper function used by #ASManager::makeBufferFromData. Creates a fully initialized #RTXBuffer object
+        * from partially specified @p buffer. All missing data of @p buffer will be completed by this function.
+        * @param buffer The partially specified #RTXBuffer holding that part of information which is required for
+        * successfully creating a vk::Buffer object.
+        */
+        void createBuffer(RTXBuffer& buffer);
 
         /**
          * @brief Build a Bottom Level Acceleration Structure (BLAS) object from given @p vertices and @p indices.

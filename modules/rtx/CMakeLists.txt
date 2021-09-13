@@ -14,6 +14,10 @@ set(vkcv_rtx_sources
 
 		${vkcv_rtx_include}/vkcv/rtx/ASManager.hpp
 		${vkcv_rtx_source}/vkcv/rtx/ASManager.cpp
+
+		${vkcv_rtx_include}/vkcv/rtx/RTXExtensions.hpp
+		${vkcv_rtx_source}/vkcv/rtx/RTXExtensions.cpp
+
 )
 
 # adding source files to the project

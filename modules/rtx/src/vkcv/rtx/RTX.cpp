@@ -2,126 +2,61 @@
 
 namespace vkcv::rtx {
 
-    RTXModule::RTXModule(){
-
-        // prepare needed raytracing extensions
-        m_instanceExtensions = {
-                VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
-        };
-        m_deviceExtensions = {
-                VK_KHR_MAINTENANCE3_EXTENSION_NAME,
-                VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-                VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
-                VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
-                VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-                VK_KHR_SPIRV_1_4_EXTENSION_NAME,
-                VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-                VK_KHR_RAY_QUERY_EXTENSION_NAME,
-                VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME
-        };
-
-        // get all features required by the device extensions
-        for(auto deviceExtension : m_deviceExtensions) {
-            m_features.requireExtension(deviceExtension);
-        }
-
-        /* FIXME : We must disable features that will be mentioned as "not supported" by the FeatureManager. If every unsupported feature is disabled, this should work.
-         * Maybe we find a better workaround...
-         */
-        m_features.requireFeature<vk::PhysicalDeviceVulkan12Features>(
-                [](vk::PhysicalDeviceVulkan12Features &features) {
-                    features.setSamplerMirrorClampToEdge(true);
-                    features.setDrawIndirectCount(true);
-                    features.setStorageBuffer8BitAccess(true);
-                    features.setUniformAndStorageBuffer8BitAccess(true);
-                    features.setStoragePushConstant8(true);
-                    features.setShaderBufferInt64Atomics(true);
-                    features.setShaderSharedInt64Atomics(true);
-                    features.setShaderFloat16(true);
-                    features.setShaderInt8(true);
-                    features.setDescriptorIndexing(true);
-                    features.setShaderInputAttachmentArrayDynamicIndexing(true);
-                    features.setShaderUniformTexelBufferArrayDynamicIndexing(true);
-                    features.setShaderStorageTexelBufferArrayDynamicIndexing(true);
-                    features.setShaderUniformBufferArrayNonUniformIndexing(true);
-                    features.setShaderSampledImageArrayNonUniformIndexing(true);
-                    features.setShaderStorageBufferArrayNonUniformIndexing(true);
-                    features.setShaderStorageImageArrayNonUniformIndexing(true);
-                    features.setShaderInputAttachmentArrayNonUniformIndexing(true);
-                    features.setShaderUniformTexelBufferArrayNonUniformIndexing(true);
-                    features.setShaderStorageTexelBufferArrayNonUniformIndexing(true);
-                    features.setDescriptorBindingUniformBufferUpdateAfterBind(true);
-                    features.setDescriptorBindingSampledImageUpdateAfterBind(true);
-                    features.setDescriptorBindingStorageImageUpdateAfterBind(true);
-                    features.setDescriptorBindingStorageBufferUpdateAfterBind(true);
-                    features.setDescriptorBindingUniformTexelBufferUpdateAfterBind(true);
-                    features.setDescriptorBindingStorageTexelBufferUpdateAfterBind(true);
-                    features.setDescriptorBindingUpdateUnusedWhilePending(true);
-                    features.setDescriptorBindingPartiallyBound(true);
-                    features.setDescriptorBindingVariableDescriptorCount(true);
-                    features.setRuntimeDescriptorArray(true);
-                    features.setSamplerFilterMinmax(true);
-                    features.setScalarBlockLayout(true);
-                    features.setImagelessFramebuffer(true);
-                    features.setUniformBufferStandardLayout(true);
-                    features.setShaderSubgroupExtendedTypes(true);
-                    features.setSeparateDepthStencilLayouts(true);
-                    features.setHostQueryReset(true);
-                    features.setTimelineSemaphore(true);
-                    features.setBufferDeviceAddress(true);
-                    features.setBufferDeviceAddressCaptureReplay(true);
-                    features.setBufferDeviceAddressMultiDevice(true);
-                    features.setVulkanMemoryModel(true);
-                    features.setVulkanMemoryModelDeviceScope(true);
-                    features.setVulkanMemoryModelAvailabilityVisibilityChains(true);
-                    features.setShaderOutputViewportIndex(true);
-                    features.setShaderOutputLayer(true);
-                    features.setSubgroupBroadcastDynamicId(true);
-                });
-        m_features.requireFeature<vk::PhysicalDeviceVulkan11Features>(
-                [](vk::PhysicalDeviceVulkan11Features &features) {
-                    features.setMultiview(true);
-                    features.setMultiviewGeometryShader(true);
-                    features.setMultiviewTessellationShader(true);
-//                    features.setProtectedMemory(true);    // not supported
-                    features.setSamplerYcbcrConversion(true);
-                    features.setShaderDrawParameters(true);
-                    features.setStorageBuffer16BitAccess(true);
-//                    features.setStorageInputOutput16(true);   // not supported
-                    features.setStoragePushConstant16(true);
-                    features.setUniformAndStorageBuffer16BitAccess(true);
-                    features.setVariablePointers(true);
-                    features.setVariablePointersStorageBuffer(true);
-                });
-        m_features.requireFeature<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>(
-                [](vk::PhysicalDeviceAccelerationStructureFeaturesKHR &features) {
-                    features.setAccelerationStructure(true);
-                    features.setAccelerationStructureCaptureReplay(true);
-//                    features.setAccelerationStructureIndirectBuild(true); // not supported
-//                    features.setAccelerationStructureHostCommands(true);  // not supported
-                    features.setDescriptorBindingAccelerationStructureUpdateAfterBind(true);
-                });
-        m_features.requireExtensionFeature<vk::PhysicalDeviceRayTracingPipelineFeaturesKHR>(
-                VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, [](vk::PhysicalDeviceRayTracingPipelineFeaturesKHR &features) {
-                    features.setRayTracingPipeline(true);
-//                    features.setRayTracingPipelineShaderGroupHandleCaptureReplay(true);   // not supported
-//                    features.setRayTracingPipelineShaderGroupHandleCaptureReplayMixed(true);  // not supported
-                    features.setRayTracingPipelineTraceRaysIndirect(true);
-                    features.setRayTraversalPrimitiveCulling(true);
-                });
-    }
-
-    void RTXModule::init(Core* core, ASManager* asManager, std::vector<uint8_t>& vertices,
-        std::vector<uint8_t>& indices, std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles)
-    {
+    RTXModule::RTXModule(Core* core, ASManager* asManager, std::vector<uint8_t>& vertices,
+        std::vector<uint8_t>& indices, std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles){
         m_core = core;
         m_asManager = asManager;
         // build acceleration structures BLAS then TLAS --> see ASManager
         m_asManager->buildBLAS(vertices, indices);
         m_asManager->buildTLAS();
         RTXDescriptors(descriptorSetHandles);
-        
     }
+
+
+    RTXModule::~RTXModule()
+    {
+        m_core->getContext().getDevice().destroy(m_pipeline);
+        m_core->getContext().getDevice().destroy(m_pipelineLayout);
+        m_core->getContext().getDevice().destroy(m_shaderBindingtableBuffer.vulkanHandle);
+        m_core->getContext().getDevice().freeMemory(m_shaderBindingtableBuffer.deviceMemory);
+    }
+    
+    void RTXModule::createShaderBindingTable(uint32_t shaderCount) {
+        vk::PhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingProperties;
+
+        vk::PhysicalDeviceProperties2 physicalProperties;
+        physicalProperties.pNext = &rayTracingProperties;
+
+        m_core->getContext().getPhysicalDevice().getProperties2(&physicalProperties);
+
+        vk::DeviceSize shaderBindingTableSize = rayTracingProperties.shaderGroupHandleSize * shaderCount;
+       
+       
+        m_shaderBindingtableBuffer.bufferType = RTXBufferType::SHADER_BINDING;
+        m_shaderBindingtableBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR;
+        m_shaderBindingtableBuffer.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eHostVisible;
+        m_shaderBindingtableBuffer.deviceSize = shaderBindingTableSize;
+
+        m_asManager->createBuffer(m_shaderBindingtableBuffer);
+
+        void* shaderHandleStorage = (void*)malloc(sizeof(uint8_t) * shaderBindingTableSize);
+        
+        if (m_core->getContext().getDevice().getRayTracingShaderGroupHandlesKHR(m_pipeline, 0, shaderCount, shaderBindingTableSize,
+            shaderHandleStorage, m_asManager->getDispatcher()) != vk::Result::eSuccess) {
+            vkcv_log(LogLevel::ERROR, "Could not retrieve shader binding table group handles.");
+        }
+
+        m_shaderGroupBaseAlignment =  rayTracingProperties.shaderGroupBaseAlignment;
+        uint8_t* mapped = (uint8_t*) m_core->getContext().getDevice().mapMemory(m_shaderBindingtableBuffer.deviceMemory, 0, shaderBindingTableSize);
+        for (int i = 0; i < shaderCount; i++) {
+            memcpy(mapped, (uint8_t*)shaderHandleStorage + (i * rayTracingProperties.shaderGroupHandleSize), rayTracingProperties.shaderGroupHandleSize);
+            mapped += m_shaderGroupBaseAlignment;
+        }
+
+        m_core->getContext().getDevice().unmapMemory(m_shaderBindingtableBuffer.deviceMemory);
+        free(shaderHandleStorage);        
+    }
+
 
     void RTXModule::RTXDescriptors(std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles)
     {
@@ -186,7 +121,7 @@ namespace vkcv::rtx {
 
     }
 
-    vk::Pipeline RTXModule::createRTXPipeline(uint32_t pushConstantSize, std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rayGenShader, ShaderProgram &rayMissShader, ShaderProgram &rayClosestHitShader) {
+    void RTXModule::createRTXPipeline(uint32_t pushConstantSize, std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rayGenShader, ShaderProgram &rayMissShader, ShaderProgram &rayClosestHitShader) {
         // TODO: maybe all of this must be moved to the vkcv::PipelineManager? If we use scene.recordDrawcalls(), this requires a vkcv::PipelineHandle and not a vk::Pipeline
 
         // -- process vkcv::ShaderProgram into vk::ShaderModule
@@ -305,8 +240,8 @@ namespace vkcv::rtx {
             &pushConstant //            nullptr // const vk::PushConstantRange* pPushConstantRanges_ = {}
         );
 
-        vk::PipelineLayout rtxPipelineLayout = m_core->getContext().getDevice().createPipelineLayout(rtxPipelineLayoutCreateInfo);
-        if (!rtxPipelineLayout) {
+        m_pipelineLayout = m_core->getContext().getDevice().createPipelineLayout(rtxPipelineLayoutCreateInfo);
+        if (!m_pipelineLayout) {
             vkcv_log(LogLevel::ERROR, "The RTX Pipeline Layout could not be created!");
         }
 
@@ -327,38 +262,46 @@ namespace vkcv::rtx {
             &rtxPipelineLibraryCreateInfo, // const vk::PipelineLibraryCreateInfoKHR* pLibraryInfo_ = {}
             nullptr, // const vk::RayTracingPipelineInterfaceCreateInfoKHR* pLibraryInterface_ = {}
             nullptr, // const vk::PipelineDynamicStateCreateInfo* pDynamicState_ = {}
-            rtxPipelineLayout // vk::PipelineLayout layout_ = {}
+            m_pipelineLayout // vk::PipelineLayout layout_ = {}
         );
 
         // WTF is this?
 //        vk::DispatchLoaderDynamic dld = vk::DispatchLoaderDynamic( (PFN_vkGetInstanceProcAddr) m_core->getContext().getInstance().getProcAddr("vkGetInstanceProcAddr") );
 //        dld.init(m_core->getContext().getInstance());
 
-vk::Pipeline rtxPipeline = m_core->getContext().getDevice().createRayTracingPipelineKHR(vk::DeferredOperationKHR(), vk::PipelineCache(), rtxPipelineInfo, nullptr, m_asManager->getDispatcher());
-        if (!rtxPipeline) {
+        m_pipeline = vk::Pipeline(m_core->getContext().getDevice().createRayTracingPipelineKHR(vk::DeferredOperationKHR(), vk::PipelineCache(), rtxPipelineInfo, nullptr, m_asManager->getDispatcher()));
+        if (!m_pipeline) {
             vkcv_log(LogLevel::ERROR, "The RTX Pipeline could not be created!");
         }
+        
 
         m_core->getContext().getDevice().destroy(rayGenShaderModule);
         m_core->getContext().getDevice().destroy(rayMissShaderModule);
         m_core->getContext().getDevice().destroy(rayClosestHitShaderModule);
 
-        m_core->getContext().getDevice().destroy(rtxPipeline);
-        m_core->getContext().getDevice().destroy(rtxPipelineLayout);
 
-        return rtxPipeline;
+        createShaderBindingTable(descriptorSetLayouts.size());
+
+        
+        
     }
 
-    std::vector<const char*> RTXModule::getInstanceExtensions() {
-        return m_instanceExtensions;
+    vk::Pipeline RTXModule::getPipeline() {
+        return m_pipeline;
     }
 
-    std::vector<const char*> RTXModule::getDeviceExtensions() {
-        return m_deviceExtensions;
+    vk::Buffer RTXModule::getShaderBindingBuffer()
+    {
+        return m_shaderBindingtableBuffer.vulkanHandle;
     }
 
-    vkcv::Features RTXModule::getFeatures() {
-        return m_features;
+    vk::DeviceSize RTXModule::getShaderGroupBaseAlignment()
+    {
+        return m_shaderGroupBaseAlignment;
+    }
+
+    vk::PipelineLayout RTXModule::getPipelineLayout() {
+        return m_pipelineLayout;
     }
 
 }

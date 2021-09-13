@@ -405,6 +405,62 @@ namespace vkcv
 		recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
 	}
 
+
+	void Core::recordRayGenerationToCmdStream(
+        CommandStreamHandle cmdStreamHandle,
+        vk::Pipeline rtxPipeline,
+        vk::PipelineLayout rtxPipelineLayout,
+		vk::Buffer shaderBindingTable,
+		vk::DeviceSize shaderGroupBaseAlignment,
+		const std::vector<DescriptorSetUsage>& descriptorSetUsages,
+        const PushConstants& pushConstants,
+		const WindowHandle windowHandle) {
+
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rtxPipeline);
+			for (const auto& usage : descriptorSetUsages) {
+				cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eRayTracingKHR,
+					rtxPipelineLayout,
+					usage.setLocation,
+					{ usage.vulkanHandle },
+					usage.dynamicOffsets
+				);
+			}
+
+			if (pushConstants.getSizePerDrawcall() > 0) {
+				cmdBuffer.pushConstants(
+					rtxPipelineLayout,
+					(vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR | vk::ShaderStageFlagBits::eRaygenKHR),
+					0,
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getData());
+			}
+			vk::DeviceSize rayGenOffset = 0;
+			vk::DeviceSize missOffset = shaderGroupBaseAlignment;
+			vk::DeviceSize closestHitOffset = 2 * shaderGroupBaseAlignment;
+			vk::DeviceSize shaderBindingTableSize = shaderGroupBaseAlignment * 3; //3 hardcoded to rtx-shader count
+
+			vk::StridedDeviceAddressRegionKHR rgenRegion;
+			vk::BufferDeviceAddressInfoKHR shaderBindingTableAddressInfo(shaderBindingTable);
+			rgenRegion.deviceAddress = m_Context.getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo) + rayGenOffset;
+			rgenRegion.setStride(shaderBindingTableSize);
+			rgenRegion.setSize(shaderBindingTableSize);
+			vk::StridedDeviceAddressRegionKHR rmissRegion;
+			rmissRegion.deviceAddress = m_Context.getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo) + missOffset;
+			rmissRegion.setStride(shaderBindingTableSize);
+			rmissRegion.setSize(shaderBindingTableSize);
+			vk::StridedDeviceAddressRegionKHR rchitRegion;
+			rchitRegion.deviceAddress = m_Context.getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo) + closestHitOffset;
+			rchitRegion.setStride(shaderBindingTableSize);
+			rchitRegion.setSize(shaderBindingTableSize);
+			vk::StridedDeviceAddressRegionKHR rcallRegion = {};
+
+			cmdBuffer.traceRaysKHR(&rgenRegion,&rmissRegion,&rchitRegion,&rcallRegion,
+									getWindow(windowHandle).getWidth(), getWindow(windowHandle).getHeight(),1);
+		};
+    }
+
 	void Core::recordComputeDispatchToCmdStream(
 		CommandStreamHandle cmdStreamHandle,
 		ComputePipelineHandle computePipeline,

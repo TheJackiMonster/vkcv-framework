@@ -20,6 +20,7 @@ namespace vkcv::rtx {
         // destroy every BLAS, its data containers and free used memory blocks
         for (size_t i=0; i < m_bottomLevelAccelerationStructures.size(); i++) {
             BottomLevelAccelerationStructure blas = m_bottomLevelAccelerationStructures[i];
+            m_core->getContext().getDevice().destroyAccelerationStructureKHR(blas.vulkanHandle, nullptr, m_rtxDispatcher);
             m_core->getContext().getDevice().destroy(blas.accelerationBuffer.vulkanHandle);
             m_core->getContext().getDevice().destroy(blas.indexBuffer.vulkanHandle);
             m_core->getContext().getDevice().destroy(blas.vertexBuffer.vulkanHandle);
@@ -27,20 +28,18 @@ namespace vkcv::rtx {
             m_core->getContext().getDevice().freeMemory(blas.accelerationBuffer.deviceMemory);
             m_core->getContext().getDevice().freeMemory(blas.indexBuffer.deviceMemory);
             m_core->getContext().getDevice().freeMemory(blas.vertexBuffer.deviceMemory);
-
-            m_core->getContext().getDevice().destroyAccelerationStructureKHR(blas.vulkanHandle, nullptr, m_rtxDispatcher);
         }
 
         // destroy the TLAS, its data containers and free used memory blocks
         TopLevelAccelerationStructure tlas = m_topLevelAccelerationStructure;
         m_core->getContext().getDevice().destroyAccelerationStructureKHR(tlas.vulkanHandle, nullptr, m_rtxDispatcher);
-        m_core->getContext().getDevice().destroy(tlas.tempBuildDataBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
-        m_core->getContext().getDevice().destroy(tlas.tlasBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
-        m_core->getContext().getDevice().destroy(tlas.gpuBufferInstances.vulkanHandle, nullptr, m_rtxDispatcher);
+        m_core->getContext().getDevice().destroy(tlas.tempBuildDataBuffer.vulkanHandle);
+        m_core->getContext().getDevice().destroy(tlas.tlasBuffer.vulkanHandle);
+        m_core->getContext().getDevice().destroy(tlas.gpuBufferInstances.vulkanHandle);
 
-        m_core->getContext().getDevice().freeMemory(tlas.tempBuildDataBuffer.deviceMemory, nullptr, m_rtxDispatcher);
-        m_core->getContext().getDevice().freeMemory(tlas.tlasBuffer.deviceMemory, nullptr, m_rtxDispatcher);
-        m_core->getContext().getDevice().freeMemory(tlas.gpuBufferInstances.deviceMemory, nullptr, m_rtxDispatcher);
+        m_core->getContext().getDevice().freeMemory(tlas.tempBuildDataBuffer.deviceMemory);
+        m_core->getContext().getDevice().freeMemory(tlas.tlasBuffer.deviceMemory);
+        m_core->getContext().getDevice().freeMemory(tlas.gpuBufferInstances.deviceMemory);
     }
 
     void ASManager::buildTLAS() {

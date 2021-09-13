@@ -7,6 +7,7 @@
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/scene/Scene.hpp>
 #include <vkcv/rtx/RTX.hpp>
+#include <vkcv/rtx/RTXExtensions.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "RTX";
@@ -15,13 +16,13 @@ int main(int argc, const char** argv) {
 	uint32_t windowHeight = 600;
 
 	// prepare raytracing extensions. IMPORTANT: configure compiler to build in 64 bit mode
-	vkcv::rtx::RTXModule rtxModule;
-	std::vector<const char*> raytracingInstanceExtensions = rtxModule.getInstanceExtensions();
+	vkcv::rtx::RTXExtensions rtxExtensions;
+	std::vector<const char*> raytracingInstanceExtensions = rtxExtensions.getInstanceExtensions();
 
 	std::vector<const char*> instanceExtensions = {};   // add some more instance extensions, if needed
 	instanceExtensions.insert(instanceExtensions.end(), raytracingInstanceExtensions.begin(), raytracingInstanceExtensions.end());  // merge together all instance extensions
 
-	vkcv::Features features = rtxModule.getFeatures();  // all features required by the RTX device extensions
+	vkcv::Features features = rtxExtensions.getFeatures();  // all features required by the RTX device extensions
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 	vkcv::Core core = vkcv::Core::create(
 			applicationName,
@@ -137,7 +138,7 @@ int main(int argc, const char** argv) {
 
 	std::vector<vkcv::DescriptorSetHandle> descriptorSetHandles;
 	std::vector<vkcv::DescriptorSetLayoutHandle> descriptorSetLayoutHandles;
-	//TODO
+
 	vkcv::DescriptorSetLayoutHandle rayGenShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayGenShaderProgram.getReflectedDescriptors().at(0));
 	vkcv::DescriptorSetHandle rayGenShaderDescriptorSet = core.createDescriptorSet(rayGenShaderDescriptorSetLayout);//
 	descriptorSetHandles.push_back(rayGenShaderDescriptorSet);
@@ -155,7 +156,7 @@ int main(int argc, const char** argv) {
 	descriptorSetLayoutHandles.push_back(rayMissShaderDescriptorSetLayout);
 
 	// init RTXModule
-	rtxModule.init(&core, &asManager, vertices, indices,descriptorSetHandles);
+	vkcv::rtx::RTXModule rtxModule(&core, &asManager, vertices, indices,descriptorSetHandles);
 
 	struct RaytracingPushConstantData {
 	    glm::vec4 camera_position;   // as origin for ray generation
@@ -167,7 +168,10 @@ int main(int argc, const char** argv) {
 
 	uint32_t pushConstantSize = sizeof(RaytracingPushConstantData);
 
-	vk::Pipeline rtxPipeline = rtxModule.createRTXPipeline(pushConstantSize, descriptorSetLayoutHandles, rayGenShaderProgram, rayMissShaderProgram, rayClosestHitShaderProgram);
+	rtxModule.createRTXPipeline(pushConstantSize, descriptorSetLayoutHandles, rayGenShaderProgram, rayMissShaderProgram, rayClosestHitShaderProgram);
+
+	vk::Pipeline rtxPipeline = rtxModule.getPipeline();
+	vk::PipelineLayout rtxPipelineLayout = rtxModule.getPipelineLayout();
 
 	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
 		sceneShaderProgram,
@@ -217,12 +221,6 @@ int main(int argc, const char** argv) {
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
-				
-		/*
-		
-		TODO: ADD PUSH CONSTANTS TO SHADER CALL WHEN PIPELINE IS WORKING/FINISHED
-		
-		*/
 
 		RaytracingPushConstantData raytracingPushData;
 		raytracingPushData.camera_position = glm::vec4(cameraManager.getActiveCamera().getPosition(),0);
@@ -247,18 +245,27 @@ int main(int argc, const char** argv) {
 							 vkcv::DrawcallInfo& drawcallInfo) {
 			pushConstants.appendDrawcall(MVP);
 		};
-		//vk::CommandBuffer test;
-		//test.traceRaysKHR();
-	
 
-		scene.recordDrawcalls(cmdStream,
-							  cameraManager.getActiveCamera(),
-							  scenePass,
-							  scenePipeline,    // TODO: here we need our RTX pipeline... but as a vkcv::PipelineHandle!
-							  sizeof(glm::mat4),
-							  recordMesh,
-							  renderTargets,
-							  windowHandle);
+		core.recordRayGenerationToCmdStream(
+            cmdStream,
+            rtxPipeline,
+            rtxPipelineLayout,
+			rtxModule.getShaderBindingBuffer(),
+			rtxModule.getShaderGroupBaseAlignment(),
+			{	vkcv::DescriptorSetUsage(0, core.getDescriptorSet(rayGenShaderDescriptorSet).vulkanHandle),
+				vkcv::DescriptorSetUsage(0, core.getDescriptorSet(rayCHITShaderDescriptorSet).vulkanHandle),
+				vkcv::DescriptorSetUsage(0, core.getDescriptorSet(rayMissShaderDescriptorSet).vulkanHandle) },
+            pushConstantsRTX,
+			windowHandle);
+
+//		scene.recordDrawcalls(cmdStream,
+//							  cameraManager.getActiveCamera(),
+//							  scenePass,
+//							  scenePipeline,    // TODO: here we need our RTX pipeline... but as a vkcv::PipelineHandle!
+//							  sizeof(glm::mat4),
+//							  recordMesh,
+//							  renderTargets,
+//							  windowHandle);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

@@ -339,6 +339,18 @@ namespace vkcv
             const std::vector<MeshShaderDrawcall>&  drawcalls,
 			const std::vector<ImageHandle>&         renderTargets,
 			const WindowHandle&                     windowHandle);
+        
+
+
+        void recordRayGenerationToCmdStream(
+            CommandStreamHandle cmdStreamHandle,
+            vk::Pipeline rtxPipeline,
+            vk::PipelineLayout rtxPipelineLayout,
+            vk::Buffer shaderBindingTable,
+            vk::DeviceSize shaderGroupBaseAlignment,
+            const std::vector<DescriptorSetUsage>& descriptorSetUsages,
+            const PushConstants& pushConstants,
+            const WindowHandle windowHandle);
 
 		void recordComputeDispatchToCmdStream(
 			CommandStreamHandle cmdStream,
