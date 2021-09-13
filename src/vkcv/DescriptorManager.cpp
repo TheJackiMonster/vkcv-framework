@@ -79,7 +79,7 @@ namespace vkcv
         }
 
         //create the descriptor set's layout from the binding data gathered above
-        vk::DescriptorSetLayout vulkanHandle = VK_NULL_HANDLE;
+        vk::DescriptorSetLayout vulkanHandle;
         vk::DescriptorSetLayoutCreateInfo layoutInfo({}, bindingsVector);
         auto result = m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &vulkanHandle);
         if (result != vk::Result::eSuccess) {
@@ -96,7 +96,7 @@ namespace vkcv
     {
         //create and allocate the set based on the layout provided
         DescriptorSetLayout setLayout = m_DescriptorSetLayouts[setLayoutHandle.getId()];
-        vk::DescriptorSet vulkanHandle = VK_NULL_HANDLE;
+        vk::DescriptorSet vulkanHandle;
         vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), 1, &setLayout.vulkanHandle);
         auto result = m_Device.allocateDescriptorSets(&allocInfo, &vulkanHandle);
         if(result != vk::Result::eSuccess)
