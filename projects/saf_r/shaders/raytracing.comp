@@ -223,8 +223,8 @@ vec3 castRay(const vec3 initialOrigin, const vec3 initialDirection, int max_dept
 
 /*
 * computeDirection transforms the pixel coords to worldspace coords
-* @param ivec2: coordinates of the camera
-* @return vec3: camera stuff what it sees or something?????
+* @param ivec2: pixel coordinates
+* @return vec3: world coordinates
 */
 vec3 computeDirection(ivec2 coord){
 
