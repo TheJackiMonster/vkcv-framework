@@ -93,7 +93,8 @@ int main(int argc, const char** argv) {
 	//spheres for the scene
 	std::vector<safrScene::Sphere> spheres;
 	spheres.push_back(safrScene::Sphere(glm::vec3(-3.0,  0.0, 16), 2, ivory));
-	spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, 12), 2, mirror));
+	// spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, 12), 2, mirror));
+	spheres.push_back(safrScene::Sphere(glm::vec3(1.5, -0.5, 23), 2, mirror));
 	spheres.push_back(safrScene::Sphere(glm::vec3( 1.5, -0.5, 18), 3, red_rubber));
 	spheres.push_back(safrScene::Sphere(glm::vec3( 7.0,  5.0, 18), 4, mirror));
 
@@ -218,11 +219,18 @@ int main(int argc, const char** argv) {
 		start = end;
 		
 		time += 0.000001f * static_cast<float>(deltatime.count());
-		
+
+		/*
 		lights[0].position.x += std::cos(time * 3.0f) * 2.5f;
 		lights[1].position.z += std::cos(time * 2.5f) * 3.0f;
 		lights[2].position.y += std::cos(time * 1.5f) * 4.0f;
 		lightsBuffer.fill(lights);
+        */
+
+		spheres[0].center.y += std::cos(time * 0.5f * 3.141f) * 0.25f;
+		spheres[1].center.x += std::cos(time * 2.f) * 0.25f;
+		spheres[1].center.z += std::cos(time * 2.f + 0.5f * 3.141f) * 0.25f;
+        sphereBuffer.fill(spheres);
 
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
