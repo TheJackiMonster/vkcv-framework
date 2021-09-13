@@ -1,6 +1,7 @@
 #version 450 core
 #extension GL_ARB_separate_shader_objects : enable
 
+// defines constants
 const float pi      = 3.1415926535897932384626433832795;
 const float hitBias = 0.0001;   // used to offset hits to avoid self intersection
 
@@ -32,17 +33,20 @@ struct Intersection{
 };
 
 
-//incoming data
+//incoming light data
 layout(std430, binding = 0) coherent buffer lights{
     Light inLights[];
 };
 
+// incoming sphere data
 layout(std430, binding = 1) coherent buffer spheres{
     Sphere inSpheres[];
 };
 
+// output store image as swapchain input
 layout(set=0, binding = 2, rgba8) uniform image2D outImage;
 
+// incoming constants, because size of dynamic arrays cannot be computed on gpu
 layout( push_constant ) uniform constants{
     mat4 viewToWorld;
     int lightCount;
@@ -50,14 +54,14 @@ layout( push_constant ) uniform constants{
 };
 
 /*
-* the ray_intersect function checks, if a ray from the raytracer passes through the sphere, hits the sphere or passes by the the sphere
+* the rayIntersect function checks, if a ray from the raytracer passes through the sphere, hits the sphere or passes by the the sphere
 * @param vec3: origin of ray
 * @param vec3: direction of ray
 * @param float: distance of the ray to the sphere (out because there are no references in shaders)
 * @return bool: if ray interesects sphere or not (out because there are no references in shaders)
 */
 
-bool ray_intersect(const vec3 origin, const vec3 dir, out float t0, const int id){
+bool rayIntersect(const vec3 origin, const vec3 dir, out float t0, const int id){
     vec3 L = inSpheres[id].center - origin;
     float tca = dot(L, dir);
     float d2 = dot(L, L) - tca * tca;
@@ -77,6 +81,7 @@ bool ray_intersect(const vec3 origin, const vec3 dir, out float t0, const int id
 }
 
 /*
+* sceneIntersect iterates over whole scene (over every single object) to check for intersections
 * @param vec3: Origin of the ray
 * @param vec3: direction of the ray
 * @return: Intersection struct with hit(bool) position, normal and material of sphere
@@ -108,6 +113,7 @@ Intersection sceneIntersect(const vec3 rayOrigin, const vec3 rayDirection) {
 }
 
 /*
+* biasHitPosition computes the new hitposition with respect to the raydirection and a bias
 * @param vec3: Hit Position
 * @param vec3: direction of ray
 * @param vec3: N(ormal)
@@ -118,8 +124,9 @@ vec3 biasHitPosition(vec3 hitPos, vec3 rayDirection, vec3 N){
 }
 
 /*
+* computeHitLighting iterates over all lights to compute the color for every ray
 * @param Intersection: struct with all the data of the intersection
-* @param vec3: ???
+* @param vec3: Raydirection
 * @param float: material albedo of the intersection
 * @return colour/shadows of sphere with illumination
 */
@@ -155,6 +162,7 @@ vec3 computeHitLighting(Intersection intersection, vec3 V, out float outReflecti
 }
 
 /*
+* castRay throws a ray out of the initial origin with respect to the initial direction checks for intersection and refelction
 * @param vec3: initial origin of ray
 * @param vec3: initial direction of ray
 * @param int: max depth o ray reflection
@@ -201,6 +209,7 @@ vec3 castRay(const vec3 initialOrigin, const vec3 initialDirection, int max_dept
 }
 
 /*
+* computeDirection transforms the pixel coords to worldspace coords
 * @param ivec2: coordinates of the camera
 * @return vec3: camera stuff what it sees or something?????
 */
@@ -223,7 +232,7 @@ vec3 computeDirection(ivec2 coord){
     return directionWorldSpace;
 }
 
-
+// the main function
 void main(){
     ivec2 coord     = ivec2(gl_GlobalInvocationID.xy);
     int max_depth   = 4;
