@@ -129,6 +129,10 @@ namespace vkcv {
 			featureFunction(features);
 			
 			if (!checkSupport(features, required)) {
+				if (required) {
+					throw std::runtime_error("Required feature is not supported!");
+				}
+				
 				return false;
 			}
 			

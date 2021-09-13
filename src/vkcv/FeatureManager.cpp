@@ -494,6 +494,10 @@ m_physicalDevice.getFeatures2(&query)
 					 extension.c_str());
 			
 			delete[] clone;
+			if (required) {
+				throw std::runtime_error("Required extension is not supported!");
+			}
+			
 			return false;
 		}
 		

@@ -5,6 +5,7 @@
 
 #include "vkcv/QueueManager.hpp"
 #include "vkcv/Logger.hpp"
+#include "vkcv/Swapchain.hpp"
 
 namespace vkcv {
 
@@ -85,7 +86,7 @@ namespace vkcv {
                     found = false;
                     for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                         if (queueFamilyStatus[i][0] > 0) {
-                            queuePairsGraphics.push_back(std::pair(i, initialQueueFamilyStatus[i][0] - queueFamilyStatus[i][0]));
+                            queuePairsGraphics.emplace_back(std::pair(i, initialQueueFamilyStatus[i][0] - queueFamilyStatus[i][0]));
                             queueFamilyStatus[i][0]--;
                             queueFamilyStatus[i][1]--;
                             queueFamilyStatus[i][2]--;
@@ -95,7 +96,7 @@ namespace vkcv {
                     if (!found) {
                         for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                             if (initialQueueFamilyStatus[i][0] > 0) {
-                                queuePairsGraphics.push_back(std::pair(i, 0));
+                                queuePairsGraphics.emplace_back(std::pair(i, 0));
                                 found = true;
                             }
                         }
@@ -107,7 +108,7 @@ namespace vkcv {
                     found = false;
                     for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                         if (queueFamilyStatus[i][1] > 0) {
-                            queuePairsCompute.push_back(std::pair(i, initialQueueFamilyStatus[i][1] - queueFamilyStatus[i][1]));
+                            queuePairsCompute.emplace_back(std::pair(i, initialQueueFamilyStatus[i][1] - queueFamilyStatus[i][1]));
                             queueFamilyStatus[i][0]--;
                             queueFamilyStatus[i][1]--;
                             queueFamilyStatus[i][2]--;
@@ -117,7 +118,7 @@ namespace vkcv {
                     if (!found) {
                         for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                             if (initialQueueFamilyStatus[i][1] > 0) {
-                                queuePairsCompute.push_back(std::pair(i, 0));
+                                queuePairsCompute.emplace_back(std::pair(i, 0));
                                 found = true;
                             }
                         }
@@ -129,7 +130,7 @@ namespace vkcv {
                     found = false;
                     for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                         if (queueFamilyStatus[i][2] > 0) {
-                            queuePairsTransfer.push_back(std::pair(i, initialQueueFamilyStatus[i][2] - queueFamilyStatus[i][2]));
+                            queuePairsTransfer.emplace_back(std::pair(i, initialQueueFamilyStatus[i][2] - queueFamilyStatus[i][2]));
                             queueFamilyStatus[i][0]--;
                             queueFamilyStatus[i][1]--;
                             queueFamilyStatus[i][2]--;
@@ -139,7 +140,7 @@ namespace vkcv {
                     if (!found) {
                         for (size_t i = 0; i < queueFamilyStatus.size() && !found; i++) {
                             if (initialQueueFamilyStatus[i][2] > 0) {
-                                queuePairsTransfer.push_back(std::pair(i, 0));
+                                queuePairsTransfer.emplace_back(std::pair(i, 0));
                                 found = true;
                             }
                         }
@@ -148,7 +149,8 @@ namespace vkcv {
                     }
                     break;
                 default:
-                    throw std::runtime_error("Invalid input for queue flag bits. Valid inputs are 'vk::QueueFlagBits::eGraphics', 'vk::QueueFlagBits::eCompute' and 'vk::QueueFlagBits::eTransfer'.");
+					vkcv_log(LogLevel::ERROR, "Invalid input for queue flag bits: %s", vk::to_string(qFlag).c_str());
+					break;
             }
         }
 
@@ -193,13 +195,33 @@ namespace vkcv {
                                       std::vector<std::pair<int, int>> &queuePairsTransfer) {
 
         std::vector<Queue> graphicsQueues = getQueues(device, queuePairsGraphics);
-        std::vector<Queue> computeQueues = getQueues(device, queuePairsCompute );
+        std::vector<Queue> computeQueues  = getQueues(device, queuePairsCompute);
         std::vector<Queue> transferQueues = getQueues(device, queuePairsTransfer);
 
     	return QueueManager( std::move(graphicsQueues), std::move(computeQueues), std::move(transferQueues), 0);
 	}
 
-	QueueManager::QueueManager(std::vector<Queue>&& graphicsQueues, std::vector<Queue>&& computeQueues, std::vector<Queue>&& transferQueues, size_t presentIndex)
+	uint32_t QueueManager::checkSurfaceSupport(
+			const vk::PhysicalDevice &physicalDevice,
+			vk::SurfaceKHR &surface
+	) {
+		std::vector<vk::QueueFamilyProperties> qFamilyProperties = physicalDevice.getQueueFamilyProperties();
+
+		for(uint32_t i = 0; i < qFamilyProperties.size(); i++) {
+			vk::Bool32 presentSupport;
+			
+			if ((vk::Result::eSuccess == physicalDevice.getSurfaceSupportKHR(i, surface, &presentSupport)) &&
+				(presentSupport == VK_TRUE)) {
+				return i;
+			}
+		}
+		
+		vkcv_log(LogLevel::WARNING, "No supported present queue");
+		return 0;
+	}
+
+	QueueManager::QueueManager(std::vector<Queue>&& graphicsQueues, std::vector<Queue>&& computeQueues,
+							   std::vector<Queue>&& transferQueues, size_t presentIndex)
 	: m_graphicsQueues(graphicsQueues), m_computeQueues(computeQueues), m_transferQueues(transferQueues), m_presentIndex(presentIndex)
     {}
 

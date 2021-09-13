@@ -39,6 +39,14 @@ namespace vkcv {
                 std::vector<std::pair<int, int>> &queuePairsCompute,
                 std::vector<std::pair<int, int>> &queuePairsTransfer);
 
+		/**
+		 * checks for surface support in the queues
+		 * @param physicalDevice to get the Queues
+		 * @param surface that needs to checked
+		 * @return
+		 */
+		static uint32_t checkSurfaceSupport(const vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR &surface);
+
     private:
         std::vector<Queue> m_graphicsQueues;
         std::vector<Queue> m_computeQueues;

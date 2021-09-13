@@ -14,14 +14,26 @@ int main(int argc, const char** argv) {
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
 
-	vkcv::Window window = vkcv::Window::create(
-		applicationName,
-		windowWidth,
-		windowHeight,
-		true
+	// prepare raytracing extensions. IMPORTANT: configure compiler to build in 64 bit mode
+	vkcv::rtx::RTXModule rtxModule;
+	std::vector<const char*> raytracingInstanceExtensions = rtxModule.getInstanceExtensions();
+
+	std::vector<const char*> instanceExtensions = {};   // add some more instance extensions, if needed
+	instanceExtensions.insert(instanceExtensions.end(), raytracingInstanceExtensions.begin(), raytracingInstanceExtensions.end());  // merge together all instance extensions
+
+	vkcv::Features features = rtxModule.getFeatures();  // all features required by the RTX device extensions
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	vkcv::Core core = vkcv::Core::create(
+			applicationName,
+			VK_MAKE_VERSION(0, 0, 1),
+			{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
+			features,
+			instanceExtensions
 	);
 
-	vkcv::camera::CameraManager cameraManager(window);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+
+	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
@@ -29,24 +41,6 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 30.0f);
 	
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
-
-	// prepare raytracing extensions. IMPORTANT: configure compiler to build in 64 bit mode
-    vkcv::rtx::RTXModule rtxModule;
-    std::vector<const char*> raytracingInstanceExtensions = rtxModule.getInstanceExtensions();
-
-    std::vector<const char*> instanceExtensions = {};   // add some more instance extensions, if needed
-    instanceExtensions.insert(instanceExtensions.end(), raytracingInstanceExtensions.begin(), raytracingInstanceExtensions.end());  // merge together all instance extensions
-
-    vkcv::Features features = rtxModule.getFeatures();  // all features required by the RTX device extensions
-    features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	vkcv::Core core = vkcv::Core::create(
-		window,
-		applicationName,
-		VK_MAKE_VERSION(0, 0, 1),
-		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
-		features,
-        instanceExtensions
-	);
 
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
 			argc > 1 ? argv[1] : "resources/Cube/cube.gltf"
@@ -80,7 +74,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain().getFormat()
+		core.getSwapchain(windowHandle).getFormat()
 	);
 
 	const vkcv::AttachmentDescription depth_attachment(
@@ -162,7 +156,7 @@ int main(int argc, const char** argv) {
 	rtxModule.init(&core, vertices, indices,descriptorSetHandles);
 //	vk::Pipeline rtxPipeline = rtxModule.createRTXPipeline(descriptorSetLayoutHandles, rayGenShaderProgram, rayMissShaderProgram, rayClosestHitShaderProgram);
 
-	const vkcv::PipelineConfig scenePipelineDefinition{
+	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
 		sceneShaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
@@ -170,7 +164,7 @@ int main(int argc, const char** argv) {
 		{sceneLayout},
 		{ core.getDescriptorSetLayout(material0.getDescriptorSetLayout()).vulkanHandle },
 		true };
-	vkcv::PipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
+	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
 
 	if (!scenePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
@@ -185,14 +179,14 @@ int main(int argc, const char** argv) {
 
 	auto start = std::chrono::system_clock::now();
 	uint32_t frameCount = 0;
-	while (window.isWindowOpen()) {
+	while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 
-		if(window.getHeight() == 0 || window.getWidth() == 0)
+		if(core.getWindow(windowHandle).getHeight() == 0 || core.getWindow(windowHandle).getWidth() == 0)
 			continue;
 
 		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight,windowHandle)) {
 			continue;
 		}
 
@@ -255,11 +249,12 @@ int main(int argc, const char** argv) {
 							  scenePipeline,    // TODO: here we need our RTX pipeline... but as a vkcv::PipelineHandle!
 							  sizeof(glm::mat4),
 							  recordMesh,
-							  renderTargets);
+							  renderTargets,
+							  windowHandle);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-		core.endFrame();
+		core.endFrame(windowHandle);
 	}
 	
 	return 0;
