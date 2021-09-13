@@ -31,6 +31,8 @@ int main(int argc, const char** argv) {
 			instanceExtensions
 	);
 
+	vkcv::rtx::ASManager asManager(&core);
+
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
 
 	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
@@ -153,7 +155,7 @@ int main(int argc, const char** argv) {
 	descriptorSetLayoutHandles.push_back(rayMissShaderDescriptorSetLayout);
 
 	// init RTXModule
-	rtxModule.init(&core, vertices, indices,descriptorSetHandles);
+	rtxModule.init(&core, &asManager, vertices, indices,descriptorSetHandles);
 
 	struct RaytracingPushConstantData {
 	    glm::vec4 camera_position;   // as origin for ray generation
@@ -262,6 +264,6 @@ int main(int argc, const char** argv) {
 		core.submitCommandStream(cmdStream);
 		core.endFrame(windowHandle);
 	}
-	
+
 	return 0;
 }

@@ -111,24 +111,22 @@ namespace vkcv::rtx {
                 });
     }
 
-    void RTXModule::init(Core* core, std::vector<uint8_t>& vertices,
+    void RTXModule::init(Core* core, ASManager* asManager, std::vector<uint8_t>& vertices,
         std::vector<uint8_t>& indices, std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles)
     {
         m_core = core;
+        m_asManager = asManager;
         // build acceleration structures BLAS then TLAS --> see ASManager
-        //asManager(core);
-//        ASManager temp(core);
-        m_asManager.init(core);
-        m_asManager.buildBLAS(vertices, indices);
-        m_asManager.buildTLAS();
-        RTXDescriptors(&m_asManager, core, descriptorSetHandles);
+        m_asManager->buildBLAS(vertices, indices);
+        m_asManager->buildTLAS();
+        RTXDescriptors(descriptorSetHandles);
         
     }
 
-    void RTXModule::RTXDescriptors(ASManager* asManager,Core* core, std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles)
+    void RTXModule::RTXDescriptors(std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles)
     {
         //TLAS-Descriptor-Write
-        TopLevelAccelerationStructure tlas = asManager->getTLAS();
+        TopLevelAccelerationStructure tlas = m_asManager->getTLAS();
         RTXBuffer tlasBuffer = tlas.tlasBuffer;
         vk::WriteDescriptorSetAccelerationStructureKHR AccelerationDescriptor = {};
         AccelerationDescriptor.accelerationStructureCount = 1;
@@ -137,24 +135,24 @@ namespace vkcv::rtx {
 
         vk::WriteDescriptorSet tlasWrite;
         tlasWrite.setPNext(&AccelerationDescriptor);
-        tlasWrite.setDstSet(core->getDescriptorSet(descriptorSetHandles[0]).vulkanHandle);
+        tlasWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[0]).vulkanHandle);
         tlasWrite.setDstBinding(1);
         tlasWrite.setDstArrayElement(0);
         tlasWrite.setDescriptorCount(1);
         tlasWrite.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
-        core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
+        m_core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
 
         vk::WriteDescriptorSet tlasWrite2;
         tlasWrite2.setPNext(&AccelerationDescriptor);
-        tlasWrite2.setDstSet(core->getDescriptorSet(descriptorSetHandles[2]).vulkanHandle);
+        tlasWrite2.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[2]).vulkanHandle);
         tlasWrite2.setDstBinding(1);
         tlasWrite2.setDstArrayElement(0);
         tlasWrite2.setDescriptorCount(1);
         tlasWrite2.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
-        core->getContext().getDevice().updateDescriptorSets(tlasWrite2, nullptr);
+        m_core->getContext().getDevice().updateDescriptorSets(tlasWrite2, nullptr);
 
         //INDEX & VERTEX BUFFER
-        BottomLevelAccelerationStructure blas = asManager->getBLAS(0);//HARD CODED
+        BottomLevelAccelerationStructure blas = m_asManager->getBLAS(0);//HARD CODED
 
         //VERTEX BUFFER
 
@@ -164,12 +162,12 @@ namespace vkcv::rtx {
         vertexInfo.setRange(blas.vertexBuffer.deviceSize); //maybe check if size is correct
 
         vk::WriteDescriptorSet vertexWrite;
-        vertexWrite.setDstSet(core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
+        vertexWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
         vertexWrite.setDstBinding(3);
         vertexWrite.setDescriptorCount(1);
         vertexWrite.setDescriptorType(vk::DescriptorType::eStorageBuffer);
         vertexWrite.setPBufferInfo(&vertexInfo);
-        core->getContext().getDevice().updateDescriptorSets(vertexWrite, nullptr);
+        m_core->getContext().getDevice().updateDescriptorSets(vertexWrite, nullptr);
 
         //INDEXBUFFER
         vk::DescriptorBufferInfo indexInfo = {};
@@ -178,12 +176,12 @@ namespace vkcv::rtx {
         indexInfo.setRange(blas.indexBuffer.deviceSize); //maybe check if size is correct
 
         vk::WriteDescriptorSet indexWrite;
-        indexWrite.setDstSet(core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
+        indexWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
         indexWrite.setDstBinding(4);
         indexWrite.setDescriptorCount(1);
         indexWrite.setDescriptorType(vk::DescriptorType::eStorageBuffer);
         indexWrite.setPBufferInfo(&indexInfo);
-        core->getContext().getDevice().updateDescriptorSets(indexWrite, nullptr);
+        m_core->getContext().getDevice().updateDescriptorSets(indexWrite, nullptr);
 
 
     }
@@ -336,7 +334,7 @@ namespace vkcv::rtx {
 //        vk::DispatchLoaderDynamic dld = vk::DispatchLoaderDynamic( (PFN_vkGetInstanceProcAddr) m_core->getContext().getInstance().getProcAddr("vkGetInstanceProcAddr") );
 //        dld.init(m_core->getContext().getInstance());
 
-        vk::Pipeline rtxPipeline = m_core->getContext().getDevice().createRayTracingPipelineKHR(vk::DeferredOperationKHR(), vk::PipelineCache(), rtxPipelineInfo, nullptr, m_asManager.getDispatcher());
+vk::Pipeline rtxPipeline = m_core->getContext().getDevice().createRayTracingPipelineKHR(vk::DeferredOperationKHR(), vk::PipelineCache(), rtxPipelineInfo, nullptr, m_asManager->getDispatcher());
         if (!rtxPipeline) {
             vkcv_log(LogLevel::ERROR, "The RTX Pipeline could not be created!");
         }

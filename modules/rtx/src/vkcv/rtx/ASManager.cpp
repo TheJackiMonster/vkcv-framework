@@ -20,7 +20,6 @@ namespace vkcv::rtx {
         // destroy every BLAS, its data containers and free used memory blocks
         for (size_t i=0; i < m_bottomLevelAccelerationStructures.size(); i++) {
             BottomLevelAccelerationStructure blas = m_bottomLevelAccelerationStructures[i];
-            m_core->getContext().getDevice().destroyAccelerationStructureKHR(blas.vulkanHandle, nullptr, m_rtxDispatcher);
             m_core->getContext().getDevice().destroy(blas.accelerationBuffer.vulkanHandle);
             m_core->getContext().getDevice().destroy(blas.indexBuffer.vulkanHandle);
             m_core->getContext().getDevice().destroy(blas.vertexBuffer.vulkanHandle);
@@ -28,6 +27,8 @@ namespace vkcv::rtx {
             m_core->getContext().getDevice().freeMemory(blas.accelerationBuffer.deviceMemory);
             m_core->getContext().getDevice().freeMemory(blas.indexBuffer.deviceMemory);
             m_core->getContext().getDevice().freeMemory(blas.vertexBuffer.deviceMemory);
+
+            m_core->getContext().getDevice().destroyAccelerationStructureKHR(blas.vulkanHandle, nullptr, m_rtxDispatcher);
         }
 
         // destroy the TLAS, its data containers and free used memory blocks
@@ -40,16 +41,6 @@ namespace vkcv::rtx {
         m_core->getContext().getDevice().freeMemory(tlas.tempBuildDataBuffer.deviceMemory, nullptr, m_rtxDispatcher);
         m_core->getContext().getDevice().freeMemory(tlas.tlasBuffer.deviceMemory, nullptr, m_rtxDispatcher);
         m_core->getContext().getDevice().freeMemory(tlas.gpuBufferInstances.deviceMemory, nullptr, m_rtxDispatcher);
-    }
-
-    void ASManager::init(Core* core) {
-        m_core = core;
-
-        // INFO: It seems that we need a dynamic dispatch loader because Vulkan is an ASs ...
-        m_rtxDispatcher = vk::DispatchLoaderDynamic( (PFN_vkGetInstanceProcAddr) m_core->getContext().getInstance().getProcAddr("vkGetInstanceProcAddr") );
-        m_rtxDispatcher.init(m_core->getContext().getInstance());
-
-        // SUGGESTION: recursive call of buildBLAS etc.
     }
 
     void ASManager::buildTLAS() {
