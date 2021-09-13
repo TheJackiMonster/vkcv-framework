@@ -144,6 +144,15 @@ namespace vkcv::rtx {
         tlasWrite.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
         core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
 
+        vk::WriteDescriptorSet tlasWrite2;
+        tlasWrite2.setPNext(&AccelerationDescriptor);
+        tlasWrite2.setDstSet(core->getDescriptorSet(descriptorSetHandles[2]).vulkanHandle);
+        tlasWrite2.setDstBinding(1);
+        tlasWrite2.setDstArrayElement(0);
+        tlasWrite2.setDescriptorCount(1);
+        tlasWrite2.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
+        core->getContext().getDevice().updateDescriptorSets(tlasWrite2, nullptr);
+
         //INDEX & VERTEX BUFFER
         BottomLevelAccelerationStructure blas = asManager->getBLAS(0);//HARD CODED
 
@@ -183,35 +192,37 @@ namespace vkcv::rtx {
         // TODO: maybe all of this must be moved to the vkcv::PipelineManager? If we use scene.recordDrawcalls(), this requires a vkcv::PipelineHandle and not a vk::Pipeline
 
         // -- process vkcv::ShaderProgram into vk::ShaderModule
-        std::vector<char> rayGenShaderCodeTemp = rayGenShader.getShader(ShaderStage::RAY_GEN).shaderCode;
-        std::vector<uint32_t> rayGenShaderCode(rayGenShaderCodeTemp.begin(), rayGenShaderCodeTemp.end());
+        std::vector<char> rayGenShaderCode = rayGenShader.getShader(ShaderStage::RAY_GEN).shaderCode;
+
         vk::ShaderModuleCreateInfo rayGenShaderModuleInfo(
             vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
-            rayGenShaderCode // vk::ArrayProxyNoTemporaries<const uint32_t> const & code_
+            rayGenShaderCode.size(), // size_t codeSize
+            (const uint32_t*)rayGenShaderCode.data() // const uint32_t* pCode
         );
-        vk::ShaderModule rayGenShaderModule = m_core->getContext().getDevice().createShaderModule(rayGenShaderModuleInfo, nullptr, m_asManager->getDispatcher());
+        vk::ShaderModule rayGenShaderModule = m_core->getContext().getDevice().createShaderModule(rayGenShaderModuleInfo);
         if (!rayGenShaderModule) {
             vkcv_log(LogLevel::ERROR, "The Ray Generation Shader Module could not be created!");
         }
 
-        std::vector<char> rayMissShaderCodeTemp = rayMissShader.getShader(ShaderStage::RAY_MISS).shaderCode;
-        std::vector<uint32_t> rayMissShaderCode(rayMissShaderCodeTemp.begin(), rayMissShaderCodeTemp.end());
+        std::vector<char> rayMissShaderCode = rayMissShader.getShader(ShaderStage::RAY_MISS).shaderCode;
         vk::ShaderModuleCreateInfo rayMissShaderModuleInfo(
             vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
-            rayMissShaderCode // vk::ArrayProxyNoTemporaries<const uint32_t> const & code_
+            rayMissShaderCode.size(), //size_t codeSize
+            (const uint32_t*)rayMissShaderCode.data() // const uint32_t* pCode
         );
-        vk::ShaderModule rayMissShaderModule = m_core->getContext().getDevice().createShaderModule(rayMissShaderModuleInfo, nullptr, m_asManager->getDispatcher());
+
+        vk::ShaderModule rayMissShaderModule = m_core->getContext().getDevice().createShaderModule(rayMissShaderModuleInfo);
         if (!rayMissShaderModule) {
             vkcv_log(LogLevel::ERROR, "The Ray Miss Shader Module could not be created!");
         }
 
-        std::vector<char> rayClosestHitShaderTemp = rayClosestHitShader.getShader(ShaderStage::RAY_CLOSEST_HIT).shaderCode;
-        std::vector<uint32_t> rayClosestHitShaderCode(rayClosestHitShaderTemp.begin(), rayClosestHitShaderTemp.end());
+        std::vector<char> rayClosestHitShaderCode = rayClosestHitShader.getShader(ShaderStage::RAY_CLOSEST_HIT).shaderCode;
         vk::ShaderModuleCreateInfo rayClosestHitShaderModuleInfo(
             vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
-            rayClosestHitShaderCode // vk::ArrayProxyNoTemporaries<const uint32_t> const & code_
+            rayClosestHitShaderCode.size(), //size_t codeSize
+            (const uint32_t*)rayClosestHitShaderCode.data() // const uint32_t* pCode_
         );
-        vk::ShaderModule rayClosestHitShaderModule = m_core->getContext().getDevice().createShaderModule(rayClosestHitShaderModuleInfo, nullptr, m_asManager->getDispatcher());
+        vk::ShaderModule rayClosestHitShaderModule = m_core->getContext().getDevice().createShaderModule(rayClosestHitShaderModuleInfo);
         if (!rayClosestHitShaderModule) {
             vkcv_log(LogLevel::ERROR, "The Ray Closest Hit Shader Module could not be created!");
         }
@@ -287,7 +298,7 @@ namespace vkcv::rtx {
             nullptr // const vk::PushConstantRange* pPushConstantRanges_ = {}
         );
 
-        vk::PipelineLayout rtxPipelineLayout = m_core->getContext().getDevice().createPipelineLayout(rtxPipelineLayoutCreateInfo, nullptr, m_asManager->getDispatcher());
+        vk::PipelineLayout rtxPipelineLayout = m_core->getContext().getDevice().createPipelineLayout(rtxPipelineLayoutCreateInfo);
         if (!rtxPipelineLayout) {
             vkcv_log(LogLevel::ERROR, "The RTX Pipeline Layout could not be created!");
         }

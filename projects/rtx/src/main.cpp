@@ -127,11 +127,11 @@ int main(int argc, const char** argv) {
 			rayClosestHitShaderProgram.addShader(shaderStage, path);
 		});
 	
-//	vkcv::ShaderProgram rayMissShaderProgram;
-//	compiler.compile(vkcv::ShaderStage::RAY_MISS, std::filesystem::path("resources/shaders/raytrace.rmiss"),
-//		[&rayMissShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-//			rayMissShaderProgram.addShader(shaderStage, path);
-//		});
+	vkcv::ShaderProgram rayMissShaderProgram;
+	compiler.compile(vkcv::ShaderStage::RAY_MISS, std::filesystem::path("resources/shaders/raytrace.rmiss"),
+		[&rayMissShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+			rayMissShaderProgram.addShader(shaderStage, path);
+		});
 
 	std::vector<vkcv::DescriptorSetHandle> descriptorSetHandles;
 	std::vector<vkcv::DescriptorSetLayoutHandle> descriptorSetLayoutHandles;
@@ -147,14 +147,14 @@ int main(int argc, const char** argv) {
 	descriptorSetHandles.push_back(rayCHITShaderDescriptorSet);
 	descriptorSetLayoutHandles.push_back(rayClosestHitShaderDescriptorSetLayout);
 
-//	vkcv::DescriptorSetLayoutHandle rayMissShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayMissShaderProgram.getReflectedDescriptors().at(0));
-//	vkcv::DescriptorSetHandle rayMissShaderDescriptorSet = core.createDescriptorSet(rayMissShaderDescriptorSetLayout);
-//	descriptorSetHandles.push_back(rayMissShaderDescriptorSet);
-//	descriptorSetLayoutHandles.push_back(rayMissShaderDescriptorSetLayout);
+	vkcv::DescriptorSetLayoutHandle rayMissShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayMissShaderProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle rayMissShaderDescriptorSet = core.createDescriptorSet(rayMissShaderDescriptorSetLayout);
+	descriptorSetHandles.push_back(rayMissShaderDescriptorSet);
+	descriptorSetLayoutHandles.push_back(rayMissShaderDescriptorSetLayout);
 
 	// init RTXModule
 	rtxModule.init(&core, vertices, indices,descriptorSetHandles);
-//	vk::Pipeline rtxPipeline = rtxModule.createRTXPipeline(descriptorSetLayoutHandles, rayGenShaderProgram, rayMissShaderProgram, rayClosestHitShaderProgram);
+	vk::Pipeline rtxPipeline = rtxModule.createRTXPipeline(descriptorSetLayoutHandles, rayGenShaderProgram, rayMissShaderProgram, rayClosestHitShaderProgram);
 
 	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
 		sceneShaderProgram,
@@ -242,6 +242,9 @@ int main(int argc, const char** argv) {
 							 vkcv::DrawcallInfo& drawcallInfo) {
 			pushConstants.appendDrawcall(MVP);
 		};
+		//vk::CommandBuffer test;
+		//test.traceRaysKHR();
+	
 
 		scene.recordDrawcalls(cmdStream,
 							  cameraManager.getActiveCamera(),
