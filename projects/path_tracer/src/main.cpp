@@ -76,23 +76,23 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle       traceDescriptorSet          = core.createDescriptorSet(traceDescriptorSetLayout);
 
 	std::vector<temp::Material> materials;
-	materials.emplace_back(temp::Material(glm::vec3(0.6, 0.3, 0.1),  glm::vec3(0.4, 0.4, 0.3),   50.f));
-	materials.emplace_back(temp::Material(glm::vec3(0.9, 0.1, 0.0),  glm::vec3(0.3, 0.1, 0.1),   10.f));
-	materials.emplace_back(temp::Material(glm::vec3(0.0, 10.0, 0.8), glm::vec3(1.0, 1.0, 1.0), 1425.f));
+	materials.emplace_back(temp::Material(glm::vec3(1, 0, 0), glm::vec3(0.4, 0.4, 0.4), 10.f));
+	materials.emplace_back(temp::Material(glm::vec3(1, 0, 0), glm::vec3(0.5, 0.0, 0.0), 10.f));
+	materials.emplace_back(temp::Material(glm::vec3(1, 0, 0), glm::vec3(0.0, 0.5, 0.0), 10));
 
-	const uint32_t ivoryIndex  = 0;
-	const uint32_t rubberIndex = 1;
-	const uint32_t mirrorIndex = 2;
+	const uint32_t whiteIndex   = 0;
+	const uint32_t redIndex     = 1;
+	const uint32_t greenIndex   = 2;
 
 	std::vector<temp::Sphere> spheres;
-	spheres.emplace_back(temp::Sphere(glm::vec3(0, -1, 0), 1, ivoryIndex));
+	spheres.emplace_back(temp::Sphere(glm::vec3(0, -1, 0), 1, whiteIndex));
 
 	std::vector<temp::Plane> planes;
-	planes.emplace_back(temp::Plane(glm::vec3( 0, -2,  0), glm::vec3( 0,  1,  0), glm::vec2(2), ivoryIndex));
-	planes.emplace_back(temp::Plane(glm::vec3( 0,  2,  0), glm::vec3( 0, -1,  0), glm::vec2(2), ivoryIndex));
-	planes.emplace_back(temp::Plane(glm::vec3( 2,  0,  0), glm::vec3(-1,  0,  0), glm::vec2(2), ivoryIndex));
-	planes.emplace_back(temp::Plane(glm::vec3(-2,  0,  0), glm::vec3( 1,  0,  0), glm::vec2(2), ivoryIndex));
-	planes.emplace_back(temp::Plane(glm::vec3( 0,  0,  2), glm::vec3( 0,  0, -1), glm::vec2(2), ivoryIndex));
+	planes.emplace_back(temp::Plane(glm::vec3( 0, -2,  0), glm::vec3( 0,  1,  0), glm::vec2(2), whiteIndex));
+	planes.emplace_back(temp::Plane(glm::vec3( 0,  2,  0), glm::vec3( 0, -1,  0), glm::vec2(2), whiteIndex));
+	planes.emplace_back(temp::Plane(glm::vec3( 2,  0,  0), glm::vec3(-1,  0,  0), glm::vec2(2), redIndex));
+	planes.emplace_back(temp::Plane(glm::vec3(-2,  0,  0), glm::vec3( 1,  0,  0), glm::vec2(2), greenIndex));
+	planes.emplace_back(temp::Plane(glm::vec3( 0,  0,  2), glm::vec3( 0,  0, -1), glm::vec2(2), whiteIndex));
 
 	std::vector<temp::Light> lights;
 	lights.emplace_back(temp::Light(glm::vec3(0, 0.5, 0), 1.5));
