@@ -6,11 +6,11 @@ layout(location = 0) in vec3 particle;
 struct Particle
 {
     vec3 position;
-    float lifeTime;
+    float padding;
     vec3 velocity;
-    float padding_2;
-    vec3 reset_velocity;
-    float padding_3;
+    float density;
+    vec3 force;
+    float pressure;
 };
 
 layout(std430, binding = 2) readonly buffer buffer_inParticle1
@@ -30,13 +30,12 @@ layout( push_constant ) uniform constants{
 
 layout(location = 0) out vec2 passTriangleCoordinates;
 layout(location = 1) out vec3 passVelocity;
-layout(location = 2) out float passlifeTime;
 
 void main()
 {
     int id = gl_InstanceIndex;
     passVelocity = inParticle1[id].velocity;
-    passlifeTime = inParticle1[id].lifeTime;
+    
     // particle position in view space
     vec4 positionView = view * vec4(inParticle1[id].position, 1);
     // by adding the triangle position in view space the mesh is always camera facing
