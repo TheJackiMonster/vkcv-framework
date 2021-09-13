@@ -97,7 +97,7 @@ Intersection sceneIntersect(const vec3 rayOrigin, const vec3 rayDirection) {
     //go over every sphere, check if sphere is hit by ray, save if hit is near enough into intersection struct
     for (int i = 0; i < sphereCount; i++) {
         float d;
-        if (ray_intersect(rayOrigin, rayDirection, d, i)) {
+        if (rayIntersect(rayOrigin, rayDirection, d, i)) {
             
             intersection.hit = true;
             

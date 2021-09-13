@@ -18,20 +18,15 @@ int main(int argc, const char** argv) {
 	//window creation
 	const int windowWidth = 800;
 	const int windowHeight = 600;
-	vkcv::Window window = vkcv::Window::create(
-		applicationName,
-		windowWidth,
-		windowHeight,
-		false
-	);
 
 	vkcv::Core core = vkcv::Core::create(
-		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
 		{ "VK_KHR_swapchain" }
 	);
+
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
 
 	//configuring the compute Shader
 	vkcv::PassConfig computePassDefinition({});
@@ -147,7 +142,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain().getFormat());
+		core.getSwapchain(windowHandle).getFormat());
 
 	vkcv::PassConfig safrPassDefinition({ present_color_attachment });
 	vkcv::PassHandle safrPass = core.createPass(safrPassDefinition);
@@ -159,7 +154,7 @@ int main(int argc, const char** argv) {
 	}
 
 	//create the render pipeline + compute pipeline
-	const vkcv::PipelineConfig safrPipelineDefinition{
+	const vkcv::GraphicsPipelineConfig safrPipelineDefinition{
 			safrShaderProgram,
 			(uint32_t)windowWidth,
 			(uint32_t)windowHeight,
@@ -169,10 +164,14 @@ int main(int argc, const char** argv) {
 			false
 	};
 
-	vkcv::PipelineHandle safrPipeline = core.createGraphicsPipeline(safrPipelineDefinition);
-	vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, {
-		core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle
-	});
+	vkcv::GraphicsPipelineHandle safrPipeline = core.createGraphicsPipeline(safrPipelineDefinition);
+
+	const vkcv::ComputePipelineConfig computePipelineConfig{
+			computeShaderProgram,
+			{core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle}
+	};
+
+	vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline(computePipelineConfig);
 
 	if (!safrPipeline || !computePipeline)
 	{
@@ -187,7 +186,7 @@ int main(int argc, const char** argv) {
 	vkcv::DrawcallInfo drawcall(renderMesh, { descriptorUsage }, 1);
 
 	//create the camera
-	vkcv::camera::CameraManager cameraManager(window);
+	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 
@@ -197,12 +196,12 @@ int main(int argc, const char** argv) {
 
 	float time = 0;
 	
-	while (window.isWindowOpen())
+	while (vkcv::Window::hasOpenWindow())
 	{
 		vkcv::Window::pollEvents();
 
 		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
 			continue;
 		}
 
@@ -273,7 +272,7 @@ int main(int argc, const char** argv) {
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
 
-		core.endFrame();
+		core.endFrame(windowHandle);
 	}
 	return 0;
 }
