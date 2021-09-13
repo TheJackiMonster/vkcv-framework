@@ -85,7 +85,7 @@ int main(int argc, const char** argv) {
 	const uint32_t greenIndex   = 2;
 
 	std::vector<temp::Sphere> spheres;
-	spheres.emplace_back(temp::Sphere(glm::vec3(0, -1, 0), 1, whiteIndex));
+	spheres.emplace_back(temp::Sphere(glm::vec3(0, -1.5, 0), 0.5, whiteIndex));
 
 	std::vector<temp::Plane> planes;
 	planes.emplace_back(temp::Plane(glm::vec3( 0, -2,  0), glm::vec3( 0,  1,  0), glm::vec2(2), whiteIndex));
@@ -179,7 +179,7 @@ int main(int argc, const char** argv) {
 		raytracingPushData.viewToWorld = glm::inverse(cameraManager.getActiveCamera().getView());
 		raytracingPushData.lightCount  = lights.size();
 		raytracingPushData.sphereCount = spheres.size();
-		raytracingPushData.planeCount  = planes.size();
+        raytracingPushData.planeCount  = planes.size();
 
 		vkcv::PushConstants pushConstantsCompute(sizeof(RaytracingPushConstantData));
 		pushConstantsCompute.appendDrawcall(raytracingPushData);
