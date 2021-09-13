@@ -7,20 +7,13 @@
 
 namespace temp {
 
-	struct Light {
-		Light(const glm::vec3& p, const float& i) : position(p), intensity(i) {}
-
-		glm::vec3   position;
-		float       intensity;
-	};
-
 	struct Material {
-		Material(const glm::vec3& a, const glm::vec3& color, const float& spec) : albedo(a), diffuse_color(color), specular_exponent(spec) {}
+		Material(const glm::vec3& e, const glm::vec3& color) : emission(e), albedo(color) {}
 
+		glm::vec3   emission;
+		float       padding0;
 		glm::vec3   albedo;
-		float       padding;
-		glm::vec3   diffuse_color;
-		float       specular_exponent;
+		float       padding1;
 	};
 
 	struct Sphere {
@@ -64,7 +57,26 @@ int main(int argc, const char** argv) {
 		{ "VK_KHR_swapchain" }
 	);
 
+	// images
+	vkcv::Image outputImage = core.createImage(
+		vk::Format::eR32G32B32A32Sfloat,
+		initialWidth,
+		initialHeight,
+		1,
+		false,
+		true);
+
+	vkcv::Image meanImage = core.createImage(
+		vk::Format::eR32G32B32A32Sfloat,
+		initialWidth,
+		initialHeight,
+		1,
+		false,
+		true);
+
 	vkcv::shader::GLSLCompiler compiler;
+
+	// path tracing shader
 	vkcv::ShaderProgram traceShaderProgram{};
 
 	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/path_tracer.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
@@ -75,32 +87,83 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetLayoutHandle traceDescriptorSetLayout    = core.createDescriptorSetLayout(traceDescriptorBindings);
 	vkcv::DescriptorSetHandle       traceDescriptorSet          = core.createDescriptorSet(traceDescriptorSetLayout);
 
+	// image combine shader
+	vkcv::ShaderProgram imageCombineShaderProgram{};
+
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/combineImages.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		imageCombineShaderProgram.addShader(shaderStage, path);
+	});
+
+	const vkcv::DescriptorBindings& imageCombineDescriptorBindings  = imageCombineShaderProgram.getReflectedDescriptors().at(0);
+	vkcv::DescriptorSetLayoutHandle imageCombineDescriptorSetLayout = core.createDescriptorSetLayout(imageCombineDescriptorBindings);
+	vkcv::DescriptorSetHandle       imageCombineDescriptorSet       = core.createDescriptorSet(imageCombineDescriptorSetLayout);
+	vkcv::PipelineHandle            imageCombinePipeline            = core.createComputePipeline(
+		imageCombineShaderProgram, 
+		{ core.getDescriptorSetLayout(imageCombineDescriptorSetLayout).vulkanHandle });
+
+	vkcv::DescriptorWrites imageCombineDescriptorWrites;
+	imageCombineDescriptorWrites.storageImageWrites = {
+		vkcv::StorageImageDescriptorWrite(0, outputImage.getHandle()),
+		vkcv::StorageImageDescriptorWrite(1, meanImage.getHandle())
+	};
+	core.writeDescriptorSet(imageCombineDescriptorSet, imageCombineDescriptorWrites);
+
+	// image present shader
+	vkcv::ShaderProgram presentShaderProgram{};
+
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/presentImage.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		presentShaderProgram.addShader(shaderStage, path);
+	});
+
+	const vkcv::DescriptorBindings& presentDescriptorBindings   = presentShaderProgram.getReflectedDescriptors().at(0);
+	vkcv::DescriptorSetLayoutHandle presentDescriptorSetLayout  = core.createDescriptorSetLayout(presentDescriptorBindings);
+	vkcv::DescriptorSetHandle       presentDescriptorSet        = core.createDescriptorSet(presentDescriptorSetLayout);
+	vkcv::PipelineHandle            presentPipeline             = core.createComputePipeline(
+		presentShaderProgram,
+		{ core.getDescriptorSetLayout(presentDescriptorSetLayout).vulkanHandle });
+
+	// clear shader
+	vkcv::ShaderProgram clearShaderProgram{};
+
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/clearImage.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		clearShaderProgram.addShader(shaderStage, path);
+	});
+
+	const vkcv::DescriptorBindings& imageClearDescriptorBindings    = clearShaderProgram.getReflectedDescriptors().at(0);
+	vkcv::DescriptorSetLayoutHandle imageClearDescriptorSetLayout   = core.createDescriptorSetLayout(imageClearDescriptorBindings);
+	vkcv::DescriptorSetHandle       imageClearDescriptorSet         = core.createDescriptorSet(imageClearDescriptorSetLayout);
+	vkcv::PipelineHandle            imageClearPipeline              = core.createComputePipeline(
+		clearShaderProgram,
+		{ core.getDescriptorSetLayout(imageClearDescriptorSetLayout).vulkanHandle });
+
+	vkcv::DescriptorWrites imageClearDescriptorWrites;
+	imageClearDescriptorWrites.storageImageWrites = {
+		vkcv::StorageImageDescriptorWrite(0, meanImage.getHandle())
+	};
+	core.writeDescriptorSet(imageClearDescriptorSet, imageClearDescriptorWrites);
+
+	// buffers
 	std::vector<temp::Material> materials;
-	materials.emplace_back(temp::Material(glm::vec3(1, 0, 0), glm::vec3(0.4, 0.4, 0.4), 10.f));
-	materials.emplace_back(temp::Material(glm::vec3(1, 0, 0), glm::vec3(0.5, 0.0, 0.0), 10.f));
-	materials.emplace_back(temp::Material(glm::vec3(1, 0, 0), glm::vec3(0.0, 0.5, 0.0), 10));
+	materials.emplace_back(temp::Material(glm::vec3(0),     glm::vec3(0.65)));
+	materials.emplace_back(temp::Material(glm::vec3(0),     glm::vec3(0.5, 0.0, 0.0)));
+	materials.emplace_back(temp::Material(glm::vec3(0),     glm::vec3(0.0, 0.5, 0.0)));
+    materials.emplace_back(temp::Material(glm::vec3(20),   glm::vec3(0)));
 
 	const uint32_t whiteIndex   = 0;
 	const uint32_t redIndex     = 1;
 	const uint32_t greenIndex   = 2;
+    const uint32_t lightIndex   = 3;
 
 	std::vector<temp::Sphere> spheres;
 	spheres.emplace_back(temp::Sphere(glm::vec3(0, -1.5, 0), 0.5, whiteIndex));
 
 	std::vector<temp::Plane> planes;
-	planes.emplace_back(temp::Plane(glm::vec3( 0, -2,  0), glm::vec3( 0,  1,  0), glm::vec2(2), whiteIndex));
-	planes.emplace_back(temp::Plane(glm::vec3( 0,  2,  0), glm::vec3( 0, -1,  0), glm::vec2(2), whiteIndex));
-	planes.emplace_back(temp::Plane(glm::vec3( 2,  0,  0), glm::vec3(-1,  0,  0), glm::vec2(2), redIndex));
-	planes.emplace_back(temp::Plane(glm::vec3(-2,  0,  0), glm::vec3( 1,  0,  0), glm::vec2(2), greenIndex));
-	planes.emplace_back(temp::Plane(glm::vec3( 0,  0,  2), glm::vec3( 0,  0, -1), glm::vec2(2), whiteIndex));
-
-	std::vector<temp::Light> lights;
-	lights.emplace_back(temp::Light(glm::vec3(0, 0.5, 0), 1.5));
-
-	vkcv::Buffer<temp::Light> lightsBuffer = core.createBuffer<temp::Light>(
-		vkcv::BufferType::STORAGE,
-		lights.size());
-	lightsBuffer.fill(lights);
+	planes.emplace_back(temp::Plane(glm::vec3( 0, -2,    0), glm::vec3( 0,  1,  0), glm::vec2(2),   whiteIndex));
+	planes.emplace_back(temp::Plane(glm::vec3( 0,  2,    0), glm::vec3( 0, -1,  0), glm::vec2(2),   whiteIndex));
+	planes.emplace_back(temp::Plane(glm::vec3( 2,  0,    0), glm::vec3(-1,  0,  0), glm::vec2(2),   redIndex));
+	planes.emplace_back(temp::Plane(glm::vec3(-2,  0,    0), glm::vec3( 1,  0,  0), glm::vec2(2),   greenIndex));
+	planes.emplace_back(temp::Plane(glm::vec3( 0,  0,    2), glm::vec3( 0,  0, -1), glm::vec2(2),   whiteIndex));
+	planes.emplace_back(temp::Plane(glm::vec3( 0,  1.9,  0), glm::vec3( 0, -1,  0), glm::vec2(1), lightIndex));
 
 	vkcv::Buffer<temp::Sphere> sphereBuffer = core.createBuffer<temp::Sphere>(
 		vkcv::BufferType::STORAGE,
@@ -119,10 +182,11 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorWrites traceDescriptorWrites;
 	traceDescriptorWrites.storageBufferWrites = { 
-		vkcv::BufferDescriptorWrite(0, lightsBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(1, sphereBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(2, planeBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(3, materialBuffer.getHandle()) };
+		vkcv::BufferDescriptorWrite(0, sphereBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(1, planeBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(2, materialBuffer.getHandle())};
+	traceDescriptorWrites.storageImageWrites = {
+		vkcv::StorageImageDescriptorWrite(3, outputImage.getHandle())};
 	core.writeDescriptorSet(traceDescriptorSet, traceDescriptorWrites);
 
 	vkcv::PipelineHandle tracePipeline = core.createComputePipeline(
@@ -142,6 +206,12 @@ int main(int argc, const char** argv) {
 
 	auto    startTime   = std::chrono::system_clock::now();
 	float   time        = 0;
+	int     frameIndex  = 0;
+	bool    clearMeanImage = true;
+
+	float cameraPitchPrevious   = 0;
+	float cameraYawPrevious     = 0;
+	glm::vec3 cameraPositionPrevious = glm::vec3(0);
 
 	while (window.isWindowOpen())
 	{
@@ -162,43 +232,105 @@ int main(int argc, const char** argv) {
 
 		const vkcv::CommandStreamHandle cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-		const vkcv::ImageHandle swapchainInput      = vkcv::ImageHandle::createSwapchainImageHandle();
-		traceDescriptorWrites.storageImageWrites    = { vkcv::StorageImageDescriptorWrite(4, swapchainInput) };
-		core.writeDescriptorSet(traceDescriptorSet, traceDescriptorWrites);
+		uint32_t fullscreenDispatchCount[3] = {
+			static_cast<uint32_t> (std::ceil(swapchainWidth  / 8.f)),
+			static_cast<uint32_t> (std::ceil(swapchainHeight / 8.f)),
+			1 };
 
-		core.prepareImageForStorage(cmdStream, swapchainInput);
+		float cameraPitch;
+		float cameraYaw;
+		cameraManager.getActiveCamera().getAngles(cameraPitch, cameraYaw);
 
+		if (cameraPitch != cameraPitchPrevious || cameraYaw != cameraYawPrevious)
+			clearMeanImage = true;	// camera rotated
+
+		cameraPitchPrevious = cameraPitch;
+		cameraYawPrevious   = cameraYaw;
+
+		glm::vec3 cameraPosition = cameraManager.getActiveCamera().getPosition();
+
+		if(glm::distance(cameraPosition, cameraPositionPrevious) > 0.001)
+			clearMeanImage = true;	// camera moved
+
+		cameraPositionPrevious = cameraPosition;
+
+		if (clearMeanImage) {
+			core.prepareImageForStorage(cmdStream, meanImage.getHandle());
+
+			core.recordComputeDispatchToCmdStream(cmdStream,
+				imageClearPipeline,
+				fullscreenDispatchCount,
+				{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(imageClearDescriptorSet).vulkanHandle) },
+				vkcv::PushConstants(0));
+
+			clearMeanImage = false;
+		}
+
+		// path tracing
 		struct RaytracingPushConstantData {
 			glm::mat4   viewToWorld;
-			int32_t     lightCount;
 			int32_t     sphereCount;
-            int32_t     planeCount;
+			int32_t     planeCount;
+			int32_t     frameIndex;
 		};
 
 		RaytracingPushConstantData raytracingPushData;
 		raytracingPushData.viewToWorld = glm::inverse(cameraManager.getActiveCamera().getView());
-		raytracingPushData.lightCount  = lights.size();
-		raytracingPushData.sphereCount = spheres.size();
-        raytracingPushData.planeCount  = planes.size();
+		raytracingPushData.sphereCount = 0;// spheres.size();
+		raytracingPushData.planeCount  = planes.size();
+		raytracingPushData.frameIndex = frameIndex;
 
 		vkcv::PushConstants pushConstantsCompute(sizeof(RaytracingPushConstantData));
 		pushConstantsCompute.appendDrawcall(raytracingPushData);
 
-		uint32_t computeDispatchCount[3] = { 
+		uint32_t traceDispatchCount[3] = { 
 			static_cast<uint32_t> (std::ceil(swapchainWidth  / 16.f)),
 			static_cast<uint32_t> (std::ceil(swapchainHeight / 16.f)),
 			1 };
 
+		core.prepareImageForStorage(cmdStream, outputImage.getHandle());
+
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			tracePipeline,
-			computeDispatchCount,
+			traceDispatchCount,
 			{ vkcv::DescriptorSetUsage(0,core.getDescriptorSet(traceDescriptorSet).vulkanHandle) },
 			pushConstantsCompute);
+
+		core.prepareImageForStorage(cmdStream, meanImage.getHandle());
+		core.recordImageMemoryBarrier(cmdStream, outputImage.getHandle());
+
+		// combine images
+		core.recordComputeDispatchToCmdStream(cmdStream,
+			imageCombinePipeline,
+			fullscreenDispatchCount,
+			{ vkcv::DescriptorSetUsage(0,core.getDescriptorSet(imageCombineDescriptorSet).vulkanHandle) },
+			vkcv::PushConstants(0));
+
+		core.recordImageMemoryBarrier(cmdStream, meanImage.getHandle());
+
+		// present image
+		const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+
+		vkcv::DescriptorWrites presentDescriptorWrites;
+		presentDescriptorWrites.storageImageWrites = {
+			vkcv::StorageImageDescriptorWrite(0, meanImage.getHandle()),
+			vkcv::StorageImageDescriptorWrite(1, swapchainInput) };
+		core.writeDescriptorSet(presentDescriptorSet, presentDescriptorWrites);
+
+		core.prepareImageForStorage(cmdStream, swapchainInput);
+
+		core.recordComputeDispatchToCmdStream(cmdStream,
+			presentPipeline,
+			fullscreenDispatchCount,
+			{ vkcv::DescriptorSetUsage(0,core.getDescriptorSet(presentDescriptorSet).vulkanHandle) },
+			vkcv::PushConstants(0));
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
 
 		core.endFrame();
+
+		frameIndex++;
 	}
 	return 0;
 }

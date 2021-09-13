@@ -7,15 +7,10 @@ const float hitBias = 0.0001;   // used to offset hits to avoid self intersectio
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 struct Material {
+    vec3 	emission;
+	float 	padding0;
     vec3 	albedo;
-	float 	padding;
-    vec3 	diffuse_color;
-    float 	specular_exponent;
-};
-
-struct Light{
-    vec3 	position;
-    float 	intensity;
+    float 	padding1;
 };
 
 struct Sphere{
@@ -34,30 +29,28 @@ struct Plane{
 	vec2 	padding2;
 };
 
-layout(std430, binding = 0) buffer lights{
-    Light inLights[];
-};
-
-layout(std430, binding = 1) buffer spheres{
+layout(std430, binding = 0) buffer spheres{
     Sphere inSpheres[];
 };
 
-layout(std430, binding = 2) buffer planes{
+layout(std430, binding = 1) buffer planes{
     Plane inPlanes[];
 };
 
-layout(std430, binding = 3) buffer materials{
+layout(std430, binding = 2) buffer materials{
     Material inMaterials[];
 };
 
-layout(set=0, binding = 4, rgba8) uniform image2D outImage;
+layout(set=0, binding = 3, rgba32f) uniform image2D outImage;
 
 layout( push_constant ) uniform constants{
     mat4 	viewToWorld;
-    int 	lightCount;
     int 	sphereCount;
 	int 	planeCount;
+	int 	frameIndex;
 };
+
+// ---- Intersection functions ----
 
 struct Ray{
 	vec3 origin;
@@ -102,6 +95,21 @@ Intersection raySphereIntersect(Ray ray, Sphere sphere){
     return intersection;
 }
 
+struct Basis{
+	vec3 right;
+	vec3 up;
+	vec3 forward;
+};
+
+Basis buildBasisAroundNormal(vec3 N){
+	Basis 	basis;
+	basis.up 		= N;
+	basis.right 	= abs(basis.up.x) < 0.99 ?  vec3(1, 0, 0) : vec3(0, 0, 1);
+	basis.forward 	= normalize(cross(basis.up, basis.right));
+	basis.right 	= cross(basis.up, basis.forward);
+	return basis;
+}
+
 // see: https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection
 Intersection rayPlaneIntersect(Ray ray, Plane plane){
 
@@ -119,12 +127,11 @@ Intersection rayPlaneIntersect(Ray ray, Plane plane){
 		return intersection;
 	
 	intersection.pos 				= ray.origin + ray.direction * intersection.distance;
-	vec3 	right 					= abs(plane.N.x) < 0.99 ?  vec3(1, 0, 0) : vec3(0, 0, 1);
-	vec3 	up 						= normalize(cross(plane.N, right));
-	right 							= cross(plane.N, up);
+	
 	vec3 	centerToIntersection	= intersection.pos - plane.center;
-	float 	projectedRight			= dot(centerToIntersection, right);
-	float 	projectedUp				= dot(centerToIntersection, up);
+	Basis 	planeBasis 				= buildBasisAroundNormal(plane.N);
+	float 	projectedRight			= dot(centerToIntersection, planeBasis.right);
+	float 	projectedUp				= dot(centerToIntersection, planeBasis.forward);
 
 	intersection.hit 		= abs(projectedRight) <= plane.extent.x && abs(projectedUp) <= plane.extent.y;
 	intersection.N 			= plane.N;
@@ -161,79 +168,126 @@ vec3 biasHitPosition(vec3 hitPos, vec3 rayDirection, vec3 N){
     return hitPos + sign(dot(rayDirection, N)) * N * hitBias;
 }
 
-vec3 computeHitLighting(Intersection intersection, vec3 V, out float outReflectionThroughput){
-	
-    float lightIntensityDiffuse  = 0;
-    float lightIntensitySpecular = 0;
+// ---- noise/hash functions for pseudorandom variables ----
+// from: https://www.shadertoy.com/view/XlGcRh
 
-    for (int i = 0; i < lightCount; i++) {
-        
-        vec3   L = normalize(inLights[i].position - intersection.pos);
-        float  d = distance(inLights[i].position, intersection.pos);
-		
-		Ray shadowRay;
-		shadowRay.origin 	= biasHitPosition(intersection.pos, L, intersection.N);
-		shadowRay.direction = L;
-        
-        Intersection shadowIntersection = sceneIntersect(shadowRay);
-        
-        bool isShadowed = false;
-        if(shadowIntersection.hit)
-            isShadowed = distance(shadowIntersection.pos, shadowRay.origin) < d;
-		
-        if(isShadowed)
-            continue;        
-        
-        lightIntensityDiffuse  += inLights[i].intensity * max(0.f, dot(L, intersection.N));
-        lightIntensitySpecular += pow(max(0.f, dot(reflect(V, intersection.N), L)), intersection.material.specular_exponent) * inLights[i].intensity;
-    }
+float g_seed = 0;
 
-    outReflectionThroughput = intersection.material.albedo[2];
-    return intersection.material.diffuse_color * lightIntensityDiffuse * intersection.material.albedo[0] + lightIntensitySpecular * intersection.material.albedo[1];
+// extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences
+vec2 r2Sequence(uint n){
+	const float g = 1.32471795724474602596;
+	return fract(vec2(
+		n /  g,
+		n / (g*g)));
 }
 
-vec3 castRay(Ray ray, int max_depth) {
+float fast(vec2 v)
+{
+    v = (1./4320.) * v + vec2(0.25,0.);
+    float state = fract( dot( v * v, vec2(3571)));
+    return fract( state * state * (3571. * 2.));
+}
+
+vec2 hashwithoutsine21(float p)
+{
+	vec3 p3 = fract(vec3(p,p,p) * vec3(.1031, .1030, .0973));
+	p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+}
+
+void initRandom(ivec2 coord){
+	g_seed = fast(vec2(coord) + hashwithoutsine21(frameIndex));
+}
+
+vec2 random(){
+	return hashwithoutsine21(g_seed += 0.1);
+}
+
+// ---- shading ----
+
+vec3 lambertBRDF(vec3 albedo){
+	return albedo / pi;
+}
+
+vec3 computeBRDF(Material material){
+    return lambertBRDF(material.albedo);
+}
+
+// ---- pathtracing and main ----
+
+float cosineDistributionPDF(float NoL){
+	return NoL / pi;
+}
+
+// https://link.springer.com/content/pdf/10.1007/978-1-4842-4427-2_16.pdf
+vec3 cosineDistribution(vec2 xi){
+	float phi = 2 * pi * xi.y;
+	return vec3(
+		sqrt(xi.x) * cos(phi),
+		sqrt(1 - xi.x),
+		sqrt(xi.x) * sin(phi));
+}
+
+vec3 sampleTangentToWorldSpace(vec3 tangentSpaceSample, vec3 N){
+	Basis tangentBasis = buildBasisAroundNormal(N);
+	return 
+		tangentBasis.right		* tangentSpaceSample.x +
+		tangentBasis.up			* tangentSpaceSample.y +
+		tangentBasis.forward 	* tangentSpaceSample.z;
+}
+
+vec3 castRay(Ray ray) {
     
-    vec3 skyColor = vec3(0.2, 0.7, 0.8);
+    vec3 skyColor 	= vec3(0.2, 0.7, 0.8);
+	skyColor 		= vec3(0);
     
-    float   reflectionThroughput    = 1;
-    vec3    color                   = vec3(0);
+    vec3   	throughput 	= vec3(1);
+    vec3	color   	= vec3(0);
     
-    for(int i = 0; i < max_depth; i++){
+	const int maxDepth = 10;
+    for(int i = 0; i < maxDepth; i++){
 
         Intersection intersection = sceneIntersect(ray);
         
-        vec3 hitColor;
-        float hitReflectionThroughput;
-        
+        vec3 hitLighting 	= vec3(0);
+        vec3 brdf 			= vec3(1);
+		
+		vec3 L 				= -normalize(ray.direction);
+        float NoL 			= max(dot(L, intersection.N), 0);
+		
         if(intersection.hit){
-            hitColor = computeHitLighting(intersection, ray.direction, hitReflectionThroughput);
+            brdf 		= computeBRDF(intersection.material);
+			hitLighting = intersection.material.emission * max(sign(NoL), 0);	// objects only emit in direction of normal
         }
         else{
-            hitColor = skyColor;
+            hitLighting = skyColor;
         }
         
-        color                   += hitColor * reflectionThroughput;
-        reflectionThroughput    *= hitReflectionThroughput;
+        color       	+= hitLighting * throughput;
+		
+		
+        throughput  	*= brdf * NoL / cosineDistributionPDF(NoL);
         
         if(!intersection.hit)
             break;
 
-        ray.direction   = normalize(reflect(ray.direction, intersection.N));
-        ray.origin		= biasHitPosition(intersection.pos, ray.direction, intersection.N);
+		vec3 sampleTangentSpace = cosineDistribution(random());
+        ray.direction   		= sampleTangentToWorldSpace(sampleTangentSpace, intersection.N);
+        ray.origin				= biasHitPosition(intersection.pos, ray.direction, intersection.N);
     }
 
     return color;
 }
 
-vec3 computeCameraRay(ivec2 coord){
+// coord must be in pixel coordinates, but already shifted to pixel center
+vec3 computeCameraRay(vec2 coord){
 
     ivec2 outImageRes   = imageSize(outImage);
     float fovDegree     = 45;
     float fov           = fovDegree * pi / 180;
     
-    vec2 uv     = (coord + 0.5) / vec2(outImageRes);
-    vec2 ndc    = 2 * uv - 1;
+    vec2 uv     		= coord / vec2(outImageRes);
+    vec2 ndc    		= 2 * uv - 1;
     
     float tanFovHalf    = tan(fov / 2.f);
     float aspectRatio   = outImageRes.x / float(outImageRes.y);
@@ -246,14 +300,28 @@ vec3 computeCameraRay(ivec2 coord){
     return directionWorldSpace;
 }
 
-
 void main(){
-    ivec2 coord     = ivec2(gl_GlobalInvocationID.xy);
-    int max_depth   = 4;
+    ivec2 	coord     = ivec2(gl_GlobalInvocationID.xy);
+	vec2 	pixelSize = 1.f / coord;
+	initRandom(coord);
+	
 	Ray cameraRay;
-    cameraRay.direction = computeCameraRay(coord);
     cameraRay.origin  	= viewToWorld[3].xyz;
-    vec3 color      = castRay(cameraRay, max_depth);
-    
-    imageStore(outImage, coord, vec4(color, 0.f));
+	vec2 coordCentered 	= coord + 0.5;
+	
+	vec3 color = vec3(0);
+	
+	const int samplesPerPixel = 10;
+	for(int i = 0; i < samplesPerPixel; i++){
+		vec2 jitter 		= r2Sequence(i + frameIndex) - 0.5;
+		cameraRay.direction = computeCameraRay(coordCentered + jitter);
+		color 				+= castRay(cameraRay);
+	}
+	color /= samplesPerPixel;
+	
+	// FIXME: find reason and fix properly
+	if(any(isnan(color)))
+		color = vec3(0);
+	
+    imageStore(outImage, coord, vec4(color, 1.f));
 }
