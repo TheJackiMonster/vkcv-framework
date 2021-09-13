@@ -85,18 +85,17 @@ int main(int argc, const char** argv) {
 	const uint32_t mirrorIndex = 2;
 
 	std::vector<temp::Sphere> spheres;
-	spheres.emplace_back(temp::Sphere(glm::vec3(-3.0,  0.0, 16), 2, ivoryIndex));
-	spheres.emplace_back(temp::Sphere(glm::vec3(-1.0, -1.5, 12), 2, mirrorIndex));
-	spheres.emplace_back(temp::Sphere(glm::vec3( 1.5, -0.5, 18), 3, rubberIndex));
-	spheres.emplace_back(temp::Sphere(glm::vec3( 7.0,  5.0, 18), 4, mirrorIndex));
+	spheres.emplace_back(temp::Sphere(glm::vec3(0, -1, 0), 1, ivoryIndex));
 
 	std::vector<temp::Plane> planes;
-	planes.emplace_back(temp::Plane(glm::vec3(0, -1, 0), glm::vec3(0, 1, 0), glm::vec2(3), ivoryIndex));
+	planes.emplace_back(temp::Plane(glm::vec3( 0, -2,  0), glm::vec3( 0,  1,  0), glm::vec2(2), ivoryIndex));
+	planes.emplace_back(temp::Plane(glm::vec3( 0,  2,  0), glm::vec3( 0, -1,  0), glm::vec2(2), ivoryIndex));
+	planes.emplace_back(temp::Plane(glm::vec3( 2,  0,  0), glm::vec3(-1,  0,  0), glm::vec2(2), ivoryIndex));
+	planes.emplace_back(temp::Plane(glm::vec3(-2,  0,  0), glm::vec3( 1,  0,  0), glm::vec2(2), ivoryIndex));
+	planes.emplace_back(temp::Plane(glm::vec3( 0,  0,  2), glm::vec3( 0,  0, -1), glm::vec2(2), ivoryIndex));
 
 	std::vector<temp::Light> lights;
-	lights.emplace_back(temp::Light(glm::vec3(-20, 20, 20), 1.5));
-	lights.emplace_back(temp::Light(glm::vec3(30, 50, -25), 1.8));
-	lights.emplace_back(temp::Light(glm::vec3(30, 20, 30), 1.7));
+	lights.emplace_back(temp::Light(glm::vec3(0, 0.5, 0), 1.5));
 
 	vkcv::Buffer<temp::Light> lightsBuffer = core.createBuffer<temp::Light>(
 		vkcv::BufferType::STORAGE,

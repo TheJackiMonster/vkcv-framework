@@ -92,14 +92,14 @@ bool rayPlaneIntersect(const vec3 origin, vec3 direction, out float intersection
 		return false;
 	
 	vec3 	intersection 			= origin + direction * intersectionDistance;
-	vec3 	right 					= plane.N.x < 0.99 ?  vec3(1, 0, 0) : vec3(0, 0, 1);
+	vec3 	right 					= abs(plane.N.x) < 0.99 ?  vec3(1, 0, 0) : vec3(0, 0, 1);
 	vec3 	up 						= normalize(cross(plane.N, right));
 	right 							= cross(plane.N, up);
 	vec3 	centerToIntersection	= intersection - plane.center;
 	float 	projectedRight			= dot(centerToIntersection, right);
 	float 	projectedUp				= dot(centerToIntersection, up);
 
-	return abs(projectedRight) < plane.extent.x && abs(projectedUp) < plane.extent.y;
+	return abs(projectedRight) <= plane.extent.x && abs(projectedUp) <= plane.extent.y;
 }
 
 struct Intersection{
@@ -219,7 +219,7 @@ vec3 castRay(const vec3 initialOrigin, const vec3 initialDirection, int max_dept
 vec3 computeDirection(ivec2 coord){
 
     ivec2 outImageRes   = imageSize(outImage);
-    float fovDegree     = 25;
+    float fovDegree     = 45;
     float fov           = fovDegree * pi / 180;
     
     vec2 uv     = (coord + 0.5) / vec2(outImageRes);
@@ -230,15 +230,8 @@ vec3 computeDirection(ivec2 coord){
     float x             =  ndc.x * tanFovHalf * aspectRatio;
     float y             = -ndc.y * tanFovHalf;
     
-    // z component must be chosen so vector length equals 1
-    // setting z=1 and normalizing shortens x and y, changing the fov
-    // the final length must satisfy:
-    //                    1 = |v|                   <=> 
-    //                    1 = sqrt(x^2 + y^2 + z^2) <=>
-    //                    1 = x^2 + y^2 + z^2       <=>
-    //        1 - x^2 - y^2 = z^2                   <=>
-    //  sqrt(1 - x^2 - y^2) = z
-    vec3 directionViewSpace     = vec3(x, y, sqrt(1 - x*x - y*y));
+    // view direction goes through pixel on image plane with z=1
+    vec3 directionViewSpace     = normalize(vec3(x, y, 1));
     vec3 directionWorldSpace    = mat3(viewToWorld) * directionViewSpace;
     return directionWorldSpace;
 }
