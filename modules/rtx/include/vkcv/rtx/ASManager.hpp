@@ -84,6 +84,11 @@ namespace vkcv::rtx {
     public:
 
         /**
+         * Default constructor
+         */
+        ASManager() = default;
+
+        /**
          * @brief Constructor of @#ASManager .
          * @param core
          */
@@ -93,6 +98,12 @@ namespace vkcv::rtx {
          * @brief Default destructor of @#ASManager.
          */
         ~ASManager();
+
+        /**
+         * @brief TODO
+         * @param core
+         */
+        void init(Core* core);
 
         /**
          * @brief Build a Bottom Level Acceleration Structure (BLAS) object from given @p vertices and @p indices.

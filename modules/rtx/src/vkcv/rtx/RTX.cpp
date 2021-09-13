@@ -117,11 +117,11 @@ namespace vkcv::rtx {
         m_core = core;
         // build acceleration structures BLAS then TLAS --> see ASManager
         //asManager(core);
-        ASManager temp(core);
-        m_asManager = &temp;
-        m_asManager->buildBLAS(vertices, indices);
-        m_asManager->buildTLAS();
-        RTXDescriptors(m_asManager, core, descriptorSetHandles);
+//        ASManager temp(core);
+        m_asManager.init(core);
+        m_asManager.buildBLAS(vertices, indices);
+        m_asManager.buildTLAS();
+        RTXDescriptors(&m_asManager, core, descriptorSetHandles);
         
     }
 
@@ -188,7 +188,7 @@ namespace vkcv::rtx {
 
     }
 
-    vk::Pipeline RTXModule::createRTXPipeline(std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rayGenShader, ShaderProgram &rayMissShader, ShaderProgram &rayClosestHitShader) {
+    vk::Pipeline RTXModule::createRTXPipeline(uint32_t pushConstantSize, std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rayGenShader, ShaderProgram &rayMissShader, ShaderProgram &rayClosestHitShader) {
         // TODO: maybe all of this must be moved to the vkcv::PipelineManager? If we use scene.recordDrawcalls(), this requires a vkcv::PipelineHandle and not a vk::Pipeline
 
         // -- process vkcv::ShaderProgram into vk::ShaderModule
@@ -260,6 +260,7 @@ namespace vkcv::rtx {
         // -- PipelineLayouts
 
         std::vector<vk::RayTracingShaderGroupCreateInfoKHR> shaderGroups(3);   // HARD CODED
+        // Ray Gen
         shaderGroups[0] = vk::RayTracingShaderGroupCreateInfoKHR(
             vk::RayTracingShaderGroupTypeKHR::eGeneral, // vk::RayTracingShaderGroupTypeKHR type_ = vk::RayTracingShaderGroupTypeKHR::eGeneral
             0, // uint32_t generalShader_ = {}
@@ -268,6 +269,7 @@ namespace vkcv::rtx {
             VK_SHADER_UNUSED_KHR, // uint32_t intersectionShader_ = {}
             nullptr // const void* pShaderGroupCaptureReplayHandle_ = {}
         );
+        // Ray Miss
         shaderGroups[1] = vk::RayTracingShaderGroupCreateInfoKHR(
             vk::RayTracingShaderGroupTypeKHR::eGeneral, // vk::RayTracingShaderGroupTypeKHR type_ = vk::RayTracingShaderGroupTypeKHR::eGeneral
             1, // uint32_t generalShader_ = {}
@@ -276,10 +278,11 @@ namespace vkcv::rtx {
             VK_SHADER_UNUSED_KHR, // uint32_t intersectionShader_ = {}
             nullptr // const void* pShaderGroupCaptureReplayHandle_ = {}
         );
+        // Ray Closest Hit
         shaderGroups[2] = vk::RayTracingShaderGroupCreateInfoKHR(
             vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup, // vk::RayTracingShaderGroupTypeKHR type_ = vk::RayTracingShaderGroupTypeKHR::eGeneral
-            2, // uint32_t generalShader_ = {}
-            VK_SHADER_UNUSED_KHR, // uint32_t closestHitShader_ = {}
+            VK_SHADER_UNUSED_KHR, // uint32_t generalShader_ = {}
+            2, // uint32_t closestHitShader_ = {}
             VK_SHADER_UNUSED_KHR, // uint32_t anyHitShader_ = {}
             VK_SHADER_UNUSED_KHR, // uint32_t intersectionShader_ = {}
             nullptr // const void* pShaderGroupCaptureReplayHandle_ = {}
@@ -290,12 +293,18 @@ namespace vkcv::rtx {
             descriptorSetLayoutsVulkan.push_back(m_core->getDescriptorSetLayout(descriptorSetLayouts[i]).vulkanHandle);
         }
 
+        vk::PushConstantRange pushConstant(
+            vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR, // vk::ShaderStageFlags stageFlags_ = {},
+            0, // uint32_t offset_ = {},
+            pushConstantSize // uint32_t size_ = {}
+        );
+
         vk::PipelineLayoutCreateInfo rtxPipelineLayoutCreateInfo(
             vk::PipelineLayoutCreateFlags(), // vk::PipelineLayoutCreateFlags flags_ = {}
-            2, // uint32_t setLayoutCount_ = {}     HARD CODED
+            (uint32_t) descriptorSetLayoutsVulkan.size(), // uint32_t setLayoutCount_ = {}     HARD CODED (2)
             descriptorSetLayoutsVulkan.data(), // const vk::DescriptorSetLayout* pSetLayouts_ = {}
-            0, // uint32_t pushConstantRangeCount_ = {}
-            nullptr // const vk::PushConstantRange* pPushConstantRanges_ = {}
+            1, //            0, // uint32_t pushConstantRangeCount_ = {}
+            &pushConstant //            nullptr // const vk::PushConstantRange* pPushConstantRanges_ = {}
         );
 
         vk::PipelineLayout rtxPipelineLayout = m_core->getContext().getDevice().createPipelineLayout(rtxPipelineLayoutCreateInfo);
@@ -312,27 +321,32 @@ namespace vkcv::rtx {
 
         vk::RayTracingPipelineCreateInfoKHR rtxPipelineInfo(
             vk::PipelineCreateFlags(), // vk::PipelineCreateFlags flags_ = {}
-            shaderStages.size(), // uint32_t stageCount_ = {}
+            (uint32_t) shaderStages.size(), // uint32_t stageCount_ = {}
             shaderStages.data(), // const vk::PipelineShaderStageCreateInfo* pStages_ = {}
-            shaderGroups.size(), // uint32_t groupCount_ = {}
+            (uint32_t) shaderGroups.size(), // uint32_t groupCount_ = {}
             shaderGroups.data(), // const vk::RayTracingShaderGroupCreateInfoKHR* pGroups_ = {}
             16, // uint32_t maxPipelineRayRecursionDepth_ = {}
             &rtxPipelineLibraryCreateInfo, // const vk::PipelineLibraryCreateInfoKHR* pLibraryInfo_ = {}
             nullptr, // const vk::RayTracingPipelineInterfaceCreateInfoKHR* pLibraryInterface_ = {}
             nullptr, // const vk::PipelineDynamicStateCreateInfo* pDynamicState_ = {}
-            rtxPipelineLayout, // vk::PipelineLayout layout_ = {}
-            nullptr, // vk::Pipeline basePipelineHandle_ = {}
-            -1 // int32_t basePipelineIndex_ = {}
+            rtxPipelineLayout // vk::PipelineLayout layout_ = {}
         );
 
-        vk::Pipeline rtxPipeline = m_core->getContext().getDevice().createRayTracingPipelineKHR(nullptr, nullptr, rtxPipelineInfo, nullptr, m_asManager->getDispatcher());
+        // WTF is this?
+//        vk::DispatchLoaderDynamic dld = vk::DispatchLoaderDynamic( (PFN_vkGetInstanceProcAddr) m_core->getContext().getInstance().getProcAddr("vkGetInstanceProcAddr") );
+//        dld.init(m_core->getContext().getInstance());
+
+        vk::Pipeline rtxPipeline = m_core->getContext().getDevice().createRayTracingPipelineKHR(vk::DeferredOperationKHR(), vk::PipelineCache(), rtxPipelineInfo, nullptr, m_asManager.getDispatcher());
         if (!rtxPipeline) {
             vkcv_log(LogLevel::ERROR, "The RTX Pipeline could not be created!");
         }
 
-        m_core->getContext().getDevice().destroy(rayGenShaderModule, nullptr, m_asManager->getDispatcher());
-        m_core->getContext().getDevice().destroy(rayMissShaderModule, nullptr, m_asManager->getDispatcher());
-        m_core->getContext().getDevice().destroy(rayClosestHitShaderModule, nullptr, m_asManager->getDispatcher());
+        m_core->getContext().getDevice().destroy(rayGenShaderModule);
+        m_core->getContext().getDevice().destroy(rayMissShaderModule);
+        m_core->getContext().getDevice().destroy(rayClosestHitShaderModule);
+
+        m_core->getContext().getDevice().destroy(rtxPipeline);
+        m_core->getContext().getDevice().destroy(rtxPipelineLayout);
 
         return rtxPipeline;
     }

@@ -154,7 +154,18 @@ int main(int argc, const char** argv) {
 
 	// init RTXModule
 	rtxModule.init(&core, vertices, indices,descriptorSetHandles);
-	vk::Pipeline rtxPipeline = rtxModule.createRTXPipeline(descriptorSetLayoutHandles, rayGenShaderProgram, rayMissShaderProgram, rayClosestHitShaderProgram);
+
+	struct RaytracingPushConstantData {
+	    glm::vec4 camera_position;   // as origin for ray generation
+	    glm::vec4 camera_right;      // for computing ray direction
+	    glm::vec4 camera_up;         // for computing ray direction
+	    glm::vec4 camera_forward;    // for computing ray direction
+	    glm::uint frameCount;        // what is this? the actual frame?
+	};
+
+	uint32_t pushConstantSize = sizeof(RaytracingPushConstantData);
+
+	vk::Pipeline rtxPipeline = rtxModule.createRTXPipeline(pushConstantSize, descriptorSetLayoutHandles, rayGenShaderProgram, rayMissShaderProgram, rayClosestHitShaderProgram);
 
 	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
 		sceneShaderProgram,
@@ -210,14 +221,6 @@ int main(int argc, const char** argv) {
 		TODO: ADD PUSH CONSTANTS TO SHADER CALL WHEN PIPELINE IS WORKING/FINISHED
 		
 		*/
-
-		struct RaytracingPushConstantData {
-			glm::vec4 camera_position;   // as origin for ray generation
-			glm::vec4 camera_right;      // for computing ray direction
-			glm::vec4 camera_up;         // for computing ray direction
-			glm::vec4 camera_forward;    // for computing ray direction
-			glm::uint frameCount;        // what is this? the actual frame?
-		};
 
 		RaytracingPushConstantData raytracingPushData;
 		raytracingPushData.camera_position = glm::vec4(cameraManager.getActiveCamera().getPosition(),0);

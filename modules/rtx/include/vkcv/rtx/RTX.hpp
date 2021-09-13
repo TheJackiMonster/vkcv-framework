@@ -13,7 +13,7 @@ namespace vkcv::rtx {
         std::vector<const char*> m_instanceExtensions;  // the instance extensions needed for using RTX
         std::vector<const char*> m_deviceExtensions;    // the device extensions needed for using RTX
         vkcv::Features m_features;                      // the features needed to be enabled for using RTX
-        ASManager* m_asManager;
+        ASManager m_asManager;
         Core* m_core;
 
     public:
@@ -63,6 +63,7 @@ namespace vkcv::rtx {
         void RTXDescriptors(ASManager* asManager, Core* core, std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles);
 
         /**
+         * TODO
          * @brief Returns the Vulkan handle of the RTX pipeline.
          * @param descriptorSetLayouts The descriptorSetLayouts used for creating a @p vk::PipelineLayoutCreateInfo.
          * @param rayGenShader The ray generation shader.
@@ -70,7 +71,7 @@ namespace vkcv::rtx {
          * @param rayClostestHitShader The ray closest hit shader.
          * @return The Vulkan handle of the RTX pipeline.
          */
-        vk::Pipeline createRTXPipeline(std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rayGenShader, ShaderProgram &rayMissShader, ShaderProgram &rayClosestHitShader);
+        vk::Pipeline createRTXPipeline(uint32_t pushConstantSize, std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rayGenShader, ShaderProgram &rayMissShader, ShaderProgram &rayClosestHitShader);
     };
 
 }
