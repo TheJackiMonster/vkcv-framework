@@ -93,11 +93,11 @@ int main(int argc, const char** argv) {
 
 	//spheres for the scene
 	std::vector<safrScene::Sphere> spheres;
-	spheres.push_back(safrScene::Sphere(glm::vec3(-3.0,  0.0, 16), 2, ivory));
+	spheres.push_back(safrScene::Sphere(glm::vec3(-3,    0,   -16), 2, ivory));
 	// spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, 12), 2, mirror));
-	spheres.push_back(safrScene::Sphere(glm::vec3(1.5, -0.5, 23), 2, mirror));
-	spheres.push_back(safrScene::Sphere(glm::vec3( 1.5, -0.5, 18), 3, red_rubber));
-	spheres.push_back(safrScene::Sphere(glm::vec3( 7.0,  5.0, 18), 4, mirror));
+	spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, -12), 2, mirror));
+	spheres.push_back(safrScene::Sphere(glm::vec3(  1.5, -0.5, -18), 3, red_rubber));
+	spheres.push_back(safrScene::Sphere(glm::vec3( 7,    5,   -18), 4, mirror));
 
 	//lights for the scene
 	std::vector<safrScene::Light> lights;
@@ -190,7 +190,7 @@ int main(int argc, const char** argv) {
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 
-	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
+	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, 2));
 	cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 	cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
 
