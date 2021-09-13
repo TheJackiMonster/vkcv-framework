@@ -80,12 +80,6 @@ int main(int argc, const char** argv) {
 
 	const int windowWidth = 1280;
 	const int windowHeight = 720;
-	vkcv::Window window = vkcv::Window::create(
-		applicationName,
-		windowWidth,
-		windowHeight,
-		false
-	);
 	
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -96,17 +90,18 @@ int main(int argc, const char** argv) {
 	});
 
 	vkcv::Core core = vkcv::Core::create(
-		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
 		features
 	);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+	vkcv::Window &window = core.getWindow(windowHandle);
 
-    vkcv::gui::GUI gui (core, window);
+    vkcv::gui::GUI gui (core, windowHandle);
 
     vkcv::asset::Scene mesh;
-    const char* path = argc > 1 ? argv[1] : "resources/Bunny/Bunny.glb";
+    const char* path = argc > 1 ? argv[1] : "assets/Bunny/Bunny.glb";
     vkcv::asset::loadScene(path, mesh);
 
     assert(!mesh.vertexGroups.empty());
@@ -168,7 +163,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain().getFormat());
+		core.getSwapchain(windowHandle).getFormat());
 
     const vkcv::AttachmentDescription depth_attachment(
             vkcv::AttachmentOperation::STORE,
@@ -188,12 +183,12 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram bunnyShaderProgram{};
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					 [&bunnyShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		 bunnyShaderProgram.addShader(shaderStage, path);
 	});
 	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 					 [&bunnyShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		bunnyShaderProgram.addShader(shaderStage, path);
 	});
@@ -208,10 +203,12 @@ int main(int argc, const char** argv) {
     vkcv::DescriptorSetLayoutHandle vertexShaderDescriptorSetLayout = core.createDescriptorSetLayout(bunnyShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(vertexShaderDescriptorSetLayout);
 
-	const vkcv::PipelineConfig bunnyPipelineDefinition {
+	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
+	
+	const vkcv::GraphicsPipelineConfig bunnyPipelineDefinition {
 			bunnyShaderProgram,
-			(uint32_t)windowWidth,
-			(uint32_t)windowHeight,
+			swapchainExtent.width,
+			swapchainExtent.height,
 			renderPass,
 			{ bunnyLayout },
 			{ core.getDescriptorSetLayout(vertexShaderDescriptorSetLayout).vulkanHandle },
@@ -229,7 +226,7 @@ int main(int argc, const char** argv) {
 	vertexShaderDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, matrixBuffer.getHandle()) };
 	core.writeDescriptorSet(vertexShaderDescriptorSet, vertexShaderDescriptorWrites);
 
-	vkcv::PipelineHandle bunnyPipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
+	vkcv::GraphicsPipelineHandle bunnyPipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
 
 	if (!bunnyPipeline)
 	{
@@ -239,17 +236,17 @@ int main(int argc, const char** argv) {
 
 	// mesh shader
 	vkcv::ShaderProgram meshShaderProgram;
-	compiler.compile(vkcv::ShaderStage::TASK, std::filesystem::path("resources/shaders/shader.task"),
+	compiler.compile(vkcv::ShaderStage::TASK, std::filesystem::path("assets/shaders/shader.task"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
 
-	compiler.compile(vkcv::ShaderStage::MESH, std::filesystem::path("resources/shaders/shader.mesh"),
+	compiler.compile(vkcv::ShaderStage::MESH, std::filesystem::path("assets/shaders/shader.mesh"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
 
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
@@ -258,17 +255,17 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet(meshShaderDescriptorSetLayout);
 	const vkcv::VertexLayout meshShaderLayout(bindings);
 
-	const vkcv::PipelineConfig meshShaderPipelineDefinition{
+	const vkcv::GraphicsPipelineConfig meshShaderPipelineDefinition{
 		meshShaderProgram,
-		(uint32_t)windowWidth,
-		(uint32_t)windowHeight,
+		swapchainExtent.width,
+		swapchainExtent.height,
 		renderPass,
 		{meshShaderLayout},
 		{core.getDescriptorSetLayout(meshShaderDescriptorSetLayout).vulkanHandle},
 		false
 	};
 
-	vkcv::PipelineHandle meshShaderPipeline = core.createGraphicsPipeline(meshShaderPipelineDefinition);
+	vkcv::GraphicsPipelineHandle meshShaderPipeline = core.createGraphicsPipeline(meshShaderPipelineDefinition);
 
 	if (!meshShaderPipeline)
 	{
@@ -292,7 +289,12 @@ int main(int argc, const char** argv) {
 
     core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
 
-    vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
+    vkcv::ImageHandle depthBuffer = core.createImage(
+			vk::Format::eD32Sfloat,
+			swapchainExtent.width,
+			swapchainExtent.height,
+			1, false
+	).getHandle();
 
     auto start = std::chrono::system_clock::now();
 
@@ -310,12 +312,12 @@ int main(int argc, const char** argv) {
 	bool useMeshShader          = true;
 	bool updateFrustumPlanes    = true;
 
-	while (window.isWindowOpen())
+	while (vkcv::Window::hasOpenWindow())
 	{
 		vkcv::Window::pollEvents();
 
 		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight,windowHandle)) {
 			continue;
 		}
 		
@@ -361,7 +363,8 @@ int main(int argc, const char** argv) {
 				meshShaderPipeline,
 				pushConstantData,
 				{ vkcv::MeshShaderDrawcall({descriptorUsage}, taskCount)},
-				{ renderTargets });
+				{ renderTargets },
+				windowHandle);
 		}
 		else {
 
@@ -373,7 +376,8 @@ int main(int argc, const char** argv) {
 				bunnyPipeline,
 				pushConstantData,
 				{ vkcv::DrawcallInfo(renderMesh, { descriptorUsage }) },
-				{ renderTargets });
+				{ renderTargets },
+				windowHandle);
 		}
 
 		core.prepareSwapchainImageForPresent(cmdStream);
@@ -389,7 +393,7 @@ int main(int argc, const char** argv) {
 		
 		gui.endGUI();
 
-		core.endFrame();
+		core.endFrame(windowHandle);
 	}
 	return 0;
 }

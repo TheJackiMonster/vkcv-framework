@@ -13,24 +13,11 @@ enum class eMotionVectorVisualisationMode : int {
 	MinTileNeighbourhood    = 5,
 	OptionCount             = 6 };
 
-static const char* MotionVectorVisualisationModeLabels[6] = {
-	"None",
-	"Full resolution",
-	"Max tile",
-	"Tile neighbourhood max",
-	"Min Tile",
-	"Tile neighbourhood min"};
-
 enum class eMotionBlurMode : int {
 	Default             = 0,
 	Disabled            = 1,
 	TileVisualisation   = 2,
 	OptionCount         = 3 };
-
-static const char* MotionBlurModeLabels[3] = {
-	"Default",
-	"Disabled",
-	"Tile visualisation" };
 
 class MotionBlur {
 public:

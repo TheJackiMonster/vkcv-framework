@@ -29,22 +29,22 @@ private:
     vkcv::Image m_radialLut;
     vkcv::Image m_lensDirt;
 
-    vkcv::PipelineHandle                            m_DownsamplePipe;
+    vkcv::ComputePipelineHandle                     m_DownsamplePipe;
     std::vector<vkcv::DescriptorSetLayoutHandle>    m_DownsampleDescSetLayouts;
     std::vector<vkcv::DescriptorSetHandle>          m_DownsampleDescSets; // per mip desc set
 
     std::vector<vkcv::DescriptorSetLayoutHandle>    m_UpsampleLensFlareDescSetLayouts;
     std::vector<vkcv::DescriptorSetHandle>          m_UpsampleLensFlareDescSets; // per mip desc set
 
-    vkcv::PipelineHandle                            m_UpsamplePipe;
+    vkcv::ComputePipelineHandle                     m_UpsamplePipe;
     std::vector<vkcv::DescriptorSetLayoutHandle>    m_UpsampleDescSetLayouts;
     std::vector<vkcv::DescriptorSetHandle>          m_UpsampleDescSets;   // per mip desc set
 
-    vkcv::PipelineHandle                            m_LensFlarePipe;
+    vkcv::ComputePipelineHandle                            m_LensFlarePipe;
     vkcv::DescriptorSetLayoutHandle                 m_LensFlareDescSetLayout;
     vkcv::DescriptorSetHandle                       m_LensFlareDescSet;
 
-    vkcv::PipelineHandle                            m_CompositePipe;
+    vkcv::ComputePipelineHandle                     m_CompositePipe;
     vkcv::DescriptorSetLayoutHandle                 m_CompositeDescSetLayout;
     vkcv::DescriptorSetHandle                       m_CompositeDescSet;
 
