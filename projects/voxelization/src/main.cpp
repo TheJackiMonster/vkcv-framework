@@ -97,31 +97,6 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camIndex).setFov(glm::radians(37.8));	// fov of a 35mm lens
 	
 	cameraManager.getCamera(camIndex2).setNearFar(0.1f, 30.0f);
-	
-	vkcv::Features features;
-	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	
-	features.tryExtensionFeature<vk::PhysicalDevice16BitStorageFeatures>(
-			VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME,
-			[](vk::PhysicalDevice16BitStorageFeatures& features) {
-				features.setStorageBuffer16BitAccess(true);
-			}
-	);
-	
-	features.tryExtensionFeature<vk::PhysicalDeviceShaderFloat16Int8Features>(
-			VK_KHR_16BIT_STORAGE_EXTENSION_NAME,
-			[](vk::PhysicalDeviceShaderFloat16Int8Features& features) {
-				features.setShaderFloat16(true);
-			}
-	);
-	
-	vkcv::Core core = vkcv::Core::create(
-		window,
-		applicationName,
-		VK_MAKE_VERSION(0, 0, 1),
-		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		features
-	);
 
 	vkcv::asset::Scene mesh;
 
