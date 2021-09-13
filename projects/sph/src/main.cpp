@@ -133,7 +133,7 @@ int main(int argc, const char **argv) {
             1
     );
 
-    int numberParticles = 10000;
+    int numberParticles = 1000;
     std::vector<Particle> particles;
     for (int i = 0; i < numberParticles; i++) {
         const float lo = 0.4;
@@ -273,6 +273,7 @@ int main(int argc, const char **argv) {
         pushConstantsCompute.appendDrawcall(pushData);
 
         uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(numberParticles/256.f)),1,1};
+        
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline1,
                                               computeDispatchCount,
@@ -292,25 +293,25 @@ int main(int argc, const char **argv) {
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
         core.recordComputeDispatchToCmdStream(cmdStream,
-            computePipeline3,
-            computeDispatchCount,
-            { vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet3).vulkanHandle) },
-            pushConstantsCompute);
+                                              computePipeline3,
+                                              computeDispatchCount,
+                                              { vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet3).vulkanHandle) },
+                                              pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
         core.recordComputeDispatchToCmdStream(cmdStream,
-            computePipeline4,
-            computeDispatchCount,
-            { vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet4).vulkanHandle) },
-            pushConstantsCompute);
+                                              computePipeline4,
+                                              computeDispatchCount,
+                                              { vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet4).vulkanHandle) },
+                                              pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
 
-        //bloomAndFlares & tonemapping
+        // bloomAndFlares & tonemapping
         vkcv::PushConstants pushConstantsDraw (sizeof(renderingMatrices));
         pushConstantsDraw.appendDrawcall(renderingMatrices);
         
