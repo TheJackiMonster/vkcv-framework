@@ -37,6 +37,12 @@
 namespace vkcv::asset {
 
 /**
+ * @defgroup vkcv_asset Asset Loader Module
+ * A module to load assets like scenes, meshes and textures.
+ * @{
+ */
+
+/**
  * These return codes are limited to the asset loader module. If unified return
  * codes are defined for the vkcv framework, these will be used instead.
  */
@@ -320,5 +326,7 @@ int loadScene(const std::filesystem::path &path, Scene &scene);
  * @return	Texture struct describing the loaded image.
  */
 Texture loadTexture(const std::filesystem::path& path);
+
+/** @} */
 
 }	// end namespace vkcv::asset

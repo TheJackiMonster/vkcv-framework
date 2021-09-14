@@ -5,6 +5,11 @@
 #include <vkcv/ShaderProgram.hpp>
 
 namespace vkcv::upscaling {
+
+    /**
+     * @addtogroup vkcv_upscaling
+     * @{
+     */
 	
 	enum class FSRQualityMode : int {
 		NONE = 0,
@@ -79,5 +84,7 @@ namespace vkcv::upscaling {
 		void setSharpness(float sharpness);
 		
 	};
+
+    /** @} */
 
 }

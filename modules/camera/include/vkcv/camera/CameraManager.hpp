@@ -10,6 +10,11 @@
 namespace vkcv::camera {
 
     /**
+     * @addtogroup vkcv_camera
+     * @{
+     */
+
+    /**
      * @brief Used for specifying existing types of camera controllers when adding a new controller object to the
      * #CameraManager.
      */
@@ -192,4 +197,7 @@ namespace vkcv::camera {
          */
         void update(double deltaTime);
     };
+
+    /** @} */
+
 }

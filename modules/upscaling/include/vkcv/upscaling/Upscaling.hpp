@@ -4,6 +4,12 @@
 #include <vkcv/Handles.hpp>
 
 namespace vkcv::upscaling {
+
+    /**
+     * @defgroup vkcv_upscaling Upscaling Module
+     * A module to upscale an image from an internal resolution to a final resolution in realtime.
+     * @{
+     */
 	
 	class Upscaling {
 	protected:
@@ -19,5 +25,7 @@ namespace vkcv::upscaling {
 							 		 const ImageHandle& output) = 0;
 	
 	};
+
+    /** @} */
 	
 }

@@ -9,6 +9,11 @@
 #include "Bounds.hpp"
 
 namespace vkcv::scene {
+
+    /**
+     * @addtogroup vkcv_scene
+     * @{
+     */
 	
 	class Scene;
 	class Mesh;
@@ -50,5 +55,7 @@ namespace vkcv::scene {
 		bool operator!() const;
 		
 	};
+
+    /** @} */
 
 }

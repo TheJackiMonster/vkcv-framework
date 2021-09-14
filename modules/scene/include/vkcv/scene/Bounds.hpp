@@ -5,6 +5,11 @@
 #include <glm/vec3.hpp>
 
 namespace vkcv::scene {
+
+    /**
+     * @addtogroup vkcv_scene
+     * @{
+     */
 	
 	class Bounds {
 	private:
@@ -65,5 +70,7 @@ namespace vkcv::scene {
 	};
 	
 	std::ostream& operator << (std::ostream& out, const Bounds& bounds);
+
+    /** @} */
 	
 }

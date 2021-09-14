@@ -3,6 +3,11 @@
 #include "Upscaling.hpp"
 
 namespace vkcv::upscaling {
+
+    /**
+     * @addtogroup vkcv_upscaling
+     * @{
+     */
 	
 	class BilinearUpscaling : public Upscaling {
 	private:
@@ -14,5 +19,7 @@ namespace vkcv::upscaling {
 							 const ImageHandle& output) override;
 	
 	};
+
+    /** @} */
 
 }

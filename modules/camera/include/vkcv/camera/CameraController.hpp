@@ -6,6 +6,11 @@
 namespace vkcv::camera {
 
     /**
+     * @addtogroup vkcv_camera
+     * @{
+     */
+
+    /**
      * @brief Used as a base class for defining camera controller classes with different behaviors, e.g. the
      * #PilotCameraController.
      */
@@ -68,5 +73,7 @@ namespace vkcv::camera {
          */
         virtual void gamepadCallback(int gamepadIndex, Camera &camera, double frametime) = 0;
     };
+
+    /** @} */
 
 }

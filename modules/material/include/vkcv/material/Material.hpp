@@ -6,13 +6,26 @@
 #include <vkcv/Handles.hpp>
 
 namespace vkcv::material {
-	
+
+    /**
+     * @defgroup vkcv_material Material Module
+     * A module to manage standardized materials for rendering.
+     * @{
+     */
+
+    /**
+     * Enum to handle standardized material types.
+     */
 	enum class MaterialType {
 		PBR_MATERIAL = 1,
 		
 		UNKNOWN = 0
 	};
-	
+
+    /**
+     * Class to manage required handles for materials using
+     * a wide range of textures with separate samplers and factors.
+     */
 	class Material {
 	private:
 		struct Texture {
@@ -70,5 +83,7 @@ namespace vkcv::material {
 								  const float emissiveFactor [3]);
 	
 	};
+
+    /** @} */
 	
 }

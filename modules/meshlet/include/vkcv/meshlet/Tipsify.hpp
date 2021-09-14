@@ -5,6 +5,12 @@
 #include <iostream>
 
 namespace vkcv::meshlet {
+
+    /**
+     * @addtogroup vkcv_meshlet
+     * @{
+     */
+
     /**
      * reorders the IndexBuffer, so all usages of vertices to triangle are as close as possible
      * @param indexBuffer32Bit current IndexBuffer
@@ -20,4 +26,7 @@ namespace vkcv::meshlet {
      */
     VertexCacheReorderResult tipsifyMesh(const std::vector<uint32_t> &indexBuffer32Bit,
                                          const int vertexCount, const unsigned int cacheSize = 20);
+
+    /** @} */
+
 }

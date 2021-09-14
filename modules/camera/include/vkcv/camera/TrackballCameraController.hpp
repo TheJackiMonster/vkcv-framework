@@ -5,6 +5,11 @@
 namespace vkcv::camera {
 
     /**
+     * @addtogroup vkcv_camera
+     * @{
+     */
+
+    /**
      * @brief Used to orbit a camera around its center point.
      */
     class TrackballCameraController final : public CameraController {
@@ -105,5 +110,7 @@ namespace vkcv::camera {
          */
         void gamepadCallback(int gamepadIndex, Camera &camera, double frametime);
     };
+
+    /** @} */
 
 }

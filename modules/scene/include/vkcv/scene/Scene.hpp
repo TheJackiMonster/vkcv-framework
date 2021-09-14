@@ -11,6 +11,12 @@
 #include "Node.hpp"
 
 namespace vkcv::scene {
+
+    /**
+     * @defgroup vkcv_scene Scene Module
+     * A module to manage basic scene rendering with CPU-side frustum culling.
+     * @{
+     */
 	
 	class Scene {
 		friend class MeshPart;
@@ -69,5 +75,7 @@ namespace vkcv::scene {
 		static Scene load(Core& core, const std::filesystem::path &path);
 		
 	};
+
+    /** @} */
 	
 }

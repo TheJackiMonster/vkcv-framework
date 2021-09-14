@@ -8,6 +8,12 @@
 #include <vkcv/ShaderStage.hpp>
 
 namespace vkcv::shader {
+
+    /**
+     * @defgroup vkcv_shader Shader Compiler Module
+     * A module to use runtime shader compilation.
+     * @{
+     */
 	
 	typedef typename event_function<ShaderStage, const std::filesystem::path&>::type ShaderCompiledFunction;
 	
@@ -29,5 +35,7 @@ namespace vkcv::shader {
 		
 		void setDefine(const std::string& name, const std::string& value);
 	};
+
+    /** @} */
 	
 }

@@ -9,6 +9,12 @@
 namespace vkcv::camera {
 
     /**
+     * @defgroup vkcv_camera Camera Module
+     * A module to manage intrinsic and extrinsic parameters with camera instances.
+     * @{
+     */
+
+    /**
      * @brief Used to create a camera which governs the view and projection matrices.
      */
     class Camera final {
@@ -206,5 +212,7 @@ namespace vkcv::camera {
          */
         void setUp(const glm::vec3 &up);
     };
+
+    /** @} */
 
 }

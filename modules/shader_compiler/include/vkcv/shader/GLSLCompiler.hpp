@@ -6,6 +6,11 @@
 #include "Compiler.hpp"
 
 namespace vkcv::shader {
+
+    /**
+     * @addtogroup vkcv_shader
+     * @{
+     */
 	
 	class GLSLCompiler : public Compiler {
 	private:
@@ -29,5 +34,7 @@ namespace vkcv::shader {
 					 const std::filesystem::path& includePath = "", bool update = false) override;
 		
 	};
+
+    /** @} */
 	
 }

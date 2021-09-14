@@ -5,6 +5,11 @@
 namespace vkcv::camera {
 
     /**
+     * @addtogroup vkcv_camera
+     * @{
+     */
+
+    /**
      * @brief Used to move around a camera object in world space.
      */
     class PilotCameraController final : public CameraController {
@@ -110,5 +115,7 @@ namespace vkcv::camera {
          */
         void gamepadCallback(int gamepadIndex, Camera &camera, double frametime);
     };
+
+    /** @} */
 
 }

@@ -7,6 +7,11 @@
 #include "MeshPart.hpp"
 
 namespace vkcv::scene {
+
+    /**
+     * @addtogroup vkcv_scene
+     * @{
+     */
 	
 	typedef typename event_function<const glm::mat4&, const glm::mat4&, PushConstants&, vkcv::DrawcallInfo&>::type RecordMeshDrawcallFunction;
 	
@@ -48,5 +53,7 @@ namespace vkcv::scene {
 		const Bounds& getBounds() const;
 	
 	};
+
+    /** @} */
 	
 }

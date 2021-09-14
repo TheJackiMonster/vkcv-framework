@@ -8,6 +8,11 @@
 #include "Mesh.hpp"
 
 namespace vkcv::scene {
+
+    /**
+     * @addtogroup vkcv_scene
+     * @{
+     */
 	
 	class Scene;
 	
@@ -57,5 +62,7 @@ namespace vkcv::scene {
 		const Bounds& getBounds() const;
 		
 	};
+
+    /** @} */
 	
 }
