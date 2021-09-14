@@ -240,7 +240,7 @@ vec3 computeDirection(ivec2 coord){
     float x             =  ndc.x * tanFovHalf * aspectRatio;
     float y             = -ndc.y * tanFovHalf;
     
-    vec3 directionViewSpace     = vec3(x, y, sqrt(1 - x*x - y*y));
+    vec3 directionViewSpace     = normalize(vec3(x, y, 1));
     vec3 directionWorldSpace    = mat3(viewToWorld) * directionViewSpace;
     return directionWorldSpace;
 }
