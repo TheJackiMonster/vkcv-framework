@@ -36,7 +36,7 @@ layout( push_constant ) uniform constants{
 
 float poly6(float r)    
 {
-    return 315/(64*PI*pow(h, 9)) * pow((h-r), 3) * int(0<=r && r<=h);
+    return (315.f/(64.f*PI*pow(h, 9)) * pow((pow(h,2)-pow(r,2)), 3)) * int(0<=r && r<=h);
 }
 
 float densitySum = 0.f;
