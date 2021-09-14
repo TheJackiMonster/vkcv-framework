@@ -39,6 +39,12 @@ float spiky(float r)
     return (15.f / (PI * pow(h, 6)) * pow((h-r), 3)) * int(0<=r && r<=h);
 }
 
+float grad_spiky(float r)
+{
+    return -45.f / (PI * pow(h, 6)) * pow((h-r), 2) * int(0<=r && r<=h);
+}
+
+
 
 float laplacian(float r)
 {
@@ -67,8 +73,8 @@ void main() {
             float dist = length(dir);
             if(dist != 0) 
             {
-            pressureForce += mass * -(inParticle[id].pressure + inParticle[i].pressure)/(2.f * inParticle[i].density) * spiky(dist) * normalize(dir);
-            viscosityForce += mass * (inParticle[id].velocity - inParticle[i].velocity)/inParticle[i].density * laplacian(dist);
+            pressureForce += mass * -(inParticle[id].pressure + inParticle[i].pressure)/(2.f * inParticle[i].density) * grad_spiky(dist) * normalize(dir);
+            viscosityForce += mass * (inParticle[i].velocity - inParticle[id].velocity)/inParticle[i].density * laplacian(dist);
             }
         }
     }
