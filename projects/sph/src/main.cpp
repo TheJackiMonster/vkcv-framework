@@ -131,10 +131,10 @@ int main(int argc, const char **argv) {
     int numberParticles = 50000;
     std::vector<Particle> particles;
     for (int i = 0; i < numberParticles; i++) {
-        const float lo = 0.4;
-        const float hi = 0.6;
-        const float vlo = -0.5;
-        const float vhi = 0.5;
+        const float lo = -0.2;
+        const float hi = 0.2;
+        const float vlo = 0;
+        const float vhi = 100;
         float x = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
         float y = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
         float z = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
@@ -142,7 +142,8 @@ int main(int argc, const char **argv) {
         float vy = vlo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(vhi-vlo)));
         float vz = vlo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(vhi-vlo)));
         glm::vec3 pos = glm::vec3(x,y,z);
-        glm::vec3 vel = glm::vec3(vx,vy,vz);
+        //glm::vec3 vel = glm::vec3(vx,vy,vz);
+        glm::vec3 vel = glm::vec3(0.0,0.0,0.0);
         particles.push_back(Particle(pos, vel));
     }
 
