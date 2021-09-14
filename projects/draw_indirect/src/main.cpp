@@ -165,9 +165,6 @@ int main(int argc, const char** argv) {
     );
     */
 
-
-
-
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
