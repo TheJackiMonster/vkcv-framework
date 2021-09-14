@@ -8,7 +8,7 @@ layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 struct Material {
     vec3 	emission;
-	float 	padding0;
+	float 	ks;
     vec3 	albedo;
     float 	padding1;
 };
@@ -209,8 +209,36 @@ vec3 lambertBRDF(vec3 albedo){
 	return albedo / pi;
 }
 
-vec3 computeBRDF(Material material){
+vec3 computeDiffuseBRDF(Material material){
     return lambertBRDF(material.albedo);
+}
+
+float distributionGGX(float r, float NoH){
+	float r2 	= r*r;
+	float denom = pi * pow(NoH*NoH * (r2-1) + 1, 2);
+	return r2 / max(denom, 0.0001);
+}
+
+float geometryGGXSmith(float r, float NoL){
+	float r2 	= r*r;
+	float denom = NoL + sqrt(r2 + (1-r2) * NoL*NoL);
+	return 2 * NoL / max(denom, 0.0001);
+}
+
+float geometryGGX(float r, float NoV, float NoL){
+	return geometryGGXSmith(r, NoV) * geometryGGXSmith(r, NoL);
+}
+
+vec3 fresnelSchlick(vec3 f0, float NoH){
+	return f0 + (1 - f0) * pow(1 - NoH, 5);
+}
+
+vec3 computeSpecularBRDF(vec3 f0, float r, float NoV, float NoL, float NoH){
+	float 	denom 	= 4 * NoV * NoL;
+	float 	D 		= distributionGGX(r, NoH);
+	float 	G 		= geometryGGX(r, NoV, NoL);
+	vec3	F 		= fresnelSchlick(f0, NoH);
+	return D * F * G / max(denom, 0.0001);
 }
 
 // ---- pathtracing and main ----
@@ -249,12 +277,33 @@ vec3 castRay(Ray ray) {
         vec3 hitLighting 	= vec3(0);
         vec3 brdf 			= vec3(1);
 		
-		vec3 L 				= -normalize(ray.direction);
-        float NoL 			= max(dot(L, intersection.N), 0);
+		// V is where the ray came from and will lead back to the camera (over multiple bounces)
+		vec3 	V 			= -normalize(ray.direction);
+		vec3 	R 			= reflect(-V, intersection.N);
+		
+		vec3 sampleTangentSpace = cosineDistribution(random());
+        ray.direction   		= sampleTangentToWorldSpace(sampleTangentSpace, intersection.N);
+        ray.origin				= biasHitPosition(intersection.pos, ray.direction, intersection.N);
+		
+		// L is where the ray is going, as that is the direction where light will from
+		vec3 	L 			= normalize(ray.direction);
+		vec3 	H			= normalize(L + V);
+		
+        float 	NoL 		= max(dot(intersection.N, L), 0);
+		float 	NoV			= max(dot(intersection.N, V), 0);
+		float	NoH			= max(dot(intersection.N, H), 0);
 		
         if(intersection.hit){
-            brdf 		= computeBRDF(intersection.material);
-			hitLighting = intersection.material.emission * max(sign(NoL), 0);	// objects only emit in direction of normal
+            brdf 		= computeDiffuseBRDF(intersection.material);
+			float 	kd 	= 1 - intersection.material.ks;
+			
+			vec3 	f0  			= vec3(0.04);
+			float 	r 				= 0.15;
+			vec3 	specularBRDF 	= computeSpecularBRDF(f0, r, NoV, NoL, NoH);
+			brdf 					= mix(brdf, specularBRDF, intersection.material.ks);
+			
+			
+			hitLighting = intersection.material.emission * max(sign(NoV), 0);	// objects only emit in direction of normal
         }
         else{
             hitLighting = skyColor;
@@ -265,10 +314,6 @@ vec3 castRay(Ray ray) {
         
         if(!intersection.hit)
             break;
-
-		vec3 sampleTangentSpace = cosineDistribution(random());
-        ray.direction   		= sampleTangentToWorldSpace(sampleTangentSpace, intersection.N);
-        ray.origin				= biasHitPosition(intersection.pos, ray.direction, intersection.N);
     }
 
     return color;

@@ -6,13 +6,15 @@
 #include <chrono>
 #include <vector>
 
-namespace temp {
+int main(int argc, const char** argv) {
 
+	// structs must match shader version
 	struct Material {
-		Material(const glm::vec3& e, const glm::vec3& color) : emission(e), albedo(color) {}
+		Material(const glm::vec3& emission, const glm::vec3& albedo, float ks)
+			: emission(emission), albedo(albedo), ks(ks) {}
 
 		glm::vec3   emission;
-		float       padding0;
+		float       ks;
 		glm::vec3   albedo;
 		float       padding1;
 	};
@@ -27,7 +29,7 @@ namespace temp {
 	};
 
 	struct Plane {
-		Plane(const glm::vec3& c, const glm::vec3& n, const glm::vec2 e, int m) 
+		Plane(const glm::vec3& c, const glm::vec3& n, const glm::vec2 e, int m)
 			: center(c), normal(n), extent(e), materialIndex(m) {}
 
 		glm::vec3   center;
@@ -37,9 +39,7 @@ namespace temp {
 		glm::vec2   extent;
 		glm::vec2   padding3;
 	};
-};
 
-int main(int argc, const char** argv) {
 	const char* applicationName = "Path Tracer";
 
 	const int initialWidth = 1280;
@@ -144,42 +144,45 @@ int main(int argc, const char** argv) {
 	core.writeDescriptorSet(imageClearDescriptorSet, imageClearDescriptorWrites);
 
 	// buffers
-	std::vector<temp::Material> materials;
-	materials.emplace_back(temp::Material(glm::vec3(0),     glm::vec3(0.65)));
-	materials.emplace_back(temp::Material(glm::vec3(0),     glm::vec3(0.5, 0.0, 0.0)));
-	materials.emplace_back(temp::Material(glm::vec3(0),     glm::vec3(0.0, 0.5, 0.0)));
-    materials.emplace_back(temp::Material(glm::vec3(20),   glm::vec3(0)));
+	typedef std::pair<std::string, Material> MaterialSetting;
 
-	const uint32_t whiteIndex   = 0;
-	const uint32_t redIndex     = 1;
-	const uint32_t greenIndex   = 2;
-    const uint32_t lightIndex   = 3;
+	std::vector<MaterialSetting> materialSettings;
+	materialSettings.emplace_back(MaterialSetting("white",  Material(glm::vec3(0),    glm::vec3(0.65),            0)));
+	materialSettings.emplace_back(MaterialSetting("red",    Material(glm::vec3(0),    glm::vec3(0.5, 0.0, 0.0),   0)));
+	materialSettings.emplace_back(MaterialSetting("green",  Material(glm::vec3(0),    glm::vec3(0.0, 0.5, 0.0),   0)));
+	materialSettings.emplace_back(MaterialSetting("light",  Material(glm::vec3(20),   glm::vec3(0),               0)));
+	materialSettings.emplace_back(MaterialSetting("sphere", Material(glm::vec3(0),    glm::vec3(0.65),            1)));
 
-	std::vector<temp::Sphere> spheres;
-	spheres.emplace_back(temp::Sphere(glm::vec3(0, -1.5, 0), 0.5, whiteIndex));
+	const uint32_t whiteMaterialIndex   = 0;
+	const uint32_t redMaterialIndex     = 1;
+	const uint32_t greenMaterialIndex   = 2;
+	const uint32_t lightMaterialIndex   = 3;
+	const uint32_t sphereMaterialIndex  = 4;
 
-	std::vector<temp::Plane> planes;
-	planes.emplace_back(temp::Plane(glm::vec3( 0, -2,    0), glm::vec3( 0,  1,  0), glm::vec2(2),   whiteIndex));
-	planes.emplace_back(temp::Plane(glm::vec3( 0,  2,    0), glm::vec3( 0, -1,  0), glm::vec2(2),   whiteIndex));
-	planes.emplace_back(temp::Plane(glm::vec3( 2,  0,    0), glm::vec3(-1,  0,  0), glm::vec2(2),   redIndex));
-	planes.emplace_back(temp::Plane(glm::vec3(-2,  0,    0), glm::vec3( 1,  0,  0), glm::vec2(2),   greenIndex));
-	planes.emplace_back(temp::Plane(glm::vec3( 0,  0,    2), glm::vec3( 0,  0, -1), glm::vec2(2),   whiteIndex));
-	planes.emplace_back(temp::Plane(glm::vec3( 0,  1.9,  0), glm::vec3( 0, -1,  0), glm::vec2(1), lightIndex));
+	std::vector<Sphere> spheres;
+	spheres.emplace_back(Sphere(glm::vec3(0, -1.5, 0), 0.5, sphereMaterialIndex));
 
-	vkcv::Buffer<temp::Sphere> sphereBuffer = core.createBuffer<temp::Sphere>(
+	std::vector<Plane> planes;
+	planes.emplace_back(Plane(glm::vec3( 0, -2,     0), glm::vec3( 0,  1,  0), glm::vec2(2), whiteMaterialIndex));
+	planes.emplace_back(Plane(glm::vec3( 0,  2,     0), glm::vec3( 0, -1,  0), glm::vec2(2), whiteMaterialIndex));
+	planes.emplace_back(Plane(glm::vec3( 2,  0,     0), glm::vec3(-1,  0,  0), glm::vec2(2), redMaterialIndex));
+	planes.emplace_back(Plane(glm::vec3(-2,  0,     0), glm::vec3( 1,  0,  0), glm::vec2(2), greenMaterialIndex));
+	planes.emplace_back(Plane(glm::vec3( 0,  0,     2), glm::vec3( 0,  0, -1), glm::vec2(2), whiteMaterialIndex));
+	planes.emplace_back(Plane(glm::vec3( 0,  1.9,   0), glm::vec3( 0, -1,  0), glm::vec2(1), lightMaterialIndex));
+
+	vkcv::Buffer<Sphere> sphereBuffer = core.createBuffer<Sphere>(
 		vkcv::BufferType::STORAGE,
 		spheres.size());
 	sphereBuffer.fill(spheres);
 
-	vkcv::Buffer<temp::Plane> planeBuffer = core.createBuffer<temp::Plane>(
+	vkcv::Buffer<Plane> planeBuffer = core.createBuffer<Plane>(
 		vkcv::BufferType::STORAGE,
 		planes.size());
 	planeBuffer.fill(planes);
 
-	vkcv::Buffer<temp::Material> materialBuffer = core.createBuffer<temp::Material>(
+	vkcv::Buffer<Material> materialBuffer = core.createBuffer<Material>(
 		vkcv::BufferType::STORAGE,
-		materials.size());
-	materialBuffer.fill(materials);
+		materialSettings.size());
 
 	vkcv::DescriptorWrites traceDescriptorWrites;
 	traceDescriptorWrites.storageBufferWrites = { 
@@ -205,10 +208,11 @@ int main(int argc, const char** argv) {
 
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
 
-	auto    startTime   = std::chrono::system_clock::now();
-	float   time        = 0;
-	int     frameIndex  = 0;
-	bool    clearMeanImage = true;
+	auto    startTime       = std::chrono::system_clock::now();
+	float   time            = 0;
+	int     frameIndex      = 0;
+	bool    clearMeanImage  = true;
+	bool    updateMaterials = true;
 
 	float cameraPitchPrevious   = 0;
 	float cameraYawPrevious     = 0;
@@ -295,6 +299,16 @@ int main(int argc, const char** argv) {
 			static_cast<uint32_t> (std::ceil(swapchainWidth  / 8.f)),
 			static_cast<uint32_t> (std::ceil(swapchainHeight / 8.f)),
 			1 };
+
+		if (updateMaterials) {
+			std::vector<Material> materials;
+			for (const auto& settings : materialSettings) {
+				materials.push_back(settings.second);
+			}
+			materialBuffer.fill(materials);
+			updateMaterials = false;
+			clearMeanImage  = true;
+		}
 
 		float cameraPitch;
 		float cameraYaw;
@@ -396,6 +410,26 @@ int main(int argc, const char** argv) {
 
 			clearMeanImage |= ImGui::ColorEdit3("Sky color", &skyColor.x);
 			clearMeanImage |= ImGui::InputFloat("Sky color multiplier", &skyColorMultiplier);
+
+			if (ImGui::CollapsingHeader("Materials")) {
+				for (auto& setting : materialSettings) {
+					if (ImGui::CollapsingHeader(setting.first.c_str())) {
+
+						const glm::vec3 emission            = setting.second.emission;
+						float           emissionStrength    = glm::max(glm::max(glm::max(emission.x, emission.y), emission.z), 1.f);
+						glm::vec3       emissionColor       = emission / emissionStrength;
+
+						updateMaterials |= ImGui::ColorEdit3("Emission color",      &emissionColor.x);
+						updateMaterials |= ImGui::InputFloat("Emission strength",   &emissionStrength);
+
+						setting.second.emission = emissionStrength * emissionColor;
+
+						updateMaterials |= ImGui::ColorEdit3("Albedo color",    &setting.second.albedo.x);
+						updateMaterials |= ImGui::DragFloat("ks",               &setting.second.ks, 0.01, 0, 1);
+
+					}
+				}
+			}
 
 			ImGui::End();
 
