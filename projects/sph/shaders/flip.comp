@@ -23,8 +23,18 @@ layout(std430, binding = 0) writeonly buffer buffer_outParticle
     Particle outParticle[];
 };
 
+layout( push_constant ) uniform constants{
+    float deltaTime;
+    float particleCount;
+};
+
 void main() {
     uint id = gl_GlobalInvocationID.x;
+
+    if(id >= int(particleCount))
+    {
+        return;
+    }
     
     outParticle[id].force = inParticle[id].force;
     outParticle[id].density = inParticle[id].density;
