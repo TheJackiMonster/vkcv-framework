@@ -387,6 +387,16 @@ namespace vkcv
                 recordDynamicViewport(cmdBuffer, width, height);
             }
 
+			if (pushConstantData.getSizePerDrawcall() > 0)
+			{
+				cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eAll,
+					0,
+					pushConstantData.getSizePerDrawcall(),
+					pushConstantData.getDrawcallData(0));
+			}
+
             /*
             for (uint32_t i = 0; i < drawcalls[i].mesh.vertexBufferBindings.size(); i++)
             {
@@ -403,17 +413,6 @@ namespace vkcv
                         descriptorUsage.setLocation,
                         descriptorUsage.vulkanHandle,
                         nullptr);
-            }
-
-
-            if (pushConstantData.getSizePerDrawcall() > 0)
-            {
-                cmdBuffer.pushConstants(
-                        pipelineLayout,
-                        vk::ShaderStageFlagBits::eAll,
-                        0,
-                        pushConstantData.getSizePerDrawcall(),
-                        pushConstantData.getDrawcallData(i));
             }
 
             if (drawcalls[i].mesh.indexBuffer)

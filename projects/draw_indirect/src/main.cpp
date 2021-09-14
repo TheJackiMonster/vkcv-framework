@@ -388,15 +388,8 @@ int main(int argc, const char** argv) {
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         vkcv::camera::Camera cam = cameraManager.getActiveCamera();
 
-		vkcv::PushConstants pushConstants(0);
-
-        /*
-        for (const auto &mesh : asset_scene.meshes)
-        {
-            glm::mat4 modelMesh = glm::make_mat4(mesh.modelMatrix.data());
-            pushConstants.appendDrawcall(cam.getProjection() * cam.getView() * modelMesh);
-        }
-        */
+		vkcv::PushConstants pushConstants(sizeof(glm::mat4));
+		pushConstants.appendDrawcall(cam.getProjection() * cam.getView());
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
