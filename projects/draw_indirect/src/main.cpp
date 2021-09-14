@@ -165,9 +165,6 @@ int main(int argc, const char** argv) {
     );
     */
 
-
-
-
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
@@ -227,12 +224,8 @@ int main(int argc, const char** argv) {
 
     // vertex layout for the pipeline. (assumed to be) used by all sponza meshes.
     const std::vector<vkcv::VertexAttachment> vertexAttachments = sponzaProgram.getVertexAttachments();
-    std::vector<vkcv::VertexBinding> bindings;
-    for (size_t i = 0; i < vertexAttachments.size(); i++)
-    {
-        bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
-    }
-    const vkcv::VertexLayout sponzaVertexLayout (bindings);
+    vkcv::VertexBinding binding(0, vertexAttachments);
+    const vkcv::VertexLayout sponzaVertexLayout({binding});
 
     // recreation of VertexBufferBindings YET AGAIN,
     // since these are used in the command buffer to bind and draw from the vertex shaders
