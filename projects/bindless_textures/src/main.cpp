@@ -12,13 +12,6 @@ int main(int argc, const char** argv) {
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
 
-	vkcv::Window window = vkcv::Window::create(
-		applicationName,
-		windowWidth,
-		windowHeight,
-		true
-	);
-
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
@@ -49,12 +42,13 @@ int main(int argc, const char** argv) {
 	);
 
 	vkcv::Core core = vkcv::Core::create(
-		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
 		features
 	);
+
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth,windowHeight,false);
 
 	vkcv::asset::Scene mesh;
 
@@ -109,7 +103,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain().getFormat()
+		core.getSwapchain(windowHandle).getFormat()
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment(
@@ -162,7 +156,7 @@ int main(int argc, const char** argv) {
     vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(adjustedBindings);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
-	const vkcv::PipelineConfig firstMeshPipelineConfig {
+	const vkcv::GraphicsPipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,
         UINT32_MAX,
         UINT32_MAX,
@@ -171,7 +165,7 @@ int main(int argc, const char** argv) {
 		{ core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle },
 		true
 	};
-	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
+	vkcv::GraphicsPipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
 	
 	if (!firstMeshPipeline) {
 		std::cerr << "Error. Could not create graphics pipeline. Exiting." << std::endl;
@@ -227,7 +221,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage },1);
 
-    vkcv::camera::CameraManager cameraManager(window);
+    vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
@@ -235,14 +229,14 @@ int main(int argc, const char** argv) {
 
     auto start = std::chrono::system_clock::now();
     
-	while (window.isWindowOpen()) {
+	while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 		
-		if(window.getHeight() == 0 || window.getWidth() == 0)
+		if(core.getWindow(windowHandle).getHeight() == 0 || core.getWindow(windowHandle).getWidth() == 0)
 			continue;
 		
 		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight,windowHandle)) {
 			continue;
 		}
 		
@@ -272,10 +266,11 @@ int main(int argc, const char** argv) {
 			firstMeshPipeline,
 			pushConstants,
 			{ drawcall },
-			renderTargets);
+			renderTargets,
+			windowHandle);
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-		core.endFrame();
+		core.endFrame(windowHandle);
 	}
 	
 	return 0;
