@@ -328,8 +328,8 @@ namespace vkcv {
 			buffer.m_size);
 
 		cmdBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eTopOfPipe,
-			vk::PipelineStageFlagBits::eBottomOfPipe,
+			vk::PipelineStageFlagBits::eAllCommands,
+			vk::PipelineStageFlagBits::eAllCommands,
 			{},
 			nullptr,
 			memoryBarrier,

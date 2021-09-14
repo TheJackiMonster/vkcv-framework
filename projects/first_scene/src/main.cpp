@@ -10,14 +10,19 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Scene";
 
-	vkcv::Window window = vkcv::Window::create(
-		applicationName,
-		800,
-		600,
-		true
-	);
+	uint32_t windowWidth = 800;
+	uint32_t windowHeight = 600;
 
+	vkcv::Core core = vkcv::Core::create(
+			applicationName,
+			VK_MAKE_VERSION(0, 0, 1),
+			{vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
+			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
+	);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+	vkcv::Window& window = core.getWindow(windowHandle);
 	vkcv::camera::CameraManager cameraManager(window);
+
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
@@ -25,15 +30,7 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 30.0f);
 	
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
-	
-	vkcv::Core core = vkcv::Core::create(
-		window,
-		applicationName,
-		VK_MAKE_VERSION(0, 0, 1),
-		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
-		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
-	);
-	
+
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
 			argc > 1 ? argv[1] : "assets/Sponza/Sponza.gltf"
 	));
@@ -41,7 +38,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain().getFormat()
+		core.getSwapchain(windowHandle).getFormat()
 	);
 
 	const vkcv::AttachmentDescription depth_attachment(
@@ -81,7 +78,7 @@ int main(int argc, const char** argv) {
 	
 	const auto& material0 = scene.getMaterial(0);
 
-	const vkcv::PipelineConfig scenePipelineDefinition{
+	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
 		sceneShaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
@@ -89,14 +86,14 @@ int main(int argc, const char** argv) {
 		{sceneLayout},
 		{ core.getDescriptorSetLayout(material0.getDescriptorSetLayout()).vulkanHandle },
 		true };
-	vkcv::PipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
+	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
 	
 	if (!scenePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 	
-	auto swapchainExtent = core.getSwapchain().getExtent();
+	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 
 	vkcv::ImageHandle depthBuffer = core.createImage(
 			vk::Format::eD32Sfloat,
@@ -107,14 +104,14 @@ int main(int argc, const char** argv) {
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	
 	auto start = std::chrono::system_clock::now();
-	while (window.isWindowOpen()) {
+	while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 		
 		if(window.getHeight() == 0 || window.getWidth() == 0)
 			continue;
 		
 		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight,windowHandle)) {
 			continue;
 		}
 		
@@ -146,11 +143,12 @@ int main(int argc, const char** argv) {
 							  scenePipeline,
 							  sizeof(glm::mat4),
 							  recordMesh,
-							  renderTargets);
+							  renderTargets,
+							  windowHandle);
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-		core.endFrame();
+		core.endFrame(windowHandle);
 	}
 	
 	return 0;

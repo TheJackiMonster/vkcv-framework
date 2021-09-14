@@ -6,29 +6,25 @@
 #include "ParticleSystem.hpp"
 #include <random>
 #include <glm/gtc/matrix_access.hpp>
-#include <time.h>
+#include <ctime>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include "BloomAndFlares.hpp"
 
 int main(int argc, const char **argv) {
     const char *applicationName = "Particlesystem";
 
-    vkcv::Window window = vkcv::Window::create(
-            applicationName,
-            800,
-            600,
-            true
-    );
-
-    vkcv::camera::CameraManager cameraManager(window);
+    uint32_t windowWidth = 800;
+    uint32_t windowHeight = 600;
 	
     vkcv::Core core = vkcv::Core::create(
-            window,
             applicationName,
             VK_MAKE_VERSION(0, 0, 1),
             {vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
 			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
     );
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
+    vkcv::Window& window = core.getWindow(windowHandle);
+	vkcv::camera::CameraManager cameraManager(window);
 
     auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3,
                                                            vkcv::BufferMemoryType::DEVICE_LOCAL);
@@ -119,7 +115,7 @@ int main(int argc, const char **argv) {
 
     const vkcv::VertexLayout particleLayout(bindings);
 
-    vkcv::PipelineConfig particlePipelineDefinition{
+    vkcv::GraphicsPipelineConfig particlePipelineDefinition{
             particleShaderProgram,
             UINT32_MAX,
             UINT32_MAX,
@@ -135,9 +131,9 @@ int main(int argc, const char **argv) {
 
     vertexBuffer.fill(vertices);
 
-    vkcv::PipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
+    vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
-    vkcv::PipelineHandle computePipeline = core.createComputePipeline(computeShaderProgram, {core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle} );
+    vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline({ computeShaderProgram, {core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle} });
 
     vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
             vkcv::BufferType::UNIFORM,
@@ -186,7 +182,7 @@ int main(int argc, const char **argv) {
     auto pos = glm::vec2(0.f);
     auto spawnPosition = glm::vec3(0.f);
 
-    window.e_mouseMove.add([&](double offsetX, double offsetY) {
+	window.e_mouseMove.add([&](double offsetX, double offsetY) {
         pos = glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY));
         pos.x = (-2 * pos.x + static_cast<float>(window.getWidth())) / static_cast<float>(window.getWidth());
         pos.y = (-2 * pos.y + static_cast<float>(window.getHeight())) / static_cast<float>(window.getHeight());
@@ -213,7 +209,7 @@ int main(int argc, const char **argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
-	auto swapchainExtent = core.getSwapchain().getExtent();
+	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 	
     vkcv::ImageHandle colorBuffer = core.createImage(
 			colorFormat,
@@ -223,7 +219,7 @@ int main(int argc, const char **argv) {
 	).getHandle();
     BloomAndFlares bloomAndFlares(&core, colorFormat, swapchainExtent.width, swapchainExtent.height);
     window.e_resize.add([&](int width, int height) {
-		swapchainExtent = core.getSwapchain().getExtent();
+		swapchainExtent = core.getSwapchain(windowHandle).getExtent();
         colorBuffer = core.createImage(
 				colorFormat,
 				swapchainExtent.width,
@@ -240,17 +236,17 @@ int main(int argc, const char **argv) {
 
     vkcv::DescriptorSetLayoutHandle tonemappingDescriptorLayout = core.createDescriptorSetLayout(tonemappingShader.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingDescriptorLayout);
-    vkcv::PipelineHandle tonemappingPipe = core.createComputePipeline(
+    vkcv::ComputePipelineHandle tonemappingPipe = core.createComputePipeline({
         tonemappingShader, 
-        { core.getDescriptorSetLayout(tonemappingDescriptorLayout).vulkanHandle });
+        { core.getDescriptorSetLayout(tonemappingDescriptorLayout).vulkanHandle }});
 
     std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
     std::default_random_engine rdmEngine;
-    while (window.isWindowOpen()) {
+    while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 
         uint32_t swapchainWidth, swapchainHeight;
-        if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+        if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
             continue;
         }
 
@@ -297,7 +293,8 @@ int main(int argc, const char **argv) {
                 particlePipeline,
 				pushConstantsDraw,
                 {drawcalls},
-                { colorBuffer });
+                { colorBuffer },
+                windowHandle);
 
         bloomAndFlares.execWholePipeline(cmdStream, colorBuffer);
 
@@ -325,7 +322,7 @@ int main(int argc, const char **argv) {
 
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);
-        core.endFrame();
+        core.endFrame(windowHandle);
     }
 
     return 0;

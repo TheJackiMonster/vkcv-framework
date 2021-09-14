@@ -14,22 +14,17 @@
 int main(int argc, const char **argv) {
     const char *applicationName = "SPH";
 
-    vkcv::Window window = vkcv::Window::create(
-            applicationName,
-            800,
-            600,
-            true
+    vkcv::Core core = vkcv::Core::create(
+        applicationName,
+        VK_MAKE_VERSION(0, 0, 1),
+        { vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
+        { VK_KHR_SWAPCHAIN_EXTENSION_NAME }
     );
 
+    vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 800, 600, true);
+    vkcv::Window& window = core.getWindow(windowHandle);
+
     vkcv::camera::CameraManager cameraManager(window);
-	
-    vkcv::Core core = vkcv::Core::create(
-            window,
-            applicationName,
-            VK_MAKE_VERSION(0, 0, 1),
-            {vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
-			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
-    );
 
     auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3,
                                                            vkcv::BufferMemoryType::DEVICE_LOCAL);
@@ -58,21 +53,21 @@ int main(int argc, const char **argv) {
 	vkcv::shader::GLSLCompiler compiler;
 
 // comp shader 1
-    vkcv::PipelineHandle computePipeline1;
+    vkcv::ComputePipelineHandle computePipeline1;
     vkcv::DescriptorSetHandle computeDescriptorSet1 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
                                                                           "shaders/pressure.comp", computePipeline1);
 // comp shader 2
-    vkcv::PipelineHandle computePipeline2;
+    vkcv::ComputePipelineHandle computePipeline2;
     vkcv::DescriptorSetHandle computeDescriptorSet2 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
                                                                           "shaders/force.comp", computePipeline2);
 
 //comp shader 3
-    vkcv::PipelineHandle computePipeline3;
+    vkcv::ComputePipelineHandle computePipeline3;
     vkcv::DescriptorSetHandle computeDescriptorSet3 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
                                                                            "shaders/updateData.comp", computePipeline3);
 
 //comp shader 4
-    vkcv::PipelineHandle computePipeline4;
+    vkcv::ComputePipelineHandle computePipeline4;
     vkcv::DescriptorSetHandle computeDescriptorSet4 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
                                                                             "shaders/flip.comp", computePipeline4);
 
@@ -105,7 +100,7 @@ int main(int argc, const char **argv) {
 
     const vkcv::VertexLayout particleLayout(bindings);
 
-    vkcv::PipelineConfig particlePipelineDefinition{
+    vkcv::GraphicsPipelineConfig particlePipelineDefinition{
             particleShaderProgram,
             UINT32_MAX,
             UINT32_MAX,
@@ -121,7 +116,7 @@ int main(int argc, const char **argv) {
 
     vertexBuffer.fill(vertices);
 
-    vkcv::PipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
+    vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
     vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
             vkcv::BufferType::UNIFORM,
@@ -215,7 +210,7 @@ int main(int argc, const char **argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
-	auto swapchainExtent = core.getSwapchain().getExtent();
+	auto swapchainExtent = core.getSwapchain(window.getSwapchainHandle()).getExtent();
 	
     vkcv::ImageHandle colorBuffer = core.createImage(
 			colorFormat,
@@ -225,7 +220,7 @@ int main(int argc, const char **argv) {
 	).getHandle();
     BloomAndFlares bloomAndFlares(&core, colorFormat, swapchainExtent.width, swapchainExtent.height);
     window.e_resize.add([&](int width, int height) {
-		swapchainExtent = core.getSwapchain().getExtent();
+		swapchainExtent = core.getSwapchain(window.getSwapchainHandle()).getExtent();
         colorBuffer = core.createImage(
 				colorFormat,
 				swapchainExtent.width,
@@ -236,16 +231,16 @@ int main(int argc, const char **argv) {
     });
 
     //tone mapping shader & pipeline
-    vkcv::PipelineHandle tonemappingPipe;
+    vkcv::ComputePipelineHandle tonemappingPipe;
     vkcv::DescriptorSetHandle tonemappingDescriptor = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
                                                                                         "shaders/tonemapping.comp", tonemappingPipe);
 
 
-    while (window.isWindowOpen()) {
+    while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 
         uint32_t swapchainWidth, swapchainHeight;
-        if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+        if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
             continue;
         }
 
@@ -324,7 +319,8 @@ int main(int argc, const char **argv) {
                 particlePipeline,
 				pushConstantsDraw,
                 {drawcalls},
-                { colorBuffer });
+                { colorBuffer },
+                windowHandle);
 
         bloomAndFlares.execWholePipeline(cmdStream, colorBuffer);
 
@@ -352,7 +348,7 @@ int main(int argc, const char **argv) {
 
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);
-        core.endFrame();
+        core.endFrame(windowHandle);
     }
 
     return 0;

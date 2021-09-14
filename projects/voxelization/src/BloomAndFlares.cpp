@@ -49,8 +49,10 @@ BloomAndFlares::BloomAndFlares(
                 );
         m_DownsampleDescSets.push_back(p_Core->createDescriptorSet(m_DownsampleDescSetLayouts.back()));
     }
-    m_DownsamplePipe = p_Core->createComputePipeline(
-            dsProg, { p_Core->getDescriptorSetLayout(m_DownsampleDescSetLayouts[0]).vulkanHandle });
+
+    m_DownsamplePipe = p_Core->createComputePipeline({
+        dsProg, { p_Core->getDescriptorSetLayout(m_DownsampleDescSetLayouts[0]).vulkanHandle }
+    });
 
     // UPSAMPLE
     vkcv::ShaderProgram usProg;
@@ -74,8 +76,9 @@ BloomAndFlares::BloomAndFlares(
                 p_Core->createDescriptorSet(m_UpsampleLensFlareDescSetLayouts.back()));
     }
 
-    m_UpsamplePipe = p_Core->createComputePipeline(
-            usProg, { p_Core->getDescriptorSetLayout(m_UpsampleDescSetLayouts[0]).vulkanHandle });
+    m_UpsamplePipe = p_Core->createComputePipeline({
+        usProg, { p_Core->getDescriptorSetLayout(m_UpsampleDescSetLayouts[0]).vulkanHandle }
+    });
 
     // LENS FEATURES
     vkcv::ShaderProgram lensProg;
@@ -85,10 +88,12 @@ BloomAndFlares::BloomAndFlares(
                      {
                          lensProg.addShader(shaderStage, path);
                      });
+
     m_LensFlareDescSetLayout = p_Core->createDescriptorSetLayout(lensProg.getReflectedDescriptors().at(0));
     m_LensFlareDescSet = p_Core->createDescriptorSet(m_LensFlareDescSetLayout);
     m_LensFlarePipe = p_Core->createComputePipeline(
-            lensProg, { p_Core->getDescriptorSetLayout(m_LensFlareDescSetLayout).vulkanHandle });
+        { lensProg, { p_Core->getDescriptorSetLayout(m_LensFlareDescSetLayout).vulkanHandle } });
+
 
     // COMPOSITE
     vkcv::ShaderProgram compProg;
@@ -102,7 +107,7 @@ BloomAndFlares::BloomAndFlares(
     m_CompositeDescSetLayout = p_Core->createDescriptorSetLayout(compProg.getReflectedDescriptors().at(0));
     m_CompositeDescSet = p_Core->createDescriptorSet(m_CompositeDescSetLayout);
     m_CompositePipe = p_Core->createComputePipeline(
-            compProg, { p_Core->getDescriptorSetLayout(m_CompositeDescSetLayout).vulkanHandle });
+        { compProg, { p_Core->getDescriptorSetLayout(m_CompositeDescSetLayout).vulkanHandle } });
 
     // radial LUT
     const auto texture = vkcv::asset::loadTexture("assets/RadialLUT.png");
@@ -318,9 +323,9 @@ void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStrea
             static_cast<uint32_t>(glm::ceil(dispatchCountY)),
             1
     };
-	
-	vkcv::PushConstants pushConstants (sizeof(cameraForward));
-	pushConstants.appendDrawcall(cameraForward);
+
+    vkcv::PushConstants pushConstants(sizeof(cameraForward));
+    pushConstants.appendDrawcall(cameraForward);
 
     // bloom composite dispatch
     p_Core->recordComputeDispatchToCmdStream(
@@ -349,5 +354,3 @@ void BloomAndFlares::updateImageDimensions(uint32_t width, uint32_t height)
     m_Blur = p_Core->createImage(m_ColorBufferFormat, m_Width, m_Height, 1, true, true, false);
     m_LensFeatures = p_Core->createImage(m_ColorBufferFormat, m_Width, m_Height, 1, true, true, false);
 }
-
-

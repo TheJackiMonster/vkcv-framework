@@ -1,7 +1,6 @@
 
-#include <GLFW/glfw3.h>
-
 #include "vkcv/Context.hpp"
+#include "vkcv/Window.hpp"
 
 namespace vkcv
 {
@@ -124,16 +123,17 @@ namespace vkcv
 	/**
 	 * @brief All existing physical devices will be evaluated by deviceScore.
 	 * @param instance The instance
-	 * @return The optimal physical device
+	 * @param physicalDevice The optimal physical device
+	 * @return Returns if a suitable GPU is found as physical device
 	 * @see Context.deviceScore
 	*/
-	vk::PhysicalDevice pickPhysicalDevice(vk::Instance& instance)
+	bool pickPhysicalDevice(const vk::Instance& instance, vk::PhysicalDevice& physicalDevice)
 	{
-		vk::PhysicalDevice phyDevice;
-		std::vector<vk::PhysicalDevice> devices = instance.enumeratePhysicalDevices();
+		const std::vector<vk::PhysicalDevice>& devices = instance.enumeratePhysicalDevices();
 		
 		if (devices.empty()) {
-			throw std::runtime_error("failed to find GPUs with Vulkan support!");
+			vkcv_log(LogLevel::ERROR, "Failed to find GPUs with Vulkan support");
+			return false;
 		}
 		
 		int max_score = -1;
@@ -141,15 +141,16 @@ namespace vkcv
 			int score = deviceScore(device);
 			if (score > max_score) {
 				max_score = score;
-				phyDevice = device;
+				physicalDevice = device;
 			}
 		}
 		
 		if (max_score == -1) {
-			throw std::runtime_error("failed to find a suitable GPU!");
+			vkcv_log(LogLevel::ERROR, "Failed to find a suitable GPU");
+			return false;
+		} else {
+			return true;
 		}
-		
-		return phyDevice;
 	}
 	
 	/**
@@ -175,13 +176,11 @@ namespace vkcv
 		return true;
 	}
 	
-	std::vector<const char*> getRequiredExtensions() {
-		uint32_t glfwExtensionCount = 0;
-		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
+	std::vector<std::string> getRequiredExtensions() {
+		std::vector<std::string> extensions = Window::getExtensions();
+		
 #ifndef NDEBUG
-		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 		
 		return extensions;
@@ -225,7 +224,13 @@ namespace vkcv
 		}
 		
 		// for GLFW: get all required extensions
-		std::vector<const char*> requiredExtensions = getRequiredExtensions();
+		auto requiredStrings = getRequiredExtensions();
+		std::vector<const char*> requiredExtensions;
+		
+		for (const auto& extension : requiredStrings) {
+			requiredExtensions.push_back(extension.c_str());
+		}
+		
 		requiredExtensions.insert(requiredExtensions.end(), instanceExtensions.begin(), instanceExtensions.end());
 		
 		if (!checkSupport(supportedExtensions, requiredExtensions)) {
@@ -257,7 +262,11 @@ namespace vkcv
 		vk::Instance instance = vk::createInstance(instanceCreateInfo);
 		
 		std::vector<vk::PhysicalDevice> physicalDevices = instance.enumeratePhysicalDevices();
-		vk::PhysicalDevice physicalDevice = pickPhysicalDevice(instance);
+		vk::PhysicalDevice physicalDevice;
+		
+		if (!pickPhysicalDevice(instance, physicalDevice)) {
+			throw std::runtime_error("Picking suitable GPU as physical device failed!");
+		}
 		
 		FeatureManager featureManager (physicalDevice);
 		

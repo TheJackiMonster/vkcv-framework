@@ -1,7 +1,7 @@
 #include "PipelineInit.hpp"
 
 vkcv::DescriptorSetHandle PipelineInit::ComputePipelineInit(vkcv::Core *pCore, vkcv::ShaderStage shaderStage, std::filesystem::path includePath,
-                                vkcv::PipelineHandle &pipeline) {
+                                vkcv::ComputePipelineHandle &pipeline) {
     vkcv::ShaderProgram shaderProgram;
     vkcv::shader::GLSLCompiler compiler;
     compiler.compile(shaderStage, includePath,
@@ -19,9 +19,9 @@ vkcv::DescriptorSetHandle PipelineInit::ComputePipelineInit(vkcv::Core *pCore, v
     }
     const vkcv::VertexLayout layout(bindings);
 
-    pipeline = pCore->createComputePipeline(
+    pipeline = pCore->createComputePipeline({
             shaderProgram,
-            { pCore->getDescriptorSetLayout(descriptorSetLayout).vulkanHandle });
+            { pCore->getDescriptorSetLayout(descriptorSetLayout).vulkanHandle } });
 
     return  descriptorSet;
 }

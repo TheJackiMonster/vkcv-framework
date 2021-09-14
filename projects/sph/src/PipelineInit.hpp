@@ -8,5 +8,5 @@ public:
     static vkcv::DescriptorSetHandle ComputePipelineInit(vkcv::Core *pCore,
                                                          vkcv::ShaderStage shaderStage,
                                                          std::filesystem::path includePath,
-                                                         vkcv::PipelineHandle& pipeline);
+                                                         vkcv::ComputePipelineHandle& pipeline);
 };
