@@ -70,9 +70,9 @@ void addMeshToIndirectDraw(const vkcv::asset::Scene &scene,
         {
             auto &vertexGroup = scene.vertexGroups[vertexGroupIndex];
 
-            indexedIndirectCommands.emplace_back(static_cast<uint32_t>(vertexGroup.indexBuffer.data.size()),
+            indexedIndirectCommands.emplace_back(static_cast<uint32_t>(vertexGroup.numIndices),
                                                  1,
-                                                 static_cast<uint32_t>(compiledIndexBuffer.size()),
+                                                 static_cast<uint32_t>(compiledIndexBuffer.size() / 4),
                                                  0,
                                                  static_cast<uint32_t>(indexedIndirectCommands.size()));
 
