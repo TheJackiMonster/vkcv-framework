@@ -53,8 +53,11 @@ void main() {
 
     for(uint i = 0; i < inParticle.length(); i++)   
     {
-        float dist = distance(inParticle[id].position, inParticle[i].position);
-        densitySum += mass * poly6(dist);
+        if (id != i)
+        {
+            float dist = distance(inParticle[id].position, inParticle[i].position);
+            densitySum += mass * poly6(dist);
+        }
     }
     outParticle[id].density = densitySum;
     outParticle[id].pressure = max((densitySum - offset), 0) * gasConstant;
