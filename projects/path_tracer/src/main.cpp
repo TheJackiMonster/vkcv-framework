@@ -2,6 +2,7 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
+#include "vkcv/gui/GUI.hpp"
 #include <chrono>
 #include <vector>
 
@@ -216,6 +217,18 @@ int main(int argc, const char** argv) {
 	uint32_t widthPrevious  = initialWidth;
 	uint32_t heightPrevious = initialHeight;
 
+	vkcv::gui::GUI gui(core, window);
+
+	bool renderUI = true;
+	window.e_key.add([&renderUI](int key, int scancode, int action, int mods) {
+		if (key == GLFW_KEY_I && action == GLFW_PRESS) {
+			renderUI = !renderUI;
+		}
+	});
+
+	glm::vec3   skyColor            = glm::vec3(0.2, 0.7, 0.8);
+	float       skyColorMultiplier  = 1;
+
 	while (window.isWindowOpen())
 	{
 		vkcv::Window::pollEvents();
@@ -315,16 +328,18 @@ int main(int argc, const char** argv) {
 		// path tracing
 		struct RaytracingPushConstantData {
 			glm::mat4   viewToWorld;
+			glm::vec3   skyColor;
 			int32_t     sphereCount;
 			int32_t     planeCount;
 			int32_t     frameIndex;
 		};
 
 		RaytracingPushConstantData raytracingPushData;
-		raytracingPushData.viewToWorld = glm::inverse(cameraManager.getActiveCamera().getView());
-		raytracingPushData.sphereCount = spheres.size();
-		raytracingPushData.planeCount  = planes.size();
-		raytracingPushData.frameIndex  = frameIndex;
+		raytracingPushData.viewToWorld  = glm::inverse(cameraManager.getActiveCamera().getView());
+		raytracingPushData.skyColor     = skyColor * skyColorMultiplier;
+		raytracingPushData.sphereCount  = spheres.size();
+		raytracingPushData.planeCount   = planes.size();
+		raytracingPushData.frameIndex   = frameIndex;
 
 		vkcv::PushConstants pushConstantsCompute(sizeof(RaytracingPushConstantData));
 		pushConstantsCompute.appendDrawcall(raytracingPushData);
@@ -373,6 +388,19 @@ int main(int argc, const char** argv) {
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
+
+		if (renderUI) {
+			gui.beginGUI();
+
+			ImGui::Begin("Settings");
+
+			clearMeanImage |= ImGui::ColorEdit3("Sky color", &skyColor.x);
+			clearMeanImage |= ImGui::InputFloat("Sky color multiplier", &skyColorMultiplier);
+
+			ImGui::End();
+
+			gui.endGUI();
+		}
 
 		core.endFrame();
 
