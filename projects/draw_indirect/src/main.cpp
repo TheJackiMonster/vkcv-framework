@@ -80,20 +80,24 @@ void addMeshToIndirectDraw(const vkcv::asset::Scene &scene,
                                         vertexGroup.vertexBuffer.data.begin(),
                                         vertexGroup.vertexBuffer.data.end());
 
-			if(vertexGroup.indexBuffer.type == vkcv::asset::IndexType::UINT8){
+			if(vertexGroup.indexBuffer.type == vkcv::asset::IndexType::UINT8)
+            {
 				std::vector<uint32_t> indexBuffer;
 				for(auto index : vertexGroup.indexBuffer.data)
 				{
-					indexBuffer.push_back(*reinterpret_cast<uint32_t*>(&index));
+                    indexBuffer.push_back(static_cast<uint32_t>(index));
 				}
 				compiledIndexBuffer.insert(compiledIndexBuffer.end(),
 										   indexBuffer.begin(),
 										   indexBuffer.end());
-			}else if(vertexGroup.indexBuffer.type == vkcv::asset::IndexType::UINT16){
+			}
+            else if(vertexGroup.indexBuffer.type == vkcv::asset::IndexType::UINT16)
+            {
 				std::vector<uint32_t> indexBuffer;
 				for(int i = 0; i < vertexGroup.indexBuffer.data.size(); i+=2)
 				{
-					indexBuffer.push_back(*reinterpret_cast<const uint32_t*>(&vertexGroup.indexBuffer.data[i]));
+                    uint16_t index16 = *reinterpret_cast<const uint16_t*>(&vertexGroup.indexBuffer.data[i]);
+					indexBuffer.push_back(static_cast<uint32_t>(index16));
 				}
 				compiledIndexBuffer.insert(compiledIndexBuffer.end(),
 										   indexBuffer.begin(),
@@ -229,6 +233,10 @@ int main(int argc, const char** argv) {
                           compiledIndexBuffer,
                           indexedIndirectCommands);
 
+    // DEBUG
+    std::vector<uint32_t> testVec;
+    testVec.insert(testVec.end(), compiledIndexBuffer.begin(), compiledIndexBuffer.end());
+
     vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(
             vkcv::BufferType::INDIRECT,
             indexedIndirectCommands.size() * sizeof(vk::DrawIndexedIndirectCommand),
@@ -277,7 +285,7 @@ int main(int argc, const char** argv) {
 			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize> (0), compiledInterleavedVertexBuffer.getVulkanHandle() )
 	};
 
-	const vkcv::Mesh mesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), compiledIndexBuffer.size());
+	const vkcv::Mesh mesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), compiledIndexBuffer.size(), vkcv::IndexBitCount::Bit32);
 
 
 	//vkcv::DescriptorBindings descriptorBindings = sponzaProgram.getReflectedDescriptors().at(0);
