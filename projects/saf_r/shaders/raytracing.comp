@@ -3,7 +3,7 @@
 
 // defines constants
 const float pi      = 3.1415926535897932384626433832795;
-const float hitBias = 0.0001;   // used to offset hits to avoid self intersection
+const float hitBias = 0.01;   // used to offset hits to avoid self intersection
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
