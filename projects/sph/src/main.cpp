@@ -175,8 +175,11 @@ int main(int argc, const char **argv) {
     vkcv::DescriptorWrites computeWrites;
     computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,particleBuffer1.getHandle()),
 										  vkcv::BufferDescriptorWrite(1,particleBuffer2.getHandle())};
+    
     core.writeDescriptorSet(computeDescriptorSet1, computeWrites);
 	core.writeDescriptorSet(computeDescriptorSet2, computeWrites);
+    core.writeDescriptorSet(computeDescriptorSet3, computeWrites);
+	core.writeDescriptorSet(computeDescriptorSet4, computeWrites);
 
     if (!particlePipeline || !computePipeline1 || !computePipeline2 || !computePipeline3 || !computePipeline4)
     {
