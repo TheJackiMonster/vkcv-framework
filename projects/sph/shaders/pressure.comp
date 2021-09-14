@@ -36,7 +36,7 @@ layout( push_constant ) uniform constants{
 
 float poly6(float r)    
 {
-    return (315.f/(64.f*PI*pow(h, 9)) * pow((pow(h,2)-pow(r,2)), 3)) * int(0<=r && r<=h);
+    return (315.f * pow((pow(h,2)-pow(r,2)), 3)/(64.f*PI*pow(h, 9))) * int(0<=r && r<=h);
 }
 
 float densitySum = 0.f;
@@ -57,8 +57,8 @@ void main() {
             densitySum += mass * poly6(dist);
         }
     }
-    outParticle[id].density = max(densitySum, 0.001f);
-    outParticle[id].pressure = max((densitySum - offset), 0) * gasConstant;
+    outParticle[id].density = max(densitySum,0.0000001f);
+    outParticle[id].pressure = max((densitySum - offset), 0.0000001f) * gasConstant;
     outParticle[id].position = inParticle[id].position;
     outParticle[id].velocity = inParticle[id].velocity;
     outParticle[id].force = inParticle[id].force;
