@@ -9,11 +9,11 @@ const vkcv::Multisampling   msaa                    = vkcv::Multisampling::MSAA8
 vkcv::ShaderProgram loadShadowShader() {
 	vkcv::ShaderProgram shader;
 	vkcv::shader::GLSLCompiler compiler;
-	compiler.compile(vkcv::ShaderStage::VERTEX, "resources/shaders/shadow.vert",
+	compiler.compile(vkcv::ShaderStage::VERTEX, "assets/shaders/shadow.vert",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, "resources/shaders/shadow.frag",
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, "assets/shaders/shadow.frag",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -23,7 +23,7 @@ vkcv::ShaderProgram loadShadowShader() {
 vkcv::ShaderProgram loadDepthToMomentsShader() {
 	vkcv::ShaderProgram shader;
 	vkcv::shader::GLSLCompiler compiler;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/depthToMoments.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/depthToMoments.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -33,7 +33,7 @@ vkcv::ShaderProgram loadDepthToMomentsShader() {
 vkcv::ShaderProgram loadShadowBlurXShader() {
 	vkcv::ShaderProgram shader;
 	vkcv::shader::GLSLCompiler compiler;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/shadowBlurX.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/shadowBlurX.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -43,7 +43,7 @@ vkcv::ShaderProgram loadShadowBlurXShader() {
 vkcv::ShaderProgram loadShadowBlurYShader() {
 	vkcv::ShaderProgram shader;
 	vkcv::shader::GLSLCompiler compiler;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/shadowBlurY.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/shadowBlurY.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		shader.addShader(shaderStage, path);
 	});
@@ -166,7 +166,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	m_shadowMapPass = corePtr->createPass(shadowPassConfig);
 
 	// pipeline
-	vkcv::PipelineConfig shadowPipeConfig{
+	vkcv::GraphicsPipelineConfig shadowPipeConfig{
 		shadowShader,
 		shadowMapResolution,
 		shadowMapResolution,
@@ -189,9 +189,10 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 
 	// depth to moments
 	vkcv::ShaderProgram depthToMomentsShader    = loadDepthToMomentsShader();
+
 	m_depthToMomentsDescriptorSetLayout         = corePtr->createDescriptorSetLayout(depthToMomentsShader.getReflectedDescriptors().at(0));
 	m_depthToMomentsDescriptorSet               = corePtr->createDescriptorSet(m_depthToMomentsDescriptorSetLayout);
-	m_depthToMomentsPipe                        = corePtr->createComputePipeline(depthToMomentsShader, { corePtr->getDescriptorSetLayout(m_depthToMomentsDescriptorSetLayout).vulkanHandle });
+    m_depthToMomentsPipe = corePtr->createComputePipeline({ depthToMomentsShader, { corePtr->getDescriptorSetLayout(m_depthToMomentsDescriptorSetLayout).vulkanHandle }});
 
 	vkcv::DescriptorWrites depthToMomentDescriptorWrites;
 	depthToMomentDescriptorWrites.sampledImageWrites    = { vkcv::SampledImageDescriptorWrite(0, m_shadowMapDepth.getHandle()) };
@@ -203,7 +204,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	vkcv::ShaderProgram shadowBlurXShader   = loadShadowBlurXShader();
 	m_shadowBlurXDescriptorSetLayout        = corePtr->createDescriptorSetLayout(shadowBlurXShader.getReflectedDescriptors().at(0));
 	m_shadowBlurXDescriptorSet              = corePtr->createDescriptorSet(m_shadowBlurXDescriptorSetLayout);
-	m_shadowBlurXPipe                       = corePtr->createComputePipeline(shadowBlurXShader, { corePtr->getDescriptorSetLayout(m_shadowBlurXDescriptorSetLayout).vulkanHandle });
+	m_shadowBlurXPipe                       = corePtr->createComputePipeline({ shadowBlurXShader, { corePtr->getDescriptorSetLayout(m_shadowBlurXDescriptorSetLayout).vulkanHandle }});
 
 	vkcv::DescriptorWrites shadowBlurXDescriptorWrites;
 	shadowBlurXDescriptorWrites.sampledImageWrites   = { vkcv::SampledImageDescriptorWrite(0, m_shadowMap.getHandle()) };
@@ -215,9 +216,9 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	vkcv::ShaderProgram shadowBlurYShader   = loadShadowBlurYShader();
 	m_shadowBlurYDescriptorSetLayout        = corePtr->createDescriptorSetLayout(shadowBlurYShader.getReflectedDescriptors().at(0));
 	m_shadowBlurYDescriptorSet              = corePtr->createDescriptorSet(m_shadowBlurYDescriptorSetLayout);
-	m_shadowBlurYPipe                       = corePtr->createComputePipeline(shadowBlurYShader, { corePtr->getDescriptorSetLayout(m_shadowBlurYDescriptorSetLayout).vulkanHandle });
+    m_shadowBlurYPipe                       = corePtr->createComputePipeline({ shadowBlurYShader, { corePtr->getDescriptorSetLayout(m_shadowBlurYDescriptorSetLayout).vulkanHandle }});
 
-	vkcv::DescriptorWrites shadowBlurYDescriptorWrites;
+    vkcv::DescriptorWrites shadowBlurYDescriptorWrites;
 	shadowBlurYDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(0, m_shadowMapIntermediate.getHandle()) };
 	shadowBlurYDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(1, m_shadowSampler) };
 	shadowBlurYDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, m_shadowMap.getHandle()) };
@@ -234,7 +235,8 @@ void ShadowMapping::recordShadowMapRendering(
 	const std::vector<glm::mat4>&       modelMatrices,
 	const vkcv::camera::Camera&         camera,
 	const glm::vec3&                    voxelVolumeOffset,
-	float                               voxelVolumeExtent) {
+	float                               voxelVolumeExtent,
+	const vkcv::WindowHandle&           windowHandle) {
 
 	LightInfo lightInfo;
 	lightInfo.sunColor = lightColor;
@@ -270,7 +272,8 @@ void ShadowMapping::recordShadowMapRendering(
 		m_shadowMapPipe,
 		shadowPushConstants,
 		drawcalls,
-		{ m_shadowMapDepth.getHandle() });
+		{ m_shadowMapDepth.getHandle() },
+		windowHandle);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMapDepth.getHandle());
 
 	// depth to moments

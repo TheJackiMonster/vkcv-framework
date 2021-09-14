@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
-#include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
@@ -12,24 +11,18 @@ int main(int argc, const char** argv) {
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
 
-	vkcv::Window window = vkcv::Window::create(
-		applicationName,
-		windowWidth,
-		windowHeight,
-		true
-	);
-	
 	vkcv::Core core = vkcv::Core::create(
-		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
 		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
 
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+
 	vkcv::asset::Scene mesh;
 
-	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
+	const char* path = argc > 1 ? argv[1] : "assets/cube/cube.gltf";
 	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
@@ -60,7 +53,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain().getFormat()
+		core.getSwapchain(windowHandle).getFormat()
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment(
@@ -80,12 +73,12 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram firstMeshProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		firstMeshProgram.addShader(shaderStage, path);
 	});
 	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		firstMeshProgram.addShader(shaderStage, path);
 	});
@@ -116,7 +109,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(setLayoutHandle);
 
-	const vkcv::PipelineConfig firstMeshPipelineConfig {
+	const vkcv::GraphicsPipelineConfig firstMeshPipelineConfig {
         firstMeshProgram,
         UINT32_MAX,
         UINT32_MAX,
@@ -125,7 +118,7 @@ int main(int argc, const char** argv) {
 		{ core.getDescriptorSetLayout(setLayoutHandle).vulkanHandle },
 		true
 	};
-	vkcv::PipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
+	vkcv::GraphicsPipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
 	
 	if (!firstMeshPipeline) {
 		std::cerr << "Error. Could not create graphics pipeline. Exiting." << std::endl;
@@ -160,8 +153,15 @@ int main(int argc, const char** argv) {
 	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(1, sampler) };
 
 	core.writeDescriptorSet(descriptorSet, setWrites);
-
-	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
+	
+	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
+	
+	vkcv::ImageHandle depthBuffer = core.createImage(
+			vk::Format::eD32Sfloat,
+			swapchainExtent.width,
+			swapchainExtent.height,
+			1, false
+	).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -170,29 +170,29 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage },1);
 
-    vkcv::camera::CameraManager cameraManager(window);
+    vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
 
     auto start = std::chrono::system_clock::now();
     
-	while (window.isWindowOpen()) {
+	while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 		
-		if(window.getHeight() == 0 || window.getWidth() == 0)
+		if(core.getWindow(windowHandle).getHeight() == 0 || core.getWindow(windowHandle).getWidth() == 0)
 			continue;
 		
 		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
 			continue;
 		}
 		
-		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
+		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
 			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
 			
-			windowWidth = swapchainWidth;
-			windowHeight = swapchainHeight;
+			swapchainExtent.width = swapchainWidth;
+			swapchainExtent.height = swapchainHeight;
 		}
   
 		auto end = std::chrono::system_clock::now();
@@ -214,10 +214,11 @@ int main(int argc, const char** argv) {
 			firstMeshPipeline,
 			pushConstants,
 			{ drawcall },
-			renderTargets);
+			renderTargets,
+			windowHandle);
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-		core.endFrame();
+		core.endFrame(windowHandle);
 	}
 	
 	return 0;

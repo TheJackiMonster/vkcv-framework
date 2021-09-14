@@ -58,10 +58,11 @@ namespace vkcv::scene {
 		void recordDrawcalls(CommandStreamHandle       		  &cmdStream,
 							 const camera::Camera			  &camera,
 							 const PassHandle                 &pass,
-							 const PipelineHandle             &pipeline,
+							 const GraphicsPipelineHandle     &pipeline,
 							 size_t							  pushConstantsSizePerDrawcall,
 							 const RecordMeshDrawcallFunction &record,
-							 const std::vector<ImageHandle>   &renderTargets);
+							 const std::vector<ImageHandle>   &renderTargets,
+							 const WindowHandle               &windowHandle);
 		
 		static Scene create(Core& core);
 		
