@@ -19,7 +19,7 @@ layout(set=0,binding=1) uniform uPosition{
 
 void main()
 {
-    outColor = vec3(1.0,1.0,1.0);
+    outColor = vec3(0.0,0.5,1.0);
 
     // make the triangle look like a circle
    outColor *= circleFactor(passTriangleCoordinates);
