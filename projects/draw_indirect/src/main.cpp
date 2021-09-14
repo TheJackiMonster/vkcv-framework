@@ -131,8 +131,8 @@ int main(int argc, const char** argv) {
 	uint32_t windowHeight = 600;
 
 	vkcv::Features features;
-    /*
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    /*
     features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
             VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, [](vk::PhysicalDeviceDescriptorIndexingFeatures &features) {
                 // features.setShaderInputAttachmentArrayDynamicIndexing(true);
