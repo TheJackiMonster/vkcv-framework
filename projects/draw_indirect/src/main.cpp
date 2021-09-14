@@ -64,6 +64,7 @@ void addMeshToIndirectDraw(const vkcv::asset::Scene &scene,
                            std::vector<uint8_t> &compiledIndexBuffer,
                            std::vector<vk::DrawIndexedIndirectCommand> &indexedIndirectCommands)
 {
+	uint32_t vertexOffset = 0;
     for (const auto &mesh : scene.meshes)
     {
         for(auto &vertexGroupIndex : mesh.vertexGroups)
@@ -73,8 +74,10 @@ void addMeshToIndirectDraw(const vkcv::asset::Scene &scene,
             indexedIndirectCommands.emplace_back(static_cast<uint32_t>(vertexGroup.numIndices),
                                                  1,
                                                  static_cast<uint32_t>(compiledIndexBuffer.size() / 4),
-                                                 0,
+                                                 vertexOffset,
                                                  static_cast<uint32_t>(indexedIndirectCommands.size()));
+
+            vertexOffset += vertexGroup.numVertices;
 
             compiledVertexBuffer.insert(compiledVertexBuffer.end(),
                                         vertexGroup.vertexBuffer.data.begin(),
