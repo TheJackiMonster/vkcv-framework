@@ -333,18 +333,19 @@ namespace vkcv
     void Core::recordIndexedIndirectDrawcallsToCmdStream(
             const CommandStreamHandle                           cmdStreamHandle,
             const PassHandle                                    renderpassHandle,
-            const PipelineHandle                                pipelineHandle,
+            const GraphicsPipelineHandle                        &pipelineHandle,
             const PushConstants                                 &pushConstantData,
             const vkcv::Mesh                                    &compiledMesh,
             const std::vector<ImageHandle>                      &renderTargets,
             const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
-            const uint32_t                                      drawCount) {
+            const uint32_t                                      drawCount,
+			const WindowHandle                                  &windowHandle) {
 
         if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
             return;
         }
-
-        const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_swapchain,
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
+        const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_SwapchainManager->getSwapchain(swapchainHandle),
                                                                                     *m_ImageManager);
         const auto width = widthHeight[0];
         const auto height = widthHeight[1];
@@ -359,7 +360,7 @@ namespace vkcv
         vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
         transitionRendertargetsToAttachmentLayout(renderTargets, *m_ImageManager, cmdBuffer);
 
-        const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_swapchain, renderpass,
+        const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_SwapchainManager->getSwapchain(swapchainHandle), renderpass,
                                                               m_Context.m_Device);
 
         if (!framebuffer) {
@@ -381,7 +382,7 @@ namespace vkcv
 
             cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
-            const PipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+            const GraphicsPipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
             if (pipeConfig.m_UseDynamicViewport) {
                 recordDynamicViewport(cmdBuffer, width, height);
             }

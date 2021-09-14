@@ -398,7 +398,8 @@ int main(int argc, const char** argv) {
 			mesh,
 			renderTargets,
 			indirectBuffer,
-            1);
+            1,
+			windowHandle);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
