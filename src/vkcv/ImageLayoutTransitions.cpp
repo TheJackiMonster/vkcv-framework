@@ -58,8 +58,8 @@ namespace vkcv {
 
 	void recordImageBarrier(vk::CommandBuffer cmdBuffer, vk::ImageMemoryBarrier barrier) {
 		cmdBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eTopOfPipe,
-			vk::PipelineStageFlagBits::eBottomOfPipe,
+			vk::PipelineStageFlagBits::eAllCommands,
+			vk::PipelineStageFlagBits::eAllCommands,
 			{},
 			nullptr,
 			nullptr,

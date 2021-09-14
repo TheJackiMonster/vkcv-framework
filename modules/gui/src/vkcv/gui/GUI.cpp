@@ -6,6 +6,9 @@
 
 namespace vkcv::gui {
 	
+	const static vk::ImageLayout initialImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	const static vk::ImageLayout finalImageLayout   = vk::ImageLayout::ePresentSrcKHR;
+
 	static void checkVulkanResult(VkResult resultCode) {
 		if (resultCode == 0)
 			return;
@@ -95,8 +98,8 @@ namespace vkcv::gui {
 				vk::AttachmentStoreOp::eStore,
 				vk::AttachmentLoadOp::eDontCare,
 				vk::AttachmentStoreOp::eDontCare,
-				vk::ImageLayout::eUndefined,
-				vk::ImageLayout::ePresentSrcKHR
+				initialImageLayout,
+				finalImageLayout
 		);
 		
 		const vk::AttachmentReference attachmentReference (
@@ -199,7 +202,7 @@ namespace vkcv::gui {
 		
 		const Swapchain& swapchain = m_core.getSwapchain(m_windowHandle);
 		const auto extent = swapchain.getExtent();
-		
+
 		const vk::ImageView swapchainImageView = m_core.getSwapchainImageView();
 
 		const vk::FramebufferCreateInfo framebufferCreateInfo (
@@ -218,6 +221,10 @@ namespace vkcv::gui {
 		submitInfo.queueType = QueueType::Graphics;
 		
 		m_core.recordAndSubmitCommandsImmediate(submitInfo, [&](const vk::CommandBuffer& commandBuffer) {
+
+			assert(initialImageLayout == vk::ImageLayout::eColorAttachmentOptimal);
+			m_core.prepareImageForAttachmentManually(commandBuffer, vkcv::ImageHandle::createSwapchainImageHandle());
+
 			const vk::Rect2D renderArea (
 					vk::Offset2D(0, 0),
 					extent
@@ -230,12 +237,17 @@ namespace vkcv::gui {
 					0,
 					nullptr
 			);
-			
+
 			commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 			
 			ImGui_ImplVulkan_RenderDrawData(drawData, static_cast<VkCommandBuffer>(commandBuffer));
 			
 			commandBuffer.endRenderPass();
+
+			// executing the renderpass changed the image layout without going through the image manager
+			// therefore the layout must be updated manually
+			m_core.updateImageLayoutManual(vkcv::ImageHandle::createSwapchainImageHandle(), finalImageLayout);
+
 		}, [&]() {
 			m_context.getDevice().destroyFramebuffer(framebuffer);
 		});
