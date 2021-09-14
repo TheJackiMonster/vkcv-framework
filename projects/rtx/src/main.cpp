@@ -144,16 +144,17 @@ int main(int argc, const char** argv) {
 	descriptorSetHandles.push_back(rayGenShaderDescriptorSet);
 	descriptorSetLayoutHandles.push_back(rayGenShaderDescriptorSetLayout);
 
+	vkcv::DescriptorSetLayoutHandle rayMissShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayMissShaderProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle rayMissShaderDescriptorSet = core.createDescriptorSet(rayMissShaderDescriptorSetLayout);
+	descriptorSetHandles.push_back(rayMissShaderDescriptorSet);
+	descriptorSetLayoutHandles.push_back(rayMissShaderDescriptorSetLayout);
 	
 	vkcv::DescriptorSetLayoutHandle rayClosestHitShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayClosestHitShaderProgram.getReflectedDescriptors().at(0));
 	vkcv::DescriptorSetHandle rayCHITShaderDescriptorSet = core.createDescriptorSet(rayClosestHitShaderDescriptorSetLayout);
 	descriptorSetHandles.push_back(rayCHITShaderDescriptorSet);
 	descriptorSetLayoutHandles.push_back(rayClosestHitShaderDescriptorSetLayout);
 
-	vkcv::DescriptorSetLayoutHandle rayMissShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayMissShaderProgram.getReflectedDescriptors().at(0));
-	vkcv::DescriptorSetHandle rayMissShaderDescriptorSet = core.createDescriptorSet(rayMissShaderDescriptorSetLayout);
-	descriptorSetHandles.push_back(rayMissShaderDescriptorSet);
-	descriptorSetLayoutHandles.push_back(rayMissShaderDescriptorSetLayout);
+	
 
 	// init RTXModule
 	vkcv::rtx::RTXModule rtxModule(&core, &asManager, vertices, indices,descriptorSetHandles);
@@ -172,7 +173,7 @@ int main(int argc, const char** argv) {
 
 	vk::Pipeline rtxPipeline = rtxModule.getPipeline();
 	vk::PipelineLayout rtxPipelineLayout = rtxModule.getPipelineLayout();
-
+	/*
 	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
 		sceneShaderProgram,
 		UINT32_MAX,
@@ -187,7 +188,7 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
-
+	*/
 	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
@@ -240,11 +241,14 @@ int main(int argc, const char** argv) {
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 
+		/*
 		auto recordMesh = [](const glm::mat4& MVP, const glm::mat4& M,
 							 vkcv::PushConstants &pushConstants,
 							 vkcv::DrawcallInfo& drawcallInfo) {
 			pushConstants.appendDrawcall(MVP);
 		};
+		*/
+
 
 		core.recordRayGenerationToCmdStream(
             cmdStream,
@@ -253,8 +257,9 @@ int main(int argc, const char** argv) {
 			rtxModule.getShaderBindingBuffer(),
 			rtxModule.getShaderGroupBaseAlignment(),
 			{	vkcv::DescriptorSetUsage(0, core.getDescriptorSet(rayGenShaderDescriptorSet).vulkanHandle),
-				vkcv::DescriptorSetUsage(0, core.getDescriptorSet(rayCHITShaderDescriptorSet).vulkanHandle),
-				vkcv::DescriptorSetUsage(0, core.getDescriptorSet(rayMissShaderDescriptorSet).vulkanHandle) },
+				vkcv::DescriptorSetUsage(1, core.getDescriptorSet(rayMissShaderDescriptorSet).vulkanHandle),
+				vkcv::DescriptorSetUsage(2, core.getDescriptorSet(rayCHITShaderDescriptorSet).vulkanHandle)
+			},
             pushConstantsRTX,
 			windowHandle);
 

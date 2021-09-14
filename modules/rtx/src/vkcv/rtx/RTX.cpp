@@ -79,7 +79,7 @@ namespace vkcv::rtx {
 
         vk::WriteDescriptorSet tlasWrite2;
         tlasWrite2.setPNext(&AccelerationDescriptor);
-        tlasWrite2.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[2]).vulkanHandle);
+        tlasWrite2.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
         tlasWrite2.setDstBinding(5);
         tlasWrite2.setDstArrayElement(0);
         tlasWrite2.setDescriptorCount(1);
@@ -97,7 +97,7 @@ namespace vkcv::rtx {
         vertexInfo.setRange(blas.vertexBuffer.deviceSize); //maybe check if size is correct
 
         vk::WriteDescriptorSet vertexWrite;
-        vertexWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
+        vertexWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[2]).vulkanHandle);
         vertexWrite.setDstBinding(3);
         vertexWrite.setDescriptorCount(1);
         vertexWrite.setDescriptorType(vk::DescriptorType::eStorageBuffer);
@@ -111,7 +111,7 @@ namespace vkcv::rtx {
         indexInfo.setRange(blas.indexBuffer.deviceSize); //maybe check if size is correct
 
         vk::WriteDescriptorSet indexWrite;
-        indexWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
+        indexWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[2]).vulkanHandle);
         indexWrite.setDstBinding(4);
         indexWrite.setDescriptorCount(1);
         indexWrite.setDescriptorType(vk::DescriptorType::eStorageBuffer);
