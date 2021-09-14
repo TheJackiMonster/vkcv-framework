@@ -36,12 +36,13 @@ layout( push_constant ) uniform constants{
 
 float spiky(float r)    
 {
-    return 15 / (PI * pow(h, 6)) * pow((h-r), 3) * int(0<=r && r<=h);
+    return (15.f / (PI * pow(h, 6)) * pow((h-r), 3)) * int(0<=r && r<=h);
 }
+
 
 float laplacian(float r)
 {
-    return 45 / (PI * pow(h,6)) * (h - r) * int(0<=r && r<=h);
+    return (45.f / (PI * pow(h,6)) * (h - r)) * int(0<=r && r<=h);
 }
 
 vec3 pressureForce = vec3(0, 0, 0);
@@ -64,8 +65,11 @@ void main() {
         {
             vec3 dir = inParticle[id].position - inParticle[i].position;
             float dist = length(dir);
+            if(dist != 0) 
+            {
             pressureForce += mass * -(inParticle[id].pressure + inParticle[i].pressure)/(2.f * inParticle[i].density) * spiky(dist) * normalize(dir);
             viscosityForce += mass * (inParticle[id].velocity - inParticle[i].velocity)/inParticle[i].density * laplacian(dist);
+            }
         }
     }
     viscosityForce *= viscosity;
