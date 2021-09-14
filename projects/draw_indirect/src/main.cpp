@@ -103,34 +103,6 @@ void compileMeshForIndirectDraw(vkcv::Core &core,
                 compiledMat.baseColor.push_back(baseColorImg);
             }
 
-
-            //auto &metalRough    = scene.textures[material.metalRough];
-            //auto &normal        = scene.textures[material.normal];
-            //auto &occlusion     = scene.textures[material.occlusion];
-
-
-            //vkcv::Image metalRoughImg = core.createImage(vk::Format::eR8G8B8A8Srgb, metalRough.w, metalRough.h);
-            //vkcv::Image normalImg = core.createImage(vk::Format::eR8G8B8A8Srgb, normal.w, normal.h);
-            //vkcv::Image occlusionImg = core.createImage(vk::Format::eR8G8B8A8Srgb, occlusion.w, occlusion.h);
-
-
-
-            //metalRoughImg.fill(baseColor.data.data());
-            //metalRoughImg.generateMipChainImmediate();
-            //metalRoughImg.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-
-            //normalImg.fill(baseColor.data.data());
-            //normalImg.generateMipChainImmediate();
-            //normalImg.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-
-            //occlusionImg.fill(baseColor.data.data());
-            //occlusionImg.generateMipChainImmediate();
-            //occlusionImg.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-
-            //compiledMat.metalRough.push_back(metalRoughImg);
-            //compiledMat.normal.push_back(normalImg);
-            //compiledMat.occlusion.push_back(occlusionImg);
-
             indexedIndirectCommands.emplace_back(static_cast<uint32_t>(vertexGroup.numIndices),
                                                  1,
                                                  static_cast<uint32_t>(compiledIndexBuffer.size() / 4),
@@ -326,6 +298,19 @@ int main(int argc, const char** argv) {
             vkcv::BufferMemoryType::DEVICE_LOCAL);
     indirectBuffer.fill(indexedIndirectCommands);
 
+	std::vector<glm::mat4> modelMatrix;
+	auto i = 0;
+	for( auto& mesh : asset_scene.meshes)
+	{
+		modelMatrix.push_back(glm::make_mat4(mesh.modelMatrix.data()));
+	}
+	vkcv::Buffer<glm::mat4> modelBuffer = core.createBuffer<glm::mat4>(
+			vkcv::BufferType::STORAGE,
+			modelMatrix.size() * sizeof(glm::mat4),
+			vkcv::BufferMemoryType::DEVICE_LOCAL
+			);
+	modelBuffer.fill(modelMatrix);
+
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
 			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize> (0), compiledInterleavedVertexBuffer.getVulkanHandle() )
 	};
@@ -336,9 +321,6 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorBindings descriptorBindings = sponzaProgram.getReflectedDescriptors().at(0);
     descriptorBindings[1].descriptorCount = compiledMaterial.baseColor.size();
-    //descriptorBindings[2].descriptorCount = compiledMaterial.metalRough.size();
-    //descriptorBindings[3].descriptorCount = compiledMaterial.normal.size();
-    //descriptorBindings[4].descriptorCount = compiledMaterial.occlusion.size();
 
 	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
@@ -354,19 +336,13 @@ int main(int argc, const char** argv) {
     for(uint32_t i = 0; i < compiledMaterial.baseColor.size(); i++)
     {
         vkcv::SampledImageDescriptorWrite baseColorWrite(1, compiledMaterial.baseColor[i].getHandle(), 0, false, i);
-        //vkcv::SampledImageDescriptorWrite metalRoughWrite(1, compiledMaterial.metalRough[i].getHandle(), 0, false, i);
-        //vkcv::SampledImageDescriptorWrite normalWrite(2, compiledMaterial.normal[i].getHandle(), 0, false, i);
-        //vkcv::SampledImageDescriptorWrite occlusionWrite(3, compiledMaterial.occlusion[i].getHandle(), 0, false, i);
-
         textureArrayWrites.push_back(baseColorWrite);
-        //textureArrayWrites.push_back(metalRoughWrite);
-        //textureArrayWrites.push_back(normalWrite);
-        //textureArrayWrites.push_back(occlusionWrite);
     }
 
     vkcv::DescriptorWrites setWrites;
     setWrites.sampledImageWrites	= textureArrayWrites;
     setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(0, standardSampler) };
+	setWrites.storageBufferWrites   = { vkcv::BufferDescriptorWrite(2, modelBuffer.getHandle())};
     core.writeDescriptorSet(descriptorSet, setWrites);
 
 
@@ -391,7 +367,6 @@ int main(int argc, const char** argv) {
 
     vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
 	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 20.f);
@@ -428,11 +403,7 @@ int main(int argc, const char** argv) {
 
 		vkcv::PushConstants pushConstants(sizeof(glm::mat4));
 
-		for( auto& mesh : asset_scene.meshes)
-		{
-			glm::mat4 modelMatrix = glm::make_mat4(mesh.modelMatrix.data());
-			pushConstants.appendDrawcall(cam.getProjection() * cam.getView() * modelMatrix);
-		}
+		pushConstants.appendDrawcall(cam.getProjection() * cam.getView());
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
