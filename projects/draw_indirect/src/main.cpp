@@ -123,14 +123,14 @@ int main(int argc, const char** argv) {
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
             VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, [](vk::PhysicalDeviceDescriptorIndexingFeatures &features) {
-                features.setShaderInputAttachmentArrayDynamicIndexing(true);
+                // features.setShaderInputAttachmentArrayDynamicIndexing(true);
                 features.setShaderUniformTexelBufferArrayDynamicIndexing(true);
                 features.setShaderStorageTexelBufferArrayDynamicIndexing(true);
                 features.setShaderUniformBufferArrayNonUniformIndexing(true);
                 features.setShaderSampledImageArrayNonUniformIndexing(true);
                 features.setShaderStorageBufferArrayNonUniformIndexing(true);
                 features.setShaderStorageImageArrayNonUniformIndexing(true);
-                features.setShaderInputAttachmentArrayNonUniformIndexing(true);
+                // features.setShaderInputAttachmentArrayNonUniformIndexing(true);
                 features.setShaderUniformTexelBufferArrayNonUniformIndexing(true);
                 features.setShaderStorageTexelBufferArrayNonUniformIndexing(true);
 
