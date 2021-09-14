@@ -10,21 +10,67 @@ namespace vkcv::upscaling {
      * @addtogroup vkcv_upscaling
      * @{
      */
-	
+
+    /**
+     * Enum to set the mode of quality for
+     * FSR upscaling.
+     */
 	enum class FSRQualityMode : int {
+        /**
+         * Don't upscale anything.
+         */
 		NONE = 0,
+
+        /**
+         * Highest quality of FSR upscaling:
+         * 1.3x per dimension
+         */
 		ULTRA_QUALITY = 1,
+
+        /**
+         * High quality of FSR upscaling:
+         * 1.5x per dimension
+         */
 		QUALITY = 2,
+
+        /**
+         * Medium quality of FSR upscaling:
+         * 1.7x per dimension
+         */
 		BALANCED = 3,
+
+        /**
+         * Low quality of FSR upscaling:
+         * 2.0x per dimension
+         */
 		PERFORMANCE = 4
 	};
-	
+
+    /**
+     * Calculates the internal resolution for actual rendering if
+     * a specific mode of quality is used for upscaling with FSR.
+     * @param[in] mode Mode of quality
+     * @param[in] outputWidth Final resolution width
+     * @param[in] outputHeight Final resolution height
+     * @param[out] inputWidth Internal resolution width
+     * @param[out] inputHeight Internal resolution height
+     */
 	void getFSRResolution(FSRQualityMode mode,
 						  uint32_t outputWidth, uint32_t outputHeight,
 						  uint32_t &inputWidth, uint32_t &inputHeight);
-	
+
+    /**
+     * Returns the matching negative lod bias to reduce artifacts
+     * upscaling with FSR under a given mode of quality.
+     * @param mode Mode of quality
+     * @return Lod bias
+     */
 	float getFSRLodBias(FSRQualityMode mode);
-	
+
+    /**
+     * A structure to exchange required configuration
+     * with the shaders used by FSR upscaling.
+     */
 	struct FSRConstants {
 		uint32_t Const0 [4];
 		uint32_t Const1 [4];
@@ -32,7 +78,11 @@ namespace vkcv::upscaling {
 		uint32_t Const3 [4];
 		uint32_t Sample [4];
 	};
-	
+
+    /**
+     * A class to handle upscaling via FidelityFX Super Resolution.
+     * https://github.com/GPUOpen-Effects/FidelityFX-FSR
+     */
 	class FSRUpscaling : public Upscaling {
 	private:
         /**
