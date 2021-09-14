@@ -60,7 +60,7 @@ void main() {
 
     externalForce = vec3(0, inParticle[id].density * gravity, 0);
 
-    for(uint i = 0; i < inParticle.length(); i++)  
+    for(uint i = 0; i < int(particleCount); i++)  
     {
         if (id != i)
         {

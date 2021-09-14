@@ -51,7 +51,7 @@ void main() {
         return;
     }
 
-    for(uint i = 0; i < inParticle.length(); i++)   
+    for(uint i = 0; i < int(particleCount); i++)   
     {
         if (id != i)
         {
