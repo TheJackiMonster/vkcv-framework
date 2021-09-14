@@ -737,6 +737,14 @@ namespace vkcv
 		}, nullptr);
 	}
 
+	void Core::prepareImageForAttachmentManually(const vk::CommandBuffer& cmdBuffer, const ImageHandle& image) {
+		transitionRendertargetsToAttachmentLayout({ image }, *m_ImageManager, cmdBuffer);
+	}
+
+	void Core::updateImageLayoutManual(const vkcv::ImageHandle& image, const vk::ImageLayout layout) {
+		m_ImageManager->updateImageLayoutManual(image, layout);
+	}
+
 	void Core::recordImageMemoryBarrier(const CommandStreamHandle& cmdStream, const ImageHandle& image) {
 		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordImageMemoryBarrier(image, cmdBuffer);
