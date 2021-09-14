@@ -308,7 +308,7 @@ int main(int argc, const char **argv) {
                                               computePipeline4,
                                               computeDispatchCount,
                                               { vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet4).vulkanHandle) },
-                                              pushConstantsCompute);
+                                              vkcv::PushConstants(0));
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
