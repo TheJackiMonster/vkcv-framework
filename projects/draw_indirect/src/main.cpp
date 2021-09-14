@@ -227,12 +227,7 @@ int main(int argc, const char** argv) {
 
     // vertex layout for the pipeline. (assumed to be) used by all sponza meshes.
     const std::vector<vkcv::VertexAttachment> vertexAttachments = sponzaProgram.getVertexAttachments();
-    std::vector<vkcv::VertexBinding> bindings;
-    for (size_t i = 0; i < vertexAttachments.size(); i++)
-    {
-        bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
-    }
-    const vkcv::VertexLayout sponzaVertexLayout (bindings);
+	const vkcv::VertexLayout sponzaVertexLayout({ vkcv::VertexBinding(0, { vertexAttachments }) });
 
     // recreation of VertexBufferBindings YET AGAIN,
     // since these are used in the command buffer to bind and draw from the vertex shaders
@@ -246,7 +241,6 @@ int main(int argc, const char** argv) {
                           compiledVertexBuffer,
                           compiledIndexBuffer,
                           indexedIndirectCommands);
-
 
     vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(
             vkcv::BufferType::INDIRECT,
