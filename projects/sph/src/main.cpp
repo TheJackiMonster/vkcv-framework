@@ -128,13 +128,13 @@ int main(int argc, const char **argv) {
             1
     );
 
-    int numberParticles = 1000;
+    int numberParticles = 50000;
     std::vector<Particle> particles;
     for (int i = 0; i < numberParticles; i++) {
         const float lo = 0.4;
         const float hi = 0.6;
-        const float vlo = 0.4;
-        const float vhi = 0.6;
+        const float vlo = -0.5;
+        const float vhi = 0.5;
         float x = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
         float y = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
         float z = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
