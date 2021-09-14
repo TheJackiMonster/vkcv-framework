@@ -193,7 +193,7 @@ int main(int argc, const char **argv) {
 
     std::vector<glm::mat4> modelMatrices;
     std::vector<vkcv::DrawcallInfo> drawcalls;
-    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}, numberParticles * sizeof(glm::vec4) * 3));
+    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}, numberParticles));
 
     auto start = std::chrono::system_clock::now();
 
