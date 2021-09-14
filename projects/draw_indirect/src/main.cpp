@@ -132,6 +132,10 @@ int main(int argc, const char** argv) {
 
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    //features.requireExtension(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
+    features.requireFeature([](vk::PhysicalDeviceFeatures &features){
+        features.setMultiDrawIndirect(true);
+    });
     /*
     features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
             VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, [](vk::PhysicalDeviceDescriptorIndexingFeatures &features) {
@@ -160,14 +164,9 @@ int main(int argc, const char** argv) {
             }
     );
     */
-    //features.requireExtension(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
-    /*
-    features.requireExtensionFeature<vk::PhysicalDeviceFeatures>(
-            VK_EXT_MULTI_DRAW_EXTENSION_NAME, [](vk::PhysicalDeviceFeatures &features){
-                features.setMultiDrawIndirect(true);
-            }
-    );
-    */
+
+
+
 
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
