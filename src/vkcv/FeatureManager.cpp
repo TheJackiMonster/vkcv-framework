@@ -87,6 +87,7 @@ m_physicalDevice.getFeatures2(&query)
 		vkcv_check_feature(variableMultisampleRate);
 		vkcv_check_feature(vertexPipelineStoresAndAtomics);
 		vkcv_check_feature(wideLines);
+        vkcv_check_feature(multiDrawIndirect);
 		
 		return true;
 	}
@@ -291,8 +292,8 @@ m_physicalDevice.getFeatures2(&query)
 		
 		return true;
 	}
-	
-	vk::BaseOutStructure* FeatureManager::findFeatureStructure(vk::StructureType type) const {
+
+    vk::BaseOutStructure* FeatureManager::findFeatureStructure(vk::StructureType type) const {
 		for (auto& base : m_featuresExtensions) {
 			if (base->sType == type) {
 				return base;
@@ -437,5 +438,4 @@ m_physicalDevice.getFeatures2(&query)
 	const vk::PhysicalDeviceFeatures2& FeatureManager::getFeatures() const {
 		return m_featuresBase;
 	}
-	
 }

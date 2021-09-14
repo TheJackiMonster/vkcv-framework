@@ -82,26 +82,37 @@ void addMeshToIndirectDraw(const vkcv::asset::Scene &scene,
 
 			if(vertexGroup.indexBuffer.type == vkcv::asset::IndexType::UINT8)
             {
-				std::vector<uint32_t> indexBuffer;
 				for(auto index : vertexGroup.indexBuffer.data)
 				{
-                    indexBuffer.push_back(static_cast<uint32_t>(index));
-				}
-				compiledIndexBuffer.insert(compiledIndexBuffer.end(),
-										   indexBuffer.begin(),
-										   indexBuffer.end());
+                    uint32_t index32 = static_cast<uint32_t>(index);
+                    uint8_t firstByte = index32;
+                    uint8_t secondByte = index32 >> 8;
+                    uint8_t thirdByte = index32 >> 16;
+                    uint8_t fourthByte = index32 >> 24;
+
+                    compiledIndexBuffer.push_back(firstByte);
+                    compiledIndexBuffer.push_back(secondByte);
+                    compiledIndexBuffer.push_back(thirdByte);
+                    compiledIndexBuffer.push_back(fourthByte);
+                }
 			}
             else if(vertexGroup.indexBuffer.type == vkcv::asset::IndexType::UINT16)
             {
-				std::vector<uint32_t> indexBuffer;
-				for(int i = 0; i < vertexGroup.indexBuffer.data.size(); i+=2)
-				{
+                for(auto i = 0; i < vertexGroup.indexBuffer.data.size(); i = i+2)
+                {
                     uint16_t index16 = *reinterpret_cast<const uint16_t*>(&vertexGroup.indexBuffer.data[i]);
-					indexBuffer.push_back(static_cast<uint32_t>(index16));
-				}
-				compiledIndexBuffer.insert(compiledIndexBuffer.end(),
-										   indexBuffer.begin(),
-										   indexBuffer.end());
+                    uint32_t index32 = static_cast<uint32_t>(index16);
+
+                    uint8_t firstByte = index32;
+                    uint8_t secondByte = index32 >> 8;
+                    uint8_t thirdByte = index32 >> 16;
+                    uint8_t fourthByte = index32 >> 24;
+
+                    compiledIndexBuffer.push_back(firstByte);
+                    compiledIndexBuffer.push_back(secondByte);
+                    compiledIndexBuffer.push_back(thirdByte);
+                    compiledIndexBuffer.push_back(fourthByte);
+                }
 			}
 			else
 			{
@@ -120,6 +131,7 @@ int main(int argc, const char** argv) {
 	uint32_t windowHeight = 600;
 
 	vkcv::Features features;
+    /*
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
             VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, [](vk::PhysicalDeviceDescriptorIndexingFeatures &features) {
@@ -147,6 +159,15 @@ int main(int argc, const char** argv) {
                 features.setRuntimeDescriptorArray(true);
             }
     );
+    */
+    //features.requireExtension(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
+    /*
+    features.requireExtensionFeature<vk::PhysicalDeviceFeatures>(
+            VK_EXT_MULTI_DRAW_EXTENSION_NAME, [](vk::PhysicalDeviceFeatures &features){
+                features.setMultiDrawIndirect(true);
+            }
+    );
+    */
 
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
@@ -227,9 +248,6 @@ int main(int argc, const char** argv) {
                           compiledIndexBuffer,
                           indexedIndirectCommands);
 
-    // DEBUG
-    std::vector<uint32_t> testVec;
-    testVec.insert(testVec.end(), compiledIndexBuffer.begin(), compiledIndexBuffer.end());
 
     vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(
             vkcv::BufferType::INDIRECT,
@@ -279,7 +297,7 @@ int main(int argc, const char** argv) {
 			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize> (0), compiledInterleavedVertexBuffer.getVulkanHandle() )
 	};
 
-	const vkcv::Mesh mesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), compiledIndexBuffer.size(), vkcv::IndexBitCount::Bit32);
+	const vkcv::Mesh mesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), 0, vkcv::IndexBitCount::Bit32);
 
 
 	//vkcv::DescriptorBindings descriptorBindings = sponzaProgram.getReflectedDescriptors().at(0);
@@ -398,7 +416,7 @@ int main(int argc, const char** argv) {
 			mesh,
 			renderTargets,
 			indirectBuffer,
-            1,
+            indexedIndirectCommands.size(),
 			windowHandle);
 
 		core.prepareSwapchainImageForPresent(cmdStream);

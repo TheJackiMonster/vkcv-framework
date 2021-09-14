@@ -78,7 +78,10 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		bool checkSupport(const vk::PhysicalDeviceMeshShaderFeaturesNV& features, bool required) const;
-		
+
+        [[nodiscard]]
+        bool checkSupport(const vk::PhysicalDeviceMultiDrawFeaturesEXT& features, bool required) const;
+
 		vk::BaseOutStructure* findFeatureStructure(vk::StructureType type) const;
 	
 	public:
