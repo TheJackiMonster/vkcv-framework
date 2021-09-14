@@ -47,7 +47,7 @@ int main(int argc, const char** argv) {
 		applicationName,
 		initialWidth,
 		initialHeight,
-		false);
+		true);
 
 	vkcv::Core core = vkcv::Core::create(
 		window,
@@ -58,21 +58,21 @@ int main(int argc, const char** argv) {
 	);
 
 	// images
-	vkcv::Image outputImage = core.createImage(
+	vkcv::ImageHandle outputImage = core.createImage(
 		vk::Format::eR32G32B32A32Sfloat,
 		initialWidth,
 		initialHeight,
 		1,
 		false,
-		true);
+		true).getHandle();
 
-	vkcv::Image meanImage = core.createImage(
+	vkcv::ImageHandle meanImage = core.createImage(
 		vk::Format::eR32G32B32A32Sfloat,
 		initialWidth,
 		initialHeight,
 		1,
 		false,
-		true);
+		true).getHandle();
 
 	vkcv::shader::GLSLCompiler compiler;
 
@@ -103,8 +103,8 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorWrites imageCombineDescriptorWrites;
 	imageCombineDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(0, outputImage.getHandle()),
-		vkcv::StorageImageDescriptorWrite(1, meanImage.getHandle())
+		vkcv::StorageImageDescriptorWrite(0, outputImage),
+		vkcv::StorageImageDescriptorWrite(1, meanImage)
 	};
 	core.writeDescriptorSet(imageCombineDescriptorSet, imageCombineDescriptorWrites);
 
@@ -138,7 +138,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorWrites imageClearDescriptorWrites;
 	imageClearDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(0, meanImage.getHandle())
+		vkcv::StorageImageDescriptorWrite(0, meanImage)
 	};
 	core.writeDescriptorSet(imageClearDescriptorSet, imageClearDescriptorWrites);
 
@@ -186,7 +186,7 @@ int main(int argc, const char** argv) {
 		vkcv::BufferDescriptorWrite(1, planeBuffer.getHandle()),
 		vkcv::BufferDescriptorWrite(2, materialBuffer.getHandle())};
 	traceDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(3, outputImage.getHandle())};
+		vkcv::StorageImageDescriptorWrite(3, outputImage)};
 	core.writeDescriptorSet(traceDescriptorSet, traceDescriptorWrites);
 
 	vkcv::PipelineHandle tracePipeline = core.createComputePipeline(
@@ -213,6 +213,9 @@ int main(int argc, const char** argv) {
 	float cameraYawPrevious     = 0;
 	glm::vec3 cameraPositionPrevious = glm::vec3(0);
 
+	uint32_t widthPrevious  = initialWidth;
+	uint32_t heightPrevious = initialHeight;
+
 	while (window.isWindowOpen())
 	{
 		vkcv::Window::pollEvents();
@@ -220,6 +223,49 @@ int main(int argc, const char** argv) {
 		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
 		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
 			continue;
+		}
+
+		if (swapchainWidth != widthPrevious || swapchainHeight != heightPrevious) {
+
+			// resize images
+			outputImage = core.createImage(
+				vk::Format::eR32G32B32A32Sfloat,
+				swapchainWidth,
+				swapchainHeight,
+				1,
+				false,
+				true).getHandle();
+
+			meanImage = core.createImage(
+				vk::Format::eR32G32B32A32Sfloat,
+				swapchainWidth,
+				swapchainHeight,
+				1,
+				false,
+				true).getHandle();
+
+			// update descriptor sets
+			traceDescriptorWrites.storageImageWrites = {
+			vkcv::StorageImageDescriptorWrite(3, outputImage) };
+			core.writeDescriptorSet(traceDescriptorSet, traceDescriptorWrites);
+
+			vkcv::DescriptorWrites imageCombineDescriptorWrites;
+			imageCombineDescriptorWrites.storageImageWrites = {
+				vkcv::StorageImageDescriptorWrite(0, outputImage),
+				vkcv::StorageImageDescriptorWrite(1, meanImage)
+			};
+			core.writeDescriptorSet(imageCombineDescriptorSet, imageCombineDescriptorWrites);
+
+			vkcv::DescriptorWrites imageClearDescriptorWrites;
+			imageClearDescriptorWrites.storageImageWrites = {
+				vkcv::StorageImageDescriptorWrite(0, meanImage)
+			};
+			core.writeDescriptorSet(imageClearDescriptorSet, imageClearDescriptorWrites);
+
+			widthPrevious  = swapchainWidth;
+			heightPrevious = swapchainHeight;
+
+			clearMeanImage = true;
 		}
 
 		auto end = std::chrono::system_clock::now();
@@ -249,13 +295,13 @@ int main(int argc, const char** argv) {
 
 		glm::vec3 cameraPosition = cameraManager.getActiveCamera().getPosition();
 
-		if(glm::distance(cameraPosition, cameraPositionPrevious) > 0.001)
+		if(glm::distance(cameraPosition, cameraPositionPrevious) > 0.0001)
 			clearMeanImage = true;	// camera moved
 
 		cameraPositionPrevious = cameraPosition;
 
 		if (clearMeanImage) {
-			core.prepareImageForStorage(cmdStream, meanImage.getHandle());
+			core.prepareImageForStorage(cmdStream, meanImage);
 
 			core.recordComputeDispatchToCmdStream(cmdStream,
 				imageClearPipeline,
@@ -288,7 +334,7 @@ int main(int argc, const char** argv) {
 			static_cast<uint32_t> (std::ceil(swapchainHeight / 16.f)),
 			1 };
 
-		core.prepareImageForStorage(cmdStream, outputImage.getHandle());
+		core.prepareImageForStorage(cmdStream, outputImage);
 
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			tracePipeline,
@@ -296,8 +342,8 @@ int main(int argc, const char** argv) {
 			{ vkcv::DescriptorSetUsage(0,core.getDescriptorSet(traceDescriptorSet).vulkanHandle) },
 			pushConstantsCompute);
 
-		core.prepareImageForStorage(cmdStream, meanImage.getHandle());
-		core.recordImageMemoryBarrier(cmdStream, outputImage.getHandle());
+		core.prepareImageForStorage(cmdStream, meanImage);
+		core.recordImageMemoryBarrier(cmdStream, outputImage);
 
 		// combine images
 		core.recordComputeDispatchToCmdStream(cmdStream,
@@ -306,14 +352,14 @@ int main(int argc, const char** argv) {
 			{ vkcv::DescriptorSetUsage(0,core.getDescriptorSet(imageCombineDescriptorSet).vulkanHandle) },
 			vkcv::PushConstants(0));
 
-		core.recordImageMemoryBarrier(cmdStream, meanImage.getHandle());
+		core.recordImageMemoryBarrier(cmdStream, meanImage);
 
 		// present image
 		const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
 		vkcv::DescriptorWrites presentDescriptorWrites;
 		presentDescriptorWrites.storageImageWrites = {
-			vkcv::StorageImageDescriptorWrite(0, meanImage.getHandle()),
+			vkcv::StorageImageDescriptorWrite(0, meanImage),
 			vkcv::StorageImageDescriptorWrite(1, swapchainInput) };
 		core.writeDescriptorSet(presentDescriptorSet, presentDescriptorWrites);
 
