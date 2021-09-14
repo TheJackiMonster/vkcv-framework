@@ -59,7 +59,7 @@ void main() {
             densitySum += mass * poly6(dist);
         }
     }
-    outParticle[id].density = densitySum;
+    outParticle[id].density = max(densitySum, 0.001f);
     outParticle[id].pressure = max((densitySum - offset), 0) * gasConstant;
     outParticle[id].position = inParticle[id].position;
     outParticle[id].velocity = inParticle[id].velocity;

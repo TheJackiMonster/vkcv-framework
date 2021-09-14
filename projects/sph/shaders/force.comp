@@ -4,7 +4,7 @@
 const float PI = 3.1415926535897932384626433832795;
 
 #define h 0.045
-#define gravity 9.81
+#define gravity -9.81
 #define mass 0.1
 #define viscosity 1500
 
