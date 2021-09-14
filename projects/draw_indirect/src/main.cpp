@@ -357,6 +357,7 @@ int main(int argc, const char** argv) {
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
+	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 20.f);
 
     vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
@@ -389,7 +390,12 @@ int main(int argc, const char** argv) {
         vkcv::camera::Camera cam = cameraManager.getActiveCamera();
 
 		vkcv::PushConstants pushConstants(sizeof(glm::mat4));
-		pushConstants.appendDrawcall(cam.getProjection() * cam.getView());
+
+		for( auto& mesh : asset_scene.meshes)
+		{
+			glm::mat4 modelMatrix = glm::make_mat4(mesh.modelMatrix.data());
+			pushConstants.appendDrawcall(cam.getProjection() * cam.getView() * modelMatrix);
+		}
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);

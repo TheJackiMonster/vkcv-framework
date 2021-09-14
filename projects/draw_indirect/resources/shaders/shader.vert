@@ -14,7 +14,7 @@ layout( push_constant ) uniform constants{
 
 void main()
 {
-	gl_Position = mvp * vec4(inPosition * 0.01, 1.0);
+	gl_Position = mvp * vec4(inPosition, 1.0);
 	passNormal  = inNormal;
     passUV      = inUV;
 }
