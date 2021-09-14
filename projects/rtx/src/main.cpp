@@ -173,22 +173,7 @@ int main(int argc, const char** argv) {
 
 	vk::Pipeline rtxPipeline = rtxModule.getPipeline();
 	vk::PipelineLayout rtxPipelineLayout = rtxModule.getPipelineLayout();
-	/*
-	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
-		sceneShaderProgram,
-		UINT32_MAX,
-		UINT32_MAX,
-		scenePass,
-		{sceneLayout},
-		{ core.getDescriptorSetLayout(material0.getDescriptorSetLayout()).vulkanHandle },
-		true };
-	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
 
-	if (!scenePipeline) {
-		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
-		return EXIT_FAILURE;
-	}
-	*/
 	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
@@ -241,15 +226,6 @@ int main(int argc, const char** argv) {
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 
-		/*
-		auto recordMesh = [](const glm::mat4& MVP, const glm::mat4& M,
-							 vkcv::PushConstants &pushConstants,
-							 vkcv::DrawcallInfo& drawcallInfo) {
-			pushConstants.appendDrawcall(MVP);
-		};
-		*/
-
-
 		core.recordRayGenerationToCmdStream(
             cmdStream,
             rtxPipeline,
@@ -262,15 +238,6 @@ int main(int argc, const char** argv) {
 			},
             pushConstantsRTX,
 			windowHandle);
-
-//		scene.recordDrawcalls(cmdStream,
-//							  cameraManager.getActiveCamera(),
-//							  scenePass,
-//							  scenePipeline,    // TODO: here we need our RTX pipeline... but as a vkcv::PipelineHandle!
-//							  sizeof(glm::mat4),
-//							  recordMesh,
-//							  renderTargets,
-//							  windowHandle);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

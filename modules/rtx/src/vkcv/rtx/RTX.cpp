@@ -265,10 +265,6 @@ namespace vkcv::rtx {
             m_pipelineLayout // vk::PipelineLayout layout_ = {}
         );
 
-        // WTF is this?
-//        vk::DispatchLoaderDynamic dld = vk::DispatchLoaderDynamic( (PFN_vkGetInstanceProcAddr) m_core->getContext().getInstance().getProcAddr("vkGetInstanceProcAddr") );
-//        dld.init(m_core->getContext().getInstance());
-
         m_pipeline = vk::Pipeline(m_core->getContext().getDevice().createRayTracingPipelineKHR(vk::DeferredOperationKHR(), vk::PipelineCache(), rtxPipelineInfo, nullptr, m_asManager->getDispatcher()));
         if (!m_pipeline) {
             vkcv_log(LogLevel::ERROR, "The RTX Pipeline could not be created!");
