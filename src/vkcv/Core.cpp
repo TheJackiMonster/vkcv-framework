@@ -335,6 +335,7 @@ namespace vkcv
             const PassHandle                                    renderpassHandle,
             const GraphicsPipelineHandle                        &pipelineHandle,
             const PushConstants                                 &pushConstantData,
+            const vkcv::DescriptorSetHandle                     &compiledDescriptorSet,
             const vkcv::Mesh                                    &compiledMesh,
             const std::vector<ImageHandle>                      &renderTargets,
             const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
@@ -397,34 +398,15 @@ namespace vkcv
 					pushConstantData.getDrawcallData(0));
 			}
 
-            /*
-            for (uint32_t i = 0; i < drawcalls[i].mesh.vertexBufferBindings.size(); i++)
-            {
-                const auto &vertexBinding = drawcalls[i].mesh.vertexBufferBindings[i];
-                cmdBuffer.bindVertexBuffers(i, vertexBinding.buffer, vertexBinding.offset);
-            }
+            vkcv::DescriptorSet descSet = m_DescriptorManager->getDescriptorSet(compiledDescriptorSet);
 
+            cmdBuffer.bindDescriptorSets(
+                    vk::PipelineBindPoint::eGraphics,
+                    pipelineLayout,
+                    0,
+                    descSet.vulkanHandle,
+                    nullptr);
 
-            for (const auto &descriptorUsage : drawcalls[i].descriptorSets)
-            {
-                cmdBuffer.bindDescriptorSets(
-                        vk::PipelineBindPoint::eGraphics,
-                        pipelineLayout,
-                        descriptorUsage.setLocation,
-                        descriptorUsage.vulkanHandle,
-                        nullptr);
-            }
-
-            if (drawcalls[i].mesh.indexBuffer)
-                cmdBuffer.bindIndexBuffer(drawcalls[i].mesh.indexBuffer, 0, getIndexType(drawcalls[i].mesh.indexBitCount));
-             */
-
-//            for (uint32_t i = 0; i < compiledMesh.vertexBufferBindings.size(); i++)
-//            {
-//                cmdBuffer.bindVertexBuffers(i,
-//                                            compiledMesh.vertexBufferBindings[i].buffer,
-//                                            compiledMesh.vertexBufferBindings[i].offset);
-//            }
 			vk::DeviceSize deviceSize = 0;
 			cmdBuffer.bindVertexBuffers(0, 1, &compiledMesh.vertexBufferBindings[0].buffer,&deviceSize);
             cmdBuffer.bindIndexBuffer(compiledMesh.indexBuffer, 0, getIndexType(compiledMesh.indexBitCount));

@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
-#include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
@@ -11,6 +10,14 @@ struct Vertex
 	glm::vec3 position;
 	glm::vec3 normal;
 	glm::vec2 uv;
+};
+
+struct CompiledMaterial
+{
+    std::vector<vkcv::Image> baseColor;
+    std::vector<vkcv::Image> metalRough;
+    std::vector<vkcv::Image> normal;
+    std::vector<vkcv::Image> occlusion;
 };
 
 std::vector<std::vector<Vertex>> interleaveScene(vkcv::asset::Scene scene)
@@ -58,18 +65,71 @@ std::vector<std::vector<Vertex>> interleaveScene(vkcv::asset::Scene scene)
 }
 
 // Assumes the meshes use index buffers
-
-void addMeshToIndirectDraw(const vkcv::asset::Scene &scene,
-                           std::vector<uint8_t> &compiledVertexBuffer,
-                           std::vector<uint8_t> &compiledIndexBuffer,
-                           std::vector<vk::DrawIndexedIndirectCommand> &indexedIndirectCommands)
+void compileMeshForIndirectDraw(vkcv::Core &core,
+                                const vkcv::asset::Scene &scene,
+                                std::vector<uint8_t> &compiledVertexBuffer,
+                                std::vector<uint8_t> &compiledIndexBuffer,
+                                CompiledMaterial &compiledMat,
+                                std::vector<vk::DrawIndexedIndirectCommand> &indexedIndirectCommands)
 {
+    vkcv::Image pseudoImg = core.createImage(vk::Format::eR8G8B8A8Srgb, 2, 2);
+    std::vector<uint8_t> pseudoData = {0, 0, 0, 0};
+    pseudoImg.fill(pseudoData.data());
+    pseudoImg.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
 	uint32_t vertexOffset = 0;
     for (const auto &mesh : scene.meshes)
     {
         for(auto &vertexGroupIndex : mesh.vertexGroups)
         {
             auto &vertexGroup = scene.vertexGroups[vertexGroupIndex];
+
+            auto &material      = scene.materials[vertexGroup.materialIndex];
+
+            if(material.baseColor == -1)
+            {
+                std::cout << "baseColor is -1! Pushing pseudo-texture!" << std::endl;
+                compiledMat.baseColor.push_back(pseudoImg);
+            }
+            else
+            {
+                auto &baseColor     = scene.textures[material.baseColor];
+
+                vkcv::Image baseColorImg = core.createImage(vk::Format::eR8G8B8A8Srgb, baseColor.w, baseColor.h);
+                baseColorImg.fill(baseColor.data.data());
+                baseColorImg.generateMipChainImmediate();
+                baseColorImg.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+                compiledMat.baseColor.push_back(baseColorImg);
+            }
+
+
+            //auto &metalRough    = scene.textures[material.metalRough];
+            //auto &normal        = scene.textures[material.normal];
+            //auto &occlusion     = scene.textures[material.occlusion];
+
+
+            //vkcv::Image metalRoughImg = core.createImage(vk::Format::eR8G8B8A8Srgb, metalRough.w, metalRough.h);
+            //vkcv::Image normalImg = core.createImage(vk::Format::eR8G8B8A8Srgb, normal.w, normal.h);
+            //vkcv::Image occlusionImg = core.createImage(vk::Format::eR8G8B8A8Srgb, occlusion.w, occlusion.h);
+
+
+
+            //metalRoughImg.fill(baseColor.data.data());
+            //metalRoughImg.generateMipChainImmediate();
+            //metalRoughImg.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+            //normalImg.fill(baseColor.data.data());
+            //normalImg.generateMipChainImmediate();
+            //normalImg.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+            //occlusionImg.fill(baseColor.data.data());
+            //occlusionImg.generateMipChainImmediate();
+            //occlusionImg.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+            //compiledMat.metalRough.push_back(metalRoughImg);
+            //compiledMat.normal.push_back(normalImg);
+            //compiledMat.occlusion.push_back(occlusionImg);
 
             indexedIndirectCommands.emplace_back(static_cast<uint32_t>(vertexGroup.numIndices),
                                                  1,
@@ -135,11 +195,11 @@ int main(int argc, const char** argv) {
 
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    //features.requireExtension(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
     features.requireFeature([](vk::PhysicalDeviceFeatures &features){
         features.setMultiDrawIndirect(true);
     });
-    /*
+
+    features.requireExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
     features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
             VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, [](vk::PhysicalDeviceDescriptorIndexingFeatures &features) {
                 // features.setShaderInputAttachmentArrayDynamicIndexing(true);
@@ -166,7 +226,7 @@ int main(int argc, const char** argv) {
                 features.setRuntimeDescriptorArray(true);
             }
     );
-    */
+
 
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
@@ -205,7 +265,6 @@ int main(int argc, const char** argv) {
 			vk::Format::eD32Sfloat
 	);
 
-
 	vkcv::PassConfig passDefinition({ present_color_attachment, depth_attachment });
 	vkcv::PassHandle passHandle = core.createPass(passDefinition);
 	if (!passHandle) {
@@ -229,39 +288,25 @@ int main(int argc, const char** argv) {
     const std::vector<vkcv::VertexAttachment> vertexAttachments = sponzaProgram.getVertexAttachments();
 	const vkcv::VertexLayout sponzaVertexLayout({ vkcv::VertexBinding(0, { vertexAttachments }) });
 
-    // recreation of VertexBufferBindings YET AGAIN,
-    // since these are used in the command buffer to bind and draw from the vertex shaders
-
-
-    std::vector<vk::DrawIndexedIndirectCommand> indexedIndirectCommands;
     std::vector<uint8_t> compiledVertexBuffer;
     std::vector<uint8_t> compiledIndexBuffer;
+    CompiledMaterial compiledMaterial;
+    std::vector<vk::DrawIndexedIndirectCommand> indexedIndirectCommands;
 
-    addMeshToIndirectDraw(asset_scene,
-                          compiledVertexBuffer,
-                          compiledIndexBuffer,
-                          indexedIndirectCommands);
-
-    vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(
-            vkcv::BufferType::INDIRECT,
-            indexedIndirectCommands.size() * sizeof(vk::DrawIndexedIndirectCommand),
-            vkcv::BufferMemoryType::DEVICE_LOCAL);
-    indirectBuffer.fill(indexedIndirectCommands);
+    compileMeshForIndirectDraw(core,
+                               asset_scene,
+                               compiledVertexBuffer,
+                               compiledIndexBuffer,
+                               compiledMaterial,
+                               indexedIndirectCommands);
 
 	std::vector<std::vector<Vertex>> interleavedVertices = interleaveScene(asset_scene);
-
 	std::vector<Vertex> compiledInterleavedBuffer;
 	for(auto& vertexGroup : interleavedVertices )
 	{
 		compiledInterleavedBuffer.insert(compiledInterleavedBuffer.end(),vertexGroup.begin(),vertexGroup.end());
 	}
-/*
-    auto vkCompiledVertexBuffer = core.createBuffer<uint8_t>(
-            vkcv::BufferType::VERTEX,
-            compiledVertexBuffer.size(),
-            vkcv::BufferMemoryType::DEVICE_LOCAL);
-    vkCompiledVertexBuffer.fill(compiledVertexBuffer.data());
-*/
+
 	auto compiledInterleavedVertexBuffer = core.createBuffer<Vertex>(
 			vkcv::BufferType::VERTEX,
 			compiledInterleavedBuffer.size(),
@@ -274,62 +319,56 @@ int main(int argc, const char** argv) {
             compiledIndexBuffer.size(),
             vkcv::BufferMemoryType::DEVICE_LOCAL);
     vkCompiledIndexBuffer.fill(compiledIndexBuffer.data());
-/*
-    std::vector<vkcv::asset::VertexAttribute> attributes = asset_scene.vertexGroups[0].vertexBuffer.attributes;
-    std::sort(attributes.begin(),
-              attributes.end(),
-              [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y)
-              {return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);});
 
-     const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-            vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vkCompiledVertexBuffer.getVulkanHandle()),
-            vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vkCompiledVertexBuffer.getVulkanHandle()),
-            vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vkCompiledVertexBuffer.getVulkanHandle()) };
-*/
+    vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(
+            vkcv::BufferType::INDIRECT,
+            indexedIndirectCommands.size() * sizeof(vk::DrawIndexedIndirectCommand),
+            vkcv::BufferMemoryType::DEVICE_LOCAL);
+    indirectBuffer.fill(indexedIndirectCommands);
+
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
 			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize> (0), compiledInterleavedVertexBuffer.getVulkanHandle() )
 	};
 
-	const vkcv::Mesh mesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), 0, vkcv::IndexBitCount::Bit32);
+	const vkcv::Mesh compiledMesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), 0, vkcv::IndexBitCount::Bit32);
 
+    //assert(compiledMaterial.baseColor.size() == compiledMaterial.metalRough.size());
 
-	//vkcv::DescriptorBindings descriptorBindings = sponzaProgram.getReflectedDescriptors().at(0);
-	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout({});
-	//vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
+	vkcv::DescriptorBindings descriptorBindings = sponzaProgram.getReflectedDescriptors().at(0);
+    descriptorBindings[1].descriptorCount = compiledMaterial.baseColor.size();
+    //descriptorBindings[2].descriptorCount = compiledMaterial.metalRough.size();
+    //descriptorBindings[3].descriptorCount = compiledMaterial.normal.size();
+    //descriptorBindings[4].descriptorCount = compiledMaterial.occlusion.size();
 
-    /*
-    vkcv::asset::Texture &tex = mesh.textures[0];
-    vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
-    texture.fill(tex.data.data());
-    texture.generateMipChainImmediate();
-    texture.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-    texturesArray.push_back(texture);
+	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
+	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
-    vkcv::SamplerHandle sampler = core.createSampler(
-        vkcv::SamplerFilterType::LINEAR,
-        vkcv::SamplerFilterType::LINEAR,
-        vkcv::SamplerMipmapMode::LINEAR,
-        vkcv::SamplerAddressMode::REPEAT
+    vkcv::SamplerHandle standardSampler = core.createSampler(
+            vkcv::SamplerFilterType::LINEAR,
+            vkcv::SamplerFilterType::LINEAR,
+            vkcv::SamplerMipmapMode::LINEAR,
+            vkcv::SamplerAddressMode::REPEAT
     );
-    */
 
-        /*
-        vkcv::DescriptorWrites setWrites;
-        std::vector<vkcv::SampledImageDescriptorWrite> texturesArrayWrites;
-        for(uint32_t i = 0; i < 6; i++)
-        {
-            texturesArrayWrites.push_back(vkcv::SampledImageDescriptorWrite(1,
-                                                                            texturesArray[i].getHandle(),
-                                                                            0,
-                                                                            false,
-                                                                            i));
-        }
+    std::vector<vkcv::SampledImageDescriptorWrite> textureArrayWrites;
+    for(uint32_t i = 0; i < compiledMaterial.baseColor.size(); i++)
+    {
+        vkcv::SampledImageDescriptorWrite baseColorWrite(1, compiledMaterial.baseColor[i].getHandle(), 0, false, i);
+        //vkcv::SampledImageDescriptorWrite metalRoughWrite(1, compiledMaterial.metalRough[i].getHandle(), 0, false, i);
+        //vkcv::SampledImageDescriptorWrite normalWrite(2, compiledMaterial.normal[i].getHandle(), 0, false, i);
+        //vkcv::SampledImageDescriptorWrite occlusionWrite(3, compiledMaterial.occlusion[i].getHandle(), 0, false, i);
 
-        setWrites.sampledImageWrites	= texturesArrayWrites;
-        setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(0, sampler) };
+        textureArrayWrites.push_back(baseColorWrite);
+        //textureArrayWrites.push_back(metalRoughWrite);
+        //textureArrayWrites.push_back(normalWrite);
+        //textureArrayWrites.push_back(occlusionWrite);
+    }
 
-        core.writeDescriptorSet(descriptorSet, setWrites);
-    */
+    vkcv::DescriptorWrites setWrites;
+    setWrites.sampledImageWrites	= textureArrayWrites;
+    setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(0, standardSampler) };
+    core.writeDescriptorSet(descriptorSet, setWrites);
+
 
 	const vkcv::GraphicsPipelineConfig sponzaPipelineConfig {
         sponzaProgram,
@@ -347,8 +386,6 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-
-
 
 
 
@@ -405,7 +442,8 @@ int main(int argc, const char** argv) {
 			passHandle,
             sponzaPipelineHandle,
             pushConstants,
-			mesh,
+            descriptorSet,
+            compiledMesh,
 			renderTargets,
 			indirectBuffer,
             indexedIndirectCommands.size(),

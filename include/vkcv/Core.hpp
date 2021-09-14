@@ -336,6 +336,7 @@ namespace vkcv
 				const PassHandle                                    renderpassHandle,
 				const GraphicsPipelineHandle                        &pipelineHandle,
 				const PushConstants                                 &pushConstantData,
+                const vkcv::DescriptorSetHandle                     &compiledDescriptorSet,
 				const vkcv::Mesh                                    &compiledMesh,
 				const std::vector<ImageHandle>                      &renderTargets,
 				const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
