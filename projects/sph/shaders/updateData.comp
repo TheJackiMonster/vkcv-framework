@@ -41,44 +41,44 @@ void main() {
     }
 
     vec3 accel = inParticle[id].force / inParticle[id].density;
-    vec3 vel_new = inParticle[id].velocity + dt * accel;
-    vec3 pos_new = inParticle[id].position + dt * vel_new;
+    vec3 vel_new = inParticle[id].velocity + (dt * accel);
+    vec3 pos_new = inParticle[id].position + (dt * vel_new);
 
     // Überprüfe Randbedingungen x
-    if (inParticle[id].position.x < 0.2)
+    if (inParticle[id].position.x < -1.0)
     {
         vel_new.x *= -ABSORBTION;
-        pos_new.x = 0.2;
+        pos_new.x = -1.0;
     }
-    else if (inParticle[id].position.x > 0.6)
+    else if (inParticle[id].position.x > 1.0)
     {
         vel_new.x *= -ABSORBTION;
-        pos_new.x = 0.6;
+        pos_new.x = 1.0;
     }
 
     // Überprüfe Randbedingungen y
-    if (inParticle[id].position.y < 0.2)
+    if (inParticle[id].position.y < -1.0)
     {
         vel_new.y *= -ABSORBTION;
-        pos_new.y = 0.2;
+        pos_new.y = -1.0;
 
     }
-    else if (inParticle[id].position.y > 0.6)
+    else if (inParticle[id].position.y > 1.0)
     {
         vel_new.y *= -ABSORBTION;
-        pos_new.y = 0.6;
+        pos_new.y = 1.0;
     }
 
     // Überprüfe Randbedingungen z
-    if (inParticle[id].position.z < 0.2 )
+    if (inParticle[id].position.z < -1.0 )
     {
         vel_new.z *= -ABSORBTION;
-        pos_new.z = 0.2;
+        pos_new.z = -1.0;
     }
-    else if (inParticle[id].position.z > 0.6 )
+    else if (inParticle[id].position.z > 1.0 )
     {
         vel_new.z *= -ABSORBTION;
-        pos_new.z = 0.6;
+        pos_new.z = 1.0;
     }
 
     outParticle[id].force = inParticle[id].force;
