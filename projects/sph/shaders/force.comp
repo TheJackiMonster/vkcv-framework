@@ -62,10 +62,13 @@ void main() {
 
     for(uint i = 0; i < inParticle.length(); i++)  
     {
-        vec3 dir = inParticle[id].position - inParticle[i].position;
-        float dist = length(dir);
-        pressureForce += mass * -(inParticle[id].pressure + inParticle[i].pressure)/(2.f * inParticle[i].density) * spiky(dist) * normalize(dir);
-        viscosityForce += mass * (inParticle[id].velocity - inParticle[i].velocity)/inParticle[i].density * laplacian(dist);
+        if (id != i)
+        {
+            vec3 dir = inParticle[id].position - inParticle[i].position;
+            float dist = length(dir);
+            pressureForce += mass * -(inParticle[id].pressure + inParticle[i].pressure)/(2.f * inParticle[i].density) * spiky(dist) * normalize(dir);
+            viscosityForce += mass * (inParticle[id].velocity - inParticle[i].velocity)/inParticle[i].density * laplacian(dist);
+        }
     }
     viscosityForce *= viscosity;
 
