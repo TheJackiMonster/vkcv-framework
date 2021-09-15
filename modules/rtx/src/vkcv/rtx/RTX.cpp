@@ -265,21 +265,25 @@ namespace vkcv::rtx {
             m_pipelineLayout // vk::PipelineLayout layout_ = {}
         );
 
-        m_pipeline = vk::Pipeline(m_core->getContext().getDevice().createRayTracingPipelineKHR(vk::DeferredOperationKHR(), vk::PipelineCache(), rtxPipelineInfo, nullptr, m_asManager->getDispatcher()));
-        if (!m_pipeline) {
+        auto pipelineResult = m_core->getContext().getDevice().createRayTracingPipelineKHR(
+                vk::DeferredOperationKHR(),
+                vk::PipelineCache(),
+                rtxPipelineInfo,
+                nullptr,
+                m_asManager->getDispatcher()
+        );
+
+        if (pipelineResult.result != vk::Result::eSuccess) {
             vkcv_log(LogLevel::ERROR, "The RTX Pipeline could not be created!");
         }
-        
+
+        m_pipeline = pipelineResult.value;
 
         m_core->getContext().getDevice().destroy(rayGenShaderModule);
         m_core->getContext().getDevice().destroy(rayMissShaderModule);
         m_core->getContext().getDevice().destroy(rayClosestHitShaderModule);
 
-
         createShaderBindingTable(descriptorSetLayouts.size());
-
-        
-        
     }
 
     vk::Pipeline RTXModule::getPipeline() {
