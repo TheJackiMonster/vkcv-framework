@@ -84,7 +84,7 @@ namespace vkcv::rtx {
         gpuBufferInstances.bufferType = RTXBufferType::GPU;
         gpuBufferInstances.deviceSize = sizeof(accelerationStructureInstanceKhr);
         gpuBufferInstances.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddressKHR
-                | vk::BufferUsageFlagBits::eTransferDst;
+                | vk::BufferUsageFlagBits::eTransferDst| vk::BufferUsageFlagBits::eTransferSrc;
         gpuBufferInstances.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eDeviceLocal;
 
         createBuffer(gpuBufferInstances);
@@ -298,39 +298,94 @@ namespace vkcv::rtx {
                 );
 
         // create buffer for acceleration structure
-        RTXBuffer blasBuffer; // scratch Buffer
+        RTXBuffer blasBuffer; // NOT scratch Buffer
         blasBuffer.bufferType = RTXBufferType::ACCELERATION;
         blasBuffer.deviceSize = asBuildSizesInfo.accelerationStructureSize;
         blasBuffer.data = nullptr;
         blasBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
                 | vk::BufferUsageFlagBits::eShaderDeviceAddress
                 | vk::BufferUsageFlagBits::eStorageBuffer;
-        blasBuffer.memoryPropertyFlagBits = {};
+        blasBuffer.memoryPropertyFlagBits = { vk::MemoryPropertyFlagBits::eDeviceLocal };
 
         createBuffer(blasBuffer);   // TODO: is this on GPU?
 
         // Create an empty AS object
         vk::AccelerationStructureCreateInfoKHR asCreateInfo(
-                {}, // creation flags
-                blasBuffer.vulkanHandle, // allocated AS buffer.
-                0,
-                asBuildSizesInfo.accelerationStructureSize, // size of the AS
-                asBuildInfo.type // type of the AS
+            {}, // creation flags
+            blasBuffer.vulkanHandle, // allocated AS buffer.
+            0,
+            asBuildSizesInfo.accelerationStructureSize, // size of the AS
+            asBuildInfo.type // type of the AS
         );
 
         // Create the intended AS object
         vk::AccelerationStructureKHR blasKHR;
         vk::Result res = m_core->getContext().getDevice().createAccelerationStructureKHR(
-                &asCreateInfo, // AS create info
-                nullptr, // allocator callbacks
-                &blasKHR, // the AS
-                m_rtxDispatcher
+            &asCreateInfo, // AS create info
+            nullptr, // allocator callbacks
+            &blasKHR, // the AS
+            m_rtxDispatcher
         );
-        if(res != vk::Result::eSuccess) {
+        if (res != vk::Result::eSuccess) {
             vkcv_log(vkcv::LogLevel::ERROR, "The Bottom Level Acceleration Structure could not be build! (%s)", vk::to_string(res).c_str());
         }
         asBuildInfo.setDstAccelerationStructure(blasKHR);
 
+        RTXBuffer scratchBuffer;
+        scratchBuffer.bufferType = RTXBufferType::SCRATCH;
+        scratchBuffer.deviceSize = asBuildSizesInfo.buildScratchSize;
+        scratchBuffer.data = nullptr;
+        scratchBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddress
+            | vk::BufferUsageFlagBits::eStorageBuffer; // maybe bugger usage ray tracing bit!!!
+        scratchBuffer.memoryPropertyFlagBits = { vk::MemoryPropertyFlagBits::eDeviceLocal };
+
+        createBuffer(scratchBuffer);
+
+        asBuildInfo.scratchData.deviceAddress = m_core->getContext().getDevice().getBufferAddressKHR(scratchBuffer.vulkanHandle, m_rtxDispatcher);
+
+        vk::AccelerationStructureBuildRangeInfoKHR* pointerToRangeInfo = &asRangeInfo;
+
+        //COMMAND-STUFF FOR ACTUAL ACCELERATIONSTRUCTURE BUILDING
+        vk::CommandPool commandPool;
+
+        vk::CommandPoolCreateInfo commandPoolCreateInfo;
+        commandPoolCreateInfo.queueFamilyIndex = m_core->getContext().getQueueManager().getComputeQueues()[0].familyIndex;
+
+        res = m_core->getContext().getDevice().createCommandPool(&commandPoolCreateInfo, nullptr, &commandPool);
+        if (res != vk::Result::eSuccess) {
+            vkcv_log(LogLevel::ERROR, "ASManager: command pool for Acceleration Strucutre Build could not be created! (%s)", vk::to_string(res).c_str());
+        }
+
+
+        vk::CommandBufferAllocateInfo bufferAllocateInfo;
+        bufferAllocateInfo.level = vk::CommandBufferLevel::ePrimary;
+        bufferAllocateInfo.commandPool = commandPool;
+        bufferAllocateInfo.commandBufferCount = 1;
+
+        vk::CommandBuffer commandBuffer;
+        res = m_core->getContext().getDevice().allocateCommandBuffers(&bufferAllocateInfo, &commandBuffer);
+        if (res != vk::Result::eSuccess) {
+            vkcv_log(LogLevel::ERROR, "ASManager: command buffer for Acceleration Strucutre Build could not be allocated! (%s)", vk::to_string(res).c_str());
+        }
+
+        beginCommandBuffer(commandBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+        commandBuffer.buildAccelerationStructuresKHR(1, &asBuildInfo, &pointerToRangeInfo, m_rtxDispatcher);
+        commandBuffer.end();
+
+        vk::SubmitInfo submitInfo;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &commandBuffer;
+
+        Queue queue = m_core->getContext().getQueueManager().getComputeQueues()[0];
+
+        queue.handle.submit(submitInfo);
+        queue.handle.waitIdle();
+
+        m_core->getContext().getDevice().freeCommandBuffers(commandPool, 1, &commandBuffer, m_rtxDispatcher);
+        m_core->getContext().getDevice().destroyCommandPool(commandPool, nullptr, m_rtxDispatcher);
+        m_core->getContext().getDevice().destroyBuffer(scratchBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
+        m_core->getContext().getDevice().freeMemory(scratchBuffer.deviceMemory, nullptr, m_rtxDispatcher);
+                
         BottomLevelAccelerationStructure blas = {
                 vertexBuffer,
                 indexBuffer,

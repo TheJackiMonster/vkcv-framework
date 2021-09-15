@@ -45,10 +45,11 @@ int main(int argc, const char** argv) {
 	
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
 
+	/*
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
 			argc > 1 ? argv[1] : "resources/Cube/cube.gltf"
 	));
-
+	*/
     // TODO: replace by bigger scene
 	vkcv::asset::Scene mesh;
 
@@ -64,8 +65,9 @@ int main(int argc, const char** argv) {
 
 	assert(!mesh.vertexGroups.empty());
 
+	/*
 	std::vector<uint8_t> vertices = {};
-	for (size_t i=0; i<mesh.vertexGroups[0].vertexBuffer.data.size(); i++) {
+	for (size_t i=0; i<mesh.vertexGroups[0].vertexBuffer.attributes[0].length; i++) {
 	    vertices.push_back(mesh.vertexGroups[0].vertexBuffer.data[i]);
 	}
 
@@ -73,7 +75,42 @@ int main(int argc, const char** argv) {
 	for (size_t i=0; i<mesh.vertexGroups[0].indexBuffer.data.size(); i++) {
 	    indices.push_back(mesh.vertexGroups[0].indexBuffer.data[i]);
 	}
+	*/
 
+	uint8_t cubeVertices[8*3] =
+	{
+		0,0,0,
+		2,0,0,
+		2,2,0,
+		0,2,0,
+		0,0,2,
+		2,0,2,
+		2,2,2,
+		0,2,2
+	};
+
+	uint8_t cubeIndices[6 * 6] =
+	{
+		0, 1, 3, 3, 1, 2,
+		1, 5, 2, 2, 5, 6,
+		5, 4, 6, 6, 4, 7,
+		4, 0, 7, 7, 0, 3,
+		3, 2, 7, 7, 2, 6,
+		4, 5, 0, 0, 5, 1
+	};
+
+	std::vector<uint8_t> vertices = {};
+	for (size_t i = 0; i < std::size(cubeVertices)  ; i++) {
+		vertices.push_back(cubeVertices[i]);
+	}
+
+	std::vector<uint8_t> indices = {};
+	for (size_t i = 0; i < std::size(cubeIndices); i++) {
+		indices.push_back(cubeIndices[i]);
+	}
+
+
+	/*
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
@@ -93,10 +130,11 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
-
-	vkcv::ShaderProgram sceneShaderProgram;
+	*/
+	//vkcv::ShaderProgram sceneShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
 
+	/*
 	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
 					 [&sceneShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		sceneShaderProgram.addShader(shaderStage, path);
@@ -115,8 +153,8 @@ int main(int argc, const char** argv) {
 
 	const vkcv::VertexLayout sceneLayout(bindings);
 
-	const auto& material0 = scene.getMaterial(0);
-
+	//const auto& material0 = scene.getMaterial(0);
+	*/
 
 	vkcv::ShaderProgram rayGenShaderProgram;
 	compiler.compile(vkcv::ShaderStage::RAY_GEN, std::filesystem::path("resources/shaders/raytrace.rgen"),

@@ -11,7 +11,8 @@ namespace vkcv::rtx {
         CPU,
         GPU,
         ACCELERATION,
-        SHADER_BINDING
+        SHADER_BINDING,
+        SCRATCH
     };
 
     /**
