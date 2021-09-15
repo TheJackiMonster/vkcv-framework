@@ -416,6 +416,7 @@ int main(int argc, const char** argv) {
 			clearMeanImage |= ImGui::InputFloat("Sky color multiplier", &skyColorMultiplier);
 
 			if (ImGui::CollapsingHeader("Materials")) {
+
 				for (auto& setting : materialSettings) {
 					if (ImGui::CollapsingHeader(setting.first.c_str())) {
 
@@ -423,15 +424,15 @@ int main(int argc, const char** argv) {
 						float           emissionStrength    = glm::max(glm::max(glm::max(emission.x, emission.y), emission.z), 1.f);
 						glm::vec3       emissionColor       = emission / emissionStrength;
 
-						updateMaterials |= ImGui::ColorEdit3("Emission color",      &emissionColor.x);
-						updateMaterials |= ImGui::InputFloat("Emission strength",   &emissionStrength);
+						updateMaterials |= ImGui::ColorEdit3((std::string("Emission color ")    + setting.first).c_str(), &emissionColor.x);
+						updateMaterials |= ImGui::InputFloat((std::string("Emission strength ") + setting.first).c_str(), &emissionStrength);
 
 						setting.second.emission = emissionStrength * emissionColor;
 
-						updateMaterials |= ImGui::ColorEdit3("Albedo color",    &setting.second.albedo.x);
-						updateMaterials |= ImGui::ColorEdit3("F0",              &setting.second.f0.x);
-						updateMaterials |= ImGui::DragFloat("ks",               &setting.second.ks, 0.01, 0, 1);
-						updateMaterials |= ImGui::DragFloat("roughness",        &setting.second.roughness, 0.01, 0, 1);
+						updateMaterials |= ImGui::ColorEdit3((std::string("Albedo color ")  + setting.first).c_str(), &setting.second.albedo.x);
+						updateMaterials |= ImGui::ColorEdit3((std::string("F0 ")            + setting.first).c_str(), &setting.second.f0.x);
+						updateMaterials |= ImGui::DragFloat(( std::string("ks ")            + setting.first).c_str(), &setting.second.ks, 0.01, 0, 1);
+						updateMaterials |= ImGui::DragFloat(( std::string("roughness ")     + setting.first).c_str(), &setting.second.roughness, 0.01, 0, 1);
 
 					}
 				}
