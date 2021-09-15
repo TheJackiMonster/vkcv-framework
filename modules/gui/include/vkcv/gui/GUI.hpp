@@ -75,9 +75,9 @@ namespace vkcv::gui {
 		 * Constructor of a new instance for ImGui management.
 		 *
 		 * @param[in,out] core Valid Core instance of the framework
-		 * @param[in,out] window Valid Window instance of the framework
+		 * @param[in,out] windowHandle Valid Window handle of the framework
 		 */
-		GUI(Core& core, WindowHandle& window);
+		GUI(Core& core, WindowHandle& windowHandle);
 		
 		GUI(const GUI& other) = delete;
 		GUI(GUI&& other) = delete;
