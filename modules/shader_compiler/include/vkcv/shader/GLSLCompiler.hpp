@@ -25,9 +25,14 @@ namespace vkcv::shader {
 
         /**
          * The copy-constructor of a runtime GLSL shader compiler instance.
-         * @param other Other instance of a GLSL shader compiler instance
+         * @param[in] other Other instance of a GLSL shader compiler instance
          */
 		GLSLCompiler(const GLSLCompiler& other);
+
+        /**
+         * The move-constructor of a runtime GLSL shader compiler instance.
+         * @param[out] other Other instance of a GLSL shader compiler instance
+         */
 		GLSLCompiler(GLSLCompiler&& other) = default;
 
         /**
@@ -37,11 +42,17 @@ namespace vkcv::shader {
 
         /**
          * The copy-operator of a runtime GLSL shader compiler instance.
-         * @param other Other instance of a GLSL shader compiler instance
+         * @param[in] other Other instance of a GLSL shader compiler instance
          * @return Reference to this instance
          */
 		GLSLCompiler& operator=(const GLSLCompiler& other);
-		GLSLCompiler& operator=(GLSLCompiler&& other) = default;
+
+        /**
+         * The copy-operator of a runtime GLSL shader compiler instance.
+         * @param[out] other Other instance of a GLSL shader compiler instance
+         * @return Reference to this instance
+         */
+        GLSLCompiler& operator=(GLSLCompiler&& other) = default;
 
         /**
          * Compile a GLSL shader from source for a target stage with a custom shader

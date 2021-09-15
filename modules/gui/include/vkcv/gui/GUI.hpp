@@ -77,7 +77,7 @@ namespace vkcv::gui {
 		 * @param[in,out] core Valid Core instance of the framework
 		 * @param[in,out] window Valid Window instance of the framework
 		 */
-		GUI(Core& core, WindowHandle& windowHandle);
+		GUI(Core& core, WindowHandle& window);
 		
 		GUI(const GUI& other) = delete;
 		GUI(GUI&& other) = delete;

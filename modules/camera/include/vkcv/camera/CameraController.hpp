@@ -12,7 +12,7 @@ namespace vkcv::camera {
 
     /**
      * @brief Used as a base class for defining camera controller classes with different behaviors, e.g. the
-     * #PilotCameraController.
+     * PilotCameraController.
      */
     class CameraController {
 

@@ -72,11 +72,30 @@ namespace vkcv::upscaling {
      * with the shaders used by FSR upscaling.
      */
 	struct FSRConstants {
+        /**
+         * 0th FSR constant.
+         */
 		uint32_t Const0 [4];
-		uint32_t Const1 [4];
-		uint32_t Const2 [4];
-		uint32_t Const3 [4];
-		uint32_t Sample [4];
+
+        /**
+         * 1st FSR constant.
+         */
+        uint32_t Const1 [4];
+
+        /**
+         * 2nd FSR constant.
+         */
+        uint32_t Const2 [4];
+
+        /**
+         * 3rd FSR constant.
+         */
+        uint32_t Const3 [4];
+
+        /**
+         * 4th FSR constant.
+         */
+        uint32_t Sample [4];
 	};
 
     /**

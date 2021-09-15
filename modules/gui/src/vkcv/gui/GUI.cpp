@@ -18,8 +18,8 @@ namespace vkcv::gui {
 		vkcv_log(LogLevel::ERROR, "ImGui has a problem with Vulkan! (%s)", vk::to_string(result).c_str());
 	}
 	
-	GUI::GUI(Core& core, WindowHandle& windowHandle) :
-	m_windowHandle(windowHandle),
+	GUI::GUI(Core& core, WindowHandle& window) :
+	m_windowHandle(window),
 	m_core(core),
 	m_context(m_core.getContext()),
 	m_gui_context(nullptr) {
