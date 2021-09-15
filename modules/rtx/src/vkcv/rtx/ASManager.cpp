@@ -162,63 +162,47 @@ namespace vkcv::rtx {
         asBuildInfo.setDstAccelerationStructure(tlas);
 
         // Allocate the scratch buffer holding temporary build data.
-        RTXBuffer tempBuildDataBuffer;  // scratch buffer
-        tempBuildDataBuffer.bufferType = RTXBufferType::ACCELERATION;
-        tempBuildDataBuffer.deviceSize = asSizeInfo.buildScratchSize;
-        tempBuildDataBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddressKHR
+        RTXBuffer tlasScratchBuffer;  // scratch buffer
+        tlasScratchBuffer.bufferType = RTXBufferType::ACCELERATION;
+        tlasScratchBuffer.deviceSize = asSizeInfo.buildScratchSize;
+        tlasScratchBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddressKHR
                 | vk::BufferUsageFlagBits::eStorageBuffer;
 
-        createBuffer(tempBuildDataBuffer);
+        createBuffer(tlasScratchBuffer);
 
-        vk::BufferDeviceAddressInfo tempBuildDataBufferDeviceAddressInfo(tempBuildDataBuffer.vulkanHandle);
+        vk::BufferDeviceAddressInfo tempBuildDataBufferDeviceAddressInfo(tlasScratchBuffer.vulkanHandle);
         vk::DeviceAddress tempBuildBufferDataAddress = m_core->getContext().getDevice().getBufferAddressKHR(tempBuildDataBufferDeviceAddressInfo, m_rtxDispatcher);
-        asBuildInfo.scratchData.deviceAddress = tempBuildBufferDataAddress;
+        asBuildInfo.setScratchData(tempBuildBufferDataAddress);
 
         // Create a one-element array of pointers to range info objects.
-        vk::AccelerationStructureBuildRangeInfoKHR* pRangeInfo = &asRangeInfo;
+        vk::AccelerationStructureBuildRangeInfoKHR* pointerToRangeInfo = &asRangeInfo;
 
         // Build the TLAS.
-        vk::CommandPool commandPool;
 
-        vk::CommandPoolCreateInfo commandPoolCreateInfo;
-        commandPoolCreateInfo.queueFamilyIndex = m_core->getContext().getQueueManager().getGraphicsQueues()[0].familyIndex;
+        SubmitInfo submitInfo;
+        submitInfo.queueType = QueueType::Graphics;
 
-        res = m_core->getContext().getDevice().createCommandPool(&commandPoolCreateInfo, nullptr, &commandPool);
-        if (res != vk::Result::eSuccess) {
-            vkcv_log(LogLevel::ERROR, "ASManager: command pool could not be created! (%s)", vk::to_string(res).c_str());
-        }
-
-        vk::CommandBufferAllocateInfo bufferAllocateInfo;
-        bufferAllocateInfo.level = vk::CommandBufferLevel::ePrimary;
-        bufferAllocateInfo.commandPool = commandPool;
-        bufferAllocateInfo.commandBufferCount = 1;
-
-        vk::CommandBuffer commandBuffer;
-        res = m_core->getContext().getDevice().allocateCommandBuffers(&bufferAllocateInfo, &commandBuffer);
-        if (res != vk::Result::eSuccess) {
-            vkcv_log(LogLevel::ERROR, "ASManager: command buffer could not be allocated! (%s)", vk::to_string(res).c_str());
-        }
-
-        beginCommandBuffer(commandBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-        commandBuffer.buildAccelerationStructuresKHR(1, &asBuildInfo, &pRangeInfo, m_rtxDispatcher);
-        commandBuffer.end();
-
-        vk::SubmitInfo submitInfo;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        Queue graphicsQueue = m_core->getContext().getQueueManager().getGraphicsQueues()[0];
-
-        graphicsQueue.handle.submit(submitInfo);
-        graphicsQueue.handle.waitIdle();
-
-        m_core->getContext().getDevice().freeCommandBuffers(commandPool, 1, &commandBuffer, m_rtxDispatcher);
-        m_core->getContext().getDevice().destroyCommandPool(commandPool, nullptr, m_rtxDispatcher);
+        m_core->recordAndSubmitCommandsImmediate(
+            submitInfo,
+            [&](const vk::CommandBuffer& commandBuffer) {
+                commandBuffer.buildAccelerationStructuresKHR(1, &asBuildInfo, &pointerToRangeInfo, m_rtxDispatcher);
+            },
+            nullptr);
+        /*
+        auto cmdStream = m_core->createCommandStream(vkcv::QueueType::Graphics);
+        auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+            cmdBuffer.buildAccelerationStructuresKHR(1, &asBuildInfo, &pointerToRangeInfo, m_rtxDispatcher);
+        };
+        m_core->recordCommandsToStream(cmdStream, submitFunction, nullptr);
+        m_core->submitCommandStream(cmdStream);
+        */
+        m_core->getContext().getDevice().destroyBuffer(tlasScratchBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
+        m_core->getContext().getDevice().freeMemory(tlasScratchBuffer.deviceMemory, nullptr, m_rtxDispatcher);
 
         m_topLevelAccelerationStructure = {
                 gpuBufferInstances,
                 tlasBuffer,
-                tempBuildDataBuffer,
+                tlasScratchBuffer,
                 tlas
         };
     }
@@ -257,7 +241,7 @@ namespace vkcv::rtx {
                 vk::Format::eR32G32B32Sfloat,   // vertex format
                 vertexDeviceOrHostAddressConst, // vertex buffer address (vk::DeviceOrHostAddressConstKHR)
                 3 * sizeof(float), // vertex stride (vk::DeviceSize)
-                uint32_t(vertexCount - 1), // maxVertex (uint32_t)
+                uint32_t(vertexCount),//uint32_t(vertexCount - 1), // maxVertex (uint32_t)
                 vk::IndexType::eUint16, // indexType (vk::IndexType) --> INFO: UINT16 oder UINT32!
                 indexDeviceOrHostAddressConst, // indexData (vk::DeviceOrHostAddressConstKHR)
                 {} // transformData (vk::DeviceOrHostAddressConstKHR)
@@ -311,7 +295,7 @@ namespace vkcv::rtx {
 
         // Create an empty AS object
         vk::AccelerationStructureCreateInfoKHR asCreateInfo(
-            {}, // creation flags
+            {vk::AccelerationStructureCreateFlagsKHR() }, // creation flags
             blasBuffer.vulkanHandle, // allocated AS buffer.
             0,
             asBuildSizesInfo.accelerationStructureSize, // size of the AS
@@ -335,54 +319,36 @@ namespace vkcv::rtx {
         scratchBuffer.bufferType = RTXBufferType::SCRATCH;
         scratchBuffer.deviceSize = asBuildSizesInfo.buildScratchSize;
         scratchBuffer.data = nullptr;
-        scratchBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddress
-            | vk::BufferUsageFlagBits::eStorageBuffer; // maybe bugger usage ray tracing bit!!!
+        scratchBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
+            | vk::BufferUsageFlagBits::eShaderDeviceAddress
+            | vk::BufferUsageFlagBits::eStorageBuffer;
         scratchBuffer.memoryPropertyFlagBits = { vk::MemoryPropertyFlagBits::eDeviceLocal };
 
         createBuffer(scratchBuffer);
 
-        asBuildInfo.scratchData.deviceAddress = m_core->getContext().getDevice().getBufferAddressKHR(scratchBuffer.vulkanHandle, m_rtxDispatcher);
+        asBuildInfo.setScratchData(m_core->getContext().getDevice().getBufferAddressKHR(scratchBuffer.vulkanHandle, m_rtxDispatcher));
 
         vk::AccelerationStructureBuildRangeInfoKHR* pointerToRangeInfo = &asRangeInfo;
 
-        //COMMAND-STUFF FOR ACTUAL ACCELERATIONSTRUCTURE BUILDING
-        vk::CommandPool commandPool;
+        SubmitInfo submitInfo;
+        submitInfo.queueType = QueueType::Graphics;
 
-        vk::CommandPoolCreateInfo commandPoolCreateInfo;
-        commandPoolCreateInfo.queueFamilyIndex = m_core->getContext().getQueueManager().getComputeQueues()[0].familyIndex;
+        m_core->recordAndSubmitCommandsImmediate(
+            submitInfo,
+            [&](const vk::CommandBuffer& commandBuffer) {
+                commandBuffer.buildAccelerationStructuresKHR(1, &asBuildInfo, &pointerToRangeInfo, m_rtxDispatcher);
+            },
+            nullptr);
 
-        res = m_core->getContext().getDevice().createCommandPool(&commandPoolCreateInfo, nullptr, &commandPool);
-        if (res != vk::Result::eSuccess) {
-            vkcv_log(LogLevel::ERROR, "ASManager: command pool for Acceleration Strucutre Build could not be created! (%s)", vk::to_string(res).c_str());
-        }
 
-
-        vk::CommandBufferAllocateInfo bufferAllocateInfo;
-        bufferAllocateInfo.level = vk::CommandBufferLevel::ePrimary;
-        bufferAllocateInfo.commandPool = commandPool;
-        bufferAllocateInfo.commandBufferCount = 1;
-
-        vk::CommandBuffer commandBuffer;
-        res = m_core->getContext().getDevice().allocateCommandBuffers(&bufferAllocateInfo, &commandBuffer);
-        if (res != vk::Result::eSuccess) {
-            vkcv_log(LogLevel::ERROR, "ASManager: command buffer for Acceleration Strucutre Build could not be allocated! (%s)", vk::to_string(res).c_str());
-        }
-
-        beginCommandBuffer(commandBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-        commandBuffer.buildAccelerationStructuresKHR(1, &asBuildInfo, &pointerToRangeInfo, m_rtxDispatcher);
-        commandBuffer.end();
-
-        vk::SubmitInfo submitInfo;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        Queue queue = m_core->getContext().getQueueManager().getComputeQueues()[0];
-
-        queue.handle.submit(submitInfo);
-        queue.handle.waitIdle();
-
-        m_core->getContext().getDevice().freeCommandBuffers(commandPool, 1, &commandBuffer, m_rtxDispatcher);
-        m_core->getContext().getDevice().destroyCommandPool(commandPool, nullptr, m_rtxDispatcher);
+        /*auto cmdStream = m_core->createCommandStream(vkcv::QueueType::Graphics);
+        auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+            
+        };
+        m_core->recordCommandsToStream(cmdStream, submitFunction, nullptr);
+        //m_core->recordAndSubmitCommandsImmediate()
+        m_core->submitCommandStream(cmdStream);
+        */
         m_core->getContext().getDevice().destroyBuffer(scratchBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
         m_core->getContext().getDevice().freeMemory(scratchBuffer.deviceMemory, nullptr, m_rtxDispatcher);
                 
@@ -477,44 +443,28 @@ namespace vkcv::rtx {
     }
 
     void ASManager::copyFromCPUToGPU(RTXBuffer &cpuBuffer, RTXBuffer &gpuBuffer) {
-        vk::CommandPool commandPool;
+        SubmitInfo submitInfo;
+        submitInfo.queueType = QueueType::Graphics;
 
-        vk::CommandPoolCreateInfo commandPoolCreateInfo;
-        commandPoolCreateInfo.queueFamilyIndex = m_core->getContext().getQueueManager().getGraphicsQueues()[0].familyIndex;
+        m_core->recordAndSubmitCommandsImmediate(
+            submitInfo,
+            [&cpuBuffer,&gpuBuffer](const vk::CommandBuffer& commandBuffer) {
+                vk::BufferCopy bufferCopy;
+                bufferCopy.size = cpuBuffer.deviceSize;
+                commandBuffer.copyBuffer(cpuBuffer.vulkanHandle, gpuBuffer.vulkanHandle, 1, &bufferCopy);
+            },
+            nullptr);
+        /*
+        auto cmdStream = m_core->createCommandStream(vkcv::QueueType::Graphics);
+        auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+            vk::BufferCopy bufferCopy;
+            bufferCopy.size = cpuBuffer.deviceSize;
+            cmdBuffer.copyBuffer(cpuBuffer.vulkanHandle, gpuBuffer.vulkanHandle, 1, &bufferCopy);
+        };
+        m_core->recordCommandsToStream(cmdStream, submitFunction, nullptr);
+        m_core->submitCommandStream(cmdStream);
+        */
 
-        vk::Result res = m_core->getContext().getDevice().createCommandPool(&commandPoolCreateInfo, nullptr, &commandPool);
-        if (res != vk::Result::eSuccess) {
-            vkcv_log(LogLevel::ERROR, "ASManager: command pool could not be created! (%s)", vk::to_string(res).c_str());
-        }
-
-        vk::CommandBufferAllocateInfo bufferAllocateInfo;
-        bufferAllocateInfo.level = vk::CommandBufferLevel::ePrimary;
-        bufferAllocateInfo.commandPool = commandPool;
-        bufferAllocateInfo.commandBufferCount = 1;
-
-        vk::CommandBuffer commandBuffer;
-        res = m_core->getContext().getDevice().allocateCommandBuffers(&bufferAllocateInfo, &commandBuffer);
-        if (res != vk::Result::eSuccess) {
-            vkcv_log(LogLevel::ERROR, "ASManager: command buffer could not be allocated! (%s)", vk::to_string(res).c_str());
-        }
-
-        beginCommandBuffer(commandBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-        vk::BufferCopy bufferCopy;
-        bufferCopy.size = cpuBuffer.deviceSize;
-        commandBuffer.copyBuffer(cpuBuffer.vulkanHandle, gpuBuffer.vulkanHandle, 1, &bufferCopy);
-        commandBuffer.end();
-
-        vk::SubmitInfo submitInfo;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        Queue graphicsQueue = m_core->getContext().getQueueManager().getGraphicsQueues()[0];
-
-        graphicsQueue.handle.submit(submitInfo);
-        graphicsQueue.handle.waitIdle();
-
-        m_core->getContext().getDevice().freeCommandBuffers(commandPool, 1, &commandBuffer, m_rtxDispatcher);
-        m_core->getContext().getDevice().destroyCommandPool(commandPool, nullptr, m_rtxDispatcher);
         m_core->getContext().getDevice().destroyBuffer(cpuBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
         m_core->getContext().getDevice().freeMemory(cpuBuffer.deviceMemory, nullptr, m_rtxDispatcher);
     }
