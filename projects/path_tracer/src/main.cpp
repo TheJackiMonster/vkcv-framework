@@ -149,23 +149,25 @@ int main(int argc, const char** argv) {
 	typedef std::pair<std::string, Material> MaterialSetting;
 
 	std::vector<MaterialSetting> materialSettings;
-	materialSettings.emplace_back(MaterialSetting("white",  Material(glm::vec3(0),    glm::vec3(0.65),            0, 0.25, glm::vec3(0.04))));
-	materialSettings.emplace_back(MaterialSetting("red",    Material(glm::vec3(0),    glm::vec3(0.5, 0.0, 0.0),   0, 0.25, glm::vec3(0.04))));
-	materialSettings.emplace_back(MaterialSetting("green",  Material(glm::vec3(0),    glm::vec3(0.0, 0.5, 0.0),   0, 0.25, glm::vec3(0.04))));
-	materialSettings.emplace_back(MaterialSetting("light",  Material(glm::vec3(20),   glm::vec3(0),               0, 0.25, glm::vec3(0.04))));
-	materialSettings.emplace_back(MaterialSetting("sphere", Material(glm::vec3(0),    glm::vec3(0.65),            1, 0.25, glm::vec3(0.04))));
+	materialSettings.emplace_back(MaterialSetting("white",  Material(glm::vec3(0),    glm::vec3(0.65),          0, 0.25, glm::vec3(0.04))));
+	materialSettings.emplace_back(MaterialSetting("red",    Material(glm::vec3(0),    glm::vec3(0.5, 0.0, 0.0), 0, 0.25, glm::vec3(0.04))));
+	materialSettings.emplace_back(MaterialSetting("green",  Material(glm::vec3(0),    glm::vec3(0.0, 0.5, 0.0), 0, 0.25, glm::vec3(0.04))));
+	materialSettings.emplace_back(MaterialSetting("light",  Material(glm::vec3(20),   glm::vec3(0),             0, 0.25, glm::vec3(0.04))));
+	materialSettings.emplace_back(MaterialSetting("sphere", Material(glm::vec3(0),    glm::vec3(0.65),          1, 0.25, glm::vec3(0.04))));
+	materialSettings.emplace_back(MaterialSetting("ground", Material(glm::vec3(0),    glm::vec3(0.65),          0, 0.25, glm::vec3(0.04))));
 
 	const uint32_t whiteMaterialIndex   = 0;
 	const uint32_t redMaterialIndex     = 1;
 	const uint32_t greenMaterialIndex   = 2;
 	const uint32_t lightMaterialIndex   = 3;
 	const uint32_t sphereMaterialIndex  = 4;
+	const uint32_t groundMaterialIndex  = 5;
 
 	std::vector<Sphere> spheres;
 	spheres.emplace_back(Sphere(glm::vec3(0, -1.5, 0), 0.5, sphereMaterialIndex));
 
 	std::vector<Plane> planes;
-	planes.emplace_back(Plane(glm::vec3( 0, -2,     0), glm::vec3( 0,  1,  0), glm::vec2(2), whiteMaterialIndex));
+	planes.emplace_back(Plane(glm::vec3( 0, -2,     0), glm::vec3( 0,  1,  0), glm::vec2(2), groundMaterialIndex));
 	planes.emplace_back(Plane(glm::vec3( 0,  2,     0), glm::vec3( 0, -1,  0), glm::vec2(2), whiteMaterialIndex));
 	planes.emplace_back(Plane(glm::vec3( 2,  0,     0), glm::vec3(-1,  0,  0), glm::vec2(2), redMaterialIndex));
 	planes.emplace_back(Plane(glm::vec3(-2,  0,     0), glm::vec3( 1,  0,  0), glm::vec2(2), greenMaterialIndex));
