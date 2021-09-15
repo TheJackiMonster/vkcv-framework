@@ -12,6 +12,8 @@ struct Material {
 	float 	ks;		// specular percentage
     vec3 	albedo;
     float 	r;		// roughness
+	vec3 	f0;
+	float 	padding;
 };
 
 struct Sphere{
@@ -358,8 +360,7 @@ vec3 castRay(Ray ray) {
         if(intersection.hit){
             vec3 	diffuseBRDF 	= computeDiffuseBRDF(intersection.material);
 
-			vec3 	f0  			= vec3(0.04);
-			vec3 	specularBRDF 	= computeSpecularBRDF(f0, intersection.material.r, NoV, NoL, NoH);
+			vec3 	specularBRDF 	= computeSpecularBRDF(intersection.material.f0, intersection.material.r, NoV, NoL, NoH);
 			brdf 					= mix(diffuseBRDF, specularBRDF, intersection.material.ks);
 			
 			

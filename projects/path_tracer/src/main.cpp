@@ -10,13 +10,15 @@ int main(int argc, const char** argv) {
 
 	// structs must match shader version
 	struct Material {
-		Material(const glm::vec3& emission, const glm::vec3& albedo, float ks, float roughness)
-			: emission(emission), albedo(albedo), ks(ks), roughness(roughness){}
+		Material(const glm::vec3& emission, const glm::vec3& albedo, float ks, float roughness, const glm::vec3& f0)
+			: emission(emission), albedo(albedo), ks(ks), roughness(roughness), f0(f0){}
 
 		glm::vec3   emission;
 		float       ks;
 		glm::vec3   albedo;
 		float       roughness;
+		glm::vec3   f0;
+		float       padding;
 	};
 
 	struct Sphere {
@@ -147,11 +149,11 @@ int main(int argc, const char** argv) {
 	typedef std::pair<std::string, Material> MaterialSetting;
 
 	std::vector<MaterialSetting> materialSettings;
-	materialSettings.emplace_back(MaterialSetting("white",  Material(glm::vec3(0),    glm::vec3(0.65),            0, 0.25)));
-	materialSettings.emplace_back(MaterialSetting("red",    Material(glm::vec3(0),    glm::vec3(0.5, 0.0, 0.0),   0, 0.25)));
-	materialSettings.emplace_back(MaterialSetting("green",  Material(glm::vec3(0),    glm::vec3(0.0, 0.5, 0.0),   0, 0.25)));
-	materialSettings.emplace_back(MaterialSetting("light",  Material(glm::vec3(20),   glm::vec3(0),               0, 0.25)));
-	materialSettings.emplace_back(MaterialSetting("sphere", Material(glm::vec3(0),    glm::vec3(0.65),            1, 0.25)));
+	materialSettings.emplace_back(MaterialSetting("white",  Material(glm::vec3(0),    glm::vec3(0.65),            0, 0.25, glm::vec3(0.04))));
+	materialSettings.emplace_back(MaterialSetting("red",    Material(glm::vec3(0),    glm::vec3(0.5, 0.0, 0.0),   0, 0.25, glm::vec3(0.04))));
+	materialSettings.emplace_back(MaterialSetting("green",  Material(glm::vec3(0),    glm::vec3(0.0, 0.5, 0.0),   0, 0.25, glm::vec3(0.04))));
+	materialSettings.emplace_back(MaterialSetting("light",  Material(glm::vec3(20),   glm::vec3(0),               0, 0.25, glm::vec3(0.04))));
+	materialSettings.emplace_back(MaterialSetting("sphere", Material(glm::vec3(0),    glm::vec3(0.65),            1, 0.25, glm::vec3(0.04))));
 
 	const uint32_t whiteMaterialIndex   = 0;
 	const uint32_t redMaterialIndex     = 1;
@@ -425,6 +427,7 @@ int main(int argc, const char** argv) {
 						setting.second.emission = emissionStrength * emissionColor;
 
 						updateMaterials |= ImGui::ColorEdit3("Albedo color",    &setting.second.albedo.x);
+						updateMaterials |= ImGui::ColorEdit3("F0",              &setting.second.f0.x);
 						updateMaterials |= ImGui::DragFloat("ks",               &setting.second.ks, 0.01, 0, 1);
 						updateMaterials |= ImGui::DragFloat("roughness",        &setting.second.roughness, 0.01, 0, 1);
 
