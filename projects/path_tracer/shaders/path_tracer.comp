@@ -67,6 +67,7 @@ struct Intersection{
     Material 	material;
 };
 
+// https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
 Intersection raySphereIntersect(Ray ray, Sphere sphere){
 
 	Intersection intersection;
@@ -75,18 +76,19 @@ Intersection raySphereIntersect(Ray ray, Sphere sphere){
     vec3 	L 	= sphere.center - ray.origin;
     float 	tca = dot(L, ray.direction);
     float 	d2 	= dot(L, L) - tca * tca;
+	
     if (d2 > sphere.radius * sphere.radius){
         return intersection;
     }
-    float thc = float(sqrt(sphere.radius * sphere.radius - d2));
-    float t0 = tca - thc;
-    float t1 = tca + thc;
-    if (t0 < 0) {
+    float thc 	= float(sqrt(sphere.radius * sphere.radius - d2));
+    float t0 	= tca - thc;
+    float t1 	= tca + thc;
+	
+    if (t0 < 0)
         t0 = t1;
-    }
-    if (t0 < 0){
+    
+    if (t0 < 0)
         return intersection;
-    }
 	
 	intersection.hit 		= true;
 	intersection.distance 	= t0;
