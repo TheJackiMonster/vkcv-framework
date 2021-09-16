@@ -20,7 +20,7 @@ namespace vkcv
     {
     public:
 		GraphicsPipelineManager() = delete; // no default ctor
-        explicit GraphicsPipelineManager(vk::Device device) noexcept; // ctor
+        explicit GraphicsPipelineManager(vk::Device device, vk::PhysicalDevice physicalDevice) noexcept; // ctor
         ~GraphicsPipelineManager() noexcept; // dtor
 	
 		GraphicsPipelineManager(const GraphicsPipelineManager &other) = delete; // copy-ctor
@@ -71,8 +71,9 @@ namespace vkcv
 			GraphicsPipelineConfig m_config;
         };
 
-        vk::Device m_Device;
-        std::vector<GraphicsPipeline> m_Pipelines;
+        vk::Device                      m_Device;
+        vk::PhysicalDevice              m_physicalDevice; // needed to get infos to configure conservative rasterization
+        std::vector<GraphicsPipeline>   m_Pipelines;
 
         void destroyPipelineById(uint64_t id);
 
