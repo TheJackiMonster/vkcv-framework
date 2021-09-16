@@ -121,7 +121,7 @@ namespace vkcv::scene {
 
         /**
          * Move-constructor of a scene node.
-         * @param[out] other Other scene node
+         * @param[in,out] other Other scene node
          */
 		Node(Node&& other) = default;
 
@@ -134,7 +134,7 @@ namespace vkcv::scene {
 
         /**
          * Move-operator of a scene node.
-         * @param[out] other Other scene node
+         * @param[in,out] other Other scene node
          * @return Reference of this node
          */
 		Node& operator=(Node&& other) noexcept;
