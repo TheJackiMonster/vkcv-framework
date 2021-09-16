@@ -81,7 +81,11 @@ namespace vkcv::scene {
          * @param[in] maxMeshesPerNode Maximum amount of meshes per node
          */
 		void splitMeshesToSubNodes(size_t maxMeshesPerNode);
-		
+
+        /**
+         * Return the sum of drawcalls in the graph of this node.
+         * @return Amount of drawcalls
+         */
 		[[nodiscard]]
 		size_t getDrawcallCount() const;
 

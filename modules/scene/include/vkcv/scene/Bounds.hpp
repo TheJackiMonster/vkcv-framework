@@ -40,12 +40,36 @@ namespace vkcv::scene {
          * @param[in] max Maximum values of the box as 3D vector
          */
 		Bounds(const glm::vec3& min, const glm::vec3& max);
+
+        /**
+         * Destructor of an axis aligned bounding box.
+         */
 		~Bounds() = default;
-		
+
+        /**
+         * Copy-constructor of an axis aligned bounding box.
+         * @param[in] other Other box as Bounds
+         */
 		Bounds(const Bounds& other) = default;
-		Bounds(Bounds&& other) = default;
-		
+
+        /**
+         * Move-constructor of an axis aligned bounding box.
+         * @param[in,out] other Other box as Bounds
+         */
+        Bounds(Bounds&& other) = default;
+
+        /**
+         * Copy-operator of an axis aligned bounding box.
+         * @param[in] other Other box as Bounds
+         * @return Reference to this box
+         */
 		Bounds& operator=(const Bounds& other) = default;
+
+        /**
+         * Move-operator of an axis aligned bounding box.
+         * @param[in,out] other Other box as Bounds
+         * @return Reference to this box
+         */
 		Bounds& operator=(Bounds&& other) = default;
 
         /**

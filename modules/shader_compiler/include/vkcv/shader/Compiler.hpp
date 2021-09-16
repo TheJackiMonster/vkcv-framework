@@ -16,7 +16,7 @@ namespace vkcv::shader {
      */
 
     /**
-     * An event function type to react on shader compilation.
+     * An event function type to be called on compilation completion.
      */
 	typedef typename event_function<ShaderStage, const std::filesystem::path&>::type ShaderCompiledFunction;
 
