@@ -45,6 +45,9 @@ endif()
 # configure everything to use the required dependencies
 include(${vkcv_config}/Libraries.cmake)
 
+# set macro to enable vulkan debug labels
+list(APPEND vkcv_definitions VULKAN_DEBUG_LABELS)
+
 # set the compile definitions aka preprocessor variables
 add_compile_definitions(${vkcv_definitions})
 
