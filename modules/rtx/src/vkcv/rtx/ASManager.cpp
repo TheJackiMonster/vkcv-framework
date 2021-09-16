@@ -73,7 +73,7 @@ namespace vkcv::rtx {
         cpuBufferInstances.bufferType = RTXBufferType::CPU;
         cpuBufferInstances.deviceSize = sizeof(accelerationStructureInstanceKhr);
         cpuBufferInstances.data = &accelerationStructureInstanceKhr;
-        cpuBufferInstances.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddressKHR
+        cpuBufferInstances.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddress
                 | vk::BufferUsageFlagBits::eTransferSrc;
         cpuBufferInstances.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eHostCoherent
                 | vk::MemoryPropertyFlagBits::eHostVisible;
@@ -83,7 +83,7 @@ namespace vkcv::rtx {
         RTXBuffer gpuBufferInstances;
         gpuBufferInstances.bufferType = RTXBufferType::GPU;
         gpuBufferInstances.deviceSize = sizeof(accelerationStructureInstanceKhr);
-        gpuBufferInstances.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddressKHR
+        gpuBufferInstances.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddress
                 | vk::BufferUsageFlagBits::eTransferDst| vk::BufferUsageFlagBits::eTransferSrc;
         gpuBufferInstances.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eDeviceLocal;
 
@@ -99,12 +99,12 @@ namespace vkcv::rtx {
                 );
 
         vk::BufferDeviceAddressInfo bufferInstancesDeviceAddressInfo(gpuBufferInstances.vulkanHandle);
-        vk::DeviceAddress bufferInstancesAddress = m_core->getContext().getDevice().getBufferAddressKHR(bufferInstancesDeviceAddressInfo, m_rtxDispatcher);
-        vk::DeviceOrHostAddressConstKHR bufferInstancesDeviceOrHostAddressConst(bufferInstancesAddress);
+        vk::DeviceAddress bufferInstancesAddress = m_core->getContext().getDevice().getBufferAddress(bufferInstancesDeviceAddressInfo);
+        //vk::DeviceOrHostAddressConstKHR bufferInstancesDeviceOrHostAddressConst(bufferInstancesAddress);
 
         vk::AccelerationStructureGeometryInstancesDataKHR asInstances(
                 false,    // vk::Bool32 arrayOfPointers
-                bufferInstancesDeviceOrHostAddressConst    // vk::DeviceOrHostAddressConstKHR data_ = {}
+                bufferInstancesAddress    // vk::DeviceOrHostAddressConstKHR data_ = {}
                 );
 
         // Like creating the BLAS, point to the geometry (in this case, the instances) in a polymorphic object.
@@ -140,7 +140,7 @@ namespace vkcv::rtx {
         tlasBuffer.bufferType = RTXBufferType::ACCELERATION;
         tlasBuffer.deviceSize = asSizeInfo.accelerationStructureSize;
         tlasBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
-                | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR
+                | vk::BufferUsageFlagBits::eShaderDeviceAddress
                 | vk::BufferUsageFlagBits::eStorageBuffer;
 
         createBuffer(tlasBuffer);
@@ -229,21 +229,21 @@ namespace vkcv::rtx {
         RTXBuffer indexBuffer = makeBufferFromData(indices);
 
         vk::BufferDeviceAddressInfo vertexBufferDeviceAddressInfo(vertexBuffer.vulkanHandle);
-        vk::DeviceAddress vertexBufferAddress = m_core->getContext().getDevice().getBufferAddressKHR(vertexBufferDeviceAddressInfo, m_rtxDispatcher);
-        vk::DeviceOrHostAddressConstKHR vertexDeviceOrHostAddressConst(vertexBufferAddress);
+        vk::DeviceAddress vertexBufferAddress = m_core->getContext().getDevice().getBufferAddress(vertexBufferDeviceAddressInfo);
+        //vk::DeviceOrHostAddressConstKHR vertexDeviceOrHostAddressConst(vertexBufferAddress);
 
         vk::BufferDeviceAddressInfo indexBufferDeviceAddressInfo(indexBuffer.vulkanHandle);
-        vk::DeviceAddress indexBufferAddress = m_core->getContext().getDevice().getBufferAddressKHR(indexBufferDeviceAddressInfo, m_rtxDispatcher);
-        vk::DeviceOrHostAddressConstKHR indexDeviceOrHostAddressConst(indexBufferAddress);
+        vk::DeviceAddress indexBufferAddress = m_core->getContext().getDevice().getBufferAddress(indexBufferDeviceAddressInfo);
+        //vk::DeviceOrHostAddressConstKHR indexDeviceOrHostAddressConst(indexBufferAddress);
 
         // Specify triangle mesh data
         vk::AccelerationStructureGeometryTrianglesDataKHR asTriangles(
                 vk::Format::eR32G32B32Sfloat,   // vertex format
-                vertexDeviceOrHostAddressConst, // vertex buffer address (vk::DeviceOrHostAddressConstKHR)
+                vertexBufferAddress, // vertex buffer address (vk::DeviceOrHostAddressConstKHR)
                 3 * sizeof(float), // vertex stride (vk::DeviceSize)
-                uint32_t(vertexCount),//uint32_t(vertexCount - 1), // maxVertex (uint32_t)
+                uint32_t(vertexCount - 1), // maxVertex (uint32_t)
                 vk::IndexType::eUint16, // indexType (vk::IndexType) --> INFO: UINT16 oder UINT32!
-                indexDeviceOrHostAddressConst, // indexData (vk::DeviceOrHostAddressConstKHR)
+                indexBufferAddress, // indexData (vk::DeviceOrHostAddressConstKHR)
                 {} // transformData (vk::DeviceOrHostAddressConstKHR)
         );
 
@@ -319,27 +319,26 @@ namespace vkcv::rtx {
         scratchBuffer.bufferType = RTXBufferType::SCRATCH;
         scratchBuffer.deviceSize = asBuildSizesInfo.buildScratchSize;
         scratchBuffer.data = nullptr;
-        scratchBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
-            | vk::BufferUsageFlagBits::eShaderDeviceAddress
+        scratchBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddress
             | vk::BufferUsageFlagBits::eStorageBuffer;
         scratchBuffer.memoryPropertyFlagBits = { vk::MemoryPropertyFlagBits::eDeviceLocal };
 
         createBuffer(scratchBuffer);
 
-        asBuildInfo.setScratchData(m_core->getContext().getDevice().getBufferAddressKHR(scratchBuffer.vulkanHandle, m_rtxDispatcher));
+        asBuildInfo.setScratchData(m_core->getContext().getDevice().getBufferAddress(scratchBuffer.vulkanHandle));
 
         vk::AccelerationStructureBuildRangeInfoKHR* pointerToRangeInfo = &asRangeInfo;
 
         SubmitInfo submitInfo;
         submitInfo.queueType = QueueType::Graphics;
 
+        
         m_core->recordAndSubmitCommandsImmediate(
             submitInfo,
-            [&](const vk::CommandBuffer& commandBuffer) {
-                commandBuffer.buildAccelerationStructuresKHR(1, &asBuildInfo, &pointerToRangeInfo, m_rtxDispatcher);
+            [&asBuildInfo,&pointerToRangeInfo,this](const vk::CommandBuffer& commandBuffer) {
+                commandBuffer.buildAccelerationStructuresKHR(1, &asBuildInfo, &pointerToRangeInfo, m_rtxDispatcher);                
             },
             nullptr);
-
 
         /*auto cmdStream = m_core->createCommandStream(vkcv::QueueType::Graphics);
         auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
@@ -349,6 +348,8 @@ namespace vkcv::rtx {
         //m_core->recordAndSubmitCommandsImmediate()
         m_core->submitCommandStream(cmdStream);
         */
+        
+        m_core->getContext().getDevice().waitIdle(m_rtxDispatcher);
         m_core->getContext().getDevice().destroyBuffer(scratchBuffer.vulkanHandle, nullptr, m_rtxDispatcher);
         m_core->getContext().getDevice().freeMemory(scratchBuffer.deviceMemory, nullptr, m_rtxDispatcher);
                 
@@ -387,7 +388,7 @@ namespace vkcv::rtx {
         gpuBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
                 | vk::BufferUsageFlagBits::eTransferDst
                 | vk::BufferUsageFlagBits::eStorageBuffer
-                | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR;
+                | vk::BufferUsageFlagBits::eShaderDeviceAddress;
         gpuBuffer.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eDeviceLocal;
 
         createBuffer(gpuBuffer);
@@ -409,24 +410,34 @@ namespace vkcv::rtx {
                 {}  // uint32_t* queueFamilyIndices
                 );
         buffer.vulkanHandle = m_core->getContext().getDevice().createBuffer(bufferCreateInfo);
-        vk::MemoryRequirements memoryRequirements = m_core->getContext().getDevice().getBufferMemoryRequirements(buffer.vulkanHandle);
+
+        vk::MemoryRequirements2KHR memoryRequirements2;
+        vk::MemoryDedicatedRequirementsKHR dedicatedRequirements;
+        vk::BufferMemoryRequirementsInfo2KHR bufferRequirements;
+
+        bufferRequirements.setBuffer(buffer.vulkanHandle);
+        memoryRequirements2.pNext = &dedicatedRequirements;
+        m_core->getContext().getDevice().getBufferMemoryRequirements2(&bufferRequirements, &memoryRequirements2);
+        
+        //vk::MemoryRequirements memoryRequirements = m_core->getContext().getDevice().getBufferMemoryRequirements(buffer.vulkanHandle);
+        
 
         vk::PhysicalDeviceMemoryProperties physicalDeviceMemoryProperties = m_core->getContext().getPhysicalDevice().getMemoryProperties();
 
         uint32_t memoryTypeIndex = -1;
         for (int x = 0; x < physicalDeviceMemoryProperties.memoryTypeCount; x++) {
-            if ((memoryRequirements.memoryTypeBits & (1 << x)) && (physicalDeviceMemoryProperties.memoryTypes[x].propertyFlags & buffer.memoryPropertyFlagBits) == buffer.memoryPropertyFlagBits) {
+            if ((memoryRequirements2.memoryRequirements.memoryTypeBits & (1 << x)) && (physicalDeviceMemoryProperties.memoryTypes[x].propertyFlags & buffer.memoryPropertyFlagBits) == buffer.memoryPropertyFlagBits) {
                 memoryTypeIndex = x;
                 break;
             }
         }
 
         vk::MemoryAllocateInfo memoryAllocateInfo(
-                memoryRequirements.size,  // size of allocation in bytes
+                memoryRequirements2.memoryRequirements.size,  // size of allocation in bytes
                 memoryTypeIndex // index identifying a memory type from the memoryTypes array of the vk::PhysicalDeviceMemoryProperties structure.
                 );
         vk::MemoryAllocateFlagsInfo allocateFlagsInfo(
-                vk::MemoryAllocateFlagBitsKHR::eDeviceAddress  // vk::MemoryAllocateFlags
+                vk::MemoryAllocateFlagBits::eDeviceAddress  // vk::MemoryAllocateFlags
                 );
         memoryAllocateInfo.setPNext(&allocateFlagsInfo);  // extend memory allocate info with allocate flag info
         buffer.deviceMemory = m_core->getContext().getDevice().allocateMemory(memoryAllocateInfo);
@@ -454,6 +465,7 @@ namespace vkcv::rtx {
                 commandBuffer.copyBuffer(cpuBuffer.vulkanHandle, gpuBuffer.vulkanHandle, 1, &bufferCopy);
             },
             nullptr);
+        m_core->getContext().getDevice().waitIdle();
         /*
         auto cmdStream = m_core->createCommandStream(vkcv::QueueType::Graphics);
         auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
