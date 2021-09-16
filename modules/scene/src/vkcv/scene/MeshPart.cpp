@@ -94,7 +94,7 @@ namespace vkcv::scene {
 		m_scene.increaseMaterialUsage(m_materialIndex);
 	}
 	
-	MeshPart::MeshPart(MeshPart &&other) :
+	MeshPart::MeshPart(MeshPart &&other) noexcept :
 			m_scene(other.m_scene),
 			m_vertices(other.m_vertices),
 			m_vertexBindings(other.m_vertexBindings),
