@@ -266,6 +266,7 @@ void ShadowMapping::recordShadowMapRendering(
 		drawcalls.push_back(vkcv::DrawcallInfo(mesh, {}));
 	}
 
+	m_corePtr->recordBeginDebugLabel(cmdStream, "Shadow map depth", {1, 1, 1, 1});
 	m_corePtr->recordDrawcallsToCmdStream(
 		cmdStream,
 		m_shadowMapPass,
@@ -275,6 +276,7 @@ void ShadowMapping::recordShadowMapRendering(
 		{ m_shadowMapDepth.getHandle() },
 		windowHandle);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMapDepth.getHandle());
+	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// depth to moments
 	uint32_t dispatchCount[3];
@@ -287,6 +289,8 @@ void ShadowMapping::recordShadowMapRendering(
 	vkcv::PushConstants msaaPushConstants (sizeof(msaaSampleCount));
 	msaaPushConstants.appendDrawcall(msaaSampleCount);
 
+	m_corePtr->recordBeginDebugLabel(cmdStream, "Depth to moments", { 1, 1, 1, 1 });
+
 	m_corePtr->prepareImageForStorage(cmdStream, m_shadowMap.getHandle());
 	m_corePtr->recordComputeDispatchToCmdStream(
 		cmdStream,
@@ -295,6 +299,9 @@ void ShadowMapping::recordShadowMapRendering(
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_depthToMomentsDescriptorSet).vulkanHandle) },
 		msaaPushConstants);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMap.getHandle());
+	m_corePtr->recordEndDebugLabel(cmdStream);
+
+	m_corePtr->recordBeginDebugLabel(cmdStream, "Moment shadow map blur", { 1, 1, 1, 1 });
 
 	// blur X
 	m_corePtr->prepareImageForStorage(cmdStream, m_shadowMapIntermediate.getHandle());
@@ -316,6 +323,8 @@ void ShadowMapping::recordShadowMapRendering(
 		vkcv::PushConstants(0));
 	m_shadowMap.recordMipChainGeneration(cmdStream);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMap.getHandle());
+
+	m_corePtr->recordEndDebugLabel(cmdStream);
 }
 
 vkcv::ImageHandle ShadowMapping::getShadowMap() {
