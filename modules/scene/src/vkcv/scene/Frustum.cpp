@@ -1,5 +1,5 @@
 
-#include "Frustum.hpp"
+#include "vkcv/scene/Frustum.hpp"
 
 namespace vkcv::scene {
 	

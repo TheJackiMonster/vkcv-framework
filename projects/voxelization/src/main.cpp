@@ -5,33 +5,41 @@
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
-#include <vkcv/Logger.hpp>
 #include "Voxelization.hpp"
-#include <glm/glm.hpp>
 #include "vkcv/gui/GUI.hpp"
 #include "ShadowMapping.hpp"
 #include "BloomAndFlares.hpp"
+#include <vkcv/upscaling/FSRUpscaling.hpp>
+#include <vkcv/upscaling/BilinearUpscaling.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";
 
-	uint32_t windowWidth = 1280;
-	uint32_t windowHeight = 720;
 	const vkcv::Multisampling   msaa        = vkcv::Multisampling::MSAA4X;
 	const bool                  usingMsaa   = msaa != vkcv::Multisampling::None;
-	
-	vkcv::Window window = vkcv::Window::create(
-		applicationName,
-		windowWidth,
-		windowHeight,
-		true
-	);
 
-	bool    isFullscreen            = false;
-	int     windowedWidthBackup     = windowWidth;
-	int     windowedHeightBackup    = windowHeight;
-	int     windowedPosXBackup;
-	int     windowedPosYBackup;
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	features.requireExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
+	features.requireExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
+
+	const uint32_t windowWidth = 1280;
+	const uint32_t windowHeight = 720;
+
+	vkcv::Core core = vkcv::Core::create(
+			applicationName,
+			VK_MAKE_VERSION(0, 0, 1),
+			{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
+			features
+	);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
+	vkcv::Window& window = core.getWindow(windowHandle);
+
+	bool     isFullscreen            = false;
+	uint32_t windowedWidthBackup     = window.getWidth();
+	uint32_t windowedHeightBackup    = window.getHeight();
+	int      windowedPosXBackup;
+	int      windowedPosYBackup;
     glfwGetWindowPos(window.getWindow(), &windowedPosXBackup, &windowedPosYBackup);
 
 	window.e_key.add([&](int key, int scancode, int action, int mods) {
@@ -47,8 +55,8 @@ int main(int argc, const char** argv) {
 					GLFW_DONT_CARE);
 			}
 			else {
-				windowedWidthBackup     = windowWidth;
-				windowedHeightBackup    = windowHeight;
+				windowedWidthBackup     = window.getWidth();
+				windowedHeightBackup    = window.getHeight();
 
 				glfwGetWindowPos(window.getWindow(), &windowedPosXBackup, &windowedPosYBackup);
 
@@ -79,18 +87,9 @@ int main(int argc, const char** argv) {
 	
 	cameraManager.getCamera(camIndex2).setNearFar(0.1f, 30.0f);
 
-	vkcv::Core core = vkcv::Core::create(
-		window,
-		applicationName,
-		VK_MAKE_VERSION(0, 0, 1),
-		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		{},
-		{ "VK_KHR_swapchain" }
-	);
-
 	vkcv::asset::Scene mesh;
 
-	const char* path = argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf";
+	const char* path = argc > 1 ? argv[1] : "assets/Sponza/Sponza.gltf";
 	vkcv::asset::Scene scene;
 	int result = vkcv::asset::loadScene(path, scene);
 
@@ -171,11 +170,11 @@ int main(int argc, const char** argv) {
 	vkcv::shader::GLSLCompiler compiler;
 
 	vkcv::ShaderProgram forwardProgram;
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"), 
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"), 
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		forwardProgram.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		forwardProgram.addShader(shaderStage, path);
 	});
@@ -188,16 +187,16 @@ int main(int argc, const char** argv) {
 	}
 	const vkcv::VertexLayout vertexLayout (vertexBindings);
 
-	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = 
-		core.createDescriptorSet({ forwardProgram.getReflectedDescriptors()[0] });
+	vkcv::DescriptorSetLayoutHandle forwardShadingDescriptorSetLayout = core.createDescriptorSetLayout(forwardProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = core.createDescriptorSet(forwardShadingDescriptorSetLayout);
 
 	// depth prepass config
 	vkcv::ShaderProgram depthPrepassShader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/depthPrepass.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/depthPrepass.vert"),
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		depthPrepassShader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/depthPrepass.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/depthPrepass.frag"),
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		depthPrepassShader.addShader(shaderStage, path);
 	});
@@ -226,6 +225,7 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
+	std::vector<vkcv::DescriptorSetLayoutHandle> materialDescriptorSetLayouts;
 	std::vector<vkcv::DescriptorSetHandle> materialDescriptorSets;
 	std::vector<vkcv::Image> sceneImages;
 
@@ -247,7 +247,8 @@ int main(int argc, const char** argv) {
 			specularIndex = 0;
 		}
 
-		materialDescriptorSets.push_back(core.createDescriptorSet(forwardProgram.getReflectedDescriptors()[1]));
+		materialDescriptorSetLayouts.push_back(core.createDescriptorSetLayout(forwardProgram.getReflectedDescriptors().at(1)));
+		materialDescriptorSets.push_back(core.createDescriptorSet(materialDescriptorSetLayouts.back()));
 
 		vkcv::asset::Texture& albedoTexture     = scene.textures[albedoIndex];
 		vkcv::asset::Texture& normalTexture     = scene.textures[normalIndex];
@@ -286,41 +287,46 @@ int main(int argc, const char** argv) {
 		core.writeDescriptorSet(materialDescriptorSets.back(), setWrites);
 	}
 
+	std::vector<vkcv::DescriptorSetLayoutHandle> perMeshDescriptorSetLayouts;
 	std::vector<vkcv::DescriptorSetHandle> perMeshDescriptorSets;
 	for (const auto& vertexGroup : scene.vertexGroups) {
+	    perMeshDescriptorSetLayouts.push_back(materialDescriptorSetLayouts[vertexGroup.materialIndex]);
 		perMeshDescriptorSets.push_back(materialDescriptorSets[vertexGroup.materialIndex]);
 	}
 
 	// prepass pipeline
-	vkcv::DescriptorSetHandle prepassDescriptorSet = core.createDescriptorSet(std::vector<vkcv::DescriptorBinding>());
+	vkcv::DescriptorSetLayoutHandle prepassDescriptorSetLayout = core.createDescriptorSetLayout({});
+	vkcv::DescriptorSetHandle prepassDescriptorSet = core.createDescriptorSet(prepassDescriptorSetLayout);
 
-	vkcv::PipelineConfig prepassPipelineConfig{
+	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
+	
+	vkcv::GraphicsPipelineConfig prepassPipelineConfig{
 		depthPrepassShader,
-		windowWidth,
-		windowHeight,
+		swapchainExtent.width,
+		swapchainExtent.height,
 		prepassPass,
 		vertexLayout,
 		{ 
-			core.getDescriptorSet(prepassDescriptorSet).layout,
-			core.getDescriptorSet(perMeshDescriptorSets[0]).layout },
+		    core.getDescriptorSetLayout(prepassDescriptorSetLayout).vulkanHandle,
+			core.getDescriptorSetLayout(perMeshDescriptorSetLayouts[0]).vulkanHandle },
 		true };
 	prepassPipelineConfig.m_culling         = vkcv::CullMode::Back;
 	prepassPipelineConfig.m_multisampling   = msaa;
 	prepassPipelineConfig.m_depthTest       = vkcv::DepthTest::LessEqual;
 	prepassPipelineConfig.m_alphaToCoverage = true;
 
-	vkcv::PipelineHandle prepassPipeline = core.createGraphicsPipeline(prepassPipelineConfig);
+	vkcv::GraphicsPipelineHandle prepassPipeline = core.createGraphicsPipeline(prepassPipelineConfig);
 
 	// forward pipeline
-	vkcv::PipelineConfig forwardPipelineConfig {
+	vkcv::GraphicsPipelineConfig forwardPipelineConfig {
 		forwardProgram,
-		windowWidth,
-		windowHeight,
+		swapchainExtent.width,
+		swapchainExtent.height,
 		forwardPass,
 		vertexLayout,
 		{	
-			core.getDescriptorSet(forwardShadingDescriptorSet).layout, 
-			core.getDescriptorSet(perMeshDescriptorSets[0]).layout },
+		    core.getDescriptorSetLayout(forwardShadingDescriptorSetLayout).vulkanHandle,
+			core.getDescriptorSetLayout(perMeshDescriptorSetLayouts[0]).vulkanHandle },
 		true
 	};
     forwardPipelineConfig.m_culling         = vkcv::CullMode::Back;
@@ -328,7 +334,7 @@ int main(int argc, const char** argv) {
 	forwardPipelineConfig.m_depthTest       = vkcv::DepthTest::Equal;
 	forwardPipelineConfig.m_depthWrite      = false;
 	
-	vkcv::PipelineHandle forwardPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
+	vkcv::GraphicsPipelineHandle forwardPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
 	
 	if (!forwardPipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
@@ -358,19 +364,19 @@ int main(int argc, const char** argv) {
 	vkcv::PassHandle skyPass = core.createPass(skyPassConfig);
 
 	vkcv::ShaderProgram skyShader;
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/sky.vert"),
+	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/sky.vert"),
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		skyShader.addShader(shaderStage, path);
 	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/sky.frag"),
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/sky.frag"),
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		skyShader.addShader(shaderStage, path);
 	});
 
-	vkcv::PipelineConfig skyPipeConfig;
+	vkcv::GraphicsPipelineConfig skyPipeConfig;
 	skyPipeConfig.m_ShaderProgram       = skyShader;
-	skyPipeConfig.m_Width               = windowWidth;
-	skyPipeConfig.m_Height              = windowHeight;
+	skyPipeConfig.m_Width               = swapchainExtent.width;
+	skyPipeConfig.m_Height              = swapchainExtent.height;
 	skyPipeConfig.m_PassHandle          = skyPass;
 	skyPipeConfig.m_VertexLayout        = vkcv::VertexLayout();
 	skyPipeConfig.m_DescriptorLayouts   = {};
@@ -378,21 +384,50 @@ int main(int argc, const char** argv) {
 	skyPipeConfig.m_multisampling       = msaa;
 	skyPipeConfig.m_depthWrite          = false;
 
-	vkcv::PipelineHandle skyPipe = core.createGraphicsPipeline(skyPipeConfig);
+	vkcv::GraphicsPipelineHandle skyPipe = core.createGraphicsPipeline(skyPipeConfig);
 
 	// render targets
-	vkcv::ImageHandle depthBuffer           = core.createImage(depthBufferFormat, windowWidth, windowHeight, 1, false, false, false, msaa).getHandle();
+	vkcv::ImageHandle depthBuffer           = core.createImage(
+			depthBufferFormat,
+			swapchainExtent.width,
+			swapchainExtent.height,
+			1, false, false, false, msaa
+	).getHandle();
 
     const bool colorBufferRequiresStorage   = !usingMsaa;
-	vkcv::ImageHandle colorBuffer           = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, colorBufferRequiresStorage, true, msaa).getHandle();
+	vkcv::ImageHandle colorBuffer           = core.createImage(
+			colorBufferFormat,
+			swapchainExtent.width,
+			swapchainExtent.height,
+			1, false, colorBufferRequiresStorage, true, msaa
+	).getHandle();
 
 	vkcv::ImageHandle resolvedColorBuffer;
 	if (usingMsaa) {
-		resolvedColorBuffer = core.createImage(colorBufferFormat, windowWidth, windowHeight, 1, false, true, true).getHandle();
+		resolvedColorBuffer = core.createImage(
+				colorBufferFormat,
+				swapchainExtent.width,
+				swapchainExtent.height,
+				1, false, true, true
+		).getHandle();
 	}
 	else {
 		resolvedColorBuffer = colorBuffer;
 	}
+	
+	vkcv::ImageHandle swapBuffer = core.createImage(
+			colorBufferFormat,
+			swapchainExtent.width,
+			swapchainExtent.height,
+			1, false, true
+	).getHandle();
+	
+	vkcv::ImageHandle swapBuffer2 = core.createImage(
+			colorBufferFormat,
+			swapchainExtent.width,
+			swapchainExtent.height,
+			1, false, true
+	).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -412,33 +447,52 @@ int main(int argc, const char** argv) {
 
 	// tonemapping compute shader
 	vkcv::ShaderProgram tonemappingProgram;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/tonemapping.comp", 
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/tonemapping.comp", 
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		tonemappingProgram.addShader(shaderStage, path);
 	});
-	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(
-		tonemappingProgram.getReflectedDescriptors()[0]);
-	vkcv::PipelineHandle tonemappingPipeline = core.createComputePipeline(
+
+	vkcv::DescriptorSetLayoutHandle tonemappingDescriptorSetLayout = core.createDescriptorSetLayout(
+	        tonemappingProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(tonemappingDescriptorSetLayout);
+	vkcv::ComputePipelineHandle tonemappingPipeline = core.createComputePipeline({
 		tonemappingProgram,
-		{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
+		{ core.getDescriptorSetLayout(tonemappingDescriptorSetLayout).vulkanHandle }});
+	
+	// tonemapping compute shader
+	vkcv::ShaderProgram postEffectsProgram;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/postEffects.comp",
+		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		postEffectsProgram.addShader(shaderStage, path);
+	});
+
+	vkcv::DescriptorSetLayoutHandle postEffectsDescriptorSetLayout = core.createDescriptorSetLayout(
+	        postEffectsProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle postEffectsDescriptorSet = core.createDescriptorSet(postEffectsDescriptorSetLayout);
+	vkcv::ComputePipelineHandle postEffectsPipeline = core.createComputePipeline({
+			postEffectsProgram,
+			{ core.getDescriptorSetLayout(postEffectsDescriptorSetLayout).vulkanHandle }});
 
 	// resolve compute shader
 	vkcv::ShaderProgram resolveProgram;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "resources/shaders/msaa4XResolve.comp",
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/msaa4XResolve.comp",
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		resolveProgram.addShader(shaderStage, path);
 	});
-	vkcv::DescriptorSetHandle resolveDescriptorSet = core.createDescriptorSet(
-		resolveProgram.getReflectedDescriptors()[0]);
-	vkcv::PipelineHandle resolvePipeline = core.createComputePipeline(
+
+	vkcv::DescriptorSetLayoutHandle resolveDescriptorSetLayout = core.createDescriptorSetLayout(
+		resolveProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle resolveDescriptorSet = core.createDescriptorSet(resolveDescriptorSetLayout);
+	vkcv::ComputePipelineHandle resolvePipeline = core.createComputePipeline({
 		resolveProgram,
-		{ core.getDescriptorSet(resolveDescriptorSet).layout });
+		{ core.getDescriptorSetLayout(resolveDescriptorSetLayout).vulkanHandle }});
 
 	vkcv::SamplerHandle resolveSampler = core.createSampler(
 		vkcv::SamplerFilterType::NEAREST,
 		vkcv::SamplerFilterType::NEAREST,
 		vkcv::SamplerMipmapMode::NEAREST,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
+		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
+	);
 
 	// model matrices per mesh
 	std::vector<glm::mat4> modelMatrices;
@@ -473,7 +527,8 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
+		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
+	);
 
 	ShadowMapping shadowMapping(&core, vertexLayout);
 
@@ -490,11 +545,11 @@ int main(int argc, const char** argv) {
 		voxelSampler,
 		msaa);
 
-	BloomAndFlares bloomFlares(&core, colorBufferFormat, windowWidth, windowHeight);
+	BloomAndFlares bloomFlares(&core, colorBufferFormat, swapchainExtent.width, swapchainExtent.height);
 
 	window.e_key.add([&](int key, int scancode, int action, int mods) {
 		if (key == GLFW_KEY_R && action == GLFW_PRESS) {
-			bloomFlares = BloomAndFlares(&core, colorBufferFormat, windowWidth, windowHeight);
+			bloomFlares = BloomAndFlares(&core, colorBufferFormat, swapchainExtent.width, swapchainExtent.height);
 		}
 	});
 
@@ -511,10 +566,10 @@ int main(int argc, const char** argv) {
 	// write forward pass descriptor set
 	vkcv::DescriptorWrites forwardDescriptorWrites;
 	forwardDescriptorWrites.uniformBufferWrites = {
-		vkcv::UniformBufferDescriptorWrite(0, shadowMapping.getLightInfoBuffer()),
-		vkcv::UniformBufferDescriptorWrite(3, cameraPosBuffer.getHandle()),
-		vkcv::UniformBufferDescriptorWrite(6, voxelization.getVoxelInfoBufferHandle()),
-		vkcv::UniformBufferDescriptorWrite(7, volumetricSettingsBuffer.getHandle())};
+		vkcv::BufferDescriptorWrite(0, shadowMapping.getLightInfoBuffer()),
+		vkcv::BufferDescriptorWrite(3, cameraPosBuffer.getHandle()),
+		vkcv::BufferDescriptorWrite(6, voxelization.getVoxelInfoBufferHandle()),
+		vkcv::BufferDescriptorWrite(7, volumetricSettingsBuffer.getHandle())};
 	forwardDescriptorWrites.sampledImageWrites = {
 		vkcv::SampledImageDescriptorWrite(1, shadowMapping.getShadowMap()),
 		vkcv::SampledImageDescriptorWrite(4, voxelization.getVoxelImageHandle()) };
@@ -523,7 +578,28 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerDescriptorWrite(5, voxelSampler) };
 	core.writeDescriptorSet(forwardShadingDescriptorSet, forwardDescriptorWrites);
 
-	vkcv::gui::GUI gui(core, window);
+	vkcv::upscaling::FSRUpscaling upscaling (core);
+	uint32_t fsrWidth = swapchainExtent.width, fsrHeight = swapchainExtent.height;
+	
+	vkcv::upscaling::FSRQualityMode fsrMode = vkcv::upscaling::FSRQualityMode::NONE;
+	int fsrModeIndex = static_cast<int>(fsrMode);
+	
+	const std::vector<const char*> fsrModeNames = {
+			"None",
+			"Ultra Quality",
+			"Quality",
+			"Balanced",
+			"Performance"
+	};
+	
+	bool fsrMipLoadBiasFlag = true;
+	bool fsrMipLoadBiasFlagBackup = fsrMipLoadBiasFlag;
+	
+	vkcv::upscaling::BilinearUpscaling upscaling1 (core);
+	
+	bool bilinearUpscaling = false;
+	
+	vkcv::gui::GUI gui(core, windowHandle);
 
 	glm::vec2   lightAnglesDegree               = glm::vec2(90.f, 0.f);
 	glm::vec3   lightColor                      = glm::vec3(1);
@@ -543,29 +619,79 @@ int main(int argc, const char** argv) {
 
 	auto start = std::chrono::system_clock::now();
 	const auto appStartTime = start;
-	while (window.isWindowOpen()) {
+	while (vkcv::Window::hasOpenWindow()) {
 		vkcv::Window::pollEvents();
 
 		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
 			continue;
 		}
+		
+		uint32_t width, height;
+		vkcv::upscaling::getFSRResolution(
+				fsrMode,
+				swapchainWidth, swapchainHeight,
+				width, height
+		);
 
-		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
-			depthBuffer         = core.createImage(depthBufferFormat, swapchainWidth, swapchainHeight, 1, false, false, false, msaa).getHandle();
-			colorBuffer         = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, false, colorBufferRequiresStorage, true, msaa).getHandle();
+		if ((width != fsrWidth) || ((height != fsrHeight)) || (fsrMipLoadBiasFlagBackup != fsrMipLoadBiasFlag)) {
+			fsrWidth = width;
+			fsrHeight = height;
+			fsrMipLoadBiasFlagBackup = fsrMipLoadBiasFlag;
+			
+			colorSampler = core.createSampler(
+					vkcv::SamplerFilterType::LINEAR,
+					vkcv::SamplerFilterType::LINEAR,
+					vkcv::SamplerMipmapMode::LINEAR,
+					vkcv::SamplerAddressMode::REPEAT,
+					fsrMipLoadBiasFlag? vkcv::upscaling::getFSRLodBias(fsrMode) : 0.0f
+			);
+			
+			for (size_t i = 0; i < scene.materials.size(); i++) {
+				vkcv::DescriptorWrites setWrites;
+				setWrites.samplerWrites = {
+						vkcv::SamplerDescriptorWrite(1, colorSampler),
+				};
+				core.writeDescriptorSet(materialDescriptorSets[i], setWrites);
+			}
+			
+			depthBuffer = core.createImage(
+					depthBufferFormat,
+					fsrWidth, fsrHeight, 1,
+					false, false, false,
+					msaa
+			).getHandle();
+			
+			colorBuffer = core.createImage(
+					colorBufferFormat,
+					fsrWidth, fsrHeight, 1,
+					false, colorBufferRequiresStorage, true,
+					msaa
+			).getHandle();
 
 			if (usingMsaa) {
-				resolvedColorBuffer = core.createImage(colorBufferFormat, swapchainWidth, swapchainHeight, 1, false, true, true).getHandle();
-			}
-			else {
+				resolvedColorBuffer = core.createImage(
+						colorBufferFormat,
+						fsrWidth, fsrHeight, 1,
+						false, true, true
+				).getHandle();
+			} else {
 				resolvedColorBuffer = colorBuffer;
 			}
-
-			windowWidth = swapchainWidth;
-			windowHeight = swapchainHeight;
-
-			bloomFlares.updateImageDimensions(windowWidth, windowHeight);
+			
+			swapBuffer = core.createImage(
+					colorBufferFormat,
+					fsrWidth, fsrHeight, 1,
+					false, true
+			).getHandle();
+			
+			swapBuffer2 = core.createImage(
+					colorBufferFormat,
+					swapchainWidth, swapchainHeight, 1,
+					false, true
+			).getHandle();
+			
+			bloomFlares.updateImageDimensions(swapchainWidth, swapchainHeight);
 		}
 
 		auto end = std::chrono::system_clock::now();
@@ -575,9 +701,17 @@ int main(int argc, const char** argv) {
 		vkcv::DescriptorWrites tonemappingDescriptorWrites;
 		tonemappingDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(0, resolvedColorBuffer) };
 		tonemappingDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(1, colorSampler) };
-		tonemappingDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, swapchainInput) };
+		tonemappingDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, swapBuffer) };
 
 		core.writeDescriptorSet(tonemappingDescriptorSet, tonemappingDescriptorWrites);
+		
+		// update descriptor sets which use swapchain image
+		vkcv::DescriptorWrites postEffectsDescriptorWrites;
+		postEffectsDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(0, swapBuffer2) };
+		postEffectsDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(1, colorSampler) };
+		postEffectsDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, swapchainInput) };
+		
+		core.writeDescriptorSet(postEffectsDescriptorSet, postEffectsDescriptorWrites);
 
 		// update resolve descriptor, color images could be changed
 		vkcv::DescriptorWrites resolveDescriptorWrites;
@@ -606,7 +740,8 @@ int main(int argc, const char** argv) {
 			modelMatrices,
 			cameraManager.getActiveCamera(),
 			voxelization.getVoxelOffset(),
-			voxelization.getVoxelExtent());
+			voxelization.getVoxelExtent(),
+			windowHandle);
 
 		// voxelization
 		voxelization.setVoxelExtent(voxelizationExtent);
@@ -614,7 +749,8 @@ int main(int argc, const char** argv) {
 			cmdStream,
 			meshes, 
 			modelMatrices,
-			perMeshDescriptorSets);
+			perMeshDescriptorSets,
+			windowHandle);
 
 		// depth prepass
 		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();
@@ -635,7 +771,8 @@ int main(int argc, const char** argv) {
 			prepassPipeline,
 			prepassPushConstants,
 			prepassDrawcalls,
-			prepassRenderTargets);
+			prepassRenderTargets,
+			windowHandle);
 
 		core.recordImageMemoryBarrier(cmdStream, depthBuffer);
 		
@@ -660,10 +797,11 @@ int main(int argc, const char** argv) {
 			forwardPipeline,
 			pushConstants,
 			drawcalls,
-			renderTargets);
+			renderTargets,
+			windowHandle);
 
 		if (renderVoxelVis) {
-			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets, voxelVisualisationMip);
+			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets, voxelVisualisationMip, windowHandle);
 		}
 		
 		vkcv::PushConstants skySettingsPushConstants (sizeof(skySettings));
@@ -676,14 +814,22 @@ int main(int argc, const char** argv) {
 			skyPipe,
 			skySettingsPushConstants,
 			{ vkcv::DrawcallInfo(vkcv::Mesh({}, nullptr, 3), {}) },
-			renderTargets);
+			renderTargets,
+			windowHandle);
 
 		const uint32_t fullscreenLocalGroupSize = 8;
-		const uint32_t fulsscreenDispatchCount[3] = {
-			static_cast<uint32_t>(glm::ceil(windowWidth  / static_cast<float>(fullscreenLocalGroupSize))),
-			static_cast<uint32_t>(glm::ceil(windowHeight / static_cast<float>(fullscreenLocalGroupSize))),
-			1
-		};
+		
+		uint32_t fulsscreenDispatchCount [3];
+		
+		fulsscreenDispatchCount[0] = static_cast<uint32_t>(
+				glm::ceil(fsrWidth  / static_cast<float>(fullscreenLocalGroupSize))
+		);
+		
+		fulsscreenDispatchCount[1] = static_cast<uint32_t>(
+				glm::ceil(fsrHeight / static_cast<float>(fullscreenLocalGroupSize))
+		);
+		
+		fulsscreenDispatchCount[2] = 1;
 
 		if (usingMsaa) {
 			if (msaaCustomResolve) {
@@ -706,24 +852,58 @@ int main(int argc, const char** argv) {
 			}
 		}
 
-		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer, windowWidth, windowHeight, 
-			glm::normalize(cameraManager.getActiveCamera().getFront()));
+		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer, fsrWidth, fsrHeight,
+			glm::normalize(cameraManager.getActiveCamera().getFront())
+		);
 
-		core.prepareImageForStorage(cmdStream, swapchainInput);
+		core.prepareImageForStorage(cmdStream, swapBuffer);
 		core.prepareImageForSampling(cmdStream, resolvedColorBuffer);
-
-		auto timeSinceStart = std::chrono::duration_cast<std::chrono::microseconds>(end - appStartTime);
-		float timeF         = static_cast<float>(timeSinceStart.count()) * 0.01;
-
-		vkcv::PushConstants timePushConstants (sizeof(timeF));
-		timePushConstants.appendDrawcall(timeF);
 		
 		core.recordComputeDispatchToCmdStream(
 			cmdStream, 
 			tonemappingPipeline, 
 			fulsscreenDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptorSet).vulkanHandle) },
-			timePushConstants);
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(
+					tonemappingDescriptorSet
+			).vulkanHandle) },
+			vkcv::PushConstants(0)
+		);
+		
+		core.prepareImageForStorage(cmdStream, swapBuffer2);
+		core.prepareImageForSampling(cmdStream, swapBuffer);
+		
+		if (bilinearUpscaling) {
+			upscaling1.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+		} else {
+			upscaling.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+		}
+		
+		core.prepareImageForStorage(cmdStream, swapchainInput);
+		core.prepareImageForSampling(cmdStream, swapBuffer2);
+		
+		auto timeSinceStart = std::chrono::duration_cast<std::chrono::microseconds>(end - appStartTime);
+		float timeF         = static_cast<float>(timeSinceStart.count()) * 0.01f;
+		
+		vkcv::PushConstants timePushConstants (sizeof(timeF));
+		timePushConstants.appendDrawcall(timeF);
+		
+		fulsscreenDispatchCount[0] = static_cast<uint32_t>(
+				glm::ceil(swapchainWidth  / static_cast<float>(fullscreenLocalGroupSize))
+		);
+		
+		fulsscreenDispatchCount[1] = static_cast<uint32_t>(
+				glm::ceil(swapchainHeight / static_cast<float>(fullscreenLocalGroupSize))
+		);
+		
+		core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				postEffectsPipeline,
+				fulsscreenDispatchCount,
+				{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(
+						postEffectsDescriptorSet
+				).vulkanHandle) },
+				timePushConstants
+		);
 
 		// present and end
 		core.prepareSwapchainImageForPresent(cmdStream);
@@ -751,26 +931,39 @@ int main(int argc, const char** argv) {
 			ImGui::DragFloat("Voxelization extent", &voxelizationExtent, 1.f, 0.f);
 			voxelizationExtent = std::max(voxelizationExtent, 1.f);
 			voxelVisualisationMip = std::max(voxelVisualisationMip, 0);
-
+			
 			ImGui::ColorEdit3("Scattering color", &scatteringColor.x);
 			ImGui::DragFloat("Scattering density", &scatteringDensity, 0.0001);
 			ImGui::ColorEdit3("Absorption color", &absorptionColor.x);
 			ImGui::DragFloat("Absorption density", &absorptionDensity, 0.0001);
 			ImGui::DragFloat("Volumetric ambient", &volumetricAmbient, 0.002);
+			
+			float fsrSharpness = upscaling.getSharpness();
+			
+			ImGui::Combo("FSR Quality Mode", &fsrModeIndex, fsrModeNames.data(), fsrModeNames.size());
+			ImGui::DragFloat("FSR Sharpness", &fsrSharpness, 0.001, 0.0f, 1.0f);
+			ImGui::Checkbox("FSR Mip Lod Bias", &fsrMipLoadBiasFlag);
+			ImGui::Checkbox("Bilinear Upscaling", &bilinearUpscaling);
+			
+			if ((fsrModeIndex >= 0) && (fsrModeIndex <= 4)) {
+				fsrMode = static_cast<vkcv::upscaling::FSRQualityMode>(fsrModeIndex);
+			}
+			
+			upscaling.setSharpness(fsrSharpness);
 
 			if (ImGui::Button("Reload forward pass")) {
 
 				vkcv::ShaderProgram newForwardProgram;
-				compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
+				compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 					newForwardProgram.addShader(shaderStage, path);
 				});
-				compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
+				compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 					newForwardProgram.addShader(shaderStage, path);
 				});
 				forwardPipelineConfig.m_ShaderProgram = newForwardProgram;
-				vkcv::PipelineHandle newPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
+				vkcv::GraphicsPipelineHandle newPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
 
 				if (newPipeline) {
 					forwardPipeline = newPipeline;
@@ -779,13 +972,14 @@ int main(int argc, const char** argv) {
 			if (ImGui::Button("Reload tonemapping")) {
 
 				vkcv::ShaderProgram newProgram;
-				compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("resources/shaders/tonemapping.comp"),
+				compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("assets/shaders/tonemapping.comp"),
 					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 					newProgram.addShader(shaderStage, path);
 				});
-				vkcv::PipelineHandle newPipeline = core.createComputePipeline(
+
+				vkcv::ComputePipelineHandle newPipeline = core.createComputePipeline({
 					newProgram,
-					{ core.getDescriptorSet(tonemappingDescriptorSet).layout });
+					{ core.getDescriptorSetLayout(tonemappingDescriptorSetLayout).vulkanHandle }});
 
 				if (newPipeline) {
 					tonemappingPipeline = newPipeline;
@@ -796,7 +990,7 @@ int main(int argc, const char** argv) {
 
 		gui.endGUI();
 
-		core.endFrame();
+		core.endFrame(windowHandle);
 	}
 	
 	return 0;

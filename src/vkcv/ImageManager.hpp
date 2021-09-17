@@ -13,6 +13,8 @@
 #include "vkcv/ImageConfig.hpp"
 
 namespace vkcv {
+	
+	bool isDepthImageFormat(vk::Format format);
 
 	class ImageManager
 	{
@@ -117,6 +119,10 @@ namespace vkcv {
 		
 		void setSwapchainImages(const std::vector<vk::Image>& images, const std::vector<vk::ImageView>& views,
 								uint32_t width, uint32_t height, vk::Format format);
+
+		// if manual vulkan work, e.g. ImGui integration, changes an image layout this function must be used
+		// to update the internal image state
+		void updateImageLayoutManual(const vkcv::ImageHandle& handle, const vk::ImageLayout layout);
 
 	};
 }

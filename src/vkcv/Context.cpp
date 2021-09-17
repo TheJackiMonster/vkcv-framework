@@ -1,7 +1,6 @@
 
-#include <GLFW/glfw3.h>
-
 #include "vkcv/Context.hpp"
+#include "vkcv/Window.hpp"
 
 namespace vkcv
 {
@@ -9,8 +8,9 @@ namespace vkcv
             m_Instance(other.m_Instance),
             m_PhysicalDevice(other.m_PhysicalDevice),
             m_Device(other.m_Device),
-            m_QueueManager(other.m_QueueManager),
-            m_Allocator(other.m_Allocator)
+			m_FeatureManager(std::move(other.m_FeatureManager)),
+			m_QueueManager(std::move(other.m_QueueManager)),
+			m_Allocator(other.m_Allocator)
     {
         other.m_Instance        = nullptr;
         other.m_PhysicalDevice  = nullptr;
@@ -23,7 +23,8 @@ namespace vkcv
         m_Instance          = other.m_Instance;
         m_PhysicalDevice    = other.m_PhysicalDevice;
         m_Device            = other.m_Device;
-        m_QueueManager		= other.m_QueueManager;
+        m_FeatureManager	= std::move(other.m_FeatureManager);
+        m_QueueManager		= std::move(other.m_QueueManager);
         m_Allocator			= other.m_Allocator;
 
         other.m_Instance        = nullptr;
@@ -37,12 +38,14 @@ namespace vkcv
     Context::Context(vk::Instance instance,
                      vk::PhysicalDevice physicalDevice,
                      vk::Device device,
+                     FeatureManager&& featureManager,
 					 QueueManager&& queueManager,
 					 vma::Allocator&& allocator) noexcept :
     m_Instance(instance),
     m_PhysicalDevice(physicalDevice),
     m_Device(device),
-    m_QueueManager(queueManager),
+    m_FeatureManager(std::move(featureManager)),
+    m_QueueManager(std::move(queueManager)),
     m_Allocator(allocator)
     {}
 
@@ -66,6 +69,10 @@ namespace vkcv
     const vk::Device &Context::getDevice() const
     {
         return m_Device;
+    }
+    
+    const FeatureManager& Context::getFeatureManager() const {
+    	return m_FeatureManager;
     }
     
     const QueueManager& Context::getQueueManager() const {
@@ -116,16 +123,17 @@ namespace vkcv
 	/**
 	 * @brief All existing physical devices will be evaluated by deviceScore.
 	 * @param instance The instance
-	 * @return The optimal physical device
+	 * @param physicalDevice The optimal physical device
+	 * @return Returns if a suitable GPU is found as physical device
 	 * @see Context.deviceScore
 	*/
-	vk::PhysicalDevice pickPhysicalDevice(vk::Instance& instance)
+	bool pickPhysicalDevice(const vk::Instance& instance, vk::PhysicalDevice& physicalDevice)
 	{
-		vk::PhysicalDevice phyDevice;
-		std::vector<vk::PhysicalDevice> devices = instance.enumeratePhysicalDevices();
+		const std::vector<vk::PhysicalDevice>& devices = instance.enumeratePhysicalDevices();
 		
 		if (devices.empty()) {
-			throw std::runtime_error("failed to find GPUs with Vulkan support!");
+			vkcv_log(LogLevel::ERROR, "Failed to find GPUs with Vulkan support");
+			return false;
 		}
 		
 		int max_score = -1;
@@ -133,15 +141,16 @@ namespace vkcv
 			int score = deviceScore(device);
 			if (score > max_score) {
 				max_score = score;
-				phyDevice = device;
+				physicalDevice = device;
 			}
 		}
 		
 		if (max_score == -1) {
-			throw std::runtime_error("failed to find a suitable GPU!");
+			vkcv_log(LogLevel::ERROR, "Failed to find a suitable GPU");
+			return false;
+		} else {
+			return true;
 		}
-		
-		return phyDevice;
 	}
 	
 	/**
@@ -151,7 +160,7 @@ namespace vkcv
 	 * @param check The elements to be checked
 	 * @return True, if all elements in "check" are supported
 	*/
-	bool checkSupport(std::vector<const char*>& supported, std::vector<const char*>& check)
+	bool checkSupport(const std::vector<const char*>& supported, const std::vector<const char*>& check)
 	{
 		for (auto checkElem : check) {
 			bool found = false;
@@ -167,14 +176,11 @@ namespace vkcv
 		return true;
 	}
 	
-	
-	std::vector<const char*> getRequiredExtensions() {
-		uint32_t glfwExtensionCount = 0;
-		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
+	std::vector<std::string> getRequiredExtensions() {
+		std::vector<std::string> extensions = Window::getExtensions();
+		
 #ifndef NDEBUG
-		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 		
 		return extensions;
@@ -182,9 +188,9 @@ namespace vkcv
 	
 	Context Context::create(const char *applicationName,
 							uint32_t applicationVersion,
-							std::vector<vk::QueueFlagBits> queueFlags,
-							std::vector<const char *> instanceExtensions,
-							std::vector<const char *> deviceExtensions) {
+							const std::vector<vk::QueueFlagBits>& queueFlags,
+							const Features& features,
+							const std::vector<const char*>& instanceExtensions) {
 		// check for layer support
 		
 		const std::vector<vk::LayerProperties>& layerProperties = vk::enumerateInstanceLayerProperties();
@@ -217,13 +223,19 @@ namespace vkcv
 			supportedExtensions.push_back(elem.extensionName);
 		}
 		
-		if (!checkSupport(supportedExtensions, instanceExtensions)) {
-			throw std::runtime_error("The requested instance extensions are not supported!");
+		// for GLFW: get all required extensions
+		auto requiredStrings = getRequiredExtensions();
+		std::vector<const char*> requiredExtensions;
+		
+		for (const auto& extension : requiredStrings) {
+			requiredExtensions.push_back(extension.c_str());
 		}
 		
-		// for GLFW: get all required extensions
-		std::vector<const char*> requiredExtensions = getRequiredExtensions();
-		instanceExtensions.insert(instanceExtensions.end(), requiredExtensions.begin(), requiredExtensions.end());
+		requiredExtensions.insert(requiredExtensions.end(), instanceExtensions.begin(), instanceExtensions.end());
+		
+		if (!checkSupport(supportedExtensions, requiredExtensions)) {
+			throw std::runtime_error("The requested instance extensions are not supported!");
+		}
 		
 		const vk::ApplicationInfo applicationInfo(
 				applicationName,
@@ -238,8 +250,8 @@ namespace vkcv
 				&applicationInfo,
 				0,
 				nullptr,
-				static_cast<uint32_t>(instanceExtensions.size()),
-				instanceExtensions.data()
+				static_cast<uint32_t>(requiredExtensions.size()),
+				requiredExtensions.data()
 		);
 
 #ifndef NDEBUG
@@ -250,17 +262,44 @@ namespace vkcv
 		vk::Instance instance = vk::createInstance(instanceCreateInfo);
 		
 		std::vector<vk::PhysicalDevice> physicalDevices = instance.enumeratePhysicalDevices();
-		vk::PhysicalDevice physicalDevice = pickPhysicalDevice(instance);
+		vk::PhysicalDevice physicalDevice;
 		
-		// check for physical device extension support
-		std::vector<vk::ExtensionProperties> deviceExtensionProperties = physicalDevice.enumerateDeviceExtensionProperties();
-		supportedExtensions.clear();
-		for (auto& elem : deviceExtensionProperties) {
-			supportedExtensions.push_back(elem.extensionName);
+		if (!pickPhysicalDevice(instance, physicalDevice)) {
+			throw std::runtime_error("Picking suitable GPU as physical device failed!");
 		}
-		if (!checkSupport(supportedExtensions, deviceExtensions)) {
-			throw std::runtime_error("The requested device extensions are not supported by the physical device!");
+		
+		FeatureManager featureManager (physicalDevice);
+		
+#ifdef __APPLE__
+		featureManager.useExtension("VK_KHR_portability_subset", true);
+#endif
+		
+		if (featureManager.useExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME, false)) {
+			featureManager.useFeatures<vk::PhysicalDeviceShaderFloat16Int8Features>(
+					[](vk::PhysicalDeviceShaderFloat16Int8Features& features) {
+				features.setShaderFloat16(true);
+			}, false);
 		}
+		
+		if (featureManager.useExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME, false)) {
+			featureManager.useFeatures<vk::PhysicalDevice16BitStorageFeatures>(
+					[](vk::PhysicalDevice16BitStorageFeatures& features) {
+				features.setStorageBuffer16BitAccess(true);
+			}, false);
+		}
+		
+		featureManager.useFeatures([](vk::PhysicalDeviceFeatures& features) {
+			features.setFragmentStoresAndAtomics(true);
+			features.setGeometryShader(true);
+			features.setDepthClamp(true);
+			features.setShaderInt16(true);
+		});
+		
+		for (const auto& feature : features.getList()) {
+			feature(featureManager);
+		}
+		
+		const auto& extensions = featureManager.getActiveExtensions();
 		
 		std::vector<vk::DeviceQueueCreateInfo> qCreateInfos;
 		
@@ -277,29 +316,23 @@ namespace vkcv
 				qCreateInfos.data(),
 				0,
 				nullptr,
-				deviceExtensions.size(),
-				deviceExtensions.data(),
-				nullptr		// Should our device use some features??? If yes: TODO
+				extensions.size(),
+				extensions.data(),
+				nullptr
 		);
 
 #ifndef NDEBUG
 		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
-
-		// FIXME: check if device feature is supported
-		vk::PhysicalDeviceFeatures deviceFeatures;
-		deviceFeatures.fragmentStoresAndAtomics = true;
-		deviceFeatures.geometryShader = true;
-		deviceFeatures.depthClamp = true;
-		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
-
-		// Ablauf
-		// qCreateInfos erstellen --> braucht das Device
-		// device erstellen
-		// jetzt koennen wir mit dem device die queues erstellen
+		
+		deviceCreateInfo.setPNext(&(featureManager.getFeatures()));
 		
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
+
+		if (featureManager.isExtensionActive(VK_NV_MESH_SHADER_EXTENSION_NAME)) {
+			InitMeshShaderDrawFunctions(device);
+		}
 		
 		QueueManager queueManager = QueueManager::create(
 				device,
@@ -336,6 +369,7 @@ namespace vkcv
 				instance,
 				physicalDevice,
 				device,
+				std::move(featureManager),
 				std::move(queueManager),
 				std::move(allocator)
 		);

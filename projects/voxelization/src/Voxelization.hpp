@@ -23,13 +23,15 @@ public:
 		vkcv::CommandStreamHandle                       cmdStream,
 		const std::vector<vkcv::Mesh>&                  meshes,
 		const std::vector<glm::mat4>&                   modelMatrices,
-		const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets);
+		const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets,
+		const vkcv::WindowHandle&                       windowHandle);
 
 	void renderVoxelVisualisation(
 		vkcv::CommandStreamHandle               cmdStream,
 		const glm::mat4&                        viewProjectin,
 		const std::vector<vkcv::ImageHandle>&   renderTargets,
-		uint32_t                                mipLevel);
+		uint32_t                                mipLevel,
+		const vkcv::WindowHandle&               windowHandle);
 
 	void updateVoxelOffset(const vkcv::camera::Camera& camera);
 	void setVoxelExtent(float extent);
@@ -53,24 +55,29 @@ private:
 	vkcv::Image                         m_voxelImage;
 	vkcv::Buffer<VoxelBufferContent>    m_voxelBuffer;
 
-	vkcv::Image                 m_dummyRenderTarget;
-	vkcv::PassHandle            m_voxelizationPass;
-	vkcv::PipelineHandle        m_voxelizationPipe;
-	vkcv::DescriptorSetHandle   m_voxelizationDescriptorSet;
+	vkcv::Image                         m_dummyRenderTarget;
+	vkcv::PassHandle                    m_voxelizationPass;
+	vkcv::GraphicsPipelineHandle        m_voxelizationPipe;
+	vkcv::DescriptorSetLayoutHandle     m_voxelizationDescriptorSetLayout;
+	vkcv::DescriptorSetHandle           m_voxelizationDescriptorSet;
 
-	vkcv::PipelineHandle        m_voxelResetPipe;
-	vkcv::DescriptorSetHandle   m_voxelResetDescriptorSet;
+	vkcv::ComputePipelineHandle         m_voxelResetPipe;
+	vkcv::DescriptorSetLayoutHandle     m_voxelResetDescriptorSetLayout;
+	vkcv::DescriptorSetHandle           m_voxelResetDescriptorSet;
 
-	vkcv::PipelineHandle        m_bufferToImagePipe;
-	vkcv::DescriptorSetHandle   m_bufferToImageDescriptorSet;
+	vkcv::ComputePipelineHandle         m_bufferToImagePipe;
+	vkcv::DescriptorSetLayoutHandle     m_bufferToImageDescriptorSetLayout;
+	vkcv::DescriptorSetHandle           m_bufferToImageDescriptorSet;
 
-	vkcv::PassHandle            m_visualisationPass;
-	vkcv::PipelineHandle        m_visualisationPipe;
+	vkcv::PassHandle                    m_visualisationPass;
+	vkcv::GraphicsPipelineHandle        m_visualisationPipe;
 
-	vkcv::PipelineHandle        m_secondaryBouncePipe;
-	vkcv::DescriptorSetHandle   m_secondaryBounceDescriptorSet;
+	vkcv::ComputePipelineHandle         m_secondaryBouncePipe;
+	vkcv::DescriptorSetLayoutHandle     m_secondaryBounceDescriptorSetLayout;
+	vkcv::DescriptorSetHandle           m_secondaryBounceDescriptorSet;
 
-	vkcv::DescriptorSetHandle   m_visualisationDescriptorSet;
+	vkcv::DescriptorSetLayoutHandle     m_visualisationDescriptorSetLayout;
+	vkcv::DescriptorSetHandle           m_visualisationDescriptorSet;
 
 	struct VoxelizationInfo {
 		glm::vec3 offset;

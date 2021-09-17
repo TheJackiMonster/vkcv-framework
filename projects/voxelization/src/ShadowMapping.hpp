@@ -27,7 +27,8 @@ public:
 		const std::vector<glm::mat4>&       modelMatrices,
 		const vkcv::camera::Camera&         camera,
 		const glm::vec3&                    voxelVolumeOffset,
-		float                               voxelVolumeExtent);
+		float                               voxelVolumeExtent,
+		const vkcv::WindowHandle&           windowHandle);
 
 	vkcv::ImageHandle   getShadowMap();
 	vkcv::SamplerHandle getShadowSampler();
@@ -36,21 +37,24 @@ public:
 private:
 	vkcv::Core* m_corePtr;
 
-	vkcv::Image                 m_shadowMap;
-	vkcv::Image                 m_shadowMapIntermediate;
-	vkcv::Image                 m_shadowMapDepth;
-	vkcv::SamplerHandle         m_shadowSampler;
-	vkcv::Buffer<LightInfo>     m_lightInfoBuffer;
+	vkcv::Image                         m_shadowMap;
+	vkcv::Image                         m_shadowMapIntermediate;
+	vkcv::Image                         m_shadowMapDepth;
+	vkcv::SamplerHandle                 m_shadowSampler;
+	vkcv::Buffer<LightInfo>             m_lightInfoBuffer;
 
-	vkcv::PassHandle            m_shadowMapPass;
-	vkcv::PipelineHandle        m_shadowMapPipe;
+	vkcv::PassHandle                    m_shadowMapPass;
+	vkcv::GraphicsPipelineHandle        m_shadowMapPipe;
 
-	vkcv::PipelineHandle        m_depthToMomentsPipe;
-	vkcv::DescriptorSetHandle   m_depthToMomentsDescriptorSet;
+	vkcv::ComputePipelineHandle         m_depthToMomentsPipe;
+	vkcv::DescriptorSetLayoutHandle     m_depthToMomentsDescriptorSetLayout;
+	vkcv::DescriptorSetHandle           m_depthToMomentsDescriptorSet;
 
-	vkcv::PipelineHandle        m_shadowBlurXPipe;
-	vkcv::DescriptorSetHandle   m_shadowBlurXDescriptorSet;
+	vkcv::ComputePipelineHandle         m_shadowBlurXPipe;
+	vkcv::DescriptorSetLayoutHandle     m_shadowBlurXDescriptorSetLayout;
+	vkcv::DescriptorSetHandle           m_shadowBlurXDescriptorSet;
 
-	vkcv::PipelineHandle        m_shadowBlurYPipe;
-	vkcv::DescriptorSetHandle   m_shadowBlurYDescriptorSet;
+	vkcv::ComputePipelineHandle         m_shadowBlurYPipe;
+	vkcv::DescriptorSetLayoutHandle     m_shadowBlurYDescriptorSetLayout;
+	vkcv::DescriptorSetHandle           m_shadowBlurYDescriptorSet;
 };

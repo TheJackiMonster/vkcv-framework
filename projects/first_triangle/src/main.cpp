@@ -10,33 +10,28 @@ int main(int argc, const char** argv) {
 
 	const int windowWidth = 800;
 	const int windowHeight = 600;
-	vkcv::Window window = vkcv::Window::create(
-		applicationName,
-		windowWidth,
-		windowHeight,
-		false
-	);
-
+	
 	vkcv::Core core = vkcv::Core::create(
-		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		{},
-		{ "VK_KHR_swapchain" }
+		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
 
-	const auto& context = core.getContext();
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
+	vkcv::Window& window = core.getWindow(windowHandle);
 
 	auto triangleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
 	uint16_t indices[3] = { 0, 1, 2 };
 	triangleIndexBuffer.fill(&indices[0], sizeof(indices));
 
+	core.setDebugLabel(triangleIndexBuffer.getHandle(), "Triangle Index Buffer");
+	
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain().getFormat());
+		core.getSwapchain(windowHandle).getFormat());
 
 	vkcv::PassConfig trianglePassDefinition({ present_color_attachment });
 	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
@@ -46,6 +41,8 @@ int main(int argc, const char** argv) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
+	
+	core.setDebugLabel(trianglePass, "Triangle Pass");
 
 	vkcv::ShaderProgram triangleShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
@@ -59,18 +56,20 @@ int main(int argc, const char** argv) {
 					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		triangleShaderProgram.addShader(shaderStage, path);
 	});
+	
+	const auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 
-	const vkcv::PipelineConfig trianglePipelineDefinition {
+	const vkcv::GraphicsPipelineConfig trianglePipelineDefinition {
 		triangleShaderProgram,
-		(uint32_t)windowWidth,
-		(uint32_t)windowHeight,
+		swapchainExtent.width,
+		swapchainExtent.height,
 		trianglePass,
 		{},
 		{},
 		false
 	};
 
-	vkcv::PipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
+	vkcv::GraphicsPipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
 
 	if (!trianglePipeline)
 	{
@@ -78,12 +77,15 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
+	core.setDebugLabel(trianglePipeline, "Triangle Pipeline");
+	
 	auto start = std::chrono::system_clock::now();
 
 	const vkcv::Mesh renderMesh({}, triangleIndexBuffer.getVulkanHandle(), 3);
 	vkcv::DrawcallInfo drawcall(renderMesh, {},1);
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+	core.setDebugLabel(swapchainInput, "Swapchain Image");
 
     vkcv::camera::CameraManager cameraManager(window);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
@@ -93,12 +95,12 @@ int main(int argc, const char** argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
 
-	while (window.isWindowOpen())
+	while (vkcv::Window::hasOpenWindow())
 	{
         vkcv::Window::pollEvents();
 
 		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
 			continue;
 		}
 		
@@ -113,6 +115,7 @@ int main(int argc, const char** argv) {
 		pushConstants.appendDrawcall(mvp);
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+		core.setDebugLabel(cmdStream, "Render Commands");
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
@@ -120,12 +123,13 @@ int main(int argc, const char** argv) {
 			trianglePipeline,
 			pushConstants,
 			{ drawcall },
-			{ swapchainInput });
+			{ swapchainInput },
+			windowHandle);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
 	    
-	    core.endFrame();
+	    core.endFrame(windowHandle);
 	}
 	return 0;
 }

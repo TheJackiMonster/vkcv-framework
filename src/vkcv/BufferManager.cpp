@@ -19,7 +19,7 @@ namespace vkcv {
 			return;
 		}
 		
-		m_stagingBuffer = createBuffer(BufferType::STAGING, 1024 * 1024, BufferMemoryType::HOST_VISIBLE);
+		m_stagingBuffer = createBuffer(BufferType::STAGING, 1024 * 1024, BufferMemoryType::HOST_VISIBLE, false);
 	}
 	
 	BufferManager::~BufferManager() noexcept {
@@ -28,7 +28,7 @@ namespace vkcv {
 		}
 	}
 	
-	BufferHandle BufferManager::createBuffer(BufferType type, size_t size, BufferMemoryType memoryType) {
+	BufferHandle BufferManager::createBuffer(BufferType type, size_t size, BufferMemoryType memoryType, bool supportIndirect) {
 		vk::BufferCreateFlags createFlags;
 		vk::BufferUsageFlags usageFlags;
 		
@@ -49,13 +49,15 @@ namespace vkcv {
 				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
 				break;
 			default:
-				// TODO: maybe an issue
+				vkcv_log(LogLevel::WARNING, "Unknown buffer type");
 				break;
 		}
 		
 		if (memoryType == BufferMemoryType::DEVICE_LOCAL) {
 			usageFlags |= vk::BufferUsageFlagBits::eTransferDst;
 		}
+		if (supportIndirect)
+			usageFlags |= vk::BufferUsageFlagBits::eIndirectBuffer;
 		
 		const vma::Allocator& allocator = m_core->getContext().getAllocator();
 		
@@ -79,6 +81,10 @@ namespace vkcv {
 				memoryUsage = vma::MemoryUsage::eUnknown;
 				mappable = false;
 				break;
+		}
+		
+		if (type == BufferType::STAGING) {
+			memoryUsage = vma::MemoryUsage::eCpuToGpu;
 		}
 		
 		auto bufferAllocation = allocator.createBuffer(
@@ -322,8 +328,8 @@ namespace vkcv {
 			buffer.m_size);
 
 		cmdBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eTopOfPipe,
-			vk::PipelineStageFlagBits::eBottomOfPipe,
+			vk::PipelineStageFlagBits::eAllCommands,
+			vk::PipelineStageFlagBits::eAllCommands,
 			{},
 			nullptr,
 			memoryBarrier,

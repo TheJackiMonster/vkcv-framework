@@ -1,7 +1,7 @@
 
 #include "vkcv/scene/Node.hpp"
 #include "vkcv/scene/Scene.hpp"
-#include "Frustum.hpp"
+#include "vkcv/scene/Frustum.hpp"
 
 #include <algorithm>
 

@@ -21,7 +21,8 @@ namespace vkcv
 	    explicit DescriptorManager(vk::Device device) noexcept;
 	    ~DescriptorManager() noexcept;
 
-        DescriptorSetHandle createDescriptorSet(const std::vector<DescriptorBinding> &descriptorBindings);
+	    DescriptorSetLayoutHandle createDescriptorSetLayout(const std::unordered_map<uint32_t, DescriptorBinding> &setBindingsMap);
+        DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle &setLayoutHandle);
 
 		void writeDescriptorSet(
 			const DescriptorSetHandle	&handle,
@@ -31,6 +32,8 @@ namespace vkcv
 			const SamplerManager    &samplerManager);
 
 		[[nodiscard]]
+		DescriptorSetLayout getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const;
+		[[nodiscard]]
 		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
 
 	private:
@@ -39,30 +42,28 @@ namespace vkcv
 		std::vector<vk::DescriptorPoolSize> m_PoolSizes;
 		vk::DescriptorPoolCreateInfo m_PoolInfo;
 
-
 		/**
-		* Contains all the resource descriptions that were requested by the user in calls of createResourceDescription.
+        * Contains all the descriptor set layout descriptions
+        * that were requested by the user in calls of createDescriptorSetLayout.
+        */
+        std::vector<DescriptorSetLayout> m_DescriptorSetLayouts;
+
+        /**
+		* Contains all the descriptor sets that were created by the user in calls of createDescriptorSet.
 		*/
         std::vector<DescriptorSet> m_DescriptorSets;
-		
+
 		/**
-		* Converts the flags of the descriptor types from VulkanCV (vkcv) to Vulkan (vk).
-		* @param[in] vkcv flag of the DescriptorType (see DescriptorConfig.hpp)
-		* @return vk flag of the DescriptorType
-		*/
-		static vk::DescriptorType convertDescriptorTypeFlag(DescriptorType type);
-		/**
-		* Converts the flags of the shader stages from VulkanCV (vkcv) to Vulkan (vk).
-		* @param[in] vkcv flag of the ShaderStage (see ShaderProgram.hpp)
-		* @return vk flag of the ShaderStage
-		*/
-		static vk::ShaderStageFlagBits convertShaderStageFlag(ShaderStage stage);
-		
-		/**
-		* Destroys a specific resource description
-		* @param[in] the handle id of the respective resource description
+		* Destroys a specific descriptor set
+		* @param[in] the DescriptorSetHandle
 		*/
 		void destroyDescriptorSetById(uint64_t id);
+
+		/**
+        * Destroys a specific descriptor set LAYOUT (not the set)
+        * @param[in] the DescriptorSetLayoutHandle
+        */
+		void destroyDescriptorSetLayoutById(uint64_t id);
 
 		/**
 		* creates a descriptor pool based on the poolSizes and poolInfo defined in the constructor

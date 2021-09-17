@@ -33,9 +33,10 @@ set(vkcv_flags ${CMAKE_CXX_FLAGS})
 # enabling warnings in the debug build
 if (vkcv_build_debug)
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-		set(vkcv_flags ${vkcv_flags} " -Weverything")
+		#set(vkcv_flags ${vkcv_flags} " -Weverything")
+		set(vkcv_flags ${vkcv_flags} " -Wextra -Wall -Wno-unused-parameter")
 	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-		set(vkcv_flags ${vkcv_flags} " -Wextra -Wall -pedantic")
+		set(vkcv_flags ${vkcv_flags} " -Wextra -Wall -pedantic -Wno-unused-parameter")
 	else()
 		set(vkcv_flags ${vkcv_flags} " -W4")
 	endif()
@@ -64,7 +65,7 @@ add_library(vkcv STATIC ${vkcv_sources})
 
 if(MSVC)
   #enable multicore compilation on visual studio
-  target_compile_options(vkcv PRIVATE "/MP" "/openmp")
+  target_compile_options(vkcv PRIVATE "/MP" "/openmp" "/Zc:offsetof-")
 
   #set source groups to create proper filters in visual studio
   source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${vkcv_sources})

@@ -4,6 +4,8 @@
 #include <vk_mem_alloc.hpp>
 
 #include "QueueManager.hpp"
+#include "DrawcallRecording.hpp"
+#include "Features.hpp"
 
 namespace vkcv
 {
@@ -32,6 +34,9 @@ namespace vkcv
         const vk::Device &getDevice() const;
         
         [[nodiscard]]
+        const FeatureManager& getFeatureManager() const;
+        
+        [[nodiscard]]
         const QueueManager& getQueueManager() const;
 	
         [[nodiscard]]
@@ -39,9 +44,9 @@ namespace vkcv
         
         static Context create(const char *applicationName,
 							  uint32_t applicationVersion,
-							  std::vector<vk::QueueFlagBits> queueFlags,
-							  std::vector<const char *> instanceExtensions,
-							  std::vector<const char *> deviceExtensions);
+							  const std::vector<vk::QueueFlagBits>& queueFlags,
+							  const Features& features,
+							  const std::vector<const char*>& instanceExtensions = {});
 
     private:
         /**
@@ -52,11 +57,12 @@ namespace vkcv
          * @param device Vulkan-Device
          */
         Context(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device,
-				QueueManager&& queueManager, vma::Allocator&& allocator) noexcept;
+				FeatureManager&& featureManager, QueueManager&& queueManager, vma::Allocator&& allocator) noexcept;
         
         vk::Instance        m_Instance;
         vk::PhysicalDevice  m_PhysicalDevice;
         vk::Device          m_Device;
+        FeatureManager		m_FeatureManager;
 		QueueManager		m_QueueManager;
 		vma::Allocator 		m_Allocator;
 		

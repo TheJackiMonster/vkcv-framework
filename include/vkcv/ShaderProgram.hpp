@@ -13,8 +13,8 @@
 #include <vulkan/vulkan.hpp>
 #include <spirv_cross.hpp>
 #include "VertexLayout.hpp"
-#include "ShaderStage.hpp"
 #include "DescriptorConfig.hpp"
+#include "ShaderStage.hpp"
 
 namespace vkcv {
 
@@ -51,7 +51,13 @@ namespace vkcv {
         const std::vector<VertexAttachment> &getVertexAttachments() const;
 		size_t getPushConstantSize() const;
 
-        const std::vector<std::vector<DescriptorBinding>>& getReflectedDescriptors() const;
+		/**
+		 * Returns the reflected descriptor sets/layouts/bindings in a map of maps.
+		 * First uint32_t serves as descriptor SET id.
+		 * Second uint32_t serves as the descriptor set's BINDING id.
+		 * @return
+		 */
+		const std::unordered_map<uint32_t, std::unordered_map<uint32_t, DescriptorBinding>>& getReflectedDescriptors() const;
 
 	private:
 	    /**
@@ -65,7 +71,7 @@ namespace vkcv {
 
         // contains all vertex input attachments used in the vertex buffer
         std::vector<VertexAttachment> m_VertexAttachments;
-        std::vector<std::vector<DescriptorBinding>> m_DescriptorSets;
+        std::unordered_map<uint32_t, std::unordered_map<uint32_t, DescriptorBinding>> m_DescriptorSets;
 		size_t m_pushConstantSize = 0;
 	};
 }

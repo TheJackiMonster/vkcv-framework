@@ -387,7 +387,7 @@ namespace vkcv {
 		const size_t max_size = std::min(size, image_size);
 		
 		BufferHandle bufferHandle = m_bufferManager.createBuffer(
-				BufferType::STAGING, max_size, BufferMemoryType::HOST_VISIBLE
+				BufferType::STAGING, max_size, BufferMemoryType::HOST_VISIBLE, false
 		);
 		
 		m_bufferManager.fillBuffer(bufferHandle, data, max_size, 0);
@@ -683,6 +683,22 @@ namespace vkcv {
 				vk::ImageLayout::eUndefined
 			});
 		}
+	}
+
+	void ImageManager::updateImageLayoutManual(const vkcv::ImageHandle& handle, const vk::ImageLayout layout) {
+		const uint64_t id = handle.getId();
+
+		if (handle.isSwapchainImage()) {
+			m_swapchainImages[m_currentSwapchainInputImage].m_layout = layout;
+		}
+		else {
+			if (id >= m_images.size()) {
+				vkcv_log(LogLevel::ERROR, "Invalid handle");
+				return;
+			}
+			m_swapchainImages[id].m_layout = layout;
+		}
+		
 	}
 
 }

@@ -32,12 +32,20 @@ namespace vkcv {
         const std::vector<Queue> &getTransferQueues() const;
 
         static void queueCreateInfosQueueHandles(vk::PhysicalDevice &physicalDevice,
-                std::vector<float> &queuePriorities,
-                std::vector<vk::QueueFlagBits> &queueFlags,
+                const std::vector<float> &queuePriorities,
+                const std::vector<vk::QueueFlagBits> &queueFlags,
                 std::vector<vk::DeviceQueueCreateInfo> &queueCreateInfos,
                 std::vector<std::pair<int, int>> &queuePairsGraphics,
                 std::vector<std::pair<int, int>> &queuePairsCompute,
                 std::vector<std::pair<int, int>> &queuePairsTransfer);
+
+		/**
+		 * checks for surface support in the queues
+		 * @param physicalDevice to get the Queues
+		 * @param surface that needs to checked
+		 * @return
+		 */
+		static uint32_t checkSurfaceSupport(const vk::PhysicalDevice &physicalDevice, vk::SurfaceKHR &surface);
 
     private:
         std::vector<Queue> m_graphicsQueues;

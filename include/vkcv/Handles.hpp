@@ -73,16 +73,28 @@ namespace vkcv
 		using Handle::Handle;
 	};
 	
-	class PipelineHandle : public Handle {
-		friend class PipelineManager;
+	class GraphicsPipelineHandle : public Handle {
+		friend class GraphicsPipelineManager;
 	private:
 		using Handle::Handle;
 	};
+
+    class ComputePipelineHandle : public Handle {
+        friend class ComputePipelineManager;
+    private:
+        using Handle::Handle;
+    };
 	
 	class DescriptorSetHandle : public Handle {
 		friend class DescriptorManager;
 	private:
 		using Handle::Handle;
+	};
+
+	class DescriptorSetLayoutHandle : public Handle {
+	    friend class DescriptorManager;
+	private:
+	    using Handle::Handle;
 	};
 	
 	class SamplerHandle : public Handle {
@@ -93,6 +105,7 @@ namespace vkcv
 
 	class ImageHandle : public Handle {
 		friend class ImageManager;
+	private:
 		using Handle::Handle;
 	public:
 		[[nodiscard]]
@@ -100,6 +113,18 @@ namespace vkcv
 		
 		static ImageHandle createSwapchainImageHandle(const HandleDestroyFunction& destroy = nullptr);
 		
+	};
+
+	class WindowHandle : public Handle {
+		friend class WindowManager;
+	private:
+		using Handle::Handle;
+	};
+
+	class SwapchainHandle : public Handle {
+		friend class SwapchainManager;
+	private:
+		using Handle::Handle;
 	};
 
     class CommandStreamHandle : public Handle {

@@ -10,6 +10,9 @@ set(vkcv_shader_compiler_include ${PROJECT_SOURCE_DIR}/include)
 
 # Add source and header files to the module
 set(vkcv_shader_compiler_sources
+		${vkcv_shader_compiler_include}/vkcv/shader/Compiler.hpp
+		${vkcv_shader_compiler_source}/vkcv/shader/Compiler.cpp
+		
 		${vkcv_shader_compiler_include}/vkcv/shader/GLSLCompiler.hpp
 		${vkcv_shader_compiler_source}/vkcv/shader/GLSLCompiler.cpp
 )
@@ -28,7 +31,7 @@ include(config/GLSLANG.cmake)
 target_link_libraries(vkcv_shader_compiler ${vkcv_shader_compiler_libraries} vkcv)
 
 # including headers of dependencies and the VkCV framework
-target_include_directories(vkcv_shader_compiler SYSTEM BEFORE PRIVATE ${vkcv_shader_compiler_includes} ${vkcv_include})
+target_include_directories(vkcv_shader_compiler SYSTEM BEFORE PRIVATE ${vkcv_shader_compiler_includes} ${vkcv_include} ${vkcv_includes})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_shader_compiler BEFORE PUBLIC ${vkcv_shader_compiler_include})

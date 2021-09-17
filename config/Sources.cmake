@@ -1,11 +1,20 @@
 
 # adding all source files and header files of the framework:
 set(vkcv_sources
+		${vkcv_include}/vkcv/Features.hpp
+		${vkcv_source}/vkcv/Features.cpp
+		
+		${vkcv_include}/vkcv/FeatureManager.hpp
+		${vkcv_source}/vkcv/FeatureManager.cpp
+		
 		${vkcv_include}/vkcv/Context.hpp
 		${vkcv_source}/vkcv/Context.cpp
 
 		${vkcv_include}/vkcv/Core.hpp
 		${vkcv_source}/vkcv/Core.cpp
+		
+		${vkcv_include}/vkcv/File.hpp
+		${vkcv_source}/vkcv/File.cpp
 
 		${vkcv_include}/vkcv/PassConfig.hpp
 		${vkcv_source}/vkcv/PassConfig.cpp
@@ -42,11 +51,15 @@ set(vkcv_sources
 		${vkcv_include}/vkcv/ShaderProgram.hpp
 		${vkcv_source}/vkcv/ShaderProgram.cpp
 
-		${vkcv_include}/vkcv/PipelineConfig.hpp
+		${vkcv_include}/vkcv/GraphicsPipelineConfig.hpp
+		${vkcv_include}/vkcv/ComputePipelineConfig.hpp
 
-		${vkcv_source}/vkcv/PipelineManager.hpp
-		${vkcv_source}/vkcv/PipelineManager.cpp
-        
+		${vkcv_source}/vkcv/ComputePipelineManager.hpp
+		${vkcv_source}/vkcv/ComputePipelineManager.cpp
+
+		${vkcv_source}/vkcv/GraphicsPipelineManager.hpp
+		${vkcv_source}/vkcv/GraphicsPipelineManager.cpp
+
         ${vkcv_include}/vkcv/CommandResources.hpp
         ${vkcv_source}/vkcv/CommandResources.cpp
         
@@ -72,6 +85,12 @@ set(vkcv_sources
 		
 		${vkcv_source}/vkcv/SamplerManager.hpp
 		${vkcv_source}/vkcv/SamplerManager.cpp
+
+		${vkcv_source}/vkcv/WindowManager.hpp
+		${vkcv_source}/vkcv/WindowManager.cpp
+
+		${vkcv_source}/vkcv/SwapchainManager.hpp
+		${vkcv_source}/vkcv/SwapchainManager.cpp
         
         ${vkcv_include}/vkcv/DescriptorWrites.hpp
         
