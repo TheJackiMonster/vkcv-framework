@@ -1,5 +1,7 @@
 
-if (EXISTS "${vkcv_lib_path}/VulkanMemoryAllocator-Hpp")
+use_git_submodule("${vkcv_lib_path}/VulkanMemoryAllocator-Hpp" vma_hpp_status)
+
+if (${vma_hpp_status})
 	set(VMA_HPP_PATH "${vkcv_lib_path}/VulkanMemoryAllocator-Hpp" CACHE INTERNAL "")
 	
 	set(VMA_RECORDING_ENABLED OFF CACHE INTERNAL "")
@@ -17,6 +19,4 @@ if (EXISTS "${vkcv_lib_path}/VulkanMemoryAllocator-Hpp")
 	list(APPEND vkcv_includes ${vkcv_lib_path}/VulkanMemoryAllocator-Hpp)
 	
 	message(${vkcv_config_msg} " VMA     - ")
-else()
-	message(WARNING "VulkanMemoryAllocator is required..! Update the submodules!")
 endif ()

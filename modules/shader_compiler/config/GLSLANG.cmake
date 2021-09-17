@@ -1,5 +1,7 @@
 
-if (EXISTS "${vkcv_shader_compiler_lib_path}/glslang")
+use_git_submodule("${vkcv_shader_compiler_lib_path}/glslang" glslang_status)
+
+if (${glslang_status})
 	set(SKIP_GLSLANG_INSTALL ON CACHE INTERNAL "")
 	set(ENABLE_SPVREMAPPER OFF CACHE INTERNAL "")
 	set(ENABLE_GLSLANG_BINARIES OFF CACHE INTERNAL "")
@@ -23,6 +25,4 @@ if (EXISTS "${vkcv_shader_compiler_lib_path}/glslang")
 	
 	list(APPEND vkcv_shader_compiler_libraries glslang SPIRV)
 	list(APPEND vkcv_shader_compiler_includes ${vkcv_shader_compiler_lib})
-else()
-	message(WARNING "GLSLANG is required..! Update the submodules!")
 endif ()
