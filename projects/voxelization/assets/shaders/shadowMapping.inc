@@ -56,7 +56,7 @@ vec4 unquantizeMoments(vec4 moments){
 	unquantized.g = 0.125 * moments.g + moments.a;
 	unquantized.b = -0.75 * moments.r + 0.75 * sqrt(3) * moments.b;
 	unquantized.a = -0.125 * moments.g + moments.a;
-	return unquantized * 0.98;
+	return unquantized / 0.98;	// division reduces light bleeding
 }
 
 float rescaleRange(float a, float b, float v)
@@ -91,7 +91,7 @@ float shadowTest(vec3 worldPos, LightInfo lightInfo, texture2D shadowMap, sample
     
     float shadow = ComputeMSMShadowIntensity(shadowMapSample, lightPos.z, depthBias, momentBias);
 	return clamp(shadow, 0, 1);
-    return reduceLightBleeding(shadow, 0.1f);
+    // return reduceLightBleeding(shadow, 0.1f);
 }
 
 #endif // #ifndef SHADOW_MAPPING_INC
