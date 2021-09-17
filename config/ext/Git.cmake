@@ -38,7 +38,7 @@ function(init_git_submodules)
 endfunction()
 
 function(use_git_submodule submodule_path submodule_status)
-    file(GLOB path_glob "${submodule_path}")
+    file(GLOB path_glob "${submodule_path}/*")
     list(LENGTH path_glob glob_len)
     if(glob_len GREATER 0)
         set(${submodule_status} TRUE PARENT_SCOPE)
@@ -59,7 +59,7 @@ function(use_git_submodule submodule_path submodule_status)
                 COMMENT "Updating Git Submodules"
         )
 
-        file(GLOB path_glob "${submodule_path}")
+        file(GLOB path_glob "${submodule_path}/*")
         list(LENGTH path_glob glob_len)
         if(glob_len GREATER 0)
             set(${submodule_status} TRUE PARENT_SCOPE)
