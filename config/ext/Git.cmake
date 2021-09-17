@@ -49,13 +49,8 @@ function(use_git_submodule submodule_path submodule_status)
     find_program(git_program "git")
 
     if (EXISTS ${git_program})
-        add_custom_target(
-                "git_submodule_${submodule_name}"
-                WORKING_DIRECTORY "${submodule_directory}"
-        )
-
         add_custom_command(
-                TARGET "git_submodule_${submodule_name}"
+                OUTPUT "${submodule_path}"
                 PRE_BUILD
                 WORKING_DIRECTORY "${submodule_directory}"
                 COMMAND git submodule update
