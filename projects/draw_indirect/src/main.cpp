@@ -299,7 +299,6 @@ int main(int argc, const char** argv) {
     indirectBuffer.fill(indexedIndirectCommands);
 
 	std::vector<glm::mat4> modelMatrix;
-	auto i = 0;
 	for( auto& mesh : asset_scene.meshes)
 	{
 		modelMatrix.push_back(glm::make_mat4(mesh.modelMatrix.data()));
@@ -320,7 +319,7 @@ int main(int argc, const char** argv) {
     //assert(compiledMaterial.baseColor.size() == compiledMaterial.metalRough.size());
 
 	vkcv::DescriptorBindings descriptorBindings = sponzaProgram.getReflectedDescriptors().at(0);
-    descriptorBindings[1].descriptorCount = compiledMaterial.baseColor.size();
+    descriptorBindings[2].descriptorCount = compiledMaterial.baseColor.size();
 
 	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
@@ -335,14 +334,14 @@ int main(int argc, const char** argv) {
     std::vector<vkcv::SampledImageDescriptorWrite> textureArrayWrites;
     for(uint32_t i = 0; i < compiledMaterial.baseColor.size(); i++)
     {
-        vkcv::SampledImageDescriptorWrite baseColorWrite(1, compiledMaterial.baseColor[i].getHandle(), 0, false, i);
+        vkcv::SampledImageDescriptorWrite baseColorWrite(2, compiledMaterial.baseColor[i].getHandle(), 0, false, i);
         textureArrayWrites.push_back(baseColorWrite);
     }
 
     vkcv::DescriptorWrites setWrites;
     setWrites.sampledImageWrites	= textureArrayWrites;
     setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(0, standardSampler) };
-	setWrites.storageBufferWrites   = { vkcv::BufferDescriptorWrite(2, modelBuffer.getHandle())};
+	setWrites.storageBufferWrites   = { vkcv::BufferDescriptorWrite(1, modelBuffer.getHandle())};
     core.writeDescriptorSet(descriptorSet, setWrites);
 
 

@@ -5,7 +5,7 @@ layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inUV;
 
-layout(std430, binding=2) readonly buffer uModel {
+layout(std430, binding=1) readonly buffer uModel {
     mat4 modelMatrix[];
 };
 

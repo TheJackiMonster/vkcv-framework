@@ -9,7 +9,7 @@ layout(location = 2) in flat uint passDrawIndex;
 layout(location = 0) out vec3 outColor;
 
 layout(set=0, binding=0) uniform sampler standardSampler;
-layout(set=0, binding=1) uniform texture2D baseColorTex[];
+layout(set=0, binding=2) uniform texture2D baseColorTex[];
 // the sponza scene used for this example only had a base color texture
 //layout(set=0, binding=2) uniform texture2D metalRoughTex[];
 //layout(set=0, binding=3) uniform texture2D normalTex[];
