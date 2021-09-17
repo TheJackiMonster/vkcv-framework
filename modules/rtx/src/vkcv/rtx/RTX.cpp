@@ -283,7 +283,7 @@ namespace vkcv::rtx {
         m_core->getContext().getDevice().destroy(rayMissShaderModule);
         m_core->getContext().getDevice().destroy(rayClosestHitShaderModule);
 
-        createShaderBindingTable(descriptorSetLayouts.size());
+        createShaderBindingTable(3); //Hardcoded because I'm a dumb
     }
 
     vk::Pipeline RTXModule::getPipeline() {

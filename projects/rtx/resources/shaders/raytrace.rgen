@@ -58,6 +58,6 @@ void main(){
     color += previousColor;
     color /= (camera.frameCount + 1);
     }
-    color=vec4(0.0001*camera.frameCount,0,0,1);//DEBUG
+    //color=vec4(0.0001*camera.frameCount,0,0,1);//DEBUG
     imageStore(outImg, ivec2(gl_LaunchIDEXT.xy), color);
 }

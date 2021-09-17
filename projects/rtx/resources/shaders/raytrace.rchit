@@ -5,14 +5,20 @@
 #define M_PI 3.1415926535897932384626433832795
 
 //Mat struct
-/*struct Material {
+struct Material {
   vec3 ambient;
   vec3 diffuse;
   vec3 specular;
   vec3 emission;
-};*/
+};
 
-//hitAttributeEXT vec2 hitCoordinate;
+struct Light {
+	vec3 position;
+	float intensity;
+};
+
+
+hitAttributeEXT vec2 hitCoordinate;
 
 layout(location = 0) rayPayloadInEXT Payload {
   vec3 rayOrigin;
@@ -26,7 +32,7 @@ layout(location = 0) rayPayloadInEXT Payload {
   int rayActive;
 } payload;
 
-//layout(location = 1) rayPayloadEXT bool isShadow;
+layout(location = 1) rayPayloadEXT bool isShadow;
 
 layout(binding = 2, set = 0) uniform accelerationStructureEXT tlas;     // top level acceleration structure (for the noobs here (you!))
 
@@ -78,9 +84,13 @@ void main() {
     if (payload.rayActive == 0) {
         return;
     }
-    
-    //ivec3 rtindices = ivec3(rtxIndexBuffer.indices[3 * gl_PrimitiveID + 0], rtxIndexBuffer.indices[3 * gl_PrimitiveID + 1], rtxIndexBuffer.indices[3 * gl_PrimitiveID + 2]);
-    /*
+    Material ivory = {vec3(1,0,0), vec3(0.4, 0.4, 0.3), vec3(50.,50.,50.), vec3(0.6, 0.3, 0.1)};
+    Light rtxLight1 = {vec3(20, 20,  20), 1.5};
+    Light rtxLight2 = {vec3(30,  50, -25), 1.8};
+    Light rtxLight3 = {vec3(30,  20,  30), 1.7};
+
+    ivec3 rtindices = ivec3(rtxIndexBuffer.indices[3 * gl_PrimitiveID + 0], rtxIndexBuffer.indices[3 * gl_PrimitiveID + 1], rtxIndexBuffer.indices[3 * gl_PrimitiveID + 2]);
+
     vec3 barycentric = vec3(1.0 - hitCoordinate.x - hitCoordinate.y, hitCoordinate.x, hitCoordinate.y);
 
     vec3 vertexA = vec3(rtxVertexBuffer.vertices[3 * rtindices.x + 0], rtxVertexBuffer.vertices[3 * rtindices.x + 1], rtxVertexBuffer.vertices[3 * rtindices.x + 2]);
@@ -88,7 +98,85 @@ void main() {
     vec3 vertexC = vec3(rtxVertexBuffer.vertices[3 * rtindices.z + 0], rtxVertexBuffer.vertices[3 * rtindices.z + 1], rtxVertexBuffer.vertices[3 * rtindices.z + 2]);
 
     vec3 position = vertexA * barycentric.x + vertexB * barycentric.y + vertexC * barycentric.z;
-    vec3 geometricNormal = normalize(cross(vertexB - vertexA, vertexC - vertexA));*/
+    vec3 geometricNormal = normalize(cross(vertexB - vertexA, vertexC - vertexA));
 
-    payload.directColor=vec3(1,0,0);    
+    //vec3 surfaceColor = materialBuffer.data[materialIndexBuffer.data[gl_PrimitiveID]].diffuse;
+    vec3 surfaceColor = ivory.diffuse;
+
+    if(payload.rayOrigin == rtxLight1.position || payload.rayOrigin == rtxLight2.position || payload.rayOrigin == rtxLight3.position){
+        if (payload.rayDepth == 0) {
+            //payload.directColor = materialBuffer.data[materialIndexBuffer.data[gl_PrimitiveID]].emission;
+            payload.directColor = ivory.emission;
+        }
+        else {
+            //payload.indirectColor += (1.0 / payload.rayDepth) * materialBuffer.data[materialIndexBuffer.data[gl_PrimitiveID]].emission * dot(payload.previousNormal, payload.rayDirection);
+            payload.indirectColor += (1.0 / payload.rayDepth) * ivory.emission * dot(payload.previousNormal, payload.rayDirection);
+        }
+    } else {
+        int randomIndex = int(random(gl_LaunchIDEXT.xy, camera.frameCount) * 2 + 40);
+        vec3 lightColor = vec3(0.6, 0.6, 0.6);
+
+        ivec3 lightIndices = ivec3(1,1,1);
+        /*
+        vec3 lightVertexA = vec3(rtxVertexBuffer.vertices[3 * lightIndices.x + 0], rtxVertexBuffer.vertices[3 * lightIndices.x + 1], rtxVertexBuffer.vertices[3 * lightIndices.x + 2]);
+        vec3 lightVertexB = vec3(rtxVertexBuffer.vertices[3 * lightIndices.y + 0], rtxVertexBuffer.vertices[3 * lightIndices.y + 1], rtxVertexBuffer.vertices[3 * lightIndices.y + 2]);
+        vec3 lightVertexC = vec3(rtxVertexBuffer.vertices[3 * lightIndices.z + 0], rtxVertexBuffer.vertices[3 * lightIndices.z + 1], rtxVertexBuffer.vertices[3 * lightIndices.z + 2]);
+        */
+        vec2 uv = vec2(random(gl_LaunchIDEXT.xy, camera.frameCount), random(gl_LaunchIDEXT.xy, camera.frameCount + 1));
+        if (uv.x + uv.y > 1.0f) {
+            uv.x = 1.0f - uv.x;
+            uv.y = 1.0f - uv.y;
+        }
+
+        vec3 lightBarycentric = vec3(1.0 - uv.x - uv.y, uv.x, uv.y);
+        //vec3 lightPosition = rtxLight.position.x * lightBarycentric.x + rtxLight.position.y * lightBarycentric.y + rtxLight.position.z * lightBarycentric.z;
+        vec3 lightPosition;
+        if(payload.rayOrigin == rtxLight1.position){
+            lightPosition = vec3(dot(rtxLight1.position, lightBarycentric));
+        }else if(payload.rayOrigin == rtxLight2.position){
+            lightPosition = vec3(dot(rtxLight2.position, lightBarycentric));
+        }else{
+            lightPosition = vec3(dot(rtxLight3.position, lightBarycentric));
+        }
+
+        vec3 positionToLightDirection = normalize(lightPosition - position);
+
+        vec3 shadowRayOrigin = position;
+        vec3 shadowRayDirection = positionToLightDirection;
+        float shadowRayDistance = length(lightPosition - position) - 0.001f;
+
+        uint shadowRayFlags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+
+        isShadow = true;
+        traceRayEXT(tlas, shadowRayFlags, 0xFF, 0, 0, 1, shadowRayOrigin, 0.001, shadowRayDirection, shadowRayDistance, 1);
+
+        // TODO: always true because light sources are dumb
+        if (!isShadow) {
+            if (payload.rayDepth == 0) {
+                payload.directColor = surfaceColor * lightColor * dot(geometricNormal, positionToLightDirection);
+            }
+            else {
+                payload.indirectColor += (1.0 / payload.rayDepth) * surfaceColor * lightColor * dot(payload.previousNormal, payload.rayDirection) * dot(geometricNormal, positionToLightDirection);
+            }
+        }
+        else {
+            if (payload.rayDepth == 0) {
+                payload.directColor = vec3(0.4, 0.4, 0.3); 
+            }
+            else {
+                payload.rayActive = 0;
+            }
+        }
+    }
+
+    vec3 hemisphere = uniformSampleHemisphere(vec2(random(gl_LaunchIDEXT.xy, camera.frameCount), random(gl_LaunchIDEXT.xy, camera.frameCount + 1)));
+    vec3 alignedHemisphere = alignHemisphereWithCoordinateSystem(hemisphere, geometricNormal);
+
+    payload.rayOrigin = position;
+    payload.rayDirection = alignedHemisphere;
+    payload.previousNormal = geometricNormal;
+
+    payload.rayDepth += 1;
+
+    //payload.directColor=vec3(1,0,0);
 }
