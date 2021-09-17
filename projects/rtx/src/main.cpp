@@ -103,32 +103,33 @@ int main(int argc, const char** argv) {
 	//vkcv::ShaderProgram sceneShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
 
-	vkcv::ShaderProgram rayGenShaderProgram;
+	vkcv::ShaderProgram rtxShaderProgram;
 	compiler.compile(vkcv::ShaderStage::RAY_GEN, std::filesystem::path("resources/shaders/raytrace.rgen"),
-		[&rayGenShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-			rayGenShaderProgram.addShader(shaderStage, path);
+		[&rtxShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+            rtxShaderProgram.addShader(shaderStage, path);
 		});
 
-	vkcv::ShaderProgram rayClosestHitShaderProgram;
+	//vkcv::ShaderProgram rayClosestHitShaderProgram;
 	compiler.compile(vkcv::ShaderStage::RAY_CLOSEST_HIT, std::filesystem::path("resources/shaders/raytrace.rchit"),
-		[&rayClosestHitShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-			rayClosestHitShaderProgram.addShader(shaderStage, path);
+		[&rtxShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+            rtxShaderProgram.addShader(shaderStage, path);
 		});
 	
-	vkcv::ShaderProgram rayMissShaderProgram;
+	//vkcv::ShaderProgram rayMissShaderProgram;
 	compiler.compile(vkcv::ShaderStage::RAY_MISS, std::filesystem::path("resources/shaders/raytrace.rmiss"),
-		[&rayMissShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-			rayMissShaderProgram.addShader(shaderStage, path);
+		[&rtxShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+            rtxShaderProgram.addShader(shaderStage, path);
 		});
 
 	std::vector<vkcv::DescriptorSetHandle> descriptorSetHandles;
 	std::vector<vkcv::DescriptorSetLayoutHandle> descriptorSetLayoutHandles;
 
-	vkcv::DescriptorSetLayoutHandle rayGenShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayGenShaderProgram.getReflectedDescriptors().at(0));
-	vkcv::DescriptorSetHandle rayGenShaderDescriptorSet = core.createDescriptorSet(rayGenShaderDescriptorSetLayout);//
-	descriptorSetHandles.push_back(rayGenShaderDescriptorSet);
-	descriptorSetLayoutHandles.push_back(rayGenShaderDescriptorSetLayout);
+	vkcv::DescriptorSetLayoutHandle rtxShaderDescriptorSetLayout = core.createDescriptorSetLayout(rtxShaderProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle rtxShaderDescriptorSet = core.createDescriptorSet(rtxShaderDescriptorSetLayout);//
+	descriptorSetHandles.push_back(rtxShaderDescriptorSet);
+	descriptorSetLayoutHandles.push_back(rtxShaderDescriptorSetLayout);
 
+    /*
 	vkcv::DescriptorSetLayoutHandle rayMissShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayMissShaderProgram.getReflectedDescriptors().at(0));
 	vkcv::DescriptorSetHandle rayMissShaderDescriptorSet = core.createDescriptorSet(rayMissShaderDescriptorSetLayout);
 	descriptorSetHandles.push_back(rayMissShaderDescriptorSet);
@@ -138,7 +139,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle rayCHITShaderDescriptorSet = core.createDescriptorSet(rayClosestHitShaderDescriptorSetLayout);
 	descriptorSetHandles.push_back(rayCHITShaderDescriptorSet);
 	descriptorSetLayoutHandles.push_back(rayClosestHitShaderDescriptorSetLayout);
-
+    */
 	
 
 	// init RTXModule
@@ -154,7 +155,7 @@ int main(int argc, const char** argv) {
 
 	uint32_t pushConstantSize = sizeof(RaytracingPushConstantData);
 
-	rtxModule.createRTXPipeline(pushConstantSize, descriptorSetLayoutHandles, rayGenShaderProgram, rayMissShaderProgram, rayClosestHitShaderProgram);
+	rtxModule.createRTXPipeline(pushConstantSize, descriptorSetLayoutHandles, rtxShaderProgram);
 
 	vk::Pipeline rtxPipeline = rtxModule.getPipeline();
 	vk::PipelineLayout rtxPipelineLayout = rtxModule.getPipelineLayout();
@@ -222,7 +223,7 @@ int main(int argc, const char** argv) {
 
 		
 		rtxWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(0, swapchainInput) };
-		core.writeDescriptorSet(rayGenShaderDescriptorSet, rtxWrites);
+		core.writeDescriptorSet(rtxShaderDescriptorSet, rtxWrites);
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 
@@ -232,10 +233,7 @@ int main(int argc, const char** argv) {
 			rtxPipelineLayout,
 			rtxModule.getShaderBindingBuffer(),
 			rtxModule.getShaderGroupBaseAlignment(),
-			{	vkcv::DescriptorSetUsage(0, core.getDescriptorSet(rayGenShaderDescriptorSet).vulkanHandle),
-				vkcv::DescriptorSetUsage(1, core.getDescriptorSet(rayMissShaderDescriptorSet).vulkanHandle),
-				vkcv::DescriptorSetUsage(2, core.getDescriptorSet(rayCHITShaderDescriptorSet).vulkanHandle)
-			},
+			{	vkcv::DescriptorSetUsage(0, core.getDescriptorSet(rtxShaderDescriptorSet).vulkanHandle)},
 			pushConstantsRTX,
 			windowHandle);
 

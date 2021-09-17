@@ -15,7 +15,7 @@ layout(location = 0) rayPayloadEXT Payload {
       } payload;
 
 layout(binding = 0, set = 0, rgba16) uniform image2D outImg;           // the output image -> maybe use 16 bit values?
-layout(location = 0, binding = 1, set = 0) uniform accelerationStructureEXT tlas;     // top level acceleration structure (for the noobs here (you!))
+layout(binding = 1, set = 0) uniform accelerationStructureEXT tlas;     // top level acceleration structure (for the noobs here (you!))
 
 layout( push_constant ) uniform constants {
     vec4 camera_position;   // as origin for ray generation
@@ -58,6 +58,6 @@ void main(){
     color += previousColor;
     color /= (camera.frameCount + 1);
     }
-    //color=vec4(0.0001*camera.frameCount,0,0,1);//DEBUG
+    color=vec4(0.0001*camera.frameCount,0,0,1);//DEBUG
     imageStore(outImg, ivec2(gl_LaunchIDEXT.xy), color);
 }

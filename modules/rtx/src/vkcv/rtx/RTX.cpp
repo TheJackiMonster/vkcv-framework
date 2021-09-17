@@ -78,10 +78,14 @@ namespace vkcv::rtx {
         tlasWrite.setDescriptorCount(1);
         tlasWrite.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
         m_core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
+        tlasWrite.setDstBinding(2);
+        m_core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
+        /*
         tlasWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
         m_core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
         tlasWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[2]).vulkanHandle);
         m_core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
+        */
 
         //INDEX & VERTEX BUFFER
         BottomLevelAccelerationStructure blas = m_asManager->getBLAS(0);//HARD CODED
@@ -93,7 +97,7 @@ namespace vkcv::rtx {
         vertexInfo.setRange(blas.vertexBuffer.deviceSize); //maybe check if size is correct
 
         vk::WriteDescriptorSet vertexWrite;
-        vertexWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[2]).vulkanHandle);
+        vertexWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[0]).vulkanHandle);
         vertexWrite.setDstBinding(3);
         vertexWrite.setDescriptorCount(1);
         vertexWrite.setDescriptorType(vk::DescriptorType::eStorageBuffer);
@@ -107,7 +111,7 @@ namespace vkcv::rtx {
         indexInfo.setRange(blas.indexBuffer.deviceSize); //maybe check if size is correct
 
         vk::WriteDescriptorSet indexWrite;
-        indexWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[2]).vulkanHandle);
+        indexWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[0]).vulkanHandle);
         indexWrite.setDstBinding(4);
         indexWrite.setDescriptorCount(1);
         indexWrite.setDescriptorType(vk::DescriptorType::eStorageBuffer);
@@ -117,11 +121,11 @@ namespace vkcv::rtx {
 
     }
 
-    void RTXModule::createRTXPipeline(uint32_t pushConstantSize, std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rayGenShader, ShaderProgram &rayMissShader, ShaderProgram &rayClosestHitShader) {
+    void RTXModule::createRTXPipeline(uint32_t pushConstantSize, std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rtxShader) {
         // TODO: maybe all of this must be moved to the vkcv::PipelineManager? If we use scene.recordDrawcalls(), this requires a vkcv::PipelineHandle and not a vk::Pipeline
 
         // -- process vkcv::ShaderProgram into vk::ShaderModule
-        std::vector<char> rayGenShaderCode = rayGenShader.getShader(ShaderStage::RAY_GEN).shaderCode;
+        std::vector<char> rayGenShaderCode = rtxShader.getShader(ShaderStage::RAY_GEN).shaderCode;
 
         vk::ShaderModuleCreateInfo rayGenShaderModuleInfo(
             vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
@@ -133,7 +137,7 @@ namespace vkcv::rtx {
             vkcv_log(LogLevel::ERROR, "The Ray Generation Shader Module could not be created!");
         }
 
-        std::vector<char> rayMissShaderCode = rayMissShader.getShader(ShaderStage::RAY_MISS).shaderCode;
+        std::vector<char> rayMissShaderCode = rtxShader.getShader(ShaderStage::RAY_MISS).shaderCode;
         vk::ShaderModuleCreateInfo rayMissShaderModuleInfo(
             vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
             rayMissShaderCode.size(), //size_t codeSize
@@ -145,7 +149,7 @@ namespace vkcv::rtx {
             vkcv_log(LogLevel::ERROR, "The Ray Miss Shader Module could not be created!");
         }
 
-        std::vector<char> rayClosestHitShaderCode = rayClosestHitShader.getShader(ShaderStage::RAY_CLOSEST_HIT).shaderCode;
+        std::vector<char> rayClosestHitShaderCode = rtxShader.getShader(ShaderStage::RAY_CLOSEST_HIT).shaderCode;
         vk::ShaderModuleCreateInfo rayClosestHitShaderModuleInfo(
             vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
             rayClosestHitShaderCode.size(), //size_t codeSize

@@ -26,10 +26,10 @@ layout(location = 0) rayPayloadInEXT Payload {
   int rayActive;
 } payload;
 
-layout(location = 1) rayPayloadEXT bool isShadow;
+//layout(location = 1) rayPayloadEXT bool isShadow;
 
-layout(location = 2, binding = 1, set = 0) uniform accelerationStructureEXT tlas;     // top level acceleration structure (for the noobs here (you!))
-/*
+layout(binding = 2, set = 0) uniform accelerationStructureEXT tlas;     // top level acceleration structure (for the noobs here (you!))
+
 layout( push_constant ) uniform constants {
     vec4 camera_position;   // as origin for ray generation
     vec4 camera_right;      // for computing ray direction
@@ -38,7 +38,7 @@ layout( push_constant ) uniform constants {
 
     uint frameCount;        // what is this? the actual frame?
 }camera;
-*/
+
 
 layout(binding = 3, set = 0) buffer rtxVertices
 {
@@ -74,10 +74,10 @@ vec3 alignHemisphereWithCoordinateSystem(vec3 hemisphere, vec3 up) {
   return hemisphere.x * right + hemisphere.y * up + hemisphere.z * forward;
 }
 
-void main() {/*
+void main() {
     if (payload.rayActive == 0) {
         return;
-    }*/
+    }
     
     //ivec3 rtindices = ivec3(rtxIndexBuffer.indices[3 * gl_PrimitiveID + 0], rtxIndexBuffer.indices[3 * gl_PrimitiveID + 1], rtxIndexBuffer.indices[3 * gl_PrimitiveID + 2]);
     /*
