@@ -78,21 +78,15 @@ namespace vkcv::rtx {
         tlasWrite.setDescriptorCount(1);
         tlasWrite.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
         m_core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
-
-        vk::WriteDescriptorSet tlasWrite2;
-        tlasWrite2.setPNext(&AccelerationDescriptor);
-        tlasWrite2.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
-        tlasWrite2.setDstBinding(5);
-        tlasWrite2.setDstArrayElement(0);
-        tlasWrite2.setDescriptorCount(1);
-        tlasWrite2.setDescriptorType(vk::DescriptorType::eAccelerationStructureKHR);
-        m_core->getContext().getDevice().updateDescriptorSets(tlasWrite2, nullptr);
+        tlasWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
+        m_core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
+        tlasWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[2]).vulkanHandle);
+        m_core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
 
         //INDEX & VERTEX BUFFER
         BottomLevelAccelerationStructure blas = m_asManager->getBLAS(0);//HARD CODED
 
         //VERTEX BUFFER
-
         vk::DescriptorBufferInfo vertexInfo = {};
         vertexInfo.setBuffer(blas.vertexBuffer.vulkanHandle);
         vertexInfo.setOffset(0);

@@ -68,14 +68,14 @@ int main(int argc, const char** argv) {
 	// TODO: replace by bigger scene
 	float cubeVertices[8*3] =
 	{
-		0.f,0.f,0.f,
-		2.f,0.f,0.f,
-		2.f,2.f,0.f,
-		0.f,2.f,0.f,
-		0.f,0.f,2.f,
-		2.f,0.f,2.f,
-		2.f,2.f,2.f,
-		0.f,2.f,2.f
+		-1.f,-1.f,-1.f,
+		1.f,-1.f,-1.f,
+		1.f,1.f,-1.f,
+		-1.f,1.f,-1.f,
+		-1.f,-1.f,1.f,
+		1.f,-1.f,1.f,
+		1.f,1.f,1.f,
+		-1.f,1.f,1.f
 	};
 
 	uint32_t cubeIndices[6 * 6] =
@@ -192,7 +192,7 @@ int main(int argc, const char** argv) {
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
-
+		
 		RaytracingPushConstantData raytracingPushData;
 		raytracingPushData.camera_position = glm::vec4(cameraManager.getActiveCamera().getPosition(),0);
 		raytracingPushData.camera_right = glm::vec4(glm::cross(cameraManager.getActiveCamera().getFront(), cameraManager.getActiveCamera().getUp()), 0);
@@ -215,16 +215,16 @@ int main(int argc, const char** argv) {
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 
 		core.recordRayGenerationToCmdStream(
-            cmdStream,
-            rtxPipeline,
-            rtxPipelineLayout,
+			cmdStream,
+			rtxPipeline,
+			rtxPipelineLayout,
 			rtxModule.getShaderBindingBuffer(),
 			rtxModule.getShaderGroupBaseAlignment(),
 			{	vkcv::DescriptorSetUsage(0, core.getDescriptorSet(rayGenShaderDescriptorSet).vulkanHandle),
 				vkcv::DescriptorSetUsage(1, core.getDescriptorSet(rayMissShaderDescriptorSet).vulkanHandle),
 				vkcv::DescriptorSetUsage(2, core.getDescriptorSet(rayCHITShaderDescriptorSet).vulkanHandle)
 			},
-            pushConstantsRTX,
+			pushConstantsRTX,
 			windowHandle);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
