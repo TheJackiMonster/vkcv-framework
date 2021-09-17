@@ -80,12 +80,6 @@ namespace vkcv::rtx {
         m_core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
         tlasWrite.setDstBinding(2);
         m_core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
-        /*
-        tlasWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[1]).vulkanHandle);
-        m_core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
-        tlasWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[2]).vulkanHandle);
-        m_core->getContext().getDevice().updateDescriptorSets(tlasWrite, nullptr);
-        */
 
         //INDEX & VERTEX BUFFER
         BottomLevelAccelerationStructure blas = m_asManager->getBLAS(0);//HARD CODED
@@ -117,8 +111,6 @@ namespace vkcv::rtx {
         indexWrite.setDescriptorType(vk::DescriptorType::eStorageBuffer);
         indexWrite.setPBufferInfo(&indexInfo);
         m_core->getContext().getDevice().updateDescriptorSets(indexWrite, nullptr);
-
-
     }
 
     void RTXModule::createRTXPipeline(uint32_t pushConstantSize, std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rtxShader) {
@@ -283,7 +275,8 @@ namespace vkcv::rtx {
         m_core->getContext().getDevice().destroy(rayMissShaderModule);
         m_core->getContext().getDevice().destroy(rayClosestHitShaderModule);
 
-        createShaderBindingTable(3); //Hardcoded because I'm a dumb
+        // TODO: add possibility of more than one shader per stage
+        createShaderBindingTable(shaderStages.size());
     }
 
     vk::Pipeline RTXModule::getPipeline() {

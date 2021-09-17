@@ -13,8 +13,6 @@ layout(location = 0) rayPayloadInEXT Payload {
   int rayActive;
 } payload;
 
-//layout(location = 0, binding = 1, set = 0) uniform accelerationStructureEXT tlas; //not neccesary in shader but for compiling ->bug
-
 void main() {
     payload.rayActive = 0;
 }

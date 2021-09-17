@@ -129,19 +129,6 @@ int main(int argc, const char** argv) {
 	descriptorSetHandles.push_back(rtxShaderDescriptorSet);
 	descriptorSetLayoutHandles.push_back(rtxShaderDescriptorSetLayout);
 
-    /*
-	vkcv::DescriptorSetLayoutHandle rayMissShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayMissShaderProgram.getReflectedDescriptors().at(0));
-	vkcv::DescriptorSetHandle rayMissShaderDescriptorSet = core.createDescriptorSet(rayMissShaderDescriptorSetLayout);
-	descriptorSetHandles.push_back(rayMissShaderDescriptorSet);
-	descriptorSetLayoutHandles.push_back(rayMissShaderDescriptorSetLayout);
-	
-	vkcv::DescriptorSetLayoutHandle rayClosestHitShaderDescriptorSetLayout = core.createDescriptorSetLayout(rayClosestHitShaderProgram.getReflectedDescriptors().at(0));
-	vkcv::DescriptorSetHandle rayCHITShaderDescriptorSet = core.createDescriptorSet(rayClosestHitShaderDescriptorSetLayout);
-	descriptorSetHandles.push_back(rayCHITShaderDescriptorSet);
-	descriptorSetLayoutHandles.push_back(rayClosestHitShaderDescriptorSetLayout);
-    */
-	
-
 	// init RTXModule
 	vkcv::rtx::RTXModule rtxModule(&core, &asManager, vertices, indices,descriptorSetHandles);
 
