@@ -8,7 +8,7 @@ namespace vkcv::rtx {
      * @brief Used for @#RTXBuffer creation depending on the @#RTXBufferType.
      */
     enum class RTXBufferType {
-        CPU,
+        STAGING,
         GPU,
         ACCELERATION,
         SHADER_BINDING,
@@ -54,17 +54,30 @@ namespace vkcv::rtx {
     class ASManager {
     private:
         Core* m_core;
+        const vk::Device* m_device;
         std::vector<BottomLevelAccelerationStructure> m_bottomLevelAccelerationStructures;
         TopLevelAccelerationStructure m_topLevelAccelerationStructure;
         vk::DispatchLoaderDynamic m_rtxDispatcher;
-
+        
+        /**
+            TODO
+        */
+        vk::CommandPool createCommandPool();
 
         /**
-         * @brief Returns a #RTXBuffer object holding data of type uint16_t from given @p data of type uint8_t.
-         * @param data The input data of type uint8_t.
-         * @return A @#RTXBuffer object holding @p data.
-         */
-        RTXBuffer makeBufferFromData(std::vector<uint8_t> &data);
+            TODO
+        */
+        vk::CommandBuffer allocateAndBeginCommandBuffer( vk::CommandPool cmdPool);
+
+        /**
+           TODO
+        */
+        void submitCommandBuffer(vk::CommandPool commandPool, vk::CommandBuffer& commandBuffer);
+
+        /**
+           TODO
+        */
+        vk::DeviceAddress getBufferDeviceAddress(vk::Buffer buffer);
 
         /**
          * @brief Copies @p cpuBuffer data into a @p gpuBuffer. Typical use case is a staging buffer (namely,
@@ -89,6 +102,47 @@ namespace vkcv::rtx {
         ~ASManager();
 
         /**
+         * @brief Returns a #RTXBuffer object holding data of type uint16_t from given @p data of type uint8_t.
+         * @param data The input data of type uint8_t.
+         * @return A @#RTXBuffer object holding @p data.
+         */
+        template<class T>
+        RTXBuffer makeBufferFromData(std::vector<T>& data) {
+
+            // first: Staging Buffer creation
+            RTXBuffer stagingBuffer;
+            stagingBuffer.bufferType = RTXBufferType::STAGING;
+            auto test = sizeof(T);
+            auto test1 = sizeof(float);
+            auto test1a = sizeof(uint32_t);
+            auto test2 = sizeof(data[0]);
+            auto test3 = data.size();
+            stagingBuffer.deviceSize = sizeof(T) * data.size();
+            stagingBuffer.data = data.data();
+            stagingBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eTransferSrc;
+            stagingBuffer.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible;
+
+            createBuffer(stagingBuffer);
+
+            // second: create AS Buffer
+            RTXBuffer targetBuffer;
+            targetBuffer.bufferType = RTXBufferType::GPU;
+            targetBuffer.deviceSize = sizeof(T) * data.size();
+            targetBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
+                | vk::BufferUsageFlagBits::eTransferDst
+                | vk::BufferUsageFlagBits::eStorageBuffer
+                | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+            targetBuffer.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eDeviceLocal;
+
+            createBuffer(targetBuffer);
+
+            // copy from CPU to GPU
+            copyFromCPUToGPU(stagingBuffer, targetBuffer);
+
+            return targetBuffer;
+        };
+
+        /**
         * @brief A helper function used by #ASManager::makeBufferFromData. Creates a fully initialized #RTXBuffer object
         * from partially specified @p buffer. All missing data of @p buffer will be completed by this function.
         * @param buffer The partially specified #RTXBuffer holding that part of information which is required for
@@ -101,7 +155,7 @@ namespace vkcv::rtx {
          * @param[in] vertices The vertex data of type uint8_t.
          * @param[in] indices The index data of type uint8_t.
          */
-        void buildBLAS(std::vector<uint8_t> &vertices, std::vector<uint8_t> &indices);
+        void buildBLAS(RTXBuffer vertexBuffer, uint32_t vertexCount, RTXBuffer indexBuffer, uint32_t indexCount);
 
         /**
          * @brief Build a Top Level Acceleration Structure (TLAS) object from the created

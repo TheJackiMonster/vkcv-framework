@@ -2,12 +2,14 @@
 
 namespace vkcv::rtx {
 
-    RTXModule::RTXModule(Core* core, ASManager* asManager, std::vector<uint8_t>& vertices,
-        std::vector<uint8_t>& indices, std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles){
+    RTXModule::RTXModule(Core* core, ASManager* asManager, std::vector<float>& vertices,
+        std::vector<uint32_t>& indices, std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles){
         m_core = core;
         m_asManager = asManager;
         // build acceleration structures BLAS then TLAS --> see ASManager
-        m_asManager->buildBLAS(vertices, indices);
+        RTXBuffer vertexBuffer = m_asManager->makeBufferFromData(vertices);
+        RTXBuffer indexBuffer  = m_asManager->makeBufferFromData(indices);
+        m_asManager->buildBLAS(vertexBuffer, vertices.size(), indexBuffer,indices.size());
         m_asManager->buildTLAS();
         RTXDescriptors(descriptorSetHandles);
     }

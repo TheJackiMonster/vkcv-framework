@@ -49,8 +49,8 @@ int main(int argc, const char** argv) {
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
 			argc > 1 ? argv[1] : "resources/Cube/cube.gltf"
 	));
-	*/
-    // TODO: replace by bigger scene
+	
+    
 	vkcv::asset::Scene mesh;
 
 	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
@@ -64,32 +64,21 @@ int main(int argc, const char** argv) {
 	}
 
 	assert(!mesh.vertexGroups.empty());
-
-	/*
-	std::vector<uint8_t> vertices = {};
-	for (size_t i=0; i<mesh.vertexGroups[0].vertexBuffer.attributes[0].length; i++) {
-	    vertices.push_back(mesh.vertexGroups[0].vertexBuffer.data[i]);
-	}
-
-	std::vector<uint8_t> indices = {};
-	for (size_t i=0; i<mesh.vertexGroups[0].indexBuffer.data.size(); i++) {
-	    indices.push_back(mesh.vertexGroups[0].indexBuffer.data[i]);
-	}
 	*/
-
-	uint8_t cubeVertices[8*3] =
+	// TODO: replace by bigger scene
+	float cubeVertices[8*3] =
 	{
-		0,0,0,
-		2,0,0,
-		2,2,0,
-		0,2,0,
-		0,0,2,
-		2,0,2,
-		2,2,2,
-		0,2,2
+		0.f,0.f,0.f,
+		2.f,0.f,0.f,
+		2.f,2.f,0.f,
+		0.f,2.f,0.f,
+		0.f,0.f,2.f,
+		2.f,0.f,2.f,
+		2.f,2.f,2.f,
+		0.f,2.f,2.f
 	};
 
-	uint8_t cubeIndices[6 * 6] =
+	uint32_t cubeIndices[6 * 6] =
 	{
 		0, 1, 3, 3, 1, 2,
 		1, 5, 2, 2, 5, 6,
@@ -99,62 +88,20 @@ int main(int argc, const char** argv) {
 		4, 5, 0, 0, 5, 1
 	};
 
-	std::vector<uint8_t> vertices = {};
+	std::vector<float> vertices = {};
 	for (size_t i = 0; i < std::size(cubeVertices)  ; i++) {
 		vertices.push_back(cubeVertices[i]);
 	}
 
-	std::vector<uint8_t> indices = {};
+	std::vector<uint32_t> indices = {};
 	for (size_t i = 0; i < std::size(cubeIndices); i++) {
 		indices.push_back(cubeIndices[i]);
 	}
 
 
-	/*
-	const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain(windowHandle).getFormat()
-	);
-
-	const vkcv::AttachmentDescription depth_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		vk::Format::eD32Sfloat
-	);
-
-	vkcv::PassConfig scenePassDefinition({ present_color_attachment, depth_attachment });
-	vkcv::PassHandle scenePass = core.createPass(scenePassDefinition);
-
-	if (!scenePass) {
-		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
-		return EXIT_FAILURE;
-	}
-	*/
+	
 	//vkcv::ShaderProgram sceneShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
-
-	/*
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
-					 [&sceneShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		sceneShaderProgram.addShader(shaderStage, path);
-	});
-
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
-					 [&sceneShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		sceneShaderProgram.addShader(shaderStage, path);
-	});
-
-	const std::vector<vkcv::VertexAttachment> vertexAttachments = sceneShaderProgram.getVertexAttachments();
-	std::vector<vkcv::VertexBinding> bindings;
-	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
-	}
-
-	const vkcv::VertexLayout sceneLayout(bindings);
-
-	//const auto& material0 = scene.getMaterial(0);
-	*/
 
 	vkcv::ShaderProgram rayGenShaderProgram;
 	compiler.compile(vkcv::ShaderStage::RAY_GEN, std::filesystem::path("resources/shaders/raytrace.rgen"),
@@ -252,7 +199,10 @@ int main(int argc, const char** argv) {
 		raytracingPushData.camera_up = glm::vec4(cameraManager.getActiveCamera().getUp(),0);
 		raytracingPushData.camera_forward = glm::vec4(cameraManager.getActiveCamera().getFront(),0);
 		raytracingPushData.frameCount = frameCount++;
-
+		/*std::cout << "Camera position: [" << raytracingPushData.camera_position.x << "," <<
+			raytracingPushData.camera_position.y << ","<< raytracingPushData.camera_position.z <<","<<
+			raytracingPushData.camera_position.a << "]" <<std::endl;
+		*/
 		vkcv::PushConstants pushConstantsRTX(sizeof(RaytracingPushConstantData));
 		pushConstantsRTX.appendDrawcall(raytracingPushData);
 

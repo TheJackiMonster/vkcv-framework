@@ -27,8 +27,8 @@ namespace vkcv::rtx {
          * @param indices The scene index data of type uint8_t.
          * @param descriptorSetHandles The descriptorSetHandles for RTX
          */
-        RTXModule(Core* core, ASManager* asManager, std::vector<uint8_t>& vertices,
-            std::vector<uint8_t>& indices, std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles);
+        RTXModule(Core* core, ASManager* asManager, std::vector<float>& vertices,
+            std::vector<uint32_t>& indices, std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles);
 
         /**
          * @brief Default #RTXModule destructor.
