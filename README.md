@@ -35,8 +35,10 @@ The following modules will be provided in this repository and they will automati
  - [Camera](modules/asset_loader/README.md)
  - [GUI](modules/gui/README.md)
  - [Material](modules/material/README.md)
+ - [Meshlet](modules/meshlet/README.md)
  - [Scene](modules/scene/README.md)
  - [Shader-Compiler](modules/shader_compiler/README.md)
+ - [Upscaling](modules/upscaling/README.md)
 
 ## Documentation
 
