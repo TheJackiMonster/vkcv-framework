@@ -169,6 +169,8 @@ int main(int argc, const char** argv) {
 	uint32_t frameCount = 0;
 	while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
+        glm::vec4 camMove1;
+        glm::vec4 camMove2;
 
 		if(core.getWindow(windowHandle).getHeight() == 0 || core.getWindow(windowHandle).getWidth() == 0)
 			continue;
@@ -198,8 +200,18 @@ int main(int argc, const char** argv) {
 		raytracingPushData.camera_right = glm::vec4(glm::cross(cameraManager.getActiveCamera().getFront(), cameraManager.getActiveCamera().getUp()), 0);
 		raytracingPushData.camera_up = glm::vec4(cameraManager.getActiveCamera().getUp(),0);
 		raytracingPushData.camera_forward = glm::vec4(cameraManager.getActiveCamera().getFront(),0);
-		raytracingPushData.frameCount = frameCount++;
-		/*std::cout << "Camera position: [" << raytracingPushData.camera_position.x << "," <<
+
+        if (camMove1 != glm::vec4(cameraManager.getActiveCamera().getFront(),0)
+            || camMove2 != glm::vec4(cameraManager.getActiveCamera().getPosition(),0)){
+            raytracingPushData.frameCount = 0;
+            frameCount = 0;
+        } else {
+            raytracingPushData.frameCount = frameCount++;
+        }
+        camMove1 = glm::vec4(cameraManager.getActiveCamera().getFront(),0);
+        camMove2 = glm::vec4(cameraManager.getActiveCamera().getPosition(),0);
+
+        /*std::cout << "Camera position: [" << raytracingPushData.camera_position.x << "," <<
 			raytracingPushData.camera_position.y << ","<< raytracingPushData.camera_position.z <<","<<
 			raytracingPushData.camera_position.a << "]" <<std::endl;
 		*/

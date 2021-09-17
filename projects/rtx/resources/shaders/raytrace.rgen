@@ -15,7 +15,7 @@ layout(location = 0) rayPayloadEXT Payload {
       } payload;
 
 layout(binding = 0, set = 0, rgba16) uniform image2D outImg;           // the output image -> maybe use 16 bit values?
-layout(binding = 1, set = 0) uniform accelerationStructureEXT tlas;     // top level acceleration structure (for the noobs here (you!))
+layout(location = 0, binding = 1, set = 0) uniform accelerationStructureEXT tlas;     // top level acceleration structure (for the noobs here (you!))
 
 layout( push_constant ) uniform constants {
     vec4 camera_position;   // as origin for ray generation
@@ -36,7 +36,7 @@ void main(){
     uv = (uv * 2.0f - 1.0f) * vec2(1.0f, -1.0f);
 
     payload.rayOrigin = camera.camera_position.xyz;
-    payload.rayDirection = normalize(uv.x * camera.camera_right * (-1) + uv.y * camera.camera_up * (-1) + camera.camera_forward).xyz ;
+    payload.rayDirection = normalize((-1) * uv.x * camera.camera_right + uv.y * camera.camera_up + camera.camera_forward).xyz ;
     payload.previousNormal = vec3(0.0, 0.0, 0.0);
 
     payload.directColor = vec3(0.0, 0.0, 0.0);
