@@ -16,11 +16,8 @@ if(NOT WIN32)
 	list(APPEND vkcv_flags -fopenmp)
 endif()
 
-# add custom functions to use git automatically
+# add custom functions to check for git submodules
 include(${vkcv_config_ext}/Git.cmake)
-
-init_git_lfs()
-init_git_submodules()
 
 list(APPEND vkcv_definitions _USE_MATH_DEFINES)
 
