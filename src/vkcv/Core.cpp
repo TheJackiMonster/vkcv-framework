@@ -439,7 +439,7 @@ namespace vkcv
 			vk::DeviceSize rayGenOffset = 0;
 			vk::DeviceSize missOffset = shaderGroupBaseAlignment;
 			vk::DeviceSize closestHitOffset = 2 * shaderGroupBaseAlignment;
-			vk::DeviceSize shaderBindingTableSize = shaderGroupBaseAlignment * 3; //3 hardcoded to rtx-shader count
+			vk::DeviceSize shaderBindingTableSize = shaderGroupBaseAlignment * 3; //4 hardcoded to rtx-shader count
 
 			auto m_rtxDispatcher = vk::DispatchLoaderDynamic((PFN_vkGetInstanceProcAddr)m_Context.getInstance().getProcAddr("vkGetInstanceProcAddr"));
 			m_rtxDispatcher.init(m_Context.getInstance());
@@ -452,7 +452,7 @@ namespace vkcv
 			vk::StridedDeviceAddressRegionKHR rmissRegion;
 			rmissRegion.deviceAddress = m_Context.getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo, m_rtxDispatcher) + missOffset;
 			rmissRegion.setStride(shaderBindingTableSize);
-			rmissRegion.setSize(shaderBindingTableSize);
+			rmissRegion.setSize(shaderBindingTableSize); 
 			vk::StridedDeviceAddressRegionKHR rchitRegion;
 			rchitRegion.deviceAddress = m_Context.getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo, m_rtxDispatcher) + closestHitOffset;
 			rchitRegion.setStride(shaderBindingTableSize);

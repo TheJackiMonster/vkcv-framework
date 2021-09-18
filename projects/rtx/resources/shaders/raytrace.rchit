@@ -85,9 +85,10 @@ void main() {
         return;
     }
     Material ivory = {vec3(1,0,0), vec3(0.4, 0.4, 0.3), vec3(50.,50.,50.), vec3(0.6, 0.3, 0.1)};
-    Light rtxLight1 = {vec3(20, 20,  20), 1.5};
-    Light rtxLight2 = {vec3(30,  50, -25), 1.8};
-    Light rtxLight3 = {vec3(30,  20,  30), 1.7};
+    Material mirror  = {vec3(1,0,0), vec3(1.0, 1.0, 1.0), vec3(1425.,1425.,1425.), vec3(0.0, 10.0, 0.8)};
+    Light rtxLight1 = {vec3(5, 5, 5), 1.5};
+    Light rtxLight2 = {vec3(-5,  -5, -2.5), 3};
+    Light rtxLight3 = {vec3(-5,  -5,  5), 1.7};
 
     ivec3 rtindices = ivec3(rtxIndexBuffer.indices[3 * gl_PrimitiveID + 0], rtxIndexBuffer.indices[3 * gl_PrimitiveID + 1], rtxIndexBuffer.indices[3 * gl_PrimitiveID + 2]);
 
@@ -151,22 +152,22 @@ void main() {
         traceRayEXT(tlas, shadowRayFlags, 0xFF, 0, 0, 1, shadowRayOrigin, 0.001, shadowRayDirection, shadowRayDistance, 1);
 
         // TODO: always true because light sources are dumb
-        if (!isShadow) {
+        //if (!isShadow) {
             if (payload.rayDepth == 0) {
                 payload.directColor = surfaceColor * lightColor * dot(geometricNormal, positionToLightDirection);
             }
             else {
                 payload.indirectColor += (1.0 / payload.rayDepth) * surfaceColor * lightColor * dot(payload.previousNormal, payload.rayDirection) * dot(geometricNormal, positionToLightDirection);
             }
-        }
-        else {
-            if (payload.rayDepth == 0) {
-                payload.directColor = vec3(0.4, 0.4, 0.3); 
-            }
-            else {
-                payload.rayActive = 0;
-            }
-        }
+        //}
+        //else {
+        //    if (payload.rayDepth == 0) {
+        //        payload.directColor = vec3(0.4, 0.4, 0.3); 
+        //    }
+        //    else {
+        //        payload.rayActive = 0;
+        //    }
+        //}
     }
 
     vec3 hemisphere = uniformSampleHemisphere(vec2(random(gl_LaunchIDEXT.xy, camera.frameCount), random(gl_LaunchIDEXT.xy, camera.frameCount + 1)));

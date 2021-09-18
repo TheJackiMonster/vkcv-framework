@@ -49,11 +49,11 @@ int main(int argc, const char** argv) {
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
 			argc > 1 ? argv[1] : "resources/Cube/cube.gltf"
 	));
-	
+	*/
     
 	vkcv::asset::Scene mesh;
 
-	const char* path = argc > 1 ? argv[1] : "resources/cube/cube.gltf";
+	const char* path = argc > 1 ? argv[1] : "resources/house/medieval_house.gltf";
 	int result = vkcv::asset::loadScene(path, mesh);
 
 	if (result == 1) {
@@ -64,7 +64,17 @@ int main(int argc, const char** argv) {
 	}
 
 	assert(!mesh.vertexGroups.empty());
-	*/
+
+	std::vector<float> vertices = {};
+	for (size_t i = 0; i < mesh.vertexGroups[0].vertexBuffer.attributes[0].length; i++) { 
+		vertices.push_back((float)mesh.vertexGroups[0].vertexBuffer.data[i]); 
+	}
+	std::vector<uint32_t> indices = {};
+	
+	for (size_t i = 0; i < mesh.vertexGroups[0].indexBuffer.data.size(); i++) { 
+		indices.push_back((uint32_t)mesh.vertexGroups[0].indexBuffer.data[i]); 
+	}
+	/*
 	// TODO: replace by bigger scene
 	float cubeVertices[8*3] =
 	{
@@ -97,7 +107,7 @@ int main(int argc, const char** argv) {
 	for (size_t i = 0; i < std::size(cubeIndices); i++) {
 		indices.push_back(cubeIndices[i]);
 	}
-
+	*/
 
 	
 	//vkcv::ShaderProgram sceneShaderProgram;
@@ -120,12 +130,20 @@ int main(int argc, const char** argv) {
 		[&rtxShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
             rtxShaderProgram.addShader(shaderStage, path);
 		});
+	/*
+	//vkcv::ShaderProgram rayMissShadowShaderProgram;
+	compiler.compile(vkcv::ShaderStage::RAY_MISS, std::filesystem::path("resources/shaders/raytrace_shadow.rsmiss"),
+		[&rtxShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+			rtxShaderProgram.addShader(shaderStage, path);
+		});*/
+
+	
 
 	std::vector<vkcv::DescriptorSetHandle> descriptorSetHandles;
 	std::vector<vkcv::DescriptorSetLayoutHandle> descriptorSetLayoutHandles;
 
 	vkcv::DescriptorSetLayoutHandle rtxShaderDescriptorSetLayout = core.createDescriptorSetLayout(rtxShaderProgram.getReflectedDescriptors().at(0));
-	vkcv::DescriptorSetHandle rtxShaderDescriptorSet = core.createDescriptorSet(rtxShaderDescriptorSetLayout);//
+	vkcv::DescriptorSetHandle rtxShaderDescriptorSet = core.createDescriptorSet(rtxShaderDescriptorSetLayout);
 	descriptorSetHandles.push_back(rtxShaderDescriptorSet);
 	descriptorSetLayoutHandles.push_back(rtxShaderDescriptorSetLayout);
 
