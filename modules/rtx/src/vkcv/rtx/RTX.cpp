@@ -140,18 +140,6 @@ namespace vkcv::rtx {
         if (!rayMissShaderModule) {
             vkcv_log(LogLevel::ERROR, "The Ray Miss Shader Module could not be created!");
         }
-        /*
-        std::vector<char> rayMissShadowShaderCode = rtxShader.getShader(ShaderStage::RAY_MISS).shaderCode;
-        vk::ShaderModuleCreateInfo rayMissShadowShaderModuleInfo(
-            vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
-            rayMissShadowShaderCode.size(), //size_t codeSize
-            (const uint32_t*)rayMissShadowShaderCode.data() // const uint32_t* pCode
-        );
-
-        vk::ShaderModule rayMissShadowShaderModule = m_core->getContext().getDevice().createShaderModule(rayMissShadowShaderModuleInfo);
-        if (!rayMissShadowShaderModule) {
-            vkcv_log(LogLevel::ERROR, "The Ray Miss Shadow Shader Module could not be created!");
-        }*/
 
         std::vector<char> rayClosestHitShaderCode = rtxShader.getShader(ShaderStage::RAY_CLOSEST_HIT).shaderCode;
         vk::ShaderModuleCreateInfo rayClosestHitShaderModuleInfo(
@@ -181,15 +169,7 @@ namespace vkcv::rtx {
             rayMissShaderModule, // vk::ShaderModule module_ = {},
             "main" // const char* pName_ = {},
         );
-        /*
-        // ray shadow miss
-        vk::PipelineShaderStageCreateInfo rayMissShadowShaderStageInfo(
-            vk::PipelineShaderStageCreateFlags(), // vk::PipelineShaderStageCreateFlags flags_ = {}
-            vk::ShaderStageFlagBits::eMissKHR, // vk::ShaderStageFlagBits stage_ = vk::ShaderStageFlagBits::eVertex,
-            rayMissShadowShaderModule, // vk::ShaderModule module_ = {},
-            "main" // const char* pName_ = {},
-        );*/
-
+      
         // ray clostest hit
         vk::PipelineShaderStageCreateInfo rayClosestHitShaderStageInfo(
             vk::PipelineShaderStageCreateFlags(), // vk::PipelineShaderStageCreateFlags flags_ = {}
@@ -222,16 +202,7 @@ namespace vkcv::rtx {
             VK_SHADER_UNUSED_KHR, // uint32_t anyHitShader_ = {}
             VK_SHADER_UNUSED_KHR, // uint32_t intersectionShader_ = {}
             nullptr // const void* pShaderGroupCaptureReplayHandle_ = {}
-        );/*
-        // Ray Miss
-        shaderGroups[2] = vk::RayTracingShaderGroupCreateInfoKHR(
-            vk::RayTracingShaderGroupTypeKHR::eGeneral, // vk::RayTracingShaderGroupTypeKHR type_ = vk::RayTracingShaderGroupTypeKHR::eGeneral
-            2, // uint32_t generalShader_ = {}
-            VK_SHADER_UNUSED_KHR, // uint32_t closestHitShader_ = {}
-            VK_SHADER_UNUSED_KHR, // uint32_t anyHitShader_ = {}
-            VK_SHADER_UNUSED_KHR, // uint32_t intersectionShader_ = {}
-            nullptr // const void* pShaderGroupCaptureReplayHandle_ = {}
-        );*/
+        );
         // Ray Closest Hit
         shaderGroups[2] = vk::RayTracingShaderGroupCreateInfoKHR(
             vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup, // vk::RayTracingShaderGroupTypeKHR type_ = vk::RayTracingShaderGroupTypeKHR::eGeneral
@@ -302,7 +273,6 @@ namespace vkcv::rtx {
 
         m_core->getContext().getDevice().destroy(rayGenShaderModule);
         m_core->getContext().getDevice().destroy(rayMissShaderModule);
-        //m_core->getContext().getDevice().destroy(rayMissShadowShaderModule);
         m_core->getContext().getDevice().destroy(rayClosestHitShaderModule);
 
         // TODO: add possibility of more than one shader per stage

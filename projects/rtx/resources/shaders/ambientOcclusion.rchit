@@ -81,6 +81,7 @@ vec3 alignHemisphereWithCoordinateSystem(vec3 hemisphere, vec3 up) {
 }
 
 void main() {
+    
     if (payload.rayActive == 0) {
         return;
     }
@@ -123,6 +124,7 @@ void main() {
         vec3 lightVertexB = vec3(rtxVertexBuffer.vertices[3 * lightIndices.y + 0], rtxVertexBuffer.vertices[3 * lightIndices.y + 1], rtxVertexBuffer.vertices[3 * lightIndices.y + 2]);
         vec3 lightVertexC = vec3(rtxVertexBuffer.vertices[3 * lightIndices.z + 0], rtxVertexBuffer.vertices[3 * lightIndices.z + 1], rtxVertexBuffer.vertices[3 * lightIndices.z + 2]);
         */
+        
         vec2 uv = vec2(random(gl_LaunchIDEXT.xy, camera.frameCount), random(gl_LaunchIDEXT.xy, camera.frameCount + 1));
         if (uv.x + uv.y > 1.0f) {
             uv.x = 1.0f - uv.x;
@@ -178,6 +180,6 @@ void main() {
     payload.previousNormal = geometricNormal;
 
     payload.rayDepth += 1;
-
+    
     //payload.directColor=vec3(1,0,0);
 }
