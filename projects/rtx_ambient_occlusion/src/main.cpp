@@ -6,12 +6,12 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/scene/Scene.hpp>
-#include <vkcv/rtx/RTX.hpp>
-#include <vkcv/rtx/RTXExtensions.hpp>
+#include "RTX/RTX.hpp"
+#include "RTX/RTXExtensions.hpp"
 #include "teapot.hpp"
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "RTX";
+	const char* applicationName = "RTX Ambient Occlusion";
 
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
