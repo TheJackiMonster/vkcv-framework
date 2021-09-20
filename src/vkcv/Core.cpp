@@ -459,7 +459,6 @@ namespace vkcv
 			rchitRegion.setSize(shaderBindingTableSize);
 			vk::StridedDeviceAddressRegionKHR rcallRegion = {};
 
-
 			cmdBuffer.traceRaysKHR(&rgenRegion,&rmissRegion,&rchitRegion,&rcallRegion,
 									getWindow(windowHandle).getWidth(), getWindow(windowHandle).getHeight(),1, m_rtxDispatcher);
 

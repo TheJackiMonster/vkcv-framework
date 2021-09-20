@@ -341,7 +341,18 @@ namespace vkcv
 			const WindowHandle&                     windowHandle);
         
 
-
+        /**
+         * Prepares RTXPipeline for Raygeneration by recording the binding Table to the Commandstream.
+         * Currently only supports closestHit, rayGen and miss shaderstages.
+         * @param cmdStreamHandle The command stream handle which receives relevant commands for drawing.
+         * @param rtxPipeline The raytracing pipeline from the RTXModule.
+         * @param rtxPipelineLayout The raytracing pipeline layout from the RTXModule.
+         * @param shaderBindingTable The shader binding table from the RTXModule.
+         * @param shaderGroupBaseAlignment The shader group base alignment from the RTXModule.
+         * @param descriptorSetUsages The descriptor set usages.
+         * @param pushConstants The push constants.
+         * @param windowHandle The window handle defining in which window to render.
+         */
         void recordRayGenerationToCmdStream(
             CommandStreamHandle cmdStreamHandle,
             vk::Pipeline rtxPipeline,

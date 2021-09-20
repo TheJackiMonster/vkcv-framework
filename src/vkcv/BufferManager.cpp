@@ -48,12 +48,6 @@ namespace vkcv {
 			case BufferType::INDEX:
 				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
 				break;
-		    case BufferType::RT_ACCELERATION_VERTEX:
-		        usageFlags = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR | vk::BufferUsageFlagBits::eStorageBuffer;
-		        break;
-		    case BufferType::RT_ACCELERATION_INDEX:
-		        usageFlags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR | vk::BufferUsageFlagBits::eStorageBuffer;
-			    break;
             default:
 				vkcv_log(LogLevel::WARNING, "Unknown buffer type");
 				break;
