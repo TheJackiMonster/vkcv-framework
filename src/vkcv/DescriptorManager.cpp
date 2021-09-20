@@ -15,8 +15,8 @@ namespace vkcv
 				vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
 				vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000),
 				vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic, 1000),
-				vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic, 1000),
-				vk::DescriptorPoolSize(vk::DescriptorType::eAccelerationStructureKHR, 1000)
+				vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic, 1000),    // for RTX
+				vk::DescriptorPoolSize(vk::DescriptorType::eAccelerationStructureKHR, 1000) // for RTX
 		};
 
 		m_PoolInfo = vk::DescriptorPoolCreateInfo(

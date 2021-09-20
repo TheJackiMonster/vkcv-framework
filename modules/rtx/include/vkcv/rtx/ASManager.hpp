@@ -60,23 +60,29 @@ namespace vkcv::rtx {
         vk::DispatchLoaderDynamic m_rtxDispatcher;
         
         /**
-            TODO
-        */
+         * Creates a command pool.
+         */
         vk::CommandPool createCommandPool();
 
         /**
-            TODO
-        */
+         * @brief Takes a @p cmdPool, allocates a command buffer and starts recording it.
+         * @param cmdPool The command pool.
+         * @return The allocated command buffer.
+         */
         vk::CommandBuffer allocateAndBeginCommandBuffer( vk::CommandPool cmdPool);
 
         /**
-           TODO
-        */
+         * @brief Ends recording, submits, waits, and then frees the @p commandBuffer.
+         * @param commandPool The command pool.
+         * @param commandBuffer The command buffer.
+         */
         void submitCommandBuffer(vk::CommandPool commandPool, vk::CommandBuffer& commandBuffer);
 
         /**
-           TODO
-        */
+         * @brief Gets the device address of a @p buffer.
+         * @param buffer The buffer.
+         * @return The device address of the @p buffer.
+         */
         vk::DeviceAddress getBufferDeviceAddress(vk::Buffer buffer);
 
         /**
@@ -102,9 +108,9 @@ namespace vkcv::rtx {
         ~ASManager();
 
         /**
-         * @brief Returns a #RTXBuffer object holding data of type uint16_t from given @p data of type uint8_t.
-         * @param data The input data of type uint8_t.
-         * @return A @#RTXBuffer object holding @p data.
+         * @brief Returns a @#RTXBuffer object holding data of type @p T.
+         * @param data The input data of type @p T.
+         * @return A @#RTXBuffer object holding @p data of type @p T.
          */
         template<class T>
         RTXBuffer makeBufferFromData(std::vector<T>& data) {
@@ -112,11 +118,6 @@ namespace vkcv::rtx {
             // first: Staging Buffer creation
             RTXBuffer stagingBuffer;
             stagingBuffer.bufferType = RTXBufferType::STAGING;
-            auto test = sizeof(T);
-            auto test1 = sizeof(float);
-            auto test1a = sizeof(uint32_t);
-            auto test2 = sizeof(data[0]);
-            auto test3 = data.size();
             stagingBuffer.deviceSize = sizeof(T) * data.size();
             stagingBuffer.data = data.data();
             stagingBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eTransferSrc;
@@ -143,17 +144,19 @@ namespace vkcv::rtx {
         };
 
         /**
-        * @brief A helper function used by #ASManager::makeBufferFromData. Creates a fully initialized #RTXBuffer object
+        * @brief A helper function used by @#ASManager::makeBufferFromData. Creates a fully initialized @#RTXBuffer object
         * from partially specified @p buffer. All missing data of @p buffer will be completed by this function.
-        * @param buffer The partially specified #RTXBuffer holding that part of information which is required for
-        * successfully creating a vk::Buffer object.
+        * @param buffer The partially specified @#RTXBuffer holding that part of information which is required for
+        * successfully creating a @p vk::Buffer object.
         */
         void createBuffer(RTXBuffer& buffer);
 
         /**
-         * @brief Build a Bottom Level Acceleration Structure (BLAS) object from given @p vertices and @p indices.
-         * @param[in] vertices The vertex data of type uint8_t.
-         * @param[in] indices The index data of type uint8_t.
+         * @brief Build a Bottom Level Acceleration Structure (BLAS) object from given @p vertexBuffer and @p indexBuffer.
+         * @param[in] vertexBuffer The vertex data.
+         * @param[in] vertexCount The amount of vertices in @p vertexBuffer.
+         * @param[in] indexBuffer The index data.
+         * @param[in] indexCount The amount of indices in @p indexBuffer.
          */
         void buildBLAS(RTXBuffer vertexBuffer, uint32_t vertexCount, RTXBuffer indexBuffer, uint32_t indexCount);
 
@@ -164,8 +167,8 @@ namespace vkcv::rtx {
         void buildTLAS();
 
         /**
-        * @brief Returns the top-level acceleration structure buffer.
-        * @return A @#TopLevelAccelerationStructure object holding the tlas.
+        * @brief Returns the top-level acceleration structure (TLAS) buffer.
+        * @return A @#TopLevelAccelerationStructure object holding the TLAS.
         */
         TopLevelAccelerationStructure getTLAS();
 

@@ -38,18 +38,13 @@ int main(int argc, const char** argv) {
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
 
 	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
-	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
-	
-	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(-8, 1, -0.5));
-	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 30.0f);
-	
-	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
+	uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	cameraManager.getCamera(camIndex).setNearFar(0.1f, 30.0f);
 	
     // get Teapot vertices and indices
-	std::vector<float> vertices;
-    std::vector<uint32_t> indices;
-    Teapot teapot(vertices,indices);
+    Teapot teapot;
+    std::vector<float> vertices = teapot.getVertices();
+    std::vector<uint32_t> indices = teapot.getIndices();
 
 	vkcv::shader::GLSLCompiler compiler;
 
@@ -85,12 +80,11 @@ int main(int argc, const char** argv) {
 	    glm::vec4 camera_right;      // for computing ray direction
 	    glm::vec4 camera_up;         // for computing ray direction
 	    glm::vec4 camera_forward;    // for computing ray direction
-	    glm::uint frameCount;        // resets when camera moves, otherwise frameCount++
 	};
 
 	uint32_t pushConstantSize = sizeof(RaytracingPushConstantData);
 
-	rtxModule.createRTXPipeline(pushConstantSize, descriptorSetLayoutHandles, rtxShaderProgram);
+    rtxModule.createRTXPipelineAndLayout(pushConstantSize, descriptorSetLayoutHandles, rtxShaderProgram);
 
 	vk::Pipeline rtxPipeline = rtxModule.getPipeline();
 	vk::PipelineLayout rtxPipelineLayout = rtxModule.getPipelineLayout();
@@ -102,11 +96,8 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorWrites rtxWrites;
 
 	auto start = std::chrono::system_clock::now();
-	uint32_t frameCount = 0;
 	while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
-        glm::vec4 camMove1;
-        glm::vec4 camMove2;
 
 		if(core.getWindow(windowHandle).getHeight() == 0 || core.getWindow(windowHandle).getWidth() == 0)
 			continue;
@@ -133,20 +124,9 @@ int main(int argc, const char** argv) {
 		
 		RaytracingPushConstantData raytracingPushData;
 		raytracingPushData.camera_position = glm::vec4(cameraManager.getActiveCamera().getPosition(),0);
-		raytracingPushData.camera_right = glm::vec4(glm::cross(cameraManager.getActiveCamera().getFront(), cameraManager.getActiveCamera().getUp()), 0);
+		raytracingPushData.camera_right = glm::vec4(glm::cross(cameraManager.getActiveCamera().getUp(), cameraManager.getActiveCamera().getFront()), 0);
 		raytracingPushData.camera_up = glm::vec4(cameraManager.getActiveCamera().getUp(),0);
 		raytracingPushData.camera_forward = glm::vec4(cameraManager.getActiveCamera().getFront(),0);
-
-        // reset frameCount if camera movement is detected
-        if (camMove1 != glm::vec4(cameraManager.getActiveCamera().getFront(),0)
-            || camMove2 != glm::vec4(cameraManager.getActiveCamera().getPosition(),0)){
-            raytracingPushData.frameCount = 0;
-            frameCount = 0;
-        } else {
-            raytracingPushData.frameCount = frameCount++;
-        }
-        camMove1 = glm::vec4(cameraManager.getActiveCamera().getFront(),0);
-        camMove2 = glm::vec4(cameraManager.getActiveCamera().getPosition(),0);
 
 		vkcv::PushConstants pushConstantsRTX(sizeof(RaytracingPushConstantData));
 		pushConstantsRTX.appendDrawcall(raytracingPushData);
@@ -162,7 +142,7 @@ int main(int argc, const char** argv) {
 			cmdStream,
 			rtxPipeline,
 			rtxPipelineLayout,
-			rtxModule.getShaderBindingBuffer(),
+            rtxModule.getShaderBindingTableBuffer(),
 			rtxModule.getShaderGroupBaseAlignment(),
 			{	vkcv::DescriptorSetUsage(0, core.getDescriptorSet(rtxShaderDescriptorSet).vulkanHandle)},
 			pushConstantsRTX,

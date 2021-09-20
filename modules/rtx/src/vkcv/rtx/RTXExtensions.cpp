@@ -26,7 +26,7 @@ RTXExtensions::RTXExtensions()
         m_features.requireExtension(deviceExtension);
     }
 
-    /* FIXME : We must disable features that will be mentioned as "not supported" by the FeatureManager. If every unsupported feature is disabled, this should work.
+    /* FIXME: We must disable features that will be mentioned as "not supported" by the FeatureManager. If every unsupported feature is disabled, this should work.
      * Maybe we find a better workaround...
      */
     m_features.requireFeature<vk::PhysicalDeviceVulkan12Features>(

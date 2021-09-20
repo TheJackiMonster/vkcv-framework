@@ -19,8 +19,8 @@ namespace vkcv::rtx {
     {
         m_core->getContext().getDevice().destroy(m_pipeline);
         m_core->getContext().getDevice().destroy(m_pipelineLayout);
-        m_core->getContext().getDevice().destroy(m_shaderBindingtableBuffer.vulkanHandle);
-        m_core->getContext().getDevice().freeMemory(m_shaderBindingtableBuffer.deviceMemory);
+        m_core->getContext().getDevice().destroy(m_shaderBindingTableBuffer.vulkanHandle);
+        m_core->getContext().getDevice().freeMemory(m_shaderBindingTableBuffer.deviceMemory);
     }
     
     void RTXModule::createShaderBindingTable(uint32_t shaderCount) {
@@ -32,14 +32,14 @@ namespace vkcv::rtx {
         m_core->getContext().getPhysicalDevice().getProperties2(&physicalProperties);
 
         vk::DeviceSize shaderBindingTableSize = rayTracingProperties.shaderGroupHandleSize * shaderCount;
-       
-       
-        m_shaderBindingtableBuffer.bufferType = RTXBufferType::SHADER_BINDING;
-        m_shaderBindingtableBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR;
-        m_shaderBindingtableBuffer.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eHostVisible;
-        m_shaderBindingtableBuffer.deviceSize = shaderBindingTableSize;
 
-        m_asManager->createBuffer(m_shaderBindingtableBuffer);
+
+        m_shaderBindingTableBuffer.bufferType = RTXBufferType::SHADER_BINDING;
+        m_shaderBindingTableBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR;
+        m_shaderBindingTableBuffer.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eHostVisible;
+        m_shaderBindingTableBuffer.deviceSize = shaderBindingTableSize;
+
+        m_asManager->createBuffer(m_shaderBindingTableBuffer);
 
         void* shaderHandleStorage = (void*)malloc(sizeof(uint8_t) * shaderBindingTableSize);
         
@@ -49,13 +49,13 @@ namespace vkcv::rtx {
         }
 
         m_shaderGroupBaseAlignment =  rayTracingProperties.shaderGroupBaseAlignment;
-        uint8_t* mapped = (uint8_t*) m_core->getContext().getDevice().mapMemory(m_shaderBindingtableBuffer.deviceMemory, 0, shaderBindingTableSize);
+        uint8_t* mapped = (uint8_t*) m_core->getContext().getDevice().mapMemory(m_shaderBindingTableBuffer.deviceMemory, 0, shaderBindingTableSize);
         for (int i = 0; i < shaderCount; i++) {
             memcpy(mapped, (uint8_t*)shaderHandleStorage + (i * rayTracingProperties.shaderGroupHandleSize), rayTracingProperties.shaderGroupHandleSize);
             mapped += m_shaderGroupBaseAlignment;
         }
 
-        m_core->getContext().getDevice().unmapMemory(m_shaderBindingtableBuffer.deviceMemory);
+        m_core->getContext().getDevice().unmapMemory(m_shaderBindingTableBuffer.deviceMemory);
         free(shaderHandleStorage);        
     }
 
@@ -113,9 +113,7 @@ namespace vkcv::rtx {
         m_core->getContext().getDevice().updateDescriptorSets(indexWrite, nullptr);
     }
 
-    void RTXModule::createRTXPipeline(uint32_t pushConstantSize, std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rtxShader) {
-        // TODO: maybe all of this must be moved to the vkcv::PipelineManager? If we use scene.recordDrawcalls(), this requires a vkcv::PipelineHandle and not a vk::Pipeline
-
+    void RTXModule::createRTXPipelineAndLayout(uint32_t pushConstantSize, std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rtxShader) {
         // -- process vkcv::ShaderProgram into vk::ShaderModule
         std::vector<char> rayGenShaderCode = rtxShader.getShader(ShaderStage::RAY_GEN).shaderCode;
 
@@ -170,7 +168,7 @@ namespace vkcv::rtx {
             "main" // const char* pName_ = {},
         );
       
-        // ray clostest hit
+        // ray closest hit
         vk::PipelineShaderStageCreateInfo rayClosestHitShaderStageInfo(
             vk::PipelineShaderStageCreateFlags(), // vk::PipelineShaderStageCreateFlags flags_ = {}
             vk::ShaderStageFlagBits::eClosestHitKHR, // vk::ShaderStageFlagBits stage_ = vk::ShaderStageFlagBits::eVertex,
@@ -178,13 +176,13 @@ namespace vkcv::rtx {
             "main" // const char* pName_ = {},
         );
         
-        std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = {   // HARD CODED
+        std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = {   // HARD CODED. TODO: Support more shader stages.
             rayGenShaderStageInfo, rayMissShaderStageInfo, rayClosestHitShaderStageInfo
         };
 
         // -- PipelineLayouts
 
-        std::vector<vk::RayTracingShaderGroupCreateInfoKHR> shaderGroups(3);   // HARD CODED
+        std::vector<vk::RayTracingShaderGroupCreateInfoKHR> shaderGroups(shaderStages.size());
         // Ray Gen
         shaderGroups[0] = vk::RayTracingShaderGroupCreateInfoKHR(
             vk::RayTracingShaderGroupTypeKHR::eGeneral, // vk::RayTracingShaderGroupTypeKHR type_ = vk::RayTracingShaderGroupTypeKHR::eGeneral
@@ -283,9 +281,9 @@ namespace vkcv::rtx {
         return m_pipeline;
     }
 
-    vk::Buffer RTXModule::getShaderBindingBuffer()
+    vk::Buffer RTXModule::getShaderBindingTableBuffer()
     {
-        return m_shaderBindingtableBuffer.vulkanHandle;
+        return m_shaderBindingTableBuffer.vulkanHandle;
     }
 
     vk::DeviceSize RTXModule::getShaderGroupBaseAlignment()

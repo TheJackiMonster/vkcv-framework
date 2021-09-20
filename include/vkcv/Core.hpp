@@ -342,8 +342,8 @@ namespace vkcv
         
 
         /**
-         * Prepares RTXPipeline for Raygeneration by recording the binding Table to the Commandstream.
-         * Currently only supports closestHit, rayGen and miss shaderstages.
+         * Prepares the @p rtxPipeline for ray generation by recording the @p shaderBindingTable to the @p cmdStreamHandle.
+         * Currently only supports @p closestHit, @p rayGen and @c miss shaderstages @c.
          * @param cmdStreamHandle The command stream handle which receives relevant commands for drawing.
          * @param rtxPipeline The raytracing pipeline from the RTXModule.
          * @param rtxPipelineLayout The raytracing pipeline layout from the RTXModule.

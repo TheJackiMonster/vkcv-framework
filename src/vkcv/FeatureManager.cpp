@@ -362,8 +362,6 @@ m_physicalDevice.getFeatures2(&query)
 	    vkcv_check_feature(variablePointers);
 	    vkcv_check_feature(variablePointersStorageBuffer);
 
-	    // TODO: (Validation Error) if using VulkanFeatures11, disable VkPhysicalDevice16BitStorageFeatures
-
 	    return true;
 	}
 

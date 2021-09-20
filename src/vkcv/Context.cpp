@@ -326,7 +326,6 @@ namespace vkcv
 				queuePairsTransfer
 		);
 
-        // TODO ?vma::AllocatorCreateFlagBits::eKhrDedicatedAllocation?
 		vma::AllocatorCreateFlags vmaFlags;
 		const vma::AllocatorCreateInfo allocatorCreateInfo (
 				vma::AllocatorCreateFlags(),

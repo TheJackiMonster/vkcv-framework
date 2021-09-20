@@ -7,12 +7,13 @@ namespace vkcv::rtx {
     ASManager::ASManager(vkcv::Core *core) :
     m_core(core),
     m_device(&(core->getContext().getDevice())){
-        // INFO: It seems that we need a dynamic dispatch loader because Vulkan is an ASs ...
+        // INFO: Using RTX extensions implies that we cannot use the standard dispatcher from Vulkan because using RTX
+        // specific functions via vk::Device will result in validation errors. Instead we need to use a
+        // vk::DispatchLoaderDynamic which is used as dispatcher parameter of the device functions.
         m_rtxDispatcher = vk::DispatchLoaderDynamic( (PFN_vkGetInstanceProcAddr) m_core->getContext().getInstance().getProcAddr("vkGetInstanceProcAddr") );
         m_rtxDispatcher.init(m_core->getContext().getInstance());
 
-        // SUGGESTION: recursive call of buildBLAS etc.
-
+        // TODO: Recursive call of buildBLAS for bigger scenes. Currently, the RTX module only supports one mesh.
     }
 
     ASManager::~ASManager() noexcept {
@@ -55,7 +56,6 @@ namespace vkcv::rtx {
         return commandPool;
     };
 
-    // Allocates and begins a one-time command buffer from the command pool.
     vk::CommandBuffer ASManager::allocateAndBeginCommandBuffer(vk::CommandPool commandPool)
     {
         vk::CommandBufferAllocateInfo commandBufferAllocateInfo{};
@@ -72,7 +72,6 @@ namespace vkcv::rtx {
         return commandBuffer;
     }
 
-    // Ends recording, submits, waits, and then frees the command buffer.
     void ASManager::submitCommandBuffer(vk::CommandPool commandPool, vk::CommandBuffer& commandBuffer)
     {
         commandBuffer.end();
@@ -90,34 +89,10 @@ namespace vkcv::rtx {
         m_device->destroyCommandPool(commandPool);
     }
 
-    // Gets the device address of a buffer.
     vk::DeviceAddress ASManager::getBufferDeviceAddress(vk::Buffer buffer)
     {
         vk::BufferDeviceAddressInfo bufferDeviceAddressInfo(buffer);
         return m_device->getBufferAddress(bufferDeviceAddressInfo);
-    }
-
-
-    // Find a memory in `memoryTypeBitsRequirement` that includes all of `requiredProperties`
-    // taken from Vulkan Spec
-    int32_t findProperties(vk::PhysicalDeviceMemoryProperties* pMemoryProperties,
-        uint32_t memoryTypeBitsRequirement,
-        vk::MemoryPropertyFlags requiredProperties) {
-        const uint32_t memoryCount = pMemoryProperties->memoryTypeCount;
-        for (uint32_t memoryIndex = 0; memoryIndex < memoryCount; ++memoryIndex) {
-            const uint32_t memoryTypeBits = (1 << memoryIndex);
-            const bool isRequiredMemoryType = memoryTypeBitsRequirement & memoryTypeBits;
-
-            const vk::MemoryPropertyFlags properties =
-                pMemoryProperties->memoryTypes[memoryIndex].propertyFlags;
-            const bool hasRequiredProperties =
-                (properties & requiredProperties) == requiredProperties;
-
-            if (isRequiredMemoryType && hasRequiredProperties)
-                return static_cast<int32_t>(memoryIndex);
-        }
-        // failed to find memory type
-        return -1;
     }
 
     void ASManager::createBuffer(RTXBuffer& buffer) {
@@ -140,13 +115,12 @@ namespace vkcv::rtx {
 
         uint32_t memoryTypeIndex = -1;
         for (int i = 0; i < physicalDeviceMemoryProperties.memoryTypeCount; i++) {
-            if ((memoryRequirements2.memoryRequirements.memoryTypeBits & (1 << i)) && (physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & buffer.memoryPropertyFlagBits) == buffer.memoryPropertyFlagBits) {
+            if ((memoryRequirements2.memoryRequirements.memoryTypeBits & (1 << i))
+                    && (physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & buffer.memoryPropertyFlagBits) == buffer.memoryPropertyFlagBits) {
                 memoryTypeIndex = i;
                 break;
             }
         }
-
-
 
         vk::MemoryAllocateInfo memoryAllocateInfo(
             memoryRequirements2.memoryRequirements.size,  // size of allocation in bytes
@@ -186,6 +160,7 @@ namespace vkcv::rtx {
     }
 
     void ASManager::buildBLAS(RTXBuffer vertexBuffer, uint32_t vertexCount, RTXBuffer indexBuffer, uint32_t indexCount) {
+        // TODO: organize hierarchical structure of multiple BLAS
 
         vk::DeviceAddress vertexBufferAddress = getBufferDeviceAddress(vertexBuffer.vulkanHandle);
         vk::DeviceAddress indexBufferAddress = getBufferDeviceAddress(indexBuffer.vulkanHandle);
@@ -239,7 +214,7 @@ namespace vkcv::rtx {
                 );
 
         // create buffer for acceleration structure
-        RTXBuffer blasBuffer; // NOT scratch Buffer
+        RTXBuffer blasBuffer;
         blasBuffer.bufferType = RTXBufferType::ACCELERATION;
         blasBuffer.deviceSize = asBuildSizesInfo.accelerationStructureSize;
         blasBuffer.bufferUsageFlagBits = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
@@ -308,7 +283,9 @@ namespace vkcv::rtx {
     }
 
     void ASManager::buildTLAS() {
-        // We need an the device address of each BLAS --> TODO: for loop
+        // TODO: organize hierarchical structure of multiple BLAS
+
+        // We need an the device address of each BLAS --> TODO: for loop for bigger scenes
         vk::AccelerationStructureDeviceAddressInfoKHR addressInfo(
             m_bottomLevelAccelerationStructures[0].vulkanHandle
         );
@@ -389,18 +366,18 @@ namespace vkcv::rtx {
             {}    // vk::GeometryFlagsKHR flags_ = {}
         );
 
-        // Finally, create the TLAS (--> ASs)
+        // Finally, create the TLAS
         vk::AccelerationStructureBuildGeometryInfoKHR asBuildInfo(
             vk::AccelerationStructureTypeKHR::eTopLevel, // type of the AS: bottom vs. top
             vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace, // some flags for different purposes, e.g. efficiency
             vk::BuildAccelerationStructureModeKHR::eBuild, // AS mode: build vs. update
             {}, // src AS (this seems to be for copying AS)
             {}, // dst AS (this seems to be for copying AS)
-            1, // the geometryCount. TODO: how many do we need?
+            1, // the geometryCount.
             &asGeometry // the next input entry would be a pointer to a pointer to geometries. Maybe geometryCount depends on the next entry?
         );
 
-        // Query the worst -case AS size and scratch space size based on the number of instances (in this case, 1).
+        // Query the worst-case AS size and scratch space size based on the number of instances (in this case, 1).
         vk::AccelerationStructureBuildSizesInfoKHR asSizeInfo;
         m_core->getContext().getDevice().getAccelerationStructureBuildSizesKHR(
             vk::AccelerationStructureBuildTypeKHR::eDevice,

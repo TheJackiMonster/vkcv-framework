@@ -8,7 +8,7 @@ class RTXExtensions {
 private:
     std::vector<const char*> m_instanceExtensions;  // the instance extensions needed for using RTX
     std::vector<const char*> m_deviceExtensions;    // the device extensions needed for using RTX
-    vkcv::Features m_features; // the features needed to be enabled for using RTX
+    vkcv::Features m_features;                      // the features needed to be enabled for using RTX
 public:
 
     RTXExtensions();

@@ -436,14 +436,17 @@ namespace vkcv
 					pushConstants.getSizePerDrawcall(),
 					pushConstants.getData());
 			}
+			// Define offsets for the RTX shaders. RayGen is the first allocated shader. Each following shader is
+			// shifted by shaderGroupBaseAlignment.
 			vk::DeviceSize rayGenOffset = 0;
 			vk::DeviceSize missOffset = shaderGroupBaseAlignment;
 			vk::DeviceSize closestHitOffset = 2 * shaderGroupBaseAlignment;
-			vk::DeviceSize shaderBindingTableSize = shaderGroupBaseAlignment * 3; //4 hardcoded to rtx-shader count
+			vk::DeviceSize shaderBindingTableSize = shaderGroupBaseAlignment * 3; // 3 hardcoded to rtx-shader count
 
 			auto m_rtxDispatcher = vk::DispatchLoaderDynamic((PFN_vkGetInstanceProcAddr)m_Context.getInstance().getProcAddr("vkGetInstanceProcAddr"));
 			m_rtxDispatcher.init(m_Context.getInstance());
 
+			// Create regions for the shader binding table buffer which are used for vk::CommandBuffer::traceRaysKHR
 			vk::StridedDeviceAddressRegionKHR rgenRegion;
 			vk::BufferDeviceAddressInfoKHR shaderBindingTableAddressInfo(shaderBindingTable);
 			rgenRegion.deviceAddress = m_Context.getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo, m_rtxDispatcher) + rayGenOffset;

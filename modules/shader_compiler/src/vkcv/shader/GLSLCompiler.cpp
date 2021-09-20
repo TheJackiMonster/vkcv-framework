@@ -56,17 +56,17 @@ namespace vkcv::shader {
 				return EShLangTaskNV;
 			case ShaderStage::MESH:
 				return EShLangMeshNV;
-			case ShaderStage::RAY_GEN:
+			case ShaderStage::RAY_GEN: // for RTX
 			    return EShLangRayGen;
-			case ShaderStage::RAY_CLOSEST_HIT:
+			case ShaderStage::RAY_CLOSEST_HIT: // for RTX
 			    return EShLangClosestHit;
-			case ShaderStage::RAY_MISS:
+			case ShaderStage::RAY_MISS: // for RTX
 			    return EShLangMiss;
-			case ShaderStage::RAY_INTERSECTION:
+			case ShaderStage::RAY_INTERSECTION: // for RTX
 				return EShLangIntersect;
-			case ShaderStage::RAY_ANY_HIT:
+			case ShaderStage::RAY_ANY_HIT: // for RTX
 				return EShLangAnyHit;
-			case ShaderStage::RAY_CALLABLE:
+			case ShaderStage::RAY_CALLABLE: // for RTX
 				return EShLangCallable;
 			default:
 				return EShLangCount;
@@ -227,7 +227,7 @@ namespace vkcv::shader {
 		
 		glslang::TShader shader (language);
 
-		//configure environment for rt shaders
+		// configure environment for rtx shaders by adjusting versions of Vulkan and SPIR-V, else rtx shader cannot be compiled.
 		if((shaderStage == ShaderStage::RAY_GEN) || (shaderStage == ShaderStage::RAY_ANY_HIT)
 		|| (shaderStage == ShaderStage::RAY_CLOSEST_HIT) || (shaderStage == ShaderStage::RAY_MISS)
 		|| (shaderStage == ShaderStage::RAY_INTERSECTION) || (shaderStage == ShaderStage::RAY_CALLABLE)){

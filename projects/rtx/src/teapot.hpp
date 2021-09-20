@@ -4,27 +4,34 @@
 class Teapot {
 public:
     /**
-     * constructor fills given vectors @p vertices and @p indices with vertex data and index data respectively
-     * @param vertices
-     * @param indices
+     * @brief The default constructor.
      */
-    Teapot(std::vector<float> &vertices, std::vector<uint32_t> &indices) {
-        for (size_t i = 0; i < std::size(m_teapotVertices); i++) {
-            vertices.push_back(m_teapotVertices[i]);
-        }
-        for (size_t i = 0; i < std::size(m_teapotIndices); i++) {
-            indices.push_back(m_teapotIndices[i]);
-        }
-    };
+    Teapot() = default;
 
     /**
      * default destructor
      */
-    ~Teapot()=default;
+    ~Teapot() = default;
+
+    /**
+     * @brief Returns the vertex data of the teapot.
+     * @return The vertex data of the teapot.
+     */
+    std::vector<float> getVertices() {
+        return m_teapotVertices;
+    }
+
+    /**
+     * @brief Returns the index data of the teapot.
+     * @return The index data of the teapot.
+     */
+    std::vector<uint32_t> getIndices() {
+        return m_teapotIndices;
+    }
 
 private:
 
-    float m_teapotVertices[3872 * 3] =
+    std::vector<float> m_teapotVertices =
             {
                     0.69999999f, 0.45000005f, 0.00000001f,
                     0.69098389f, 0.44999996f, 0.11485600f,
@@ -3900,7 +3907,7 @@ private:
                     1.39999998f, 0.45000005f, 0.00000001f,
             };
 
-    uint32_t m_teapotIndices[19200] =
+    std::vector<uint32_t> m_teapotIndices =
             {
                     0, 1, 11, 11, 1, 12,
                     1, 2, 12, 12, 2, 13,

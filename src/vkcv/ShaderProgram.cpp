@@ -254,6 +254,7 @@ namespace vkcv {
             }
         }
 
+        // Used to reflect acceleration structure bindings for RTX.
         for (uint32_t i = 0; i < resources.acceleration_structures.size(); i++) {
             auto& u = resources.acceleration_structures[i];
             const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
