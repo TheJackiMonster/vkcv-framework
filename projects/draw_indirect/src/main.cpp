@@ -128,13 +128,15 @@ void interleaveScene(vkcv::asset::Scene scene,
                 v.normal   = *reinterpret_cast<const glm::vec3*>(&(vertexData[normalOffset]));
                 v.uv       = *reinterpret_cast<const glm::vec3*>(&(vertexData[uvOffset]));
 
-                max_pos.x = glm::max(max_pos.x, v.position.x);
-                max_pos.y = glm::max(max_pos.y, v.position.y);
-                max_pos.z = glm::max(max_pos.z, v.position.z);
+                glm::vec3 posWorld = glm::make_mat4(mesh.modelMatrix.data()) * glm::vec4(v.position, 1);
 
-                min_pos.x = glm::min(min_pos.x, v.position.x);
-                min_pos.y = glm::min(min_pos.y, v.position.y);
-                min_pos.z = glm::min(min_pos.z, v.position.z);
+                max_pos.x = glm::max(max_pos.x, posWorld.x);
+                max_pos.y = glm::max(max_pos.y, posWorld.y);
+                max_pos.z = glm::max(max_pos.z, posWorld.z);
+
+                min_pos.x = glm::min(min_pos.x, posWorld.x);
+                min_pos.y = glm::min(min_pos.y, posWorld.y);
+                min_pos.z = glm::min(min_pos.z, posWorld.z);
 
                 vertices.push_back(v);
             }
@@ -567,13 +569,13 @@ int main(int argc, const char** argv) {
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-        //core.recordComputeDispatchToCmdStream(cmdStream,
-        //                                      cullingPipelineHandle,
-        //                                      dispatchCount,
-        //                                      {cullingUsage},
-        //                                      emptyPushConstant);
+        core.recordComputeDispatchToCmdStream(cmdStream,
+                                              cullingPipelineHandle,
+                                              dispatchCount,
+                                              {cullingUsage},
+                                              emptyPushConstant);
 
-        //core.recordBufferMemoryBarrier(cmdStream, indirectBuffer.getHandle());
+        core.recordBufferMemoryBarrier(cmdStream, indirectBuffer.getHandle());
 
 		core.recordIndexedIndirectDrawcallsToCmdStream(
 			cmdStream,
