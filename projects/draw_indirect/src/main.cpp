@@ -596,6 +596,7 @@ int main(int argc, const char** argv) {
 
         ImGui::Begin("Settings");
         ImGui::Checkbox("Update frustum culling", &updateFrustumPlanes);
+		ImGui::Text("Deltatime %fms, %f", 0.001 * static_cast<double>(deltatime.count()), 1/(0.000001 * static_cast<double>(deltatime.count())));
 
         ImGui::End();
 
