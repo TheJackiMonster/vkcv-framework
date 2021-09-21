@@ -48,7 +48,7 @@ void main(){
     }
 
     vec4 bbox = boundingBoxes[gl_GlobalInvocationID.x];
-    if (isSphereInsideFrustum(bbox.xyz, bbox.z)){
+    if (isSphereInsideFrustum(bbox.xyz, bbox.w)){
         commands[gl_GlobalInvocationID.x].instanceCount = 1;
     }
     else{
