@@ -89,70 +89,67 @@ void interleaveScene(vkcv::asset::Scene scene,
                      std::vector<std::vector<Vertex>> &interleavedVertexBuffers,
                      std::vector<glm::vec4> &boundingBoxBuffers)
 {
-	for(auto& vertexGroup : scene.vertexGroups )
-	{
-		const vkcv::asset::VertexAttribute positionAttribute = vertexGroup.vertexBuffer.attributes[0];
-		const vkcv::asset::VertexAttribute normalAttribute   = vertexGroup.vertexBuffer.attributes[1];
-		const vkcv::asset::VertexAttribute uvAttribute       = vertexGroup.vertexBuffer.attributes[2];
+    for(const auto &mesh : scene.meshes)
+    {
+        for(auto vertexGroupIndex : mesh.vertexGroups)
+        {
+            const auto &vertexGroup = scene.vertexGroups[vertexGroupIndex];
 
-		assert(positionAttribute.type   == vkcv::asset::PrimitiveType::POSITION);
-		assert(normalAttribute.type     == vkcv::asset::PrimitiveType::NORMAL);
-		assert(uvAttribute.type         == vkcv::asset::PrimitiveType::TEXCOORD_0);
+            const vkcv::asset::VertexAttribute positionAttribute = vertexGroup.vertexBuffer.attributes[0];
+            const vkcv::asset::VertexAttribute normalAttribute   = vertexGroup.vertexBuffer.attributes[1];
+            const vkcv::asset::VertexAttribute uvAttribute       = vertexGroup.vertexBuffer.attributes[2];
 
-		const uint64_t &verticesCount          = vertexGroup.numVertices;
-		const std::vector<uint8_t> &vertexData = vertexGroup.vertexBuffer.data;
+            assert(positionAttribute.type   == vkcv::asset::PrimitiveType::POSITION);
+            assert(normalAttribute.type     == vkcv::asset::PrimitiveType::NORMAL);
+            assert(uvAttribute.type         == vkcv::asset::PrimitiveType::TEXCOORD_0);
 
-		std::vector<Vertex> vertices;
-		vertices.reserve(verticesCount);
+            const uint64_t &verticesCount          = vertexGroup.numVertices;
+            const std::vector<uint8_t> &vertexData = vertexGroup.vertexBuffer.data;
 
-		const size_t positionStride = positionAttribute.stride == 0 ? sizeof(glm::vec3) : positionAttribute.stride;
-		const size_t normalStride   = normalAttribute.stride   == 0 ? sizeof(glm::vec3) : normalAttribute.stride;
-		const size_t uvStride       = uvAttribute.stride       == 0 ? sizeof(glm::vec2) : uvAttribute.stride;
+            std::vector<Vertex> vertices;
+            vertices.reserve(verticesCount);
 
-        glm::vec3 max_pos(-std::numeric_limits<float>::max());
-        glm::vec3 min_pos(std::numeric_limits<float>::max());
+            const size_t positionStride = positionAttribute.stride == 0 ? sizeof(glm::vec3) : positionAttribute.stride;
+            const size_t normalStride   = normalAttribute.stride   == 0 ? sizeof(glm::vec3) : normalAttribute.stride;
+            const size_t uvStride       = uvAttribute.stride       == 0 ? sizeof(glm::vec2) : uvAttribute.stride;
 
-		for(auto i = 0; i < verticesCount; i++)
-		{
-			const size_t positionOffset = positionAttribute.offset + positionStride * i;
-			const size_t normalOffset   = normalAttribute.offset   + normalStride * i;
-			const size_t uvOffset       = uvAttribute.offset       + uvStride * i;
+            glm::vec3 max_pos(-std::numeric_limits<float>::max());
+            glm::vec3 min_pos(std::numeric_limits<float>::max());
 
-			Vertex v;
+            for(auto i = 0; i < verticesCount; i++)
+            {
+                const size_t positionOffset = positionAttribute.offset + positionStride * i;
+                const size_t normalOffset   = normalAttribute.offset   + normalStride * i;
+                const size_t uvOffset       = uvAttribute.offset       + uvStride * i;
 
-			v.position = *reinterpret_cast<const glm::vec3*>(&(vertexData[positionOffset]));
-			v.normal   = *reinterpret_cast<const glm::vec3*>(&(vertexData[normalOffset]));
-			v.uv       = *reinterpret_cast<const glm::vec3*>(&(vertexData[uvOffset]));
+                Vertex v;
 
-            max_pos.x = glm::max(max_pos.x, v.position.x);
-            max_pos.y = glm::max(max_pos.y, v.position.y);
-            max_pos.z = glm::max(max_pos.z, v.position.z);
+                v.position = *reinterpret_cast<const glm::vec3*>(&(vertexData[positionOffset]));
+                v.normal   = *reinterpret_cast<const glm::vec3*>(&(vertexData[normalOffset]));
+                v.uv       = *reinterpret_cast<const glm::vec3*>(&(vertexData[uvOffset]));
 
-            min_pos.x = glm::min(min_pos.x, v.position.x);
-            min_pos.y = glm::min(min_pos.y, v.position.y);
-            min_pos.z = glm::min(min_pos.z, v.position.z);
+                max_pos.x = glm::max(max_pos.x, v.position.x);
+                max_pos.y = glm::max(max_pos.y, v.position.y);
+                max_pos.z = glm::max(max_pos.z, v.position.z);
 
-			vertices.push_back(v);
-		}
+                min_pos.x = glm::min(min_pos.x, v.position.x);
+                min_pos.y = glm::min(min_pos.y, v.position.y);
+                min_pos.z = glm::min(min_pos.z, v.position.z);
 
-        //const glm::mat4 modelMat = glm::mat4(glm::vec4(-0.009f, 0.0f, 0.0f, 0.0f),
-        //                                     glm::vec4(0.0f, 0.009f, 0.0f, 0.0f),
-        //                                     glm::vec4(0.0f, 0.0f, 0.009f, 0.0f),
-        //                                     glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+                vertices.push_back(v);
+            }
 
-        const glm::vec3 boundingPosition = (max_pos + min_pos) / 200.0f;
-        const float radius = glm::distance(max_pos, min_pos) / 200.0f;
-        //const glm::vec3 boundingPosition(1.0f);
-        //const float radius = 2.0f;
+            const glm::vec3 boundingPosition = (max_pos + min_pos) / 2.0f;
+            const float radius = glm::distance(max_pos, min_pos) / 2.0f;
 
-        boundingBoxBuffers.emplace_back(boundingPosition.x,
-                                        boundingPosition.y,
-                                        boundingPosition.z,
-                                        radius);
+            boundingBoxBuffers.emplace_back(boundingPosition.x,
+                                            boundingPosition.y,
+                                            boundingPosition.z,
+                                            radius);
 
-		interleavedVertexBuffers.push_back(vertices);
-	}
-	assert(interleavedVertexBuffers.size() == scene.vertexGroups.size());
+            interleavedVertexBuffers.push_back(vertices);
+        }
+    }
 }
 
 // Assumes the meshes use index buffers
@@ -526,14 +523,13 @@ int main(int argc, const char** argv) {
 
     float ceiledDispatchCount = static_cast<float>(indexedIndirectCommands.size()) / 64.0f;
     ceiledDispatchCount = std::ceil(ceiledDispatchCount);
-    //const uint32_t dispatchCount[3] = {static_cast<uint32_t>(ceiledDispatchCount), 0, 0};
-    const uint32_t dispatchCount[3] = {100, 100, 100};
+    const uint32_t dispatchCount[3] = {static_cast<uint32_t>(ceiledDispatchCount), 1, 1};
 
 
     vkcv::DescriptorSetUsage cullingUsage(0, core.getDescriptorSet(cullingDescSet).vulkanHandle, {});
     vkcv::PushConstants emptyPushConstant(0);
 
-    bool updateFrustumPlanes    = false;
+    bool updateFrustumPlanes    = true;
 
     while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
@@ -571,16 +567,13 @@ int main(int argc, const char** argv) {
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-        core.recordMemoryBarrier(cmdStream);
+        //core.recordComputeDispatchToCmdStream(cmdStream,
+        //                                      cullingPipelineHandle,
+        //                                      dispatchCount,
+        //                                      {cullingUsage},
+        //                                      emptyPushConstant);
 
-        core.recordComputeDispatchToCmdStream(cmdStream,
-                                              cullingPipelineHandle,
-                                              dispatchCount,
-                                              {cullingUsage},
-                                              emptyPushConstant);
-
-        core.recordBufferMemoryBarrier(cmdStream, indirectBuffer.getHandle());
-        core.recordMemoryBarrier(cmdStream);
+        //core.recordBufferMemoryBarrier(cmdStream, indirectBuffer.getHandle());
 
 		core.recordIndexedIndirectDrawcallsToCmdStream(
 			cmdStream,
