@@ -2,8 +2,73 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
+#include <vkcv/gui/GUI.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
+
+struct Plane {
+    glm::vec3   pointOnPlane;
+    float       padding0;
+    glm::vec3   normal;
+    float       padding1;
+};
+
+struct CameraPlanes {
+    Plane planes[6];
+};
+
+CameraPlanes computeCameraPlanes(const vkcv::camera::Camera& camera) {
+    const float     fov     = camera.getFov();
+    const glm::vec3 pos     = camera.getPosition();
+    const float     ratio   = camera.getRatio();
+    const glm::vec3 forward = glm::normalize(camera.getFront());
+    float near;
+    float far;
+    camera.getNearFar(near, far);
+
+    glm::vec3 up    = glm::vec3(0, -1, 0);
+    glm::vec3 right = glm::normalize(glm::cross(forward, up));
+    up              = glm::cross(forward, right);
+
+    const glm::vec3 nearCenter      = pos + forward * near;
+    const glm::vec3 farCenter       = pos + forward * far;
+
+    const float tanFovHalf          = glm::tan(fov / 2);
+
+    const glm::vec3 nearUpCenter    = nearCenter + up    * tanFovHalf * near;
+    const glm::vec3 nearDownCenter  = nearCenter - up    * tanFovHalf * near;
+    const glm::vec3 nearRightCenter = nearCenter + right * tanFovHalf * near * ratio;
+    const glm::vec3 nearLeftCenter  = nearCenter - right * tanFovHalf * near * ratio;
+
+    const glm::vec3 farUpCenter     = farCenter + up    * tanFovHalf * far;
+    const glm::vec3 farDownCenter   = farCenter - up    * tanFovHalf * far;
+    const glm::vec3 farRightCenter  = farCenter + right * tanFovHalf * far * ratio;
+    const glm::vec3 farLeftCenter   = farCenter - right * tanFovHalf * far * ratio;
+
+    CameraPlanes cameraPlanes;
+    // near
+    cameraPlanes.planes[0].pointOnPlane = nearCenter;
+    cameraPlanes.planes[0].normal       = -forward;
+    // far
+    cameraPlanes.planes[1].pointOnPlane = farCenter;
+    cameraPlanes.planes[1].normal       = forward;
+
+    // top
+    cameraPlanes.planes[2].pointOnPlane = nearUpCenter;
+    cameraPlanes.planes[2].normal       = glm::normalize(glm::cross(farUpCenter - nearUpCenter, right));
+    // bot
+    cameraPlanes.planes[3].pointOnPlane = nearDownCenter;
+    cameraPlanes.planes[3].normal       = glm::normalize(glm::cross(right, farDownCenter - nearDownCenter));
+
+    // right
+    cameraPlanes.planes[4].pointOnPlane = nearRightCenter;
+    cameraPlanes.planes[4].normal       = glm::normalize(glm::cross(up, farRightCenter - nearRightCenter));
+    // left
+    cameraPlanes.planes[5].pointOnPlane = nearLeftCenter;
+    cameraPlanes.planes[5].normal       = glm::normalize(glm::cross(farLeftCenter - nearLeftCenter, up));
+
+    return cameraPlanes;
+}
 
 struct Vertex
 {
@@ -20,10 +85,10 @@ struct CompiledMaterial
     std::vector<vkcv::Image> occlusion;
 };
 
-std::vector<std::vector<Vertex>> interleaveScene(vkcv::asset::Scene scene)
+void interleaveScene(vkcv::asset::Scene scene,
+                     std::vector<std::vector<Vertex>> &interleavedVertexBuffers,
+                     std::vector<glm::vec4> &boundingBoxBuffers)
 {
-	std::vector<std::vector<Vertex>> returnScene;
-
 	for(auto& vertexGroup : scene.vertexGroups )
 	{
 		const vkcv::asset::VertexAttribute positionAttribute = vertexGroup.vertexBuffer.attributes[0];
@@ -44,6 +109,9 @@ std::vector<std::vector<Vertex>> interleaveScene(vkcv::asset::Scene scene)
 		const size_t normalStride   = normalAttribute.stride   == 0 ? sizeof(glm::vec3) : normalAttribute.stride;
 		const size_t uvStride       = uvAttribute.stride       == 0 ? sizeof(glm::vec2) : uvAttribute.stride;
 
+        glm::vec3 max_pos(-std::numeric_limits<float>::max());
+        glm::vec3 min_pos(std::numeric_limits<float>::max());
+
 		for(auto i = 0; i < verticesCount; i++)
 		{
 			const size_t positionOffset = positionAttribute.offset + positionStride * i;
@@ -56,12 +124,35 @@ std::vector<std::vector<Vertex>> interleaveScene(vkcv::asset::Scene scene)
 			v.normal   = *reinterpret_cast<const glm::vec3*>(&(vertexData[normalOffset]));
 			v.uv       = *reinterpret_cast<const glm::vec3*>(&(vertexData[uvOffset]));
 
+            max_pos.x = glm::max(max_pos.x, v.position.x);
+            max_pos.y = glm::max(max_pos.y, v.position.y);
+            max_pos.z = glm::max(max_pos.z, v.position.z);
+
+            min_pos.x = glm::min(min_pos.x, v.position.x);
+            min_pos.y = glm::min(min_pos.y, v.position.y);
+            min_pos.z = glm::min(min_pos.z, v.position.z);
+
 			vertices.push_back(v);
 		}
-		returnScene.push_back(vertices);
+
+        //const glm::mat4 modelMat = glm::mat4(glm::vec4(-0.009f, 0.0f, 0.0f, 0.0f),
+        //                                     glm::vec4(0.0f, 0.009f, 0.0f, 0.0f),
+        //                                     glm::vec4(0.0f, 0.0f, 0.009f, 0.0f),
+        //                                     glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+        const glm::vec3 boundingPosition = (max_pos + min_pos) / 200.0f;
+        const float radius = glm::distance(max_pos, min_pos) / 200.0f;
+        //const glm::vec3 boundingPosition(1.0f);
+        //const float radius = 2.0f;
+
+        boundingBoxBuffers.emplace_back(boundingPosition.x,
+                                        boundingPosition.y,
+                                        boundingPosition.z,
+                                        radius);
+
+		interleavedVertexBuffers.push_back(vertices);
 	}
-	assert(returnScene.size() == scene.vertexGroups.size());
-	return returnScene;
+	assert(interleavedVertexBuffers.size() == scene.vertexGroups.size());
 }
 
 // Assumes the meshes use index buffers
@@ -209,7 +300,9 @@ int main(int argc, const char** argv) {
 
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName,windowWidth,windowHeight,false);
 
-	vkcv::asset::Scene asset_scene;
+    vkcv::gui::GUI gui (core, windowHandle);
+
+    vkcv::asset::Scene asset_scene;
 	const char* path = argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf";
 	int result = vkcv::asset::loadScene(path, asset_scene);
 
@@ -249,18 +342,25 @@ int main(int argc, const char** argv) {
 	vkcv::shader::GLSLCompiler compiler;
 	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
 					 [&sponzaProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-                         sponzaProgram.addShader(shaderStage, path);
+        sponzaProgram.addShader(shaderStage, path);
 	});
 	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
 					 [&sponzaProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-                         sponzaProgram.addShader(shaderStage, path);
+        sponzaProgram.addShader(shaderStage, path);
 	});
+
+    vkcv::ShaderProgram cullingProgram;
+    compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("resources/shaders/culling.comp"),
+                     [&cullingProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+        cullingProgram.addShader(shaderStage, path);
+    });
 
     // vertex layout for the pipeline. (assumed to be) used by all sponza meshes.
     const std::vector<vkcv::VertexAttachment> vertexAttachments = sponzaProgram.getVertexAttachments();
 	const vkcv::VertexLayout sponzaVertexLayout({ vkcv::VertexBinding(0, { vertexAttachments }) });
 
-    std::vector<uint8_t> compiledVertexBuffer;
+    std::vector<uint8_t> compiledVertexBuffer; // IGNORED, since the vertex buffer is not interleaved!
+
     std::vector<uint8_t> compiledIndexBuffer;
     CompiledMaterial compiledMaterial;
     std::vector<vk::DrawIndexedIndirectCommand> indexedIndirectCommands;
@@ -272,19 +372,24 @@ int main(int argc, const char** argv) {
                                compiledMaterial,
                                indexedIndirectCommands);
 
-	std::vector<std::vector<Vertex>> interleavedVertices = interleaveScene(asset_scene);
-	std::vector<Vertex> compiledInterleavedBuffer;
+	std::vector<std::vector<Vertex>> interleavedVertices;
+    std::vector<glm::vec4> compiledBoundingBoxBuffer;
+    interleaveScene(asset_scene,
+                    interleavedVertices,
+                    compiledBoundingBoxBuffer);
+
+	std::vector<Vertex> compiledInterleavedVertexBuffer;
 	for(auto& vertexGroup : interleavedVertices )
 	{
-		compiledInterleavedBuffer.insert(compiledInterleavedBuffer.end(),vertexGroup.begin(),vertexGroup.end());
+        compiledInterleavedVertexBuffer.insert(compiledInterleavedVertexBuffer.end(),vertexGroup.begin(),vertexGroup.end());
 	}
 
-	auto compiledInterleavedVertexBuffer = core.createBuffer<Vertex>(
+	auto vkCompiledVertexBuffer = core.createBuffer<Vertex>(
 			vkcv::BufferType::VERTEX,
-			compiledInterleavedBuffer.size(),
+            compiledInterleavedVertexBuffer.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL
 			);
-	compiledInterleavedVertexBuffer.fill(compiledInterleavedBuffer.data());
+    vkCompiledVertexBuffer.fill(compiledInterleavedVertexBuffer.data());
 
     auto vkCompiledIndexBuffer = core.createBuffer<uint8_t>(
             vkcv::BufferType::INDEX,
@@ -294,24 +399,29 @@ int main(int argc, const char** argv) {
 
     vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(
             vkcv::BufferType::INDIRECT,
-            indexedIndirectCommands.size() * sizeof(vk::DrawIndexedIndirectCommand),
+            indexedIndirectCommands.size(),
             vkcv::BufferMemoryType::DEVICE_LOCAL);
     indirectBuffer.fill(indexedIndirectCommands);
 
-	std::vector<glm::mat4> modelMatrix;
+    auto boundingBoxBuffer = core.createBuffer<glm::vec4>(
+            vkcv::BufferType::STORAGE,
+            compiledBoundingBoxBuffer.size());
+    boundingBoxBuffer.fill(compiledBoundingBoxBuffer);
+
+    std::vector<glm::mat4> modelMatrix;
 	for( auto& mesh : asset_scene.meshes)
 	{
 		modelMatrix.push_back(glm::make_mat4(mesh.modelMatrix.data()));
 	}
 	vkcv::Buffer<glm::mat4> modelBuffer = core.createBuffer<glm::mat4>(
 			vkcv::BufferType::STORAGE,
-			modelMatrix.size() * sizeof(glm::mat4),
+			modelMatrix.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL
 			);
 	modelBuffer.fill(modelMatrix);
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize> (0), compiledInterleavedVertexBuffer.getVulkanHandle() )
+			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize> (0), vkCompiledVertexBuffer.getVulkanHandle() )
 	};
 
 	const vkcv::Mesh compiledMesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), 0, vkcv::IndexBitCount::Bit32);
@@ -344,7 +454,6 @@ int main(int argc, const char** argv) {
 	setWrites.storageBufferWrites   = { vkcv::BufferDescriptorWrite(1, modelBuffer.getHandle())};
     core.writeDescriptorSet(descriptorSet, setWrites);
 
-
 	const vkcv::GraphicsPipelineConfig sponzaPipelineConfig {
         sponzaProgram,
         UINT32_MAX,
@@ -355,14 +464,54 @@ int main(int argc, const char** argv) {
 		true
 	};
 	vkcv::GraphicsPipelineHandle sponzaPipelineHandle = core.createGraphicsPipeline(sponzaPipelineConfig);
-	
 	if (!sponzaPipelineHandle) {
 		std::cerr << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
-	
+
+    vkcv::DescriptorBindings cullingBindings = cullingProgram.getReflectedDescriptors().at(0);
+    vkcv::DescriptorSetLayoutHandle cullingSetLayout = core.createDescriptorSetLayout(cullingBindings);
+    vkcv::DescriptorSetHandle cullingDescSet = core.createDescriptorSet(cullingSetLayout);
+
+    vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = core.createBuffer<CameraPlanes>(
+            vkcv::BufferType::UNIFORM,
+            1);
+
+    //Plane dummyPlane{};
+    //dummyPlane.pointOnPlane = glm::vec3(0.0f);
+    //dummyPlane.padding0 = 0.0f;
+    //dummyPlane.normal = glm::vec3(0.0f);
+    //dummyPlane.padding1 = 0.0f;
+
+    //CameraPlanes dummyCameraPlane{};
+    //dummyCameraPlane.planes[0] = dummyPlane;
+    //dummyCameraPlane.planes[1] = dummyPlane;
+    //dummyCameraPlane.planes[2] = dummyPlane;
+    //dummyCameraPlane.planes[3] = dummyPlane;
+    //dummyCameraPlane.planes[4] = dummyPlane;
+    //dummyCameraPlane.planes[5] = dummyPlane;
+
+    //cameraPlaneBuffer.fill(&dummyCameraPlane);
+
+    vkcv::BufferDescriptorWrite cameraPlaneWrite(0, cameraPlaneBuffer.getHandle());
+    vkcv::BufferDescriptorWrite drawCommandsWrite(1, indirectBuffer.getHandle());
+    vkcv::BufferDescriptorWrite boundingBoxWrite(2, boundingBoxBuffer.getHandle());
+
+    vkcv::DescriptorWrites cullingWrites;
+    cullingWrites.storageBufferWrites = {drawCommandsWrite, boundingBoxWrite};
+    cullingWrites.uniformBufferWrites = {cameraPlaneWrite};
+    core.writeDescriptorSet(cullingDescSet, cullingWrites);
 
 
+    const vkcv::ComputePipelineConfig computeCullingConfig {
+        cullingProgram,
+        {core.getDescriptorSetLayout(cullingSetLayout).vulkanHandle}
+    };
+    vkcv::ComputePipelineHandle cullingPipelineHandle = core.createComputePipeline(computeCullingConfig);
+    if (!cullingPipelineHandle) {
+        std::cerr << "Error. Could not create culling pipeline. Exiting." << std::endl;
+        return EXIT_FAILURE;
+    }
 
     vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
@@ -375,7 +524,18 @@ int main(int argc, const char** argv) {
 
     auto start = std::chrono::system_clock::now();
 
-	while (vkcv::Window::hasOpenWindow()) {
+    float ceiledDispatchCount = static_cast<float>(indexedIndirectCommands.size()) / 64.0f;
+    ceiledDispatchCount = std::ceil(ceiledDispatchCount);
+    //const uint32_t dispatchCount[3] = {static_cast<uint32_t>(ceiledDispatchCount), 0, 0};
+    const uint32_t dispatchCount[3] = {100, 100, 100};
+
+
+    vkcv::DescriptorSetUsage cullingUsage(0, core.getDescriptorSet(cullingDescSet).vulkanHandle, {});
+    vkcv::PushConstants emptyPushConstant(0);
+
+    bool updateFrustumPlanes    = false;
+
+    while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 		
 		if(core.getWindow(windowHandle).getHeight() == 0 || core.getWindow(windowHandle).getWidth() == 0)
@@ -399,13 +559,28 @@ int main(int argc, const char** argv) {
 		start = end;
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         vkcv::camera::Camera cam = cameraManager.getActiveCamera();
-
 		vkcv::PushConstants pushConstants(sizeof(glm::mat4));
-
 		pushConstants.appendDrawcall(cam.getProjection() * cam.getView());
+
+        if(updateFrustumPlanes)
+        {
+            const CameraPlanes cameraPlanes = computeCameraPlanes(cam);
+            cameraPlaneBuffer.fill({ cameraPlanes });
+        }
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+
+        core.recordMemoryBarrier(cmdStream);
+
+        core.recordComputeDispatchToCmdStream(cmdStream,
+                                              cullingPipelineHandle,
+                                              dispatchCount,
+                                              {cullingUsage},
+                                              emptyPushConstant);
+
+        core.recordBufferMemoryBarrier(cmdStream, indirectBuffer.getHandle());
+        core.recordMemoryBarrier(cmdStream);
 
 		core.recordIndexedIndirectDrawcallsToCmdStream(
 			cmdStream,
@@ -421,6 +596,16 @@ int main(int argc, const char** argv) {
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
+
+        gui.beginGUI();
+
+        ImGui::Begin("Settings");
+        ImGui::Checkbox("Update frustum culling", &updateFrustumPlanes);
+
+        ImGui::End();
+
+        gui.endGUI();
+
 		core.endFrame(windowHandle);
 	}
 	
