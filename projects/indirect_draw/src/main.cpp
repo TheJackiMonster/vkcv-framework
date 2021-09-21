@@ -592,11 +592,13 @@ int main(int argc, const char** argv) {
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
 
+		auto stop = std::chrono::system_clock::now();
+		auto kektime = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
         gui.beginGUI();
 
         ImGui::Begin("Settings");
         ImGui::Checkbox("Update frustum culling", &updateFrustumPlanes);
-		ImGui::Text("Deltatime %fms, %f", 0.001 * static_cast<double>(deltatime.count()), 1/(0.000001 * static_cast<double>(deltatime.count())));
+		ImGui::Text("Deltatime %fms, %f", 0.001 * static_cast<double>(kektime.count()), 1/(0.000001 * static_cast<double>(kektime.count())));
 
         ImGui::End();
 
