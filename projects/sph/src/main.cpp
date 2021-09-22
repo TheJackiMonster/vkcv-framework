@@ -4,7 +4,9 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <random>
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_access.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <time.h>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include "BloomAndFlares.hpp"
@@ -21,7 +23,7 @@ int main(int argc, const char **argv) {
         { VK_KHR_SWAPCHAIN_EXTENSION_NAME }
     );
 
-    vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 800, 600, true);
+    vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 1920, 1080, true);
     vkcv::Window& window = core.getWindow(windowHandle);
 
     vkcv::camera::CameraManager cameraManager(window);
@@ -44,6 +46,20 @@ int main(int argc, const char **argv) {
 
     vkcv::PassConfig computePassDefinition({});
     vkcv::PassHandle computePass = core.createPass(computePassDefinition);
+
+    //rotation
+    float rotationx = 0;
+    float rotationy = 0;
+
+    // params  
+    float param_h = 0.20;
+    float param_mass = 0.03;
+    float param_gasConstant = 3500;
+    float param_offset = 200;
+    float param_gravity = -5000;
+    float param_viscosity = 10;
+    float param_ABSORBTION = 0.5;
+    float param_dt = 0.0005;
 
     if (!particlePass || !computePass)
     {
@@ -128,13 +144,13 @@ int main(int argc, const char **argv) {
             1
     );
 
-    int numberParticles = 50000;
+    int numberParticles = 20000;
     std::vector<Particle> particles;
     for (int i = 0; i < numberParticles; i++) {
-        const float lo = -0.2;
-        const float hi = 0.2;
+        const float lo = 0.6;
+        const float hi = 0.9;
         const float vlo = 0;
-        const float vhi = 100;
+        const float vhi = 70;
         float x = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
         float y = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
         float z = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
@@ -142,8 +158,8 @@ int main(int argc, const char **argv) {
         float vy = vlo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(vhi-vlo)));
         float vz = vlo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(vhi-vlo)));
         glm::vec3 pos = glm::vec3(x,y,z);
-        //glm::vec3 vel = glm::vec3(vx,vy,vz);
-        glm::vec3 vel = glm::vec3(0.0,0.0,0.0);
+        glm::vec3 vel = glm::vec3(vx,vy,vz);
+        //glm::vec3 vel = glm::vec3(0.0,0.0,0.0);
         particles.push_back(Particle(pos, vel));
     }
 
@@ -192,7 +208,6 @@ int main(int argc, const char **argv) {
     auto pos = glm::vec2(0.f);
     auto spawnPosition = glm::vec3(0.f);
 
-    std::vector<glm::mat4> modelMatrices;
     std::vector<vkcv::DrawcallInfo> drawcalls;
     drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}, numberParticles));
 
@@ -207,8 +222,8 @@ int main(int argc, const char **argv) {
 
     cameraManager.setActiveCamera(1);
 
-    cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
-    cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
+    cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2.5));
+    cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.5f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
 	auto swapchainExtent = core.getSwapchain(window.getSwapchainHandle()).getExtent();
@@ -259,16 +274,64 @@ int main(int argc, const char **argv) {
 			glm::mat4 view;
 			glm::mat4 projection;
         } renderingMatrices;
-        
+
+        glm::vec3 gravityDir = glm::rotate(glm::mat4(1.0), glm::radians(rotationx), glm::vec3(0.f,0.f,1.f)) * glm::vec4(0.f,1.f,0.f,0.f);
+        gravityDir = glm::rotate(glm::mat4(1.0), glm::radians(rotationy), glm::vec3(0.f,1.f,0.f)) * glm::vec4(gravityDir,0.f);
+
         renderingMatrices.view = cameraManager.getActiveCamera().getView();
+        renderingMatrices.view = glm::rotate(renderingMatrices.view, glm::radians(rotationx), glm::vec3(0.f, 0.f, 1.f));
+        renderingMatrices.view = glm::rotate(renderingMatrices.view, glm::radians(rotationy), glm::vec3(0.f, 1.f, 0.f));
         renderingMatrices.projection = cameraManager.getActiveCamera().getProjection();
+
+        // keybindings rotation
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_LEFT) == GLFW_PRESS)
+            rotationx += deltatime * 50;
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_RIGHT) == GLFW_PRESS)
+            rotationx -= deltatime * 50;
+        
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_UP) == GLFW_PRESS)
+            rotationy += deltatime * 50;
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_DOWN) == GLFW_PRESS)
+            rotationy -= deltatime * 50;
+
+        // keybindings params
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_T) == GLFW_PRESS)
+            param_h += deltatime * 0.2;
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_G) == GLFW_PRESS)
+            param_h -= deltatime * 0.2;
+
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_Y) == GLFW_PRESS)
+            param_mass += deltatime * 0.2;
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_H) == GLFW_PRESS)
+            param_mass -= deltatime * 0.2;
+
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_U) == GLFW_PRESS)
+            param_gasConstant += deltatime * 1500.0;
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_J) == GLFW_PRESS)
+            param_gasConstant -= deltatime * 1500.0;
+
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_I) == GLFW_PRESS)
+            param_offset += deltatime * 400.0;
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_K) == GLFW_PRESS)
+            param_offset -= deltatime * 400.0;
+
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_O) == GLFW_PRESS)
+            param_viscosity = 50;
+        if (glfwGetKey(window.getWindow(), GLFW_KEY_L) == GLFW_PRESS)
+            param_viscosity = 1200;
+        
 
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-        //deltatime wird noch nicht genutzt
-        glm::vec2 pushData = glm::vec2(deltatime, (float)numberParticles);
+        glm::vec4 pushData[3] = {
+            glm::vec4(param_h,param_mass,param_gasConstant,param_offset),
+            glm::vec4(param_gravity,param_viscosity,param_ABSORBTION,param_dt),
+            glm::vec4(gravityDir.x,gravityDir.y,gravityDir.z,(float)numberParticles)
+        };
 
-        vkcv::PushConstants pushConstantsCompute (sizeof(glm::vec2));
+        std::cout << "h: " << param_h << " | mass: " << param_mass << " | gasConstant: " << param_gasConstant << " | offset: " << param_offset << " | viscosity: " << param_viscosity << std::endl;
+
+        vkcv::PushConstants pushConstantsCompute (sizeof(pushData));
         pushConstantsCompute.appendDrawcall(pushData);
 
         uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(numberParticles/256.f)),1,1};
