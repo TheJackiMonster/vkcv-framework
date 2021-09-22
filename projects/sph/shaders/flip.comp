@@ -25,7 +25,15 @@ layout(std430, binding = 0) writeonly buffer buffer_outParticle
 };
 
 layout( push_constant ) uniform constants{
-    float deltaTime;
+    float h;
+    float mass;
+    float gasConstant;
+    float offset;
+    float gravity;
+    float viscosity;
+    float ABSORBTION;
+    float dt;
+    vec3 gravityDir;
     float particleCount;
 };
 
