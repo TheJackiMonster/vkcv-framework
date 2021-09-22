@@ -4,8 +4,6 @@
 
 const float PI = 3.1415926535897932384626433832795;
 
-#include "particle_params.inc"
-
 layout(local_size_x = 256) in;
 
 struct Particle
@@ -30,7 +28,15 @@ layout(std430, binding = 1) writeonly buffer buffer_outParticle
 };
 
 layout( push_constant ) uniform constants{
-    float deltaTime;
+    float h;
+    float mass;
+    float gasConstant;
+    float offset;
+    float gravity;
+    float viscosity;
+    float ABSORBTION;
+    float dt;
+    vec3 gravityDir;
     float particleCount;
 };
 
@@ -42,6 +48,7 @@ float poly6(float r)
 float densitySum = 0.f;
 
 void main() {
+    
     uint id = gl_GlobalInvocationID.x;
 
     if(id >= int(particleCount))
