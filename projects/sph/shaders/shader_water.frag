@@ -19,7 +19,8 @@ layout(set=0,binding=1) uniform uPosition{
 
 void main()
 {
-    outColor = vec3(0.0,0.5,1.0);
+    float p = length(passVelocity)/100.f;
+    outColor = vec3(0.f+p/3.f, 0.05f+p/2.f, 0.4f+p);
 
     // make the triangle look like a circle
    outColor *= circleFactor(passTriangleCoordinates);
