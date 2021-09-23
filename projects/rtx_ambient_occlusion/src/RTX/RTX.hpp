@@ -7,6 +7,14 @@
 
 namespace vkcv::rtx {
 
+    //struct that holds all shader binding table regions
+    struct ShaderBindingTableRegions {
+        vk::StridedDeviceAddressRegionKHR rgenRegion;
+        vk::StridedDeviceAddressRegionKHR rmissRegion;
+        vk::StridedDeviceAddressRegionKHR rchitRegion;
+        vk::StridedDeviceAddressRegionKHR rcallRegion;
+    };
+
     class RTXModule {
     private:
 
@@ -65,6 +73,13 @@ namespace vkcv::rtx {
          * @param shaderCount The amount of shaders to be used for RTX.
          */
         void createShaderBindingTable(uint32_t shaderCount);
+
+        /**
+         * @brief Divides the shader binding table into regions for each shader type
+         * (ray generation, ray miss, ray closest hit, callable) and returns them as a struct.
+         * @return The struct holding all four regions of type vk::StridedDeviceAddressRegionKHR.
+         */
+        ShaderBindingTableRegions createRegions();
 
         /**
          * @brief Creates Descriptor-Writes for RTX

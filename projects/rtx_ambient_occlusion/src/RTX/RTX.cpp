@@ -59,6 +59,39 @@ namespace vkcv::rtx {
         free(shaderHandleStorage);        
     }
 
+    ShaderBindingTableRegions RTXModule::createRegions() {
+        // Define offsets for the RTX shaders. RayGen is the first allocated shader. Each following shader is
+        // shifted by shaderGroupBaseAlignment.
+        // Offset Calculation: offset = count of previous shaders * m_shaderGroupBaseAlignment
+        // Regions are hard coded
+        vk::DeviceSize rayGenOffset = 0; //First Shader group -> offset 0 * m_shaderGroupBaseAlignment =0
+        vk::DeviceSize missOffset = m_shaderGroupBaseAlignment;//Second group, offset = 1 * m_shaderGroupBaseAlignment
+        vk::DeviceSize closestHitOffset = 2 * m_shaderGroupBaseAlignment; //Third group, offset = 2 * m_shaderGroupBaseAlignment
+        vk::DeviceSize shaderBindingTableSize = m_shaderGroupBaseAlignment * 3; // 3 hardcoded to rtx-shader count
+
+        auto m_rtxDispatcher = vk::DispatchLoaderDynamic((PFN_vkGetInstanceProcAddr)m_core->getContext().getInstance().getProcAddr("vkGetInstanceProcAddr"));
+        m_rtxDispatcher.init(m_core->getContext().getInstance());
+        
+
+        // Create regions for the shader binding table buffer which are used for vk::CommandBuffer::traceRaysKHR
+        vk::StridedDeviceAddressRegionKHR rgenRegion;
+        vk::BufferDeviceAddressInfoKHR shaderBindingTableAddressInfo(m_shaderBindingTableBuffer.vulkanHandle);
+        rgenRegion.deviceAddress = m_core->getContext().getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo, m_rtxDispatcher) + rayGenOffset;
+        rgenRegion.setStride(shaderBindingTableSize);
+        rgenRegion.setSize(shaderBindingTableSize);
+        vk::StridedDeviceAddressRegionKHR rmissRegion;
+        rmissRegion.deviceAddress = m_core->getContext().getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo, m_rtxDispatcher) + missOffset;
+        rmissRegion.setStride(shaderBindingTableSize);
+        rmissRegion.setSize(shaderBindingTableSize);
+        vk::StridedDeviceAddressRegionKHR rchitRegion;
+        rchitRegion.deviceAddress = m_core->getContext().getDevice().getBufferAddressKHR(shaderBindingTableAddressInfo, m_rtxDispatcher) + closestHitOffset;
+        rchitRegion.setStride(shaderBindingTableSize);
+        rchitRegion.setSize(shaderBindingTableSize);
+        vk::StridedDeviceAddressRegionKHR rcallRegion = {};
+
+        return ShaderBindingTableRegions{ rgenRegion, rmissRegion, rchitRegion, rcallRegion };
+    }
+
 
     void RTXModule::RTXDescriptors(std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles)
     {
