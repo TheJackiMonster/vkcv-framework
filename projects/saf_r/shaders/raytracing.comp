@@ -10,8 +10,9 @@ layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 //structs of materials, lights, spheres and intersection for use in compute shader
 struct Material {
     vec3 albedo;
-    vec3 diffuse_color;
-    float specular_exponent;
+    vec3 diffuseColor;
+    float specularExponent;
+    float refractiveIndex;
 };
 
 struct Light{
@@ -52,6 +53,40 @@ layout( push_constant ) uniform constants{
     int lightCount;
     int sphereCount;
 };
+
+/*
+* safrReflect computes the new reflected or refracted ray depending on the material
+* @param vec3: raydirection vector
+* @param vec3: normalvector on which should be reflected or refracted
+* @param float: degree of refraction. In case of simple reflection it is 1.0
+* @return vec3: new ray that is the result of the reflection or refraction
+*/
+vec3 safrReflect(vec3 V, vec3 N, float refractIndex){
+    if(refractIndex != 1.0){
+        // Snell's law
+        float cosi = - max(-1.f, min(1.f, dot(V,N)));
+        float etai = 1;
+        float etat = refractIndex;
+        vec3 n = N;
+        float swap;
+        if(cosi < 0){
+            cosi = -cosi;
+            n = -N;
+            swap = etai;
+            etai = etat;
+            etat = swap;
+        }
+        float eta = etai / etat;
+        float k = 1 - eta * eta * (1 - cosi * cosi);
+        if(k < 0){
+            return vec3(0,0,0);
+        } else {
+            return V * eta + n * (eta * cosi - sqrt(k));
+        }
+    }else{
+        return reflect(V, N);
+    }
+}
 
 /*
 * the rayIntersect function checks, if a ray from the raytracer passes through the sphere, hits the sphere or passes by the the sphere
@@ -167,11 +202,11 @@ vec3 computeHitLighting(Intersection intersection, vec3 V, out float outReflecti
         }
 
         lightIntensityDiffuse  += inLights[i].intensity * max(0.f, dot(L, intersection.N));
-        lightIntensitySpecular += pow(max(0.f, dot(reflect(V, intersection.N), L)), intersection.material.specular_exponent) * inLights[i].intensity;
+        lightIntensitySpecular += pow(max(0.f, dot(safrReflect(V, intersection.N, intersection.material.refractiveIndex), L)), intersection.material.specularExponent) * inLights[i].intensity;
     }
 
     outReflectionThroughput = intersection.material.albedo[2];
-    return intersection.material.diffuse_color * lightIntensityDiffuse * intersection.material.albedo[0] + lightIntensitySpecular * intersection.material.albedo[1];
+    return intersection.material.diffuseColor * lightIntensityDiffuse * intersection.material.albedo[0] + lightIntensitySpecular * intersection.material.albedo[1];
 }
 
 /*
@@ -214,7 +249,7 @@ vec3 castRay(const vec3 initialOrigin, const vec3 initialDirection, int max_dept
         }
 
         //compute new direction and origin of the reflected ray
-        rayDirection    = normalize(reflect(rayDirection, intersection.N));
+        rayDirection    = normalize(safrReflect(rayDirection, intersection.N, intersection.material.refractiveIndex));
         rayOrigin       = biasHitPosition(intersection.pos, rayDirection, intersection.N);
     }
 

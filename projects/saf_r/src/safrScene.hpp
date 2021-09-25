@@ -27,11 +27,12 @@ public:
 	* Material struct with defuse color, albedo and specular component
 	*/
 	struct Material {
-		Material(const glm::vec3& a, const glm::vec3& color, const float& spec) : albedo(a), diffuse_color(color), specular_exponent(spec) {}
-		Material() : albedo(1, 0, 0), diffuse_color(), specular_exponent() {}
-		glm::vec3 albedo;
-		alignas(16) glm::vec3 diffuse_color;
-		float specular_exponent;
+		Material(const glm::vec4& a, const glm::vec3& color, const float& spec, const float& r) : albedo(a), diffuse_color(color), specular_exponent(spec), refractive_index(r) {}
+		Material() : refractive_index(1), albedo(1, 0, 0, 0), diffuse_color(), specular_exponent() {}
+        glm::vec4 albedo;
+        alignas(16) glm::vec3 diffuse_color;
+        float specular_exponent;
+		float refractive_index;
 	};
 
 	/*

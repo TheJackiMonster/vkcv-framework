@@ -97,9 +97,11 @@ int main(int argc, const char** argv) {
 
 	//materials for the spheres
 	std::vector<safrScene::Material> materials;
-	safrScene::Material ivory(glm::vec3(0.6, 0.3, 0.1), glm::vec3(0.4, 0.4, 0.3), 50.);
-	safrScene::Material red_rubber(glm::vec3(0.9, 0.1, 0.0), glm::vec3(0.3, 0.1, 0.1), 10.);
-	safrScene::Material mirror(glm::vec3(0.0, 10.0, 0.8), glm::vec3(1.0, 1.0, 1.0), 1425.);
+	safrScene::Material ivory(glm::vec4(0.6, 0.3, 0.1, 0.0), glm::vec3(0.4, 0.4, 0.3), 50., 1.0);
+	safrScene::Material red_rubber(glm::vec4(0.9, 0.1, 0.0, 0.0), glm::vec3(0.3, 0.1, 0.1), 10., 1.0);
+	safrScene::Material mirror( glm::vec4(0.0, 10.0, 0.8, 0.0), glm::vec3(1.0, 1.0, 1.0), 1425., 1.0);
+    safrScene::Material glass( glm::vec4(0.0, 10.0, 0.8, 0.0), glm::vec3(1.0, 1.0, 1.0), 1425., 1.5);
+
 	materials.push_back(ivory);
 	materials.push_back(red_rubber);
 	materials.push_back(mirror);
@@ -108,7 +110,7 @@ int main(int argc, const char** argv) {
 	std::vector<safrScene::Sphere> spheres;
 	spheres.push_back(safrScene::Sphere(glm::vec3(-3,    0,   -16), 2, ivory));
 	// spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, 12), 2, mirror));
-	spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, -12), 2, mirror));
+	spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, -12), 2, glass));
 	spheres.push_back(safrScene::Sphere(glm::vec3(  1.5, -0.5, -18), 3, red_rubber));
 	spheres.push_back(safrScene::Sphere(glm::vec3( 7,    5,   -18), 4, mirror));
 
