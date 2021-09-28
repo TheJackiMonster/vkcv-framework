@@ -23,7 +23,7 @@ int main(int argc, const char **argv) {
         { VK_KHR_SWAPCHAIN_EXTENSION_NAME }
     );
 
-    vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 1920, 1080, true);
+    vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 1920, 1080, false);
     vkcv::Window& window = core.getWindow(windowHandle);
 
     vkcv::camera::CameraManager cameraManager(window);
@@ -235,16 +235,6 @@ int main(int argc, const char **argv) {
 			1, false, true, true
 	).getHandle();
     BloomAndFlares bloomAndFlares(&core, colorFormat, swapchainExtent.width, swapchainExtent.height);
-    window.e_resize.add([&](int width, int height) {
-		swapchainExtent = core.getSwapchain(window.getSwapchainHandle()).getExtent();
-        colorBuffer = core.createImage(
-				colorFormat,
-				swapchainExtent.width,
-				swapchainExtent.height,
-				1, false, true, true
-		).getHandle();
-        bloomAndFlares.updateImageDimensions(width, height);
-    });
 
     //tone mapping shader & pipeline
     vkcv::ComputePipelineHandle tonemappingPipe;
