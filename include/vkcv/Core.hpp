@@ -331,6 +331,18 @@ namespace vkcv
 			const std::vector<ImageHandle>  &renderTargets,
 			const WindowHandle              &windowHandle);
 
+		void recordIndexedIndirectDrawcallsToCmdStream(
+				const CommandStreamHandle                           cmdStreamHandle,
+				const PassHandle                                    renderpassHandle,
+				const GraphicsPipelineHandle                        &pipelineHandle,
+				const PushConstants                                 &pushConstantData,
+                const vkcv::DescriptorSetHandle                     &compiledDescriptorSet,
+				const vkcv::Mesh                                    &compiledMesh,
+				const std::vector<ImageHandle>                      &renderTargets,
+				const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
+				const uint32_t                                      drawCount,
+				const WindowHandle                                  &windowHandle);
+
 		void recordMeshShaderDrawcalls(
 			const CommandStreamHandle&              cmdStreamHandle,
 			const PassHandle&                       renderpassHandle,

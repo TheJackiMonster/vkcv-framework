@@ -2,6 +2,7 @@
 #include <vkcv/Core.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
+#include <vkcv/gui/GUI.hpp>
 #include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -23,7 +24,9 @@ int main(int argc, const char** argv) {
 	vkcv::Window& window = core.getWindow(windowHandle);
 	vkcv::camera::CameraManager cameraManager(window);
 
-	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+    vkcv::gui::GUI gui (core, windowHandle);
+
+    uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(-8, 1, -0.5));
@@ -148,6 +151,18 @@ int main(int argc, const char** argv) {
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
+
+        auto stop = std::chrono::system_clock::now();
+        auto kektime = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
+        gui.beginGUI();
+
+        ImGui::Begin("Settings");
+        ImGui::Text("Deltatime %fms, %f", 0.001 * static_cast<double>(kektime.count()), 1/(0.000001 * static_cast<double>(kektime.count())));
+        ImGui::End();
+
+        gui.endGUI();
+
 		core.endFrame(windowHandle);
 	}
 	

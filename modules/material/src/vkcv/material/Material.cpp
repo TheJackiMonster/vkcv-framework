@@ -36,16 +36,36 @@ namespace vkcv::material {
 			case MaterialType::PBR_MATERIAL:
 				if (pbr_bindings.empty())
 				{
-					pbr_bindings.insert(std::make_pair(0, DescriptorBinding(0, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT)));
-					pbr_bindings.insert(std::make_pair(1, DescriptorBinding(1, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT)));
-					pbr_bindings.insert(std::make_pair(2, DescriptorBinding(2, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT)));
-					pbr_bindings.insert(std::make_pair(3, DescriptorBinding(3, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT)));
-					pbr_bindings.insert(std::make_pair(4, DescriptorBinding(4, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT)));
-					pbr_bindings.insert(std::make_pair(5, DescriptorBinding(5, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT)));
-					pbr_bindings.insert(std::make_pair(6, DescriptorBinding(6, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT)));
-					pbr_bindings.insert(std::make_pair(7, DescriptorBinding(7, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT)));
-					pbr_bindings.insert(std::make_pair(8, DescriptorBinding(8, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT)));
-					pbr_bindings.insert(std::make_pair(9, DescriptorBinding(9, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT)));
+					pbr_bindings.insert(std::make_pair(0, DescriptorBinding {
+						0, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT, false
+					}));
+					pbr_bindings.insert(std::make_pair(1, DescriptorBinding {
+						1, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT, false
+					}));
+					pbr_bindings.insert(std::make_pair(2, DescriptorBinding {
+						2, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT, false
+					}));
+					pbr_bindings.insert(std::make_pair(3, DescriptorBinding {
+						3, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT, false
+					}));
+					pbr_bindings.insert(std::make_pair(4, DescriptorBinding {
+						4, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT, false
+					}));
+					pbr_bindings.insert(std::make_pair(5, DescriptorBinding {
+						5, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT, false
+					}));
+					pbr_bindings.insert(std::make_pair(6, DescriptorBinding {
+						6, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT, false
+					}));
+					pbr_bindings.insert(std::make_pair(7, DescriptorBinding {
+						7, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT, false
+					}));
+					pbr_bindings.insert(std::make_pair(8, DescriptorBinding {
+						8, DescriptorType::IMAGE_SAMPLED, 1, ShaderStage::FRAGMENT, false
+					}));
+					pbr_bindings.insert(std::make_pair(9, DescriptorBinding {
+						9, DescriptorType::SAMPLER, 1, ShaderStage::FRAGMENT, false
+					}));
 				}
 				
 				return pbr_bindings;

@@ -48,7 +48,10 @@ namespace vkcv {
 			case BufferType::INDEX:
 				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
 				break;
-            default:
+            case BufferType::INDIRECT:
+                usageFlags = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndirectBuffer ;
+                break;
+			default:
 				vkcv_log(LogLevel::WARNING, "Unknown buffer type");
 				break;
 		}

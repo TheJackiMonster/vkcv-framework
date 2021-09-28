@@ -330,6 +330,103 @@ namespace vkcv
 		recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
 	}
 
+    void Core::recordIndexedIndirectDrawcallsToCmdStream(
+            const CommandStreamHandle                           cmdStreamHandle,
+            const PassHandle                                    renderpassHandle,
+            const GraphicsPipelineHandle                        &pipelineHandle,
+            const PushConstants                                 &pushConstantData,
+            const vkcv::DescriptorSetHandle                     &compiledDescriptorSet,
+            const vkcv::Mesh                                    &compiledMesh,
+            const std::vector<ImageHandle>                      &renderTargets,
+            const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
+            const uint32_t                                      drawCount,
+			const WindowHandle                                  &windowHandle) {
+
+        if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
+            return;
+        }
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
+        const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_SwapchainManager->getSwapchain(swapchainHandle),
+                                                                                    *m_ImageManager);
+        const auto width = widthHeight[0];
+        const auto height = widthHeight[1];
+
+        const vk::RenderPass        renderpass      = m_PassManager->getVkPass(renderpassHandle);
+        const PassConfig            passConfig      = m_PassManager->getPassConfig(renderpassHandle);
+
+        const vk::Pipeline          pipeline        = m_PipelineManager->getVkPipeline(pipelineHandle);
+        const vk::PipelineLayout    pipelineLayout  = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
+        const vk::Rect2D            renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+
+        vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
+        transitionRendertargetsToAttachmentLayout(renderTargets, *m_ImageManager, cmdBuffer);
+
+        const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_SwapchainManager->getSwapchain(swapchainHandle), renderpass,
+                                                              m_Context.m_Device);
+
+        if (!framebuffer) {
+            vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
+            return;
+        }
+
+        SubmitInfo submitInfo;
+        submitInfo.queueType = QueueType::Graphics;
+        submitInfo.signalSemaphores = {m_SyncResources.renderFinished};
+
+        auto submitFunction = [&](const vk::CommandBuffer &cmdBuffer) {
+
+            const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
+
+            const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(),
+                                                    clearValues.data());
+            cmdBuffer.beginRenderPass(beginInfo, {}, {});
+
+            cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
+
+            const GraphicsPipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+            if (pipeConfig.m_UseDynamicViewport) {
+                recordDynamicViewport(cmdBuffer, width, height);
+            }
+
+			if (pushConstantData.getSizePerDrawcall() > 0)
+			{
+				cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eAll,
+					0,
+					pushConstantData.getSizePerDrawcall(),
+					pushConstantData.getDrawcallData(0));
+			}
+
+            vkcv::DescriptorSet descSet = m_DescriptorManager->getDescriptorSet(compiledDescriptorSet);
+
+            cmdBuffer.bindDescriptorSets(
+                    vk::PipelineBindPoint::eGraphics,
+                    pipelineLayout,
+                    0,
+                    descSet.vulkanHandle,
+                    nullptr);
+
+			vk::DeviceSize deviceSize = 0;
+			cmdBuffer.bindVertexBuffers(0, 1, &compiledMesh.vertexBufferBindings[0].buffer,&deviceSize);
+            cmdBuffer.bindIndexBuffer(compiledMesh.indexBuffer, 0, getIndexType(compiledMesh.indexBitCount));
+
+            cmdBuffer.drawIndexedIndirect(
+                    indirectBuffer.getVulkanHandle(),
+                    0,
+                    drawCount,
+                    sizeof(vk::DrawIndexedIndirectCommand));
+
+            cmdBuffer.endRenderPass();
+        };
+
+        auto finishFunction = [framebuffer, this]() {
+            m_Context.m_Device.destroy(framebuffer);
+        };
+
+        recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
+    }
+
 	void Core::recordMeshShaderDrawcalls(
 		const CommandStreamHandle&                          cmdStreamHandle,
 		const PassHandle&                                   renderpassHandle,

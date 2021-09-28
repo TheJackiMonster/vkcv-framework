@@ -78,7 +78,7 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		bool checkSupport(const vk::PhysicalDeviceMeshShaderFeaturesNV& features, bool required) const;
-
+		
 		/**
          * @brief Currently used for RTX. Checks support of the @p vk::PhysicalDeviceVulkan12Features.
          * @param features The features.

@@ -154,11 +154,10 @@ namespace vkcv
 	}
 	
 	/**
-	 * @brief With the help of the reference "supported" all elements in "check" checked,
-	 * if they are supported by the physical device.
-	 * @param supported The reference that can be used to check "check"
-	 * @param check The elements to be checked
-	 * @return True, if all elements in "check" are supported
+	 * @brief Check whether all string occurrences in "check" are contained in "supported"
+	 * @param supported The const vector const char* reference used to compare entries in "check"
+	 * @param check The const vector const char* reference elements to be checked by "supported"
+	 * @return True, if all elements in "check" are supported (contained in supported)
 	*/
 	bool checkSupport(const std::vector<const char*>& supported, const std::vector<const char*>& check)
 	{
@@ -185,7 +184,7 @@ namespace vkcv
 		
 		return extensions;
 	}
-	
+
 	Context Context::create(const char *applicationName,
 							uint32_t applicationVersion,
 							const std::vector<vk::QueueFlagBits>& queueFlags,
@@ -213,7 +212,7 @@ namespace vkcv
 		}
 #endif
 		
-		// check for extension support
+		// check for instance extension support
 		std::vector<vk::ExtensionProperties> instanceExtensionProperties = vk::enumerateInstanceExtensionProperties();
 		
 		std::vector<const char*> supportedExtensions;
@@ -260,7 +259,7 @@ namespace vkcv
 #endif
 		
 		vk::Instance instance = vk::createInstance(instanceCreateInfo);
-		
+
 		std::vector<vk::PhysicalDevice> physicalDevices = instance.enumeratePhysicalDevices();
 		vk::PhysicalDevice physicalDevice;
 		
@@ -273,6 +272,21 @@ namespace vkcv
 #ifdef __APPLE__
 		featureManager.useExtension("VK_KHR_portability_subset", true);
 #endif
+
+		if (featureManager.useExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME, false)) {
+			featureManager.useFeatures<vk::PhysicalDeviceShaderFloat16Int8Features>(
+					[](vk::PhysicalDeviceShaderFloat16Int8Features& features) {
+				features.setShaderFloat16(true);
+			}, false);
+		}
+		
+		if (featureManager.useExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME, false)) {
+			featureManager.useFeatures<vk::PhysicalDevice16BitStorageFeatures>(
+					[](vk::PhysicalDevice16BitStorageFeatures& features) {
+				features.setStorageBuffer16BitAccess(true);
+			}, false);
+		}
+
 		featureManager.useFeatures([](vk::PhysicalDeviceFeatures& features) {
 			features.setFragmentStoresAndAtomics(true);
 			features.setGeometryShader(true);
@@ -285,10 +299,8 @@ namespace vkcv
 		}
 		
 		const auto& extensions = featureManager.getActiveExtensions();
-		
+
 		std::vector<vk::DeviceQueueCreateInfo> qCreateInfos;
-		
-		// create required queues
 		std::vector<float> qPriorities;
 		qPriorities.resize(queueFlags.size(), 1.f);
 		std::vector<std::pair<int, int>> queuePairsGraphics, queuePairsCompute, queuePairsTransfer;
@@ -310,7 +322,7 @@ namespace vkcv
 		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
-		
+
 		deviceCreateInfo.setPNext(&(featureManager.getFeatures()));
 		
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);

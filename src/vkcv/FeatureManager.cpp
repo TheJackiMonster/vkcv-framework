@@ -87,6 +87,7 @@ m_physicalDevice.getFeatures2(&query)
 		vkcv_check_feature(variableMultisampleRate);
 		vkcv_check_feature(vertexPipelineStoresAndAtomics);
 		vkcv_check_feature(wideLines);
+        vkcv_check_feature(multiDrawIndirect);
 		
 		return true;
 	}
@@ -291,7 +292,7 @@ m_physicalDevice.getFeatures2(&query)
 		
 		return true;
 	}
-
+	
 	bool FeatureManager::checkSupport(const vk::PhysicalDeviceVulkan12Features &features, bool required) const {
 	    vkcv_check_init_features2(vk::PhysicalDeviceVulkan12Features);
 
@@ -534,5 +535,4 @@ m_physicalDevice.getFeatures2(&query)
 	const vk::PhysicalDeviceFeatures2& FeatureManager::getFeatures() const {
 		return m_featuresBase;
 	}
-	
 }

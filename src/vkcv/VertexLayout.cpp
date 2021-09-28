@@ -46,8 +46,8 @@ namespace vkcv {
         uint32_t offset = 0;
         for (auto &attachment : vertexAttachments)
         {
-            offset += getFormatSize(attachment.format);
             attachment.offset = offset;
+            offset += getFormatSize(attachment.format);
         }
         stride = offset;
     }

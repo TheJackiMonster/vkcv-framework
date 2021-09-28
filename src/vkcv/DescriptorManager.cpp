@@ -61,27 +61,42 @@ namespace vkcv
             }
         }
         
-        //create the descriptor set's layout by iterating over its bindings
+        //create the descriptor set's layout and binding flags by iterating over its bindings
         std::vector<vk::DescriptorSetLayoutBinding> bindingsVector = {};
+		std::vector<vk::DescriptorBindingFlags> bindingsFlags = {};
+		
         for (auto bindingElem : setBindingsMap)
         {
             DescriptorBinding binding = bindingElem.second;
             uint32_t bindingID = bindingElem.first;
-
-            vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding(
-                    bindingID,
-                    getVkDescriptorType(binding.descriptorType),
-                    binding.descriptorCount,
-                    getShaderStageFlags(binding.shaderStages),
-                    nullptr
-                    );
-
-            bindingsVector.push_back(descriptorSetLayoutBinding);
+	
+			bindingsVector.emplace_back(
+					bindingID,
+					getVkDescriptorType(binding.descriptorType),
+					binding.descriptorCount,
+					getShaderStageFlags(binding.shaderStages),
+					nullptr
+			);
+			
+			if (binding.variableCount) {
+				bindingsFlags.push_back(
+						vk::DescriptorBindingFlagBits::eVariableDescriptorCount |
+						vk::DescriptorBindingFlagBits::ePartiallyBound
+				);
+			} else {
+				bindingsFlags.emplace_back();
+			}
         }
+		
+        vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo (
+				bindingsFlags.size(), bindingsFlags.data()
+		);
 
         //create the descriptor set's layout from the binding data gathered above
         vk::DescriptorSetLayout vulkanHandle;
-        vk::DescriptorSetLayoutCreateInfo layoutInfo({}, bindingsVector);
+        vk::DescriptorSetLayoutCreateInfo layoutInfo(vk::DescriptorSetLayoutCreateFlags(), bindingsVector);
+		layoutInfo.setPNext(&bindingFlagsInfo);
+		
         auto result = m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &vulkanHandle);
         if (result != vk::Result::eSuccess) {
             vkcv_log(LogLevel::ERROR, "Failed to create descriptor set layout");
@@ -99,6 +114,23 @@ namespace vkcv
         DescriptorSetLayout setLayout = m_DescriptorSetLayouts[setLayoutHandle.getId()];
         vk::DescriptorSet vulkanHandle;
         vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), 1, &setLayout.vulkanHandle);
+
+        uint32_t sumVariableDescriptorCounts = 0;
+        for (auto bindingElem : setLayout.descriptorBindings)
+        {
+            DescriptorBinding binding = bindingElem.second;
+            uint32_t bindingID = bindingElem.first;
+
+            if(binding.variableCount)
+                sumVariableDescriptorCounts += binding.descriptorCount;
+        }
+
+        vk::DescriptorSetVariableDescriptorCountAllocateInfo variableAllocInfo(1, &sumVariableDescriptorCounts);
+
+        if (sumVariableDescriptorCounts > 0) {
+            allocInfo.setPNext(&variableAllocInfo);
+        }
+
         auto result = m_Device.allocateDescriptorSets(&allocInfo, &vulkanHandle);
         if(result != vk::Result::eSuccess)
         {
@@ -126,6 +158,7 @@ namespace vkcv
 		size_t imageInfoIndex;
 		size_t bufferInfoIndex;
 		uint32_t binding;
+		uint32_t arrayElementIndex;
 		vk::DescriptorType type;
     };
 
@@ -142,7 +175,8 @@ namespace vkcv
 		
 		std::vector<WriteDescriptorSetInfo> writeInfos;
 
-		for (const auto& write : writes.sampledImageWrites) {
+		for (const auto& write : writes.sampledImageWrites)
+		{
 		    vk::ImageLayout layout = write.useGeneralLayout ? vk::ImageLayout::eGeneral : vk::ImageLayout::eShaderReadOnlyOptimal;
 			const vk::DescriptorImageInfo imageInfo(
 				nullptr,
@@ -156,6 +190,7 @@ namespace vkcv
 					imageInfos.size(),
 					0,
 					write.binding,
+					write.arrayIndex,
 					vk::DescriptorType::eSampledImage,
 			};
 			
@@ -175,6 +210,7 @@ namespace vkcv
 					imageInfos.size(),
 					0,
 					write.binding,
+					0,
 					vk::DescriptorType::eStorageImage
 			};
 			
@@ -199,6 +235,7 @@ namespace vkcv
 					0,
 					bufferInfos.size(),
 					write.binding,
+					0,
 					write.dynamic?
 					vk::DescriptorType::eUniformBufferDynamic :
 					vk::DescriptorType::eUniformBuffer
@@ -225,6 +262,7 @@ namespace vkcv
 					0,
 					bufferInfos.size(),
 					write.binding,
+					0,
 					write.dynamic?
 					vk::DescriptorType::eStorageBufferDynamic :
 					vk::DescriptorType::eStorageBuffer
@@ -248,6 +286,7 @@ namespace vkcv
 					imageInfos.size(),
 					0,
 					write.binding,
+					0,
 					vk::DescriptorType::eSampler
 			};
 			
@@ -260,7 +299,7 @@ namespace vkcv
 			vk::WriteDescriptorSet vulkanWrite(
 					set,
 					write.binding,
-					static_cast<uint32_t>(0),
+					write.arrayElementIndex,
 					1,
 					write.type,
 					(write.imageInfoIndex > 0? &(imageInfos[write.imageInfoIndex - 1]) : nullptr),
@@ -289,6 +328,7 @@ namespace vkcv
 		}
 		
 		auto& set = m_DescriptorSets[id];
+		
 		if (set.vulkanHandle) {
 			m_Device.freeDescriptorSets(m_Pools[set.poolIndex], 1, &(set.vulkanHandle));
 			set.setLayoutHandle = DescriptorSetLayoutHandle();
@@ -303,6 +343,7 @@ namespace vkcv
 	    }
 
 	    auto& layout = m_DescriptorSetLayouts[id];
+		
 	    if (layout.vulkanHandle){
 	        m_Device.destroy(layout.vulkanHandle);
 	        layout.vulkanHandle = nullptr;
