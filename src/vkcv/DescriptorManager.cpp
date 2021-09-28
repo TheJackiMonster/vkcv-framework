@@ -127,7 +127,9 @@ namespace vkcv
 
         vk::DescriptorSetVariableDescriptorCountAllocateInfo variableAllocInfo(1, &sumVariableDescriptorCounts);
 
-        allocInfo.setPNext(&variableAllocInfo);
+        if (sumVariableDescriptorCounts > 0) {
+            allocInfo.setPNext(&variableAllocInfo);
+        }
 
         auto result = m_Device.allocateDescriptorSets(&allocInfo, &vulkanHandle);
         if(result != vk::Result::eSuccess)
