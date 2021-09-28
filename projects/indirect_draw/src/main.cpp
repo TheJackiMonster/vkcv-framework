@@ -93,6 +93,13 @@ void interleaveScene(vkcv::asset::Scene scene,
     {
         for(auto vertexGroupIndex : mesh.vertexGroups)
         {
+			// Sort attributes to fix it!
+			auto& attributes = scene.vertexGroups[vertexGroupIndex].vertexBuffer.attributes;
+	
+			std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
+				return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
+			});
+			
             const auto &vertexGroup = scene.vertexGroups[vertexGroupIndex];
 
             const vkcv::asset::VertexAttribute positionAttribute = vertexGroup.vertexBuffer.attributes[0];
