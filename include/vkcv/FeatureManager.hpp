@@ -78,6 +78,42 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		bool checkSupport(const vk::PhysicalDeviceMeshShaderFeaturesNV& features, bool required) const;
+
+		/**
+         * @brief Currently used for RTX. Checks support of the @p vk::PhysicalDeviceVulkan12Features.
+         * @param features The features.
+         * @param required True, if the @p features are required, else false.
+         * @return @p True, if the @p features are supported, else @p false.
+         */
+		[[nodiscard]]
+		bool checkSupport(const vk::PhysicalDeviceVulkan12Features& features, bool required) const;
+
+		/**
+         * @brief Currently used for RTX. Checks support of the @p vk::PhysicalDeviceVulkan11Features.
+         * @param features The features.
+         * @param required True, if the @p features are required, else false.
+         * @return @p True, if the @p features are supported, else @p false.
+         */
+		[[nodiscard]]
+		bool checkSupport(const vk::PhysicalDeviceVulkan11Features& features, bool required) const;
+
+		/**
+		 * @brief Only used for RTX. Checks support of the @p vk::PhysicalDeviceAccelerationStructureFeaturesKHR.
+		 * @param features The features.
+		 * @param required True, if the @p features are required, else false.
+		 * @return @p True, if the @p features are supported, else @p false.
+		 */
+		[[nodiscard]]
+		bool checkSupport(const vk::PhysicalDeviceAccelerationStructureFeaturesKHR& features, bool required) const;
+
+		/**
+         * @brief Only used for RTX. Checks support of the @p vk::PhysicalDeviceRayTracingPipelineFeaturesKHR.
+         * @param features The features.
+         * @param required True, if the @p features are required, else false.
+         * @return @p True, if the @p features are supported, else @p false.
+         */
+		[[nodiscard]]
+		bool checkSupport(const vk::PhysicalDeviceRayTracingPipelineFeaturesKHR& features, bool required) const;
 		
 		vk::BaseOutStructure* findFeatureStructure(vk::StructureType type) const;
 	

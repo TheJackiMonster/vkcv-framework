@@ -405,6 +405,50 @@ namespace vkcv
 		recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
 	}
 
+
+	void Core::recordRayGenerationToCmdStream(
+		CommandStreamHandle cmdStreamHandle,
+		vk::Pipeline rtxPipeline,
+		vk::PipelineLayout rtxPipelineLayout,
+		vk::StridedDeviceAddressRegionKHR rgenRegion,
+		vk::StridedDeviceAddressRegionKHR rmissRegion,
+		vk::StridedDeviceAddressRegionKHR rchitRegion,
+		vk::StridedDeviceAddressRegionKHR rcallRegion,
+		const std::vector<DescriptorSetUsage>& descriptorSetUsages,
+        const PushConstants& pushConstants,
+		const WindowHandle windowHandle) {
+
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rtxPipeline);
+			for (const auto& usage : descriptorSetUsages) {
+				cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eRayTracingKHR,
+					rtxPipelineLayout,
+					usage.setLocation,
+					{ usage.vulkanHandle },
+					usage.dynamicOffsets
+				);
+			}
+
+			if (pushConstants.getSizePerDrawcall() > 0) {
+				cmdBuffer.pushConstants(
+					rtxPipelineLayout,
+					(vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR | vk::ShaderStageFlagBits::eRaygenKHR), // TODO: add Support for eAnyHitKHR, eCallableKHR, eIntersectionKHR
+					0,
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getData());
+			}
+			
+			auto m_rtxDispatcher = vk::DispatchLoaderDynamic((PFN_vkGetInstanceProcAddr)m_Context.getInstance().getProcAddr("vkGetInstanceProcAddr"));
+			m_rtxDispatcher.init(m_Context.getInstance());
+
+			cmdBuffer.traceRaysKHR(&rgenRegion,&rmissRegion,&rchitRegion,&rcallRegion,
+									getWindow(windowHandle).getWidth(), getWindow(windowHandle).getHeight(),1, m_rtxDispatcher);
+
+		};
+		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);
+    }
+
 	void Core::recordComputeDispatchToCmdStream(
 		CommandStreamHandle cmdStreamHandle,
 		ComputePipelineHandle computePipeline,

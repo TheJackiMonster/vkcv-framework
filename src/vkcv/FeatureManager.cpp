@@ -156,7 +156,7 @@ m_physicalDevice.getFeatures2(&query)
 		vkcv_check_init_features2(vk::PhysicalDeviceHostQueryResetFeatures);
 		
 		vkcv_check_feature(hostQueryReset);
-		
+
 		return true;
 	}
 	
@@ -258,7 +258,7 @@ m_physicalDevice.getFeatures2(&query)
 		vkcv_check_init_features2(vk::PhysicalDeviceUniformBufferStandardLayoutFeatures);
 		
 		vkcv_check_feature(uniformBufferStandardLayout);
-		
+
 		return true;
 	}
 	
@@ -290,6 +290,103 @@ m_physicalDevice.getFeatures2(&query)
 		vkcv_check_feature(meshShader);
 		
 		return true;
+	}
+
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceVulkan12Features &features, bool required) const {
+	    vkcv_check_init_features2(vk::PhysicalDeviceVulkan12Features);
+
+	    vkcv_check_feature(samplerMirrorClampToEdge);
+	    vkcv_check_feature(drawIndirectCount);
+	    vkcv_check_feature(storageBuffer8BitAccess);
+	    vkcv_check_feature(uniformAndStorageBuffer8BitAccess);
+	    vkcv_check_feature(storagePushConstant8);
+	    vkcv_check_feature(shaderBufferInt64Atomics);
+	    vkcv_check_feature(shaderSharedInt64Atomics);
+	    vkcv_check_feature(shaderFloat16);
+	    vkcv_check_feature(shaderInt8);
+	    vkcv_check_feature(descriptorIndexing);
+	    vkcv_check_feature(shaderInputAttachmentArrayDynamicIndexing);
+	    vkcv_check_feature(shaderUniformTexelBufferArrayDynamicIndexing);
+	    vkcv_check_feature(shaderStorageTexelBufferArrayDynamicIndexing);
+	    vkcv_check_feature(shaderUniformBufferArrayNonUniformIndexing);
+	    vkcv_check_feature(shaderSampledImageArrayNonUniformIndexing);
+	    vkcv_check_feature(shaderStorageBufferArrayNonUniformIndexing);
+	    vkcv_check_feature(shaderStorageImageArrayNonUniformIndexing);
+	    vkcv_check_feature(shaderInputAttachmentArrayNonUniformIndexing);
+	    vkcv_check_feature(shaderUniformTexelBufferArrayNonUniformIndexing);
+	    vkcv_check_feature(shaderStorageTexelBufferArrayNonUniformIndexing);
+	    vkcv_check_feature(descriptorBindingUniformBufferUpdateAfterBind);
+	    vkcv_check_feature(descriptorBindingSampledImageUpdateAfterBind);
+	    vkcv_check_feature(descriptorBindingStorageImageUpdateAfterBind);
+	    vkcv_check_feature(descriptorBindingStorageBufferUpdateAfterBind);
+	    vkcv_check_feature(descriptorBindingUniformTexelBufferUpdateAfterBind);
+	    vkcv_check_feature(descriptorBindingStorageTexelBufferUpdateAfterBind);
+	    vkcv_check_feature(descriptorBindingUpdateUnusedWhilePending);
+	    vkcv_check_feature(descriptorBindingPartiallyBound);
+	    vkcv_check_feature(descriptorBindingVariableDescriptorCount);
+	    vkcv_check_feature(runtimeDescriptorArray);
+	    vkcv_check_feature(samplerFilterMinmax);
+	    vkcv_check_feature(scalarBlockLayout);
+	    vkcv_check_feature(imagelessFramebuffer);
+	    vkcv_check_feature(uniformBufferStandardLayout);
+	    vkcv_check_feature(shaderSubgroupExtendedTypes);
+	    vkcv_check_feature(separateDepthStencilLayouts);
+	    vkcv_check_feature(hostQueryReset);
+	    vkcv_check_feature(timelineSemaphore);
+	    vkcv_check_feature(bufferDeviceAddress);
+	    vkcv_check_feature(bufferDeviceAddressCaptureReplay);
+	    vkcv_check_feature(bufferDeviceAddressMultiDevice);
+	    vkcv_check_feature(vulkanMemoryModel);
+	    vkcv_check_feature(vulkanMemoryModelDeviceScope);
+	    vkcv_check_feature(vulkanMemoryModelAvailabilityVisibilityChains);
+	    vkcv_check_feature(shaderOutputViewportIndex);
+	    vkcv_check_feature(shaderOutputLayer);
+	    vkcv_check_feature(subgroupBroadcastDynamicId);
+
+	    return true;
+	}
+
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceVulkan11Features &features, bool required) const {
+	    vkcv_check_init_features2(vk::PhysicalDeviceVulkan11Features);
+
+	    vkcv_check_feature(multiview);
+	    vkcv_check_feature(multiviewGeometryShader);
+	    vkcv_check_feature(multiviewTessellationShader);
+	    vkcv_check_feature(protectedMemory);
+	    vkcv_check_feature(samplerYcbcrConversion);
+	    vkcv_check_feature(shaderDrawParameters);
+	    vkcv_check_feature(storageBuffer16BitAccess);
+	    vkcv_check_feature(storageInputOutput16);
+	    vkcv_check_feature(storagePushConstant16);
+	    vkcv_check_feature(uniformAndStorageBuffer16BitAccess);
+	    vkcv_check_feature(variablePointers);
+	    vkcv_check_feature(variablePointersStorageBuffer);
+
+	    return true;
+	}
+
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceAccelerationStructureFeaturesKHR &features, bool required) const {
+	    vkcv_check_init_features2(vk::PhysicalDeviceAccelerationStructureFeaturesKHR);
+
+	    vkcv_check_feature(accelerationStructure);
+	    vkcv_check_feature(accelerationStructureCaptureReplay);
+	    vkcv_check_feature(accelerationStructureIndirectBuild);
+	    vkcv_check_feature(accelerationStructureHostCommands);
+	    vkcv_check_feature(descriptorBindingAccelerationStructureUpdateAfterBind);
+
+	    return true;
+	}
+
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceRayTracingPipelineFeaturesKHR &features, bool required) const {
+	    vkcv_check_init_features2(vk::PhysicalDeviceRayTracingPipelineFeaturesKHR);
+
+	    vkcv_check_feature(rayTracingPipeline);
+	    vkcv_check_feature(rayTracingPipelineShaderGroupHandleCaptureReplay);
+	    vkcv_check_feature(rayTracingPipelineShaderGroupHandleCaptureReplayMixed);
+	    vkcv_check_feature(rayTracingPipelineTraceRaysIndirect);
+	    vkcv_check_feature(rayTraversalPrimitiveCulling);
+
+	    return true;
 	}
 	
 	vk::BaseOutStructure* FeatureManager::findFeatureStructure(vk::StructureType type) const {

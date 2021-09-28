@@ -254,6 +254,29 @@ namespace vkcv {
             }
         }
 
+        // Used to reflect acceleration structure bindings for RTX.
+        for (uint32_t i = 0; i < resources.acceleration_structures.size(); i++) {
+            auto& u = resources.acceleration_structures[i];
+            const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+
+            uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+            uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
+            auto binding = DescriptorBinding(
+                bindingID,
+                DescriptorType::ACCELERATION_STRUCTURE_KHR,
+                base_type.vecsize,
+                shaderStage);
+
+            auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
+            if (!insertionResult.second)
+            {
+                vkcv_log(LogLevel::WARNING,
+                    "Attempting to overwrite already existing binding %u at set ID %u.",
+                    bindingID,
+                    setID);
+            }
+        }
+
         //reflect push constants
 		for (const auto &pushConstantBuffer : resources.push_constant_buffers)
 		{
