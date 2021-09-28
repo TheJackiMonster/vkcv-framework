@@ -3,7 +3,7 @@
 #include <functional>
 
 #ifndef __MINGW32__
-#include <mutex>
+#include <semaphore>
 #endif
 
 #include <vector>
@@ -34,7 +34,7 @@ namespace vkcv {
         uint32_t m_id_counter;
 	
 #ifndef __MINGW32__
-		std::mutex m_mutex;
+		std::binary_semaphore m_semaphore;
 #endif
 
     public:
@@ -84,7 +84,7 @@ namespace vkcv {
          */
         void lock() {
 #ifndef __MINGW32__
-			m_mutex.lock();
+			m_semaphore.acquire();
 #endif
         }
 	
@@ -93,15 +93,12 @@ namespace vkcv {
 		*/
         void unlock() {
 #ifndef __MINGW32__
-			m_mutex.unlock();
+			m_semaphore.release();
 #endif
         }
 
-        explicit event(bool locked = false) {
-        	if (locked) {
-        		lock();
-        	}
-        }
+        explicit event(bool locked = false) :
+		m_semaphore(locked? 1 : 0) {}
 
         event(const event &other) = delete;
 

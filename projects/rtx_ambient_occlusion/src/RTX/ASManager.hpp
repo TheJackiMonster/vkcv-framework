@@ -141,7 +141,7 @@ namespace vkcv::rtx {
             copyFromCPUToGPU(stagingBuffer, targetBuffer);
 
             return targetBuffer;
-        };
+        }
 
         /**
         * @brief A helper function used by @#ASManager::makeBufferFromData. Creates a fully initialized @#RTXBuffer object

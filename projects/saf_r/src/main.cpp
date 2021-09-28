@@ -150,9 +150,6 @@ int main(int argc, const char** argv) {
                                           vkcv::BufferDescriptorWrite(1,sphereBuffer.getHandle())};
     core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
-
-	const auto& context = core.getContext();
-
 	auto safrIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
 	uint16_t indices[3] = { 0, 1, 2 };
 	safrIndexBuffer.fill(&indices[0], sizeof(indices));

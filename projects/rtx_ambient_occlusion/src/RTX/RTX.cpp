@@ -50,7 +50,7 @@ namespace vkcv::rtx {
 
         m_shaderGroupBaseAlignment =  rayTracingProperties.shaderGroupBaseAlignment;
         uint8_t* mapped = (uint8_t*) m_core->getContext().getDevice().mapMemory(m_shaderBindingTableBuffer.deviceMemory, 0, shaderBindingTableSize);
-        for (int i = 0; i < shaderCount; i++) {
+        for (size_t i = 0; i < shaderCount; i++) {
             memcpy(mapped, (uint8_t*)shaderHandleStorage + (i * rayTracingProperties.shaderGroupHandleSize), rayTracingProperties.shaderGroupHandleSize);
             mapped += m_shaderGroupBaseAlignment;
         }
@@ -97,7 +97,6 @@ namespace vkcv::rtx {
     {
         //TLAS-Descriptor-Write
         TopLevelAccelerationStructure tlas = m_asManager->getTLAS();
-        RTXBuffer tlasBuffer = tlas.tlasBuffer;
         vk::WriteDescriptorSetAccelerationStructureKHR AccelerationDescriptor = {};
         AccelerationDescriptor.accelerationStructureCount = 1;
         const TopLevelAccelerationStructure constTLAS = tlas;

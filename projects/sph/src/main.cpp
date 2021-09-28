@@ -206,7 +206,6 @@ int main(int argc, const char **argv) {
     vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
 
     auto pos = glm::vec2(0.f);
-    auto spawnPosition = glm::vec3(0.f);
 
     std::vector<vkcv::DrawcallInfo> drawcalls;
     drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}, numberParticles));

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(vkcv_upscaling)
 
 # setting c++ standard for the project
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(vkcv_upscaling_source ${PROJECT_SOURCE_DIR}/src)

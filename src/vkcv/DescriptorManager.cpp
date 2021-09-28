@@ -118,9 +118,7 @@ namespace vkcv
         uint32_t sumVariableDescriptorCounts = 0;
         for (auto bindingElem : setLayout.descriptorBindings)
         {
-            DescriptorBinding binding = bindingElem.second;
-            uint32_t bindingID = bindingElem.first;
-
+            auto binding = bindingElem.second;
             if(binding.variableCount)
                 sumVariableDescriptorCounts += binding.descriptorCount;
         }

@@ -114,7 +114,7 @@ namespace vkcv::rtx {
         vk::PhysicalDeviceMemoryProperties physicalDeviceMemoryProperties = m_core->getContext().getPhysicalDevice().getMemoryProperties();
 
         uint32_t memoryTypeIndex = -1;
-        for (int i = 0; i < physicalDeviceMemoryProperties.memoryTypeCount; i++) {
+        for (size_t i = 0; i < physicalDeviceMemoryProperties.memoryTypeCount; i++) {
             if ((memoryRequirements2.memoryRequirements.memoryTypeBits & (1 << i))
                     && (physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & buffer.memoryPropertyFlagBits) == buffer.memoryPropertyFlagBits) {
                 memoryTypeIndex = i;
