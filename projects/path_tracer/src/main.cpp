@@ -44,20 +44,21 @@ int main(int argc, const char** argv) {
 
 	const char* applicationName = "Path Tracer";
 
-	const int initialWidth = 1280;
-	const int initialHeight = 720;
-	vkcv::Window window = vkcv::Window::create(
-		applicationName,
-		initialWidth,
-		initialHeight,
-		true);
-
 	vkcv::Core core = vkcv::Core::create(
-		window,
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
 		{ "VK_KHR_swapchain" }
+	);
+	
+	const int initialWidth = 1280;
+	const int initialHeight = 720;
+	
+	vkcv::WindowHandle windowHandle = core.createWindow(
+			applicationName,
+			initialWidth,
+			initialHeight,
+			true
 	);
 
 	// images
@@ -100,9 +101,10 @@ int main(int argc, const char** argv) {
 	const vkcv::DescriptorBindings& imageCombineDescriptorBindings  = imageCombineShaderProgram.getReflectedDescriptors().at(0);
 	vkcv::DescriptorSetLayoutHandle imageCombineDescriptorSetLayout = core.createDescriptorSetLayout(imageCombineDescriptorBindings);
 	vkcv::DescriptorSetHandle       imageCombineDescriptorSet       = core.createDescriptorSet(imageCombineDescriptorSetLayout);
-	vkcv::PipelineHandle            imageCombinePipeline            = core.createComputePipeline(
+	vkcv::ComputePipelineHandle     imageCombinePipeline            = core.createComputePipeline({
 		imageCombineShaderProgram, 
-		{ core.getDescriptorSetLayout(imageCombineDescriptorSetLayout).vulkanHandle });
+		{ core.getDescriptorSetLayout(imageCombineDescriptorSetLayout).vulkanHandle }
+	});
 
 	vkcv::DescriptorWrites imageCombineDescriptorWrites;
 	imageCombineDescriptorWrites.storageImageWrites = {
@@ -121,9 +123,10 @@ int main(int argc, const char** argv) {
 	const vkcv::DescriptorBindings& presentDescriptorBindings   = presentShaderProgram.getReflectedDescriptors().at(0);
 	vkcv::DescriptorSetLayoutHandle presentDescriptorSetLayout  = core.createDescriptorSetLayout(presentDescriptorBindings);
 	vkcv::DescriptorSetHandle       presentDescriptorSet        = core.createDescriptorSet(presentDescriptorSetLayout);
-	vkcv::PipelineHandle            presentPipeline             = core.createComputePipeline(
+	vkcv::ComputePipelineHandle     presentPipeline             = core.createComputePipeline({
 		presentShaderProgram,
-		{ core.getDescriptorSetLayout(presentDescriptorSetLayout).vulkanHandle });
+		{ core.getDescriptorSetLayout(presentDescriptorSetLayout).vulkanHandle }
+	});
 
 	// clear shader
 	vkcv::ShaderProgram clearShaderProgram{};
@@ -135,9 +138,10 @@ int main(int argc, const char** argv) {
 	const vkcv::DescriptorBindings& imageClearDescriptorBindings    = clearShaderProgram.getReflectedDescriptors().at(0);
 	vkcv::DescriptorSetLayoutHandle imageClearDescriptorSetLayout   = core.createDescriptorSetLayout(imageClearDescriptorBindings);
 	vkcv::DescriptorSetHandle       imageClearDescriptorSet         = core.createDescriptorSet(imageClearDescriptorSetLayout);
-	vkcv::PipelineHandle            imageClearPipeline              = core.createComputePipeline(
+	vkcv::ComputePipelineHandle     imageClearPipeline              = core.createComputePipeline({
 		clearShaderProgram,
-		{ core.getDescriptorSetLayout(imageClearDescriptorSetLayout).vulkanHandle });
+		{ core.getDescriptorSetLayout(imageClearDescriptorSetLayout).vulkanHandle }
+	});
 
 	vkcv::DescriptorWrites imageClearDescriptorWrites;
 	imageClearDescriptorWrites.storageImageWrites = {
@@ -197,9 +201,10 @@ int main(int argc, const char** argv) {
 		vkcv::StorageImageDescriptorWrite(3, outputImage)};
 	core.writeDescriptorSet(traceDescriptorSet, traceDescriptorWrites);
 
-	vkcv::PipelineHandle tracePipeline = core.createComputePipeline(
-		traceShaderProgram, 
-		{ core.getDescriptorSetLayout(traceDescriptorSetLayout).vulkanHandle });
+	vkcv::ComputePipelineHandle tracePipeline = core.createComputePipeline({
+		traceShaderProgram,
+		{ core.getDescriptorSetLayout(traceDescriptorSetLayout).vulkanHandle }
+	});
 
 	if (!tracePipeline)
 	{
@@ -207,7 +212,7 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	vkcv::camera::CameraManager cameraManager(window);
+	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
@@ -225,10 +230,10 @@ int main(int argc, const char** argv) {
 	uint32_t widthPrevious  = initialWidth;
 	uint32_t heightPrevious = initialHeight;
 
-	vkcv::gui::GUI gui(core, window);
+	vkcv::gui::GUI gui(core, windowHandle);
 
 	bool renderUI = true;
-	window.e_key.add([&renderUI](int key, int scancode, int action, int mods) {
+	core.getWindow(windowHandle).e_key.add([&renderUI](int key, int scancode, int action, int mods) {
 		if (key == GLFW_KEY_I && action == GLFW_PRESS) {
 			renderUI = !renderUI;
 		}
@@ -237,12 +242,12 @@ int main(int argc, const char** argv) {
 	glm::vec3   skyColor            = glm::vec3(0.2, 0.7, 0.8);
 	float       skyColorMultiplier  = 1;
 
-	while (window.isWindowOpen())
+	while (vkcv::Window::hasOpenWindow())
 	{
 		vkcv::Window::pollEvents();
 
 		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
-		if (!core.beginFrame(swapchainWidth, swapchainHeight)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
 			continue;
 		}
 
@@ -443,7 +448,7 @@ int main(int argc, const char** argv) {
 			gui.endGUI();
 		}
 
-		core.endFrame();
+		core.endFrame(windowHandle);
 
 		frameIndex++;
 	}
