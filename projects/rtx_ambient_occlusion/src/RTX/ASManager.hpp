@@ -69,10 +69,10 @@ namespace vkcv::rtx {
          * @param cmdPool The command pool.
          * @return The allocated command buffer.
          */
-        vk::CommandBuffer allocateAndBeginCommandBuffer( vk::CommandPool cmdPool);
+        vk::CommandBuffer createAndBeginCommandBuffer( vk::CommandPool cmdPool);
 
         /**
-         * @brief Ends recording, submits, waits, and then frees the @p commandBuffer.
+         * @brief Ends the @p commandBuffer,submits it and waits. Afterwards frees the @p commandBuffer.
          * @param commandPool The command pool.
          * @param commandBuffer The command buffer.
          */

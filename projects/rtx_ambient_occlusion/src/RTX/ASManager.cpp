@@ -56,7 +56,7 @@ namespace vkcv::rtx {
         return commandPool;
     };
 
-    vk::CommandBuffer ASManager::allocateAndBeginCommandBuffer(vk::CommandPool commandPool)
+    vk::CommandBuffer ASManager::createAndBeginCommandBuffer(vk::CommandPool commandPool)
     {
         vk::CommandBufferAllocateInfo commandBufferAllocateInfo{};
         commandBufferAllocateInfo.setLevel(vk::CommandBufferLevel::ePrimary);
@@ -148,7 +148,7 @@ namespace vkcv::rtx {
         submitInfo.queueType = QueueType::Graphics;
 
         vk::CommandPool commandPool= createCommandPool();
-        vk::CommandBuffer commandBuffer= allocateAndBeginCommandBuffer(commandPool);
+        vk::CommandBuffer commandBuffer= createAndBeginCommandBuffer(commandPool);
         vk::BufferCopy bufferCopy;
         bufferCopy.size = cpuBuffer.deviceSize;
         commandBuffer.copyBuffer(cpuBuffer.vulkanHandle, gpuBuffer.vulkanHandle, 1, &bufferCopy);
@@ -165,7 +165,7 @@ namespace vkcv::rtx {
         vk::DeviceAddress vertexBufferAddress = getBufferDeviceAddress(vertexBuffer.vulkanHandle);
         vk::DeviceAddress indexBufferAddress = getBufferDeviceAddress(indexBuffer.vulkanHandle);
 
-        // Specify triangle mesh data
+        // triangle mesh data
         vk::AccelerationStructureGeometryTrianglesDataKHR asTriangles(
                 vk::Format::eR32G32B32Sfloat,   // vertex format
                 vertexBufferAddress, // vertex buffer address (vk::DeviceOrHostAddressConstKHR)
@@ -176,14 +176,14 @@ namespace vkcv::rtx {
                 {} // transformData (vk::DeviceOrHostAddressConstKHR)
         );
 
-        // Encapsulate geometry data
+        // Geometry data
         vk::AccelerationStructureGeometryKHR asGeometry(
                 vk::GeometryTypeKHR::eTriangles, // The geometry type, e.g. triangles, AABBs, instances
                 asTriangles, // the geometry data
                 vk::GeometryFlagBitsKHR::eOpaque // This flag disables any-hit shaders to increase ray tracing performance
         );
 
-        // List ranges of data for access
+        // Ranges for data lists
         vk::AccelerationStructureBuildRangeInfoKHR asRangeInfo(
                 uint32_t(indexCount / 3), // the primitiveCount (uint32_t)
                 0, // primitiveOffset (uint32_t)
@@ -191,8 +191,7 @@ namespace vkcv::rtx {
                 0  // transformOffset (uint32_t)
         );
 
-        // This struct points to an array of geometries to be built into the
-        // BLAS, as well as build settings.
+        // Settings and array of geometries to build into BLAS
         vk::AccelerationStructureBuildGeometryInfoKHR asBuildInfo(
                 vk::AccelerationStructureTypeKHR::eBottomLevel, // type of the AS: bottom vs. top
                 vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace, // some flags for different purposes, e.g. efficiency
@@ -203,7 +202,7 @@ namespace vkcv::rtx {
                 &asGeometry // the next input entry would be a pointer to a pointer to geometries. Maybe geometryCount depends on the next entry?
         );
 
-        // Query the worst-case amount of memory needed for the AS
+        // Calculate memory needed for AS
         vk::AccelerationStructureBuildSizesInfoKHR asBuildSizesInfo;
         m_device->getAccelerationStructureBuildSizesKHR(
                 vk::AccelerationStructureBuildTypeKHR::eDevice, // build on device instead of host
@@ -246,7 +245,7 @@ namespace vkcv::rtx {
         }
         asBuildInfo.setDstAccelerationStructure(blasKHR);
 
-        // Allocate the scratch buffer holding temporary build data.
+        // Create temporary scratch buffer used for building the AS
         RTXBuffer scratchBuffer;
         scratchBuffer.bufferType = RTXBufferType::SCRATCH;
         scratchBuffer.deviceSize = asBuildSizesInfo.buildScratchSize;
@@ -258,13 +257,11 @@ namespace vkcv::rtx {
 
         asBuildInfo.setScratchData(getBufferDeviceAddress(scratchBuffer.vulkanHandle));
 
-        // Since Vulkan requries an array of pointers to
-        // VkAccelerationStructureBuildRangeInfoKHR objects, get a pointer to
-        // rangeInfo:
+        // Pointer to rangeInfo, used later for build
         vk::AccelerationStructureBuildRangeInfoKHR* pointerToRangeInfo = &asRangeInfo;
 
         vk::CommandPool commandPool = createCommandPool();
-        vk::CommandBuffer commandBuffer = allocateAndBeginCommandBuffer(commandPool);
+        vk::CommandBuffer commandBuffer = createAndBeginCommandBuffer(commandPool);
 
         commandBuffer.buildAccelerationStructuresKHR(1, &asBuildInfo, &pointerToRangeInfo, m_rtxDispatcher);
 
@@ -336,7 +333,7 @@ namespace vkcv::rtx {
         barrier.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite);
         barrier.setDstAccessMask(vk::AccessFlagBits::eAccelerationStructureWriteKHR);
         vk::CommandPool commandPool = createCommandPool();
-        vk::CommandBuffer commandBuffer = allocateAndBeginCommandBuffer(commandPool);
+        vk::CommandBuffer commandBuffer = createAndBeginCommandBuffer(commandPool);
         commandBuffer.pipelineBarrier(
             vk::PipelineStageFlagBits::eTransfer,
             vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
@@ -359,7 +356,7 @@ namespace vkcv::rtx {
             bufferInstancesAddress    // vk::DeviceOrHostAddressConstKHR data_ = {}
         );
 
-        // Like creating the BLAS, point to the geometry (in this case, the instances) in a polymorphic object.
+        // Geometry, in this case instances of BLAS
         vk::AccelerationStructureGeometryKHR asGeometry(
             vk::GeometryTypeKHR::eInstances,    // vk::GeometryTypeKHR geometryType_ = vk::GeometryTypeKHR::eTriangles
             asInstances,    // vk::AccelerationStructureGeometryDataKHR geometry_ = {}
@@ -377,7 +374,7 @@ namespace vkcv::rtx {
             &asGeometry // the next input entry would be a pointer to a pointer to geometries. Maybe geometryCount depends on the next entry?
         );
 
-        // Query the worst-case AS size and scratch space size based on the number of instances (in this case, 1).
+        // AS size and scratch space size, given by count of instances (1)
         vk::AccelerationStructureBuildSizesInfoKHR asSizeInfo;
         m_core->getContext().getDevice().getAccelerationStructureBuildSizesKHR(
             vk::AccelerationStructureBuildTypeKHR::eDevice,
@@ -387,7 +384,7 @@ namespace vkcv::rtx {
             m_rtxDispatcher
         );
 
-        // Allocate a buffer for the acceleration structure.
+        // Create buffer for the TLAS
         RTXBuffer tlasBuffer;
         tlasBuffer.bufferType = RTXBufferType::ACCELERATION;
         tlasBuffer.deviceSize = asSizeInfo.accelerationStructureSize;
@@ -397,7 +394,7 @@ namespace vkcv::rtx {
 
         createBuffer(tlasBuffer);
 
-        // Create the acceleration structure object. (Data has not yet been set.)
+        // Create empty TLAS object
         vk::AccelerationStructureCreateInfoKHR asCreateInfo(
             {}, // creation flags
             tlasBuffer.vulkanHandle, // allocated AS buffer.
@@ -413,7 +410,7 @@ namespace vkcv::rtx {
         }
         asBuildInfo.setDstAccelerationStructure(tlas);
 
-        // Allocate the scratch buffer holding temporary build data.
+        // Create temporary scratch buffer used for building the AS
         RTXBuffer tlasScratchBuffer;  // scratch buffer
         tlasScratchBuffer.bufferType = RTXBufferType::ACCELERATION;
         tlasScratchBuffer.deviceSize = asSizeInfo.buildScratchSize;
@@ -426,13 +423,13 @@ namespace vkcv::rtx {
         vk::DeviceAddress tempBuildBufferDataAddress = m_core->getContext().getDevice().getBufferAddressKHR(tempBuildDataBufferDeviceAddressInfo, m_rtxDispatcher);
         asBuildInfo.setScratchData(tempBuildBufferDataAddress);
 
-        // Create a one-element array of pointers to range info objects.
+        // Pointer to rangeInfo, used later for build
         vk::AccelerationStructureBuildRangeInfoKHR* pointerToRangeInfo = &asRangeInfo;
 
         // Build the TLAS.
 
         vk::CommandPool commandPool2 = createCommandPool();
-        vk::CommandBuffer commandBuffer2 = allocateAndBeginCommandBuffer(commandPool2);
+        vk::CommandBuffer commandBuffer2 = createAndBeginCommandBuffer(commandPool2);
         commandBuffer2.buildAccelerationStructuresKHR(1, &asBuildInfo, &pointerToRangeInfo, m_rtxDispatcher);
         submitCommandBuffer(commandPool2, commandBuffer2);
         

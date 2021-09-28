@@ -8,8 +8,8 @@
 
 /**
  * Note: This project is based on the following tutorial https://github.com/Apress/Ray-Tracing-Gems-II/tree/main/Chapter_16.
- * Some code was taken from the tutorial, some code was adjusted to our framework. This includes the shader files as well.
  */
+
 int main(int argc, const char** argv) {
 	const char* applicationName = "RTX Ambient Occlusion";
 
