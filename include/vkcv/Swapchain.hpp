@@ -65,8 +65,8 @@ namespace vkcv
 	
 		/**
 		 * recreates the swapchain
-		 * context
-		 * window
+		 * @param context that holds the device to recreate the swapchain
+		 * @param window that the new swapchain gets bound to
 		 */
 		void updateSwapchain(const Context &context, const Window &window);
 	

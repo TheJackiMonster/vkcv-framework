@@ -133,7 +133,7 @@ namespace vkcv
     }
 
     /**
-     * returns the minImageCount +1 for at least doublebuffering, if it's greater than maxImageCount return maxImageCount
+     * returns the minImageCount +1 for at least double buffering, if it's greater than maxImageCount return maxImageCount
      * @param physicalDevice Vulkan-PhysicalDevice
      * @param surface of the swapchain
      * @return available ImageCount
@@ -151,12 +151,7 @@ namespace vkcv
 
         return imageCount;
     }
-    /**
-     * creates and returns a swapchain with default specs
-     * @param window of the current application
-     * @param context that keeps instance, physicalDevice and a device.
-     * @return swapchain
-     */
+
     Swapchain Swapchain::create(const Window &window, const Context &context) {
         const vk::Instance& instance = context.getInstance();
         const vk::PhysicalDevice& physicalDevice = context.getPhysicalDevice();
@@ -175,22 +170,22 @@ namespace vkcv
         uint32_t chosenImageCount = chooseImageCount(physicalDevice, surface.handle);
 
         vk::SwapchainCreateInfoKHR swapchainCreateInfo(
-                vk::SwapchainCreateFlagsKHR(),  //flags
-                surface.handle,    // surface
-                chosenImageCount,  // minImageCount TODO: how many do we need for our application?? "must be less than or equal to the value returned in maxImageCount" -> 3 for Triple Buffering, else 2 for Double Buffering (should be the standard)
-                chosenSurfaceFormat.format,   // imageFormat
-                chosenSurfaceFormat.colorSpace,   // imageColorSpace
-                chosenExtent,   // imageExtent
-                1,  // imageArrayLayers TODO: should we only allow non-stereoscopic applications? yes -> 1, no -> ? "must be greater than 0, less or equal to maxImageArrayLayers"
-                vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,  // imageUsage TODO: what attachments? only color? depth?
-                vk::SharingMode::eExclusive,    // imageSharingMode TODO: which sharing mode? "VK_SHARING_MODE_EXCLUSIV access exclusive to a single queue family, better performance", "VK_SHARING_MODE_CONCURRENT access from multiple queues"
-                0,  // queueFamilyIndexCount, the number of queue families having access to the image(s) of the swapchain when imageSharingMode is VK_SHARING_MODE_CONCURRENT
-                nullptr,    // pQueueFamilyIndices, the pointer to an array of queue family indices having access to the images(s) of the swapchain when imageSharingMode is VK_SHARING_MODE_CONCURRENT
-                vk::SurfaceTransformFlagBitsKHR::eIdentity, // preTransform, transformations applied onto the image before display
-                vk::CompositeAlphaFlagBitsKHR::eOpaque, // compositeAlpha, TODO: how to handle transparent pixels? do we need transparency? If no -> opaque
-                chosenPresentMode,    // presentMode
-                true,   // clipped
-                nullptr // oldSwapchain
+                vk::SwapchainCreateFlagsKHR(),
+                surface.handle,
+                chosenImageCount,
+                chosenSurfaceFormat.format,
+                chosenSurfaceFormat.colorSpace,
+                chosenExtent,
+                1,
+                vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
+                vk::SharingMode::eExclusive,
+                0,
+                nullptr,
+                vk::SurfaceTransformFlagBitsKHR::eIdentity,
+                vk::CompositeAlphaFlagBitsKHR::eOpaque,
+                chosenPresentMode,
+                true,
+                nullptr
         );
 
         vk::SwapchainKHR swapchain = device.createSwapchainKHR(swapchainCreateInfo);

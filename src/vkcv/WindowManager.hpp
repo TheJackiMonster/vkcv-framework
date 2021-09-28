@@ -19,11 +19,18 @@ namespace vkcv {
 	private:
 		std::vector<Window*> m_windows;
 
+		/**
+		 * destroys a specific window by a given id
+		 * @param id of the window to be destroyed
+		 */
 		void destroyWindowById(uint64_t id);
 
 	public:
 		WindowManager() noexcept;
 
+		/**
+		 * destroys every window
+		 */
 		~WindowManager() noexcept;
 
 		WindowManager(WindowManager &&other) = delete;

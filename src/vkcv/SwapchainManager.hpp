@@ -20,11 +20,18 @@ namespace vkcv {
 
 		Context *m_context;
 
+		/**
+		 * destroys a specific swapchain by a given id
+		 * @param id of the swapchain to be destroyed
+		 */
 		void destroySwapchainById(uint64_t id);
 
 	public:
 		SwapchainManager() noexcept;
 
+		/**
+		 * destroys every swapchain
+		 */
 		~SwapchainManager() noexcept;
 
 		SwapchainManager(SwapchainManager &&other) = delete;
