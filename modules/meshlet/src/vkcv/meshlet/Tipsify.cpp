@@ -18,18 +18,18 @@ namespace vkcv::meshlet {
 
     /**
      * searches for the next VertexIndex that was used before or returns any vertexIndex if no used was found
-     * @param livingTriangles
-     * @param usedVerticeStack
-     * @param usedVerticeCount
-     * @param usedVerticeOffset
-     * @param vertexCount
-     * @param lowestLivingVertexIndex
-     * @param currentTriangleIndex
-     * @param skippedIndices
+     * @param livingVertices vertice that still has a living triangle
+     * @param usedVerticeStack stack of vertices that are recently used
+     * @param usedVerticeCount number of last used vertices that maxes at @param maxUsedVertices
+     * @param usedVerticeOffset the @param usedVerticeStack wraps around and overrides old vertices, this offset keeps the wrapping intact
+     * @param vertexCount total vertex count to terminate correctly
+     * @param lowestLivingVertexIndex vertexIndex with the lowest number
+     * @param currentTriangleIndex index of the currently fanned triangle
+     * @param skippedIndices indices that define a new meshlet, even if they are close in memory
      * @return a VertexIndex to be used as fanningVertexIndex
      */
     int skipDeadEnd(
-            const std::vector<uint8_t> &livingTriangles,
+            const std::vector<uint8_t> &livingVertices,
             const std::vector<uint32_t> &usedVerticeStack,
             int &usedVerticeCount,
             int &usedVerticeOffset,
@@ -43,14 +43,14 @@ namespace vkcv::meshlet {
             // iterate from the latest to the oldest. + maxUsedVertices to always make it a positive number in the range 0 to maxUsedVertices -1
             int nextVertex = usedVerticeStack[mod(--usedVerticeCount)];
 
-            if (livingTriangles[nextVertex] > 0) {
+            if (livingVertices[nextVertex] > 0) {
                 return nextVertex;
             }
         }
         // returns any vertexIndex since no last used has a living triangle
         while (lowestLivingVertexIndex + 1 < vertexCount) {
             lowestLivingVertexIndex++;
-            if (livingTriangles[lowestLivingVertexIndex] > 0) {
+            if (livingVertices[lowestLivingVertexIndex] > 0) {
                 // add index of the vertex to skippedIndices
                 skippedIndices.push_back(static_cast<uint32_t>(currentTriangleIndex * 3));
                 return lowestLivingVertexIndex;
@@ -61,19 +61,19 @@ namespace vkcv::meshlet {
 
     /**
      * searches for the best next candidate as a fanningVertexIndex
-     * @param vertexCount
-     * @param lowestLivingVertexIndex
-     * @param cacheSize
-     * @param possibleCandidates
-     * @param numPossibleCandidates
-     * @param lastTimestampCache
-     * @param currentTimeStamp
-     * @param livingTriangles
-     * @param usedVerticeStack
-     * @param usedVerticeCount
-     * @param usedVerticeOffset
-     * @param currentTriangleIndex
-     * @param skippedIndices
+     * @param vertexCount total vertexCount of the mesh
+     * @param lowestLivingVertexIndex vertexIndex with the lowest number
+     * @param cacheSize number to determine in which range vertices are prioritized to me reused
+     * @param possibleCandidates candidates for the next vertex to be fanned out
+     * @param numPossibleCandidates number of all possible candidates
+     * @param lastTimestampCache number of the last iteration the vertex was used
+     * @param currentTimeStamp current iteration of all vertices
+     * @param livingVertices vertice that still has a living triangle
+     * @param usedVerticeStack stack of vertices that are recently used
+     * @param usedVerticeCount number of last used vertices that maxes at @param maxUsedVertices
+     * @param usedVerticeOffset the @param usedVerticeStack wraps around and overrides old vertices, this offset keeps the wrapping intact
+     * @param currentTriangleIndex index of the currently fanned triangle
+     * @param skippedIndices indices that define a new meshlet, even if they are close in memory
      * @return a VertexIndex to be used as fanningVertexIndex
      */
     int getNextVertexIndex(int vertexCount,
@@ -83,7 +83,7 @@ namespace vkcv::meshlet {
                            int numPossibleCandidates,
                            const std::vector<uint32_t> &lastTimestampCache,
                            int currentTimeStamp,
-                           const std::vector<uint8_t> &livingTriangles,
+                           const std::vector<uint8_t> &livingVertices,
                            const std::vector<uint32_t> &usedVerticeStack,
                            int &usedVerticeCount,
                            int &usedVerticeOffset,
@@ -96,12 +96,12 @@ namespace vkcv::meshlet {
             int vertexIndex = possibleCandidates[j];
 
             // the candidate needs to be not fanned out yet
-            if (livingTriangles[vertexIndex] > 0) {
+            if (livingVertices[vertexIndex] > 0) {
                 int priority = -1;
 
                 // prioritizes recent used vertices, but tries not to pick one that has many triangles -> fills holes better
-                if ( currentTimeStamp - lastTimestampCache[vertexIndex] + 2 * livingTriangles[vertexIndex] <=
-                    cacheSize) {
+                if ( currentTimeStamp - lastTimestampCache[vertexIndex] + 2 * livingVertices[vertexIndex] <=
+					 cacheSize) {
                     priority = currentTimeStamp - lastTimestampCache[vertexIndex];
                 }
                 // select the vertexIndex with the highest priority
@@ -115,14 +115,14 @@ namespace vkcv::meshlet {
         // if no candidate is alive, try and find another one
         if (nextVertexIndex == -1) {
             nextVertexIndex = skipDeadEnd(
-                    livingTriangles,
-                    usedVerticeStack,
-                    usedVerticeCount,
-                    usedVerticeOffset,
-                    vertexCount,
-                    lowestLivingVertexIndex,
-                    currentTriangleIndex,
-                    skippedIndices);
+					livingVertices,
+					usedVerticeStack,
+					usedVerticeCount,
+					usedVerticeOffset,
+					vertexCount,
+					lowestLivingVertexIndex,
+					currentTriangleIndex,
+					skippedIndices);
         }
         return nextVertexIndex;
     }
