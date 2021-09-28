@@ -685,4 +685,20 @@ namespace vkcv {
 		}
 	}
 
+	void ImageManager::updateImageLayoutManual(const vkcv::ImageHandle& handle, const vk::ImageLayout layout) {
+		const uint64_t id = handle.getId();
+
+		if (handle.isSwapchainImage()) {
+			m_swapchainImages[m_currentSwapchainInputImage].m_layout = layout;
+		}
+		else {
+			if (id >= m_images.size()) {
+				vkcv_log(LogLevel::ERROR, "Invalid handle");
+				return;
+			}
+			m_swapchainImages[id].m_layout = layout;
+		}
+		
+	}
+
 }

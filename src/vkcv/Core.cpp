@@ -52,7 +52,7 @@ namespace vkcv
     Core::Core(Context &&context, const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
             m_Context(std::move(context)),
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
-            m_PipelineManager{std::make_unique<GraphicsPipelineManager>(m_Context.m_Device)},
+            m_PipelineManager{std::make_unique<GraphicsPipelineManager>(m_Context.m_Device, m_Context.m_PhysicalDevice)},
             m_ComputePipelineManager{std::make_unique<ComputePipelineManager>(m_Context.m_Device)},
             m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
             m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
@@ -487,7 +487,7 @@ namespace vkcv
 	void Core::recordBeginDebugLabel(const CommandStreamHandle &cmdStream,
 									 const std::string& label,
 									 const std::array<float, 4>& color) {
-#ifndef NDEBUG
+	#ifdef VULKAN_DEBUG_LABELS
 		static PFN_vkCmdBeginDebugUtilsLabelEXT beginDebugLabel = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(
 				m_Context.getDevice().getProcAddr("vkCmdBeginDebugUtilsLabelEXT")
 		);
@@ -506,11 +506,11 @@ namespace vkcv
 		};
 
 		recordCommandsToStream(cmdStream, submitFunction, nullptr);
-#endif
+	#endif
 	}
 	
 	void Core::recordEndDebugLabel(const CommandStreamHandle &cmdStream) {
-#ifndef NDEBUG
+	#ifdef VULKAN_DEBUG_LABELS
 		static PFN_vkCmdEndDebugUtilsLabelEXT endDebugLabel = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(
 				m_Context.getDevice().getProcAddr("vkCmdEndDebugUtilsLabelEXT")
 		);
@@ -524,7 +524,7 @@ namespace vkcv
 		};
 
 		recordCommandsToStream(cmdStream, submitFunction, nullptr);
-#endif
+	#endif
 	}
 	
 	void Core::recordComputeIndirectDispatchToCmdStream(
@@ -781,6 +781,14 @@ namespace vkcv
 		}, nullptr);
 	}
 
+	void Core::prepareImageForAttachmentManually(const vk::CommandBuffer& cmdBuffer, const ImageHandle& image) {
+		transitionRendertargetsToAttachmentLayout({ image }, *m_ImageManager, cmdBuffer);
+	}
+
+	void Core::updateImageLayoutManual(const vkcv::ImageHandle& image, const vk::ImageLayout layout) {
+		m_ImageManager->updateImageLayoutManual(image, layout);
+	}
+
 	void Core::recordImageMemoryBarrier(const CommandStreamHandle& cmdStream, const ImageHandle& image) {
 		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordImageMemoryBarrier(image, cmdBuffer);
@@ -900,7 +908,7 @@ namespace vkcv
 	
 	static void setDebugObjectLabel(const vk::Device& device, const vk::ObjectType& type,
 									uint64_t handle, const std::string& label) {
-#ifndef NDEBUG
+#ifndef VULKAN_DEBUG_LABELS
 		static PFN_vkSetDebugUtilsObjectNameEXT setDebugLabel = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
 				device.getProcAddr("vkSetDebugUtilsObjectNameEXT")
 		);

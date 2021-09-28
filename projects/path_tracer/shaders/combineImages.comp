@@ -1,0 +1,21 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+layout(set=0, binding=0, rgba32f) uniform image2D newImage;
+layout(set=0, binding=1, rgba32f) uniform image2D meanImage;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void main(){
+
+    ivec2 outImageRes = imageSize(meanImage);
+    ivec2 coord       = ivec2(gl_GlobalInvocationID.xy);
+
+    if(any(greaterThanEqual(coord, outImageRes)))
+        return;
+   
+    vec4 colorNew 	= imageLoad(newImage,  coord);
+	vec4 colorMean 	= imageLoad(meanImage, coord);
+
+    imageStore(meanImage, coord, colorNew + colorMean);
+}
