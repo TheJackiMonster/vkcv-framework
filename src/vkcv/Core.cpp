@@ -52,7 +52,7 @@ namespace vkcv
     Core::Core(Context &&context, const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
             m_Context(std::move(context)),
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
-            m_PipelineManager{std::make_unique<GraphicsPipelineManager>(m_Context.m_Device)},
+            m_PipelineManager{std::make_unique<GraphicsPipelineManager>(m_Context.m_Device, m_Context.m_PhysicalDevice)},
             m_ComputePipelineManager{std::make_unique<ComputePipelineManager>(m_Context.m_Device)},
             m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
             m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
@@ -502,6 +502,50 @@ namespace vkcv
 		recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
 	}
 
+
+	void Core::recordRayGenerationToCmdStream(
+		CommandStreamHandle cmdStreamHandle,
+		vk::Pipeline rtxPipeline,
+		vk::PipelineLayout rtxPipelineLayout,
+		vk::StridedDeviceAddressRegionKHR rgenRegion,
+		vk::StridedDeviceAddressRegionKHR rmissRegion,
+		vk::StridedDeviceAddressRegionKHR rchitRegion,
+		vk::StridedDeviceAddressRegionKHR rcallRegion,
+		const std::vector<DescriptorSetUsage>& descriptorSetUsages,
+        const PushConstants& pushConstants,
+		const WindowHandle windowHandle) {
+
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rtxPipeline);
+			for (const auto& usage : descriptorSetUsages) {
+				cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eRayTracingKHR,
+					rtxPipelineLayout,
+					usage.setLocation,
+					{ usage.vulkanHandle },
+					usage.dynamicOffsets
+				);
+			}
+
+			if (pushConstants.getSizePerDrawcall() > 0) {
+				cmdBuffer.pushConstants(
+					rtxPipelineLayout,
+					(vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR | vk::ShaderStageFlagBits::eRaygenKHR), // TODO: add Support for eAnyHitKHR, eCallableKHR, eIntersectionKHR
+					0,
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getData());
+			}
+			
+			auto m_rtxDispatcher = vk::DispatchLoaderDynamic((PFN_vkGetInstanceProcAddr)m_Context.getInstance().getProcAddr("vkGetInstanceProcAddr"));
+			m_rtxDispatcher.init(m_Context.getInstance());
+
+			cmdBuffer.traceRaysKHR(&rgenRegion,&rmissRegion,&rchitRegion,&rcallRegion,
+									getWindow(windowHandle).getWidth(), getWindow(windowHandle).getHeight(),1, m_rtxDispatcher);
+
+		};
+		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);
+    }
+
 	void Core::recordComputeDispatchToCmdStream(
 		CommandStreamHandle cmdStreamHandle,
 		ComputePipelineHandle computePipeline,
@@ -540,7 +584,7 @@ namespace vkcv
 	void Core::recordBeginDebugLabel(const CommandStreamHandle &cmdStream,
 									 const std::string& label,
 									 const std::array<float, 4>& color) {
-#ifndef NDEBUG
+	#ifdef VULKAN_DEBUG_LABELS
 		static PFN_vkCmdBeginDebugUtilsLabelEXT beginDebugLabel = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(
 				m_Context.getDevice().getProcAddr("vkCmdBeginDebugUtilsLabelEXT")
 		);
@@ -559,11 +603,11 @@ namespace vkcv
 		};
 
 		recordCommandsToStream(cmdStream, submitFunction, nullptr);
-#endif
+	#endif
 	}
 	
 	void Core::recordEndDebugLabel(const CommandStreamHandle &cmdStream) {
-#ifndef NDEBUG
+	#ifdef VULKAN_DEBUG_LABELS
 		static PFN_vkCmdEndDebugUtilsLabelEXT endDebugLabel = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(
 				m_Context.getDevice().getProcAddr("vkCmdEndDebugUtilsLabelEXT")
 		);
@@ -577,7 +621,7 @@ namespace vkcv
 		};
 
 		recordCommandsToStream(cmdStream, submitFunction, nullptr);
-#endif
+	#endif
 	}
 	
 	void Core::recordComputeIndirectDispatchToCmdStream(
@@ -961,7 +1005,7 @@ namespace vkcv
 	
 	static void setDebugObjectLabel(const vk::Device& device, const vk::ObjectType& type,
 									uint64_t handle, const std::string& label) {
-#ifndef NDEBUG
+#ifndef VULKAN_DEBUG_LABELS
 		static PFN_vkSetDebugUtilsObjectNameEXT setDebugLabel = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
 				device.getProcAddr("vkSetDebugUtilsObjectNameEXT")
 		);

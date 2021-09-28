@@ -15,7 +15,8 @@ namespace vkcv
 				vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
 				vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000),
 				vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic, 1000),
-				vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic, 1000)
+				vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic, 1000),    // for RTX
+				vk::DescriptorPoolSize(vk::DescriptorType::eAccelerationStructureKHR, 1000) // for RTX
 		};
 
 		m_PoolInfo = vk::DescriptorPoolCreateInfo(
@@ -92,9 +93,9 @@ namespace vkcv
 		);
 
         //create the descriptor set's layout from the binding data gathered above
-        vk::DescriptorSetLayout vulkanHandle = VK_NULL_HANDLE;
+        vk::DescriptorSetLayout vulkanHandle;
         vk::DescriptorSetLayoutCreateInfo layoutInfo(vk::DescriptorSetLayoutCreateFlags(), bindingsVector);
-        layoutInfo.setPNext(&bindingFlagsInfo);
+		layoutInfo.setPNext(&bindingFlagsInfo);
 		
         auto result = m_Device.createDescriptorSetLayout(&layoutInfo, nullptr, &vulkanHandle);
         if (result != vk::Result::eSuccess) {
@@ -111,7 +112,7 @@ namespace vkcv
     {
         //create and allocate the set based on the layout provided
         DescriptorSetLayout setLayout = m_DescriptorSetLayouts[setLayoutHandle.getId()];
-        vk::DescriptorSet vulkanHandle = VK_NULL_HANDLE;
+        vk::DescriptorSet vulkanHandle;
         vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), 1, &setLayout.vulkanHandle);
 
         uint32_t sumVariableDescriptorCounts = 0;

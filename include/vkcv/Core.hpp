@@ -351,6 +351,33 @@ namespace vkcv
             const std::vector<MeshShaderDrawcall>&  drawcalls,
 			const std::vector<ImageHandle>&         renderTargets,
 			const WindowHandle&                     windowHandle);
+        
+
+        /**
+         * Records the rtx ray generation to the @p cmdStreamHandle.
+         * Currently only supports @p closestHit, @p rayGen and @c miss shaderstages @c.
+         * @param cmdStreamHandle The command stream handle which receives relevant commands for drawing.
+         * @param rtxPipeline The raytracing pipeline from the RTXModule.
+         * @param rtxPipelineLayout The raytracing pipeline layout from the RTXModule.
+         * @param rgenRegion The shader binding table region for ray generation shaders.
+         * @param rmissRegion The shader binding table region for ray miss shaders.
+         * @param rchitRegion The shader binding table region for ray closest hit shaders.
+         * @param rcallRegion The shader binding table region for callable shaders.
+         * @param descriptorSetUsages The descriptor set usages.
+         * @param pushConstants The push constants.
+         * @param windowHandle The window handle defining in which window to render.
+         */
+        void recordRayGenerationToCmdStream(
+            CommandStreamHandle cmdStreamHandle,
+            vk::Pipeline rtxPipeline,
+            vk::PipelineLayout rtxPipelineLayout,
+            vk::StridedDeviceAddressRegionKHR rgenRegion,
+            vk::StridedDeviceAddressRegionKHR rmissRegion,
+            vk::StridedDeviceAddressRegionKHR rchitRegion,
+            vk::StridedDeviceAddressRegionKHR rcallRegion,
+            const std::vector<DescriptorSetUsage>& descriptorSetUsages,
+            const PushConstants& pushConstants,
+            const WindowHandle windowHandle);
 
 		void recordComputeDispatchToCmdStream(
 			CommandStreamHandle cmdStream,

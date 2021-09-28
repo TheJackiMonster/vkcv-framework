@@ -3,7 +3,7 @@
 
 vec4 blurMomentShadowMap1D(ivec2 coord, ivec2 blurDirection, texture2D srcTexture, sampler depthSampler){
     
-    int blurRadius  = 9;
+    int blurRadius  = 7;
     int minOffset   = -(blurRadius-1) / 2;
     int maxOffset   = -minOffset;
     

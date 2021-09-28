@@ -127,6 +127,8 @@ void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStre
             1
     };
 
+	p_Core->recordBeginDebugLabel(cmdStream, "Bloom downsample", { 1, 1, 1, 1 });
+
     // downsample dispatch of original color attachment
     p_Core->prepareImageForSampling(cmdStream, colorAttachment);
     p_Core->prepareImageForStorage(cmdStream, m_Blur.getHandle());
@@ -182,10 +184,14 @@ void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStre
         // image barrier between mips
         p_Core->recordImageMemoryBarrier(cmdStream, m_Blur.getHandle());
     }
+
+    p_Core->recordEndDebugLabel(cmdStream);
 }
 
 void BloomAndFlares::execUpsamplePipe(const vkcv::CommandStreamHandle &cmdStream)
 {
+    p_Core->recordBeginDebugLabel(cmdStream, "Bloom upsample", { 1, 1, 1, 1 });
+
     // upsample dispatch
     p_Core->prepareImageForStorage(cmdStream, m_Blur.getHandle());
 
@@ -227,10 +233,14 @@ void BloomAndFlares::execUpsamplePipe(const vkcv::CommandStreamHandle &cmdStream
         // image barrier between mips
         p_Core->recordImageMemoryBarrier(cmdStream, m_Blur.getHandle());
     }
+
+    p_Core->recordEndDebugLabel(cmdStream);
 }
 
 void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStream)
 {
+    p_Core->recordBeginDebugLabel(cmdStream, "Lense flare generation", { 1, 1, 1, 1 });
+
     // lens feature generation descriptor writes
     p_Core->prepareImageForSampling(cmdStream, m_Blur.getHandle());
     p_Core->prepareImageForStorage(cmdStream, m_LensFeatures.getHandle());
@@ -295,11 +305,15 @@ void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStr
         // image barrier between mips
         p_Core->recordImageMemoryBarrier(cmdStream, m_LensFeatures.getHandle());
     }
+
+    p_Core->recordEndDebugLabel(cmdStream);
 }
 
 void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStream, const vkcv::ImageHandle& colorAttachment,
     const uint32_t attachmentWidth, const uint32_t attachmentHeight, const glm::vec3& cameraForward)
 {
+    p_Core->recordBeginDebugLabel(cmdStream, "Bloom/lense flare composition", { 1, 1, 1, 1 });
+
     p_Core->prepareImageForSampling(cmdStream, m_Blur.getHandle());
     p_Core->prepareImageForSampling(cmdStream, m_LensFeatures.getHandle());
     p_Core->prepareImageForStorage(cmdStream, colorAttachment);
@@ -329,11 +343,13 @@ void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStrea
 
     // bloom composite dispatch
     p_Core->recordComputeDispatchToCmdStream(
-            cmdStream,
-            m_CompositePipe,
-            compositeDispatchCount,
-            {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_CompositeDescSet).vulkanHandle)},
-			pushConstants);
+        cmdStream,
+        m_CompositePipe,
+        compositeDispatchCount,
+        {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_CompositeDescSet).vulkanHandle)},
+        pushConstants);
+
+    p_Core->recordEndDebugLabel(cmdStream);
 }
 
 void BloomAndFlares::execWholePipeline(const vkcv::CommandStreamHandle &cmdStream, const vkcv::ImageHandle &colorAttachment, 

@@ -89,7 +89,7 @@ namespace vkcv {
 		if (type == BufferType::STAGING) {
 			memoryUsage = vma::MemoryUsage::eCpuToGpu;
 		}
-		
+
 		auto bufferAllocation = allocator.createBuffer(
 				vk::BufferCreateInfo(createFlags, size, usageFlags),
 				vma::AllocationCreateInfo(

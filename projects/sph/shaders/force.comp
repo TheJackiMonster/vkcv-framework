@@ -1,0 +1,95 @@
+#version 450 core
+#extension GL_ARB_separate_shader_objects : enable
+#extension GL_GOOGLE_include_directive : enable
+
+const float PI = 3.1415926535897932384626433832795;
+
+layout(local_size_x = 256) in;
+
+struct Particle
+{
+    vec3 position;
+    float padding;
+    vec3 velocity;
+    float density;
+    vec3 force;
+    float pressure;
+    
+};
+
+layout(std430, binding = 1) readonly buffer buffer_inParticle
+{
+    Particle inParticle[];
+};
+
+layout(std430, binding = 0) writeonly buffer buffer_outParticle
+{
+    Particle outParticle[];
+};
+
+layout( push_constant ) uniform constants{
+    float h;
+    float mass;
+    float gasConstant;
+    float offset;
+    float gravity;
+    float viscosity;
+    float ABSORBTION;
+    float dt;
+    vec3 gravityDir;
+    float particleCount;
+};
+
+float spiky(float r)    
+{
+    return (15.f / (PI * pow(h, 6)) * pow((h-r), 3)) * int(0<=r && r<=h);
+}
+
+float grad_spiky(float r)
+{
+    return -45.f / (PI * pow(h, 6)) * pow((h-r), 2) * int(0<=r && r<=h);
+}
+
+
+
+float laplacian(float r)
+{
+    return (45.f / (PI * pow(h,6)) * (h - r)) * int(0<=r && r<=h);
+}
+
+vec3 pressureForce = vec3(0, 0, 0);
+vec3 viscosityForce = vec3(0, 0, 0); 
+vec3 externalForce = vec3(0, 0, 0);
+
+void main() {
+
+    uint id = gl_GlobalInvocationID.x;
+
+    if(id >= int(particleCount))
+    {
+        return;
+    }
+
+    externalForce = inParticle[id].density * gravity * vec3(-gravityDir.x,gravityDir.y,gravityDir.z);
+
+    for(uint i = 0; i < int(particleCount); i++)  
+    {
+        if (id != i)
+        {
+            vec3 dir = inParticle[id].position - inParticle[i].position;
+            float dist = length(dir);
+            if(dist != 0) 
+            {
+                pressureForce += mass * -(inParticle[id].pressure + inParticle[i].pressure)/(2.f * inParticle[i].density) * grad_spiky(dist) * normalize(dir);
+                viscosityForce += mass * (inParticle[i].velocity - inParticle[id].velocity)/inParticle[i].density * laplacian(dist);
+            }
+        }
+    }
+    viscosityForce *= viscosity;
+
+    outParticle[id].force = externalForce + pressureForce + viscosityForce;
+    outParticle[id].density = inParticle[id].density;
+    outParticle[id].pressure = inParticle[id].pressure;
+    outParticle[id].position = inParticle[id].position;
+    outParticle[id].velocity = inParticle[id].velocity;
+}

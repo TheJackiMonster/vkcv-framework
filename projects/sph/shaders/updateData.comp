@@ -1,0 +1,109 @@
+#version 450 core
+#extension GL_ARB_separate_shader_objects : enable
+#extension GL_GOOGLE_include_directive : enable
+
+layout(local_size_x = 256) in;
+
+struct Particle
+{
+    vec3 position;
+    float padding;
+    vec3 velocity;
+    float density;
+    vec3 force;
+    float pressure;
+    
+};
+
+layout(std430, binding = 0) readonly buffer buffer_inParticle
+{
+    Particle inParticle[];
+};
+
+layout(std430, binding = 1) writeonly buffer buffer_outParticle
+{
+    Particle outParticle[];
+};
+
+layout( push_constant ) uniform constants{
+    float h;
+    float mass;
+    float gasConstant;
+    float offset;
+    float gravity;
+    float viscosity;
+    float ABSORBTION;
+    float dt;
+    vec3 gravityDir;
+    float particleCount;
+};
+
+void main() {
+
+    uint id = gl_GlobalInvocationID.x;
+
+    if(id >= int(particleCount))
+    {
+        return;
+    }
+
+    vec3 accel = inParticle[id].force / inParticle[id].density;
+    vec3 vel_new = inParticle[id].velocity + (dt * accel);
+
+    vec3 out_force = inParticle[id].force;
+    float out_density = inParticle[id].density;
+    float out_pressure = inParticle[id].pressure;
+    
+    if (length(vel_new) > 100.f)
+    {
+        vel_new = normalize(vel_new)*50;
+        out_density = 0.01f;
+        out_pressure = 0.01f;
+        out_force = gravity * vec3(-gravityDir.x,gravityDir.y,gravityDir.z);
+    }
+
+    vec3 pos_new = inParticle[id].position + (dt * vel_new);
+
+    // Überprüfe Randbedingungen x
+    if (inParticle[id].position.x < -1.0)
+    {
+        vel_new = reflect(vel_new.xyz, vec3(1.f,0.f,0.f)) * ABSORBTION;
+        pos_new.x = -1.0 + 0.01f;
+    }
+    else if (inParticle[id].position.x > 1.0)
+    {
+        vel_new = reflect(vel_new,vec3(1.f,0.f,0.f)) * ABSORBTION;
+        pos_new.x = 1.0 - 0.01f;
+    }
+
+    // Überprüfe Randbedingungen y
+    if (inParticle[id].position.y < -1.0)
+    {
+        vel_new = reflect(vel_new,vec3(0.f,1.f,0.f)) * ABSORBTION;
+        pos_new.y = -1.0 + 0.01f;
+
+    }
+    else if (inParticle[id].position.y > 1.0)
+    {
+        vel_new = reflect(vel_new,vec3(0.f,1.f,0.f)) * ABSORBTION;
+        pos_new.y = 1.0 - 0.01f;
+    }
+
+    // Überprüfe Randbedingungen z
+    if (inParticle[id].position.z < -1.0 )
+    {
+        vel_new = reflect(vel_new,vec3(0.f,0.f,1.f)) * ABSORBTION;
+        pos_new.z = -1.0 + 0.01f;
+    }
+    else if (inParticle[id].position.z > 1.0 )
+    {
+        vel_new = reflect(vel_new,vec3(0.f,0.f,1.f)) * ABSORBTION;
+        pos_new.z = 1.0 - 0.01f;
+    }
+
+    outParticle[id].force = out_force;
+    outParticle[id].density = out_density;
+    outParticle[id].pressure = out_pressure;
+    outParticle[id].position = pos_new;
+    outParticle[id].velocity = vel_new;
+}

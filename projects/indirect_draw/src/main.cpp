@@ -123,7 +123,7 @@ void interleaveScene(vkcv::asset::Scene scene,
             glm::vec3 max_pos(-std::numeric_limits<float>::max());
             glm::vec3 min_pos(std::numeric_limits<float>::max());
 
-            for(auto i = 0; i < verticesCount; i++)
+            for(size_t i = 0; i < verticesCount; i++)
             {
                 const size_t positionOffset = positionAttribute.offset + positionStride * i;
                 const size_t normalOffset   = normalAttribute.offset   + normalStride * i;
@@ -230,7 +230,7 @@ void compileMeshForIndirectDraw(vkcv::Core &core,
 			}
             else if(vertexGroup.indexBuffer.type == vkcv::asset::IndexType::UINT16)
             {
-                for(auto i = 0; i < vertexGroup.indexBuffer.data.size(); i = i+2)
+                for (size_t i = 0; i < vertexGroup.indexBuffer.data.size(); i += 2)
                 {
                     uint16_t index16 = *reinterpret_cast<const uint16_t*>(&vertexGroup.indexBuffer.data[i]);
                     uint32_t index32 = static_cast<uint32_t>(index16);

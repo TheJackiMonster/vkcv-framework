@@ -272,7 +272,7 @@ namespace vkcv
 #ifdef __APPLE__
 		featureManager.useExtension("VK_KHR_portability_subset", true);
 #endif
-		
+
 		if (featureManager.useExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME, false)) {
 			featureManager.useFeatures<vk::PhysicalDeviceShaderFloat16Int8Features>(
 					[](vk::PhysicalDeviceShaderFloat16Int8Features& features) {
@@ -337,7 +337,8 @@ namespace vkcv
 				queuePairsCompute,
 				queuePairsTransfer
 		);
-		
+
+		vma::AllocatorCreateFlags vmaFlags;
 		const vma::AllocatorCreateInfo allocatorCreateInfo (
 				vma::AllocatorCreateFlags(),
 				physicalDevice,
