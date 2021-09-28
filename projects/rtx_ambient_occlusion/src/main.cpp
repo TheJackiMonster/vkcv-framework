@@ -89,6 +89,8 @@ int main(int argc, const char** argv) {
 	vk::Pipeline rtxPipeline = rtxModule.getPipeline();
 	vk::PipelineLayout rtxPipelineLayout = rtxModule.getPipelineLayout();
 
+	vkcv::rtx::ShaderBindingTableRegions rtxRegions = rtxModule.createRegions();
+
 	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
@@ -142,8 +144,10 @@ int main(int argc, const char** argv) {
 			cmdStream,
 			rtxPipeline,
 			rtxPipelineLayout,
-            rtxModule.getShaderBindingTableBuffer(),
-			rtxModule.getShaderGroupBaseAlignment(),
+			rtxRegions.rgenRegion,
+			rtxRegions.rmissRegion,
+			rtxRegions.rchitRegion,
+			rtxRegions.rcallRegion,
 			{	vkcv::DescriptorSetUsage(0, core.getDescriptorSet(rtxShaderDescriptorSet).vulkanHandle)},
 			pushConstantsRTX,
 			windowHandle);
