@@ -14,5 +14,5 @@ layout(set=0, binding=2) uniform texture2D baseColorTex[];
 
 void main()
 {
-    outColor = texture(sampler2D(baseColorTex[passDrawIndex], standardSampler), passUV).rgb;
+    outColor = texture(sampler2D(baseColorTex[nonuniformEXT(passDrawIndex)], standardSampler), passUV).rgb;
 }

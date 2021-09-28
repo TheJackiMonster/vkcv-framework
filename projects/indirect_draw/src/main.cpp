@@ -268,6 +268,7 @@ int main(int argc, const char** argv) {
         features.setMultiDrawIndirect(true);
     });
 
+	features.requireExtension(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME);
     features.requireExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
     features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
             VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, [](vk::PhysicalDeviceDescriptorIndexingFeatures &features) {
