@@ -97,8 +97,11 @@ namespace vkcv {
 #endif
         }
 
-        explicit event(bool locked = false) :
-		m_semaphore(locked? 1 : 0) {}
+        explicit event(bool locked = false)
+#ifndef __MINGW32__
+		: m_semaphore(locked? 1 : 0)
+#endif
+		{}
 
         event(const event &other) = delete;
 

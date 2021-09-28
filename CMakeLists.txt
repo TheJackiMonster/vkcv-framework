@@ -42,6 +42,10 @@ if (vkcv_build_debug)
 	endif()
 endif()
 
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "10.0.0"))
+	set(vkcv_flags ${vkcv_flags} " -std=c++2a")
+endif()
+
 # configure everything to use the required dependencies
 include(${vkcv_config}/Libraries.cmake)
 
