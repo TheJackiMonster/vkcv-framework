@@ -765,6 +765,7 @@ int main(int argc, const char** argv) {
 		
 		const std::vector<vkcv::ImageHandle>    prepassRenderTargets = { depthBuffer };
 
+		core.recordBeginDebugLabel(cmdStream, "Depth prepass", { 1, 1, 1, 1 });
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			prepassPass,
@@ -775,6 +776,7 @@ int main(int argc, const char** argv) {
 			windowHandle);
 
 		core.recordImageMemoryBarrier(cmdStream, depthBuffer);
+		core.recordEndDebugLabel(cmdStream);
 		
 		vkcv::PushConstants pushConstants (2 * sizeof(glm::mat4));
 		
@@ -791,6 +793,7 @@ int main(int argc, const char** argv) {
 		
 		const std::vector<vkcv::ImageHandle>    renderTargets = { colorBuffer, depthBuffer };
 
+		core.recordBeginDebugLabel(cmdStream, "Forward rendering", { 1, 1, 1, 1 });
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			forwardPass,
@@ -799,6 +802,7 @@ int main(int argc, const char** argv) {
 			drawcalls,
 			renderTargets,
 			windowHandle);
+		core.recordEndDebugLabel(cmdStream);
 
 		if (renderVoxelVis) {
 			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets, voxelVisualisationMip, windowHandle);
@@ -808,6 +812,7 @@ int main(int argc, const char** argv) {
 		skySettingsPushConstants.appendDrawcall(skySettings);
 
 		// sky
+		core.recordBeginDebugLabel(cmdStream, "Sky", { 1, 1, 1, 1 });
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			skyPass,
@@ -816,6 +821,7 @@ int main(int argc, const char** argv) {
 			{ vkcv::DrawcallInfo(vkcv::Mesh({}, nullptr, 3), {}) },
 			renderTargets,
 			windowHandle);
+		core.recordEndDebugLabel(cmdStream);
 
 		const uint32_t fullscreenLocalGroupSize = 8;
 		
@@ -832,8 +838,8 @@ int main(int argc, const char** argv) {
 		fulsscreenDispatchCount[2] = 1;
 
 		if (usingMsaa) {
+			core.recordBeginDebugLabel(cmdStream, "MSAA resolve", { 1, 1, 1, 1 });
 			if (msaaCustomResolve) {
-
 				core.prepareImageForSampling(cmdStream, colorBuffer);
 				core.prepareImageForStorage(cmdStream, resolvedColorBuffer);
 
@@ -850,6 +856,7 @@ int main(int argc, const char** argv) {
 			else {
 				core.resolveMSAAImage(cmdStream, colorBuffer, resolvedColorBuffer);
 			}
+			core.recordEndDebugLabel(cmdStream);
 		}
 
 		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer, fsrWidth, fsrHeight,
@@ -859,6 +866,7 @@ int main(int argc, const char** argv) {
 		core.prepareImageForStorage(cmdStream, swapBuffer);
 		core.prepareImageForSampling(cmdStream, resolvedColorBuffer);
 		
+		core.recordBeginDebugLabel(cmdStream, "Tonemapping", { 1, 1, 1, 1 });
 		core.recordComputeDispatchToCmdStream(
 			cmdStream, 
 			tonemappingPipeline, 
@@ -871,6 +879,7 @@ int main(int argc, const char** argv) {
 		
 		core.prepareImageForStorage(cmdStream, swapBuffer2);
 		core.prepareImageForSampling(cmdStream, swapBuffer);
+		core.recordEndDebugLabel(cmdStream);
 		
 		if (bilinearUpscaling) {
 			upscaling1.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
@@ -895,6 +904,7 @@ int main(int argc, const char** argv) {
 				glm::ceil(swapchainHeight / static_cast<float>(fullscreenLocalGroupSize))
 		);
 		
+		core.recordBeginDebugLabel(cmdStream, "Post Processing", { 1, 1, 1, 1 });
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				postEffectsPipeline,
@@ -904,6 +914,7 @@ int main(int argc, const char** argv) {
 				).vulkanHandle) },
 				timePushConstants
 		);
+		core.recordEndDebugLabel(cmdStream);
 
 		// present and end
 		core.prepareSwapchainImageForPresent(cmdStream);

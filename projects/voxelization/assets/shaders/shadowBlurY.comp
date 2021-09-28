@@ -16,10 +16,8 @@ void main(){
     if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(outImage)))){
         return;
     }
-    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
-    vec2 pixelSize = vec2(1) / textureSize(sampler2D(srcTexture, depthSampler), 0);
-    
+    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);    
     vec4 moments = blurMomentShadowMap1D(coord, ivec2(0, 1), srcTexture, depthSampler);
-    
+    // moments = texelFetch(sampler2D(srcTexture, depthSampler), coord, 0);
     imageStore(outImage, coord, moments);
 }
