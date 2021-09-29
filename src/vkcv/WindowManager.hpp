@@ -17,6 +17,9 @@ namespace vkcv {
 		friend class Core;
 
 	private:
+		/**
+		 * vector of all managed windows
+		 */
 		std::vector<Window*> m_windows;
 
 		/**

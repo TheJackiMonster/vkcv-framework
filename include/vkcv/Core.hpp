@@ -84,7 +84,7 @@ namespace vkcv
 
 		/**
 		 * sets up swapchain images
-		 * @param swapchainHandles of swapchain
+		 * @param handle Handle of swapchain
 		 */
 		void setSwapchainImages(SwapchainHandle handle);
 
@@ -111,7 +111,7 @@ namespace vkcv
         /**
          * Copy assignment operator of #Core is deleted!
          *
-         * @param other Other instance of #Context
+         * @param other Other instance of Context
          * @return Reference to itself
          */
         Core & operator=(const Core &other) = delete;
@@ -119,11 +119,16 @@ namespace vkcv
         /**
          * Move assignment operator of #Core uses default behavior!
          *
-         * @param other Other instance of #Context
+         * @param other Other instance of Context
          * @return Reference to itself
          */
         Core & operator=(Core &&other) = delete;
 
+		/**
+		 * Returns the context of a Core instance.
+		 *
+		 * @return Current Context
+		 */
         [[nodiscard]]
         const Context &getContext() const;
 
@@ -170,12 +175,11 @@ namespace vkcv
         ComputePipelineHandle createComputePipeline(const ComputePipelineConfig &config);
 
         /**
-         * Creates a basic vulkan render pass using @p config from the render pass config class and returns it using the @p handle.
+         * Creates a basic vulkan render pass using @p config from the render pass config class and returns it.
          * Fixed Functions for pipeline are set with standard values.
          *
          * @param config a render pass config object from the render pass config class
-         * @param handle a handle to return the created vulkan handle
-         * @return True if render pass creation was successful, False if not
+         * @return A handle to represent the created pass
          */
         [[nodiscard]]
         PassHandle createPass(const PassConfig &config);

@@ -80,12 +80,36 @@ namespace vkcv::material {
          * Default constructor to create an invalid material instance.
          */
 		Material();
+		
+		/**
+		 * Destructor to release handles and resources of a material instance.
+		 */
 		~Material() = default;
 		
+		/**
+		 * Copy-constructor to copy a given material instance.
+		 * @param other Other material
+		 */
 		Material(const Material& other) = default;
+		
+		/**
+		 * Move-constructor to move a given material instance.
+		 * @param other Other material
+		 */
 		Material(Material&& other) = default;
 		
+		/**
+		 * Copy-operator to copy a given material instance.
+		 * @param other Other material
+		 * @return Reference to the material
+		 */
 		Material& operator=(const Material& other) = default;
+		
+		/**
+		 * Move-operator to move a given material instance.
+		 * @param other Other material
+		 * @return Reference to the material
+		 */
 		Material& operator=(Material&& other) = default;
 
         /**

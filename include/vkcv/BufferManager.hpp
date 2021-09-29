@@ -135,7 +135,7 @@ namespace vkcv
 		/**
 		 * Record a memory barrier for a buffer, synchronizing subsequent accesses to buffer data
 		 *
-		 * @param handle #BufferHandle of the buffer
+		 * @param handle BufferHandle of the buffer
 		 * @param cmdBuffer Vulkan command buffer to record the barrier into
 		*/
 		void recordBufferMemoryBarrier(
