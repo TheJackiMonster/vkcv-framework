@@ -307,13 +307,30 @@ namespace vkcv
 
 		// TODO: existsDescriptorSetLayout function that checks and returns fitting layout upon existence.
 
-        /** TODO:
-         *   @param setDescriptions
-         *   @return
-         */
+		/**
+		 * @brief Creates a new descriptor set
+		 * 
+		 * @param layoutHandle Handle to the layout that the descriptor set will use
+		 * @return Handle that represents the descriptor set
+		 */
         [[nodiscard]]
         DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle &layoutHandle);
+
+		/**
+		 * @brief Writes resources bindings to a descriptor set
+		 * 
+		 * @param handle Handle of the descriptor set
+		 * @param writes Struct containing the resource bindings to be written
+		 * must be compatible with the descriptor set's layout
+		*/
 		void writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites& writes);
+
+		/**
+		 * @brief Returns information about a descriptor set
+		 * 
+		 * @param handle Handle of the descriptor set
+		 * @return Struct containing the descriptor set's vulkan handle, layout handle and descriptor pool index
+		*/
 		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
 
 
@@ -322,6 +339,17 @@ namespace vkcv
 		*/
 		bool beginFrame(uint32_t& width, uint32_t& height, const WindowHandle &windowHandle);
 
+		/**
+		 * @brief Records drawcalls to a command stream
+		 * 
+		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
+		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
+		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
+		 * @param pushConstants Push constants that are used for the drawcalls, ignored if constant size is set to 0
+		 * @param drawcalls Information about each drawcall, consisting of mesh handle, descriptor set bindings and instance count
+		 * @param renderTargets Image handles that are used as render targets
+		 * @param windowHandle Window handle that is used to retrieve the corresponding swapchain
+		*/
 		void recordDrawcallsToCmdStream(
 			const CommandStreamHandle&      cmdStreamHandle,
 			const PassHandle&               renderpassHandle,
@@ -331,6 +359,17 @@ namespace vkcv
 			const std::vector<ImageHandle>  &renderTargets,
 			const WindowHandle              &windowHandle);
 
+		/**
+		 * @brief Records mesh shader drawcalls to a command stream
+		 * 
+		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
+		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
+		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
+		 * @param pushConstantData Push constants that are used for the drawcalls, ignored if constant size is set to 0
+		 * @param drawcalls Information about each drawcall, consisting of descriptor set bindings and task shader dispatch count
+		 * @param renderTargets Image handles that are used as render targets
+		 * @param windowHandle Window handle that is used to retrieve the corresponding swapchain
+		*/
 		void recordMeshShaderDrawcalls(
 			const CommandStreamHandle&              cmdStreamHandle,
 			const PassHandle&                       renderpassHandle,
@@ -340,6 +379,15 @@ namespace vkcv
 			const std::vector<ImageHandle>&         renderTargets,
 			const WindowHandle&                     windowHandle);
 
+		/**
+		 * @brief Record a compute shader dispatch into a command stream
+		 * 
+		 * @param cmdStream Handle of the command stream that the dispatch is recorded into
+		 * @param computePipeline Handle of the pipeline that is used for the dispatch
+		 * @param dispatchCount How many work groups are dispatched
+		 * @param descriptorSetUsages Descriptor set bindings of the dispatch
+		 * @param pushConstants Push constant data for the dispatch
+		 */
 		void recordComputeDispatchToCmdStream(
 			CommandStreamHandle cmdStream,
             ComputePipelineHandle computePipeline,
@@ -347,12 +395,34 @@ namespace vkcv
 			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
 			const PushConstants& pushConstants);
 		
+		/**
+		 * @brief Record the start of a debug label into a command stream. 
+		 * Debug labels are displayed in GPU debuggers, such as RenderDoc
+		 * 
+		 * @param cmdStream Handle of the command stream that the label start is recorded into
+		 * @param label Label name, which is displayed in a debugger
+		 * @param color Display color for the label in a debugger
+		*/
 		void recordBeginDebugLabel(const CommandStreamHandle &cmdStream,
 								   const std::string& label,
 								   const std::array<float, 4>& color);
 		
+		/**
+		 * @brief Record the end of a debug label into a command stream
+		 * @param cmdStream Handle of the command stream that the label end is recorded into
+		*/
 		void recordEndDebugLabel(const CommandStreamHandle &cmdStream);
 
+		/**
+		 * @brief Record an indirect compute shader dispatch into a command stream
+		 *
+		 * @param cmdStream Handle of the command stream that the indirect dispatch is recorded into
+		 * @param computePipeline Handle of the pipeline that is used for the indirect dispatch
+		 * @param buffer GPU Buffer from which the dispatch counts are read
+		 * @param bufferArgOffset Offset into the GPU Buffer from where the dispatch counts are read
+		 * @param descriptorSetUsages Descriptor set bindings of the indirect dispatch
+		 * @param pushConstants Push constant data for the indirect dispatch
+		 */
 		void recordComputeIndirectDispatchToCmdStream(
 			const CommandStreamHandle               cmdStream,
 			const ComputePipelineHandle             computePipeline,
@@ -380,6 +450,12 @@ namespace vkcv
 			const RecordCommandFunction &record, 
 			const FinishCommandFunction &finish);
 
+		/**
+		 * @brief Create a new command stream
+		 * 
+		 * @param queueType The type of queue to which the command stream will be submitted to
+		 * @return Handle which represents the command stream
+		*/
 		CommandStreamHandle createCommandStream(QueueType queueType);
 
 		void recordCommandsToStream(
