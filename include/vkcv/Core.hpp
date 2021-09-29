@@ -362,10 +362,37 @@ namespace vkcv
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets,
 			const WindowHandle              &windowHandle);
-
+	
+		/**
+		 * @brief Records indirect drawcalls to a command stream
+		 *
+		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
+		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
+		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
+		 * @param pushConstantData Push constants that are used for the drawcalls, ignored if constant size is set to 0
+		 * @param compiledDescriptorSet TODO
+		 * @param compiledMesh TODO
+		 * @param drawcalls Information about each drawcall, consisting of mesh handle, descriptor set bindings and instance count
+		 * @param renderTargets Image handles that are used as render targets
+		 * @param indirectBuffer TODO
+		 * @param drawCount TODO
+		 * @param windowHandle Window handle that is used to retrieve the corresponding swapchain
+		*/
+		void recordIndexedIndirectDrawcallsToCmdStream(
+				const CommandStreamHandle                           cmdStreamHandle,
+				const PassHandle                                    renderpassHandle,
+				const GraphicsPipelineHandle                        &pipelineHandle,
+				const PushConstants                                 &pushConstantData,
+                const vkcv::DescriptorSetHandle                     &compiledDescriptorSet,
+				const vkcv::Mesh                                    &compiledMesh,
+				const std::vector<ImageHandle>                      &renderTargets,
+				const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
+				const uint32_t                                      drawCount,
+				const WindowHandle                                  &windowHandle);
+		
 		/**
 		 * @brief Records mesh shader drawcalls to a command stream
-		 * 
+		 *
 		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
 		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
 		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
@@ -382,6 +409,32 @@ namespace vkcv
             const std::vector<MeshShaderDrawcall>&  drawcalls,
 			const std::vector<ImageHandle>&         renderTargets,
 			const WindowHandle&                     windowHandle);
+		
+        /**
+         * Records the rtx ray generation to the @p cmdStreamHandle.
+         * Currently only supports @p closestHit, @p rayGen and @c miss shaderstages @c.
+         * @param cmdStreamHandle The command stream handle which receives relevant commands for drawing.
+         * @param rtxPipeline The raytracing pipeline from the RTXModule.
+         * @param rtxPipelineLayout The raytracing pipeline layout from the RTXModule.
+         * @param rgenRegion The shader binding table region for ray generation shaders.
+         * @param rmissRegion The shader binding table region for ray miss shaders.
+         * @param rchitRegion The shader binding table region for ray closest hit shaders.
+         * @param rcallRegion The shader binding table region for callable shaders.
+         * @param descriptorSetUsages The descriptor set usages.
+         * @param pushConstants The push constants.
+         * @param windowHandle The window handle defining in which window to render.
+         */
+        void recordRayGenerationToCmdStream(
+            CommandStreamHandle cmdStreamHandle,
+            vk::Pipeline rtxPipeline,
+            vk::PipelineLayout rtxPipelineLayout,
+            vk::StridedDeviceAddressRegionKHR rgenRegion,
+            vk::StridedDeviceAddressRegionKHR rmissRegion,
+            vk::StridedDeviceAddressRegionKHR rchitRegion,
+            vk::StridedDeviceAddressRegionKHR rcallRegion,
+            const std::vector<DescriptorSetUsage>& descriptorSetUsages,
+            const PushConstants& pushConstants,
+            const WindowHandle windowHandle);
 
 		/**
 		 * @brief Record a compute shader dispatch into a command stream

@@ -28,9 +28,11 @@ void main(){
         z += texelFetch(sampler2DMS(srcTexture, depthSampler), uv, i).r;
     }
     z /= msaaCount;
-    
+    z = 2 * z - 1;	// algorithm expects depth in range [-1:1]
+	
     float   z2                  = z*z;   
     vec4    moments             = vec4(z, z2, z2*z, z2*z2);
     vec4    momentsQuantized    = quantizeMoments(moments);
+	
     imageStore(outImage, uv, momentsQuantized);
 }

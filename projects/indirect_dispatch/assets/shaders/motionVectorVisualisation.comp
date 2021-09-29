@@ -21,7 +21,10 @@ void main(){
     if(any(greaterThanEqual(coord, outImageRes)))
         return;
 
-    vec2 motionVector           = texelFetch(sampler2D(inMotion, textureSampler), coord / motionTileSize, 0).rg;
+    vec2    uv              = (coord + 0.5) / vec2(outImageRes);
+    ivec2   inTextureRes    = textureSize(sampler2D(inMotion, textureSampler), 0);
+    
+    vec2 motionVector           = texelFetch(sampler2D(inMotion, textureSampler), ivec2(uv * inTextureRes), 0).rg;
     vec2 motionVectorNormalized = clamp(motionVector / range, -1, 1);
     
     vec2 color  = motionVectorNormalized * 0.5 + 0.5;

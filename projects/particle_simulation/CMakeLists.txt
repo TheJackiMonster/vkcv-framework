@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(particle_simulation)
 
 # setting c++ standard for the project
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # this should fix the execution path to load local files from the project

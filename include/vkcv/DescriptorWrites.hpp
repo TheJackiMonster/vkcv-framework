@@ -4,12 +4,13 @@
 
 namespace vkcv {
 	struct SampledImageDescriptorWrite {
-		inline SampledImageDescriptorWrite(uint32_t binding, ImageHandle image, uint32_t mipLevel = 0, bool useGeneralLayout = false)
-		    : binding(binding), image(image), mipLevel(mipLevel), useGeneralLayout(useGeneralLayout) {};
+		inline SampledImageDescriptorWrite(uint32_t binding, ImageHandle image, uint32_t mipLevel = 0, bool useGeneralLayout = false, uint32_t arrayIndex = 0)
+		: binding(binding), image(image), mipLevel(mipLevel), useGeneralLayout(useGeneralLayout), arrayIndex(arrayIndex) {};
 		uint32_t	binding;
 		ImageHandle	image;
 		uint32_t    mipLevel;
 		bool        useGeneralLayout;
+		uint32_t    arrayIndex;
 	};
 
 	struct StorageImageDescriptorWrite {
@@ -37,11 +38,20 @@ namespace vkcv {
 		SamplerHandle	sampler;
 	};
 
+	/**
+	 * @brief Only used for RTX. Used to bind the Acceleration Structure.
+	 */
+	struct AccelerationDescriptorWrite {
+	    inline AccelerationDescriptorWrite(uint32_t binding) : binding(binding) {};
+	    uint32_t    binding;
+	};
+
 	struct DescriptorWrites {
 		std::vector<SampledImageDescriptorWrite>		sampledImageWrites;
 		std::vector<StorageImageDescriptorWrite>		storageImageWrites;
 		std::vector<BufferDescriptorWrite>	    		uniformBufferWrites;
 		std::vector<BufferDescriptorWrite>	    		storageBufferWrites;
 		std::vector<SamplerDescriptorWrite>			    samplerWrites;
+		std::vector<AccelerationDescriptorWrite>        accelerationWrites;
 	};
 }
