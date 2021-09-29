@@ -433,7 +433,7 @@ namespace vkcv
 
 		/**
 		 * @brief end recording and present image
-		*/
+		 */
 		void endFrame( const WindowHandle& windowHandle );
 
 		/**
@@ -455,37 +455,124 @@ namespace vkcv
 		 * 
 		 * @param queueType The type of queue to which the command stream will be submitted to
 		 * @return Handle which represents the command stream
-		*/
+		 */
 		CommandStreamHandle createCommandStream(QueueType queueType);
 
+		/**
+		 * @brief Record commands to a command stream by providing a function
+		 * 
+		 * @param cmdStreamHandle Handle of the command stream to record to
+		 * @param record Recording function
+		 * @param finish Finish function, called after execution of commands is finished
+		 */
 		void recordCommandsToStream(
 			const CommandStreamHandle   cmdStreamHandle,
 			const RecordCommandFunction &record,
 			const FinishCommandFunction &finish);
 
+		/**
+		 * @brief Submit command stream to GPU for actual execution
+		 * 
+		 * @param handle command stream to submit
+		 */
 		void submitCommandStream(const CommandStreamHandle& handle);
-		void prepareSwapchainImageForPresent(const CommandStreamHandle& handle);
-		void prepareImageForSampling(const CommandStreamHandle& cmdStream, const ImageHandle& image);
-		void prepareImageForStorage(const CommandStreamHandle& cmdStream, const ImageHandle& image);
 
-		// normally layout transitions for attachments are handled by the core
-		// however for manual vulkan use, e.g. ImGui integration, this function is exposed
-		// this is also why the command buffer is passed directly, instead of the command stream handle
+		/**
+		 * @brief Prepare swapchain image for presentation to screen.
+		 * Handles internal state such as image format, also acts as a memory barrier
+		 * 
+		 * @param handle Handle of the command stream to record the preparation commands to
+		 */
+		void prepareSwapchainImageForPresent(const CommandStreamHandle& handle);
+
+		/**
+		 * @brief Prepare image for use as a sampled image.
+		 * Handles internal state such as image format, also acts as a memory barrier
+		 * 
+		 * @param cmdStream Handle of the command stream to record the preparation commands to
+		 * @param image Handle of the image to prepare
+		 */
+		void prepareImageForSampling(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+
+		/**
+		 * @brief Prepare image for use as a storage image.
+		 * Handles internal state such as image format, also acts as a memory barrier
+		 *
+		 * @param cmdStream Handle of the command stream to record the preparation commands to
+		 * @param image Handle of the image to prepare
+		 */
+		void prepareImageForStorage(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+		
+		/**
+		 * @brief Manual trigger to record commands to prepare an image for use as an attachment
+		 *
+		 * normally layout transitions for attachments are handled by the core
+		 * however for manual vulkan use, e.g. ImGui integration, this function is exposed
+		 * this is also why the command buffer is passed directly, instead of the command stream handle
+		 * 
+		 * @param cmdBuffer The vulkan command buffer to record to
+		 * @param image Handle of the image to prepare
+		 */
 		void prepareImageForAttachmentManually(const vk::CommandBuffer& cmdBuffer, const ImageHandle& image);
 
-		// if manual vulkan work, e.g. ImGui integration, changes an image layout this function must be used
-		// to update the internal image state
+		/**
+		 * @brief Indicate an external change of an image's layout
+		 * 
+		 * if manual vulkan work, e.g. ImGui integration, changes an image layout this function must be used
+		 * to update the internal image state
+		 * 
+		 * @param image Handle of the image whose layout was changed
+		 * @param layout The current layout of the image
+		*/
 		void updateImageLayoutManual(const vkcv::ImageHandle& image, const vk::ImageLayout layout);
 
+		/**
+		 * @brief Records a memory barrier to synchronize subsequent accesses to the image's data
+		 * 
+		 * @param cmdStream Handle of the command stream to record the barrier to
+		 * @param image Handle of the image the barrier belongs to
+		 */
 		void recordImageMemoryBarrier(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+
+		/**
+		 * @brief Records a buffer barrier to synchronize subsequent accesses to the buffer's data
+		 * 
+		 * @param cmdStream Handle of the command stream to record the barrier to
+		 * @param buffer Handle of the buffer the barrier belongs to
+		 */
 		void recordBufferMemoryBarrier(const CommandStreamHandle& cmdStream, const BufferHandle& buffer);
+
+		/**
+		 * @brief Resolve a source MSAA image into a destination image for further use
+		 * 
+		 * @param cmdStream Handle of the command stream to record the resolve to
+		 * @param src The MSAA image that is resolved
+		 * @param dst The target non-MSAA image that is resolved into
+		 */
 		void resolveMSAAImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst);
 
+		/**
+		 * @return Vulkan image view of the current swapchain image
+		 */
 		[[nodiscard]]
 		vk::ImageView getSwapchainImageView() const;
 	
+		/**
+		 * @brief Records a generic memory barrier to a command stream
+		 * 
+		 * @param cmdStream Handle of the command stream the barrier is recorded to
+		 */
 		void recordMemoryBarrier(const CommandStreamHandle& cmdStream);
 		
+		/**
+		 * @brief Record a blit (bit block image transfer) of a source image into a destination image, 
+		 * mip 0 is used for both
+		 * 
+		 * @param cmdStream Handle of the command stream the blit operation is recorded into
+		 * @param src The source image that is read from
+		 * @param dst The destination image that is written into
+		 * @param filterType The type of interpolation that is used
+		 */
 		void recordBlitImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst,
 							 SamplerFilterType filterType);
 	
