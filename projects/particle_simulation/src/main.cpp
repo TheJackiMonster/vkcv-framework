@@ -22,7 +22,7 @@ int main(int argc, const char **argv) {
             {vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
 			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
     );
-	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
     vkcv::Window& window = core.getWindow(windowHandle);
 	vkcv::camera::CameraManager cameraManager(window);
 
@@ -61,7 +61,7 @@ int main(int argc, const char **argv) {
 			shaderPathFragment = "shaders/shader_space.frag";
     	} else
 		if (strcmp(argv[i], "--water") == 0) {
-			shaderPathCompute = "shaders/shader_water.comp";
+			shaderPathCompute = "shaders/shader_water1.comp";
 			shaderPathFragment = "shaders/shader_water.frag";
 		} else
 		if (strcmp(argv[i], "--gravity") == 0) {

@@ -101,7 +101,7 @@ int main(int argc, const char** argv) {
 
 	// since we only use one descriptor set (namely, desc set 0), directly address it
 	// recreate copies of the bindings and the handles (to check whether they are properly reused instead of actually recreated)
-	std::unordered_map<uint32_t, vkcv::DescriptorBinding> set0Bindings = firstMeshProgram.getReflectedDescriptors().at(0);
+	const vkcv::DescriptorBindings& set0Bindings = firstMeshProgram.getReflectedDescriptors().at(0);
     auto set0BindingsExplicitCopy = set0Bindings;
 
 	vkcv::DescriptorSetLayoutHandle setLayoutHandle = core.createDescriptorSetLayout(set0Bindings);

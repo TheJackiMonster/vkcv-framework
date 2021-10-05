@@ -16,7 +16,7 @@ namespace vkcv {
 		friend class Core;
 	public:
 		// explicit destruction of default constructor
-		Buffer<T>() = delete;
+		Buffer() = delete;
 		
 		[[nodiscard]]
 		const BufferHandle& getHandle() const {
@@ -39,7 +39,7 @@ namespace vkcv {
 		}
 
         [[nodiscard]]
-        const vk::Buffer getVulkanHandle() const {
+		vk::Buffer getVulkanHandle() const {
             return m_manager->getBuffer(m_handle);
         }
 		
@@ -67,7 +67,7 @@ namespace vkcv {
 		const size_t m_count;
 		const BufferMemoryType m_memoryType;
 		
-		Buffer<T>(BufferManager* manager, BufferHandle handle, BufferType type, size_t count, BufferMemoryType memoryType) :
+		Buffer(BufferManager* manager, BufferHandle handle, BufferType type, size_t count, BufferMemoryType memoryType) :
 				m_manager(manager),
 				m_handle(handle),
 				m_type(type),

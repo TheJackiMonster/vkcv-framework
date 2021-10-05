@@ -52,7 +52,7 @@ namespace vkcv
     Core::Core(Context &&context, const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
             m_Context(std::move(context)),
             m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
-            m_PipelineManager{std::make_unique<GraphicsPipelineManager>(m_Context.m_Device)},
+            m_PipelineManager{std::make_unique<GraphicsPipelineManager>(m_Context.m_Device, m_Context.m_PhysicalDevice)},
             m_ComputePipelineManager{std::make_unique<ComputePipelineManager>(m_Context.m_Device)},
             m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
             m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
@@ -330,6 +330,103 @@ namespace vkcv
 		recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
 	}
 
+    void Core::recordIndexedIndirectDrawcallsToCmdStream(
+            const CommandStreamHandle                           cmdStreamHandle,
+            const PassHandle                                    renderpassHandle,
+            const GraphicsPipelineHandle                        &pipelineHandle,
+            const PushConstants                                 &pushConstantData,
+            const vkcv::DescriptorSetHandle                     &compiledDescriptorSet,
+            const vkcv::Mesh                                    &compiledMesh,
+            const std::vector<ImageHandle>                      &renderTargets,
+            const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
+            const uint32_t                                      drawCount,
+			const WindowHandle                                  &windowHandle) {
+
+        if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
+            return;
+        }
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
+        const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_SwapchainManager->getSwapchain(swapchainHandle),
+                                                                                    *m_ImageManager);
+        const auto width = widthHeight[0];
+        const auto height = widthHeight[1];
+
+        const vk::RenderPass        renderpass      = m_PassManager->getVkPass(renderpassHandle);
+        const PassConfig            passConfig      = m_PassManager->getPassConfig(renderpassHandle);
+
+        const vk::Pipeline          pipeline        = m_PipelineManager->getVkPipeline(pipelineHandle);
+        const vk::PipelineLayout    pipelineLayout  = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
+        const vk::Rect2D            renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+
+        vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
+        transitionRendertargetsToAttachmentLayout(renderTargets, *m_ImageManager, cmdBuffer);
+
+        const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_SwapchainManager->getSwapchain(swapchainHandle), renderpass,
+                                                              m_Context.m_Device);
+
+        if (!framebuffer) {
+            vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
+            return;
+        }
+
+        SubmitInfo submitInfo;
+        submitInfo.queueType = QueueType::Graphics;
+        submitInfo.signalSemaphores = {m_SyncResources.renderFinished};
+
+        auto submitFunction = [&](const vk::CommandBuffer &cmdBuffer) {
+
+            const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
+
+            const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(),
+                                                    clearValues.data());
+            cmdBuffer.beginRenderPass(beginInfo, {}, {});
+
+            cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
+
+            const GraphicsPipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+            if (pipeConfig.m_UseDynamicViewport) {
+                recordDynamicViewport(cmdBuffer, width, height);
+            }
+
+			if (pushConstantData.getSizePerDrawcall() > 0)
+			{
+				cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eAll,
+					0,
+					pushConstantData.getSizePerDrawcall(),
+					pushConstantData.getDrawcallData(0));
+			}
+
+            vkcv::DescriptorSet descSet = m_DescriptorManager->getDescriptorSet(compiledDescriptorSet);
+
+            cmdBuffer.bindDescriptorSets(
+                    vk::PipelineBindPoint::eGraphics,
+                    pipelineLayout,
+                    0,
+                    descSet.vulkanHandle,
+                    nullptr);
+
+			vk::DeviceSize deviceSize = 0;
+			cmdBuffer.bindVertexBuffers(0, 1, &compiledMesh.vertexBufferBindings[0].buffer,&deviceSize);
+            cmdBuffer.bindIndexBuffer(compiledMesh.indexBuffer, 0, getIndexType(compiledMesh.indexBitCount));
+
+            cmdBuffer.drawIndexedIndirect(
+                    indirectBuffer.getVulkanHandle(),
+                    0,
+                    drawCount,
+                    sizeof(vk::DrawIndexedIndirectCommand));
+
+            cmdBuffer.endRenderPass();
+        };
+
+        auto finishFunction = [framebuffer, this]() {
+            m_Context.m_Device.destroy(framebuffer);
+        };
+
+        recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
+    }
+
 	void Core::recordMeshShaderDrawcalls(
 		const CommandStreamHandle&                          cmdStreamHandle,
 		const PassHandle&                                   renderpassHandle,
@@ -405,6 +502,50 @@ namespace vkcv
 		recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
 	}
 
+
+	void Core::recordRayGenerationToCmdStream(
+		CommandStreamHandle cmdStreamHandle,
+		vk::Pipeline rtxPipeline,
+		vk::PipelineLayout rtxPipelineLayout,
+		vk::StridedDeviceAddressRegionKHR rgenRegion,
+		vk::StridedDeviceAddressRegionKHR rmissRegion,
+		vk::StridedDeviceAddressRegionKHR rchitRegion,
+		vk::StridedDeviceAddressRegionKHR rcallRegion,
+		const std::vector<DescriptorSetUsage>& descriptorSetUsages,
+        const PushConstants& pushConstants,
+		const WindowHandle windowHandle) {
+
+		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rtxPipeline);
+			for (const auto& usage : descriptorSetUsages) {
+				cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eRayTracingKHR,
+					rtxPipelineLayout,
+					usage.setLocation,
+					{ usage.vulkanHandle },
+					usage.dynamicOffsets
+				);
+			}
+
+			if (pushConstants.getSizePerDrawcall() > 0) {
+				cmdBuffer.pushConstants(
+					rtxPipelineLayout,
+					(vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR | vk::ShaderStageFlagBits::eRaygenKHR), // TODO: add Support for eAnyHitKHR, eCallableKHR, eIntersectionKHR
+					0,
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getData());
+			}
+			
+			auto m_rtxDispatcher = vk::DispatchLoaderDynamic((PFN_vkGetInstanceProcAddr)m_Context.getInstance().getProcAddr("vkGetInstanceProcAddr"));
+			m_rtxDispatcher.init(m_Context.getInstance());
+
+			cmdBuffer.traceRaysKHR(&rgenRegion,&rmissRegion,&rchitRegion,&rcallRegion,
+									getWindow(windowHandle).getWidth(), getWindow(windowHandle).getHeight(),1, m_rtxDispatcher);
+
+		};
+		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);
+    }
+
 	void Core::recordComputeDispatchToCmdStream(
 		CommandStreamHandle cmdStreamHandle,
 		ComputePipelineHandle computePipeline,
@@ -443,7 +584,7 @@ namespace vkcv
 	void Core::recordBeginDebugLabel(const CommandStreamHandle &cmdStream,
 									 const std::string& label,
 									 const std::array<float, 4>& color) {
-#ifndef NDEBUG
+	#ifdef VULKAN_DEBUG_LABELS
 		static PFN_vkCmdBeginDebugUtilsLabelEXT beginDebugLabel = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(
 				m_Context.getDevice().getProcAddr("vkCmdBeginDebugUtilsLabelEXT")
 		);
@@ -462,11 +603,11 @@ namespace vkcv
 		};
 
 		recordCommandsToStream(cmdStream, submitFunction, nullptr);
-#endif
+	#endif
 	}
 	
 	void Core::recordEndDebugLabel(const CommandStreamHandle &cmdStream) {
-#ifndef NDEBUG
+	#ifdef VULKAN_DEBUG_LABELS
 		static PFN_vkCmdEndDebugUtilsLabelEXT endDebugLabel = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(
 				m_Context.getDevice().getProcAddr("vkCmdEndDebugUtilsLabelEXT")
 		);
@@ -480,7 +621,7 @@ namespace vkcv
 		};
 
 		recordCommandsToStream(cmdStream, submitFunction, nullptr);
-#endif
+	#endif
 	}
 	
 	void Core::recordComputeIndirectDispatchToCmdStream(
@@ -864,7 +1005,7 @@ namespace vkcv
 	
 	static void setDebugObjectLabel(const vk::Device& device, const vk::ObjectType& type,
 									uint64_t handle, const std::string& label) {
-#ifndef NDEBUG
+#ifndef VULKAN_DEBUG_LABELS
 		static PFN_vkSetDebugUtilsObjectNameEXT setDebugLabel = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
 				device.getProcAddr("vkSetDebugUtilsObjectNameEXT")
 		);

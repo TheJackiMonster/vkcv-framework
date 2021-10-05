@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(vkcv)
 
 # settings c++ standard for the framework
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # checking build type and setting up a variable
@@ -42,8 +42,15 @@ if (vkcv_build_debug)
 	endif()
 endif()
 
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "11.0.0"))
+	list(APPEND vkcv_definitions __NO_SEMAPHORES__)
+endif()
+
 # configure everything to use the required dependencies
 include(${vkcv_config}/Libraries.cmake)
+
+# set macro to enable vulkan debug labels
+list(APPEND vkcv_definitions VULKAN_DEBUG_LABELS)
 
 # set the compile definitions aka preprocessor variables
 add_compile_definitions(${vkcv_definitions})
