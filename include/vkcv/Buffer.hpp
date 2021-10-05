@@ -2,8 +2,9 @@
 /**
  * @authors Lars Hoerttrich, Tobias Frisch
  * @file vkcv/Buffer.hpp
- * @brief template buffer class, template for type security, implemented here because template classes can't be written in .cpp
+ * @brief Template buffer class for type security with buffers.
  */
+ 
 #include "Handles.hpp"
 #include "BufferManager.hpp"
 

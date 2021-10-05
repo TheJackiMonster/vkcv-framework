@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Tobias Frisch
+ * @file vkcv/Event.hpp
+ * @brief Template event struct to synchronize callbacks.
+ */
 
 #include <functional>
 

@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Tobias Frisch
+ * @file vkcv/Features.hpp
+ * @brief Class to manage feature requests.
+ */
 
 #include <functional>
 #include <vector>

@@ -1,9 +1,10 @@
 #pragma once
 /**
  * @authors Lars Hoerttrich
- * @file vkcv/Buffer.hpp
- * @brief class for image handles
+ * @file vkcv/Image.hpp
+ * @brief Class for image handling
  */
+ 
 #include "vulkan/vulkan.hpp"
 
 #include "Handles.hpp"

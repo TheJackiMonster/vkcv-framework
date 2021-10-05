@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Tobias Frisch
+ * @file vkcv/Logging.hpp
+ * @brief Logging macro function to print line of code specific information.
+ */
 
 #include <stdio.h>
 

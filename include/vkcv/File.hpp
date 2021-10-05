@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Tobias Frisch
+ * @file vkcv/File.hpp
+ * @brief Functions to handle generating temporary file paths.
+ */
 
 #include <filesystem>
 

@@ -1,10 +1,27 @@
 #pragma once
+/**
+ * @authors Tobias Frisch
+ * @file vkcv/QueueManager.hpp
+ * @brief Types to manage queues of a device.
+ */
+ 
 #include <vulkan/vulkan.hpp>
 
 namespace vkcv {
 
-	enum class QueueType { Compute, Transfer, Graphics, Present };
+	/**
+	 * Enum class to represent types of queues.
+	 */
+	enum class QueueType {
+		Compute,
+		Transfer,
+		Graphics,
+		Present
+	};
 
+	/**
+	 * Struct to represent a queue, provide its family and its index.
+	 */
 	struct Queue {
 		int familyIndex;
 		int queueIndex;
@@ -12,10 +29,13 @@ namespace vkcv {
 		vk::Queue handle;
 	};
 	
+	/**
+	 * Class to manage queues of a device.
+	 */
 	class QueueManager {
 	public:
 		/**
-		 * creates a QueueManager with the given queue pairs
+		 * Creates a QueueManager with the given queue pairs
 		 * @param device device that holds the queues that are specified in the queue pairs
 		 * @param queuePairsGraphics graphic queue pairs of queueFamily and queueIndex
 		 * @param queuePairsCompute compute queue pairs of queueFamily and queueIndex
@@ -27,28 +47,28 @@ namespace vkcv {
                             std::vector<std::pair<int, int>> &queuePairsCompute,
                             std::vector<std::pair<int, int>> &queuePairsTransfer);
 		/**
-		 * returns the default presentQueue. Recommended to use the presentQueue in the Swapchain
+		 * Returns the default presentQueue. Recommended to use the presentQueue in the Swapchain
 		 * @return a default presentQueue
 		 */
         [[nodiscard]]
         const Queue &getPresentQueue() const;
 
 		/**
-		 * returns all queues with the graphics flag
+		 * Returns all queues with the graphics flag
 		 * @return vector of graphic queues
 		 */
 		[[nodiscard]]
 		const std::vector<Queue> &getGraphicsQueues() const;
 
 		/**
-		 * returns all queues with the compute flag
+		 * Returns all queues with the compute flag
 		 * @return vector of compute queues
 		 */
 		[[nodiscard]]
         const std::vector<Queue> &getComputeQueues() const;
 
 		/**
-		 * returns all queues with the transfer flag
+		 * Returns all queues with the transfer flag
 		 * @return vector of transfer queues
 		 */
 		[[nodiscard]]
@@ -81,7 +101,7 @@ namespace vkcv {
                 std::vector<std::pair<int, int>> &queuePairsTransfer);
 
 		/**
-		 * checks for surface support in the queues
+		 * Checks for surface support in the queues
 		 * @param physicalDevice to get the Queues
 		 * @param surface that needs to checked
 		 * @return
