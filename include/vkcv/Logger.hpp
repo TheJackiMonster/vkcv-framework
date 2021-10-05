@@ -1,7 +1,7 @@
 #pragma once
 /**
  * @authors Tobias Frisch
- * @file vkcv/Logging.hpp
+ * @file vkcv/Logger.hpp
  * @brief Logging macro function to print line of code specific information.
  */
 
