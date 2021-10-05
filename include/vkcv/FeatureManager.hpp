@@ -330,10 +330,11 @@ namespace vkcv {
 		
 		/**
 		 * @brief Request specific features for optional or required usage.
-		 * @tparam T Template parameter to use specific base structure types ( @see checkSupport() ).
+		 * @tparam T Template parameter to use specific base structure types.
 		 * @param featureFunction Function or lambda to request specific features
 		 * @param required True, if the @p features are required, else false
 		 * @return @p True, if the requested features could be activated, else @p false
+		 * @see checkSupport()
 		 */
 		template<typename T>
 		bool useFeatures(const std::function<void(T&)>& featureFunction, bool required = true) {
