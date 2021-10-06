@@ -11,7 +11,7 @@ int main(int argc, const char** argv) {
 	// structs must match shader version
 	struct Material {
 		Material(const glm::vec3& emission, const glm::vec3& albedo, float ks, float roughness, const glm::vec3& f0)
-			: emission(emission), albedo(albedo), ks(ks), roughness(roughness), f0(f0){}
+			: emission(emission), ks(ks), albedo(albedo), roughness(roughness), f0(f0), padding() {}
 
 		glm::vec3   emission;
 		float       ks;
@@ -22,7 +22,8 @@ int main(int argc, const char** argv) {
 	};
 
 	struct Sphere {
-		Sphere(const glm::vec3& c, const float& r, const int m) : center(c), radius(r), materialIndex(m) {}
+		Sphere(const glm::vec3& c, const float& r, const int m)
+			: center(c), radius(r), materialIndex(m), padding() {}
 
 		glm::vec3   center;
 		float       radius;
@@ -32,7 +33,7 @@ int main(int argc, const char** argv) {
 
 	struct Plane {
 		Plane(const glm::vec3& c, const glm::vec3& n, const glm::vec2 e, int m)
-			: center(c), normal(n), extent(e), materialIndex(m) {}
+			: center(c), materialIndex(m), normal(n), padding1(), extent(e), padding3() {}
 
 		glm::vec3   center;
 		uint32_t    materialIndex;

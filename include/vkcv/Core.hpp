@@ -25,9 +25,6 @@
 #include "Event.hpp"
 #include "DrawcallRecording.hpp"
 #include "CommandRecordingFunctionTypes.hpp"
-#include "../../src/vkcv/WindowManager.hpp"
-#include "../../src/vkcv/SwapchainManager.hpp"
-
 
 namespace vkcv
 {

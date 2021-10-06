@@ -16,7 +16,7 @@
 #include "DescriptorManager.hpp"
 #include "WindowManager.hpp"
 #include "ImageLayoutTransitions.hpp"
-#include "vkcv/CommandStreamManager.hpp"
+#include "CommandStreamManager.hpp"
 #include <cmath>
 #include "vkcv/Logger.hpp"
 

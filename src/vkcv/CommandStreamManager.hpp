@@ -53,7 +53,7 @@ namespace vkcv {
 		 * @return Handle that represents the #CommandStream
 		*/
 		CommandStreamHandle createCommandStream(
-			const vk::Queue queue,
+			const vk::Queue &queue,
 			vk::CommandPool cmdPool);
 
 		/**
@@ -62,7 +62,7 @@ namespace vkcv {
 		 * @param handle Command stream handle
 		 * @param record Function that records the vulkan commands
 		*/
-		void recordCommandsToStream(const CommandStreamHandle handle, const RecordCommandFunction record);
+		void recordCommandsToStream(const CommandStreamHandle &handle, const RecordCommandFunction &record);
 
 		/**
 		 * @brief Add a callback to a #CommandStream that is called 
@@ -71,7 +71,7 @@ namespace vkcv {
 		 * @param handle Command stream handle
 		 * @param finish Callback that is called when a command stream submission is finished
 		*/
-		void addFinishCallbackToStream(const CommandStreamHandle handle, const FinishCommandFunction finish);
+		void addFinishCallbackToStream(const CommandStreamHandle &handle, const FinishCommandFunction &finish);
 
 		/**
 		 * @brief Submits a #CommandStream to it's queue and returns after execution is finished
@@ -81,7 +81,7 @@ namespace vkcv {
 		 * @param signalSemaphores Semaphores that are signaled when execution of the recorded commands is finished
 		*/
 		void submitCommandStreamSynchronous(
-			const CommandStreamHandle   handle,
+			const CommandStreamHandle   &handle,
 			std::vector<vk::Semaphore>  &waitSemaphores,
 			std::vector<vk::Semaphore>  &signalSemaphores);
 
@@ -91,7 +91,7 @@ namespace vkcv {
 		 * @param handle Command stream handle
 		 * @return Vulkan handle of the #CommandStream
 		*/
-		vk::CommandBuffer getStreamCommandBuffer(const CommandStreamHandle handle);
+		vk::CommandBuffer getStreamCommandBuffer(const CommandStreamHandle &handle);
 	};
 
 }
