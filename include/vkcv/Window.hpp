@@ -5,7 +5,10 @@
  * @brief Class to represent and manage a window with its input.
  */
 
-#define NOMINMAX
+#ifndef NOMINMAX
+#define NOMINMAX 1
+#endif
+
 #include <algorithm>
 #include <string>
 
