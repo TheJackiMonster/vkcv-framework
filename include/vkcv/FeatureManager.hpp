@@ -1,11 +1,16 @@
 #pragma once
-
-#include "Logger.hpp"
+/**
+ * @authors Tobias Frisch, Artur Wasmut, Vanessa Karolek, Sebastian Gaida
+ * @file vkcv/FeatureManager.hpp
+ * @brief Class to manage feature support and extension usage.
+ */
 
 #include <functional>
 #include <unordered_set>
 #include <vector>
 #include <vulkan/vulkan.hpp>
+
+#include "Logger.hpp"
 
 namespace vkcv {
 

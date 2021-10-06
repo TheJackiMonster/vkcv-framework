@@ -1,12 +1,13 @@
 #pragma once
 /**
- * @authors Mara Vogt, Mark Mints
- * @file src/vkcv/PipelineConfig.hpp
+ * @authors Mara Vogt, Mark Mints, Tobias Frisch
+ * @file vkcv/GraphicsPipelineConfig.hpp
  * @brief Graphics Pipeline Config Struct to hand over required information to Pipeline Creation
  */
 
 #include <vector>
 #include <cstdint>
+
 #include "Handles.hpp"
 #include "ShaderProgram.hpp"
 #include "VertexLayout.hpp"

@@ -5,10 +5,9 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <chrono>
-#include <limits>
 #include <cmath>
 #include <vector>
-#include <string.h>	// memcpy(3)
+#include <cstring>
 #include "safrScene.hpp"
 
 

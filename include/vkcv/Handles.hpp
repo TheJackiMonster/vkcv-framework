@@ -1,6 +1,6 @@
 #pragma once
 /**
- * @authors Artur Wasmut, Tobias Frisch
+ * @authors Tobias Frisch, Alexander Gauggel, Artur Wasmut, Sebastian Gaida, Mark Mints
  * @file vkcv/Handles.hpp
  * @brief Central header file for all possible handles that the framework will hand out.
  */

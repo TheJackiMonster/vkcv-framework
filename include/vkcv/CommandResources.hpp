@@ -1,9 +1,17 @@
 #pragma once
+/**
+ * @authors Alexander Gauggel, Tobias Frisch
+ * @file vkcv/CommandResources.hpp
+ * @brief Support functions to deal with command resources.
+ */
+
 #include <vulkan/vulkan.hpp>
 #include <unordered_set>
-#include "vkcv/QueueManager.hpp"
+
+#include "QueueManager.hpp"
 
 namespace vkcv {
+	
 	struct CommandResources {
 		std::vector<vk::CommandPool> cmdPoolPerQueueFamily;
 	};
@@ -22,4 +30,5 @@ namespace vkcv {
 		vk::Fence							fence,
 		const std::vector<vk::Semaphore>&	waitSemaphores,
 		const std::vector<vk::Semaphore>&	signalSemaphores);
+	
 }

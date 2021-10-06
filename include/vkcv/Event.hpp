@@ -1,6 +1,6 @@
 #pragma once
 /**
- * @authors Tobias Frisch
+ * @authors Tobias Frisch, Sebastian Gaida, Josch Morgenstern, Katharina Krämer
  * @file vkcv/Event.hpp
  * @brief Template event struct to synchronize callbacks.
  */
@@ -141,5 +141,7 @@ namespace vkcv {
         event &operator=(const event &other) = delete;
 
         event &operator=(event &&other) = delete;
+		
     };
+	
 }

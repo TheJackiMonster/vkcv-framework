@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Tobias Frisch, Sebastian Gaida, Vanessa Karolek, Artur Wasmut
+ * @file vkcv/Window.hpp
+ * @brief Class to represent and manage a window with its input.
+ */
 
 #define NOMINMAX
 #include <algorithm>

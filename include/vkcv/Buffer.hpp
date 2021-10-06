@@ -1,14 +1,14 @@
 #pragma once
 /**
- * @authors Lars Hoerttrich, Tobias Frisch
+ * @authors Tobias Frisch, Lars Hoerttrich, Alexander Gauggel
  * @file vkcv/Buffer.hpp
  * @brief Template buffer class for type security with buffers.
  */
- 
-#include "Handles.hpp"
-#include "BufferManager.hpp"
 
 #include <vector>
+
+#include "Handles.hpp"
+#include "BufferManager.hpp"
 
 namespace vkcv {
 

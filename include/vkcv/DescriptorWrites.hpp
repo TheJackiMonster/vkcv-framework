@@ -1,8 +1,16 @@
 #pragma once
-#include "Handles.hpp"
+/**
+ * @authors Artur Wasmut, Tobias Frisch, Alexander Gauggel, Vanessa Karolek
+ * @file vkcv/DescriptorWrites.hpp
+ * @brief Structures to handle descriptor writes.
+ */
+
 #include <vector>
 
+#include "Handles.hpp"
+
 namespace vkcv {
+	
 	struct SampledImageDescriptorWrite {
 		inline SampledImageDescriptorWrite(uint32_t binding, ImageHandle image, uint32_t mipLevel = 0, bool useGeneralLayout = false, uint32_t arrayIndex = 0)
 		: binding(binding), image(image), mipLevel(mipLevel), useGeneralLayout(useGeneralLayout), arrayIndex(arrayIndex) {};
@@ -54,4 +62,5 @@ namespace vkcv {
 		std::vector<SamplerDescriptorWrite>			    samplerWrites;
 		std::vector<AccelerationDescriptorWrite>        accelerationWrites;
 	};
+	
 }

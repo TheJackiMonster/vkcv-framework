@@ -1,8 +1,8 @@
 #pragma once
 /**
- * @authors Simeon Hermann, Leonie Franken
- * @file src/vkcv/ShaderProgram.hpp
- * @brief ShaderProgram class to handle and prepare the shader stages for a graphics pipeline
+ * @authors Artur Wasmut, Leonie Franken, Tobias Frisch, Simeon Hermann, Alexander Gauggel, Mark Mints
+ * @file vkcv/ShaderProgram.hpp
+ * @brief ShaderProgram class to handle and prepare the shader stages for a graphics pipeline.
  */
 
 #include <unordered_map>
@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <vulkan/vulkan.hpp>
 #include <spirv_cross.hpp>
+
 #include "VertexLayout.hpp"
 #include "DescriptorConfig.hpp"
 #include "ShaderStage.hpp"

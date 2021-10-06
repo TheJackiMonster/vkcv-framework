@@ -1,10 +1,17 @@
 #pragma once
+/**
+ * @authors Alexander Gauggel, Artur Wasmut, Mara Vogt, Susanne Dötsch,
+ *          Trevor Hollmann, Leonie Franken, Simeon Hermann, Tobias Frisch
+ * @file vkcv/VertexLayout.hpp
+ * @brief Structures to handle vertex layout, bindings and attachments.
+ */
 
 #include <vector>
 #include <iostream>
 #include <string>
 
-namespace vkcv{
+namespace vkcv {
+	
     enum class VertexAttachmentFormat{
         FLOAT,
         FLOAT2,
@@ -63,4 +70,5 @@ namespace vkcv{
 
         std::vector<VertexBinding> vertexBindings;
     };
+	
 }

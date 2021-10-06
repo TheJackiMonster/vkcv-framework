@@ -1,11 +1,18 @@
 #pragma once
+/**
+ * @authors Alexander Gauggel, Artur Wasmut, Tobias Frisch
+ * @file vkcv/PassConfig.hpp
+ * @brief Enums and structures to handle render pass configuration.
+ */
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
+
 #include "ImageConfig.hpp"
 
 namespace vkcv
 {
+	
     enum class AttachmentLayout
     {
         UNDEFINED,
@@ -50,4 +57,5 @@ namespace vkcv
         std::vector<AttachmentDescription> attachments{};
         Multisampling msaa;
     };
+	
 }

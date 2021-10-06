@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Tobias Frisch, Alexander Gauggel
+ * @file vkcv/PushConstants.hpp
+ * @brief Class to manage push constants for pipeline recording.
+ */
 
 #include <vector>
 #include <vulkan/vulkan.hpp>

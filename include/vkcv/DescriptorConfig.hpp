@@ -1,10 +1,15 @@
 #pragma once
+/**
+ * @authors Artur Wasmut, Tobias Frisch, Simeon Hermann, Alexander Gauggel, Vanessa Karolek
+ * @file vkcv/DescriptorConfig.hpp
+ * @brief Structures to handle descriptor types and bindings.
+ */
 
 #include <unordered_map>
 
-#include "vkcv/Handles.hpp"
-#include "vkcv/ShaderStage.hpp"
-#include "vkcv/Logger.hpp"
+#include "Handles.hpp"
+#include "ShaderStage.hpp"
+#include "Logger.hpp"
 
 namespace vkcv
 {

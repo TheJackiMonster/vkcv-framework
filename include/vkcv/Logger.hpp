@@ -5,7 +5,7 @@
  * @brief Logging macro function to print line of code specific information.
  */
 
-#include <stdio.h>
+#include <cstdio>
 
 namespace vkcv {
 	

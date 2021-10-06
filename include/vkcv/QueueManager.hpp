@@ -1,6 +1,6 @@
 #pragma once
 /**
- * @authors Tobias Frisch
+ * @authors Sebastian Gaida, Tobias Frisch, Alexander Gauggel
  * @file vkcv/QueueManager.hpp
  * @brief Types to manage queues of a device.
  */

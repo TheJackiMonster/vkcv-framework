@@ -1,9 +1,15 @@
 #pragma once
-#include "vulkan/vulkan.hpp"
-#include "Context.hpp"
-#include "vkcv/Window.hpp"
+/**
+ * @authors Sebastian Gaida, Tobias Frisch
+ * @file vkcv/Swapchain.hpp
+ * @brief Class to manage the state of a swapchain and its transitions.
+ */
 
 #include <atomic>
+#include <vulkan/vulkan.hpp>
+
+#include "Context.hpp"
+#include "Window.hpp"
 
 namespace vkcv
 {

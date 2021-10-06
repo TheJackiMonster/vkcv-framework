@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Artur Wasmut, Simeon Hermann, Tobias Frisch, Vanessa Karolek, Alexander Gauggel, Lars Hoerttrich
+ * @file vkcv/ShaderStage.hpp
+ * @brief Enum and struct to operate with multiple shader stages.
+ */
 
 #include <vulkan/vulkan.hpp>
 
@@ -42,4 +47,5 @@ namespace vkcv {
 	constexpr ShaderStages operator~(ShaderStage stage) noexcept {
 		return ~(ShaderStages(stage));
 	}
+	
 }

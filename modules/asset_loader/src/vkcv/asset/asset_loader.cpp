@@ -1,8 +1,8 @@
 #include "vkcv/asset/asset_loader.hpp"
 #include <iostream>
-#include <string.h>	// memcpy(3)
+#include <cstring>	// memcpy(3)
 #include <set>
-#include <stdlib.h>	// calloc(3)
+#include <cstdlib>	// calloc(3)
 #include <vulkan/vulkan.hpp>
 #include <fx/gltf.h>
 #include <stb_image.h>

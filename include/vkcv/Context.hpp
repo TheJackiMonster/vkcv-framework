@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Tobias Frisch, Artur Wasmut, Sebastian Gaida, Alexander Gauggel
+ * @file vkcv/Context.hpp
+ * @brief Class to handle the instance, device, allocator and features of the current context.
+ */
 
 #include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.hpp>

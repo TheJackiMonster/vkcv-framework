@@ -1,11 +1,19 @@
 #pragma once
+/**
+ * @authors Sebastian Gaida, Alexander Gauggel, Artur Wasmut, Tobias Frisch
+ * @file vkcv/DrawcallRecording.hpp
+ * @brief Structures and functions to record drawcalls.
+ */
+
 #include <vulkan/vulkan.hpp>
-#include <vkcv/Handles.hpp>
-#include <vkcv/DescriptorConfig.hpp>
-#include <vkcv/PushConstants.hpp>
+
+#include "Handles.hpp"
+#include "DescriptorConfig.hpp"
+#include "PushConstants.hpp"
 #include "Buffer.hpp"
 
 namespace vkcv {
+	
     struct VertexBufferBinding {
         inline VertexBufferBinding(vk::DeviceSize offset, vk::Buffer buffer) noexcept
             : offset(offset), buffer(buffer) {}
@@ -95,4 +103,5 @@ namespace vkcv {
         const uint32_t                          pushConstantOffset,
         const MeshShaderDrawcall&               drawcall,
         const uint32_t                          firstTask);
+	
 }

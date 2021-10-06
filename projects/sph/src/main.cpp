@@ -3,7 +3,7 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <random>
-#include <time.h>
+#include <ctime>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include "BloomAndFlares.hpp"
 #include "PipelineInit.hpp"

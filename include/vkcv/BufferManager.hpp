@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Tobias Frisch, Alexander Gauggel, Artur Wasmut, Lars Hoerttrich, Sebastian Gaida
+ * @file vkcv/BufferManager.hpp
+ * @brief Manager to handle buffer operations.
+ */
 
 #include <vector>
 #include <vulkan/vulkan.hpp>

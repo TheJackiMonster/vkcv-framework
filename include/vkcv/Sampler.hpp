@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Tobias Frisch
+ * @file vkcv/Sampler.hpp
+ * @brief Enums for different sampler attributes.
+ */
 
 namespace vkcv {
 

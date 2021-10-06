@@ -1,14 +1,14 @@
 #pragma once
 /**
- * @authors Lars Hoerttrich
+ * @authors Alexander Gauggel, Tobias Frisch, Lars Hoerttrich, Artur Wasmut
  * @file vkcv/Image.hpp
- * @brief Class for image handling
+ * @brief Class for image handling.
  */
  
-#include "vulkan/vulkan.hpp"
+#include <vulkan/vulkan.hpp>
 
 #include "Handles.hpp"
-#include "vkcv/ImageConfig.hpp"
+#include "ImageConfig.hpp"
 
 namespace vkcv {
 	

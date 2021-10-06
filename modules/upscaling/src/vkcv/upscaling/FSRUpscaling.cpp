@@ -1,7 +1,7 @@
 #include "vkcv/upscaling/FSRUpscaling.hpp"
 
-#include <stdint.h>
-#include <math.h>
+#include <cstdint>
+#include <cmath>
 
 #define A_CPU 1
 #include <ffx_a.h>

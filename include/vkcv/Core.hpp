@@ -1,7 +1,9 @@
 #pragma once
 /**
- * @file src/vkcv/Core.hpp
- * @brief Handling of global states regarding dependencies
+ * @authors Alexander Gauggel, Tobias Frisch, Sebastian Gaida, Artur Wasmut, Lars Hoerttrich,
+ *          Mara Vogt, Mark Mints, Simeon Hermann, Alex Laptop, Katharina Krämer, Vanessa Karolek
+ * @file vkcv/Core.hpp
+ * @brief Handling of global states regarding dependencies.
  */
 
 #include <memory>

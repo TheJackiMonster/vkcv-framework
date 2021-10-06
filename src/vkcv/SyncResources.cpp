@@ -26,7 +26,7 @@ namespace vkcv {
 		return device.createFence(fenceInfo, nullptr, {});
 	}
 
-	void waitForFence(const vk::Device& device, const vk::Fence fence) {
+	void waitForFence(const vk::Device& device, const vk::Fence& fence) {
 		const auto result = device.waitForFences(fence, true, UINT64_MAX);
 		assert(result == vk::Result::eSuccess);
 	}

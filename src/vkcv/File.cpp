@@ -1,7 +1,7 @@
 
 #include "vkcv/File.hpp"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #ifdef _WIN32
 #include <io.h>
