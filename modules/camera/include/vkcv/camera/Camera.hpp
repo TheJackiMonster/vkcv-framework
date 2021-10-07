@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Vanessa Karolek, Josch Morgenstern, Sebastian Gaida, Katharina Krämer, Tobias Frisch, Alexander Gauggel
+ * @file include/vkcv/camera/Camera.hpp
+ * @brief Camera class of the camera module for the vkcv framework.
+ */
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

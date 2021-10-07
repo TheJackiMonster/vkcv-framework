@@ -1,4 +1,11 @@
 #pragma once
+/**
+ * @authors Vanessa Karolek, Josch Morgenstern, Tobias Frisch
+ * @file include/vkcv/camera/CameraController.hpp
+ * @brief CameraController class of the camera module for the vkcv framework. A camera object is controlled by a camera
+ * controller object. Using inheritance of this base class a camera controller object defines a specific control
+ * behaviour of the camera object in the scene.
+ */
 
 #include "Camera.hpp"
 #include "vkcv/Window.hpp"

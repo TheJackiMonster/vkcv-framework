@@ -1,4 +1,10 @@
 #pragma once
+/**
+ * @authors Vanessa Karolek, Josch Morgenstern, Sebastian Gaida,Tobias Frisch
+ * @file include/vkcv/camera/TrackballCameraController.hpp
+ * @brief TrackballCameraController class of the camera module for the vkcv framework. This class inherits from the base
+ * class @#CameraController and enables camera objects to be orbited around a specific center point.
+ */
 
 #include "CameraController.hpp"
 

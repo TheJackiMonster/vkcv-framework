@@ -1,4 +1,10 @@
 #pragma once
+/**
+ * @authors Vanessa Karolek, Josch Morgenstern, Tobias Frisch
+ * @file include/vkcv/camera/PilotCameraController.hpp
+ * @brief PilotCameraController class of the camera module for the vkcv framework. This class inherits from the base
+ * class @#CameraController and enables camera objects to be moved freely within the scene.
+ */
 
 #include <vkcv/camera/CameraController.hpp>
 
