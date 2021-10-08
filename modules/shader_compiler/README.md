@@ -12,4 +12,4 @@ A VkCV module to compile shaders at runtime
 
 ## Docs
 
-Here is a [link](https://vkcv.de/branch/96-dokumentation-vervollstandigen/group__vkcv__shader.html) to this module.
+Here is a [link](https://vkcv.de/develop/group__vkcv__shader.html) to this module.

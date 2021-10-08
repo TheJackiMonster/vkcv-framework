@@ -12,5 +12,5 @@ A VkCV module to integrate GUI rendering to your application as additional pass
 
 ## Docs
 
-Here is a [link](https://vkcv.de/branch/96-dokumentation-vervollstandigen/group__vkcv__gui.html) to this module.
+Here is a [link](https://vkcv.de/develop/group__vkcv__gui.html) to this module.
 
