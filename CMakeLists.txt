@@ -1,8 +1,30 @@
 cmake_minimum_required(VERSION 3.16)
 project(vkcv)
 
+# cmake options
+option(BUILD_MODULES "Enables building VkCV as shared libraries" ON)
+option(BUILD_PROJECTS "Enables building the VkCV projects" ON)
+option(BUILD_DOXYGEN_DOCS "Enables building the VkCV doxygen documentation" OFF)
+option(BUILD_SHARED "Enables building VkCV as shared libraries" OFF)
+
+if (BUILD_PROJECTS)
+	set(BUILD_MODULES ${BUILD_PROJECTS})
+endif()
+
+message(STATUS "Options:")
+message(" - BUILD_MODULES: ${BUILD_MODULES}")
+message(" - BUILD_PROJECTS: ${BUILD_PROJECTS}")
+message(" - BUILD_DOXYGEN_DOCS: ${BUILD_DOXYGEN_DOCS}")
+message(" - BUILD_SHARED: ${BUILD_SHARED}")
+
+if (BUILD_SHARED)
+	set(vkcv_build_attribute SHARED)
+else()
+	set(vkcv_build_attribute STATIC)
+endif()
+
 # settings c++ standard for the framework
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # checking build type and setting up a variable
@@ -11,8 +33,8 @@ if (CMAKE_BUILD_TYPE)
 	set(vkcv_build_${_vkcv_build_type} 1)
 endif()
 
-message("-- Language: [ C++ " ${CMAKE_CXX_STANDARD} " ]")
-message("-- Compiler: [ " ${CMAKE_CXX_COMPILER_ID} " " ${CMAKE_CXX_COMPILER_VERSION} " ]")
+message(STATUS "Language: [ C++ " ${CMAKE_CXX_STANDARD} " ]")
+message(STATUS "Compiler: [ " ${CMAKE_CXX_COMPILER_ID} " " ${CMAKE_CXX_COMPILER_VERSION} " ]")
 
 if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0.0"))
 	message(FATAL_ERROR "Upgrade your compiler! GCC 9.0+ is required!")
@@ -42,26 +64,43 @@ if (vkcv_build_debug)
 	endif()
 endif()
 
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "11.0.0"))
+	list(APPEND vkcv_definitions __NO_SEMAPHORES__)
+endif()
+
 # configure everything to use the required dependencies
 include(${vkcv_config}/Libraries.cmake)
+
+# set macro to enable vulkan debug labels
+list(APPEND vkcv_definitions VULKAN_DEBUG_LABELS)
 
 # set the compile definitions aka preprocessor variables
 add_compile_definitions(${vkcv_definitions})
 
-# add modules as targets
-add_subdirectory(modules)
+# check if the framework is used from a parent scope
+get_directory_property(vkcv_parent_scope PARENT_DIRECTORY)
+
+if (BUILD_MODULES)
+	message(STATUS "Modules: ON")
+	
+	# add modules as targets
+	add_subdirectory(modules)
+else()
+	message(STATUS "Modules: OFF")
+endif()
 
 # add source files for compilation
 include(${vkcv_config}/Sources.cmake)
 
-message("-- Libraries: [ ${vkcv_libraries} ]")
-message("-- Flags: [ ${vkcv_flags} ]")
+message(STATUS "Framework:")
+message(" - Libraries: [ ${vkcv_libraries} ]")
+message(" - Flags: [ ${vkcv_flags} ]")
 
 # set the compiler flags for the framework
 set(CMAKE_CXX_FLAGS ${vkcv_flags})
 
-# create VkCV framework as static library using all source files
-add_library(vkcv STATIC ${vkcv_sources})
+# create VkCV framework as library using all source files
+add_library(vkcv ${vkcv_build_attribute} ${vkcv_sources})
 
 if(MSVC)
   #enable multicore compilation on visual studio
@@ -73,20 +112,40 @@ endif()
 
 # add include directories from dependencies as system includes
 target_include_directories(vkcv SYSTEM BEFORE PRIVATE ${vkcv_includes})
-message(STATUS ${vkcv_includes})
 
 # add the own include directory for public headers
 target_include_directories(vkcv BEFORE PUBLIC ${vkcv_include})
-message(STATUS ${vkcv_include})
 
 # link the framework using all required libraries
 target_link_libraries(vkcv ${vkcv_libraries})
-message(STATUS ${vkcv_libraries})
 
-# add sub-projects/examples as targets
-add_subdirectory(projects)
+if (BUILD_PROJECTS)
+	message(STATUS "Projects: ON")
+	
+	# add sub-projects/examples as targets
+	add_subdirectory(projects)
+else()
+	message(STATUS "Projects: OFF")
+endif()
 
-if (NOT WIN32)
+if (BUILD_DOXYGEN_DOCS)
+	message(STATUS "Doxygen: ON")
+	
 	# add doxygen as target if installed
-	include(${vkcv_config_ext}/Doxygen.cmake)
+	include(${vkcv_config}/ext/Doxygen.cmake)
+else()
+	message(STATUS "Doxygen: OFF")
+endif()
+
+if (vkcv_parent_scope)
+	list(APPEND vkcv_includes ${vkcv_include})
+	list(APPEND vkcv_libraries vkcv)
+	
+	if (BUILD_MODULES)
+		list(APPEND vkcv_includes ${vkcv_modules_includes})
+		list(APPEND vkcv_libraries ${vkcv_modules_libraries})
+	endif()
+	
+	set(vkcv_includes ${vkcv_includes} PARENT_SCOPE)
+	set(vkcv_libraries ${vkcv_libraries} PARENT_SCOPE)
 endif()

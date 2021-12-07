@@ -58,7 +58,7 @@ namespace vkcv {
 	static std::vector<GLFWwindow*> s_Windows;
 
 	void Window_onGamepadEvent(int gamepadIndex) {
-			Window::getFocusedWindow().e_gamepad(gamepadIndex);
+		Window::getFocusedWindow().e_gamepad(gamepadIndex);
 	}
 	
 	static GLFWwindow* createGLFWWindow(const char *windowTitle, int width, int height, bool resizable) {
@@ -160,7 +160,6 @@ namespace vkcv {
 	}
 
     void Window::pollEvents() {
-
     	for (auto glfwWindow : s_Windows) {
 			auto window = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
 			
@@ -174,11 +173,6 @@ namespace vkcv {
 		}
 
 		glfwPollEvents();
-
-		// fixes subtle mouse stutter, which is made visible by motion blur
-		// FIXME: proper solution
-		// probably caused by main thread locking events before glfw callbacks are executed
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 		for (int gamepadIndex = GLFW_JOYSTICK_1; gamepadIndex <= GLFW_JOYSTICK_LAST; gamepadIndex++) {
 			if (glfwJoystickPresent(gamepadIndex)) {

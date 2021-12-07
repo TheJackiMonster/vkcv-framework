@@ -13,7 +13,8 @@ namespace vkcv
 		VERTEX,
 		UNIFORM,
 		STORAGE,
-		STAGING
+		STAGING,
+		INDIRECT
 	};
 	
 	enum class BufferMemoryType {

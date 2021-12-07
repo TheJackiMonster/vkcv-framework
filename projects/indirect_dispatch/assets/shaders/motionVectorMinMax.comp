@@ -12,6 +12,7 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 void main(){
     
     ivec2 outImageRes       = imageSize(outMotionMax);
+    ivec2 inImageRes        = textureSize(sampler2D(inMotion, textureSampler), 0);
     ivec2 motionTileCoord   = ivec2(gl_GlobalInvocationID.xy);
     
     if(any(greaterThanEqual(motionTileCoord, outImageRes)))
@@ -28,6 +29,14 @@ void main(){
     for(int x = 0; x < motionTileSize; x++){
         for(int y = 0; y < motionTileSize; y++){
             ivec2   sampleCoord     = motionBufferBaseCoord + ivec2(x, y);
+            
+            bool sampleIsOutsideImage = false;
+            sampleIsOutsideImage = sampleIsOutsideImage || any(greaterThanEqual(sampleCoord, inImageRes));
+            sampleIsOutsideImage = sampleIsOutsideImage || any(lessThan(sampleCoord, ivec2(0)));
+            
+            if(sampleIsOutsideImage)
+                continue;
+            
             vec2    motionSample    = texelFetch(sampler2D(inMotion, textureSampler), sampleCoord, 0).rg;
             float   velocitySample  = length(motionSample);
             

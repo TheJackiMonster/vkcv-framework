@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(vkcv_upscaling)
 
 # setting c++ standard for the project
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(vkcv_upscaling_source ${PROJECT_SOURCE_DIR}/src)
@@ -27,7 +27,7 @@ set(vkcv_upscaling_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_upscaling_lib})
 include(config/FidelityFX_FSR.cmake)
 
 # adding source files to the project
-add_library(vkcv_upscaling STATIC ${vkcv_upscaling_sources})
+add_library(vkcv_upscaling ${vkcv_build_attribute} ${vkcv_upscaling_sources})
 
 # link the required libraries to the module
 target_link_libraries(vkcv_upscaling ${vkcv_upscaling_libraries} vkcv vkcv_shader_compiler)
@@ -37,3 +37,11 @@ target_include_directories(vkcv_upscaling SYSTEM BEFORE PRIVATE ${vkcv_upscaling
 
 # add the own include directory for public headers
 target_include_directories(vkcv_upscaling BEFORE PUBLIC ${vkcv_upscaling_include})
+
+if (vkcv_parent_scope)
+	list(APPEND vkcv_modules_includes ${vkcv_upscaling_include})
+	list(APPEND vkcv_modules_libraries vkcv_upscaling)
+	
+	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
+	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
+endif()

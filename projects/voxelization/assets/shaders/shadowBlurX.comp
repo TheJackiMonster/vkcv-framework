@@ -18,6 +18,6 @@ void main(){
     }
     ivec2 coord = ivec2(gl_GlobalInvocationID.xy);    
     vec4 moments = blurMomentShadowMap1D(coord, ivec2(1, 0), srcTexture, depthSampler);
-    
+    // moments = texelFetch(sampler2D(srcTexture, depthSampler), coord, 0);
     imageStore(outImage, coord, moments);
 }

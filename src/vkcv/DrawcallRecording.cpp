@@ -52,6 +52,17 @@ namespace vkcv {
         }
     }
 
+    void recordIndirectDrawcall(
+            const DrawcallInfo                              &drawcall,
+            vk::CommandBuffer                               cmdBuffer,
+            const Buffer <vk::DrawIndexedIndirectCommand>   &drawBuffer,
+            const uint32_t                                  drawCount,
+            vk::PipelineLayout                              pipelineLayout,
+            const PushConstants                             &pushConstants,
+            const size_t                                    drawcallIndex) {
+        return;
+    }
+
     struct MeshShaderFunctions
     {
         PFN_vkCmdDrawMeshTasksNV cmdDrawMeshTasks                           = nullptr;

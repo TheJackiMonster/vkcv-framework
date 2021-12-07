@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(vkcv_meshlet)
 
 # setting c++ standard for the module
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(vkcv_meshlet_source ${PROJECT_SOURCE_DIR}/src)
@@ -20,7 +20,7 @@ set(vkcv_meshlet_sources
 		${vkcv_meshlet_source}/vkcv/meshlet/Forsyth.cpp)
 
 # adding source files to the module
-add_library(vkcv_meshlet STATIC ${vkcv_meshlet_sources})
+add_library(vkcv_meshlet ${vkcv_build_attribute} ${vkcv_meshlet_sources})
 
 
 # link the required libraries to the module
@@ -34,3 +34,11 @@ target_include_directories(vkcv_meshlet BEFORE PUBLIC ${vkcv_meshlet_include})
 
 # linking with libraries from all dependencies and the VkCV framework
 target_link_libraries(vkcv_meshlet vkcv vkcv_asset_loader vkcv_camera)
+
+if (vkcv_parent_scope)
+	list(APPEND vkcv_modules_includes ${vkcv_meshlet_include})
+	list(APPEND vkcv_modules_libraries vkcv_meshlet)
+	
+	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
+	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
+endif()

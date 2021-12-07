@@ -146,14 +146,26 @@ namespace vkcv {
         {
             auto& u = resources.uniform_buffers[i];
             const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+            const spirv_cross::SPIRType &type      = comp.get_type(u.type_id);
 
             uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
             uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-            auto binding = DescriptorBinding(
-                    bindingID,
-                    DescriptorType::UNIFORM_BUFFER,
-                    base_type.vecsize,
-                    shaderStage);
+
+            uint32_t descriptorCount = base_type.vecsize;
+            bool variableCount = false;
+            // query whether reflected resources are qualified as one-dimensional array
+            if(type.array_size_literal[0])
+            {
+                descriptorCount = type.array[0];
+                if(type.array[0] == 0)
+                    variableCount = true;
+            }
+
+            DescriptorBinding binding{bindingID,
+                                      DescriptorType::UNIFORM_BUFFER,
+                                      descriptorCount,
+                                      shaderStage,
+                                      variableCount};
 
             auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
             if(!insertionResult.second)
@@ -169,14 +181,27 @@ namespace vkcv {
         {
             auto& u = resources.storage_buffers[i];
             const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+            const spirv_cross::SPIRType &type      = comp.get_type(u.type_id);
 
             uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
             uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-            auto binding = DescriptorBinding(
-                    bindingID,
-                    DescriptorType::STORAGE_BUFFER,
-                    base_type.vecsize,
-                    shaderStage);
+
+            uint32_t descriptorCount = base_type.vecsize;
+            bool variableCount = false;
+            // query whether reflected resources are qualified as one-dimensional array
+            if(type.array_size_literal[0])
+            {
+                descriptorCount = type.array[0];
+                if(type.array[0] == 0)
+                    variableCount = true;
+            }
+
+            DescriptorBinding binding{bindingID,
+                                      DescriptorType::STORAGE_BUFFER,
+                                      descriptorCount,
+                                      shaderStage,
+                                      variableCount};
+
 
             auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
             if(!insertionResult.second)
@@ -191,14 +216,26 @@ namespace vkcv {
         for (uint32_t i = 0; i < resources.separate_samplers.size(); i++) {
             auto& u = resources.separate_samplers[i];
             const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+            const spirv_cross::SPIRType &type      = comp.get_type(u.type_id);
 
             uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
             uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-            auto binding = DescriptorBinding(
-                    bindingID,
-                    DescriptorType::SAMPLER,
-                    base_type.vecsize,
-                    shaderStage);
+
+            uint32_t descriptorCount = base_type.vecsize;
+            bool variableCount = false;
+            // query whether reflected resources are qualified as one-dimensional array
+            if(type.array_size_literal[0])
+            {
+                descriptorCount = type.array[0];
+                if(type.array[0] == 0)
+                    variableCount = true;
+            }
+
+            DescriptorBinding binding {bindingID,
+                                       DescriptorType::SAMPLER,
+                                       descriptorCount,
+                                       shaderStage,
+                                       variableCount};
 
             auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
             if(!insertionResult.second)
@@ -212,15 +249,27 @@ namespace vkcv {
 
         for (uint32_t i = 0; i < resources.separate_images.size(); i++) {
             auto& u = resources.separate_images[i];
-            const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+            const spirv_cross::SPIRType &base_type = comp.get_type(u.base_type_id);
+            const spirv_cross::SPIRType &type      = comp.get_type(u.type_id);
 
             uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
             uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-            auto binding = DescriptorBinding(
-                    bindingID,
-                    DescriptorType::IMAGE_SAMPLED,
-                    base_type.vecsize,
-                    shaderStage);
+
+            uint32_t descriptorCount = base_type.vecsize;
+            bool variableCount = false;
+            // query whether reflected resources are qualified as one-dimensional array
+            if(type.array_size_literal[0])
+            {
+                descriptorCount = type.array[0];
+                if(type.array[0] == 0)
+                    variableCount = true;
+            }
+
+            DescriptorBinding binding {bindingID,
+                                       DescriptorType::IMAGE_SAMPLED,
+                                       descriptorCount,
+                                       shaderStage,
+                                       variableCount};
 
             auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
             if(!insertionResult.second)
@@ -235,14 +284,26 @@ namespace vkcv {
         for (uint32_t i = 0; i < resources.storage_images.size(); i++) {
             auto& u = resources.storage_images[i];
             const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+            const spirv_cross::SPIRType &type      = comp.get_type(u.type_id);
 
             uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
             uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-            auto binding = DescriptorBinding(
-                    bindingID,
-                    DescriptorType::IMAGE_STORAGE,
-                    base_type.vecsize,
-                    shaderStage);
+
+            uint32_t descriptorCount = base_type.vecsize;
+            bool variableCount = false;
+            // query whether reflected resources are qualified as one-dimensional array
+            if(type.array_size_literal[0])
+            {
+                descriptorCount = type.array[0];
+                if(type.array[0] == 0)
+                    variableCount = true;
+            }
+
+            DescriptorBinding binding {bindingID,
+                                       DescriptorType::IMAGE_STORAGE,
+                                       descriptorCount,
+                                       shaderStage,
+                                       variableCount};
 
             auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
             if(!insertionResult.second)
@@ -251,6 +312,31 @@ namespace vkcv {
                          "Attempting to overwrite already existing binding %u at set ID %u.",
                          bindingID,
                          setID);
+            }
+        }
+
+        // Used to reflect acceleration structure bindings for RTX.
+        for (uint32_t i = 0; i < resources.acceleration_structures.size(); i++) {
+            auto& u = resources.acceleration_structures[i];
+            const spirv_cross::SPIRType& base_type = comp.get_type(u.base_type_id);
+
+            uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+            uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
+            auto binding = DescriptorBinding {
+                bindingID,
+                DescriptorType::ACCELERATION_STRUCTURE_KHR,
+                base_type.vecsize,
+                shaderStage,
+				false
+			};
+
+            auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
+            if (!insertionResult.second)
+            {
+                vkcv_log(LogLevel::WARNING,
+                    "Attempting to overwrite already existing binding %u at set ID %u.",
+                    bindingID,
+                    setID);
             }
         }
 

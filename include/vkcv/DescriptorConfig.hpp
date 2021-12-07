@@ -19,7 +19,8 @@ namespace vkcv
         IMAGE_SAMPLED,
 		IMAGE_STORAGE,
         UNIFORM_BUFFER_DYNAMIC,
-        STORAGE_BUFFER_DYNAMIC
+        STORAGE_BUFFER_DYNAMIC,
+        ACCELERATION_STRUCTURE_KHR
     };    
 
     /**
@@ -44,6 +45,8 @@ namespace vkcv
                 return vk::DescriptorType::eSampledImage;
             case DescriptorType::IMAGE_STORAGE:
                 return vk::DescriptorType::eStorageImage;
+            case DescriptorType::ACCELERATION_STRUCTURE_KHR:
+                return vk::DescriptorType::eAccelerationStructureKHR;
             default:
                 return vk::DescriptorType::eMutableVALVE;
         }
@@ -58,17 +61,11 @@ namespace vkcv
     */
     struct DescriptorBinding
     {
-        DescriptorBinding(
-            uint32_t bindingID,
-            DescriptorType descriptorType,
-            uint32_t descriptorCount,
-            ShaderStages shaderStages
-        ) noexcept;
-        
         uint32_t        bindingID;
         DescriptorType  descriptorType;
         uint32_t        descriptorCount;
         ShaderStages    shaderStages;
+        bool            variableCount;
 
         bool operator ==(const DescriptorBinding &other) const;
     };

@@ -251,6 +251,7 @@ void Voxelization::voxelizeMeshes(
 	vkcv::PushConstants voxelCountPushConstants (sizeof(voxelCount));
 	voxelCountPushConstants.appendDrawcall(voxelCount);
 
+	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel reset", { 1, 1, 1, 1 });
 	m_corePtr->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_voxelResetPipe,
@@ -258,6 +259,7 @@ void Voxelization::voxelizeMeshes(
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_voxelResetDescriptorSet).vulkanHandle) },
 		voxelCountPushConstants);
 	m_corePtr->recordBufferMemoryBarrier(cmdStream, m_voxelBuffer.getHandle());
+	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// voxelization
 	std::vector<vkcv::DrawcallInfo> drawcalls;
@@ -270,6 +272,7 @@ void Voxelization::voxelizeMeshes(
 			},1));
 	}
 
+	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxelization", { 1, 1, 1, 1 });
 	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImageIntermediate.getHandle());
 	m_corePtr->recordDrawcallsToCmdStream(
 		cmdStream,
@@ -279,6 +282,7 @@ void Voxelization::voxelizeMeshes(
 		drawcalls,
 		{ m_dummyRenderTarget.getHandle() },
 		windowHandle);
+	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// buffer to image
 	const uint32_t bufferToImageGroupSize[3] = { 4, 4, 4 };
@@ -287,6 +291,7 @@ void Voxelization::voxelizeMeshes(
 		bufferToImageDispatchCount[i] = glm::ceil(voxelResolution / float(bufferToImageGroupSize[i]));
 	}
 
+	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel buffer to image", { 1, 1, 1, 1 });
 	m_corePtr->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_bufferToImagePipe,
@@ -295,14 +300,17 @@ void Voxelization::voxelizeMeshes(
 		vkcv::PushConstants(0));
 
 	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImageIntermediate.getHandle());
+	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// intermediate image mipchain
+	m_corePtr->recordBeginDebugLabel(cmdStream, "Intermediate Voxel mipmap generation", { 1, 1, 1, 1 });
 	m_voxelImageIntermediate.recordMipChainGeneration(cmdStream);
 	m_corePtr->prepareImageForSampling(cmdStream, m_voxelImageIntermediate.getHandle());
+	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// secondary bounce
+	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel secondary bounce", { 1, 1, 1, 1 });
 	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImage.getHandle());
-
 	m_corePtr->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_secondaryBouncePipe,
@@ -310,12 +318,14 @@ void Voxelization::voxelizeMeshes(
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_secondaryBounceDescriptorSet).vulkanHandle) },
 		vkcv::PushConstants(0));
 	m_voxelImage.recordMipChainGeneration(cmdStream);
-
 	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImage.getHandle());
+	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// final image mipchain
+	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel mipmap generation", { 1, 1, 1, 1 });
 	m_voxelImage.recordMipChainGeneration(cmdStream);
 	m_corePtr->prepareImageForSampling(cmdStream, m_voxelImage.getHandle());
+	m_corePtr->recordEndDebugLabel(cmdStream);
 }
 
 void Voxelization::renderVoxelVisualisation(
@@ -344,6 +354,7 @@ void Voxelization::renderVoxelVisualisation(
 		vkcv::Mesh({}, nullptr, drawVoxelCount),
 		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle) },1);
 
+	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel visualisation", { 1, 1, 1, 1 });
 	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImage.getHandle());
 	m_corePtr->recordDrawcallsToCmdStream(
 		cmdStream,
@@ -353,6 +364,7 @@ void Voxelization::renderVoxelVisualisation(
 		{ drawcall },
 		renderTargets,
 		windowHandle);
+	m_corePtr->recordEndDebugLabel(cmdStream);
 }
 
 void Voxelization::updateVoxelOffset(const vkcv::camera::Camera& camera) {

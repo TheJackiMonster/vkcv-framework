@@ -5,8 +5,9 @@
 namespace vkcv
 {
 	
-	GraphicsPipelineManager::GraphicsPipelineManager(vk::Device device) noexcept :
-            m_Device{device},
+	GraphicsPipelineManager::GraphicsPipelineManager(vk::Device device, vk::PhysicalDevice physicalDevice) noexcept :
+            m_Device(device),
+            m_physicalDevice(physicalDevice),
             m_Pipelines{}
     {}
 	
@@ -237,7 +238,9 @@ namespace vkcv
 	 * @param config sets Depth Clamping and Culling Mode
 	 * @return Pipeline Rasterization State Create Info Struct
 	 */
-	vk::PipelineRasterizationStateCreateInfo createPipelineRasterizationStateCreateInfo(const GraphicsPipelineConfig &config) {
+	vk::PipelineRasterizationStateCreateInfo createPipelineRasterizationStateCreateInfo(
+		const GraphicsPipelineConfig &config,
+		const vk::PhysicalDeviceConservativeRasterizationPropertiesEXT& conservativeRasterProperties) {
 		vk::CullModeFlags cullMode;
 		switch (config.m_culling) {
 			case CullMode::None:
@@ -267,14 +270,17 @@ namespace vkcv
 				0.f,
 				1.f
 		);
-		
+
 		static vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterization;
 		
 		if (config.m_UseConservativeRasterization) {
+            const float overestimationSize = 1.0f - conservativeRasterProperties.primitiveOverestimationSize;
+            const float maxOverestimationSize = conservativeRasterProperties.maxExtraPrimitiveOverestimationSize;
+
 			conservativeRasterization = vk::PipelineRasterizationConservativeStateCreateInfoEXT(
 					{},
 					vk::ConservativeRasterizationModeEXT::eOverestimate,
-					0.f
+					std::min(std::max(overestimationSize, 0.f), maxOverestimationSize)
 			);
 			
 			pipelineRasterizationStateCreateInfo.pNext = &conservativeRasterization;
@@ -544,8 +550,13 @@ namespace vkcv
                 createPipelineViewportStateCreateInfo(config);
 
         // rasterization state
+        vk::PhysicalDeviceConservativeRasterizationPropertiesEXT    conservativeRasterProperties;
+        vk::PhysicalDeviceProperties                                deviceProperties;
+        vk::PhysicalDeviceProperties2                               deviceProperties2(deviceProperties);
+        deviceProperties2.pNext = &conservativeRasterProperties;
+        m_physicalDevice.getProperties2(&deviceProperties2);
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo =
-                createPipelineRasterizationStateCreateInfo(config);
+                createPipelineRasterizationStateCreateInfo(config, conservativeRasterProperties);
 
         // multisample state
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo =
