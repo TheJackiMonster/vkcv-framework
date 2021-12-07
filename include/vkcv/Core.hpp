@@ -28,6 +28,8 @@
 #include "../../src/vkcv/WindowManager.hpp"
 #include "../../src/vkcv/SwapchainManager.hpp"
 
+#define VKCV_FRAMEWORK_NAME "VkCV"
+#define VKCV_FRAMEWORK_VERSION (VK_MAKE_VERSION(0, 1, 0))
 
 namespace vkcv
 {

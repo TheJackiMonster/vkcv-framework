@@ -1,6 +1,7 @@
 
 #include "vkcv/Context.hpp"
 #include "vkcv/Window.hpp"
+#include "vkcv/Core.hpp"
 
 namespace vkcv
 {
@@ -239,8 +240,8 @@ namespace vkcv
 		const vk::ApplicationInfo applicationInfo(
 				applicationName,
 				applicationVersion,
-				"vkCV",
-				VK_MAKE_VERSION(0, 0, 1),
+				VKCV_FRAMEWORK_NAME,
+				VKCV_FRAMEWORK_VERSION,
 				VK_HEADER_VERSION_COMPLETE
 		);
 		
