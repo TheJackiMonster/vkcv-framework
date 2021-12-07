@@ -16,6 +16,11 @@ More information about Git LFS [here](https://git-lfs.github.com/).
 Git submodules are used for libraries. 
 To download the submodules either clone using `git clone --recurse-submodules` or after `git clone` use `git submodule init` and `git submodule update`.
 
+Detailed build process:
+ - [How to build on Windows](doc/BUILD_WINDOWS.md)
+ - [How to build on macOS](doc/BUILD_MACOS.md)
+ - [How to build on Linux](doc/BUILD_LINUX.md)
+
 ### Dependencies (required):
 
 Most dependencies will be used via submodules but for example Vulkan needs to be installed correctly depending on your platform. So please setup your environment properly.

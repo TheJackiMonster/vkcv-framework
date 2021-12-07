@@ -22,7 +22,7 @@ set(vkcv_gui_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_gui_lib})
 include(config/ImGui.cmake)
 
 # adding source files to the module
-add_library(vkcv_gui STATIC ${vkcv_gui_sources} ${vkcv_imgui_sources})
+add_library(vkcv_gui ${vkcv_build_attribute} ${vkcv_gui_sources} ${vkcv_imgui_sources})
 
 # link the required libraries to the module
 target_link_libraries(vkcv_gui ${vkcv_gui_libraries} vkcv ${vkcv_libraries})
@@ -34,3 +34,11 @@ target_include_directories(vkcv_gui SYSTEM BEFORE PRIVATE ${vkcv_gui_includes} $
 target_include_directories(vkcv_gui BEFORE PUBLIC ${vkcv_gui_include} ${vkcv_imgui_includes})
 
 target_compile_definitions(vkcv_gui PUBLIC ${vkcv_gui_defines})
+
+if (vkcv_parent_scope)
+	list(APPEND vkcv_modules_includes ${vkcv_gui_include})
+	list(APPEND vkcv_modules_libraries vkcv_gui)
+	
+	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
+	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
+endif()

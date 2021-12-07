@@ -15,7 +15,7 @@ set(vkcv_asset_loader_sources
 )
 
 # adding source files to the module
-add_library(vkcv_asset_loader STATIC ${vkcv_asset_loader_sources})
+add_library(vkcv_asset_loader ${vkcv_build_attribute} ${vkcv_asset_loader_sources})
 
 # Setup some path variables to load libraries
 set(vkcv_asset_loader_lib lib)
@@ -40,3 +40,11 @@ target_include_directories(vkcv_asset_loader SYSTEM BEFORE PRIVATE ${vkcv_asset_
 target_include_directories(vkcv_asset_loader BEFORE PUBLIC ${vkcv_asset_loader_include})
 
 target_compile_definitions(vkcv_asset_loader PUBLIC ${vkcv_asset_loader_definitions})
+
+if (vkcv_parent_scope)
+	list(APPEND vkcv_modules_includes ${vkcv_asset_loader_include})
+	list(APPEND vkcv_modules_libraries vkcv_asset_loader)
+	
+	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
+	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
+endif()

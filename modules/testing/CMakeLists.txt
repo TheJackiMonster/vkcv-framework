@@ -14,8 +14,15 @@ set(vkcv_testing_sources
 )
 
 # adding source files to the project
-add_library(vkcv_testing STATIC ${vkcv_testing_sources})
+add_library(vkcv_testing ${vkcv_build_attribute} ${vkcv_testing_sources})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_testing BEFORE PUBLIC ${vkcv_testing_include})
 
+if (vkcv_parent_scope)
+	list(APPEND vkcv_modules_includes ${vkcv_testing_include})
+	list(APPEND vkcv_modules_libraries vkcv_testing)
+	
+	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
+	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
+endif()
