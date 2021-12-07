@@ -1,5 +1,7 @@
 
-if (EXISTS "${vkcv_upscaling_lib_path}/FidelityFX-FSR")
+use_git_submodule("${vkcv_upscaling_lib_path}/FidelityFX-FSR" ffx_fsr_status)
+
+if (${ffx_fsr_status})
 	include_shader(${vkcv_upscaling_lib_path}/FidelityFX-FSR/ffx-fsr/ffx_a.h ${vkcv_upscaling_include} ${vkcv_upscaling_source})
 	include_shader(${vkcv_upscaling_lib_path}/FidelityFX-FSR/ffx-fsr/ffx_fsr1.h ${vkcv_upscaling_include} ${vkcv_upscaling_source})
 	include_shader(${vkcv_upscaling_lib_path}/FidelityFX-FSR/sample/src/VK/FSR_Pass.glsl ${vkcv_upscaling_include} ${vkcv_upscaling_source})
@@ -13,6 +15,4 @@ if (EXISTS "${vkcv_upscaling_lib_path}/FidelityFX-FSR")
 	list(APPEND vkcv_upscaling_sources ${vkcv_upscaling_include}/ffx_a.h.hxx)
 	list(APPEND vkcv_upscaling_sources ${vkcv_upscaling_include}/ffx_fsr1.h.hxx)
 	list(APPEND vkcv_upscaling_sources ${vkcv_upscaling_include}/FSR_Pass.glsl.hxx)
-else()
-	message(WARNING "FidelityFX-FSR is required..! Update the submodules!")
 endif ()

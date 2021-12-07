@@ -5,7 +5,9 @@ if (spirv-cross_FOUND)
 
     message(${vkcv_config_msg} " SPIRV Cross    - " ${SPIRV_CROSS_VERSION})
 else()
-    if (EXISTS "${vkcv_lib_path}/SPIRV-Cross")
+    use_git_submodule("${vkcv_lib_path}/SPIRV-Cross" spirv_cross_status)
+
+    if (${spirv_cross_status})
         set(SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS OFF CACHE INTERNAL "")
         set(SPIRV_CROSS_SHARED OFF CACHE INTERNAL "")
         set(SPIRV_CROSS_STATIC ON CACHE INTERNAL "")
@@ -28,7 +30,5 @@ else()
         list(APPEND vkcv_includes ${vkcv_lib_path}/SPIV-Cross/include)
 
         message(${vkcv_config_msg} " SPIRV Cross    - " ${SPIRV_CROSS_VERSION})
-    else()
-        message(WARNING "SPIRV-Cross is required..! Update the submodules!")
     endif ()
 endif ()

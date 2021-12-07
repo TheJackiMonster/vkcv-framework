@@ -1,4 +1,6 @@
 
+include(${vkcv_config_ext}/ProjectFix.cmake)
+
 # Add new projects/examples here:
 add_subdirectory(first_triangle)
 add_subdirectory(first_mesh)
