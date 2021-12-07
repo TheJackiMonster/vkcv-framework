@@ -2,15 +2,14 @@
 
 ## How to build with MSVC on Windows
 
-1. Something, something, open VisualStudio
-2. Something, something, update VisualStudio
-3. Install VulkanSDK and restart
-4. Check for updates
-5. Create a project solution and fix the mess
+1. Download and install [VulkanSDK](https://vulkan.lunarg.com/sdk/home#windows)
+2. Download and install [VisualStudio](https://visualstudio.microsoft.com/vs/features/cplusplus/) for MSVC
+3. (optional) Download and install [CLion](https://www.jetbrains.com/clion/) as IDE to develop
+4. Create and configure a project with the framework and build it
 
 ## How to build with GCC on Windows
 
-1. Install MSYS2
+1. Install [MSYS2](https://www.msys2.org/)
 2. Run "MSYS2 MSYS" from Start menu
 3. Enter the following commands into MSYS2 console:
 ```
