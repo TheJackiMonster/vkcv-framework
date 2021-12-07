@@ -274,10 +274,13 @@ namespace vkcv
 		static vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterization;
 		
 		if (config.m_UseConservativeRasterization) {
+            const float overestimationSize = 1.0f - conservativeRasterProperties.primitiveOverestimationSize;
+            const float maxOverestimationSize = conservativeRasterProperties.maxExtraPrimitiveOverestimationSize;
+
 			conservativeRasterization = vk::PipelineRasterizationConservativeStateCreateInfoEXT(
 					{},
 					vk::ConservativeRasterizationModeEXT::eOverestimate,
-					std::max(1 - conservativeRasterProperties.primitiveOverestimationSize, 0.f)
+					std::min(std::max(overestimationSize, 0.f), maxOverestimationSize)
 			);
 			
 			pipelineRasterizationStateCreateInfo.pNext = &conservativeRasterization;

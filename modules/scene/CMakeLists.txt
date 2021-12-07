@@ -30,7 +30,7 @@ set(vkcv_scene_sources
 )
 
 # adding source files to the module
-add_library(vkcv_scene STATIC ${vkcv_scene_sources})
+add_library(vkcv_scene ${vkcv_build_attribute} ${vkcv_scene_sources})
 
 # link the required libraries to the module
 target_link_libraries(vkcv_scene vkcv)
@@ -43,3 +43,11 @@ target_include_directories(vkcv_scene BEFORE PUBLIC ${vkcv_scene_include})
 
 # linking with libraries from all dependencies and the VkCV framework
 target_link_libraries(vkcv_scene vkcv vkcv_asset_loader vkcv_material vkcv_camera)
+
+if (vkcv_parent_scope)
+	list(APPEND vkcv_modules_includes ${vkcv_scene_include})
+	list(APPEND vkcv_modules_libraries vkcv_scene)
+	
+	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
+	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
+endif()

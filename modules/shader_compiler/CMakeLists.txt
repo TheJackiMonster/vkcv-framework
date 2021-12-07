@@ -18,7 +18,7 @@ set(vkcv_shader_compiler_sources
 )
 
 # adding source files to the module
-add_library(vkcv_shader_compiler STATIC ${vkcv_shader_compiler_sources})
+add_library(vkcv_shader_compiler ${vkcv_build_attribute} ${vkcv_shader_compiler_sources})
 
 # Setup some path variables to load libraries
 set(vkcv_shader_compiler_lib lib)
@@ -35,3 +35,11 @@ target_include_directories(vkcv_shader_compiler SYSTEM BEFORE PRIVATE ${vkcv_sha
 
 # add the own include directory for public headers
 target_include_directories(vkcv_shader_compiler BEFORE PUBLIC ${vkcv_shader_compiler_include})
+
+if (vkcv_parent_scope)
+	list(APPEND vkcv_modules_includes ${vkcv_shader_compiler_include})
+	list(APPEND vkcv_modules_libraries vkcv_shader_compiler)
+	
+	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
+	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
+endif()

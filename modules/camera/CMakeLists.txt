@@ -21,7 +21,7 @@ set(vkcv_camera_sources
 )
 
 # adding source files to the project
-add_library(vkcv_camera STATIC ${vkcv_camera_sources})
+add_library(vkcv_camera ${vkcv_build_attribute} ${vkcv_camera_sources})
 
 # Setup some path variables to load libraries
 set(vkcv_camera_lib lib)
@@ -37,3 +37,11 @@ target_include_directories(vkcv_camera SYSTEM BEFORE PRIVATE ${vkcv_camera_inclu
 target_include_directories(vkcv_camera BEFORE PUBLIC ${vkcv_camera_include} ${vkcv_camera_includes})
 
 target_compile_definitions(vkcv_camera PUBLIC ${vkcv_camera_definitions})
+
+if (vkcv_parent_scope)
+	list(APPEND vkcv_modules_includes ${vkcv_camera_include})
+	list(APPEND vkcv_modules_libraries vkcv_camera)
+	
+	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
+	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
+endif()
