@@ -2,6 +2,47 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/gui/GUI.hpp>
+#include <vkcv/shader/GLSLCompiler.hpp>
+
+struct Particle {
+	glm::vec3 position;
+	float size;
+	glm::vec3 velocity;
+	float mass;
+};
+
+float randomFloat(float min, float max) {
+	return min + (max - min) * static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+}
+
+void distributeParticles(Particle *particles, size_t count, const glm::vec3& center, float radius, float mass) {
+	float volume = 0.0f;
+	
+	for (size_t i = 0; i < count; i++) {
+		glm::vec3 offset (
+				randomFloat(-1.0f, +1.0f),
+				randomFloat(-1.0f, +1.0f),
+				randomFloat(-1.0f, +1.0f)
+		);
+		
+		if (glm::length(offset) > 0.0f)
+			offset = glm::normalize(offset);
+		
+		offset *= randomFloat(0.0f, radius);
+		
+		const float size = (radius - glm::length(offset));
+		
+		particles[i].position = center + offset;
+		particles[i].size = size;
+		particles[i].velocity = glm::vec3(0.0f);
+		
+		volume += size;
+	}
+	
+	for (size_t i = 0; i < count; i++) {
+		particles[i].mass = (mass * particles[i].size / volume);
+	}
+}
 
 int main(int argc, const char **argv) {
 	const char* applicationName = "Wobble Bobble";
@@ -31,6 +72,101 @@ int main(int argc, const char **argv) {
 			swapchainExtent.width,
 			swapchainExtent.height
 	).getHandle();
+	
+	vkcv::Buffer<Particle> particles = core.createBuffer<Particle>(
+			vkcv::BufferType::STORAGE,
+			1024
+	);
+	
+	std::vector<Particle> particles_vec (1024);
+	
+	distributeParticles(
+			particles_vec.data(),
+			particles_vec.size(),
+			glm::vec3(0.5f),
+			0.25f,
+			1.0f
+	);
+	
+	particles.fill(particles_vec);
+	
+	vkcv::Image grid = core.createImage(
+			vk::Format::eR32G32B32A32Sfloat,
+			64,
+			64,
+			64,
+			false,
+			true
+	);
+	
+	/* TODO: clear grid via compute shader?
+	std::vector<glm::vec4> grid_vec (grid.getWidth() * grid.getHeight() * grid.getDepth());
+	
+	for (size_t i = 0; i < grid_vec.size(); i++) {
+		grid_vec[i] = glm::vec4(0);
+	}
+	
+	grid.fill(grid_vec.data()); // FIXME: gets limited by staging buffer size...
+	 */
+	
+	vkcv::shader::GLSLCompiler compiler;
+	vkcv::ShaderProgram gfxProgram;
+	
+	compiler.compile(
+			vkcv::ShaderStage::VERTEX,
+			"shaders/particle.vert",
+			[&gfxProgram](vkcv::ShaderStage stage, const std::filesystem::path& path) {
+				gfxProgram.addShader(stage, path);
+			}
+	);
+	
+	compiler.compile(
+			vkcv::ShaderStage::GEOMETRY,
+			"shaders/particle.geom",
+			[&gfxProgram](vkcv::ShaderStage stage, const std::filesystem::path& path) {
+				gfxProgram.addShader(stage, path);
+			}
+	);
+	
+	compiler.compile(
+			vkcv::ShaderStage::FRAGMENT,
+			"shaders/particle.frag",
+			[&gfxProgram](vkcv::ShaderStage stage, const std::filesystem::path& path) {
+				gfxProgram.addShader(stage, path);
+			}
+	);
+	
+	vkcv::PassConfig passConfig ({
+		vkcv::AttachmentDescription(
+				vkcv::AttachmentOperation::STORE,
+				vkcv::AttachmentOperation::CLEAR,
+				core.getSwapchain(windowHandle).getFormat()
+		),
+		vkcv::AttachmentDescription(
+				vkcv::AttachmentOperation::STORE,
+				vkcv::AttachmentOperation::CLEAR,
+				vk::Format::eD32Sfloat
+		)
+	});
+	
+	vkcv::PassHandle gfxPass = core.createPass(passConfig);
+	
+	std::vector<vkcv::VertexBinding> vertexBindings;
+	vkcv::VertexLayout vertexLayout (vertexBindings);
+	
+	vkcv::GraphicsPipelineConfig gfxPipelineConfig;
+	gfxPipelineConfig.m_ShaderProgram = gfxProgram;
+	gfxPipelineConfig.m_Width = windowWidth;
+	gfxPipelineConfig.m_Height = windowHeight;
+	gfxPipelineConfig.m_PassHandle = gfxPass;
+	gfxPipelineConfig.m_VertexLayout = vertexLayout;
+	gfxPipelineConfig.m_DescriptorLayouts = {};
+	gfxPipelineConfig.m_UseDynamicViewport = true;
+	
+	vkcv::GraphicsPipelineHandle gfxPipeline = core.createGraphicsPipeline(gfxPipelineConfig);
+	
+	vkcv::PushConstants pushConstants (0);
+	std::vector<vkcv::DrawcallInfo> drawcalls;
 	
 	auto start = std::chrono::system_clock::now();
 	while (vkcv::Window::hasOpenWindow()) {
@@ -62,6 +198,21 @@ int main(int argc, const char **argv) {
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
+		
+		std::vector<vkcv::ImageHandle> renderTargets {
+				vkcv::ImageHandle::createSwapchainImageHandle(),
+				depthBuffer
+		};
+		
+		core.recordDrawcallsToCmdStream(
+				cmdStream,
+				gfxPass,
+				gfxPipeline,
+				pushConstants,
+				drawcalls,
+				renderTargets,
+				windowHandle
+		);
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
