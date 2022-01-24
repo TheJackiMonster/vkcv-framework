@@ -103,7 +103,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle       imageCombineDescriptorSet       = core.createDescriptorSet(imageCombineDescriptorSetLayout);
 	vkcv::ComputePipelineHandle     imageCombinePipeline            = core.createComputePipeline({
 		imageCombineShaderProgram, 
-		{ core.getDescriptorSetLayout(imageCombineDescriptorSetLayout).vulkanHandle }
+		{ imageCombineDescriptorSetLayout }
 	});
 
 	vkcv::DescriptorWrites imageCombineDescriptorWrites;
@@ -125,7 +125,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle       presentDescriptorSet        = core.createDescriptorSet(presentDescriptorSetLayout);
 	vkcv::ComputePipelineHandle     presentPipeline             = core.createComputePipeline({
 		presentShaderProgram,
-		{ core.getDescriptorSetLayout(presentDescriptorSetLayout).vulkanHandle }
+		{ presentDescriptorSetLayout }
 	});
 
 	// clear shader
@@ -140,7 +140,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle       imageClearDescriptorSet         = core.createDescriptorSet(imageClearDescriptorSetLayout);
 	vkcv::ComputePipelineHandle     imageClearPipeline              = core.createComputePipeline({
 		clearShaderProgram,
-		{ core.getDescriptorSetLayout(imageClearDescriptorSetLayout).vulkanHandle }
+		{ imageClearDescriptorSetLayout }
 	});
 
 	vkcv::DescriptorWrites imageClearDescriptorWrites;
@@ -203,7 +203,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::ComputePipelineHandle tracePipeline = core.createComputePipeline({
 		traceShaderProgram,
-		{ core.getDescriptorSetLayout(traceDescriptorSetLayout).vulkanHandle }
+		{ traceDescriptorSetLayout }
 	});
 
 	if (!tracePipeline)

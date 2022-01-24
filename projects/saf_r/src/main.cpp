@@ -184,7 +184,7 @@ int main(int argc, const char** argv) {
 
 	const vkcv::ComputePipelineConfig computePipelineConfig{
 			computeShaderProgram,
-			{core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle}
+			{computeDescriptorSetLayout}
 	};
 
 	vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline(computePipelineConfig);

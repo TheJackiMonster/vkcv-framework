@@ -41,11 +41,12 @@ namespace vkcv
         return pipeline.m_layout;
     }
 
-    ComputePipelineHandle ComputePipelineManager::createComputePipeline(const ComputePipelineConfig& config) {
+    ComputePipelineHandle ComputePipelineManager::createComputePipeline(const ShaderProgram& shaderProgram,
+																		const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) {
 
         // Temporally handing over the Shader Program instead of a pipeline config
         vk::ShaderModule computeModule{};
-        if (createShaderModule(computeModule, config.m_ShaderProgram, ShaderStage::COMPUTE) != vk::Result::eSuccess)
+        if (createShaderModule(computeModule, shaderProgram, ShaderStage::COMPUTE) != vk::Result::eSuccess)
             return ComputePipelineHandle();
 
         vk::PipelineShaderStageCreateInfo pipelineComputeShaderStageInfo(
@@ -56,9 +57,9 @@ namespace vkcv
                 nullptr
         );
 
-        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo({}, config.m_DescriptorSetLayouts);
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo({}, descriptorSetLayouts);
 
-        const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
+        const size_t pushConstantSize = shaderProgram.getPushConstantSize();
         vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute, 0, pushConstantSize);
         if (pushConstantSize > 0) {
             pipelineLayoutCreateInfo.setPushConstantRangeCount(1);

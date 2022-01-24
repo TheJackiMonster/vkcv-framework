@@ -468,7 +468,8 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(tonemappingDescriptorSetLayout);
 	vkcv::ComputePipelineHandle tonemappingPipeline = core.createComputePipeline({
 		tonemappingProgram,
-		{ core.getDescriptorSetLayout(tonemappingDescriptorSetLayout).vulkanHandle }});
+		{ tonemappingDescriptorSetLayout }
+	});
 	
 	// tonemapping compute shader
 	vkcv::ShaderProgram postEffectsProgram;
@@ -482,7 +483,8 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle postEffectsDescriptorSet = core.createDescriptorSet(postEffectsDescriptorSetLayout);
 	vkcv::ComputePipelineHandle postEffectsPipeline = core.createComputePipeline({
 			postEffectsProgram,
-			{ core.getDescriptorSetLayout(postEffectsDescriptorSetLayout).vulkanHandle }});
+			{ postEffectsDescriptorSetLayout }
+	});
 
 	// resolve compute shader
 	vkcv::ShaderProgram resolveProgram;
@@ -496,7 +498,8 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle resolveDescriptorSet = core.createDescriptorSet(resolveDescriptorSetLayout);
 	vkcv::ComputePipelineHandle resolvePipeline = core.createComputePipeline({
 		resolveProgram,
-		{ core.getDescriptorSetLayout(resolveDescriptorSetLayout).vulkanHandle }});
+		{ resolveDescriptorSetLayout }
+	});
 
 	vkcv::SamplerHandle resolveSampler = core.createSampler(
 		vkcv::SamplerFilterType::NEAREST,
@@ -1001,7 +1004,8 @@ int main(int argc, const char** argv) {
 
 				vkcv::ComputePipelineHandle newPipeline = core.createComputePipeline({
 					newProgram,
-					{ core.getDescriptorSetLayout(tonemappingDescriptorSetLayout).vulkanHandle }});
+					{ tonemappingDescriptorSetLayout }
+				});
 
 				if (newPipeline) {
 					tonemappingPipeline = newPipeline;

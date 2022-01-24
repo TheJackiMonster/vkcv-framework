@@ -38,7 +38,8 @@ BloomAndFlares::BloomAndFlares(
     }
 
     m_DownsamplePipe = p_Core->createComputePipeline({
-        dsProg, { p_Core->getDescriptorSetLayout(m_DownsampleDescSetLayouts[0]).vulkanHandle }});
+        dsProg, m_DownsampleDescSetLayouts
+	});
 
     // UPSAMPLE
     vkcv::ShaderProgram usProg;
@@ -57,7 +58,8 @@ BloomAndFlares::BloomAndFlares(
     }
 
     m_UpsamplePipe = p_Core->createComputePipeline({
-            usProg, { p_Core->getDescriptorSetLayout(m_UpsampleDescSetLayouts[0]).vulkanHandle }});
+            usProg, m_UpsampleDescSetLayouts
+	});
 
     // LENS FEATURES
     vkcv::ShaderProgram lensProg;
@@ -71,7 +73,8 @@ BloomAndFlares::BloomAndFlares(
     m_LensFlareDescSetLayout = p_Core->createDescriptorSetLayout(lensProg.getReflectedDescriptors().at(0));
     m_LensFlareDescSet = p_Core->createDescriptorSet(m_LensFlareDescSetLayout);
     m_LensFlarePipe = p_Core->createComputePipeline({
-            lensProg, { p_Core->getDescriptorSetLayout(m_LensFlareDescSetLayout).vulkanHandle }});
+            lensProg, { m_LensFlareDescSetLayout }
+	});
 
     // COMPOSITE
     vkcv::ShaderProgram compProg;
@@ -85,7 +88,8 @@ BloomAndFlares::BloomAndFlares(
     m_CompositeDescSetLayout = p_Core->createDescriptorSetLayout(compProg.getReflectedDescriptors().at(0));
     m_CompositeDescSet = p_Core->createDescriptorSet(m_CompositeDescSetLayout);
     m_CompositePipe = p_Core->createComputePipeline({
-            compProg, { p_Core->getDescriptorSetLayout(m_CompositeDescSetLayout).vulkanHandle }});
+            compProg, { m_CompositeDescSetLayout }
+	});
 }
 
 void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStream,

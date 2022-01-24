@@ -133,7 +133,9 @@ int main(int argc, const char **argv) {
 
     vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
-    vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline({ computeShaderProgram, {core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle} });
+    vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline({
+		computeShaderProgram, {computeDescriptorSetLayout}
+	});
 
     vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
             vkcv::BufferType::UNIFORM,
@@ -238,7 +240,8 @@ int main(int argc, const char **argv) {
     vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingDescriptorLayout);
     vkcv::ComputePipelineHandle tonemappingPipe = core.createComputePipeline({
         tonemappingShader, 
-        { core.getDescriptorSetLayout(tonemappingDescriptorLayout).vulkanHandle }});
+        { tonemappingDescriptorLayout }
+	});
 
     std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
     std::default_random_engine rdmEngine;

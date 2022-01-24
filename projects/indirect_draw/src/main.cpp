@@ -512,7 +512,7 @@ int main(int argc, const char** argv) {
 
     const vkcv::ComputePipelineConfig computeCullingConfig {
         cullingProgram,
-        {core.getDescriptorSetLayout(cullingSetLayout).vulkanHandle}
+        {cullingSetLayout}
     };
     vkcv::ComputePipelineHandle cullingPipelineHandle = core.createComputePipeline(computeCullingConfig);
     if (!cullingPipelineHandle) {
