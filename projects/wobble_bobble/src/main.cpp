@@ -35,7 +35,7 @@ void distributeParticles(Particle *particles, size_t count, const glm::vec3& cen
 		
 		particles[i].position = center + offset;
 		particles[i].size = size;
-		particles[i].velocity = glm::vec3(0.1f);
+		particles[i].velocity = glm::vec3(0.0f);
 		
 		volume += size;
 	}
@@ -154,7 +154,12 @@ int main(int argc, const char **argv) {
 	grid.fill(grid_vec.data()); // FIXME: gets limited by staging buffer size...
 	 */
 	
-	grid.switchLayout(vk::ImageLayout::eGeneral);
+	vkcv::SamplerHandle gridSampler = core.createSampler(
+			vkcv::SamplerFilterType::LINEAR,
+			vkcv::SamplerFilterType::LINEAR,
+			vkcv::SamplerMipmapMode::NEAREST,
+			vkcv::SamplerAddressMode::REPEAT
+	);
 	
 	vkcv::shader::GLSLCompiler compiler;
 	
@@ -206,6 +211,14 @@ int main(int argc, const char **argv) {
 			"shaders/update_particle_velocities.comp",
 			updateParticleVelocitiesSets
 	);
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, grid.getHandle()));
+		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
+		core.writeDescriptorSet(updateParticleVelocitiesSets[0], writes);
+	}
 	
 	std::vector<vkcv::DescriptorSetHandle> updateParticlePositionsSets;
 	vkcv::ComputePipelineHandle updateParticlePositionsPipeline = createComputePipeline(
@@ -357,6 +370,8 @@ int main(int argc, const char **argv) {
 		const uint32_t dispatchSize [3] = { 1, 1, 1 };
 		
 		core.recordBeginDebugLabel(cmdStream, "TRANSFORM PARTICLES TO GRID", { 0.47f, 0.77f, 0.85f, 1.0f });
+		core.prepareImageForStorage(cmdStream, grid.getHandle());
+		
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				transformParticlesToGridPipeline,
@@ -414,13 +429,19 @@ int main(int argc, const char **argv) {
 		core.recordEndDebugLabel(cmdStream);
 		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE VELOCITIES", { 0.78f, 0.89f, 0.94f, 1.0f });
+		core.prepareImageForSampling(cmdStream, grid.getHandle());
+		
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateParticleVelocitiesPipeline,
 				dispatchSizeUpdateParticles,
-				{},
+				{ vkcv::DescriptorSetUsage(
+						0, core.getDescriptorSet(updateParticleVelocitiesSets[0]).vulkanHandle
+				) },
 				vkcv::PushConstants(0)
 		);
+		
+		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
 		core.recordEndDebugLabel(cmdStream);
 		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE POSITIONS", { 0.78f, 0.89f, 0.94f, 1.0f });

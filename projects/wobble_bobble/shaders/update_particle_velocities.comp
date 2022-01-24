@@ -1,6 +1,29 @@
 #version 450
+#extension GL_GOOGLE_include_directive : enable
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
+#include "particle.inc"
+
+layout(set=0, binding=0, std430) buffer particleBuffer {
+    Particle particles [];
+};
+
+layout(set=0, binding=1) uniform texture3D gridImage;
+layout(set=0, binding=2) uniform sampler gridSampler;
+
 void main()	{
+    if (gl_GlobalInvocationID.x < particles.length()) {
+        vec3 position = particles[gl_GlobalInvocationID.x].minimal.position;
+        float mass = particles[gl_GlobalInvocationID.x].minimal.mass;
+
+        vec3 offset = position;
+
+        vec4 gridSample = texture(sampler3D(gridImage, gridSampler), offset);
+
+        vec3 gridVelocity = gridSample.xyz;
+        float gridMass = gridSample.w;
+
+        particles[gl_GlobalInvocationID.x].minimal.velocity = gridVelocity * mass / gridMass;
+    }
 }
