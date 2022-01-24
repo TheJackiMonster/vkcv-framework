@@ -35,7 +35,7 @@ void distributeParticles(Particle *particles, size_t count, const glm::vec3& cen
 		
 		particles[i].position = center + offset;
 		particles[i].size = size;
-		particles[i].velocity = glm::vec3(0.0f);
+		particles[i].velocity = glm::vec3(0.1f);
 		
 		volume += size;
 	}
@@ -47,7 +47,7 @@ void distributeParticles(Particle *particles, size_t count, const glm::vec3& cen
 
 vkcv::ComputePipelineHandle createComputePipeline(vkcv::Core& core, vkcv::shader::GLSLCompiler& compiler,
 												  const std::string& path,
-												  std::vector<vkcv::DescriptorSetLayoutHandle>& descriptorSetLayouts) {
+												  std::vector<vkcv::DescriptorSetHandle>& descriptorSets) {
 	vkcv::ShaderProgram shaderProgram;
 	
 	compiler.compile(
@@ -68,10 +68,14 @@ vkcv::ComputePipelineHandle createComputePipeline(vkcv::Core& core, vkcv::shader
 		}
 	}
 	
+	std::vector<vkcv::DescriptorSetLayoutHandle> descriptorSetLayouts;
+	
 	descriptorSetLayouts.resize(count);
+	descriptorSets.resize(count);
 	
 	for (const auto& descriptor : descriptors) {
 		descriptorSetLayouts[descriptor.first] = core.createDescriptorSetLayout(descriptor.second);
+		descriptorSets[descriptor.first] = core.createDescriptorSet(descriptorSetLayouts[descriptor.first]);
 	}
 	
 	vkcv::ComputePipelineConfig config {
@@ -154,67 +158,67 @@ int main(int argc, const char **argv) {
 	
 	vkcv::shader::GLSLCompiler compiler;
 	
-	std::vector<vkcv::DescriptorSetLayoutHandle> transformParticlesToGridLayouts;
 	std::vector<vkcv::DescriptorSetHandle> transformParticlesToGridSets;
-	
 	vkcv::ComputePipelineHandle transformParticlesToGridPipeline = createComputePipeline(
 			core, compiler,
 			"shaders/transform_particles_to_grid.comp",
-			transformParticlesToGridLayouts
+			transformParticlesToGridSets
 	);
 	
-	transformParticlesToGridSets.resize(transformParticlesToGridLayouts.size());
-	
-	for (size_t i = 0; i < transformParticlesToGridSets.size(); i++) {
-		transformParticlesToGridSets[i] = core.createDescriptorSet(transformParticlesToGridLayouts[i]);
+	{
+		vkcv::DescriptorWrites writes;
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
+		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(1, grid.getHandle()));
+		core.writeDescriptorSet(transformParticlesToGridSets[0], writes);
 	}
 	
-	vkcv::DescriptorWrites writes;
-	writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-	writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(1, grid.getHandle()));
-	core.writeDescriptorSet(transformParticlesToGridSets[0], writes);
-	
-	std::vector<vkcv::DescriptorSetLayoutHandle> initParticleVolumesLayouts;
+	std::vector<vkcv::DescriptorSetHandle> initParticleVolumesSets;
 	vkcv::ComputePipelineHandle initParticleVolumesPipeline = createComputePipeline(
 			core, compiler,
 			"shaders/init_particle_volumes.comp",
-			initParticleVolumesLayouts
+			initParticleVolumesSets
 	);
 	
-	std::vector<vkcv::DescriptorSetLayoutHandle> updateGridForcesLayouts;
+	std::vector<vkcv::DescriptorSetHandle> updateGridForcesSets;
 	vkcv::ComputePipelineHandle updateGridForcesPipeline = createComputePipeline(
 			core, compiler,
 			"shaders/update_grid_forces.comp",
-			updateGridForcesLayouts
+			updateGridForcesSets
 	);
 	
-	std::vector<vkcv::DescriptorSetLayoutHandle> updateGridVelocitiesLayouts;
+	std::vector<vkcv::DescriptorSetHandle> updateGridVelocitiesSets;
 	vkcv::ComputePipelineHandle updateGridVelocitiesPipeline = createComputePipeline(
 			core, compiler,
 			"shaders/update_grid_velocities.comp",
-			updateGridVelocitiesLayouts
+			updateGridVelocitiesSets
 	);
 	
-	std::vector<vkcv::DescriptorSetLayoutHandle> updateParticleDeformationLayouts;
+	std::vector<vkcv::DescriptorSetHandle> updateParticleDeformationSets;
 	vkcv::ComputePipelineHandle updateParticleDeformationPipeline = createComputePipeline(
 			core, compiler,
 			"shaders/update_particle_deformation.comp",
-			updateParticleDeformationLayouts
+			updateParticleDeformationSets
 	);
 	
-	std::vector<vkcv::DescriptorSetLayoutHandle> updateParticleVelocitiesLayouts;
+	std::vector<vkcv::DescriptorSetHandle> updateParticleVelocitiesSets;
 	vkcv::ComputePipelineHandle updateParticleVelocitiesPipeline = createComputePipeline(
 			core, compiler,
 			"shaders/update_particle_velocities.comp",
-			updateParticleVelocitiesLayouts
+			updateParticleVelocitiesSets
 	);
 	
-	std::vector<vkcv::DescriptorSetLayoutHandle> updateParticlePositionsLayouts;
+	std::vector<vkcv::DescriptorSetHandle> updateParticlePositionsSets;
 	vkcv::ComputePipelineHandle updateParticlePositionsPipeline = createComputePipeline(
 			core, compiler,
 			"shaders/update_particle_positions.comp",
-			updateParticlePositionsLayouts
+			updateParticlePositionsSets
 	);
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
+		core.writeDescriptorSet(updateParticlePositionsSets[0], writes);
+	}
 	
 	vkcv::ShaderProgram gfxProgram;
 	
@@ -253,9 +257,11 @@ int main(int argc, const char **argv) {
 	
 	vkcv::DescriptorSetHandle gfxSet = core.createDescriptorSet(gfxSetLayout);
 	
-	vkcv::DescriptorWrites writesGfx;
-	writesGfx.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-	core.writeDescriptorSet(gfxSet, writesGfx);
+	{
+		vkcv::DescriptorWrites writes;
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
+		core.writeDescriptorSet(gfxSet, writes);
+	}
 	
 	vkcv::PassHandle gfxPass = core.createPass(passConfig);
 	
@@ -293,7 +299,6 @@ int main(int argc, const char **argv) {
 			triangleIndices.getCount()
 	);
 	
-	vkcv::PushConstants pushConstants (0);
 	std::vector<vkcv::DrawcallInfo> drawcalls;
 	
 	drawcalls.push_back(vkcv::DrawcallInfo(
@@ -305,6 +310,8 @@ int main(int argc, const char **argv) {
 	bool initializedParticleVolumes = false;
 	
 	auto start = std::chrono::system_clock::now();
+	auto current = start;
+	
 	while (vkcv::Window::hasOpenWindow()) {
 		vkcv::Window::pollEvents();
 		
@@ -327,15 +334,26 @@ int main(int argc, const char **argv) {
 			swapchainExtent.height = swapchainHeight;
 		}
 		
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		auto next = std::chrono::system_clock::now();
 		
-		start = end;
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		auto time = std::chrono::duration_cast<std::chrono::microseconds>(next - start);
+		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(next - current);
+		
+		current = next;
+		
+		double  t = 0.000001 * static_cast<double>(time.count());
+		double dt = 0.000001 * static_cast<double>(deltatime.count());
+		
+		vkcv::PushConstants timePushConstants (sizeof(float));
+		timePushConstants.appendDrawcall(static_cast<float>(t));
+		timePushConstants.appendDrawcall(static_cast<float>(dt));
+		
+		cameraManager.update(dt);
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
 		const uint32_t dispatchSizeTransformParticlesToGrid [3] = { 16, 16, 16 };
+		const uint32_t dispatchSizeUpdateParticles [3] = { static_cast<uint32_t>(particles.getCount() + 63) / 64, 1, 1 };
 		const uint32_t dispatchSize [3] = { 1, 1, 1 };
 		
 		core.recordBeginDebugLabel(cmdStream, "TRANSFORM PARTICLES TO GRID", { 0.47f, 0.77f, 0.85f, 1.0f });
@@ -346,8 +364,10 @@ int main(int argc, const char **argv) {
 				{ vkcv::DescriptorSetUsage(
 						0, core.getDescriptorSet(transformParticlesToGridSets[0]).vulkanHandle
 				) },
-				pushConstants
+				vkcv::PushConstants(0)
 		);
+		
+		core.recordImageMemoryBarrier(cmdStream, grid.getHandle());
 		core.recordEndDebugLabel(cmdStream);
 		
 		if (!initializedParticleVolumes) {
@@ -357,7 +377,7 @@ int main(int argc, const char **argv) {
 					initParticleVolumesPipeline,
 					dispatchSize,
 					{},
-					pushConstants
+					vkcv::PushConstants(0)
 			);
 			core.recordEndDebugLabel(cmdStream);
 			initializedParticleVolumes = true;
@@ -369,7 +389,7 @@ int main(int argc, const char **argv) {
 				updateGridForcesPipeline,
 				dispatchSize,
 				{},
-				pushConstants
+				vkcv::PushConstants(0)
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
@@ -379,7 +399,7 @@ int main(int argc, const char **argv) {
 				updateGridVelocitiesPipeline,
 				dispatchSize,
 				{},
-				pushConstants
+				vkcv::PushConstants(0)
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
@@ -387,9 +407,9 @@ int main(int argc, const char **argv) {
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateParticleDeformationPipeline,
-				dispatchSize,
+				dispatchSizeUpdateParticles,
 				{},
-				pushConstants
+				vkcv::PushConstants(0)
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
@@ -397,9 +417,9 @@ int main(int argc, const char **argv) {
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateParticleVelocitiesPipeline,
-				dispatchSize,
+				dispatchSizeUpdateParticles,
 				{},
-				pushConstants
+				vkcv::PushConstants(0)
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
@@ -407,10 +427,14 @@ int main(int argc, const char **argv) {
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateParticlePositionsPipeline,
-				dispatchSize,
-				{},
-				pushConstants
+				dispatchSizeUpdateParticles,
+				{ vkcv::DescriptorSetUsage(
+						0, core.getDescriptorSet(updateParticlePositionsSets[0]).vulkanHandle
+				) },
+				timePushConstants
 		);
+		
+		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
 		core.recordEndDebugLabel(cmdStream);
 		
 		std::vector<vkcv::ImageHandle> renderTargets {
@@ -423,7 +447,7 @@ int main(int argc, const char **argv) {
 				cmdStream,
 				gfxPass,
 				gfxPipeline,
-				pushConstants,
+				vkcv::PushConstants(0),
 				drawcalls,
 				renderTargets,
 				windowHandle
