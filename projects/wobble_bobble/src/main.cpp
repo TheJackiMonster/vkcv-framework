@@ -232,6 +232,8 @@ int main(int argc, const char **argv) {
 	vkcv::PushConstants pushConstants (0);
 	std::vector<vkcv::DrawcallInfo> drawcalls;
 	
+	bool initializedParticleVolumes = false;
+	
 	auto start = std::chrono::system_clock::now();
 	while (vkcv::Window::hasOpenWindow()) {
 		vkcv::Window::pollEvents();
@@ -265,7 +267,7 @@ int main(int argc, const char **argv) {
 		
 		const uint32_t dispatchSize [3] = { 1, 0, 0 };
 		
-		core.recordBeginDebugLabel(cmdStream, "TRANSFORM PARTICLES TO GRID", { 1.0f, 0.0f, 0.0f, 1.0f });
+		core.recordBeginDebugLabel(cmdStream, "TRANSFORM PARTICLES TO GRID", { 0.47f, 0.77f, 0.85f, 1.0f });
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				transformParticlesToGridPipeline,
@@ -275,7 +277,20 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
-		core.recordBeginDebugLabel(cmdStream, "UPDATE GRID FORCES", { 1.0f, 0.0f, 0.0f, 1.0f });
+		if (!initializedParticleVolumes) {
+			core.recordBeginDebugLabel(cmdStream, "INIT PARTICLE VOLUMES", { 0.78f, 0.89f, 0.94f, 1.0f });
+			core.recordComputeDispatchToCmdStream(
+					cmdStream,
+					initParticleVolumesPipeline,
+					dispatchSize,
+					{},
+					pushConstants
+			);
+			core.recordEndDebugLabel(cmdStream);
+			initializedParticleVolumes = true;
+		}
+		
+		core.recordBeginDebugLabel(cmdStream, "UPDATE GRID FORCES", { 0.47f, 0.77f, 0.85f, 1.0f });
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateGridForcesPipeline,
@@ -285,7 +300,7 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
-		core.recordBeginDebugLabel(cmdStream, "UPDATE GRID VELOCITIES", { 1.0f, 0.0f, 0.0f, 1.0f });
+		core.recordBeginDebugLabel(cmdStream, "UPDATE GRID VELOCITIES", { 0.47f, 0.77f, 0.85f, 1.0f });
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateGridVelocitiesPipeline,
@@ -295,7 +310,7 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
-		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE DEFORMATION", { 0.0f, 1.0f, 0.0f, 1.0f });
+		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE DEFORMATION", { 0.78f, 0.89f, 0.94f, 1.0f });
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateParticleDeformationPipeline,
@@ -305,7 +320,7 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
-		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE VELOCITIES", { 0.0f, 1.0f, 0.0f, 1.0f });
+		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE VELOCITIES", { 0.78f, 0.89f, 0.94f, 1.0f });
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateParticleVelocitiesPipeline,
@@ -315,7 +330,7 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
-		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE POSITIONS", { 0.0f, 1.0f, 0.0f, 1.0f });
+		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE POSITIONS", { 0.78f, 0.89f, 0.94f, 1.0f });
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateParticlePositionsPipeline,
@@ -330,7 +345,7 @@ int main(int argc, const char **argv) {
 				depthBuffer
 		};
 		
-		core.recordBeginDebugLabel(cmdStream, "RENDER PARTICLES", { 0.0f, 0.0f, 1.0f, 1.0f });
+		core.recordBeginDebugLabel(cmdStream, "RENDER PARTICLES", { 0.13f, 0.20f, 0.22f, 1.0f });
 		core.recordDrawcallsToCmdStream(
 				cmdStream,
 				gfxPass,
