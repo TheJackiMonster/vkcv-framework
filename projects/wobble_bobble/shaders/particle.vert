@@ -16,5 +16,5 @@ void main()	{
     float size = particles[gl_InstanceIndex].minimal.size;
 
     passPos = vertexPos;
-    gl_Position = vec4(position + vec3(vertexPos * size, 0), 1);
+    gl_Position = vec4(position + vec3(vertexPos * size * 2.0f, 0), 1);
 }

@@ -247,6 +247,16 @@ int main(int argc, const char **argv) {
 		)
 	});
 	
+	vkcv::DescriptorSetLayoutHandle gfxSetLayout = core.createDescriptorSetLayout(
+			gfxProgram.getReflectedDescriptors().at(0)
+	);
+	
+	vkcv::DescriptorSetHandle gfxSet = core.createDescriptorSet(gfxSetLayout);
+	
+	vkcv::DescriptorWrites writesGfx;
+	writesGfx.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
+	core.writeDescriptorSet(gfxSet, writesGfx);
+	
 	vkcv::PassHandle gfxPass = core.createPass(passConfig);
 	
 	vkcv::VertexLayout vertexLayout ({
@@ -259,7 +269,7 @@ int main(int argc, const char **argv) {
 	gfxPipelineConfig.m_Height = windowHeight;
 	gfxPipelineConfig.m_PassHandle = gfxPass;
 	gfxPipelineConfig.m_VertexLayout = vertexLayout;
-	gfxPipelineConfig.m_DescriptorLayouts = { core.getDescriptorSetLayout(transformParticlesToGridLayouts[0]).vulkanHandle };
+	gfxPipelineConfig.m_DescriptorLayouts = { core.getDescriptorSetLayout(gfxSetLayout).vulkanHandle };
 	gfxPipelineConfig.m_UseDynamicViewport = true;
 	gfxPipelineConfig.m_blendMode = vkcv::BlendMode::Additive;
 	
@@ -288,7 +298,7 @@ int main(int argc, const char **argv) {
 	
 	drawcalls.push_back(vkcv::DrawcallInfo(
 			triangleMesh,
-			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(transformParticlesToGridSets[0]).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(gfxSet).vulkanHandle) },
 			particles.getCount()
 	));
 	

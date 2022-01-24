@@ -8,7 +8,7 @@ void main()	{
     const float value = length(passPos);
 
     if (value < 0.5f) {
-        outColor = vec4(1.0f - value, 0.0f, 0.0f, 1.0f);
+        outColor = vec4(1.0f, 0.0f, 0.0f, 1.0f - value * 2.0f);
     } else {
         discard;
     }
