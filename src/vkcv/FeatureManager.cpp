@@ -293,6 +293,44 @@ m_physicalDevice.getFeatures2(&query)
 		return true;
 	}
 	
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceShaderAtomicFloatFeaturesEXT& features, bool required) const {
+		vkcv_check_init_features2(vk::PhysicalDeviceShaderAtomicFloatFeaturesEXT);
+		
+		vkcv_check_feature(shaderBufferFloat32Atomics);
+		vkcv_check_feature(shaderBufferFloat32AtomicAdd);
+		vkcv_check_feature(shaderBufferFloat64Atomics);
+		vkcv_check_feature(shaderBufferFloat64AtomicAdd);
+		vkcv_check_feature(shaderSharedFloat32Atomics);
+		vkcv_check_feature(shaderSharedFloat32AtomicAdd);
+		vkcv_check_feature(shaderSharedFloat64Atomics);
+		vkcv_check_feature(shaderSharedFloat64AtomicAdd);
+		vkcv_check_feature(shaderImageFloat32Atomics);
+		vkcv_check_feature(shaderImageFloat32AtomicAdd);
+		vkcv_check_feature(sparseImageFloat32Atomics);
+		vkcv_check_feature(sparseImageFloat32AtomicAdd);
+		
+		return true;
+	}
+	
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT& features, bool required) const {
+		vkcv_check_init_features2(vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT);
+		
+		vkcv_check_feature(shaderBufferFloat16Atomics);
+		vkcv_check_feature(shaderBufferFloat16AtomicAdd);
+		vkcv_check_feature(shaderBufferFloat16AtomicMinMax);
+		vkcv_check_feature(shaderBufferFloat32AtomicMinMax);
+		vkcv_check_feature(shaderBufferFloat64AtomicMinMax);
+		vkcv_check_feature(shaderSharedFloat16Atomics);
+		vkcv_check_feature(shaderSharedFloat16AtomicAdd);
+		vkcv_check_feature(shaderSharedFloat16AtomicMinMax);
+		vkcv_check_feature(shaderSharedFloat32AtomicMinMax);
+		vkcv_check_feature(shaderSharedFloat64AtomicMinMax);
+		vkcv_check_feature(shaderImageFloat32AtomicMinMax);
+		vkcv_check_feature(sparseImageFloat32AtomicMinMax);
+		
+		return true;
+	}
+	
 	bool FeatureManager::checkSupport(const vk::PhysicalDeviceVulkan12Features &features, bool required) const {
 	    vkcv_check_init_features2(vk::PhysicalDeviceVulkan12Features);
 

@@ -9,6 +9,7 @@ struct Particle {
 	float size;
 	glm::vec3 velocity;
 	float mass;
+	glm::mat4 deformation;
 };
 
 float randomFloat(float min, float max) {
@@ -59,7 +60,7 @@ vkcv::ComputePipelineHandle createComputePipeline(vkcv::Core& core, vkcv::shader
 	
 	vkcv::ComputePipelineConfig config {
 			shaderProgram,
-			descriptorSetLayouts
+			{}
 	};
 	
 	return core.createComputePipeline(config);
@@ -71,11 +72,14 @@ int main(int argc, const char **argv) {
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
 	
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	
 	vkcv::Core core = vkcv::Core::create(
 			applicationName,
 			VK_MAKE_VERSION(0, 0, 1),
 			{vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
-			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
+			features
 	);
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
 	vkcv::Window& window = core.getWindow(windowHandle);

@@ -1,6 +1,50 @@
 #version 450
+#extension GL_GOOGLE_include_directive : enable
 
-layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+
+#include "particle.inc"
+
+layout(set=0, binding=0, std430) buffer particleBuffer {
+    Particle particles [];
+};
+
+layout(set=0, binding=1, rgba32f) restrict writeonly uniform image3D gridImage;
+
+#define SHARED_PARTICLES_BATCH_SIZE 64
+
+shared ParticleMinimal shared_particles [SHARED_PARTICLES_BATCH_SIZE];
 
 void main()	{
+    const vec3 position = vec3(gl_GlobalInvocationID) / imageSize(gridImage);
+
+    vec4 gridValue = vec4(0.0f);
+    uint offset = 0;
+
+    memoryBarrierBuffer();
+
+    for (offset = 0; offset < particles.length(); offset += 64) {
+        uint localOffset = offset + gl_LocalInvocationIndex;
+
+        if (localOffset < particles.length()) {
+            shared_particles[gl_LocalInvocationIndex] = particles[localOffset].minimal;
+        } else {
+            shared_particles[gl_LocalInvocationIndex].velocity = vec3(0.0f);
+            shared_particles[gl_LocalInvocationIndex].mass = 0.0f;
+        }
+
+        memoryBarrierShared();
+
+        for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
+            if (length(shared_particles[i].position - position) < shared_particles[i].size) {
+                gridValue += vec4(shared_particles[i].velocity, shared_particles[i].mass);
+            }
+        }
+    }
+
+    imageStore(
+        gridImage,
+        ivec3(gl_GlobalInvocationID),
+        gridValue
+    );
 }
