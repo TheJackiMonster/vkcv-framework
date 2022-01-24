@@ -44,6 +44,27 @@ void distributeParticles(Particle *particles, size_t count, const glm::vec3& cen
 	}
 }
 
+vkcv::ComputePipelineHandle createComputePipeline(vkcv::Core& core, vkcv::shader::GLSLCompiler& compiler,
+												  const std::string& path,
+												  const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) {
+	vkcv::ShaderProgram shaderProgram;
+	
+	compiler.compile(
+			vkcv::ShaderStage::COMPUTE,
+			path,
+			[&shaderProgram](vkcv::ShaderStage stage, const std::filesystem::path& path) {
+				shaderProgram.addShader(stage, path);
+			}
+	);
+	
+	vkcv::ComputePipelineConfig config {
+			shaderProgram,
+			descriptorSetLayouts
+	};
+	
+	return core.createComputePipeline(config);
+}
+
 int main(int argc, const char **argv) {
 	const char* applicationName = "Wobble Bobble";
 	
@@ -110,6 +131,49 @@ int main(int argc, const char **argv) {
 	 */
 	
 	vkcv::shader::GLSLCompiler compiler;
+	
+	vkcv::ComputePipelineHandle transformParticlesToGridPipeline = createComputePipeline(
+			core, compiler,
+			"shaders/transform_particles_to_grid.comp",
+			{}
+	);
+	
+	vkcv::ComputePipelineHandle initParticleVolumesPipeline = createComputePipeline(
+			core, compiler,
+			"shaders/init_particle_volumes.comp",
+			{}
+	);
+	
+	vkcv::ComputePipelineHandle updateGridForcesPipeline = createComputePipeline(
+			core, compiler,
+			"shaders/update_grid_forces.comp",
+			{}
+	);
+	
+	vkcv::ComputePipelineHandle updateGridVelocitiesPipeline = createComputePipeline(
+			core, compiler,
+			"shaders/update_grid_velocities.comp",
+			{}
+	);
+	
+	vkcv::ComputePipelineHandle updateParticleDeformationPipeline = createComputePipeline(
+			core, compiler,
+			"shaders/update_particle_deformation.comp",
+			{}
+	);
+	
+	vkcv::ComputePipelineHandle updateParticleVelocitiesPipeline = createComputePipeline(
+			core, compiler,
+			"shaders/update_particle_velocities.comp",
+			{}
+	);
+	
+	vkcv::ComputePipelineHandle updateParticlePositionsPipeline = createComputePipeline(
+			core, compiler,
+			"shaders/update_particle_positions.comp",
+			{}
+	);
+	
 	vkcv::ShaderProgram gfxProgram;
 	
 	compiler.compile(
@@ -199,11 +263,74 @@ int main(int argc, const char **argv) {
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
+		const uint32_t dispatchSize [3] = { 1, 0, 0 };
+		
+		core.recordBeginDebugLabel(cmdStream, "TRANSFORM PARTICLES TO GRID", { 1.0f, 0.0f, 0.0f, 1.0f });
+		core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				transformParticlesToGridPipeline,
+				dispatchSize,
+				{},
+				pushConstants
+		);
+		core.recordEndDebugLabel(cmdStream);
+		
+		core.recordBeginDebugLabel(cmdStream, "UPDATE GRID FORCES", { 1.0f, 0.0f, 0.0f, 1.0f });
+		core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				updateGridForcesPipeline,
+				dispatchSize,
+				{},
+				pushConstants
+		);
+		core.recordEndDebugLabel(cmdStream);
+		
+		core.recordBeginDebugLabel(cmdStream, "UPDATE GRID VELOCITIES", { 1.0f, 0.0f, 0.0f, 1.0f });
+		core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				updateGridVelocitiesPipeline,
+				dispatchSize,
+				{},
+				pushConstants
+		);
+		core.recordEndDebugLabel(cmdStream);
+		
+		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE DEFORMATION", { 0.0f, 1.0f, 0.0f, 1.0f });
+		core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				updateParticleDeformationPipeline,
+				dispatchSize,
+				{},
+				pushConstants
+		);
+		core.recordEndDebugLabel(cmdStream);
+		
+		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE VELOCITIES", { 0.0f, 1.0f, 0.0f, 1.0f });
+		core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				updateParticleVelocitiesPipeline,
+				dispatchSize,
+				{},
+				pushConstants
+		);
+		core.recordEndDebugLabel(cmdStream);
+		
+		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE POSITIONS", { 0.0f, 1.0f, 0.0f, 1.0f });
+		core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				updateParticlePositionsPipeline,
+				dispatchSize,
+				{},
+				pushConstants
+		);
+		core.recordEndDebugLabel(cmdStream);
+		
 		std::vector<vkcv::ImageHandle> renderTargets {
 				vkcv::ImageHandle::createSwapchainImageHandle(),
 				depthBuffer
 		};
 		
+		core.recordBeginDebugLabel(cmdStream, "RENDER PARTICLES", { 0.0f, 0.0f, 1.0f, 1.0f });
 		core.recordDrawcallsToCmdStream(
 				cmdStream,
 				gfxPass,
@@ -213,6 +340,7 @@ int main(int argc, const char **argv) {
 				renderTargets,
 				windowHandle
 		);
+		core.recordEndDebugLabel(cmdStream);
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
