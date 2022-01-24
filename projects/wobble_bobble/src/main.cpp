@@ -227,14 +227,6 @@ int main(int argc, const char **argv) {
 	);
 	
 	compiler.compile(
-			vkcv::ShaderStage::GEOMETRY,
-			"shaders/particle.geom",
-			[&gfxProgram](vkcv::ShaderStage stage, const std::filesystem::path& path) {
-				gfxProgram.addShader(stage, path);
-			}
-	);
-	
-	compiler.compile(
 			vkcv::ShaderStage::FRAGMENT,
 			"shaders/particle.frag",
 			[&gfxProgram](vkcv::ShaderStage stage, const std::filesystem::path& path) {
@@ -257,8 +249,9 @@ int main(int argc, const char **argv) {
 	
 	vkcv::PassHandle gfxPass = core.createPass(passConfig);
 	
-	std::vector<vkcv::VertexBinding> vertexBindings;
-	vkcv::VertexLayout vertexLayout (vertexBindings);
+	vkcv::VertexLayout vertexLayout ({
+		vkcv::VertexBinding(0, gfxProgram.getVertexAttachments())
+	});
 	
 	vkcv::GraphicsPipelineConfig gfxPipelineConfig;
 	gfxPipelineConfig.m_ShaderProgram = gfxProgram;
@@ -266,13 +259,38 @@ int main(int argc, const char **argv) {
 	gfxPipelineConfig.m_Height = windowHeight;
 	gfxPipelineConfig.m_PassHandle = gfxPass;
 	gfxPipelineConfig.m_VertexLayout = vertexLayout;
-	gfxPipelineConfig.m_DescriptorLayouts = {};
+	gfxPipelineConfig.m_DescriptorLayouts = { core.getDescriptorSetLayout(transformParticlesToGridLayouts[0]).vulkanHandle };
 	gfxPipelineConfig.m_UseDynamicViewport = true;
+	gfxPipelineConfig.m_blendMode = vkcv::BlendMode::Additive;
 	
 	vkcv::GraphicsPipelineHandle gfxPipeline = core.createGraphicsPipeline(gfxPipelineConfig);
 	
+	vkcv::Buffer<glm::vec2> trianglePositions = core.createBuffer<glm::vec2>(vkcv::BufferType::VERTEX, 3);
+	trianglePositions.fill({
+		glm::vec2(-1.0f, -1.0f),
+		glm::vec2(+0.0f, +1.0f),
+		glm::vec2(+1.0f, -1.0f),
+	});
+	
+	vkcv::Buffer<uint16_t> triangleIndices = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3);
+	triangleIndices.fill({
+		0, 1, 2
+	});
+	
+	vkcv::Mesh triangleMesh (
+			{ vkcv::VertexBufferBinding(0, trianglePositions.getVulkanHandle()) },
+			triangleIndices.getVulkanHandle(),
+			triangleIndices.getCount()
+	);
+	
 	vkcv::PushConstants pushConstants (0);
 	std::vector<vkcv::DrawcallInfo> drawcalls;
+	
+	drawcalls.push_back(vkcv::DrawcallInfo(
+			triangleMesh,
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(transformParticlesToGridSets[0]).vulkanHandle) },
+			particles.getCount()
+	));
 	
 	bool initializedParticleVolumes = false;
 	
