@@ -232,9 +232,9 @@ namespace vkcv::upscaling {
 				program.addShader(shaderStage, path);
 			});
 
-			m_easuPipeline = m_core.createComputePipeline({ program, 
-				{m_core.getDescriptorSetLayout(m_easuDescriptorSetLayout).vulkanHandle} 
-			});
+			m_easuPipeline = m_core.createComputePipeline({program,{
+				m_easuDescriptorSetLayout
+			}});
 
 			
 			DescriptorWrites writes;
@@ -255,7 +255,7 @@ namespace vkcv::upscaling {
 			});
 
 			m_rcasPipeline = m_core.createComputePipeline({ program, {
-				m_core.getDescriptorSetLayout(m_rcasDescriptorSetLayout).vulkanHandle
+				m_rcasDescriptorSetLayout
 			}});
 
 			DescriptorWrites writes;

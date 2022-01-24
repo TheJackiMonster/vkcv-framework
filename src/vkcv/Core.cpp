@@ -85,7 +85,14 @@ namespace vkcv
 
     ComputePipelineHandle Core::createComputePipeline(const ComputePipelineConfig &config)
     {
-        return m_ComputePipelineManager->createComputePipeline(config);
+		std::vector<vk::DescriptorSetLayout> layouts;
+		layouts.resize(config.m_DescriptorSetLayouts.size());
+	
+		for (size_t i = 0; i < layouts.size(); i++) {
+			layouts[i] = getDescriptorSetLayout(config.m_DescriptorSetLayouts[i]).vulkanHandle;
+		}
+		
+        return m_ComputePipelineManager->createComputePipeline(config.m_ShaderProgram, layouts);
     }
 
     PassHandle Core::createPass(const PassConfig &config)

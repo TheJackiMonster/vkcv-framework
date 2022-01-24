@@ -192,7 +192,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 
 	m_depthToMomentsDescriptorSetLayout         = corePtr->createDescriptorSetLayout(depthToMomentsShader.getReflectedDescriptors().at(0));
 	m_depthToMomentsDescriptorSet               = corePtr->createDescriptorSet(m_depthToMomentsDescriptorSetLayout);
-    m_depthToMomentsPipe = corePtr->createComputePipeline({ depthToMomentsShader, { corePtr->getDescriptorSetLayout(m_depthToMomentsDescriptorSetLayout).vulkanHandle }});
+    m_depthToMomentsPipe = corePtr->createComputePipeline({ depthToMomentsShader, { m_depthToMomentsDescriptorSetLayout }});
 
 	vkcv::DescriptorWrites depthToMomentDescriptorWrites;
 	depthToMomentDescriptorWrites.sampledImageWrites    = { vkcv::SampledImageDescriptorWrite(0, m_shadowMapDepth.getHandle()) };
@@ -204,7 +204,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	vkcv::ShaderProgram shadowBlurXShader   = loadShadowBlurXShader();
 	m_shadowBlurXDescriptorSetLayout        = corePtr->createDescriptorSetLayout(shadowBlurXShader.getReflectedDescriptors().at(0));
 	m_shadowBlurXDescriptorSet              = corePtr->createDescriptorSet(m_shadowBlurXDescriptorSetLayout);
-	m_shadowBlurXPipe                       = corePtr->createComputePipeline({ shadowBlurXShader, { corePtr->getDescriptorSetLayout(m_shadowBlurXDescriptorSetLayout).vulkanHandle }});
+	m_shadowBlurXPipe                       = corePtr->createComputePipeline({ shadowBlurXShader, { m_shadowBlurXDescriptorSetLayout }});
 
 	vkcv::DescriptorWrites shadowBlurXDescriptorWrites;
 	shadowBlurXDescriptorWrites.sampledImageWrites   = { vkcv::SampledImageDescriptorWrite(0, m_shadowMap.getHandle()) };
@@ -216,7 +216,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	vkcv::ShaderProgram shadowBlurYShader   = loadShadowBlurYShader();
 	m_shadowBlurYDescriptorSetLayout        = corePtr->createDescriptorSetLayout(shadowBlurYShader.getReflectedDescriptors().at(0));
 	m_shadowBlurYDescriptorSet              = corePtr->createDescriptorSet(m_shadowBlurYDescriptorSetLayout);
-    m_shadowBlurYPipe                       = corePtr->createComputePipeline({ shadowBlurYShader, { corePtr->getDescriptorSetLayout(m_shadowBlurYDescriptorSetLayout).vulkanHandle }});
+    m_shadowBlurYPipe                       = corePtr->createComputePipeline({ shadowBlurYShader, { m_shadowBlurYDescriptorSetLayout }});
 
     vkcv::DescriptorWrites shadowBlurYDescriptorWrites;
 	shadowBlurYDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(0, m_shadowMapIntermediate.getHandle()) };

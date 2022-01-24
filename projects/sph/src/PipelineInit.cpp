@@ -21,7 +21,8 @@ vkcv::DescriptorSetHandle PipelineInit::ComputePipelineInit(vkcv::Core *pCore, v
 
     pipeline = pCore->createComputePipeline({
             shaderProgram,
-            { pCore->getDescriptorSetLayout(descriptorSetLayout).vulkanHandle } });
+            { descriptorSetLayout }
+	});
 
     return  descriptorSet;
 }
