@@ -39,6 +39,7 @@ namespace vkcv {
         DepthTest                               m_depthTest                     = DepthTest::LessEqual;
         bool                                    m_depthWrite                    = true;
         bool                                    m_alphaToCoverage               = false;
+		uint32_t								m_tessellationControlPoints		= 0;
     };
 
 }
