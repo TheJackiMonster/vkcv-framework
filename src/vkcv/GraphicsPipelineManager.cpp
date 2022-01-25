@@ -195,6 +195,15 @@ namespace vkcv
 		return pipelineInputAssemblyStateCreateInfo;
 	}
 	
+	vk::PipelineTessellationStateCreateInfo createPipelineTessellationStateCreateInfo(const GraphicsPipelineConfig &config) {
+		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo(
+				{},
+				config.m_tessellationControlPoints
+		);
+		
+		return pipelineTessellationStateCreateInfo;
+	}
+	
 	/**
 	 * Creates a Pipeline Viewport State Create Info Struct with default set viewport and scissor settings.
 	 * @param config provides with and height of the output window
@@ -424,7 +433,13 @@ namespace vkcv
         const bool existsVertexShader   = config.m_ShaderProgram.existsShader(ShaderStage::VERTEX);
         const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
         const bool existsGeometryShader = config.m_ShaderProgram.existsShader(ShaderStage::GEOMETRY);
-        const bool validGeometryStages  = existsVertexShader || (existsTaskShader && existsMeshShader);
+		const bool existsTessellationControlShader = config.m_ShaderProgram.existsShader(ShaderStage::TESS_CONTROL);
+		const bool existsTessellationEvaluationShader = config.m_ShaderProgram.existsShader(ShaderStage::TESS_EVAL);
+		
+        const bool validGeometryStages  = (
+				(existsVertexShader && (existsTessellationControlShader == existsTessellationEvaluationShader)) ||
+				(existsTaskShader && existsMeshShader)
+		);
 
         if (!validGeometryStages)
         {
@@ -529,6 +544,40 @@ namespace vkcv
                 return GraphicsPipelineHandle();
             }
         }
+	
+		if (existsTessellationControlShader) {
+			vk::PipelineShaderStageCreateInfo createInfo;
+			const bool success = createPipelineShaderStageCreateInfo(
+					config.m_ShaderProgram,
+					ShaderStage::TESS_CONTROL,
+					m_Device,
+					&createInfo);
+		
+			if (success) {
+				shaderStages.push_back(createInfo);
+			}
+			else {
+				destroyShaderModules();
+				return GraphicsPipelineHandle();
+			}
+		}
+	
+		if (existsTessellationEvaluationShader) {
+			vk::PipelineShaderStageCreateInfo createInfo;
+			const bool success = createPipelineShaderStageCreateInfo(
+					config.m_ShaderProgram,
+					ShaderStage::TESS_EVAL,
+					m_Device,
+					&createInfo);
+		
+			if (success) {
+				shaderStages.push_back(createInfo);
+			}
+			else {
+				destroyShaderModules();
+				return GraphicsPipelineHandle();
+			}
+		}
 
         // vertex input state
         // Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
@@ -545,6 +594,10 @@ namespace vkcv
         vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo =
                 createPipelineInputAssemblyStateCreateInfo(config);
 
+		// tesselation state
+		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo =
+				createPipelineTessellationStateCreateInfo(config);
+		
         // viewport state
         vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo =
                 createPipelineViewportStateCreateInfo(config);
@@ -601,7 +654,7 @@ namespace vkcv
                 shaderStages.data(),
                 &pipelineVertexInputStateCreateInfo,
                 &pipelineInputAssemblyStateCreateInfo,
-                nullptr,
+                &pipelineTessellationStateCreateInfo,
                 &pipelineViewportStateCreateInfo,
                 &pipelineRasterizationStateCreateInfo,
                 &pipelineMultisampleStateCreateInfo,
