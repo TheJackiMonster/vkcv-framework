@@ -14,7 +14,7 @@
 
 namespace vkcv {
 
-    enum class PrimitiveTopology{PointList, LineList, TriangleList };
+    enum class PrimitiveTopology{PointList, LineList, TriangleList, PatchList };
 	enum class CullMode{ None, Front, Back };
     enum class DepthTest { None, Less, LessEqual, Greater, GreatherEqual, Equal };
 

@@ -51,6 +51,8 @@ namespace vkcv
                 return vk::PrimitiveTopology::eLineList;
             case(PrimitiveTopology::TriangleList):
                 return vk::PrimitiveTopology::eTriangleList;
+			case(PrimitiveTopology::PatchList):
+				return vk::PrimitiveTopology::ePatchList;
             default:
             vkcv_log(LogLevel::ERROR, "Unknown primitive topology type");
                 return vk::PrimitiveTopology::eTriangleList;
