@@ -176,7 +176,7 @@ int main(int argc, const char** argv) {
 			(uint32_t)windowHeight,
 			safrPass,
 			{},
-			{ core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle },
+			{ descriptorSetLayout },
 			false
 	};
 

@@ -51,6 +51,8 @@ namespace vkcv
                 return vk::PrimitiveTopology::eLineList;
             case(PrimitiveTopology::TriangleList):
                 return vk::PrimitiveTopology::eTriangleList;
+			case(PrimitiveTopology::PatchList):
+				return vk::PrimitiveTopology::ePatchList;
             default:
             vkcv_log(LogLevel::ERROR, "Unknown primitive topology type");
                 return vk::PrimitiveTopology::eTriangleList;
@@ -359,7 +361,8 @@ namespace vkcv
 	 * @param config sets Push Constant Size and Descriptor Layouts.
 	 * @return Pipeline Layout Create Info Struct
 	 */
-	vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(const GraphicsPipelineConfig &config) {
+	vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(const GraphicsPipelineConfig &config,
+																const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) {
 		static vk::PushConstantRange pushConstantRange;
 		
 		const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
@@ -369,7 +372,7 @@ namespace vkcv
 		
 		vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
 				{},
-				(config.m_DescriptorLayouts),
+				(descriptorSetLayouts),
 				(pushConstantRange)
 		);
 		
@@ -425,7 +428,9 @@ namespace vkcv
 		return dynamicStateCreateInfo;
 	}
 
-    GraphicsPipelineHandle GraphicsPipelineManager::createPipeline(const GraphicsPipelineConfig &config, PassManager& passManager) {
+    GraphicsPipelineHandle GraphicsPipelineManager::createPipeline(const GraphicsPipelineConfig &config,
+																   const PassManager& passManager,
+																   const DescriptorManager& descriptorManager) {
         const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
 
         const bool existsTaskShader     = config.m_ShaderProgram.existsShader(ShaderStage::TASK);
@@ -623,9 +628,15 @@ namespace vkcv
         vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo =
                 createPipelineDynamicStateCreateInfo(config);
 
+		std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+		descriptorSetLayouts.reserve(config.m_DescriptorLayouts.size());
+		for (const auto& handle : config.m_DescriptorLayouts) {
+			descriptorSetLayouts.push_back(descriptorManager.getDescriptorSetLayout(handle).vulkanHandle);
+		}
+		
         // pipeline layout
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-                createPipelineLayoutCreateInfo(config);
+                createPipelineLayoutCreateInfo(config, descriptorSetLayouts);
 
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess) {

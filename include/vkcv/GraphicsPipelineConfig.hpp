@@ -14,7 +14,7 @@
 
 namespace vkcv {
 
-    enum class PrimitiveTopology{PointList, LineList, TriangleList };
+    enum class PrimitiveTopology{PointList, LineList, TriangleList, PatchList };
 	enum class CullMode{ None, Front, Back };
     enum class DepthTest { None, Less, LessEqual, Greater, GreatherEqual, Equal };
 
@@ -28,7 +28,7 @@ namespace vkcv {
 		uint32_t                              	m_Height;
         PassHandle                            	m_PassHandle;
         VertexLayout                          	m_VertexLayout;
-        std::vector<vk::DescriptorSetLayout>  	m_DescriptorLayouts;
+        std::vector<DescriptorSetLayoutHandle>	m_DescriptorLayouts;
         bool                                  	m_UseDynamicViewport;
         bool                                  	m_UseConservativeRasterization 	= false;
         PrimitiveTopology                     	m_PrimitiveTopology 			= PrimitiveTopology::TriangleList;

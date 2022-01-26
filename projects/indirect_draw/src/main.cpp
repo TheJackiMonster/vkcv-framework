@@ -467,7 +467,7 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
         passHandle,
         {sponzaVertexLayout},
-		{ core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle },
+		{ descriptorSetLayout },
 		true
 	};
 	vkcv::GraphicsPipelineHandle sponzaPipelineHandle = core.createGraphicsPipeline(sponzaPipelineConfig);

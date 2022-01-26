@@ -80,7 +80,7 @@ namespace vkcv
 	
 	GraphicsPipelineHandle Core::createGraphicsPipeline(const GraphicsPipelineConfig &config)
     {
-        return m_PipelineManager->createPipeline(config, *m_PassManager);
+        return m_PipelineManager->createPipeline(config, *m_PassManager, *m_DescriptorManager);
     }
 
     ComputePipelineHandle Core::createComputePipeline(const ComputePipelineConfig &config)

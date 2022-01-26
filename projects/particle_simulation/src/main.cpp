@@ -121,8 +121,9 @@ int main(int argc, const char **argv) {
             UINT32_MAX,
             particlePass,
             {particleLayout},
-            {core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle},
-            true};
+            {descriptorSetLayout},
+            true
+	};
     particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 
     const std::vector<glm::vec3> vertices = {glm::vec3(-0.012, 0.012, 0),

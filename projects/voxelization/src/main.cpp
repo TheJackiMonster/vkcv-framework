@@ -317,10 +317,9 @@ int main(int argc, const char** argv) {
 		swapchainExtent.height,
 		prepassPass,
 		vertexLayout,
-		{ 
-		    core.getDescriptorSetLayout(prepassDescriptorSetLayout).vulkanHandle,
-			core.getDescriptorSetLayout(perMeshDescriptorSetLayouts[0]).vulkanHandle },
-		true };
+		{ prepassDescriptorSetLayout, perMeshDescriptorSetLayouts[0] },
+		true
+	};
 	prepassPipelineConfig.m_culling         = vkcv::CullMode::Back;
 	prepassPipelineConfig.m_multisampling   = msaa;
 	prepassPipelineConfig.m_depthTest       = vkcv::DepthTest::LessEqual;
@@ -335,9 +334,7 @@ int main(int argc, const char** argv) {
 		swapchainExtent.height,
 		forwardPass,
 		vertexLayout,
-		{	
-		    core.getDescriptorSetLayout(forwardShadingDescriptorSetLayout).vulkanHandle,
-			core.getDescriptorSetLayout(perMeshDescriptorSetLayouts[0]).vulkanHandle },
+		{ forwardShadingDescriptorSetLayout, perMeshDescriptorSetLayouts[0] },
 		true
 	};
     forwardPipelineConfig.m_culling         = vkcv::CullMode::Back;
