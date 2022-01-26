@@ -12,6 +12,10 @@ layout(location = 0) in vec2 vertexPos;
 layout(location = 0) out vec2 passPos;
 layout(location = 1) out float passMass;
 
+layout( push_constant ) uniform constants{
+    mat4 mvp;
+};
+
 void main()	{
     vec3 position = particles[gl_InstanceIndex].minimal.position;
     float size = particles[gl_InstanceIndex].minimal.size;
@@ -20,5 +24,8 @@ void main()	{
 
     passPos = vertexPos;
     passMass = mass;
-    gl_Position = vec4(position + vec3(vertexPos * size * 2.0f, 0), 1);
+
+    // align particle to face camera
+    gl_Position = mvp * vec4(position, 1);      // transform position into projected view space
+    gl_Position.xy += vertexPos * size * 2.0f;  // move position directly in view space
 }

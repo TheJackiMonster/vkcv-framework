@@ -384,7 +384,11 @@ int main(int argc, const char **argv) {
 		timePushConstants.appendDrawcall(static_cast<float>(dt));
 		
 		cameraManager.update(dt);
-		
+
+		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
+		vkcv::PushConstants cameraPushConstants (sizeof(glm::mat4));
+		cameraPushConstants.appendDrawcall(mvp);
+
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
 		const uint32_t dispatchSizeGrid [3] = { 16, 16, 16 };
@@ -496,7 +500,7 @@ int main(int argc, const char **argv) {
 				cmdStream,
 				gfxPass,
 				gfxPipeline,
-				vkcv::PushConstants(0),
+				cameraPushConstants,
 				drawcalls,
 				renderTargets,
 				windowHandle
