@@ -108,7 +108,8 @@ int main(int argc, const char **argv) {
 	vkcv::gui::GUI gui (core, windowHandle);
 	
 	cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-	cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	uint32_t trackballIdx = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	cameraManager.getCamera(trackballIdx).setCenter(glm::vec3(0.5f, 0.5f, 0.5f));   // set camera to look at the center of the particle volume
 	
 	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 	
