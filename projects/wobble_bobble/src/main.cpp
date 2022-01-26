@@ -123,7 +123,7 @@ int main(int argc, const char **argv) {
 			1024
 	);
 	
-	std::vector<Particle> particles_vec (1024);
+	std::vector<Particle> particles_vec (particles.getCount());
 	
 	distributeParticles(
 			particles_vec.data(),
@@ -309,7 +309,7 @@ int main(int argc, const char **argv) {
 	gfxPipelineConfig.m_Height = windowHeight;
 	gfxPipelineConfig.m_PassHandle = gfxPass;
 	gfxPipelineConfig.m_VertexLayout = vertexLayout;
-	gfxPipelineConfig.m_DescriptorLayouts = { core.getDescriptorSetLayout(gfxSetLayout).vulkanHandle };
+	gfxPipelineConfig.m_DescriptorLayouts = { gfxSetLayout };
 	gfxPipelineConfig.m_UseDynamicViewport = true;
 	gfxPipelineConfig.m_blendMode = vkcv::BlendMode::Additive;
 	
