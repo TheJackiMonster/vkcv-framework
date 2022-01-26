@@ -211,7 +211,7 @@ int main(int argc, const char** argv) {
 			swapchainExtent.height,
 			renderPass,
 			{ bunnyLayout },
-			{ core.getDescriptorSetLayout(vertexShaderDescriptorSetLayout).vulkanHandle },
+			{ vertexShaderDescriptorSetLayout },
 			false
 	};
 
@@ -261,7 +261,7 @@ int main(int argc, const char** argv) {
 		swapchainExtent.height,
 		renderPass,
 		{meshShaderLayout},
-		{core.getDescriptorSetLayout(meshShaderDescriptorSetLayout).vulkanHandle},
+		{meshShaderDescriptorSetLayout},
 		false
 	};
 

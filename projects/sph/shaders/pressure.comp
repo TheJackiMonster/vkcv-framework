@@ -42,10 +42,12 @@ layout( push_constant ) uniform constants{
 
 float poly6(float r)    
 {
-    return (315.f * pow((pow(h,2)-pow(r,2)), 3)/(64.f*PI*pow(h, 9))) * int(0<=r && r<=h);
+    return (315.f * pow((pow(h,2)-pow(r,2)), 3)/(64.f*PI*pow(h, 9))) * int(r<=h);
 }
 
 float densitySum = 0.f;
+
+shared vec3 position_data [256];
 
 void main() {
     
@@ -56,17 +58,34 @@ void main() {
         return;
     }
 
-    for(uint i = 0; i < int(particleCount); i++)   
-    {
-        if (id != i)
-        {
-            float dist = distance(inParticle[id].position, inParticle[i].position);
-            densitySum += mass * poly6(dist);
-        }
+    uint index_offset = gl_WorkGroupID.x * gl_WorkGroupSize.x;
+
+    position_data[gl_LocalInvocationIndex] = inParticle[id].position;
+
+    memoryBarrierShared();
+
+    for(uint j = 1; j < gl_WorkGroupSize.x; j++) {
+        uint i = (gl_LocalInvocationIndex + j) % gl_WorkGroupSize.x;
+
+        float dist = distance(position_data[gl_LocalInvocationIndex], position_data[i]);
+        densitySum += mass * poly6(dist);
     }
+
+    for(uint i = 0; i < index_offset; i++)
+    {
+        float dist = distance(position_data[gl_LocalInvocationIndex], inParticle[i].position);
+        densitySum += mass * poly6(dist);
+    }
+
+    for(uint i = index_offset + gl_WorkGroupSize.x; i < int(particleCount); i++)
+    {
+        float dist = distance(position_data[gl_LocalInvocationIndex], inParticle[i].position);
+        densitySum += mass * poly6(dist);
+    }
+
     outParticle[id].density = max(densitySum,0.0000001f);
     outParticle[id].pressure = max((densitySum - offset), 0.0000001f) * gasConstant;
-    outParticle[id].position = inParticle[id].position;
+    outParticle[id].position = position_data[gl_LocalInvocationIndex];
     outParticle[id].velocity = inParticle[id].velocity;
     outParticle[id].force = inParticle[id].force;
 }

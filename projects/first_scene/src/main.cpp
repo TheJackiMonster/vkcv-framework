@@ -87,8 +87,9 @@ int main(int argc, const char** argv) {
 		UINT32_MAX,
 		scenePass,
 		{sceneLayout},
-		{ core.getDescriptorSetLayout(material0.getDescriptorSetLayout()).vulkanHandle },
-		true };
+		{ material0.getDescriptorSetLayout() },
+		true
+	};
 	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
 	
 	if (!scenePipeline) {

@@ -162,7 +162,7 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
         firstMeshPass,
         {firstMeshLayout},
-		{ core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle },
+		{ descriptorSetLayout },
 		true
 	};
 	vkcv::GraphicsPipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);

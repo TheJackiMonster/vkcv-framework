@@ -110,11 +110,10 @@ Voxelization::Voxelization(
 		voxelResolution,
 		m_voxelizationPass,
 		dependencies.vertexLayout,
-		{ 
-		    m_corePtr->getDescriptorSetLayout(m_voxelizationDescriptorSetLayout).vulkanHandle,
-		    m_corePtr->getDescriptorSetLayout(dummyPerMeshDescriptorSetLayout).vulkanHandle},
+		{ m_voxelizationDescriptorSetLayout, dummyPerMeshDescriptorSetLayout },
 		false,
-		true };
+		true
+	};
 	m_voxelizationPipe = m_corePtr->createGraphicsPipeline(voxelizationPipeConfig);
 
 	vkcv::DescriptorWrites voxelizationDescriptorWrites;
@@ -156,10 +155,11 @@ Voxelization::Voxelization(
 		0,
 		m_visualisationPass,
 		{},
-		{ m_corePtr->getDescriptorSetLayout(m_visualisationDescriptorSetLayout).vulkanHandle },
+		{ m_visualisationDescriptorSetLayout },
 		true,
 		false,
-		vkcv::PrimitiveTopology::PointList };	// points are extended to cubes in the geometry shader
+		vkcv::PrimitiveTopology::PointList
+	};	// points are extended to cubes in the geometry shader
 	voxelVisualisationPipeConfig.m_multisampling = msaa;
 	m_visualisationPipe = m_corePtr->createGraphicsPipeline(voxelVisualisationPipeConfig);
 

@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * @authors Artur Wasmut, Susanne D�tsch, Simeon Hermann
  * @file src/vkcv/DescriptorManager.cpp
@@ -21,7 +23,7 @@ namespace vkcv
 	    explicit DescriptorManager(vk::Device device) noexcept;
 	    ~DescriptorManager() noexcept;
 
-	    DescriptorSetLayoutHandle createDescriptorSetLayout(const std::unordered_map<uint32_t, DescriptorBinding> &setBindingsMap);
+	    DescriptorSetLayoutHandle createDescriptorSetLayout(const DescriptorBindings &setBindingsMap);
         DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle &setLayoutHandle);
 
 		void writeDescriptorSet(
