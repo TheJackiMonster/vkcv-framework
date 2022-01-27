@@ -4,6 +4,8 @@
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
+#include <random>
+
 struct Particle {
 	glm::vec3 position;
 	float size;
@@ -12,8 +14,11 @@ struct Particle {
 	glm::mat4 deformation;
 };
 
+std::random_device random_dev;
+std::uniform_int_distribution<int> dist(0, RAND_MAX);
+
 float randomFloat(float min, float max) {
-	return min + (max - min) * static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+	return min + (max - min) * dist(random_dev) / static_cast<float>(RAND_MAX);
 }
 
 void distributeParticles(Particle *particles, size_t count, const glm::vec3& center, float radius, float mass) {
