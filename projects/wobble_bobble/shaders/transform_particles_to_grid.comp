@@ -11,19 +11,47 @@ layout(set=0, binding=0, std430) buffer particleBuffer {
 
 layout(set=0, binding=1, rgba32f) restrict writeonly uniform image3D gridImage;
 
+float weight_A(float x) {
+    return max(1.0f - x, 0.0f);
+}
+
+float weight_B(float x) {
+    if (x < 0.5f) {
+        return 0.75f - x * x;
+    } else
+    if (x < 1.5f) {
+        float y = (1.5f - x);
+        return 0.5f * y * y;
+    } else {
+        return 0.0f;
+    }
+}
+
+float weight_C(float x) {
+    if (x < 1.0f) {
+        return (0.5f * x - 1.0f) * x*x + 2.0f / 3.0f;
+    } else
+    if (x < 2.0f) {
+        float y = (2.0f - x);
+        return 0.5f / 3.0f * y * y * y;
+    } else {
+        return 0.0f;
+    }
+}
+
 #define SHARED_PARTICLES_BATCH_SIZE 64
 
 shared ParticleMinimal shared_particles [SHARED_PARTICLES_BATCH_SIZE];
 
 void main()	{
-    const vec3 position = vec3(gl_GlobalInvocationID) / imageSize(gridImage);
+    const vec3 position = (vec3(gl_GlobalInvocationID) + vec3(0.5f)) / imageSize(gridImage);
 
     vec4 gridValue = vec4(0.0f);
     uint offset = 0;
 
     memoryBarrierBuffer();
 
-    for (offset = 0; offset < particles.length(); offset += 64) {
+    for (offset = 0; offset < particles.length(); offset += SHARED_PARTICLES_BATCH_SIZE) {
         uint localOffset = offset + gl_LocalInvocationIndex;
 
         if (localOffset < particles.length()) {
@@ -36,8 +64,10 @@ void main()	{
         memoryBarrierShared();
 
         for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
-            if (length(shared_particles[i].position - position) < shared_particles[i].size) {
-                gridValue += vec4(shared_particles[i].velocity, shared_particles[i].mass);
+            float x = distance(shared_particles[i].position, position) / shared_particles[i].size;
+
+            if (x < 2.0f) {
+                gridValue += vec4(shared_particles[i].velocity, shared_particles[i].mass) * weight_C(x);
             }
         }
     }
