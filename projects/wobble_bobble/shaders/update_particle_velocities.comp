@@ -24,6 +24,8 @@ void main()	{
         vec3 gridVelocity = gridSample.xyz;
         float gridMass = gridSample.w;
 
-        particles[gl_GlobalInvocationID.x].minimal.velocity = gridVelocity * mass / gridMass;
+        if (gridMass > 0.0f) {
+            particles[gl_GlobalInvocationID.x].minimal.velocity = gridVelocity * mass / gridMass;
+        }
     }
 }
