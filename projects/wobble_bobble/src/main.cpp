@@ -260,25 +260,43 @@ int main(int argc, const char **argv) {
 		core.writeDescriptorSet(updateParticlePositionsSets[0], writes);
 	}
 	
-	vkcv::ShaderProgram gfxProgram;
+	vkcv::ShaderProgram gfxProgramGrid;
+	
+	compiler.compile(
+			vkcv::ShaderStage::VERTEX,
+			"shaders/grid.vert",
+			[&gfxProgramGrid](vkcv::ShaderStage stage, const std::filesystem::path& path) {
+				gfxProgramGrid.addShader(stage, path);
+			}
+	);
+	
+	compiler.compile(
+			vkcv::ShaderStage::FRAGMENT,
+			"shaders/grid.frag",
+			[&gfxProgramGrid](vkcv::ShaderStage stage, const std::filesystem::path& path) {
+				gfxProgramGrid.addShader(stage, path);
+			}
+	);
+	
+	vkcv::ShaderProgram gfxProgramParticles;
 	
 	compiler.compile(
 			vkcv::ShaderStage::VERTEX,
 			"shaders/particle.vert",
-			[&gfxProgram](vkcv::ShaderStage stage, const std::filesystem::path& path) {
-				gfxProgram.addShader(stage, path);
+			[&gfxProgramParticles](vkcv::ShaderStage stage, const std::filesystem::path& path) {
+				gfxProgramParticles.addShader(stage, path);
 			}
 	);
 	
 	compiler.compile(
 			vkcv::ShaderStage::FRAGMENT,
 			"shaders/particle.frag",
-			[&gfxProgram](vkcv::ShaderStage stage, const std::filesystem::path& path) {
-				gfxProgram.addShader(stage, path);
+			[&gfxProgramParticles](vkcv::ShaderStage stage, const std::filesystem::path& path) {
+				gfxProgramParticles.addShader(stage, path);
 			}
 	);
 	
-	vkcv::PassConfig passConfig ({
+	vkcv::PassConfig passConfigGrid ({
 		vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,
 				vkcv::AttachmentOperation::CLEAR,
@@ -291,35 +309,76 @@ int main(int argc, const char **argv) {
 		)
 	});
 	
-	vkcv::DescriptorSetLayoutHandle gfxSetLayout = core.createDescriptorSetLayout(
-			gfxProgram.getReflectedDescriptors().at(0)
+	vkcv::PassConfig passConfigParticles ({
+		vkcv::AttachmentDescription(
+				vkcv::AttachmentOperation::STORE,
+				vkcv::AttachmentOperation::CLEAR,
+				core.getSwapchain(windowHandle).getFormat()
+		),
+		vkcv::AttachmentDescription(
+				vkcv::AttachmentOperation::STORE,
+				vkcv::AttachmentOperation::CLEAR,
+				vk::Format::eD32Sfloat
+		)
+	});
+	
+	vkcv::DescriptorSetLayoutHandle gfxSetLayoutGrid = core.createDescriptorSetLayout(
+			gfxProgramGrid.getReflectedDescriptors().at(0)
 	);
 	
-	vkcv::DescriptorSetHandle gfxSet = core.createDescriptorSet(gfxSetLayout);
+	vkcv::DescriptorSetHandle gfxSetGrid = core.createDescriptorSet(gfxSetLayoutGrid);
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(0, tmpGrid.getHandle()));
+		core.writeDescriptorSet(gfxSetGrid, writes);
+	}
+	
+	vkcv::DescriptorSetLayoutHandle gfxSetLayoutParticles = core.createDescriptorSetLayout(
+			gfxProgramParticles.getReflectedDescriptors().at(0)
+	);
+	
+	vkcv::DescriptorSetHandle gfxSetParticles = core.createDescriptorSet(gfxSetLayoutParticles);
 	
 	{
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		core.writeDescriptorSet(gfxSet, writes);
+		core.writeDescriptorSet(gfxSetParticles, writes);
 	}
 	
-	vkcv::PassHandle gfxPass = core.createPass(passConfig);
+	vkcv::PassHandle gfxPassGrid = core.createPass(passConfigGrid);
+	vkcv::PassHandle gfxPassParticles = core.createPass(passConfigParticles);
 	
-	vkcv::VertexLayout vertexLayout ({
-		vkcv::VertexBinding(0, gfxProgram.getVertexAttachments())
+	vkcv::VertexLayout vertexLayoutGrid ({
+		vkcv::VertexBinding(0, gfxProgramGrid.getVertexAttachments())
 	});
 	
-	vkcv::GraphicsPipelineConfig gfxPipelineConfig;
-	gfxPipelineConfig.m_ShaderProgram = gfxProgram;
-	gfxPipelineConfig.m_Width = windowWidth;
-	gfxPipelineConfig.m_Height = windowHeight;
-	gfxPipelineConfig.m_PassHandle = gfxPass;
-	gfxPipelineConfig.m_VertexLayout = vertexLayout;
-	gfxPipelineConfig.m_DescriptorLayouts = { gfxSetLayout };
-	gfxPipelineConfig.m_UseDynamicViewport = true;
-	gfxPipelineConfig.m_blendMode = vkcv::BlendMode::Additive;
+	vkcv::GraphicsPipelineConfig gfxPipelineConfigGrid;
+	gfxPipelineConfigGrid.m_ShaderProgram = gfxProgramGrid;
+	gfxPipelineConfigGrid.m_Width = windowWidth;
+	gfxPipelineConfigGrid.m_Height = windowHeight;
+	gfxPipelineConfigGrid.m_PassHandle = gfxPassGrid;
+	gfxPipelineConfigGrid.m_VertexLayout = vertexLayoutGrid;
+	gfxPipelineConfigGrid.m_DescriptorLayouts = { gfxSetLayoutGrid };
+	gfxPipelineConfigGrid.m_UseDynamicViewport = true;
+	gfxPipelineConfigGrid.m_blendMode = vkcv::BlendMode::Additive;
 	
-	vkcv::GraphicsPipelineHandle gfxPipeline = core.createGraphicsPipeline(gfxPipelineConfig);
+	vkcv::VertexLayout vertexLayoutParticles ({
+		vkcv::VertexBinding(0, gfxProgramParticles.getVertexAttachments())
+	});
+	
+	vkcv::GraphicsPipelineConfig gfxPipelineConfigParticles;
+	gfxPipelineConfigParticles.m_ShaderProgram = gfxProgramParticles;
+	gfxPipelineConfigParticles.m_Width = windowWidth;
+	gfxPipelineConfigParticles.m_Height = windowHeight;
+	gfxPipelineConfigParticles.m_PassHandle = gfxPassParticles;
+	gfxPipelineConfigParticles.m_VertexLayout = vertexLayoutParticles;
+	gfxPipelineConfigParticles.m_DescriptorLayouts = { gfxSetLayoutParticles };
+	gfxPipelineConfigParticles.m_UseDynamicViewport = true;
+	gfxPipelineConfigParticles.m_blendMode = vkcv::BlendMode::Additive;
+	
+	vkcv::GraphicsPipelineHandle gfxPipelineGrid = core.createGraphicsPipeline(gfxPipelineConfigGrid);
+	vkcv::GraphicsPipelineHandle gfxPipelineParticles = core.createGraphicsPipeline(gfxPipelineConfigParticles);
 	
 	vkcv::Buffer<glm::vec2> trianglePositions = core.createBuffer<glm::vec2>(vkcv::BufferType::VERTEX, 3);
 	trianglePositions.fill({
@@ -339,15 +398,24 @@ int main(int argc, const char **argv) {
 			triangleIndices.getCount()
 	);
 	
-	std::vector<vkcv::DrawcallInfo> drawcalls;
+	std::vector<vkcv::DrawcallInfo> drawcallsGrid;
 	
-	drawcalls.push_back(vkcv::DrawcallInfo(
+	drawcallsGrid.push_back(vkcv::DrawcallInfo(
 			triangleMesh,
-			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(gfxSet).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(gfxSetGrid).vulkanHandle) },
+			grid.getWidth() * grid.getHeight() * grid.getDepth()
+	));
+	
+	std::vector<vkcv::DrawcallInfo> drawcallsParticles;
+	
+	drawcallsParticles.push_back(vkcv::DrawcallInfo(
+			triangleMesh,
+			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(gfxSetParticles).vulkanHandle) },
 			particles.getCount()
 	));
 	
 	bool initializedParticleVolumes = false;
+	bool renderGrid = false;
 	
 	auto start = std::chrono::system_clock::now();
 	auto current = start;
@@ -500,17 +568,36 @@ int main(int argc, const char **argv) {
 				depthBuffer
 		};
 		
-		core.recordBeginDebugLabel(cmdStream, "RENDER PARTICLES", { 0.13f, 0.20f, 0.22f, 1.0f });
-		core.recordDrawcallsToCmdStream(
-				cmdStream,
-				gfxPass,
-				gfxPipeline,
-				cameraPushConstants,
-				drawcalls,
-				renderTargets,
-				windowHandle
-		);
-		core.recordEndDebugLabel(cmdStream);
+		if (renderGrid) {
+			core.recordBeginDebugLabel(cmdStream, "RENDER GRID", { 0.13f, 0.20f, 0.22f, 1.0f });
+			core.prepareImageForStorage(cmdStream, tmpGrid.getHandle());
+			
+			core.recordDrawcallsToCmdStream(
+					cmdStream,
+					gfxPassGrid,
+					gfxPipelineGrid,
+					cameraPushConstants,
+					drawcallsGrid,
+					renderTargets,
+					windowHandle
+			);
+			
+			core.recordEndDebugLabel(cmdStream);
+		} else {
+			core.recordBeginDebugLabel(cmdStream, "RENDER PARTICLES", { 0.13f, 0.20f, 0.22f, 1.0f });
+			
+			core.recordDrawcallsToCmdStream(
+					cmdStream,
+					gfxPassParticles,
+					gfxPipelineParticles,
+					cameraPushConstants,
+					drawcallsParticles,
+					renderTargets,
+					windowHandle
+			);
+			
+			core.recordEndDebugLabel(cmdStream);
+		}
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
@@ -518,6 +605,8 @@ int main(int argc, const char **argv) {
 		gui.beginGUI();
 		
 		ImGui::Begin("Settings");
+		ImGui::Checkbox("Render Grid", &renderGrid);
+		
 		ImGui::End();
 		
 		gui.endGUI();
