@@ -11,6 +11,10 @@ layout( push_constant ) uniform constants{
     mat4 mvp;
 };
 
+ivec3 actual_mod(ivec3 x, ivec3 y) {
+    return x - y * (x/y);
+}
+
 void main()	{
     ivec3 gridResolution = imageSize(gridImage);
 
@@ -20,7 +24,7 @@ void main()	{
         gl_InstanceIndex / gridResolution.x / gridResolution.y
     );
 
-    gridID = ivec3(mod(gridID, gridResolution));
+    gridID = actual_mod(gridID, gridResolution);
 
     vec3 position = (vec3(gridID) + vec3(0.5f)) / gridResolution;
     float size = 1.0f / length(vec3(gridResolution));
