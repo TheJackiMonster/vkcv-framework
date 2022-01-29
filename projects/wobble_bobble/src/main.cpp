@@ -47,6 +47,7 @@ void distributeParticles(Particle *particles, size_t count, const glm::vec3& cen
 	
 	for (size_t i = 0; i < count; i++) {
 		particles[i].mass = (mass * particles[i].size / volume);
+		particles[i].deformation = glm::mat4(1.0f);
 	}
 }
 
@@ -210,6 +211,12 @@ int main(int argc, const char **argv) {
 			updateGridForcesSets
 	);
 	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(0, grid.getHandle()));
+		core.writeDescriptorSet(updateGridForcesSets[0], writes);
+	}
+	
 	std::vector<vkcv::DescriptorSetHandle> updateGridVelocitiesSets;
 	vkcv::ComputePipelineHandle updateGridVelocitiesPipeline = createComputePipeline(
 			core, compiler,
@@ -231,6 +238,14 @@ int main(int argc, const char **argv) {
 			"shaders/update_particle_deformation.comp",
 			updateParticleDeformationSets
 	);
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, tmpGrid.getHandle()));
+		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
+		core.writeDescriptorSet(updateParticleDeformationSets[0], writes);
+	}
 	
 	std::vector<vkcv::DescriptorSetHandle> updateParticleVelocitiesSets;
 	vkcv::ComputePipelineHandle updateParticleVelocitiesPipeline = createComputePipeline(
@@ -501,8 +516,10 @@ int main(int argc, const char **argv) {
 				cmdStream,
 				updateGridForcesPipeline,
 				dispatchSizeGrid,
-				{},
-				vkcv::PushConstants(0)
+				{ vkcv::DescriptorSetUsage(
+						0, core.getDescriptorSet(updateGridForcesSets[0]).vulkanHandle
+				) },
+				timePushConstants
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
@@ -524,18 +541,22 @@ int main(int argc, const char **argv) {
 		core.recordEndDebugLabel(cmdStream);
 		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE DEFORMATION", { 0.78f, 0.89f, 0.94f, 1.0f });
+		core.prepareImageForSampling(cmdStream, tmpGrid.getHandle());
+		
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateParticleDeformationPipeline,
 				dispatchSizeParticles,
-				{},
-				vkcv::PushConstants(0)
+				{ vkcv::DescriptorSetUsage(
+						0, core.getDescriptorSet(updateParticleDeformationSets[0]).vulkanHandle
+				) },
+				timePushConstants
 		);
+		
+		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
 		core.recordEndDebugLabel(cmdStream);
 		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE VELOCITIES", { 0.78f, 0.89f, 0.94f, 1.0f });
-		core.prepareImageForSampling(cmdStream, tmpGrid.getHandle());
-		
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateParticleVelocitiesPipeline,

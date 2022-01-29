@@ -1,6 +1,33 @@
 #version 450
+#extension GL_GOOGLE_include_directive : enable
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
+#include "particle.inc"
+
+layout(set=0, binding=0, std430) buffer particleBuffer {
+    Particle particles [];
+};
+
+layout(set=0, binding=1) uniform texture3D gridTextureIn;
+layout(set=0, binding=2) uniform sampler gridSampler;
+
+layout( push_constant ) uniform constants {
+    float t;
+    float dt;
+};
+
 void main()	{
+    ParticleMinimal particle = particles[gl_GlobalInvocationID.x].minimal;
+    mat3 deformation = mat3(particles[gl_GlobalInvocationID.x].deformation);
+
+    mat3 grad_velocity = mat3(
+        textureGrad(sampler3D(gridTextureIn, gridSampler), particle.position, vec3(1.0f, 0.0f, 0.0f), vec3(0.0f)).xyz,
+        textureGrad(sampler3D(gridTextureIn, gridSampler), particle.position, vec3(0.0f, 1.0f, 0.0f), vec3(0.0f)).xyz,
+        textureGrad(sampler3D(gridTextureIn, gridSampler), particle.position, vec3(0.0f, 0.0f, 1.0f), vec3(0.0f)).xyz
+    );
+
+    mat3 deformation_elastic = (mat3(1.0f) + grad_velocity * dt) * deformation;
+
+    particles[gl_GlobalInvocationID.x].deformation = mat4(deformation_elastic);
 }

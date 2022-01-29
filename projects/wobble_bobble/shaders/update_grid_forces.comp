@@ -1,6 +1,45 @@
 #version 450
+#extension GL_GOOGLE_include_directive : enable
 
-layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+
+#include "particle.inc"
+
+layout(set=0, binding=0, rgba32f) uniform image3D gridImage;
+
+layout( push_constant ) uniform constants {
+    float t;
+    float dt;
+};
 
 void main()	{
+    vec4 gridSample = imageLoad(
+        gridImage,
+        ivec3(gl_GlobalInvocationID)
+    );
+
+    vec3 velocity = gridSample.xyz;
+    float mass = gridSample.w;
+
+    velocity += vec3(0.0f, 0.0f, 0.0f) * dt;
+
+    bvec3 lowerID = lessThanEqual(gl_GlobalInvocationID, ivec3(0));
+    bvec3 negativeVelocity = lessThan(velocity, vec3(0.0f));
+
+    bvec3 greaterID = greaterThanEqual(gl_GlobalInvocationID + ivec3(1), imageSize(gridImage));
+    bvec3 positiveVelocity = greaterThan(velocity, vec3(0.0f));
+
+    bvec3 invert = bvec3(
+        (lowerID.x && negativeVelocity.x) || (greaterID.x && positiveVelocity.x),
+        (lowerID.y && negativeVelocity.y) || (greaterID.y && positiveVelocity.y),
+        (lowerID.z && negativeVelocity.z) || (greaterID.z && positiveVelocity.z)
+    );
+
+    velocity = mix(velocity, -velocity, invert);
+
+    imageStore(
+        gridImage,
+        ivec3(gl_GlobalInvocationID),
+        vec4(velocity, mass)
+    );
 }
