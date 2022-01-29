@@ -64,10 +64,11 @@ void main()	{
         memoryBarrierShared();
 
         for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
-            float x = distance(shared_particles[i].position, position) / shared_particles[i].size;
+            float s = shared_particles[i].size;
+            float x = distance(shared_particles[i].position, position);
 
-            if (x < 2.0f) {
-                gridValue += vec4(shared_particles[i].velocity, shared_particles[i].mass) * weight_C(x);
+            if (x < 2.0f * s) {
+                gridValue += vec4(shared_particles[i].velocity, shared_particles[i].mass) * weight_C(x / s);
             }
         }
     }
