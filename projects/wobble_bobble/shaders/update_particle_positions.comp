@@ -15,9 +15,13 @@ layout( push_constant ) uniform constants {
 };
 
 void main()	{
+    memoryBarrierBuffer();
+
     if (gl_GlobalInvocationID.x < particles.length()) {
         vec3 position = particles[gl_GlobalInvocationID.x].minimal.position;
         position = position + particles[gl_GlobalInvocationID.x].minimal.velocity * dt;
         particles[gl_GlobalInvocationID.x].minimal.position = position;
     }
+
+    memoryBarrierBuffer();
 }

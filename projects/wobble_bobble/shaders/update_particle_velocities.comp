@@ -13,6 +13,9 @@ layout(set=0, binding=1) uniform texture3D gridImage;
 layout(set=0, binding=2) uniform sampler gridSampler;
 
 void main()	{
+    memoryBarrierBuffer();
+    memoryBarrierImage();
+
     if (gl_GlobalInvocationID.x < particles.length()) {
         vec3 position = particles[gl_GlobalInvocationID.x].minimal.position;
         float mass = particles[gl_GlobalInvocationID.x].minimal.mass;
@@ -28,4 +31,6 @@ void main()	{
             particles[gl_GlobalInvocationID.x].minimal.velocity = gridVelocity * mass / gridMass;
         }
     }
+
+    memoryBarrierBuffer();
 }

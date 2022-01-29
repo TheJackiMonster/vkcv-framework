@@ -13,6 +13,8 @@ layout( push_constant ) uniform constants {
 };
 
 void main()	{
+    memoryBarrierImage();
+
     vec4 gridSample = imageLoad(
         gridImage,
         ivec3(gl_GlobalInvocationID)
@@ -42,4 +44,6 @@ void main()	{
         ivec3(gl_GlobalInvocationID),
         vec4(velocity, mass)
     );
+
+    memoryBarrierImage();
 }

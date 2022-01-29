@@ -48,4 +48,6 @@ void main()	{
         ivec3(gl_GlobalInvocationID),
         gridValue
     );
+
+    memoryBarrierImage();
 }

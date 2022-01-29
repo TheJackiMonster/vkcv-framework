@@ -18,6 +18,9 @@ layout( push_constant ) uniform constants {
 };
 
 void main()	{
+    memoryBarrierBuffer();
+    memoryBarrierImage();
+
     ParticleMinimal particle = particles[gl_GlobalInvocationID.x].minimal;
     mat3 deformation = mat3(particles[gl_GlobalInvocationID.x].deformation);
 
@@ -30,4 +33,6 @@ void main()	{
     mat3 deformation_elastic = (mat3(1.0f) + grad_velocity * dt) * deformation;
 
     particles[gl_GlobalInvocationID.x].deformation = mat4(deformation_elastic);
+
+    memoryBarrierBuffer();
 }
