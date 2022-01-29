@@ -1,6 +1,7 @@
 #version 450
 
-layout(set=0, binding=0, rgba32f) readonly uniform image3D gridImage;
+layout(set=0, binding=0) uniform texture3D gridImage;
+layout(set=0, binding=1) uniform sampler gridSampler;
 
 layout(location = 0) in vec2 vertexPos;
 
@@ -16,7 +17,7 @@ ivec3 actual_mod(ivec3 x, ivec3 y) {
 }
 
 void main()	{
-    ivec3 gridResolution = imageSize(gridImage);
+    ivec3 gridResolution = textureSize(sampler3D(gridImage, gridSampler), 0);
 
     ivec3 gridID = ivec3(
         gl_InstanceIndex,
@@ -29,7 +30,7 @@ void main()	{
     vec3 position = (vec3(gridID) + vec3(0.5f)) / gridResolution;
     float size = 1.0f / length(vec3(gridResolution));
 
-    vec4 gridData = imageLoad(gridImage, gridID);
+    vec4 gridData = texture(sampler3D(gridImage, gridSampler), position);
 
     float mass = gridData.w;
 

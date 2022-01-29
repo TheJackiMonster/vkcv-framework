@@ -330,7 +330,8 @@ int main(int argc, const char **argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(0, tmpGrid.getHandle()));
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(0, tmpGrid.getHandle()));
+		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(1, gridSampler));
 		core.writeDescriptorSet(gfxSetGrid, writes);
 	}
 	
@@ -375,7 +376,6 @@ int main(int argc, const char **argv) {
 	gfxPipelineConfigParticles.m_VertexLayout = vertexLayoutParticles;
 	gfxPipelineConfigParticles.m_DescriptorLayouts = { gfxSetLayoutParticles };
 	gfxPipelineConfigParticles.m_UseDynamicViewport = true;
-	gfxPipelineConfigParticles.m_blendMode = vkcv::BlendMode::Additive;
 	
 	vkcv::GraphicsPipelineHandle gfxPipelineGrid = core.createGraphicsPipeline(gfxPipelineConfigGrid);
 	vkcv::GraphicsPipelineHandle gfxPipelineParticles = core.createGraphicsPipeline(gfxPipelineConfigParticles);
@@ -570,7 +570,6 @@ int main(int argc, const char **argv) {
 		
 		if (renderGrid) {
 			core.recordBeginDebugLabel(cmdStream, "RENDER GRID", { 0.13f, 0.20f, 0.22f, 1.0f });
-			core.prepareImageForStorage(cmdStream, tmpGrid.getHandle());
 			
 			core.recordDrawcallsToCmdStream(
 					cmdStream,
