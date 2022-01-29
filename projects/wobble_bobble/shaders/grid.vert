@@ -15,10 +15,12 @@ void main()	{
     ivec3 gridResolution = imageSize(gridImage);
 
     ivec3 gridID = ivec3(
-        gl_InstanceIndex % gridResolution.x,
-        (gl_InstanceIndex / gridResolution.x) % gridResolution.y,
-        (gl_InstanceIndex / gridResolution.x / gridResolution.y) % gridResolution.z
+        gl_InstanceIndex,
+        gl_InstanceIndex / gridResolution.x,
+        gl_InstanceIndex / gridResolution.x / gridResolution.y
     );
+
+    gridID = ivec3(mod(gridID, gridResolution));
 
     vec3 position = (vec3(gridID) + vec3(0.5f)) / gridResolution;
     float size = 1.0f / length(vec3(gridResolution));
