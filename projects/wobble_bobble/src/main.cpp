@@ -153,17 +153,6 @@ int main(int argc, const char **argv) {
 	
 	grid.switchLayout(vk::ImageLayout::eGeneral);
 	
-	vkcv::Image tmpGrid = core.createImage(
-			vk::Format::eR32G32B32A32Sfloat,
-			64,
-			64,
-			64,
-			false,
-			true
-	);
-	
-	tmpGrid.switchLayout(vk::ImageLayout::eGeneral);
-	
 	/* TODO: clear grid via compute shader?
 	std::vector<glm::vec4> grid_vec (grid.getWidth() * grid.getHeight() * grid.getDepth());
 	
@@ -204,6 +193,12 @@ int main(int argc, const char **argv) {
 			initParticleVolumesSets
 	);
 	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
+		core.writeDescriptorSet(initParticleVolumesSets[0], writes);
+	}
+	
 	std::vector<vkcv::DescriptorSetHandle> updateGridForcesSets;
 	vkcv::ComputePipelineHandle updateGridForcesPipeline = createComputePipeline(
 			core, compiler,
@@ -218,21 +213,6 @@ int main(int argc, const char **argv) {
 		core.writeDescriptorSet(updateGridForcesSets[0], writes);
 	}
 	
-	std::vector<vkcv::DescriptorSetHandle> updateGridVelocitiesSets;
-	vkcv::ComputePipelineHandle updateGridVelocitiesPipeline = createComputePipeline(
-			core, compiler,
-			"shaders/update_grid_velocities.comp",
-			updateGridVelocitiesSets
-	);
-	
-	{
-		vkcv::DescriptorWrites writes;
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(0, grid.getHandle()));
-		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(1, gridSampler));
-		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(2, tmpGrid.getHandle()));
-		core.writeDescriptorSet(updateGridVelocitiesSets[0], writes);
-	}
-	
 	std::vector<vkcv::DescriptorSetHandle> updateParticleDeformationSets;
 	vkcv::ComputePipelineHandle updateParticleDeformationPipeline = createComputePipeline(
 			core, compiler,
@@ -243,7 +223,7 @@ int main(int argc, const char **argv) {
 	{
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, tmpGrid.getHandle()));
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, grid.getHandle()));
 		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
 		core.writeDescriptorSet(updateParticleDeformationSets[0], writes);
 	}
@@ -258,7 +238,7 @@ int main(int argc, const char **argv) {
 	{
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, tmpGrid.getHandle()));
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, grid.getHandle()));
 		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
 		core.writeDescriptorSet(updateParticleVelocitiesSets[0], writes);
 	}
@@ -346,7 +326,7 @@ int main(int argc, const char **argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(0, tmpGrid.getHandle()));
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(0, grid.getHandle()));
 		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(1, gridSampler));
 		core.writeDescriptorSet(gfxSetGrid, writes);
 	}
@@ -505,9 +485,13 @@ int main(int argc, const char **argv) {
 					cmdStream,
 					initParticleVolumesPipeline,
 					dispatchSizeParticles,
-					{},
+					{ vkcv::DescriptorSetUsage(
+							0, core.getDescriptorSet(initParticleVolumesSets[0]).vulkanHandle
+					) },
 					vkcv::PushConstants(0)
 			);
+			
+			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
 			core.recordEndDebugLabel(cmdStream);
 			initializedParticleVolumes = true;
 		}
@@ -524,25 +508,8 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
-		core.recordBeginDebugLabel(cmdStream, "UPDATE GRID VELOCITIES", { 0.47f, 0.77f, 0.85f, 1.0f });
-		core.prepareImageForSampling(cmdStream, grid.getHandle());
-		core.prepareImageForStorage(cmdStream, tmpGrid.getHandle());
-		
-		core.recordComputeDispatchToCmdStream(
-				cmdStream,
-				updateGridVelocitiesPipeline,
-				dispatchSizeGrid,
-				{ vkcv::DescriptorSetUsage(
-						0, core.getDescriptorSet(updateGridVelocitiesSets[0]).vulkanHandle
-				) },
-				timePushConstants
-		);
-		
-		core.recordImageMemoryBarrier(cmdStream, tmpGrid.getHandle());
-		core.recordEndDebugLabel(cmdStream);
-		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE DEFORMATION", { 0.78f, 0.89f, 0.94f, 1.0f });
-		core.prepareImageForSampling(cmdStream, tmpGrid.getHandle());
+		core.prepareImageForSampling(cmdStream, grid.getHandle());
 		
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
