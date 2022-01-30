@@ -1,18 +1,30 @@
 #version 450
 #extension GL_GOOGLE_include_directive : enable
 
+const float PI = 3.1415926535897932384626433832795;
+
 layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
 #include "particle.inc"
 
 layout(set=0, binding=0, rgba32f) uniform image3D gridImage;
+layout(set=0, binding=1, std430) buffer particleBuffer {
+    Particle particles [];
+};
 
 layout( push_constant ) uniform constants {
     float t;
     float dt;
 };
 
+#define SHARED_PARTICLES_BATCH_SIZE 64
+
+shared Particle shared_particles [SHARED_PARTICLES_BATCH_SIZE];
+
 void main()	{
+    const vec3 position = (vec3(gl_GlobalInvocationID) + vec3(0.5f)) / imageSize(gridImage);
+    const float elasticity_module = 12.5f * 1000000.0f; // 10..15 = Wood
+
     memoryBarrierImage();
 
     vec4 gridSample = imageLoad(
@@ -23,7 +35,44 @@ void main()	{
     vec3 velocity = gridSample.xyz;
     float mass = gridSample.w;
 
-    velocity += vec3(0.0f, 0.0f, 0.0f) * dt;
+    vec3 force = vec3(0.0f);
+    uint offset = 0;
+
+    memoryBarrierBuffer();
+
+    for (offset = 0; offset < particles.length(); offset += SHARED_PARTICLES_BATCH_SIZE) {
+        uint localOffset = offset + gl_LocalInvocationIndex;
+
+        if (localOffset < particles.length()) {
+            shared_particles[gl_LocalInvocationIndex] = particles[localOffset];
+        } else {
+            shared_particles[gl_LocalInvocationIndex].minimal.position = vec3(0.0f);
+            shared_particles[gl_LocalInvocationIndex].minimal.size = 0.0f;
+            shared_particles[gl_LocalInvocationIndex].minimal.velocity = vec3(0.0f);
+            shared_particles[gl_LocalInvocationIndex].minimal.mass = 0.0f;
+            shared_particles[gl_LocalInvocationIndex].deformation = mat4(0.0f);
+        }
+
+        memoryBarrierShared();
+
+        for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
+            float size = shared_particles[gl_LocalInvocationIndex].minimal.size;
+            float volume = 4.0f / 3.0f * PI * size * size * size;
+            mat3 deformation = mat3(shared_particles[gl_LocalInvocationIndex].deformation);
+
+            mat3 epsilon = deformation - mat3(1.0f);
+            mat3 delta = elasticity_module * epsilon;
+            mat3 delta_cauchy = determinant(deformation) * delta * inverse(transpose(deformation));
+
+            force -= (
+                volume *
+                delta_cauchy *
+                vec3(voxel_particle_weight(position, shared_particles[gl_LocalInvocationIndex].minimal))
+            );
+        }
+    }
+
+    velocity += force * dt / mass;
 
     bvec3 lowerID = lessThanEqual(gl_GlobalInvocationID, ivec3(0));
     bvec3 negativeVelocity = lessThan(velocity, vec3(0.0f));

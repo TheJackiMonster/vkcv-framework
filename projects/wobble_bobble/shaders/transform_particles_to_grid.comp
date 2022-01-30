@@ -29,6 +29,8 @@ void main()	{
         if (localOffset < particles.length()) {
             shared_particles[gl_LocalInvocationIndex] = particles[localOffset].minimal;
         } else {
+            shared_particles[gl_LocalInvocationIndex].position = vec3(0.0f);
+            shared_particles[gl_LocalInvocationIndex].size = 0.0f;
             shared_particles[gl_LocalInvocationIndex].velocity = vec3(0.0f);
             shared_particles[gl_LocalInvocationIndex].mass = 0.0f;
         }

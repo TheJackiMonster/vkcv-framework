@@ -214,6 +214,7 @@ int main(int argc, const char **argv) {
 	{
 		vkcv::DescriptorWrites writes;
 		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(0, grid.getHandle()));
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(1, particles.getHandle()));
 		core.writeDescriptorSet(updateGridForcesSets[0], writes);
 	}
 	
