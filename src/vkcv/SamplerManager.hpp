@@ -30,10 +30,11 @@ namespace vkcv {
 		SamplerManager& operator=(SamplerManager&& other) = delete;
 		
 		SamplerHandle createSampler(SamplerFilterType magFilter,
-							  		SamplerFilterType minFilter,
-							  		SamplerMipmapMode mipmapMode,
-							  		SamplerAddressMode addressMode,
-							  		float mipLodBias);
+									SamplerFilterType minFilter,
+									SamplerMipmapMode mipmapMode,
+									SamplerAddressMode addressMode,
+									float mipLodBias,
+									SamplerBorderColor borderColor);
 		
 		[[nodiscard]]
 		vk::Sampler getVulkanSampler(const SamplerHandle& handle) const;

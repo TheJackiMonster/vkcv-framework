@@ -64,11 +64,15 @@ void main()	{
             mat3 delta = elasticity_module * epsilon;
             mat3 delta_cauchy = determinant(deformation) * delta * inverse(transpose(deformation));
 
-            force -= (
+            vec3 weight_gradient = vec3(
+                voxel_particle_grad_weight(position, shared_particles[gl_LocalInvocationIndex].minimal)
+            );
+
+            /*force -= (
                 volume *
                 delta_cauchy *
-                vec3(voxel_particle_weight(position, shared_particles[gl_LocalInvocationIndex].minimal))
-            );
+                weight_gradient
+            );*/
         }
     }
 

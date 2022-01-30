@@ -6,7 +6,8 @@ layout(set=0, binding=1) uniform sampler gridSampler;
 layout(location = 0) in vec2 vertexPos;
 
 layout(location = 0) out vec2 passPos;
-layout(location = 1) out float passMass;
+layout(location = 1) out vec3 passVelocity;
+layout(location = 2) out float passMass;
 
 layout( push_constant ) uniform constants{
     mat4 mvp;
@@ -35,6 +36,7 @@ void main()	{
     float mass = gridData.w;
 
     passPos = vertexPos;
+    passVelocity = gridData.xyz;
     passMass = mass;
 
     // align voxel to face camera

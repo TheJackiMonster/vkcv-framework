@@ -207,7 +207,7 @@ namespace vkcv
         [[nodiscard]]
         SamplerHandle createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
 									SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode,
-									float mipLodBias = 0.0f);
+									float mipLodBias = 0.0f, SamplerBorderColor borderColor = SamplerBorderColor::INT_ZERO_OPAQUE);
 
         /**
          * Creates an #Image with a given format, width, height and depth.

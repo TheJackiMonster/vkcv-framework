@@ -763,8 +763,8 @@ namespace vkcv
 
 	SamplerHandle Core::createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
 									  SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode,
-									  float mipLodBias) {
-		return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode, mipLodBias);
+									  float mipLodBias, SamplerBorderColor borderColor) {
+		return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode, mipLodBias, borderColor);
 	}
 
 	Image Core::createImage(

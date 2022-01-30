@@ -25,6 +25,10 @@ void main()	{
         vec3 velocity_pic = vec3(0.0f);
         uint i, j, k;
 
+        //for (i = 0; i < gridResolution.x; i++) {
+        //    for (j = 0; j < gridResolution.y; j++) {
+        //        for (k = 0; k < gridResolution.z; k++) {
+        //          vec3 voxel = vec3(i, j, k) / gridResolution;
         for (i = -gridWindow.x; i <= gridWindow.x; i++) {
             for (j = -gridWindow.y; j <= gridWindow.y; j++) {
                 for (k = -gridWindow.z; k <= gridWindow.z; k++) {
@@ -39,7 +43,7 @@ void main()	{
             }
         }
 
-        particles[gl_GlobalInvocationID.x].minimal.velocity = velocity_pic;
+        //particles[gl_GlobalInvocationID.x].minimal.velocity = velocity_pic;
     }
 
     memoryBarrierBuffer();

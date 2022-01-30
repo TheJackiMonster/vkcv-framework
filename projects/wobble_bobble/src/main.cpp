@@ -40,7 +40,7 @@ void distributeParticles(Particle *particles, size_t count, const glm::vec3& cen
 		
 		particles[i].position = center + offset;
 		particles[i].size = size;
-		particles[i].velocity = glm::vec3(0.0f);
+		particles[i].velocity = glm::vec3(0.0f, 0.01f, 0.0f);
 		
 		volume += size;
 	}
@@ -167,7 +167,9 @@ int main(int argc, const char **argv) {
 			vkcv::SamplerFilterType::LINEAR,
 			vkcv::SamplerFilterType::LINEAR,
 			vkcv::SamplerMipmapMode::NEAREST,
-			vkcv::SamplerAddressMode::REPEAT
+			vkcv::SamplerAddressMode::CLAMP_TO_BORDER,
+			0.0f,
+			vkcv::SamplerBorderColor::FLOAT_ZERO_TRANSPARENT
 	);
 	
 	vkcv::shader::GLSLCompiler compiler;
@@ -411,7 +413,7 @@ int main(int argc, const char **argv) {
 	));
 	
 	bool initializedParticleVolumes = false;
-	bool renderGrid = false;
+	bool renderGrid = true;
 	
 	auto start = std::chrono::system_clock::now();
 	auto current = start;
