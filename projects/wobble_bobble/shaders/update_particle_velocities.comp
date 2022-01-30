@@ -17,19 +17,29 @@ void main()	{
     memoryBarrierImage();
 
     if (gl_GlobalInvocationID.x < particles.length()) {
-        vec3 position = particles[gl_GlobalInvocationID.x].minimal.position;
-        float mass = particles[gl_GlobalInvocationID.x].minimal.mass;
+        ParticleMinimal minimal = particles[gl_GlobalInvocationID.x].minimal;
 
-        vec3 offset = position;
+        ivec3 gridResolution = textureSize(sampler3D(gridImage, gridSampler), 0);
+        ivec3 gridWindow = ivec3(minimal.size * 2.0f * gridResolution);
 
-        vec4 gridSample = texture(sampler3D(gridImage, gridSampler), offset);
+        vec3 velocity_pic = vec3(0.0f);
+        uint i, j, k;
 
-        vec3 gridVelocity = gridSample.xyz;
-        float gridMass = gridSample.w;
+        for (i = -gridWindow.x; i <= gridWindow.x; i++) {
+            for (j = -gridWindow.y; j <= gridWindow.y; j++) {
+                for (k = -gridWindow.z; k <= gridWindow.z; k++) {
+                    vec3 voxel = minimal.position + vec3(i, j, k) / gridResolution;
 
-        if (gridMass > 0.0f) {
-            particles[gl_GlobalInvocationID.x].minimal.velocity = gridVelocity * mass / gridMass;
+                    if (distance(voxel, minimal.position) < minimal.size * 2.0f) {
+                        vec4 gridSample = texture(sampler3D(gridImage, gridSampler), voxel);
+
+                        velocity_pic += voxel_particle_weight(voxel, minimal) * gridSample.xyz;
+                    }
+                }
+            }
         }
+
+        particles[gl_GlobalInvocationID.x].minimal.velocity = velocity_pic;
     }
 
     memoryBarrierBuffer();
