@@ -16,7 +16,10 @@ void main()	{
     float z = sqrt(0.25 - value * value);
 
     if (value < 0.5f) {
-        outColor = (passVelocity.xyz - passVelocity.yzx) * 100.0f; // vec3(passPos.x + 0.5f, passPos.y + 0.5f, z * 2.0f);
+        vec3 surface = vec3(passPos.x + 0.5f, passPos.y + 0.5f, z * 2.0f);
+        vec3 velocity = vec3(0.5f) + 0.5f * normalize(passVelocity.xyz);
+
+        outColor = surface;
     } else {
         discard;
     }

@@ -19,8 +19,24 @@ void main()	{
 
     if (gl_GlobalInvocationID.x < particles.length()) {
         vec3 position = particles[gl_GlobalInvocationID.x].minimal.position;
-        position = position + particles[gl_GlobalInvocationID.x].minimal.velocity * dt;
+        float size = particles[gl_GlobalInvocationID.x].minimal.size;
+        vec3 velocity = particles[gl_GlobalInvocationID.x].minimal.velocity;
+
+        position = position + velocity * dt;
+
+        for (uint i = 0; i < 3; i++) {
+            if (position[i] - size < 0.0f) {
+                position[i] = -position[i] + 2.0f * size;
+                velocity[i] *= -1.0f;
+            } else
+            if (position[i] + size > 1.0f) {
+                position[i] = 2.0f * (1.0f - size) - position[i];
+                velocity[i] *= -1.0f;
+            }
+        }
+
         particles[gl_GlobalInvocationID.x].minimal.position = position;
+        particles[gl_GlobalInvocationID.x].minimal.velocity = velocity;
     }
 
     memoryBarrierBuffer();
