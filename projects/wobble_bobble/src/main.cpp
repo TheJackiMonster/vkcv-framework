@@ -103,6 +103,21 @@ vkcv::ComputePipelineHandle createComputePipeline(vkcv::Core& core, vkcv::shader
 	return core.createComputePipeline(config);
 }
 
+void resetParticles(vkcv::Buffer<Particle>& particles, const glm::vec3& velocity) {
+	std::vector<Particle> particles_vec (particles.getCount());
+	
+	distributeParticles(
+			particles_vec.data(),
+			particles_vec.size(),
+			glm::vec3(0.5f),
+			0.05f,
+			0.27f,
+			velocity
+	);
+	
+	particles.fill(particles_vec);
+}
+
 int main(int argc, const char **argv) {
 	const char* applicationName = "Wobble Bobble";
 	
@@ -136,23 +151,14 @@ int main(int argc, const char **argv) {
 			swapchainExtent.height
 	).getHandle();
 	
+	glm::vec3 initialVelocity (0.0f, 0.0f, 0.0f);
+	
 	vkcv::Buffer<Particle> particles = core.createBuffer<Particle>(
 			vkcv::BufferType::STORAGE,
 			1024
 	);
 	
-	std::vector<Particle> particles_vec (particles.getCount());
-	
-	distributeParticles(
-			particles_vec.data(),
-			particles_vec.size(),
-			glm::vec3(0.5f),
-			0.05f,
-			0.27f,
-			glm::vec3(0.0f, 0.1f, 0.0f)
-	);
-	
-	particles.fill(particles_vec);
+	resetParticles(particles, initialVelocity);
 	
 	vkcv::Image grid = core.createImage(
 			vk::Format::eR32G32B32A32Sfloat,
@@ -745,6 +751,12 @@ int main(int argc, const char **argv) {
 		ImGui::Checkbox("Render Grid", &renderGrid);
 		ImGui::SliderFloat("Alpha (PIC -> FLIP)", &alpha, 0.0f, 1.0f);
 		ImGui::SliderFloat("Beta (Alpha -> APIC)", &beta, 0.0f, 1.0f);
+		
+		ImGui::DragFloat3("Initial velocity", reinterpret_cast<float*>(&initialVelocity));
+		
+		if (ImGui::Button("Reset Particles")) {
+			resetParticles(particles, initialVelocity);
+		}
 		
 		ImGui::End();
 		
