@@ -14,6 +14,16 @@ struct Particle {
 	glm::mat4 deformation;
 };
 
+struct Time {
+	float t;
+	float dt;
+};
+
+struct Tweaks {
+	float alpha;
+	float beta;
+};
+
 std::random_device random_dev;
 std::uniform_int_distribution<int> dist(0, RAND_MAX);
 
@@ -521,8 +531,8 @@ int main(int argc, const char **argv) {
 	
 	bool initializedParticleVolumes = false;
 	bool renderGrid = true;
-	float alpha = 0.95f;
-	float beta = 0.95f;
+	float alpha = 0.5f;
+	float beta = 0.75f;
 	
 	auto start = std::chrono::system_clock::now();
 	auto current = start;
@@ -556,18 +566,21 @@ int main(int argc, const char **argv) {
 		
 		current = next;
 		
-		double  t = 0.000001 * static_cast<double>(time.count());
-		double dt = 0.000001 * static_cast<double>(deltatime.count());
+		Time timeConstants;
+		timeConstants.t = static_cast<float>(0.000001 * static_cast<double>(time.count()));
+		timeConstants.dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
 		
-		vkcv::PushConstants timePushConstants (sizeof(float));
-		timePushConstants.appendDrawcall(static_cast<float>(t));
-		timePushConstants.appendDrawcall(static_cast<float>(dt));
+		vkcv::PushConstants timePushConstants (sizeof(timeConstants));
+		timePushConstants.appendDrawcall(timeConstants);
 		
-		vkcv::PushConstants tweakPushConstants (sizeof(float));
-		tweakPushConstants.appendDrawcall(static_cast<float>(alpha));
-		tweakPushConstants.appendDrawcall(static_cast<float>(beta));
+		Tweaks tweaks;
+		tweaks.alpha = alpha;
+		tweaks.beta = beta;
 		
-		cameraManager.update(dt);
+		vkcv::PushConstants tweakPushConstants (sizeof(tweaks));
+		tweakPushConstants.appendDrawcall(tweaks);
+		
+		cameraManager.update(timeConstants.dt);
 
 		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 		vkcv::PushConstants cameraPushConstants (sizeof(glm::mat4));
