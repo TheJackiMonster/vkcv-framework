@@ -20,6 +20,7 @@ void main()	{
     const vec3 position = (vec3(gl_GlobalInvocationID) + vec3(0.5f)) / imageSize(gridImage);
 
     vec4 gridValue = vec4(0.0f);
+
     uint offset = 0;
 
     memoryBarrierBuffer();
@@ -40,11 +41,18 @@ void main()	{
         memoryBarrierShared();
 
         for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
-            gridValue += (
-                vec4(shared_particles[i].velocity, shared_particles[i].mass) *
-                voxel_particle_weight(position, shared_particles[i])
+            float weight = voxel_particle_weight(position, shared_particles[i]);
+            float mass = shared_particles[i].mass * weight;
+
+            gridValue += vec4(
+                shared_particles[i].velocity * mass,
+                mass
             );
         }
+    }
+
+    if (gridValue.w > 0.0f) {
+        gridValue.xyz /= gridValue.w;
     }
 
     imageStore(

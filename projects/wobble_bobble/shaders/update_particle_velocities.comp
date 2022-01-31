@@ -14,6 +14,10 @@ layout(set=0, binding=1) uniform texture3D gridImage;
 layout(set=0, binding=2) uniform texture3D gridOldImage;
 layout(set=0, binding=3) uniform sampler gridSampler;
 
+layout( push_constant ) uniform constants {
+    float alpha;
+};
+
 void main()	{
     memoryBarrierBuffer();
     memoryBarrierImage();
@@ -48,7 +52,7 @@ void main()	{
             }
         }
 
-        particles[gl_GlobalInvocationID.x].minimal.velocity = mix(velocity_pic, velocity_flip, 0.95f);
+        particles[gl_GlobalInvocationID.x].minimal.velocity = mix(velocity_pic, velocity_flip, alpha);
     }
 
     memoryBarrierBuffer();

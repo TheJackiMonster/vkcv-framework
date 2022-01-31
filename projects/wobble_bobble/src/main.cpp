@@ -21,7 +21,8 @@ float randomFloat(float min, float max) {
 	return min + (max - min) * dist(random_dev) / static_cast<float>(RAND_MAX);
 }
 
-void distributeParticles(Particle *particles, size_t count, const glm::vec3& center, float radius, float mass) {
+void distributeParticles(Particle *particles, size_t count, const glm::vec3& center, float radius,
+						 float mass, const glm::vec3& velocity) {
 	float volume = 0.0f;
 	
 	for (size_t i = 0; i < count; i++) {
@@ -40,7 +41,7 @@ void distributeParticles(Particle *particles, size_t count, const glm::vec3& cen
 		
 		particles[i].position = center + offset;
 		particles[i].size = size;
-		particles[i].velocity = glm::vec3(0.0f);
+		particles[i].velocity = velocity;
 		
 		volume += size;
 	}
@@ -137,7 +138,8 @@ int main(int argc, const char **argv) {
 			particles_vec.size(),
 			glm::vec3(0.5f),
 			0.05f,
-			0.27f
+			0.27f,
+			glm::vec3(0.0f, 0.1f, 0.0f)
 	);
 	
 	particles.fill(particles_vec);
@@ -519,6 +521,7 @@ int main(int argc, const char **argv) {
 	
 	bool initializedParticleVolumes = false;
 	bool renderGrid = true;
+	float alpha = 0.95f;
 	
 	auto start = std::chrono::system_clock::now();
 	auto current = start;
@@ -558,6 +561,9 @@ int main(int argc, const char **argv) {
 		vkcv::PushConstants timePushConstants (sizeof(float));
 		timePushConstants.appendDrawcall(static_cast<float>(t));
 		timePushConstants.appendDrawcall(static_cast<float>(dt));
+		
+		vkcv::PushConstants tweakPushConstants (sizeof(float));
+		tweakPushConstants.appendDrawcall(static_cast<float>(alpha));
 		
 		cameraManager.update(dt);
 
@@ -645,7 +651,7 @@ int main(int argc, const char **argv) {
 				{ vkcv::DescriptorSetUsage(
 						0, core.getDescriptorSet(updateParticleVelocitiesSets[0]).vulkanHandle
 				) },
-				vkcv::PushConstants(0)
+				tweakPushConstants
 		);
 		
 		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
@@ -720,7 +726,9 @@ int main(int argc, const char **argv) {
 		gui.beginGUI();
 		
 		ImGui::Begin("Settings");
+		
 		ImGui::Checkbox("Render Grid", &renderGrid);
+		ImGui::SliderFloat("Alpha (PIC -> FLIP)", &alpha, 0.0f, 1.0f);
 		
 		ImGui::End();
 		
