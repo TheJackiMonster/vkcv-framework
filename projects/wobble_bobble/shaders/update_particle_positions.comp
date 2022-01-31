@@ -10,6 +10,8 @@ layout(set=0, binding=0, std430) buffer particleBuffer {
 };
 
 layout( push_constant ) uniform constants {
+    float K;
+    float E;
     float t;
     float dt;
 };

@@ -14,7 +14,9 @@ struct Particle {
 	glm::mat4 deformation;
 };
 
-struct Time {
+struct Physics {
+	float K;
+	float E;
 	float t;
 	float dt;
 };
@@ -537,6 +539,11 @@ int main(int argc, const char **argv) {
 	
 	bool initializedParticleVolumes = false;
 	bool renderGrid = true;
+	
+	// Glass is glass and glass breaks...
+	float compression_modulus = 65.0f;
+	float elasticity_modulus = 45.0f;
+	
 	float alpha = 0.5f;
 	float beta = 0.75f;
 	
@@ -572,12 +579,14 @@ int main(int argc, const char **argv) {
 		
 		current = next;
 		
-		Time timeConstants;
-		timeConstants.t = static_cast<float>(0.000001 * static_cast<double>(time.count()));
-		timeConstants.dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
+		Physics physics;
+		physics.K = static_cast<float>(compression_modulus * std::pow(10.0, 9.0));
+		physics.E = static_cast<float>(elasticity_modulus * std::pow(10.0, 9.0));
+		physics.t = static_cast<float>(0.000001 * static_cast<double>(time.count()));
+		physics.dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
 		
-		vkcv::PushConstants timePushConstants (sizeof(timeConstants));
-		timePushConstants.appendDrawcall(timeConstants);
+		vkcv::PushConstants physicsPushConstants (sizeof(physics));
+		physicsPushConstants.appendDrawcall(physics);
 		
 		Tweaks tweaks;
 		tweaks.alpha = alpha;
@@ -586,7 +595,7 @@ int main(int argc, const char **argv) {
 		vkcv::PushConstants tweakPushConstants (sizeof(tweaks));
 		tweakPushConstants.appendDrawcall(tweaks);
 		
-		cameraManager.update(timeConstants.dt);
+		cameraManager.update(physics.dt);
 
 		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 		vkcv::PushConstants cameraPushConstants (sizeof(glm::mat4));
@@ -640,7 +649,7 @@ int main(int argc, const char **argv) {
 				{ vkcv::DescriptorSetUsage(
 						0, core.getDescriptorSet(updateGridForcesSets[0]).vulkanHandle
 				) },
-				timePushConstants
+				physicsPushConstants
 		);
 		
 		core.recordImageMemoryBarrier(cmdStream, grid.getHandle());
@@ -686,7 +695,7 @@ int main(int argc, const char **argv) {
 				{ vkcv::DescriptorSetUsage(
 						0, core.getDescriptorSet(updateParticlePositionsSets[0]).vulkanHandle
 				) },
-				timePushConstants
+				physicsPushConstants
 		);
 		
 		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
@@ -748,6 +757,9 @@ int main(int argc, const char **argv) {
 		
 		ImGui::Begin("Settings");
 		
+		ImGui::SliderFloat("Compression Modulus", &compression_modulus, 0.0f, 500.0f);
+		ImGui::SliderFloat("Elasticity Modulus", &elasticity_modulus, 0.0f, 1000.0f);
+		
 		ImGui::Checkbox("Render Grid", &renderGrid);
 		ImGui::SliderFloat("Alpha (PIC -> FLIP)", &alpha, 0.0f, 1.0f);
 		ImGui::SameLine(0.0f, 10.0f);
@@ -760,7 +772,7 @@ int main(int argc, const char **argv) {
 		    beta = 0.75f;
 		}
 		
-		ImGui::DragFloat3("Initial velocity", reinterpret_cast<float*>(&initialVelocity));
+		ImGui::DragFloat3("Initial Velocity", reinterpret_cast<float*>(&initialVelocity));
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::Button("Reset##particle_velocity")) {
 			resetParticles(particles, initialVelocity);

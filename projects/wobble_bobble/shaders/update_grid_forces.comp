@@ -14,6 +14,8 @@ layout(set=0, binding=2, std430) buffer particleBuffer {
 };
 
 layout( push_constant ) uniform constants {
+    float K;
+    float E;
     float t;
     float dt;
 };
@@ -23,8 +25,24 @@ layout( push_constant ) uniform constants {
 shared Particle shared_particles [SHARED_PARTICLES_BATCH_SIZE];
 
 void main()	{
+    const float K9_E = (9.0f * K - E);
+
+    float lame1 = 3.0f * K * (3.0f * K - E);
+    float lame2 = 3.0f * K * E;
+    float poisson = (3.0f * K - E);
+    float M = 3.0f * K * (3.0f * K + E);
+
+    if (K9_E > 0.0f) {
+        lame1 /= K9_E;
+        lame2 /= K9_E;
+        M /= K9_E;
+    }
+
+    if (K > 0.0f) {
+        poisson /= (6.0f * K);
+    }
+
     const vec3 position = (vec3(gl_GlobalInvocationID) + vec3(0.5f)) / imageSize(gridImage);
-    const float elasticity_module = 12.5f * 1000000.0f; // 10..15 = Wood
 
     memoryBarrierImage();
 
@@ -59,14 +77,17 @@ void main()	{
         for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
             float size = shared_particles[gl_LocalInvocationIndex].minimal.size;
             float volume = 4.0f / 3.0f * PI * size * size * size;
-            mat3 deformation = mat3(shared_particles[gl_LocalInvocationIndex].deformation);
+            mat3 F = mat3(shared_particles[gl_LocalInvocationIndex].deformation);
 
-            float J = determinant(deformation);
+            float J = determinant(F);
 
-            if ((abs(J) > 0.0f) && (volume > 0.0f)) {
-                mat3 epsilon = deformation - mat3(1.0f);
-                mat3 delta = elasticity_module * epsilon;
-                mat3 delta_cauchy = J * delta * inverse(transpose(deformation));
+            if ((J > 0.0f) && (volume > 0.0f)) {
+                mat3 F_invT = inverse(transpose(F));
+
+                vec3 v = shared_particles[gl_LocalInvocationIndex].minimal.velocity;
+                float m = shared_particles[gl_LocalInvocationIndex].minimal.mass;
+
+                mat3 delta = lame2 * (F - F_invT) + lame1 * log(J) * F_invT;
 
                 vec3 weight_gradient = voxel_particle_grad_weight(
                     position,
@@ -75,7 +96,7 @@ void main()	{
 
                 force -= (
                     volume *
-                    delta_cauchy *
+                    delta * transpose(F) *
                     weight_gradient
                 );
             }

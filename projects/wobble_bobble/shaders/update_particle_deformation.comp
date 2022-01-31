@@ -36,11 +36,10 @@ void main()	{
                     if (length(offset) < minimal.size * 2.0f) {
                         vec4 gridSample = texture(sampler3D(gridImage, gridSampler), voxel);
 
-                        // TODO: needs to be activated once everything else is stable!
-                        /*velocity_gradient += outerProduct(
+                        velocity_gradient += outerProduct(
                             gridSample.xyz,
                             voxel_particle_grad_weight(voxel, minimal)
-                        );*/
+                        );
                     }
                 }
             }
