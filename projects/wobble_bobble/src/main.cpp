@@ -136,8 +136,8 @@ int main(int argc, const char **argv) {
 			particles_vec.data(),
 			particles_vec.size(),
 			glm::vec3(0.5f),
-			0.25f,
-			1.0f
+			0.05f,
+			0.27f
 	);
 	
 	particles.fill(particles_vec);

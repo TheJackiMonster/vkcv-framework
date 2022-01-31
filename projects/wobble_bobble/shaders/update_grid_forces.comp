@@ -24,7 +24,7 @@ shared Particle shared_particles [SHARED_PARTICLES_BATCH_SIZE];
 
 void main()	{
     const vec3 position = (vec3(gl_GlobalInvocationID) + vec3(0.5f)) / imageSize(gridImage);
-    const float elasticity_module = 2.5f * 1000000.0f; // 10..15 = Wood
+    const float elasticity_module = 12.5f * 1000000.0f; // 10..15 = Wood
 
     memoryBarrierImage();
 
