@@ -36,6 +36,7 @@ void main()	{
             shared_particles[gl_LocalInvocationIndex].mass = 0.0f;
         }
 
+        barrier();
         memoryBarrierShared();
 
         for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
