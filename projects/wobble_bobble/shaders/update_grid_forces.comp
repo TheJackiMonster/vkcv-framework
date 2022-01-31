@@ -7,8 +7,9 @@ layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
 #include "particle.inc"
 
-layout(set=0, binding=0, rgba32f) uniform image3D gridImage;
-layout(set=0, binding=1, std430) buffer particleBuffer {
+layout(set=0, binding=0, rgba32f) restrict readonly uniform image3D gridImage;
+layout(set=0, binding=1, rgba32f) restrict writeonly uniform image3D gridForceImage;
+layout(set=0, binding=2, std430) buffer particleBuffer {
     Particle particles [];
 };
 
@@ -23,7 +24,7 @@ shared Particle shared_particles [SHARED_PARTICLES_BATCH_SIZE];
 
 void main()	{
     const vec3 position = (vec3(gl_GlobalInvocationID) + vec3(0.5f)) / imageSize(gridImage);
-    const float elasticity_module = 1200.5f * 1000000.0f; // 10..15 = Wood
+    const float elasticity_module = 2.5f * 1000000.0f; // 10..15 = Wood
 
     memoryBarrierImage();
 
@@ -60,23 +61,30 @@ void main()	{
             float volume = 4.0f / 3.0f * PI * size * size * size;
             mat3 deformation = mat3(shared_particles[gl_LocalInvocationIndex].deformation);
 
-            mat3 epsilon = deformation - mat3(1.0f);
-            mat3 delta = elasticity_module * epsilon;
-            mat3 delta_cauchy = determinant(deformation) * delta * inverse(transpose(deformation));
+            float J = determinant(deformation);
 
-            vec3 weight_gradient = vec3(
-                voxel_particle_grad_weight(position, shared_particles[gl_LocalInvocationIndex].minimal)
-            );
+            if ((abs(J) > 0.0f) && (volume > 0.0f)) {
+                mat3 epsilon = deformation - mat3(1.0f);
+                mat3 delta = elasticity_module * epsilon;
+                mat3 delta_cauchy = J * delta * inverse(transpose(deformation));
 
-            force -= (
-                volume *
-                delta_cauchy *
-                weight_gradient
-            );
+                vec3 weight_gradient = voxel_particle_grad_weight(
+                    position,
+                    shared_particles[gl_LocalInvocationIndex].minimal
+                );
+
+                force -= (
+                    volume *
+                    delta_cauchy *
+                    weight_gradient
+                );
+            }
         }
     }
 
-    velocity += force * dt / mass;
+    if (mass > 0.0f) {
+        velocity += force * dt / mass;
+    }
 
     bvec3 lowerID = lessThanEqual(gl_GlobalInvocationID, ivec3(0));
     bvec3 negativeVelocity = lessThan(velocity, vec3(0.0f));
@@ -90,10 +98,10 @@ void main()	{
         (lowerID.z && negativeVelocity.z) || (greaterID.z && positiveVelocity.z)
     );
 
-    velocity = mix(velocity, -velocity, invert) - gridSample.xyz;
+    velocity = mix(velocity, -velocity, invert);
 
     imageStore(
-        gridImage,
+        gridForceImage,
         ivec3(gl_GlobalInvocationID),
         vec4(velocity, mass)
     );

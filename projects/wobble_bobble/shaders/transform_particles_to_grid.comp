@@ -10,6 +10,7 @@ layout(set=0, binding=0, std430) buffer particleBuffer {
 };
 
 layout(set=0, binding=1, rgba32f) restrict writeonly uniform image3D gridImage;
+layout(set=0, binding=2, rgba32f) restrict writeonly uniform image3D gridCopyImage;
 
 #define SHARED_PARTICLES_BATCH_SIZE 64
 
@@ -38,15 +39,23 @@ void main()	{
         memoryBarrierShared();
 
         for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
+            vec3 weight = voxel_particle_weight(position, shared_particles[i]);
+
             gridValue += (
                 vec4(shared_particles[i].velocity, shared_particles[i].mass) *
-                voxel_particle_weight(position, shared_particles[i])
+                weight.x * weight.y * weight.z
             );
         }
     }
 
     imageStore(
         gridImage,
+        ivec3(gl_GlobalInvocationID),
+        gridValue
+    );
+
+    imageStore(
+        gridCopyImage,
         ivec3(gl_GlobalInvocationID),
         gridValue
     );

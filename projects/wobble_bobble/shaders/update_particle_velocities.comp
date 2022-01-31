@@ -10,7 +10,8 @@ layout(set=0, binding=0, std430) buffer particleBuffer {
 };
 
 layout(set=0, binding=1) uniform texture3D gridImage;
-layout(set=0, binding=2) uniform sampler gridSampler;
+layout(set=0, binding=2) uniform texture3D gridOldImage;
+layout(set=0, binding=3) uniform sampler gridSampler;
 
 void main()	{
     memoryBarrierBuffer();
@@ -20,7 +21,7 @@ void main()	{
         ParticleMinimal minimal = particles[gl_GlobalInvocationID.x].minimal;
 
         ivec3 gridResolution = textureSize(sampler3D(gridImage, gridSampler), 0);
-        ivec3 gridWindow = ivec3(minimal.size * 4.0f * gridResolution);
+        ivec3 gridWindow = ivec3(minimal.size * 2.0f * gridResolution);
 
         vec3 velocity = vec3(minimal.velocity);
 
@@ -34,7 +35,11 @@ void main()	{
 
                     if (length(offset) < minimal.size * 2.0f) {
                         vec4 gridSample = texture(sampler3D(gridImage, gridSampler), voxel);
-                        velocity += voxel_particle_weight(voxel, minimal) * gridSample.xyz;
+                        vec4 gridOldSample = texture(sampler3D(gridOldImage, gridSampler), voxel);
+
+                        vec3 weight = voxel_particle_weight(voxel, minimal);
+
+                        velocity += (weight.x * weight.y * weight.z) * (gridSample.xyz - gridOldSample.xyz);
                     }
                 }
             }

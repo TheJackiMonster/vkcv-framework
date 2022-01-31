@@ -40,7 +40,7 @@ void distributeParticles(Particle *particles, size_t count, const glm::vec3& cen
 		
 		particles[i].position = center + offset;
 		particles[i].size = size;
-		particles[i].velocity = glm::vec3(0.0f, 1.0f, 0.0f);
+		particles[i].velocity = glm::vec3(0.0f, 0.1f, 0.0f);
 		
 		volume += size;
 	}
@@ -153,6 +153,17 @@ int main(int argc, const char **argv) {
 	
 	grid.switchLayout(vk::ImageLayout::eGeneral);
 	
+	vkcv::Image gridCopy = core.createImage(
+			grid.getFormat(),
+			grid.getWidth(),
+			grid.getHeight(),
+			grid.getDepth(),
+			false,
+			true
+	);
+	
+	gridCopy.switchLayout(vk::ImageLayout::eGeneral);
+	
 	/* TODO: clear grid via compute shader?
 	std::vector<glm::vec4> grid_vec (grid.getWidth() * grid.getHeight() * grid.getDepth());
 	
@@ -185,6 +196,7 @@ int main(int argc, const char **argv) {
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
 		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(1, grid.getHandle()));
+		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(2, gridCopy.getHandle()));
 		core.writeDescriptorSet(transformParticlesToGridSets[0], writes);
 	}
 	
@@ -210,8 +222,9 @@ int main(int argc, const char **argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(0, grid.getHandle()));
-		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(1, particles.getHandle()));
+		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(0, gridCopy.getHandle()));
+		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(1, grid.getHandle()));
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(2, particles.getHandle()));
 		core.writeDescriptorSet(updateGridForcesSets[0], writes);
 	}
 	
@@ -241,7 +254,8 @@ int main(int argc, const char **argv) {
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
 		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, grid.getHandle()));
-		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(2, gridCopy.getHandle()));
+		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(3, gridSampler));
 		core.writeDescriptorSet(updateParticleVelocitiesSets[0], writes);
 	}
 	
@@ -467,6 +481,7 @@ int main(int argc, const char **argv) {
 		
 		core.recordBeginDebugLabel(cmdStream, "TRANSFORM PARTICLES TO GRID", { 0.47f, 0.77f, 0.85f, 1.0f });
 		core.prepareImageForStorage(cmdStream, grid.getHandle());
+		core.prepareImageForStorage(cmdStream, gridCopy.getHandle());
 		
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
@@ -479,6 +494,7 @@ int main(int argc, const char **argv) {
 		);
 		
 		core.recordImageMemoryBarrier(cmdStream, grid.getHandle());
+		core.recordImageMemoryBarrier(cmdStream, gridCopy.getHandle());
 		core.recordEndDebugLabel(cmdStream);
 		
 		if (!initializedParticleVolumes) {
@@ -508,6 +524,8 @@ int main(int argc, const char **argv) {
 				) },
 				timePushConstants
 		);
+		
+		core.recordImageMemoryBarrier(cmdStream, grid.getHandle());
 		core.recordEndDebugLabel(cmdStream);
 		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE DEFORMATION", { 0.78f, 0.89f, 0.94f, 1.0f });
@@ -520,13 +538,15 @@ int main(int argc, const char **argv) {
 				{ vkcv::DescriptorSetUsage(
 						0, core.getDescriptorSet(updateParticleDeformationSets[0]).vulkanHandle
 				) },
-				timePushConstants
+				vkcv::PushConstants(0)
 		);
 		
 		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
 		core.recordEndDebugLabel(cmdStream);
 		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE VELOCITIES", { 0.78f, 0.89f, 0.94f, 1.0f });
+		core.prepareImageForSampling(cmdStream, gridCopy.getHandle());
+		
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateParticleVelocitiesPipeline,

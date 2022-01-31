@@ -19,7 +19,7 @@ void main()	{
         vec3 surface = vec3(passPos.x + 0.5f, passPos.y + 0.5f, z * 2.0f);
         vec3 velocity = vec3(0.5f) + 0.5f * normalize(passVelocity.xyz);
 
-        outColor = surface;
+        outColor = velocity;
     } else {
         discard;
     }

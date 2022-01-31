@@ -9,30 +9,46 @@ layout(set=0, binding=0, std430) buffer particleBuffer {
     Particle particles [];
 };
 
-layout(set=0, binding=1) uniform texture3D gridTextureIn;
+layout(set=0, binding=1) uniform texture3D gridImage;
 layout(set=0, binding=2) uniform sampler gridSampler;
-
-layout( push_constant ) uniform constants {
-    float t;
-    float dt;
-};
 
 void main()	{
     memoryBarrierBuffer();
     memoryBarrierImage();
 
-    ParticleMinimal particle = particles[gl_GlobalInvocationID.x].minimal;
-    mat3 deformation = mat3(particles[gl_GlobalInvocationID.x].deformation);
+    if (gl_GlobalInvocationID.x < particles.length()) {
+        ParticleMinimal minimal = particles[gl_GlobalInvocationID.x].minimal;
+        mat3 deformation = mat3(particles[gl_GlobalInvocationID.x].deformation);
 
-    mat3 grad_velocity = mat3(
-        textureGrad(sampler3D(gridTextureIn, gridSampler), particle.position, vec3(1.0f, 0.0f, 0.0f), vec3(0.0f)).xyz,
-        textureGrad(sampler3D(gridTextureIn, gridSampler), particle.position, vec3(0.0f, 1.0f, 0.0f), vec3(0.0f)).xyz,
-        textureGrad(sampler3D(gridTextureIn, gridSampler), particle.position, vec3(0.0f, 0.0f, 1.0f), vec3(0.0f)).xyz
-    );
+        ivec3 gridResolution = textureSize(sampler3D(gridImage, gridSampler), 0);
+        ivec3 gridWindow = ivec3(minimal.size * 2.0f * gridResolution);
 
-    mat3 deformation_elastic = (mat3(1.0f) + grad_velocity * dt) * deformation;
+        mat3 velocity_gradient = mat3(0.0f);
 
-    particles[gl_GlobalInvocationID.x].deformation = mat4(deformation_elastic);
+        uint i, j, k;
+
+        for (i = -gridWindow.x; i <= gridWindow.x; i++) {
+            for (j = -gridWindow.y; j <= gridWindow.y; j++) {
+                for (k = -gridWindow.z; k <= gridWindow.z; k++) {
+                    vec3 offset = vec3(i, j, k) / gridResolution;
+                    vec3 voxel = minimal.position + offset;
+
+                    if (length(offset) < minimal.size * 2.0f) {
+                        vec4 gridSample = texture(sampler3D(gridImage, gridSampler), voxel);
+
+                        velocity_gradient += outerProduct(
+                            gridSample.xyz,
+                            voxel_particle_grad_weight(voxel, minimal)
+                        );
+                    }
+                }
+            }
+        }
+
+        mat3 deformation_elastic = (mat3(1.0f) + velocity_gradient) * deformation;
+
+        particles[gl_GlobalInvocationID.x].deformation = mat4(deformation_elastic);
+    }
 
     memoryBarrierBuffer();
 }
