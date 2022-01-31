@@ -22,7 +22,9 @@ void main()	{
         float size = particles[gl_GlobalInvocationID.x].minimal.size;
         vec3 velocity = particles[gl_GlobalInvocationID.x].minimal.velocity;
 
-        position = position + velocity * dt;
+        if (dt > 0.0f) {
+            position = position + velocity * dt;
+        }
 
         for (uint i = 0; i < 3; i++) {
             if (position[i] - size < 0.0f) {

@@ -82,8 +82,10 @@ void main()	{
         }
     }
 
-    if (mass > 0.0f) {
-        velocity += force * dt / mass;
+    if (dt > 0.0f) {
+        if (mass > 0.0f) {
+            velocity += force * dt / mass;
+        }
     }
 
     bvec3 lowerID = lessThanEqual(gl_GlobalInvocationID, ivec3(0));
