@@ -751,18 +751,18 @@ int main(int argc, const char **argv) {
 		ImGui::Checkbox("Render Grid", &renderGrid);
 		ImGui::SliderFloat("Alpha (PIC -> FLIP)", &alpha, 0.0f, 1.0f);
 		ImGui::SameLine(0.0f, 10.0f);
-		if (ImGui::SmallButton("Reset")) {
+		if (ImGui::SmallButton("Reset##alpha")) {
 		    alpha = 0.5f;
 		}
 		ImGui::SliderFloat("Beta (Alpha -> APIC)", &beta, 0.0f, 1.0f);
 		ImGui::SameLine(0.0f, 10.0f);
-		if (ImGui::SmallButton("Reset")) {
+		if (ImGui::SmallButton("Reset##beta")) {
 		    beta = 0.75f;
 		}
 		
 		ImGui::DragFloat3("Initial velocity", reinterpret_cast<float*>(&initialVelocity));
-		
-		if (ImGui::Button("Reset Particles")) {
+		ImGui::SameLine(0.0f, 10.0f);
+		if (ImGui::Button("Reset##particle_velocity")) {
 			resetParticles(particles, initialVelocity);
 		}
 		
