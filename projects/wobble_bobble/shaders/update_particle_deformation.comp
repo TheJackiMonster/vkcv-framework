@@ -25,7 +25,7 @@ void main()	{
 
         mat3 velocity_gradient = mat3(0.0f);
 
-        uint i, j, k;
+        int i, j, k;
 
         for (i = -gridWindow.x; i <= gridWindow.x; i++) {
             for (j = -gridWindow.y; j <= gridWindow.y; j++) {

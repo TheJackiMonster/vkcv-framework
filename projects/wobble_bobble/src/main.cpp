@@ -40,7 +40,7 @@ void distributeParticles(Particle *particles, size_t count, const glm::vec3& cen
 		
 		particles[i].position = center + offset;
 		particles[i].size = size;
-		particles[i].velocity = glm::vec3(0.0f, 0.1f, 0.0f);
+		particles[i].velocity = glm::vec3(0.0f);
 		
 		volume += size;
 	}

@@ -1,5 +1,6 @@
 #version 450
 #extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_control_flow_attributes : enable
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
@@ -23,9 +24,10 @@ void main()	{
         ivec3 gridResolution = textureSize(sampler3D(gridImage, gridSampler), 0);
         ivec3 gridWindow = ivec3(minimal.size * 2.0f * gridResolution);
 
-        vec3 velocity = vec3(minimal.velocity);
+        vec3 velocity_pic = vec3(0.0f);
+        vec3 velocity_flip = vec3(minimal.velocity);
 
-        uint i, j, k;
+        int i, j, k;
 
         for (i = -gridWindow.x; i <= gridWindow.x; i++) {
             for (j = -gridWindow.y; j <= gridWindow.y; j++) {
@@ -38,14 +40,16 @@ void main()	{
                         vec4 gridOldSample = texture(sampler3D(gridOldImage, gridSampler), voxel);
 
                         vec3 weight = voxel_particle_weight(voxel, minimal);
+                        float w = (weight.x * weight.y * weight.z);
 
-                        velocity += (weight.x * weight.y * weight.z) * (gridSample.xyz - gridOldSample.xyz);
+                        velocity_pic += gridSample.xyz * w;
+                        velocity_flip += (gridSample.xyz - gridOldSample.xyz) * w;
                     }
                 }
             }
         }
 
-        particles[gl_GlobalInvocationID.x].minimal.velocity = velocity;
+        particles[gl_GlobalInvocationID.x].minimal.velocity = mix(velocity_pic, velocity_flip, 0.95f);
     }
 
     memoryBarrierBuffer();
