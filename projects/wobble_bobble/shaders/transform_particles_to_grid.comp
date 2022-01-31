@@ -39,11 +39,9 @@ void main()	{
         memoryBarrierShared();
 
         for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
-            vec3 weight = voxel_particle_weight(position, shared_particles[i]);
-
             gridValue += (
                 vec4(shared_particles[i].velocity, shared_particles[i].mass) *
-                weight.x * weight.y * weight.z
+                voxel_particle_weight(position, shared_particles[i])
             );
         }
     }

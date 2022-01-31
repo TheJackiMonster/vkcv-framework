@@ -41,14 +41,20 @@ float weight_C(float x) {
 	}
 }
 
-vec3 voxel_particle_weight(vec3 voxel, ParticleMinimal particle) {
+float voxel_particle_weight(vec3 voxel, ParticleMinimal particle) {
 	if (particle.size <= 0.0f) {
-		return vec3(0.0f);
+		return 0.0f;
 	}
 	
 	vec3 delta = abs(particle.position - voxel) / particle.size;
 	
-	return vec3(weight_C(delta.x), weight_C(delta.y), weight_C(delta.z));
+	vec3 weight = vec3(
+		weight_C(delta.x),
+		weight_C(delta.y),
+		weight_C(delta.z)
+	);
+	
+	return weight.x * weight.y * weight.z;
 }
 
 float grad_weight_A(float x) {
@@ -88,12 +94,22 @@ vec3 voxel_particle_grad_weight(vec3 voxel, ParticleMinimal particle) {
 	vec3 sign = sign(sign_delta);
 	
 	vec3 weight = vec3(
+		weight_C(delta.x),
+		weight_C(delta.y),
+		weight_C(delta.z)
+	);
+	
+	vec3 grad_weight = vec3(
 		grad_weight_C(delta.x),
 		grad_weight_C(delta.y),
 		grad_weight_C(delta.z)
-	);
+	) * sign;
 	
-	return weight * sign;
+	return vec3(
+			grad_weight.x * weight.y * weight.z,
+			grad_weight.y * weight.z * weight.x,
+			grad_weight.z * weight.x * weight.y
+	);
 }
 
 #endif // PARTICLE_INC
