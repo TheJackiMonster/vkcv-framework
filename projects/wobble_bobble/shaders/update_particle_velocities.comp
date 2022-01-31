@@ -16,6 +16,7 @@ layout(set=0, binding=3) uniform sampler gridSampler;
 
 layout( push_constant ) uniform constants {
     float alpha;
+    float beta;
 };
 
 void main()	{
@@ -27,6 +28,9 @@ void main()	{
 
         ivec3 gridResolution = textureSize(sampler3D(gridImage, gridSampler), 0);
         ivec3 gridWindow = ivec3(minimal.size * 2.0f * gridResolution);
+
+        mat3 affine_D = mat3(0.0f);
+        mat3 affine_B = mat3(0.0f);
 
         vec3 velocity_pic = vec3(0.0f);
         vec3 velocity_flip = vec3(minimal.velocity);
@@ -44,15 +48,41 @@ void main()	{
                         vec4 gridOldSample = texture(sampler3D(gridOldImage, gridSampler), voxel);
 
                         float weight = voxel_particle_weight(voxel, minimal);
+                        vec3 velocity = gridSample.xyz * weight;
 
-                        velocity_pic += gridSample.xyz * weight;
+                        affine_D += outerProduct(weight * offset, offset);
+                        affine_B += outerProduct(velocity, offset);
+
+                        velocity_pic += velocity;
                         velocity_flip += (gridSample.xyz - gridOldSample.xyz) * weight;
                     }
                 }
             }
         }
 
-        particles[gl_GlobalInvocationID.x].minimal.velocity = mix(velocity_pic, velocity_flip, alpha);
+        mat3 affine_C = mat3(0.0f);
+        vec3 velocity_apic = vec3(0.0f);
+
+        if (abs(determinant(affine_D)) > 0.0f) {
+            affine_C = affine_B * inverse(affine_D);
+        }
+
+        for (i = -gridWindow.x; i <= gridWindow.x; i++) {
+            for (j = -gridWindow.y; j <= gridWindow.y; j++) {
+                for (k = -gridWindow.z; k <= gridWindow.z; k++) {
+                    vec3 offset = vec3(i, j, k) / gridResolution;
+
+                    if (length(offset) < minimal.size * 2.0f) {
+                        velocity_apic += affine_C * offset;
+                    }
+                }
+            }
+        }
+
+        vec3 velocity_alpha = mix(velocity_pic, velocity_flip, alpha);
+        vec3 velocity_beta = mix(velocity_alpha, velocity_apic, beta);
+
+        particles[gl_GlobalInvocationID.x].minimal.velocity = velocity_beta;
     }
 
     memoryBarrierBuffer();

@@ -522,6 +522,7 @@ int main(int argc, const char **argv) {
 	bool initializedParticleVolumes = false;
 	bool renderGrid = true;
 	float alpha = 0.95f;
+	float beta = 0.95f;
 	
 	auto start = std::chrono::system_clock::now();
 	auto current = start;
@@ -564,6 +565,7 @@ int main(int argc, const char **argv) {
 		
 		vkcv::PushConstants tweakPushConstants (sizeof(float));
 		tweakPushConstants.appendDrawcall(static_cast<float>(alpha));
+		tweakPushConstants.appendDrawcall(static_cast<float>(beta));
 		
 		cameraManager.update(dt);
 
@@ -729,6 +731,7 @@ int main(int argc, const char **argv) {
 		
 		ImGui::Checkbox("Render Grid", &renderGrid);
 		ImGui::SliderFloat("Alpha (PIC -> FLIP)", &alpha, 0.0f, 1.0f);
+		ImGui::SliderFloat("Beta (Alpha -> APIC)", &beta, 0.0f, 1.0f);
 		
 		ImGui::End();
 		
