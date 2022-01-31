@@ -308,6 +308,24 @@ int main(int argc, const char **argv) {
 			}
 	);
 	
+	vkcv::ShaderProgram gfxProgramLines;
+	
+	compiler.compile(
+			vkcv::ShaderStage::VERTEX,
+			"shaders/lines.vert",
+			[&gfxProgramLines](vkcv::ShaderStage stage, const std::filesystem::path& path) {
+				gfxProgramLines.addShader(stage, path);
+			}
+	);
+	
+	compiler.compile(
+			vkcv::ShaderStage::FRAGMENT,
+			"shaders/lines.frag",
+			[&gfxProgramLines](vkcv::ShaderStage stage, const std::filesystem::path& path) {
+				gfxProgramLines.addShader(stage, path);
+			}
+	);
+	
 	vkcv::PassConfig passConfigGrid ({
 		vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,
@@ -330,6 +348,19 @@ int main(int argc, const char **argv) {
 		vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,
 				vkcv::AttachmentOperation::CLEAR,
+				vk::Format::eD32Sfloat
+		)
+	});
+	
+	vkcv::PassConfig passConfigLines ({
+		vkcv::AttachmentDescription(
+				vkcv::AttachmentOperation::STORE,
+				vkcv::AttachmentOperation::LOAD,
+				core.getSwapchain(windowHandle).getFormat()
+		),
+		vkcv::AttachmentDescription(
+				vkcv::AttachmentOperation::STORE,
+				vkcv::AttachmentOperation::LOAD,
 				vk::Format::eD32Sfloat
 		)
 	});
@@ -361,6 +392,7 @@ int main(int argc, const char **argv) {
 	
 	vkcv::PassHandle gfxPassGrid = core.createPass(passConfigGrid);
 	vkcv::PassHandle gfxPassParticles = core.createPass(passConfigParticles);
+	vkcv::PassHandle gfxPassLines = core.createPass(passConfigLines);
 	
 	vkcv::VertexLayout vertexLayoutGrid ({
 		vkcv::VertexBinding(0, gfxProgramGrid.getVertexAttachments())
@@ -389,14 +421,29 @@ int main(int argc, const char **argv) {
 	gfxPipelineConfigParticles.m_DescriptorLayouts = { gfxSetLayoutParticles };
 	gfxPipelineConfigParticles.m_UseDynamicViewport = true;
 	
+	vkcv::VertexLayout vertexLayoutLines ({
+		vkcv::VertexBinding(0, gfxProgramLines.getVertexAttachments())
+	});
+	
+	vkcv::GraphicsPipelineConfig gfxPipelineConfigLines;
+	gfxPipelineConfigLines.m_ShaderProgram = gfxProgramLines;
+	gfxPipelineConfigLines.m_Width = windowWidth;
+	gfxPipelineConfigLines.m_Height = windowHeight;
+	gfxPipelineConfigLines.m_PassHandle = gfxPassLines;
+	gfxPipelineConfigLines.m_VertexLayout = vertexLayoutLines;
+	gfxPipelineConfigLines.m_DescriptorLayouts = {};
+	gfxPipelineConfigLines.m_UseDynamicViewport = true;
+	gfxPipelineConfigLines.m_PrimitiveTopology = vkcv::PrimitiveTopology::LineList;
+	
 	vkcv::GraphicsPipelineHandle gfxPipelineGrid = core.createGraphicsPipeline(gfxPipelineConfigGrid);
 	vkcv::GraphicsPipelineHandle gfxPipelineParticles = core.createGraphicsPipeline(gfxPipelineConfigParticles);
+	vkcv::GraphicsPipelineHandle gfxPipelineLines = core.createGraphicsPipeline(gfxPipelineConfigLines);
 	
 	vkcv::Buffer<glm::vec2> trianglePositions = core.createBuffer<glm::vec2>(vkcv::BufferType::VERTEX, 3);
 	trianglePositions.fill({
 		glm::vec2(-1.0f, -1.0f),
 		glm::vec2(+0.0f, +1.5f),
-		glm::vec2(+1.0f, -1.0f),
+		glm::vec2(+1.0f, -1.0f)
 	});
 	
 	vkcv::Buffer<uint16_t> triangleIndices = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3);
@@ -408,6 +455,42 @@ int main(int argc, const char **argv) {
 			{ vkcv::VertexBufferBinding(0, trianglePositions.getVulkanHandle()) },
 			triangleIndices.getVulkanHandle(),
 			triangleIndices.getCount()
+	);
+	
+	vkcv::Buffer<glm::vec3> linesPositions = core.createBuffer<glm::vec3>(vkcv::BufferType::VERTEX, 8);
+	linesPositions.fill({
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(1.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f),
+		glm::vec3(1.0f, 1.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 1.0f),
+		glm::vec3(1.0f, 0.0f, +1.0f),
+		glm::vec3(0.0f, 1.0f, 1.0f),
+		glm::vec3(1.0f, 1.0f, 1.0f)
+	});
+	
+	vkcv::Buffer<uint16_t> linesIndices = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 24);
+	linesIndices.fill({
+		0, 1,
+		1, 3,
+		3, 2,
+		2, 0,
+		
+		4, 5,
+		5, 7,
+		7, 6,
+		6, 4,
+		
+		0, 4,
+		1, 5,
+		2, 6,
+		3, 7
+	});
+	
+	vkcv::Mesh linesMesh (
+			{ vkcv::VertexBufferBinding(0, linesPositions.getVulkanHandle()) },
+			linesIndices.getVulkanHandle(),
+			linesIndices.getCount()
 	);
 	
 	std::vector<vkcv::DrawcallInfo> drawcallsGrid;
@@ -424,6 +507,14 @@ int main(int argc, const char **argv) {
 			triangleMesh,
 			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(gfxSetParticles).vulkanHandle) },
 			particles.getCount()
+	));
+	
+	std::vector<vkcv::DrawcallInfo> drawcallsLines;
+	
+	drawcallsLines.push_back(vkcv::DrawcallInfo(
+			linesMesh,
+			{},
+			1
 	));
 	
 	bool initializedParticleVolumes = false;
@@ -608,6 +699,20 @@ int main(int argc, const char **argv) {
 			
 			core.recordEndDebugLabel(cmdStream);
 		}
+		
+		core.recordBeginDebugLabel(cmdStream, "RENDER LINES", { 0.13f, 0.20f, 0.22f, 1.0f });
+		
+		core.recordDrawcallsToCmdStream(
+				cmdStream,
+				gfxPassLines,
+				gfxPipelineLines,
+				cameraPushConstants,
+				drawcallsLines,
+				renderTargets,
+				windowHandle
+		);
+		
+		core.recordEndDebugLabel(cmdStream);
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

@@ -17,7 +17,11 @@ void main()	{
 
     if (value < 0.5f) {
         vec3 surface = vec3(passPos.x + 0.5f, passPos.y + 0.5f, z * 2.0f);
-        vec3 velocity = vec3(0.5f) + 0.5f * normalize(passVelocity.xyz);
+        vec3 velocity = vec3(0.5f);
+
+        if (length(passVelocity) > 0.0f) {
+            velocity = vec3(0.5f) + 0.5f * normalize(passVelocity.xyz);
+        }
 
         outColor = velocity;
     } else {
