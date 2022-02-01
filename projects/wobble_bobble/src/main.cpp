@@ -688,7 +688,7 @@ int main(int argc, const char **argv) {
 				{ vkcv::DescriptorSetUsage(
 						0, core.getDescriptorSet(updateParticleDeformationSets[0]).vulkanHandle
 				) },
-				vkcv::PushConstants(0)
+				physicsPushConstants
 		);
 		
 		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());

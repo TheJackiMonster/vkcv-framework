@@ -43,10 +43,14 @@ void main()	{
         }
 
         if (volume > 0.0f) {
+            float density = minimal.mass / volume;
+
             //volume = minimal.mass / (mass / volume);
+            mass = density * volume;
         }
 
         particles[gl_GlobalInvocationID.x].minimal.size = sphere_radius(volume);
+        particles[gl_GlobalInvocationID.x].minimal.mass = mass;
     }
 
     memoryBarrierBuffer();

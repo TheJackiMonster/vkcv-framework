@@ -113,7 +113,7 @@ vec3 voxel_particle_grad_weight(vec3 voxel, ParticleMinimal particle) {
 		grad_weight_C(delta.x),
 		grad_weight_C(delta.y),
 		grad_weight_C(delta.z)
-	) * sign;
+	) * sign / particle.size;
 	
 	return vec3(
 			grad_weight.x * weight.y * weight.z,

@@ -12,6 +12,13 @@ layout(set=0, binding=0, std430) buffer particleBuffer {
 layout(set=0, binding=1) uniform texture3D gridImage;
 layout(set=0, binding=2) uniform sampler gridSampler;
 
+layout( push_constant ) uniform constants {
+    float K;
+    float E;
+    float t;
+    float dt;
+};
+
 void main()	{
     memoryBarrierBuffer();
     memoryBarrierImage();
@@ -45,7 +52,11 @@ void main()	{
             }
         }
 
-        mat3 deformation_elastic = (mat3(1.0f) + velocity_gradient) * deformation;
+        mat3 deformation_elastic = deformation;
+
+        if (dt > 0.0f) {
+            deformation_elastic = (mat3(1.0f) + dt * velocity_gradient) * deformation;
+        }
 
         particles[gl_GlobalInvocationID.x].deformation = mat4(deformation_elastic);
     }
