@@ -43,19 +43,17 @@ void main()	{
                     vec3 offset = vec3(i, j, k) / gridResolution;
                     vec3 voxel = minimal.position + offset;
 
-                    if (length(offset) < minimal.size * 2.0f) {
-                        vec4 gridSample = texture(sampler3D(gridImage, gridSampler), voxel);
-                        vec4 gridOldSample = texture(sampler3D(gridOldImage, gridSampler), voxel);
+                    vec4 gridSample = texture(sampler3D(gridImage, gridSampler), voxel);
+                    vec4 gridOldSample = texture(sampler3D(gridOldImage, gridSampler), voxel);
 
-                        float weight = voxel_particle_weight(voxel, minimal);
-                        vec3 velocity = gridSample.xyz * weight;
+                    float weight = voxel_particle_weight(voxel, minimal);
+                    vec3 velocity = gridSample.xyz * weight;
 
-                        affine_D += outerProduct(weight * offset, offset);
-                        affine_B += outerProduct(velocity, offset);
+                    affine_D += outerProduct(weight * offset, offset);
+                    affine_B += outerProduct(velocity, offset);
 
-                        velocity_pic += velocity;
-                        velocity_flip += (gridSample.xyz - gridOldSample.xyz) * weight;
-                    }
+                    velocity_pic += velocity;
+                    velocity_flip += (gridSample.xyz - gridOldSample.xyz) * weight;
                 }
             }
         }
@@ -72,9 +70,7 @@ void main()	{
                 for (k = -gridWindow.z; k <= gridWindow.z; k++) {
                     vec3 offset = vec3(i, j, k) / gridResolution;
 
-                    if (length(offset) < minimal.size * 2.0f) {
-                        velocity_apic += affine_C * offset;
-                    }
+                    velocity_apic += affine_C * offset;
                 }
             }
         }

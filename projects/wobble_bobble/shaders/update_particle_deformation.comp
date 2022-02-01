@@ -37,14 +37,12 @@ void main()	{
                     vec3 offset = vec3(i, j, k) / gridResolution;
                     vec3 voxel = minimal.position + offset;
 
-                    if (length(offset) < minimal.size * 2.0f) {
-                        vec4 gridSample = texture(sampler3D(gridImage, gridSampler), voxel);
+                    vec4 gridSample = texture(sampler3D(gridImage, gridSampler), voxel);
 
-                        velocity_gradient += outerProduct(
-                            gridSample.xyz,
-                            voxel_particle_grad_weight(voxel, minimal)
-                        );
-                    }
+                    velocity_gradient += outerProduct(
+                        gridSample.xyz,
+                        voxel_particle_grad_weight(voxel, minimal)
+                    );
                 }
             }
         }
