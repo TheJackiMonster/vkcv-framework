@@ -26,6 +26,14 @@ struct Tweaks {
 	float beta;
 };
 
+float sphere_volume(float radius) {
+	return 4.0f * (radius * radius * radius) * M_PI / 3.0f;
+}
+
+float sphere_radius(float volume) {
+	return pow(volume * 3.0f / 4.0f / M_PI, 1.0f / 3.0f);
+}
+
 std::random_device random_dev;
 std::uniform_int_distribution<int> dist(0, RAND_MAX);
 
@@ -55,11 +63,14 @@ void distributeParticles(Particle *particles, size_t count, const glm::vec3& cen
 		particles[i].size = size;
 		particles[i].velocity = velocity;
 		
-		volume += size;
+		volume += sphere_volume(size);
 	}
 	
+	// Keep the same densitiy as planned!
+	mass *= (volume / sphere_volume(radius));
+	
 	for (size_t i = 0; i < count; i++) {
-		particles[i].mass = (mass * particles[i].size / volume);
+		particles[i].mass = (mass * sphere_volume(particles[i].size) / volume);
 		particles[i].deformation = glm::mat4(1.0f);
 	}
 }
@@ -105,15 +116,16 @@ vkcv::ComputePipelineHandle createComputePipeline(vkcv::Core& core, vkcv::shader
 	return core.createComputePipeline(config);
 }
 
-void resetParticles(vkcv::Buffer<Particle>& particles, const glm::vec3& velocity) {
+void resetParticles(vkcv::Buffer<Particle>& particles, const glm::vec3& velocity,
+					float density, float size) {
 	std::vector<Particle> particles_vec (particles.getCount());
 	
 	distributeParticles(
 			particles_vec.data(),
 			particles_vec.size(),
 			glm::vec3(0.5f),
-			0.05f,
-			0.27f,
+			size,
+			density * sphere_volume(size),
 			velocity
 	);
 	
@@ -154,13 +166,15 @@ int main(int argc, const char **argv) {
 	).getHandle();
 	
 	glm::vec3 initialVelocity (0.0f, 0.0f, 0.0f);
+	float density = 2500.0f;
+	float radius = 0.1f;
 	
 	vkcv::Buffer<Particle> particles = core.createBuffer<Particle>(
 			vkcv::BufferType::STORAGE,
 			1024
 	);
 	
-	resetParticles(particles, initialVelocity);
+	resetParticles(particles, initialVelocity, density, radius);
 	
 	vkcv::Image grid = core.createImage(
 			vk::Format::eR32G32B32A32Sfloat,
@@ -230,6 +244,8 @@ int main(int argc, const char **argv) {
 	{
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, grid.getHandle()));
+		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
 		core.writeDescriptorSet(initParticleVolumesSets[0], writes);
 	}
 	
@@ -542,7 +558,10 @@ int main(int argc, const char **argv) {
 	
 	// Glass is glass and glass breaks...
 	float compression_modulus = 65.0f;
+	int compression_exponent = 9;
+	
 	float elasticity_modulus = 45.0f;
+	int elasticity_exponent = 9;
 	
 	float alpha = 0.5f;
 	float beta = 0.75f;
@@ -580,8 +599,8 @@ int main(int argc, const char **argv) {
 		current = next;
 		
 		Physics physics;
-		physics.K = static_cast<float>(compression_modulus * std::pow(10.0, 9.0));
-		physics.E = static_cast<float>(elasticity_modulus * std::pow(10.0, 9.0));
+		physics.K = static_cast<float>(compression_modulus * std::pow(10.0, compression_exponent));
+		physics.E = static_cast<float>(elasticity_modulus * std::pow(10.0, elasticity_exponent));
 		physics.t = static_cast<float>(0.000001 * static_cast<double>(time.count()));
 		physics.dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
 		
@@ -626,6 +645,8 @@ int main(int argc, const char **argv) {
 		
 		if (!initializedParticleVolumes) {
 			core.recordBeginDebugLabel(cmdStream, "INIT PARTICLE VOLUMES", { 0.78f, 0.89f, 0.94f, 1.0f });
+			core.prepareImageForSampling(cmdStream, grid.getHandle());
+			
 			core.recordComputeDispatchToCmdStream(
 					cmdStream,
 					initParticleVolumesPipeline,
@@ -642,6 +663,8 @@ int main(int argc, const char **argv) {
 		}
 		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE GRID FORCES", { 0.47f, 0.77f, 0.85f, 1.0f });
+		core.prepareImageForStorage(cmdStream, grid.getHandle());
+		
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateGridForcesPipeline,
@@ -754,18 +777,49 @@ int main(int argc, const char **argv) {
 		core.submitCommandStream(cmdStream);
 		
 		gui.beginGUI();
-		
 		ImGui::Begin("Settings");
 		
-		ImGui::SliderFloat("Compression Modulus", &compression_modulus, 0.0f, 500.0f);
-		ImGui::SliderFloat("Elasticity Modulus", &elasticity_modulus, 0.0f, 1000.0f);
+		ImGui::SliderFloat("Density", &density, std::numeric_limits<float>::epsilon(), 5000.0f);
+		ImGui::SameLine(0.0f, 10.0f);
+		if (ImGui::SmallButton("Reset##density")) {
+			density = 2500.0f;
+		}
 		
+		ImGui::SliderFloat("Radius", &radius, 0.0f, 0.5f);
+		ImGui::SameLine(0.0f, 10.0f);
+		if (ImGui::SmallButton("Reset##radius")) {
+			radius = 0.1f;
+		}
+		
+		ImGui::BeginGroup();
+		ImGui::SliderFloat("Compression Modulus", &compression_modulus, 0.0f, 500.0f);
+		ImGui::SliderInt("##compression_exponent", &compression_exponent, 1, 9);
+		ImGui::SameLine(0.0f, 10.0f);
+		if (ImGui::SmallButton("Reset##compression")) {
+			compression_modulus = 65.0f;
+			compression_exponent = 9;
+		}
+		ImGui::EndGroup();
+		
+		ImGui::BeginGroup();
+		ImGui::SliderFloat("Elasticity Modulus", &elasticity_modulus, 0.0f, 1000.0f);
+		ImGui::SliderInt("##elasticity_exponent", &elasticity_exponent, 1, 9);
+		ImGui::SameLine(0.0f, 10.0f);
+		if (ImGui::SmallButton("Reset##elasticity")) {
+			elasticity_modulus = 45.0f;
+			elasticity_exponent = 9;
+		}
+		ImGui::EndGroup();
+		
+		ImGui::Spacing();
 		ImGui::Checkbox("Render Grid", &renderGrid);
+		
 		ImGui::SliderFloat("Alpha (PIC -> FLIP)", &alpha, 0.0f, 1.0f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::SmallButton("Reset##alpha")) {
 		    alpha = 0.5f;
 		}
+		
 		ImGui::SliderFloat("Beta (Alpha -> APIC)", &beta, 0.0f, 1.0f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::SmallButton("Reset##beta")) {
@@ -775,11 +829,11 @@ int main(int argc, const char **argv) {
 		ImGui::DragFloat3("Initial Velocity", reinterpret_cast<float*>(&initialVelocity));
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::Button("Reset##particle_velocity")) {
-			resetParticles(particles, initialVelocity);
+			resetParticles(particles, initialVelocity, density, radius);
+			initializedParticleVolumes = false;
 		}
 		
 		ImGui::End();
-		
 		gui.endGUI();
 		
 		core.endFrame(windowHandle);

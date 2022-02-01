@@ -9,11 +9,44 @@ layout(set=0, binding=0, std430) buffer particleBuffer {
     Particle particles [];
 };
 
+layout(set=0, binding=1) uniform texture3D gridImage;
+layout(set=0, binding=2) uniform sampler gridSampler;
+
 void main()	{
     memoryBarrierBuffer();
+    memoryBarrierImage();
 
     if (gl_GlobalInvocationID.x < particles.length()) {
-        // nothing
+        ParticleMinimal minimal = particles[gl_GlobalInvocationID.x].minimal;
+
+        ivec3 gridResolution = textureSize(sampler3D(gridImage, gridSampler), 0);
+        ivec3 gridWindow = ivec3(minimal.size * 2.0f * gridResolution);
+
+        float volume = sphere_volume(minimal.size);
+
+        float mass = 0.0f;
+        int i, j, k;
+
+        for (i = -gridWindow.x; i <= gridWindow.x; i++) {
+            for (j = -gridWindow.y; j <= gridWindow.y; j++) {
+                for (k = -gridWindow.z; k <= gridWindow.z; k++) {
+                    vec3 offset = vec3(i, j, k) / gridResolution;
+                    vec3 voxel = minimal.position + offset;
+
+                    if (length(offset) < minimal.size * 2.0f) {
+                        vec4 gridSample = texture(sampler3D(gridImage, gridSampler), voxel);
+
+                        mass += gridSample.w * voxel_particle_weight(voxel, minimal);
+                    }
+                }
+            }
+        }
+
+        if (volume > 0.0f) {
+            //volume = minimal.mass / (mass / volume);
+        }
+
+        particles[gl_GlobalInvocationID.x].minimal.size = sphere_radius(volume);
     }
 
     memoryBarrierBuffer();

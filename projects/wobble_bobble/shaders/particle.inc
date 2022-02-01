@@ -13,6 +13,16 @@ struct Particle {
     mat4 deformation;
 };
 
+const float PI = 3.1415926535897932384626433832795;
+
+float sphere_volume(float radius) {
+	return 4.0f * (radius * radius * radius) * PI / 3.0f;
+}
+
+float sphere_radius(float volume) {
+	return pow(volume * 3.0f / 4.0f / PI, 1.0f / 3.0f);
+}
+
 float weight_A(float x) {
 	return max(1.0f - x, 0.0f);
 }

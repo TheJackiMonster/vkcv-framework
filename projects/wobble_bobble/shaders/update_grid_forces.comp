@@ -1,8 +1,6 @@
 #version 450
 #extension GL_GOOGLE_include_directive : enable
 
-const float PI = 3.1415926535897932384626433832795;
-
 layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
 #include "particle.inc"
@@ -42,7 +40,9 @@ void main()	{
         poisson /= (6.0f * K);
     }
 
-    const vec3 position = (vec3(gl_GlobalInvocationID) + vec3(0.5f)) / imageSize(gridImage);
+    const vec3 gridResolution = vec3(imageSize(gridImage));
+    const vec3 position = (vec3(gl_GlobalInvocationID) + vec3(0.5f)) / gridResolution;
+    const float h3 = 1.0f / gridResolution.x / gridResolution.y / gridResolution.z;
 
     memoryBarrierImage();
 
@@ -75,8 +75,7 @@ void main()	{
         memoryBarrierShared();
 
         for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
-            float size = shared_particles[gl_LocalInvocationIndex].minimal.size;
-            float volume = 4.0f / 3.0f * PI * size * size * size;
+            float volume = sphere_volume(shared_particles[gl_LocalInvocationIndex].minimal.size);
             mat3 F = mat3(shared_particles[gl_LocalInvocationIndex].deformation);
 
             float J = determinant(F);

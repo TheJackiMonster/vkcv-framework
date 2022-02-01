@@ -1,4 +1,7 @@
 #version 450
+#extension GL_GOOGLE_include_directive : enable
+
+#include "particle.inc"
 
 layout(set=0, binding=0) uniform texture3D gridImage;
 layout(set=0, binding=1) uniform sampler gridSampler;
@@ -34,6 +37,8 @@ void main()	{
     vec4 gridData = texture(sampler3D(gridImage, gridSampler), position);
 
     float mass = gridData.w;
+    float density = mass / sphere_volume(size);
+    float alpha = clamp(density / 100000000.0f, 0.0f, 1.0f);
 
     passPos = vertexPos;
     passVelocity = gridData.xyz;
@@ -41,5 +46,5 @@ void main()	{
 
     // align voxel to face camera
     gl_Position = mvp * vec4(position, 1);      // transform position into projected view space
-    gl_Position.xy += vertexPos * (size * 2.0f) * (mass * 100.0f);  // move position directly in view space
+    gl_Position.xy += vertexPos * mix(0.0f, size * 2.0f, alpha);  // move position directly in view space
 }
