@@ -772,7 +772,7 @@ int main(int argc, const char **argv) {
 		    beta = 0.75f;
 		}
 		
-		ImGui::DragFloat3("Initial Velocity", reinterpret_cast<float*>(&initialVelocity));
+		ImGui::DragFloat3("Initial Velocity", reinterpret_cast<float*>(&initialVelocity), 0.001f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::Button("Reset##particle_velocity")) {
 			resetParticles(particles, initialVelocity);
