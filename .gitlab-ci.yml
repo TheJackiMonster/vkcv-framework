@@ -8,48 +8,48 @@ stages:
   - build
   - deploy
 
-build_ubuntu_gcc:
-  only:
-    variables:
-      - $RUN =~ /\bubuntu.*/i || $RUN =~ /\ball.*/i
-  stage: build
-  tags: 
-    - ubuntu-gcc-cached
-  variables:
-    GIT_SUBMODULE_STRATEGY: recursive
-  timeout: 15m
-  retry: 1
-  script:
-    - mkdir debug
-    - cd debug
-    - cmake -DCMAKE_BUILD_TYPE=Debug ..
-    - cmake --build . -j 4
-  artifacts:
-    name: "Documentation - $CI_PIPELINE_ID"
-    paths:
-      - doc/html
-      - doc/latex
-    expire_in: never
+# build_ubuntu_gcc:
+#   only:
+#     variables:
+#       - $RUN =~ /\bubuntu.*/i || $RUN =~ /\ball.*/i
+#   stage: build
+#   tags: 
+#     - ubuntu-gcc-cached
+#   variables:
+#     GIT_SUBMODULE_STRATEGY: recursive
+#   timeout: 15m
+#   retry: 1
+#   script:
+#     - mkdir debug
+#     - cd debug
+#     - cmake -DCMAKE_BUILD_TYPE=Debug ..
+#     - cmake --build . -j 4
+#   artifacts:
+#     name: "Documentation - $CI_PIPELINE_ID"
+#     paths:
+#       - doc/html
+#       - doc/latex
+#     expire_in: never
 
-build_win10_msvc:
-  only:
-    variables:
-      - $RUN =~ /\bwin-msvc.*/i || $RUN =~ /\ball.*/i
-  stage: build
-  tags: 
-    - win10-msvc-cached
-  variables:
-    GIT_SUBMODULE_STRATEGY: recursive
-  timeout: 15m
-  retry: 0
-  script:
-    - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
-    - .\Launch-VsDevShell.ps1
-    - cd $CI_PROJECT_DIR
-    - mkdir debug
-    - cd debug
-    - cmake -DCMAKE_BUILD_TYPE=Debug ..
-    - cmake --build . -j 4
+# build_win10_msvc:
+#   only:
+#     variables:
+#       - $RUN =~ /\bwin-msvc.*/i || $RUN =~ /\ball.*/i
+#   stage: build
+#   tags: 
+#     - win10-msvc-cached
+#   variables:
+#     GIT_SUBMODULE_STRATEGY: recursive
+#   timeout: 15m
+#   retry: 0
+#   script:
+#     - cd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\'
+#     - .\Launch-VsDevShell.ps1
+#     - cd $CI_PROJECT_DIR
+#     - mkdir debug
+#     - cd debug
+#     - cmake -DCMAKE_BUILD_TYPE=Debug ..
+#     - cmake --build . -j 4
 
 # build_win10_mingw:
 #   only:
