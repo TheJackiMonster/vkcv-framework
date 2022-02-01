@@ -3,7 +3,7 @@
 
 #include "particle.inc"
 
-layout(set=0, binding=0, std430) buffer particleBuffer {
+layout(set=0, binding=0, std430) readonly buffer particleBuffer {
     Particle particles [];
 };
 

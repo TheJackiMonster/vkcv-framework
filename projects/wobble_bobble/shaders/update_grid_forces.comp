@@ -7,7 +7,7 @@ layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
 layout(set=0, binding=0, rgba32f) restrict readonly uniform image3D gridImage;
 layout(set=0, binding=1, rgba32f) restrict writeonly uniform image3D gridForceImage;
-layout(set=0, binding=2, std430) buffer particleBuffer {
+layout(set=0, binding=2, std430) readonly buffer particleBuffer {
     Particle particles [];
 };
 
@@ -40,6 +40,7 @@ void main()	{
         poisson /= (6.0f * K);
     }
 
+    barrier();
     memoryBarrierImage();
 
     const vec3 gridResolution = vec3(imageSize(gridImage));
@@ -57,6 +58,7 @@ void main()	{
     vec3 force = vec3(0.0f);
     uint offset = 0;
 
+    barrier();
     memoryBarrierBuffer();
 
     for (offset = 0; offset < particles.length(); offset += SHARED_PARTICLES_BATCH_SIZE) {
@@ -72,6 +74,7 @@ void main()	{
             shared_particles[gl_LocalInvocationIndex].deformation = mat4(0.0f);
         }
 
+        barrier();
         memoryBarrierShared();
 
         for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
@@ -101,6 +104,7 @@ void main()	{
             }
         }
 
+        barrier();
         memoryBarrierShared();
     }
 
@@ -129,6 +133,4 @@ void main()	{
         ivec3(gl_GlobalInvocationID),
         vec4(velocity, mass)
     );
-
-    memoryBarrierImage();
 }

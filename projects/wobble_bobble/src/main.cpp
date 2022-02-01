@@ -229,8 +229,7 @@ int main(int argc, const char **argv) {
 	{
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(1, grid.getHandle()));
-		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(2, gridCopy.getHandle()));
+		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(1, gridCopy.getHandle()));
 		core.writeDescriptorSet(transformParticlesToGridSets[0], writes);
 	}
 	
@@ -244,7 +243,7 @@ int main(int argc, const char **argv) {
 	{
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, grid.getHandle()));
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, gridCopy.getHandle()));
 		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
 		core.writeDescriptorSet(initParticleVolumesSets[0], writes);
 	}
@@ -626,7 +625,7 @@ int main(int argc, const char **argv) {
 		const uint32_t dispatchSizeParticles [3] = { static_cast<uint32_t>(particles.getCount() + 63) / 64, 1, 1 };
 		
 		core.recordBeginDebugLabel(cmdStream, "TRANSFORM PARTICLES TO GRID", { 0.47f, 0.77f, 0.85f, 1.0f });
-		core.prepareImageForStorage(cmdStream, grid.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
 		core.prepareImageForStorage(cmdStream, gridCopy.getHandle());
 		
 		core.recordComputeDispatchToCmdStream(
@@ -639,13 +638,13 @@ int main(int argc, const char **argv) {
 				vkcv::PushConstants(0)
 		);
 		
-		core.recordImageMemoryBarrier(cmdStream, grid.getHandle());
 		core.recordImageMemoryBarrier(cmdStream, gridCopy.getHandle());
 		core.recordEndDebugLabel(cmdStream);
 		
 		if (!initializedParticleVolumes) {
 			core.recordBeginDebugLabel(cmdStream, "INIT PARTICLE VOLUMES", { 0.78f, 0.89f, 0.94f, 1.0f });
-			core.prepareImageForSampling(cmdStream, grid.getHandle());
+			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.prepareImageForSampling(cmdStream, gridCopy.getHandle());
 			
 			core.recordComputeDispatchToCmdStream(
 					cmdStream,
@@ -659,11 +658,14 @@ int main(int argc, const char **argv) {
 			
 			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
 			core.recordEndDebugLabel(cmdStream);
+			
 			initializedParticleVolumes = true;
 		}
 		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE GRID FORCES", { 0.47f, 0.77f, 0.85f, 1.0f });
+		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
 		core.prepareImageForStorage(cmdStream, grid.getHandle());
+		core.prepareImageForStorage(cmdStream, gridCopy.getHandle());
 		
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
@@ -679,6 +681,7 @@ int main(int argc, const char **argv) {
 		core.recordEndDebugLabel(cmdStream);
 		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE DEFORMATION", { 0.78f, 0.89f, 0.94f, 1.0f });
+		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
 		core.prepareImageForSampling(cmdStream, grid.getHandle());
 		
 		core.recordComputeDispatchToCmdStream(
@@ -695,6 +698,8 @@ int main(int argc, const char **argv) {
 		core.recordEndDebugLabel(cmdStream);
 		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE VELOCITIES", { 0.78f, 0.89f, 0.94f, 1.0f });
+		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+		core.prepareImageForSampling(cmdStream, grid.getHandle());
 		core.prepareImageForSampling(cmdStream, gridCopy.getHandle());
 		
 		core.recordComputeDispatchToCmdStream(
@@ -711,6 +716,8 @@ int main(int argc, const char **argv) {
 		core.recordEndDebugLabel(cmdStream);
 		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE POSITIONS", { 0.78f, 0.89f, 0.94f, 1.0f });
+		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+		
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				updateParticlePositionsPipeline,
@@ -731,6 +738,7 @@ int main(int argc, const char **argv) {
 		
 		if (renderGrid) {
 			core.recordBeginDebugLabel(cmdStream, "RENDER GRID", { 0.13f, 0.20f, 0.22f, 1.0f });
+			core.prepareImageForSampling(cmdStream, grid.getHandle());
 			
 			core.recordDrawcallsToCmdStream(
 					cmdStream,
@@ -745,6 +753,7 @@ int main(int argc, const char **argv) {
 			core.recordEndDebugLabel(cmdStream);
 		} else {
 			core.recordBeginDebugLabel(cmdStream, "RENDER PARTICLES", { 0.13f, 0.20f, 0.22f, 1.0f });
+			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
 			
 			core.recordDrawcallsToCmdStream(
 					cmdStream,
