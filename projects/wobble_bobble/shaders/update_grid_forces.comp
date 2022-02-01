@@ -40,11 +40,11 @@ void main()	{
         poisson /= (6.0f * K);
     }
 
+    memoryBarrierImage();
+
     const vec3 gridResolution = vec3(imageSize(gridImage));
     const vec3 position = (vec3(gl_GlobalInvocationID) + vec3(0.5f)) / gridResolution;
     const float h3 = 1.0f / gridResolution.x / gridResolution.y / gridResolution.z;
-
-    memoryBarrierImage();
 
     vec4 gridSample = imageLoad(
         gridImage,
@@ -75,22 +75,22 @@ void main()	{
         memoryBarrierShared();
 
         for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
-            float volume = sphere_volume(shared_particles[gl_LocalInvocationIndex].minimal.size);
-            mat3 F = mat3(shared_particles[gl_LocalInvocationIndex].deformation);
+            float volume = sphere_volume(shared_particles[i].minimal.size);
+            mat3 F = mat3(shared_particles[i].deformation);
 
             float J = determinant(F);
 
             if ((J > 0.0f) && (volume > 0.0f)) {
                 mat3 F_invT = inverse(transpose(F));
 
-                vec3 v = shared_particles[gl_LocalInvocationIndex].minimal.velocity;
-                float m = shared_particles[gl_LocalInvocationIndex].minimal.mass;
+                vec3 v = shared_particles[i].minimal.velocity;
+                float m = shared_particles[i].minimal.mass;
 
                 mat3 delta = lame2 * (F - F_invT) + lame1 * log(J) * F_invT;
 
                 vec3 weight_gradient = voxel_particle_grad_weight(
                     position,
-                    shared_particles[gl_LocalInvocationIndex].minimal
+                    shared_particles[i].minimal
                 );
 
                 force -= (
@@ -100,6 +100,8 @@ void main()	{
                 );
             }
         }
+
+        memoryBarrierShared();
     }
 
     if (dt > 0.0f) {
@@ -111,7 +113,7 @@ void main()	{
     bvec3 lowerID = lessThanEqual(gl_GlobalInvocationID, ivec3(0));
     bvec3 negativeVelocity = lessThan(velocity, vec3(0.0f));
 
-    bvec3 greaterID = greaterThanEqual(gl_GlobalInvocationID + ivec3(1), imageSize(gridImage));
+    bvec3 greaterID = greaterThanEqual(gl_GlobalInvocationID + ivec3(1), imageSize(gridForceImage));
     bvec3 positiveVelocity = greaterThan(velocity, vec3(0.0f));
 
     bvec3 invert = bvec3(

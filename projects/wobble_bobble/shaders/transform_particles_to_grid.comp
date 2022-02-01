@@ -49,6 +49,8 @@ void main()	{
                 mass
             );
         }
+
+        memoryBarrierShared();
     }
 
     if (gridValue.w > 0.0f) {

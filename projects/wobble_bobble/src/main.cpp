@@ -165,13 +165,13 @@ int main(int argc, const char **argv) {
 			swapchainExtent.height
 	).getHandle();
 	
-	glm::vec3 initialVelocity (0.0f, 0.0f, 0.0f);
+	glm::vec3 initialVelocity (0.0f, 1.0f, 0.0f);
 	float density = 2500.0f;
 	float radius = 0.1f;
 	
 	vkcv::Buffer<Particle> particles = core.createBuffer<Particle>(
 			vkcv::BufferType::STORAGE,
-			1024
+			64
 	);
 	
 	resetParticles(particles, initialVelocity, density, radius);
@@ -563,8 +563,8 @@ int main(int argc, const char **argv) {
 	float elasticity_modulus = 45.0f;
 	int elasticity_exponent = 9;
 	
-	float alpha = 0.5f;
-	float beta = 0.75f;
+	float alpha = 1.0f;
+	float beta = 0.0f;
 	
 	auto start = std::chrono::system_clock::now();
 	auto current = start;
