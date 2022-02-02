@@ -185,8 +185,6 @@ int main(int argc, const char **argv) {
 			true
 	);
 	
-	grid.switchLayout(vk::ImageLayout::eGeneral);
-	
 	vkcv::Image gridCopy = core.createImage(
 			grid.getFormat(),
 			grid.getWidth(),
@@ -196,17 +194,14 @@ int main(int argc, const char **argv) {
 			true
 	);
 	
-	gridCopy.switchLayout(vk::ImageLayout::eGeneral);
-	
-	/* TODO: clear grid via compute shader?
 	std::vector<glm::vec4> grid_vec (grid.getWidth() * grid.getHeight() * grid.getDepth());
 	
 	for (size_t i = 0; i < grid_vec.size(); i++) {
-		grid_vec[i] = glm::vec4(0);
+		grid_vec[i] = glm::vec4(0.0f);
 	}
 	
-	grid.fill(grid_vec.data()); // FIXME: gets limited by staging buffer size...
-	 */
+	grid.fill(grid_vec.data());
+	gridCopy.fill(grid_vec.data());
 	
 	vkcv::SamplerHandle gridSampler = core.createSampler(
 			vkcv::SamplerFilterType::LINEAR,
