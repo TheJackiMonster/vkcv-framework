@@ -41,6 +41,8 @@ void main()	{
     }
 
     barrier();
+    memoryBarrierBuffer();
+    memoryBarrierShared();
     memoryBarrierImage();
 
     const vec3 gridResolution = vec3(imageSize(gridImage));
@@ -127,6 +129,11 @@ void main()	{
     );
 
     velocity = mix(velocity, -velocity, invert);
+
+    barrier();
+    memoryBarrierBuffer();
+    memoryBarrierShared();
+    memoryBarrierImage();
 
     imageStore(
         gridForceImage,

@@ -24,6 +24,9 @@ void main()	{
         float mass = 0.0f;
         int i, j, k;
 
+        barrier();
+        memoryBarrierImage();
+
         for (i = -gridWindow.x; i <= gridWindow.x; i++) {
             for (j = -gridWindow.y; j <= gridWindow.y; j++) {
                 for (k = -gridWindow.z; k <= gridWindow.z; k++) {
@@ -37,12 +40,18 @@ void main()	{
             }
         }
 
+        barrier();
+        memoryBarrierBuffer();
+
         if (volume > 0.0f) {
             float density = minimal.mass / volume;
 
             //volume = minimal.mass / (mass / volume);
             //mass = density * volume;
         }
+
+        barrier();
+        memoryBarrierBuffer();
 
         particles[gl_GlobalInvocationID.x].minimal.size = sphere_radius(volume);
         particles[gl_GlobalInvocationID.x].minimal.mass = mass;

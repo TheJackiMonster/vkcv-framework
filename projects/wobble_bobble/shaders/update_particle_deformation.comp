@@ -47,11 +47,17 @@ void main()	{
             }
         }
 
+        barrier();
+        memoryBarrierBuffer();
+
         mat3 deformation_elastic = deformation;
 
         if (dt > 0.0f) {
             deformation_elastic = (mat3(1.0f) + dt * velocity_gradient) * deformation;
         }
+
+        barrier();
+        memoryBarrierBuffer();
 
         particles[gl_GlobalInvocationID.x].deformation = mat4(deformation_elastic);
     }

@@ -39,9 +39,13 @@ void main()	{
             }
         }
 
+        barrier();
+        memoryBarrierBuffer();
+
         particles[gl_GlobalInvocationID.x].minimal.position = position;
         particles[gl_GlobalInvocationID.x].minimal.velocity = velocity;
     }
 
+    barrier();
     memoryBarrierBuffer();
 }

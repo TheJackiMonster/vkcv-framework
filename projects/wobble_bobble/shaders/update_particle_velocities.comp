@@ -58,6 +58,9 @@ void main()	{
             }
         }
 
+        barrier();
+        memoryBarrierBuffer();
+
         mat3 affine_C = mat3(0.0f);
         vec3 velocity_apic = vec3(0.0f);
 
@@ -75,11 +78,15 @@ void main()	{
             }
         }
 
+        barrier();
+        memoryBarrierBuffer();
+
         vec3 velocity_alpha = mix(velocity_pic, velocity_flip, alpha);
         vec3 velocity_beta = mix(velocity_alpha, velocity_apic, beta);
 
         particles[gl_GlobalInvocationID.x].minimal.velocity = velocity_beta;
     }
 
+    barrier();
     memoryBarrierBuffer();
 }
