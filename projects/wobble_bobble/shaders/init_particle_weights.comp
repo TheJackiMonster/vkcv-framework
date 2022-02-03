@@ -16,12 +16,16 @@ void main()	{
     if (gl_GlobalInvocationID.x < particles.length()) {
         ParticleMinimal minimal = particles[gl_GlobalInvocationID.x].minimal;
 
+        minimal.weight_sum = 1.0f;
+
+        barrier();
+        memoryBarrierBuffer();
+
         ivec3 gridResolution = textureSize(sampler3D(gridImage, gridSampler), 0);
         ivec3 gridWindow = ivec3(minimal.size * 2.0f * gridResolution);
 
-        float volume = sphere_volume(minimal.size);
+        float weight_sum = 0.0f;
 
-        float mass = 0.0f;
         int i, j, k;
 
         barrier();
@@ -33,9 +37,7 @@ void main()	{
                     vec3 offset = vec3(i, j, k) / gridResolution;
                     vec3 voxel = minimal.position + offset;
 
-                    vec4 gridSample = texture(sampler3D(gridImage, gridSampler), voxel);
-
-                    mass += gridSample.w * voxel_particle_weight(voxel, minimal);
+                    weight_sum += voxel_particle_weight(voxel, minimal);
                 }
             }
         }
@@ -43,17 +45,8 @@ void main()	{
         barrier();
         memoryBarrierBuffer();
 
-        if (volume > 0.0f) {
-            float density = minimal.mass / volume;
-
-            //volume = minimal.mass / (mass / volume);
-            //mass = density * volume;
+        if (weight_sum > 0.0f) {
+            particles[gl_GlobalInvocationID.x].minimal.weight_sum = weight_sum;
         }
-
-        barrier();
-        memoryBarrierBuffer();
-
-        particles[gl_GlobalInvocationID.x].minimal.size = sphere_radius(volume);
-        particles[gl_GlobalInvocationID.x].minimal.mass = mass;
     }
 }

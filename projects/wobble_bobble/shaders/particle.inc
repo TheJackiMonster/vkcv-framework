@@ -6,6 +6,9 @@ struct ParticleMinimal {
     float size;
     vec3 velocity;
     float mass;
+	
+	vec3 pad;
+	float weight_sum;
 };
 
 struct Particle {
@@ -64,7 +67,9 @@ float voxel_particle_weight(vec3 voxel, ParticleMinimal particle) {
 		weight_C(delta.z)
 	);
 	
-	return weight.x * weight.y * weight.z;
+	return (
+		weight.x * weight.y * weight.z
+	) / particle.weight_sum;
 }
 
 float grad_weight_A(float x) {
@@ -119,7 +124,7 @@ vec3 voxel_particle_grad_weight(vec3 voxel, ParticleMinimal particle) {
 			grad_weight.x * weight.y * weight.z,
 			grad_weight.y * weight.z * weight.x,
 			grad_weight.z * weight.x * weight.y
-	);
+	) / particle.weight_sum;
 }
 
 #endif // PARTICLE_INC

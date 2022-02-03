@@ -38,7 +38,7 @@ void main()	{
 
     float mass = gridData.w;
     float density = mass / sphere_volume(size);
-    float alpha = clamp(density / 100000000.0f, 0.0f, 1.0f);
+    float alpha = clamp(density / 10000.0f, 0.0f, 1.0f);
 
     passPos = vertexPos;
     passVelocity = gridData.xyz;

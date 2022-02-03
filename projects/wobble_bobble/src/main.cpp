@@ -11,6 +11,10 @@ struct Particle {
 	float size;
 	glm::vec3 velocity;
 	float mass;
+	
+	glm::vec3 pad;
+	float weight_sum;
+	
 	glm::mat4 deformation;
 };
 
@@ -72,6 +76,9 @@ void distributeParticles(Particle *particles, size_t count, const glm::vec3& cen
 	for (size_t i = 0; i < count; i++) {
 		particles[i].mass = (mass * sphere_volume(particles[i].size) / volume);
 		particles[i].deformation = glm::mat4(1.0f);
+		
+		particles[i].pad = glm::vec3(0.0f);
+		particles[i].weight_sum = 1.0f;
 	}
 }
 
@@ -214,6 +221,21 @@ int main(int argc, const char **argv) {
 	
 	vkcv::shader::GLSLCompiler compiler;
 	
+	std::vector<vkcv::DescriptorSetHandle> initParticleWeightsSets;
+	vkcv::ComputePipelineHandle initParticleWeightsPipeline = createComputePipeline(
+			core, compiler,
+			"shaders/init_particle_weights.comp",
+			initParticleWeightsSets
+	);
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, gridCopy.getHandle()));
+		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
+		core.writeDescriptorSet(initParticleWeightsSets[0], writes);
+	}
+	
 	std::vector<vkcv::DescriptorSetHandle> transformParticlesToGridSets;
 	vkcv::ComputePipelineHandle transformParticlesToGridPipeline = createComputePipeline(
 			core, compiler,
@@ -226,21 +248,6 @@ int main(int argc, const char **argv) {
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
 		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(1, gridCopy.getHandle()));
 		core.writeDescriptorSet(transformParticlesToGridSets[0], writes);
-	}
-	
-	std::vector<vkcv::DescriptorSetHandle> initParticleVolumesSets;
-	vkcv::ComputePipelineHandle initParticleVolumesPipeline = createComputePipeline(
-			core, compiler,
-			"shaders/init_particle_volumes.comp",
-			initParticleVolumesSets
-	);
-	
-	{
-		vkcv::DescriptorWrites writes;
-		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, gridCopy.getHandle()));
-		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
-		core.writeDescriptorSet(initParticleVolumesSets[0], writes);
 	}
 	
 	std::vector<vkcv::DescriptorSetHandle> updateGridForcesSets;
@@ -547,7 +554,6 @@ int main(int argc, const char **argv) {
 			1
 	));
 	
-	bool initializedParticleVolumes = false;
 	bool renderGrid = true;
 	
 	// Glass is glass and glass breaks...
@@ -619,6 +625,23 @@ int main(int argc, const char **argv) {
 		const uint32_t dispatchSizeGrid [3] = { 16, 16, 16 };
 		const uint32_t dispatchSizeParticles [3] = { static_cast<uint32_t>(particles.getCount() + 63) / 64, 1, 1 };
 		
+		core.recordBeginDebugLabel(cmdStream, "INIT PARTICLE WEIGHTS", { 0.78f, 0.89f, 0.94f, 1.0f });
+		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+		core.prepareImageForSampling(cmdStream, grid.getHandle());
+		
+		core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				initParticleWeightsPipeline,
+				dispatchSizeParticles,
+				{ vkcv::DescriptorSetUsage(
+						0, core.getDescriptorSet(initParticleWeightsSets[0]).vulkanHandle
+				) },
+				vkcv::PushConstants(0)
+		);
+		
+		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+		core.recordEndDebugLabel(cmdStream);
+		
 		core.recordBeginDebugLabel(cmdStream, "TRANSFORM PARTICLES TO GRID", { 0.47f, 0.77f, 0.85f, 1.0f });
 		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
 		core.prepareImageForStorage(cmdStream, gridCopy.getHandle());
@@ -635,27 +658,6 @@ int main(int argc, const char **argv) {
 		
 		core.recordImageMemoryBarrier(cmdStream, gridCopy.getHandle());
 		core.recordEndDebugLabel(cmdStream);
-		
-		if (!initializedParticleVolumes) {
-			core.recordBeginDebugLabel(cmdStream, "INIT PARTICLE VOLUMES", { 0.78f, 0.89f, 0.94f, 1.0f });
-			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
-			core.prepareImageForSampling(cmdStream, gridCopy.getHandle());
-			
-			core.recordComputeDispatchToCmdStream(
-					cmdStream,
-					initParticleVolumesPipeline,
-					dispatchSizeParticles,
-					{ vkcv::DescriptorSetUsage(
-							0, core.getDescriptorSet(initParticleVolumesSets[0]).vulkanHandle
-					) },
-					vkcv::PushConstants(0)
-			);
-			
-			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
-			core.recordEndDebugLabel(cmdStream);
-			
-			initializedParticleVolumes = true;
-		}
 		
 		core.recordBeginDebugLabel(cmdStream, "UPDATE GRID FORCES", { 0.47f, 0.77f, 0.85f, 1.0f });
 		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
@@ -834,7 +836,6 @@ int main(int argc, const char **argv) {
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::Button("Reset##particle_velocity")) {
 			resetParticles(particles, initialVelocity, density, radius);
-			initializedParticleVolumes = false;
 		}
 		
 		ImGui::End();
