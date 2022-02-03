@@ -81,15 +81,14 @@ void main()	{
 
             if ((J > 0.0f) && (mass > 0.0f)) {
                 mat3 F_T = transpose(F);
-                mat3 F_invT = inverse(F_T);
 
-                mat3 delta = lame2 * (F - F_invT) + lame1 * log(J) * F_invT;
+                mat3 delta = lame2 * (F * F_T - mat3(1.0f)) + lame1 * log(J);
 
-                //mls_Q += beta * dt * volume * particle.minimal.weight_sum * delta * F_T * D_inv / mass;
+                mls_Q += beta * dt * volume * delta * D_inv;
             }
 
             affine_C = affine_B * D_inv;
-            mls_Q += beta * affine_C;
+            mls_Q += beta * affine_C * mass;
         }
 
         F = (mat3(1.0f) + dt * affine_C) * F;

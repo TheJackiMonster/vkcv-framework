@@ -28,16 +28,21 @@ void main()	{
         if (localOffset < particles.length()) {
             shared_particles[gl_LocalInvocationIndex] = particles[localOffset].minimal;
 
-            vec3 distance = (position - shared_particles[gl_LocalInvocationIndex].position);
-
-            shared_particles[gl_LocalInvocationIndex].velocity += (
-                mat3(particles[localOffset].mls) * distance
+            shared_particles[gl_LocalInvocationIndex].pad = (
+                mat3(particles[localOffset].mls) *
+                (position - shared_particles[gl_LocalInvocationIndex].position)
+            ) + (
+                shared_particles[gl_LocalInvocationIndex].velocity *
+                shared_particles[gl_LocalInvocationIndex].mass
             );
         } else {
             shared_particles[gl_LocalInvocationIndex].position = vec3(0.0f);
             shared_particles[gl_LocalInvocationIndex].size = 0.0f;
             shared_particles[gl_LocalInvocationIndex].velocity = vec3(0.0f);
             shared_particles[gl_LocalInvocationIndex].mass = 0.0f;
+
+            shared_particles[gl_LocalInvocationIndex].pad = vec3(0.0f);
+            shared_particles[gl_LocalInvocationIndex].weight_sum = 1.0f;
         }
 
         barrier();
@@ -45,11 +50,10 @@ void main()	{
 
         for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
             float weight = voxel_particle_weight(position, shared_particles[i]);
-            float mass = shared_particles[i].mass * weight;
 
             gridValue += vec4(
-                shared_particles[i].velocity * mass,
-                mass
+                shared_particles[i].pad * weight,
+                shared_particles[i].mass * weight
             );
         }
 
