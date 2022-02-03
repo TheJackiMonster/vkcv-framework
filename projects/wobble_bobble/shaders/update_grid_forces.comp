@@ -12,8 +12,8 @@ layout(set=0, binding=2, std430) readonly buffer particleBuffer {
 };
 
 layout( push_constant ) uniform constants {
-    float K;
-    float E;
+    float lame1;
+    float lame2;
     float t;
     float dt;
 };
@@ -23,22 +23,6 @@ layout( push_constant ) uniform constants {
 shared Particle shared_particles [SHARED_PARTICLES_BATCH_SIZE];
 
 void main()	{
-    const float K9_E = (9.0f * K - E);
-
-    float lame1 = 3.0f * K * (3.0f * K - E);
-    float lame2 = 3.0f * K * E;
-    float poisson = (3.0f * K - E);
-    float M = 3.0f * K * (3.0f * K + E);
-
-    if (K9_E > 0.0f) {
-        lame1 /= K9_E;
-        lame2 /= K9_E;
-        M /= K9_E;
-    }
-
-    if (K > 0.0f) {
-        poisson /= (6.0f * K);
-    }
 
     barrier();
     memoryBarrierBuffer();
