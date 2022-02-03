@@ -534,8 +534,8 @@ int main(int argc, const char **argv) {
 	float compression_modulus = material.m_compression / 1E9;
 	float elasticity_modulus = material.m_elasticity / 1E9;
 
-	float alpha = 1.0f;
-	float beta = 0.0f;
+	float alpha = 0.0f;
+	float beta = 1.0f;
 	
 	auto start = std::chrono::system_clock::now();
 	auto current = start;

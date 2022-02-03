@@ -84,7 +84,7 @@ void main()	{
 
                 mat3 delta = lame2 * (F * F_T - mat3(1.0f)) + lame1 * log(J);
 
-                mls_Q -= beta * dt * volume * delta * D_inv;
+                mls_Q += beta * dt * volume * delta * D_inv;
             }
 
             affine_C = affine_B * D_inv;
