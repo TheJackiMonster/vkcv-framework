@@ -14,6 +14,7 @@ struct ParticleMinimal {
 struct Particle {
     ParticleMinimal minimal;
     mat4 deformation;
+	mat4 mls;
 };
 
 const float PI = 3.1415926535897932384626433832795;

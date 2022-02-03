@@ -14,6 +14,8 @@ layout(set=0, binding=2, std430) readonly buffer particleBuffer {
 layout( push_constant ) uniform constants {
     float lame1;
     float lame2;
+    float alpha;
+    float beta;
     float t;
     float dt;
 };
@@ -41,63 +43,11 @@ void main()	{
     vec3 velocity = gridSample.xyz;
     float mass = gridSample.w;
 
-    vec3 force = vec3(0.0f);
-    uint offset = 0;
-
     barrier();
     memoryBarrierBuffer();
 
-    for (offset = 0; offset < particles.length(); offset += SHARED_PARTICLES_BATCH_SIZE) {
-        uint localOffset = offset + gl_LocalInvocationIndex;
-
-        if (localOffset < particles.length()) {
-            shared_particles[gl_LocalInvocationIndex] = particles[localOffset];
-        } else {
-            shared_particles[gl_LocalInvocationIndex].minimal.position = vec3(0.0f);
-            shared_particles[gl_LocalInvocationIndex].minimal.size = 0.0f;
-            shared_particles[gl_LocalInvocationIndex].minimal.velocity = vec3(0.0f);
-            shared_particles[gl_LocalInvocationIndex].minimal.mass = 0.0f;
-            shared_particles[gl_LocalInvocationIndex].deformation = mat4(0.0f);
-        }
-
-        barrier();
-        memoryBarrierShared();
-
-        for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
-            float volume = sphere_volume(shared_particles[i].minimal.size);
-            mat3 F = mat3(shared_particles[i].deformation);
-
-            float J = determinant(F);
-
-            if ((J > 0.0f) && (volume > 0.0f)) {
-                mat3 F_invT = inverse(transpose(F));
-
-                vec3 v = shared_particles[i].minimal.velocity;
-                float m = shared_particles[i].minimal.mass;
-
-                mat3 delta = lame2 * (F - F_invT) + lame1 * log(J) * F_invT;
-
-                vec3 weight_gradient = voxel_particle_grad_weight(
-                    position,
-                    shared_particles[i].minimal
-                );
-
-                force -= (
-                    volume *
-                    delta * transpose(F) *
-                    weight_gradient
-                );
-            }
-        }
-
-        barrier();
-        memoryBarrierShared();
-    }
-
-    if (dt > 0.0f) {
-        if (mass > 0.0f) {
-            velocity += force * dt / mass;
-        }
+    if (mass > 0.0f) {
+        velocity += vec3(0.0f, -9.81f * dt * 0.0f, 0.0f);
     }
 
     bvec3 lowerID = lessThanEqual(gl_GlobalInvocationID, ivec3(0));
