@@ -27,6 +27,7 @@ struct Physics {
 	float beta;
 	float t;
 	float dt;
+	float speedfactor;
 };
 
 float sphere_volume(float radius) {
@@ -533,6 +534,7 @@ int main(int argc, const char **argv) {
 	
 	float compression_modulus = material.m_compression / 1E9;
 	float elasticity_modulus = material.m_elasticity / 1E9;
+	float speed_factor = 1.0f;
 
 	float alpha = 0.0f;
 	float beta = 1.0f;
@@ -576,6 +578,7 @@ int main(int argc, const char **argv) {
 		physics.beta = beta;
 		physics.t = static_cast<float>(0.000001 * static_cast<double>(time.count()));
 		physics.dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
+		physics.speedfactor = speed_factor;
 		
 		vkcv::PushConstants physicsPushConstants (sizeof(physics));
 		physicsPushConstants.appendDrawcall(physics);
@@ -757,6 +760,10 @@ int main(int argc, const char **argv) {
 		    material.recalculate(elasticity_modulus, compression_modulus);
 		}
 		ImGui::EndGroup();
+
+		ImGui::Spacing();
+
+		ImGui::SliderFloat("Simulation Speed", &speed_factor, 0.0f, 2.0f);
 		
 		ImGui::Spacing();
 		ImGui::Checkbox("Render Grid", &renderGrid);

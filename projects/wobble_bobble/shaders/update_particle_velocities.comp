@@ -21,11 +21,14 @@ layout( push_constant ) uniform constants {
     float beta;
     float t;
     float dt;
+    float speedfactor;
 };
 
 void main()	{
     memoryBarrierBuffer();
     memoryBarrierImage();
+
+    float dts = dt * speedfactor;
 
     if (gl_GlobalInvocationID.x < particles.length()) {
         Particle particle = particles[gl_GlobalInvocationID.x];
@@ -84,18 +87,18 @@ void main()	{
 
                 mat3 delta = lame2 * (F * F_T - mat3(1.0f)) + lame1 * log(J);
 
-                mls_Q += beta * dt * volume * delta * D_inv;
+                mls_Q -= beta * dts * volume * delta * D_inv;
             }
 
             affine_C = affine_B * D_inv;
             mls_Q += beta * affine_C * mass;
         }
 
-        F = (mat3(1.0f) + dt * affine_C) * F;
+        F = (mat3(1.0f) + dts * affine_C) * F;
 
         vec3 velocity = mix(velocity_pic, velocity_flip, alpha);
 
-        position = position + velocity * dt;
+        position = position + velocity * dts;
 
         for (uint i = 0; i < 3; i++) {
             if (position[i] - size < 0.0f) {
