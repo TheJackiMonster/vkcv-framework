@@ -10,7 +10,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 # adding source files to the project
 add_executable(wobble_bobble
-		src/main.cpp)
+		src/main.cpp
+		src/Material.hpp)
 
 fix_project(wobble_bobble)
 

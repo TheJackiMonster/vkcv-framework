@@ -3,6 +3,7 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
+#include "Material.hpp"
 
 #include <random>
 
@@ -15,8 +16,8 @@ struct Particle {
 };
 
 struct Physics {
-	float K;
-	float E;
+	float lame1;
+    float lame2;
 	float t;
 	float dt;
 };
@@ -164,7 +165,9 @@ int main(int argc, const char **argv) {
 			swapchainExtent.width,
 			swapchainExtent.height
 	).getHandle();
-	
+
+	int selectedMaterial = 1;
+	Material material(static_cast<MaterialType>(selectedMaterial));
 	glm::vec3 initialVelocity (0.0f, 1.0f, 0.0f);
 	float density = 2500.0f;
 	float radius = 0.1f;
@@ -550,13 +553,9 @@ int main(int argc, const char **argv) {
 	bool initializedParticleVolumes = false;
 	bool renderGrid = true;
 	
-	// Glass is glass and glass breaks...
-	float compression_modulus = 65.0f;
-	int compression_exponent = 9;
-	
-	float elasticity_modulus = 45.0f;
-	int elasticity_exponent = 9;
-	
+	float compression_modulus = material.m_compression / 1E9;
+	float elasticity_modulus = material.m_elasticity / 1E9;
+
 	float alpha = 1.0f;
 	float beta = 0.0f;
 	
@@ -593,8 +592,8 @@ int main(int argc, const char **argv) {
 		current = next;
 		
 		Physics physics;
-		physics.K = static_cast<float>(compression_modulus * std::pow(10.0, compression_exponent));
-		physics.E = static_cast<float>(elasticity_modulus * std::pow(10.0, elasticity_exponent));
+		physics.lame1 = material.m_lame1;
+		physics.lame2 = material.m_lame2;
 		physics.t = static_cast<float>(0.000001 * static_cast<double>(time.count()));
 		physics.dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
 		
@@ -782,7 +781,21 @@ int main(int argc, const char **argv) {
 		
 		gui.beginGUI();
 		ImGui::Begin("Settings");
-		
+
+		ImGui::BeginGroup();
+		const char* types[] = {"undefined", "glass", "wood", "ice", "rubber"};
+		if (ImGui::Combo("MaterialType", &selectedMaterial, types, IM_ARRAYSIZE(types))) {
+		    if (static_cast<MaterialType>(selectedMaterial) == MaterialType::UNDEFINED) {
+		        material.m_type = MaterialType::UNDEFINED;
+		    }
+		    else {
+		        material = Material(static_cast<MaterialType>(selectedMaterial));
+		        compression_modulus = material.m_compression / 1E9;
+		        elasticity_modulus = material.m_elasticity / 1E9;
+		    }
+		}
+		ImGui::EndGroup();
+
 		ImGui::SliderFloat("Density", &density, std::numeric_limits<float>::epsilon(), 5000.0f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::SmallButton("Reset##density")) {
@@ -794,24 +807,18 @@ int main(int argc, const char **argv) {
 		if (ImGui::SmallButton("Reset##radius")) {
 			radius = 0.1f;
 		}
-		
+
 		ImGui::BeginGroup();
-		ImGui::SliderFloat("Compression Modulus", &compression_modulus, 0.0f, 500.0f);
-		ImGui::SliderInt("##compression_exponent", &compression_exponent, 1, 9);
-		ImGui::SameLine(0.0f, 10.0f);
-		if (ImGui::SmallButton("Reset##compression")) {
-			compression_modulus = 65.0f;
-			compression_exponent = 9;
+		if (ImGui::SliderFloat("Compression Modulus", &compression_modulus, 0.0f, 500.0f)) {
+		    selectedMaterial = 0;
+		    material.recalculate(elasticity_modulus, compression_modulus);
 		}
 		ImGui::EndGroup();
 		
 		ImGui::BeginGroup();
-		ImGui::SliderFloat("Elasticity Modulus", &elasticity_modulus, 0.0f, 1000.0f);
-		ImGui::SliderInt("##elasticity_exponent", &elasticity_exponent, 1, 9);
-		ImGui::SameLine(0.0f, 10.0f);
-		if (ImGui::SmallButton("Reset##elasticity")) {
-			elasticity_modulus = 45.0f;
-			elasticity_exponent = 9;
+		if (ImGui::SliderFloat("Elasticity Modulus", &elasticity_modulus, 0.0f, 1000.0f)) {
+		    selectedMaterial = 0;
+		    material.recalculate(elasticity_modulus, compression_modulus);
 		}
 		ImGui::EndGroup();
 		
@@ -821,13 +828,13 @@ int main(int argc, const char **argv) {
 		ImGui::SliderFloat("Alpha (PIC -> FLIP)", &alpha, 0.0f, 1.0f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::SmallButton("Reset##alpha")) {
-		    alpha = 0.5f;
+		    alpha =1.0f;
 		}
 		
 		ImGui::SliderFloat("Beta (Alpha -> APIC)", &beta, 0.0f, 1.0f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::SmallButton("Reset##beta")) {
-		    beta = 0.75f;
+		    beta = 0.0f;
 		}
 		
 		ImGui::DragFloat3("Initial Velocity", reinterpret_cast<float*>(&initialVelocity), 0.001f);
