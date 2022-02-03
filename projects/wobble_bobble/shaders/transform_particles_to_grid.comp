@@ -61,8 +61,10 @@ void main()	{
         memoryBarrierShared();
     }
 
-    if (gridValue.w > 0.0f) {
-        gridValue.xyz /= gridValue.w;
+    gridValue.xyz /= gridValue.w;
+
+    if (any(isnan(gridValue.xyz)) || any(isinf(gridValue.xyz))) {
+        gridValue.xyz = vec3(0.0f);
     }
 
     barrier();
