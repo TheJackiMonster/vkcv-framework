@@ -555,7 +555,7 @@ int main(int argc, const char **argv) {
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
-		const uint32_t dispatchSizeGrid [3] = { 16, 16, 16 };
+		const uint32_t dispatchSizeGrid [3] = { grid.getWidth() / 4, grid.getHeight() / 4, grid.getDepth() / 4 };
 		const uint32_t dispatchSizeParticles [3] = { static_cast<uint32_t>(particles.getCount() + 63) / 64, 1, 1 };
 		
 		core.recordBeginDebugLabel(cmdStream, "INIT PARTICLE WEIGHTS", { 0.78f, 0.89f, 0.94f, 1.0f });
