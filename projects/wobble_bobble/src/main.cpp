@@ -3,7 +3,6 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
-#include "Material.hpp"
 
 #include <random>
 
@@ -23,8 +22,6 @@ struct Particle {
 struct Physics {
 	float lame1;
     float lame2;
-	float alpha;
-	float beta;
 	float t;
 	float dt;
 	float speedfactor;
@@ -174,8 +171,6 @@ int main(int argc, const char **argv) {
 			swapchainExtent.height
 	).getHandle();
 
-	int selectedMaterial = 1;
-	Material material(static_cast<MaterialType>(selectedMaterial));
 	glm::vec3 initialVelocity (0.0f, 1.0f, 0.0f);
 	float density = 2500.0f;
 	float radius = 0.1f;
@@ -196,15 +191,6 @@ int main(int argc, const char **argv) {
 			true
 	);
 	
-	vkcv::Image gridCopy = core.createImage(
-			grid.getFormat(),
-			grid.getWidth(),
-			grid.getHeight(),
-			grid.getDepth(),
-			false,
-			true
-	);
-	
 	std::vector<glm::vec4> grid_vec (grid.getWidth() * grid.getHeight() * grid.getDepth());
 	
 	for (size_t i = 0; i < grid_vec.size(); i++) {
@@ -212,7 +198,6 @@ int main(int argc, const char **argv) {
 	}
 	
 	grid.fill(grid_vec.data());
-	gridCopy.fill(grid_vec.data());
 	
 	vkcv::SamplerHandle gridSampler = core.createSampler(
 			vkcv::SamplerFilterType::LINEAR,
@@ -235,7 +220,7 @@ int main(int argc, const char **argv) {
 	{
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, gridCopy.getHandle()));
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, grid.getHandle()));
 		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
 		core.writeDescriptorSet(initParticleWeightsSets[0], writes);
 	}
@@ -250,23 +235,8 @@ int main(int argc, const char **argv) {
 	{
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(1, gridCopy.getHandle()));
-		core.writeDescriptorSet(transformParticlesToGridSets[0], writes);
-	}
-	
-	std::vector<vkcv::DescriptorSetHandle> updateGridForcesSets;
-	vkcv::ComputePipelineHandle updateGridForcesPipeline = createComputePipeline(
-			core, compiler,
-			"shaders/update_grid_forces.comp",
-			updateGridForcesSets
-	);
-	
-	{
-		vkcv::DescriptorWrites writes;
-		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(0, gridCopy.getHandle()));
 		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(1, grid.getHandle()));
-		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(2, particles.getHandle()));
-		core.writeDescriptorSet(updateGridForcesSets[0], writes);
+		core.writeDescriptorSet(transformParticlesToGridSets[0], writes);
 	}
 	
 	std::vector<vkcv::DescriptorSetHandle> updateParticleVelocitiesSets;
@@ -280,8 +250,7 @@ int main(int argc, const char **argv) {
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
 		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, grid.getHandle()));
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(2, gridCopy.getHandle()));
-		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(3, gridSampler));
+		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
 		core.writeDescriptorSet(updateParticleVelocitiesSets[0], writes);
 	}
 	
@@ -532,12 +501,9 @@ int main(int argc, const char **argv) {
 	
 	bool renderGrid = true;
 	
-	float compression_modulus = material.m_compression / 1E9;
-	float elasticity_modulus = material.m_elasticity / 1E9;
+	float lame1 = 10.0f;
+	float lame2 = 20.0f;
 	float speed_factor = 1.0f;
-
-	float alpha = 0.0f;
-	float beta = 1.0f;
 	
 	auto start = std::chrono::system_clock::now();
 	auto current = start;
@@ -572,10 +538,8 @@ int main(int argc, const char **argv) {
 		current = next;
 		
 		Physics physics;
-		physics.lame1 = material.m_lame1;
-		physics.lame2 = material.m_lame2;
-		physics.alpha = alpha;
-		physics.beta = beta;
+		physics.lame1 = lame1;
+		physics.lame2 = lame2;
 		physics.t = static_cast<float>(0.000001 * static_cast<double>(time.count()));
 		physics.dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
 		physics.speedfactor = speed_factor;
@@ -613,7 +577,7 @@ int main(int argc, const char **argv) {
 		
 		core.recordBeginDebugLabel(cmdStream, "TRANSFORM PARTICLES TO GRID", { 0.47f, 0.77f, 0.85f, 1.0f });
 		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
-		core.prepareImageForStorage(cmdStream, gridCopy.getHandle());
+		core.prepareImageForStorage(cmdStream, grid.getHandle());
 		
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
@@ -621,24 +585,6 @@ int main(int argc, const char **argv) {
 				dispatchSizeGrid,
 				{ vkcv::DescriptorSetUsage(
 						0, core.getDescriptorSet(transformParticlesToGridSets[0]).vulkanHandle
-				) },
-				vkcv::PushConstants(0)
-		);
-		
-		core.recordImageMemoryBarrier(cmdStream, gridCopy.getHandle());
-		core.recordEndDebugLabel(cmdStream);
-		
-		core.recordBeginDebugLabel(cmdStream, "UPDATE GRID FORCES", { 0.47f, 0.77f, 0.85f, 1.0f });
-		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
-		core.prepareImageForStorage(cmdStream, grid.getHandle());
-		core.prepareImageForStorage(cmdStream, gridCopy.getHandle());
-		
-		core.recordComputeDispatchToCmdStream(
-				cmdStream,
-				updateGridForcesPipeline,
-				dispatchSizeGrid,
-				{ vkcv::DescriptorSetUsage(
-						0, core.getDescriptorSet(updateGridForcesSets[0]).vulkanHandle
 				) },
 				physicsPushConstants
 		);
@@ -649,7 +595,6 @@ int main(int argc, const char **argv) {
 		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE VELOCITIES", { 0.78f, 0.89f, 0.94f, 1.0f });
 		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
 		core.prepareImageForSampling(cmdStream, grid.getHandle());
-		core.prepareImageForSampling(cmdStream, gridCopy.getHandle());
 		
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
@@ -721,20 +666,6 @@ int main(int argc, const char **argv) {
 		gui.beginGUI();
 		ImGui::Begin("Settings");
 
-		ImGui::BeginGroup();
-		const char* types[] = {"undefined", "glass", "wood", "ice", "rubber"};
-		if (ImGui::Combo("MaterialType", &selectedMaterial, types, IM_ARRAYSIZE(types))) {
-		    if (static_cast<MaterialType>(selectedMaterial) == MaterialType::UNDEFINED) {
-		        material.m_type = MaterialType::UNDEFINED;
-		    }
-		    else {
-		        material = Material(static_cast<MaterialType>(selectedMaterial));
-		        compression_modulus = material.m_compression / 1E9;
-		        elasticity_modulus = material.m_elasticity / 1E9;
-		    }
-		}
-		ImGui::EndGroup();
-
 		ImGui::SliderFloat("Density", &density, std::numeric_limits<float>::epsilon(), 5000.0f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::SmallButton("Reset##density")) {
@@ -748,17 +679,11 @@ int main(int argc, const char **argv) {
 		}
 
 		ImGui::BeginGroup();
-		if (ImGui::SliderFloat("Compression Modulus", &compression_modulus, 0.0f, 500.0f)) {
-		    selectedMaterial = 0;
-		    material.recalculate(elasticity_modulus, compression_modulus);
-		}
+		ImGui::SliderFloat("Compression Modulus", &lame1, 0.0f, 100.0f);
 		ImGui::EndGroup();
 		
 		ImGui::BeginGroup();
-		if (ImGui::SliderFloat("Elasticity Modulus", &elasticity_modulus, 0.0f, 1000.0f)) {
-		    selectedMaterial = 0;
-		    material.recalculate(elasticity_modulus, compression_modulus);
-		}
+		ImGui::SliderFloat("Elasticity Modulus", &lame2, 0.0f, 100.0f);
 		ImGui::EndGroup();
 
 		ImGui::Spacing();
@@ -767,18 +692,6 @@ int main(int argc, const char **argv) {
 		
 		ImGui::Spacing();
 		ImGui::Checkbox("Render Grid", &renderGrid);
-		
-		ImGui::SliderFloat("Alpha (PIC -> FLIP)", &alpha, 0.0f, 1.0f);
-		ImGui::SameLine(0.0f, 10.0f);
-		if (ImGui::SmallButton("Reset##alpha")) {
-		    alpha =1.0f;
-		}
-		
-		ImGui::SliderFloat("Beta (Alpha -> APIC)", &beta, 0.0f, 1.0f);
-		ImGui::SameLine(0.0f, 10.0f);
-		if (ImGui::SmallButton("Reset##beta")) {
-		    beta = 0.0f;
-		}
 		
 		ImGui::DragFloat3("Initial Velocity", reinterpret_cast<float*>(&initialVelocity), 0.001f);
 		ImGui::SameLine(0.0f, 10.0f);

@@ -11,12 +11,22 @@ layout(set=0, binding=0, std430) readonly buffer particleBuffer {
 
 layout(set=0, binding=1, rgba32f) restrict writeonly uniform image3D gridImage;
 
+layout( push_constant ) uniform constants {
+    float lame1;
+    float lame2;
+    float t;
+    float dt;
+    float speedfactor;
+};
+
 #define SHARED_PARTICLES_BATCH_SIZE 64
 
 shared ParticleMinimal shared_particles [SHARED_PARTICLES_BATCH_SIZE];
 
 void main()	{
     const vec3 position = (vec3(gl_GlobalInvocationID) + vec3(0.5f)) / imageSize(gridImage);
+
+    float dts = dt * speedfactor;
 
     vec4 gridValue = vec4(0.0f);
 
@@ -61,11 +71,26 @@ void main()	{
         memoryBarrierShared();
     }
 
+    gridValue.xyz += vec3(0.0f, -9.81f * dts * gridValue.w, 0.0f);
     gridValue.xyz /= gridValue.w;
 
     if (any(isnan(gridValue.xyz)) || any(isinf(gridValue.xyz))) {
         gridValue.xyz = vec3(0.0f);
     }
+
+    bvec3 lowerID = lessThanEqual(gl_GlobalInvocationID, ivec3(0));
+    bvec3 negativeVelocity = lessThan(gridValue.xyz, vec3(0.0f));
+
+    bvec3 greaterID = greaterThanEqual(gl_GlobalInvocationID + ivec3(1), imageSize(gridImage));
+    bvec3 positiveVelocity = greaterThan(gridValue.xyz, vec3(0.0f));
+
+    bvec3 collision = bvec3(
+        (lowerID.x && negativeVelocity.x) || (greaterID.x && positiveVelocity.x),
+        (lowerID.y && negativeVelocity.y) || (greaterID.y && positiveVelocity.y),
+        (lowerID.z && negativeVelocity.z) || (greaterID.z && positiveVelocity.z)
+    );
+
+    gridValue.xyz = mix(gridValue.xyz, vec3(0.0f), collision);
 
     barrier();
     memoryBarrierShared();

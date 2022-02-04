@@ -11,14 +11,11 @@ layout(set=0, binding=0, std430) restrict buffer particleBuffer {
 };
 
 layout(set=0, binding=1) uniform texture3D gridImage;
-layout(set=0, binding=2) uniform texture3D gridOldImage;
-layout(set=0, binding=3) uniform sampler gridSampler;
+layout(set=0, binding=2) uniform sampler gridSampler;
 
 layout( push_constant ) uniform constants {
     float lame1;
     float lame2;
-    float alpha;
-    float beta;
     float t;
     float dt;
     float speedfactor;
@@ -35,7 +32,6 @@ void main()	{
 
         vec3 position = particle.minimal.position;
         float size = particle.minimal.size;
-        float volume = sphere_volume(size);
         float mass = particle.minimal.mass;
 
         ivec3 gridResolution = textureSize(sampler3D(gridImage, gridSampler), 0);
@@ -56,7 +52,6 @@ void main()	{
                     vec3 voxel = position + offset;
 
                     vec4 gridSample = texture(sampler3D(gridImage, gridSampler), voxel);
-                    vec4 gridOldSample = texture(sampler3D(gridOldImage, gridSampler), voxel);
 
                     float weight = voxel_particle_weight(voxel, particle.minimal);
                     vec3 velocity = gridSample.xyz * weight;
@@ -65,7 +60,6 @@ void main()	{
                     affine_B += outerProduct(velocity, offset);
 
                     velocity_pic += velocity;
-                    velocity_flip += (gridSample.xyz - gridOldSample.xyz) * weight;
                 }
             }
         }
@@ -83,31 +77,39 @@ void main()	{
             float J = determinant(F);
 
             if (J > 0.0f) {
+                float volume = sphere_volume(size) * J;
+
                 mat3 F_T = transpose(F);
+                mat3 F_T_inv = inverse(F_T);
 
-                mat3 delta = lame2 * (F * F_T - mat3(1.0f)) + lame1 * log(J);
+                mat3 delta = lame2 * (F - F_T_inv) + lame1 * log(J) * F_T_inv;
+                mat3 stress = (1.0f / J) * delta * F_T;
 
-                mls_Q -= beta * dts * volume * delta * D_inv;
+                mls_Q -= dts * volume * stress * D_inv;
             }
 
             affine_C = affine_B * D_inv;
-            mls_Q += beta * affine_C * mass;
+            mls_Q += affine_C * mass;
         }
 
         F = (mat3(1.0f) + dts * affine_C) * F;
 
-        vec3 velocity = mix(velocity_pic, velocity_flip, alpha);
-
-        position = position + velocity * dts;
+        position = position + velocity_pic * dts;
 
         for (uint i = 0; i < 3; i++) {
             if (position[i] - size < 0.0f) {
-                position[i] = -position[i] + 2.0f * size;
-                velocity[i] *= -1.0f;
+                position[i] = size;
+
+                if (velocity_pic[i] < 0.0f) {
+                    velocity_pic[i] *= -1.0f;
+                }
             } else
             if (position[i] + size > 1.0f) {
-                position[i] = 2.0f * (1.0f - size) - position[i];
-                velocity[i] *= -1.0f;
+                position[i] = 1.0f - size;
+
+                if (velocity_pic[i] > 0.0f) {
+                    velocity_pic[i] *= -1.0f;
+                }
             }
         }
 
@@ -115,7 +117,7 @@ void main()	{
         memoryBarrierBuffer();
 
         particles[gl_GlobalInvocationID.x].minimal.position = position;
-        particles[gl_GlobalInvocationID.x].minimal.velocity = velocity;
+        particles[gl_GlobalInvocationID.x].minimal.velocity = velocity_pic;
         particles[gl_GlobalInvocationID.x].deformation = mat4(F);
         particles[gl_GlobalInvocationID.x].mls = mat4(mls_Q);
     }
