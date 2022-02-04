@@ -1,7 +1,7 @@
 #ifndef PARTICLE_INC
 #define PARTICLE_INC
 
-#define EPSILON 0.0001f
+#define EPSILON 0.00001f
 
 struct ParticleMinimal {
     vec3 position;
