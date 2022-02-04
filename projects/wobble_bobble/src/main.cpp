@@ -511,11 +511,11 @@ int main(int argc, const char **argv) {
 	while (vkcv::Window::hasOpenWindow()) {
 		vkcv::Window::pollEvents();
 		
-		if(window.getHeight() == 0 || window.getWidth() == 0)
+		if (window.getHeight() == 0 || window.getWidth() == 0)
 			continue;
 		
 		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight,windowHandle)) {
+		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
 			continue;
 		}
 		
@@ -544,70 +544,72 @@ int main(int argc, const char **argv) {
 		physics.dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
 		physics.speedfactor = speed_factor;
 		
-		vkcv::PushConstants physicsPushConstants (sizeof(physics));
+		vkcv::PushConstants physicsPushConstants(sizeof(physics));
 		physicsPushConstants.appendDrawcall(physics);
 		
 		cameraManager.update(physics.dt);
-
+		
 		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
-		vkcv::PushConstants cameraPushConstants (sizeof(glm::mat4));
+		vkcv::PushConstants cameraPushConstants(sizeof(glm::mat4));
 		cameraPushConstants.appendDrawcall(mvp);
-
+		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
-		const uint32_t dispatchSizeGrid [3] = { grid.getWidth() / 4, grid.getHeight() / 4, grid.getDepth() / 4 };
-		const uint32_t dispatchSizeParticles [3] = { static_cast<uint32_t>(particles.getCount() + 63) / 64, 1, 1 };
+		const uint32_t dispatchSizeGrid[3] = {grid.getWidth() / 4, grid.getHeight() / 4, grid.getDepth() / 4};
+		const uint32_t dispatchSizeParticles[3] = {static_cast<uint32_t>(particles.getCount() + 63) / 64, 1, 1};
 		
-		core.recordBeginDebugLabel(cmdStream, "INIT PARTICLE WEIGHTS", { 0.78f, 0.89f, 0.94f, 1.0f });
-		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
-		core.prepareImageForSampling(cmdStream, grid.getHandle());
-		
-		core.recordComputeDispatchToCmdStream(
-				cmdStream,
-				initParticleWeightsPipeline,
-				dispatchSizeParticles,
-				{ vkcv::DescriptorSetUsage(
-						0, core.getDescriptorSet(initParticleWeightsSets[0]).vulkanHandle
-				) },
-				vkcv::PushConstants(0)
-		);
-		
-		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
-		core.recordEndDebugLabel(cmdStream);
-		
-		core.recordBeginDebugLabel(cmdStream, "TRANSFORM PARTICLES TO GRID", { 0.47f, 0.77f, 0.85f, 1.0f });
-		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
-		core.prepareImageForStorage(cmdStream, grid.getHandle());
-		
-		core.recordComputeDispatchToCmdStream(
-				cmdStream,
-				transformParticlesToGridPipeline,
-				dispatchSizeGrid,
-				{ vkcv::DescriptorSetUsage(
-						0, core.getDescriptorSet(transformParticlesToGridSets[0]).vulkanHandle
-				) },
-				physicsPushConstants
-		);
-		
-		core.recordImageMemoryBarrier(cmdStream, grid.getHandle());
-		core.recordEndDebugLabel(cmdStream);
-		
-		core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE VELOCITIES", { 0.78f, 0.89f, 0.94f, 1.0f });
-		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
-		core.prepareImageForSampling(cmdStream, grid.getHandle());
-		
-		core.recordComputeDispatchToCmdStream(
-				cmdStream,
-				updateParticleVelocitiesPipeline,
-				dispatchSizeParticles,
-				{ vkcv::DescriptorSetUsage(
-						0, core.getDescriptorSet(updateParticleVelocitiesSets[0]).vulkanHandle
-				) },
-				physicsPushConstants
-		);
-		
-		core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
-		core.recordEndDebugLabel(cmdStream);
+		for (int step = 0; step < 1; step++) {
+			core.recordBeginDebugLabel(cmdStream, "INIT PARTICLE WEIGHTS", {0.78f, 0.89f, 0.94f, 1.0f});
+			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.prepareImageForSampling(cmdStream, grid.getHandle());
+			
+			core.recordComputeDispatchToCmdStream(
+					cmdStream,
+					initParticleWeightsPipeline,
+					dispatchSizeParticles,
+					{vkcv::DescriptorSetUsage(
+							0, core.getDescriptorSet(initParticleWeightsSets[0]).vulkanHandle
+					)},
+					vkcv::PushConstants(0)
+			);
+			
+			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.recordEndDebugLabel(cmdStream);
+			
+			core.recordBeginDebugLabel(cmdStream, "TRANSFORM PARTICLES TO GRID", {0.47f, 0.77f, 0.85f, 1.0f});
+			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.prepareImageForStorage(cmdStream, grid.getHandle());
+			
+			core.recordComputeDispatchToCmdStream(
+					cmdStream,
+					transformParticlesToGridPipeline,
+					dispatchSizeGrid,
+					{vkcv::DescriptorSetUsage(
+							0, core.getDescriptorSet(transformParticlesToGridSets[0]).vulkanHandle
+					)},
+					physicsPushConstants
+			);
+			
+			core.recordImageMemoryBarrier(cmdStream, grid.getHandle());
+			core.recordEndDebugLabel(cmdStream);
+			
+			core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE VELOCITIES", {0.78f, 0.89f, 0.94f, 1.0f});
+			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.prepareImageForSampling(cmdStream, grid.getHandle());
+			
+			core.recordComputeDispatchToCmdStream(
+					cmdStream,
+					updateParticleVelocitiesPipeline,
+					dispatchSizeParticles,
+					{vkcv::DescriptorSetUsage(
+							0, core.getDescriptorSet(updateParticleVelocitiesSets[0]).vulkanHandle
+					)},
+					physicsPushConstants
+			);
+			
+			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.recordEndDebugLabel(cmdStream);
+		}
 		
 		std::vector<vkcv::ImageHandle> renderTargets {
 				vkcv::ImageHandle::createSwapchainImageHandle(),
