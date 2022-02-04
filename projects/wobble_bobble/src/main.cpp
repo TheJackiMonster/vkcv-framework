@@ -171,13 +171,13 @@ int main(int argc, const char **argv) {
 			swapchainExtent.height
 	).getHandle();
 
-	glm::vec3 initialVelocity (0.0f, 1.0f, 0.0f);
+	glm::vec3 initialVelocity (0.0f, 0.1f, 0.0f);
 	float density = 2500.0f;
 	float radius = 0.1f;
 	
 	vkcv::Buffer<Particle> particles = core.createBuffer<Particle>(
 			vkcv::BufferType::STORAGE,
-			64
+			256
 	);
 	
 	resetParticles(particles, initialVelocity, density, radius);

@@ -71,7 +71,7 @@ void main()	{
         memoryBarrierShared();
     }
 
-    gridValue.xyz += vec3(0.0f, -9.81f * dts * gridValue.w, 0.0f);
+    gridValue.xyz += vec3(0.0f, -9.81f * dts * gridValue.w * 0.0f, 0.0f);
     gridValue.xyz /= gridValue.w;
 
     if (any(isnan(gridValue.xyz)) || any(isinf(gridValue.xyz))) {
@@ -90,7 +90,7 @@ void main()	{
         (lowerID.z && negativeVelocity.z) || (greaterID.z && positiveVelocity.z)
     );
 
-    gridValue.xyz = mix(gridValue.xyz, vec3(0.0f), collision);
+    gridValue.xyz = mix(gridValue.xyz, -gridValue.xyz, collision);
 
     barrier();
     memoryBarrierShared();
