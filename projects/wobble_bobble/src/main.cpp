@@ -760,8 +760,11 @@ int main(int argc, const char **argv) {
 		gui.beginGUI();
 		ImGui::Begin("Settings");
 		
+		ImGui::Combo("Form", &(sim->form), "Sphere\0Cube", 2);
 		ImGui::Combo("Type", &(sim->type), "Hyperelastic\0Fluid", 2);
-
+		
+		ImGui::Spacing();
+		
 		ImGui::SliderFloat("Density", &(sim->density), std::numeric_limits<float>::epsilon(), 5000.0f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::SmallButton("Reset##density")) {
@@ -773,6 +776,8 @@ int main(int argc, const char **argv) {
 		if (ImGui::SmallButton("Reset##radius")) {
 			sim->size = 0.1f;
 		}
+		
+		ImGui::Spacing();
 		
 		ImGui::BeginGroup();
 		ImGui::SliderFloat("Bulk Modulus", &(sim->K), 0.0f, 100.0f);
