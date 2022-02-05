@@ -76,25 +76,35 @@ void main()	{
 
         mat3 F = mat3(particle.deformation);
 
-        if (abs(determinant(affine_D)) >= EPSILON) {
-            mat3 D_inv = inverse(affine_D);
-            float J = determinant(F);
+        mat3 D_inv = inverse(affine_D);
+        float D_det = determinant(D_inv);
 
-            if (J > 0.0f) {
-                float volume = sphere_volume(size);
-
-                mat3 F_T = transpose(F);
-
-                mat3 stress = lame2 * (F * F_T - mat3(1.0f)) + lame1 * log(J);
-
-                mls_Q -= dts * volume * stress * D_inv;
-            }
-
-            affine_C = affine_B * D_inv;
-            mls_Q += affine_C * mass;
-
-            F = (mat3(1.0f) + dts * affine_C) * F;
+        if ((isnan(D_det)) || (isinf(D_det))) {
+            D_inv = mat3(0.0f);
+        } else {
+            D_inv *= min(abs(D_det), 1.0f / EPSILON) / abs(D_det);
         }
+
+        float J = max(determinant(F), EPSILON);
+
+        float volume = sphere_volume(size);
+
+        mat3 F_T = transpose(F);
+        mat3 F_T_inv = inverse(F_T);
+
+        mat3 P_term_0 = lame2 * (F - F_T_inv);
+        mat3 P_term_1 = lame1 * log(J) * F_T_inv;
+
+        mat3 P = P_term_0 + P_term_1;
+
+        mat3 stress = P * F_T;
+
+        mls_Q -= dts * volume * stress * D_inv;
+
+        affine_C = affine_B * D_inv;
+        mls_Q += affine_C * mass;
+
+        F = (mat3(1.0f) + dts * affine_C) * F;
 
         position = position + velocity_pic * dts;
 
