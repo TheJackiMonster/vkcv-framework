@@ -32,7 +32,15 @@ float sphere_volume(float radius) {
 }
 
 float sphere_radius(float volume) {
-	return pow(volume * 3.0f / 4.0f / M_PI, 1.0f / 3.0f);
+	return std::pow(volume * 3.0f / 4.0f / M_PI, 1.0f / 3.0f);
+}
+
+float cube_volume(float radius) {
+	return 8.0f * (radius * radius * radius);
+}
+
+float cube_radius(float volume) {
+	return std::pow(volume / 8.0f, 1.0f / 3.0f);
 }
 
 std::random_device random_dev;
@@ -42,8 +50,47 @@ float randomFloat(float min, float max) {
 	return min + (max - min) * dist(random_dev) / static_cast<float>(RAND_MAX);
 }
 
-void distributeParticles(Particle *particles, size_t count, const glm::vec3& center, float radius,
-						 float mass, const glm::vec3& velocity) {
+void distributeParticlesCube(Particle *particles, size_t count, const glm::vec3& center, float radius,
+							 float mass, const glm::vec3& velocity) {
+	float volume = 0.0f;
+	
+	for (size_t i = 0; i < count; i++) {
+		glm::vec3 offset(
+				randomFloat(-1.0f, +1.0f),
+				randomFloat(-1.0f, +1.0f),
+				randomFloat(-1.0f, +1.0f)
+		);
+		
+		offset *= radius;
+		
+		const float ax = std::abs(offset.x);
+		const float ay = std::abs(offset.y);
+		const float az = std::abs(offset.z);
+		
+		const float a = std::max(std::max(ax, ay), az);
+		
+		const float size = (radius - a);
+		
+		particles[i].position = center + offset;
+		particles[i].size = size;
+		particles[i].velocity = velocity;
+		
+		volume += cube_volume(size);
+	}
+	
+	for (size_t i = 0; i < count; i++) {
+		particles[i].mass = (mass * cube_volume(particles[i].size) / volume);
+		particles[i].deformation = glm::mat4(1.0f);
+		
+		particles[i].pad = glm::vec3(0.0f);
+		particles[i].weight_sum = 1.0f;
+		
+		particles[i].mls = glm::mat4(0.0f);
+	}
+}
+
+void distributeParticlesSphere(Particle *particles, size_t count, const glm::vec3& center, float radius,
+							   float mass, const glm::vec3& velocity) {
 	float volume = 0.0f;
 	
 	for (size_t i = 0; i < count; i++) {
@@ -126,7 +173,7 @@ void resetParticles(vkcv::Buffer<Particle>& particles, const glm::vec3& velocity
 					float density, float size) {
 	std::vector<Particle> particles_vec (particles.getCount());
 	
-	distributeParticles(
+	distributeParticlesCube(
 			particles_vec.data(),
 			particles_vec.size(),
 			glm::vec3(0.5f),
@@ -177,7 +224,7 @@ int main(int argc, const char **argv) {
 	
 	vkcv::Buffer<Particle> particles = core.createBuffer<Particle>(
 			vkcv::BufferType::STORAGE,
-			256
+			1024
 	);
 	
 	resetParticles(particles, initialVelocity, density, radius);
