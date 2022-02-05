@@ -9,7 +9,11 @@ layout(set=0, binding=0, std430) readonly buffer particleBuffer {
     Particle particles [];
 };
 
-layout(set=0, binding=1, rgba32f) restrict writeonly uniform image3D gridImage;
+layout(set=0, binding=1) uniform simulationBlock {
+    Simulation simulation;
+};
+
+layout(set=0, binding=2, rgba32f) restrict writeonly uniform image3D gridImage;
 
 layout( push_constant ) uniform constants {
     float t;
@@ -73,7 +77,7 @@ void main()	{
         gridValue.xyz = vec3(0.0f);
     }
 
-    gridValue.xyz += vec3(0.0f, -9.81f * dts * gridValue.w, 0.0f);
+    gridValue.xyz += vec3(0.0f, -simulation.gravity * dts * gridValue.w, 0.0f);
 
     bvec3 lowerID = lessThanEqual(gl_GlobalInvocationID, ivec3(0));
     bvec3 negativeVelocity = lessThan(gridValue.xyz, vec3(0.0f));

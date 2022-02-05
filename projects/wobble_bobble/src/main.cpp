@@ -33,12 +33,15 @@ struct Simulation {
 	float size;
 	float lame1;
 	float lame2;
+	
 	int form;
 	int type;
 	float K;
 	float E;
+	
 	float gamma;
 	int mode;
+	float gravity;
 };
 
 struct Physics {
@@ -348,6 +351,7 @@ int main(int argc, const char **argv) {
 	sim->E = 35.0f;
 	sim->gamma = 1.330f;
 	sim->mode = SIM_MODE_RANDOM;
+	sim->gravity = 9.81f;
 	
 	resetParticles(particles, initialVelocity, sim->density, sim->size, sim->form, sim->mode);
 	
@@ -378,7 +382,8 @@ int main(int argc, const char **argv) {
 	{
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(1, grid.getHandle()));
+		writes.uniformBufferWrites.push_back(vkcv::BufferDescriptorWrite(1, simulation.getHandle()));
+		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(2, grid.getHandle()));
 		core.writeDescriptorSet(transformParticlesToGridSets[0], writes);
 	}
 	
@@ -833,11 +838,11 @@ int main(int argc, const char **argv) {
 		ImGui::Spacing();
 		
 		ImGui::BeginGroup();
-		ImGui::SliderFloat("Bulk Modulus", &(sim->K), 0.0f, 100.0f);
-		ImGui::SliderFloat("Young's Modulus", &(sim->E), 0.0f, 100.0f);
+		ImGui::SliderFloat("Bulk Modulus", &(sim->K), 0.0f, 1000.0f);
+		ImGui::SliderFloat("Young's Modulus", &(sim->E), 0.0f, 1000.0f);
 		ImGui::SliderFloat("Heat Capacity Ratio", &(sim->gamma), 1.0f, 2.0f);
-		ImGui::SliderFloat("Lame1", &(sim->lame1), 0.0f, 100.0f);
-		ImGui::SliderFloat("Lame2", &(sim->lame2), 0.0f, 100.0f);
+		ImGui::SliderFloat("Lame1", &(sim->lame1), 0.0f, 1000.0f);
+		ImGui::SliderFloat("Lame2", &(sim->lame2), 0.0f, 1000.0f);
 		ImGui::EndGroup();
 
 		ImGui::Spacing();
@@ -852,6 +857,8 @@ int main(int argc, const char **argv) {
 		if (ImGui::Button("Reset##particle_velocity")) {
 			resetParticles(particles, initialVelocity, sim->density, sim->size, sim->form, sim->mode);
 		}
+		
+		ImGui::SliderFloat("Gravity", &(sim->gravity), 0.0f, 10.0f);
 		
 		ImGui::End();
 		gui.endGUI();

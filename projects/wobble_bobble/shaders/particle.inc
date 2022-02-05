@@ -33,12 +33,15 @@ struct Simulation {
 	float size;
 	float lame1;
 	float lame2;
+	
 	int form;
 	int type;
 	float K;
 	float E;
+	
 	float gamma;
 	int mode;
+	float gravity;
 };
 
 const float PI = 3.1415926535897932384626433832795;
