@@ -25,6 +25,9 @@ struct Particle {
 #define SIM_TYPE_HYPERELASTIC 0
 #define SIM_TYPE_FLUID 1
 
+#define SIM_MODE_RANDOM 0
+#define SIM_MODE_ORDERED 1
+
 struct Simulation {
 	float density;
 	float size;
@@ -35,6 +38,7 @@ struct Simulation {
 	float K;
 	float E;
 	float gamma;
+	int mode;
 };
 
 const float PI = 3.1415926535897932384626433832795;

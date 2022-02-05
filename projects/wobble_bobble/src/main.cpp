@@ -25,6 +25,9 @@ struct Particle {
 #define SIM_TYPE_HYPERELASTIC 0
 #define SIM_TYPE_FLUID 1
 
+#define SIM_MODE_RANDOM 0
+#define SIM_MODE_ORDERED 1
+
 struct Simulation {
 	float density;
 	float size;
@@ -35,6 +38,7 @@ struct Simulation {
 	float K;
 	float E;
 	float gamma;
+	int mode;
 };
 
 struct Physics {
@@ -66,26 +70,46 @@ float randomFloat(float min, float max) {
 	return min + (max - min) * dist(random_dev) / static_cast<float>(RAND_MAX);
 }
 
+float mod(float x, float y) {
+	return x - std::floor(x / y) * y;
+}
+
 void distributeParticlesCube(Particle *particles, size_t count, const glm::vec3& center, float radius,
-							 float mass, const glm::vec3& velocity) {
+							 float mass, const glm::vec3& velocity, bool random) {
+	const float side = cube_radius(static_cast<float>(count)) * 2.0f;
+	
 	float volume = 0.0f;
 	
 	for (size_t i = 0; i < count; i++) {
-		glm::vec3 offset(
-				randomFloat(-1.0f, +1.0f),
-				randomFloat(-1.0f, +1.0f),
-				randomFloat(-1.0f, +1.0f)
-		);
+		glm::vec3 offset;
+		
+		if (random) {
+			offset.x = randomFloat(-1.0f, +1.0f);
+			offset.y = randomFloat(-1.0f, +1.0f);
+			offset.z = randomFloat(-1.0f, +1.0f);
+		} else {
+			const float s = static_cast<float>(i) + 0.5f;
+			
+			offset.x = 2.0f * mod(s, side) / side - 1.0f;
+			offset.y = 2.0f * mod(s / side, side) / side - 1.0f;
+			offset.z = 2.0f * mod(s / side / side, side) / side - 1.0f;
+		}
 		
 		offset *= radius;
 		
-		const float ax = std::abs(offset.x);
-		const float ay = std::abs(offset.y);
-		const float az = std::abs(offset.z);
+		float size = 0.0f;
 		
-		const float a = std::max(std::max(ax, ay), az);
-		
-		const float size = (radius - a);
+		if (random) {
+			const float ax = std::abs(offset.x);
+			const float ay = std::abs(offset.y);
+			const float az = std::abs(offset.z);
+			
+			const float a = std::max(std::max(ax, ay), az);
+			
+			size = (radius - a);
+		} else {
+			size = 2.0f * radius / side;
+		}
 		
 		particles[i].position = center + offset;
 		particles[i].size = size;
@@ -106,22 +130,45 @@ void distributeParticlesCube(Particle *particles, size_t count, const glm::vec3&
 }
 
 void distributeParticlesSphere(Particle *particles, size_t count, const glm::vec3& center, float radius,
-							   float mass, const glm::vec3& velocity) {
+							   float mass, const glm::vec3& velocity, bool random) {
+	const float side = sphere_radius(static_cast<float>(count)) * 2.0f;
+	
 	float volume = 0.0f;
 	
 	for (size_t i = 0; i < count; i++) {
-		glm::vec3 offset (
-				randomFloat(-1.0f, +1.0f),
-				randomFloat(-1.0f, +1.0f),
-				randomFloat(-1.0f, +1.0f)
-		);
+		glm::vec3 offset;
 		
-		if (glm::length(offset) > 0.0f)
-			offset = glm::normalize(offset);
+		if (random) {
+			offset.x = randomFloat(-1.0f, +1.0f);
+			offset.y = randomFloat(-1.0f, +1.0f);
+			offset.z = randomFloat(-1.0f, +1.0f);
+			
+			if (glm::length(offset) > 0.0f)
+				offset = glm::normalize(offset);
+			
+			offset *= randomFloat(0.0f, 1.0f);
+		} else {
+			const float range = 0.5f * side;
+			const float s = static_cast<float>(i) + 0.5f;
+			
+			float a = mod(s, range) / range;
+			float b = mod(s / range, M_PI * range);
+			float c = mod(s / range / M_PI / range, M_PI * range * 2.0f);
+			
+			offset.x = a * std::sin(c) * std::sin(b);
+			offset.y = a * std::cos(b);
+			offset.z = a * std::cos(c) * std::sin(b);
+		}
 		
-		offset *= randomFloat(0.0f, radius);
+		offset *= radius;
 		
-		const float size = (radius - glm::length(offset));
+		float size = 0.0f;
+		
+		if (random) {
+			size = (radius - glm::length(offset));
+		} else {
+			size = 2.0f * radius / side;
+		}
 		
 		particles[i].position = center + offset;
 		particles[i].size = size;
@@ -186,7 +233,7 @@ vkcv::ComputePipelineHandle createComputePipeline(vkcv::Core& core, vkcv::shader
 }
 
 void resetParticles(vkcv::Buffer<Particle>& particles, const glm::vec3& velocity,
-					float density, float size, int form) {
+					float density, float size, int form, int mode) {
 	std::vector<Particle> particles_vec (particles.getCount());
 	
 	switch (form) {
@@ -197,7 +244,8 @@ void resetParticles(vkcv::Buffer<Particle>& particles, const glm::vec3& velocity
 					glm::vec3(0.5f),
 					size,
 					density * sphere_volume(size),
-					velocity
+					velocity,
+					(mode == 0)
 			);
 			break;
 		case SIM_FORM_CUBE:
@@ -207,7 +255,8 @@ void resetParticles(vkcv::Buffer<Particle>& particles, const glm::vec3& velocity
 					glm::vec3(0.5f),
 					size,
 					density * sphere_volume(size),
-					velocity
+					velocity,
+					(mode == 0)
 			);
 			break;
 		default:
@@ -298,8 +347,9 @@ int main(int argc, const char **argv) {
 	sim->K = 2.2f;
 	sim->E = 35.0f;
 	sim->gamma = 1.330f;
+	sim->mode = SIM_MODE_RANDOM;
 	
-	resetParticles(particles, initialVelocity, sim->density, sim->size, sim->form);
+	resetParticles(particles, initialVelocity, sim->density, sim->size, sim->form, sim->mode);
 	
 	vkcv::shader::GLSLCompiler compiler;
 	
@@ -760,8 +810,11 @@ int main(int argc, const char **argv) {
 		gui.beginGUI();
 		ImGui::Begin("Settings");
 		
+		ImGui::BeginGroup();
+		ImGui::Combo("Mode", &(sim->mode), "Random\0Ordered", 2);
 		ImGui::Combo("Form", &(sim->form), "Sphere\0Cube", 2);
 		ImGui::Combo("Type", &(sim->type), "Hyperelastic\0Fluid", 2);
+		ImGui::EndGroup();
 		
 		ImGui::Spacing();
 		
@@ -797,7 +850,7 @@ int main(int argc, const char **argv) {
 		ImGui::DragFloat3("Initial Velocity", reinterpret_cast<float*>(&initialVelocity), 0.001f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::Button("Reset##particle_velocity")) {
-			resetParticles(particles, initialVelocity, sim->density, sim->size, sim->form);
+			resetParticles(particles, initialVelocity, sim->density, sim->size, sim->form, sim->mode);
 		}
 		
 		ImGui::End();
