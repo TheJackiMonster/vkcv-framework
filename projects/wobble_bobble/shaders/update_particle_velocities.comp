@@ -98,18 +98,38 @@ void main()	{
 
         position = position + velocity_pic * dts;
 
+        const float gridRange = (1.0f - 2.0f * size);
+
         for (uint i = 0; i < 3; i++) {
             if (position[i] - size < 0.0f) {
-                position[i] = -position[i] + 2.0f * size;
+                float a = (size - position[i]) / gridRange;
+                int b = int(floor(a));
 
-                if (velocity_pic[i] < 0.0f) {
+                a = (a - b) * gridRange;
+
+                if (b % 2 == 0) {
+                    position[i] = size + a;
+                } else {
+                    position[i] = 1.0f - size - a;
+                }
+
+                if ((velocity_pic[i] < 0.0f) == (b % 2 == 0)) {
                     velocity_pic[i] *= -1.0f;
                 }
             } else
             if (position[i] + size > 1.0f) {
-                position[i] = 2.0f * (1.0f - size) - position[i];
+                float a = (position[i] + size - 1.0f) / gridRange;
+                int b = int(floor(a));
 
-                if (velocity_pic[i] > 0.0f) {
+                a = (a - b) * gridRange;
+
+                if (b % 2 == 0) {
+                    position[i] = 1.0f - size - a;
+                } else {
+                    position[i] = size + a;
+                }
+
+                if ((velocity_pic[i] > 0.0f) == (b % 2 == 0)) {
                     velocity_pic[i] *= -1.0f;
                 }
             }
