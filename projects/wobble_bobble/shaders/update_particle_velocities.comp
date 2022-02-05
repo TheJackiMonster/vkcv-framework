@@ -10,12 +10,14 @@ layout(set=0, binding=0, std430) restrict buffer particleBuffer {
     Particle particles [];
 };
 
-layout(set=0, binding=1) uniform texture3D gridImage;
-layout(set=0, binding=2) uniform sampler gridSampler;
+layout(set=0, binding=1) uniform simulationBlock {
+    Simulation simulation;
+};
+
+layout(set=0, binding=2) uniform texture3D gridImage;
+layout(set=0, binding=3) uniform sampler gridSampler;
 
 layout( push_constant ) uniform constants {
-    float lame1;
-    float lame2;
     float t;
     float dt;
     float speedfactor;
@@ -86,18 +88,30 @@ void main()	{
         }
 
         float J = max(determinant(F), EPSILON);
-
         float volume = sphere_volume(size);
 
-        mat3 F_T = transpose(F);
-        mat3 F_T_inv = inverse(F_T);
+        mat3 stress = mat3(0.0f);
 
-        mat3 P_term_0 = lame2 * (F - F_T_inv);
-        mat3 P_term_1 = lame1 * log(J) * F_T_inv;
+        switch (simulation.type) {
+            case SIM_TYPE_HYPERELASTIC:
+                mat3 F_T = transpose(F);
+                mat3 F_T_inv = inverse(F_T);
 
-        mat3 P = P_term_0 + P_term_1;
+                mat3 P_term_0 = simulation.lame2 * (F - F_T_inv);
+                mat3 P_term_1 = simulation.lame1 * log(J) * F_T_inv;
 
-        mat3 stress = P * F_T;
+                mat3 P = P_term_0 + P_term_1;
+
+                stress = P * F_T;
+                break;
+            case SIM_TYPE_FLUID:
+                float pressure = simulation.K * (1.0f / pow(J, simulation.gamma) - 1.0f);
+
+                stress = mat3(-pressure * J);
+                break;
+            default:
+                break;
+        }
 
         mls_Q -= dts * volume * stress * D_inv;
 

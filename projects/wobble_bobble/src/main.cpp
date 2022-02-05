@@ -19,9 +19,25 @@ struct Particle {
 	glm::mat4 mls;
 };
 
-struct Physics {
+#define SIM_FORM_SPHERE 0
+#define SIM_FORM_CUBE 1
+
+#define SIM_TYPE_HYPERELASTIC 0
+#define SIM_TYPE_FLUID 1
+
+struct Simulation {
+	float density;
+	float size;
 	float lame1;
-    float lame2;
+	float lame2;
+	int form;
+	int type;
+	float K;
+	float E;
+	float gamma;
+};
+
+struct Physics {
 	float t;
 	float dt;
 	float speedfactor;
@@ -170,17 +186,33 @@ vkcv::ComputePipelineHandle createComputePipeline(vkcv::Core& core, vkcv::shader
 }
 
 void resetParticles(vkcv::Buffer<Particle>& particles, const glm::vec3& velocity,
-					float density, float size) {
+					float density, float size, int form) {
 	std::vector<Particle> particles_vec (particles.getCount());
 	
-	distributeParticlesCube(
-			particles_vec.data(),
-			particles_vec.size(),
-			glm::vec3(0.5f),
-			size,
-			density * sphere_volume(size),
-			velocity
-	);
+	switch (form) {
+		case SIM_FORM_SPHERE:
+			distributeParticlesSphere(
+					particles_vec.data(),
+					particles_vec.size(),
+					glm::vec3(0.5f),
+					size,
+					density * sphere_volume(size),
+					velocity
+			);
+			break;
+		case SIM_FORM_CUBE:
+			distributeParticlesCube(
+					particles_vec.data(),
+					particles_vec.size(),
+					glm::vec3(0.5f),
+					size,
+					density * sphere_volume(size),
+					velocity
+			);
+			break;
+		default:
+			break;
+	}
 	
 	particles.fill(particles_vec);
 }
@@ -217,17 +249,11 @@ int main(int argc, const char **argv) {
 			swapchainExtent.width,
 			swapchainExtent.height
 	).getHandle();
-
-	glm::vec3 initialVelocity (0.0f, 0.1f, 0.0f);
-	float density = 2500.0f;
-	float radius = 0.1f;
 	
 	vkcv::Buffer<Particle> particles = core.createBuffer<Particle>(
 			vkcv::BufferType::STORAGE,
 			1024
 	);
-	
-	resetParticles(particles, initialVelocity, density, radius);
 	
 	vkcv::Image grid = core.createImage(
 			vk::Format::eR32G32B32A32Sfloat,
@@ -254,6 +280,26 @@ int main(int argc, const char **argv) {
 			0.0f,
 			vkcv::SamplerBorderColor::FLOAT_ZERO_TRANSPARENT
 	);
+	
+	vkcv::Buffer<Simulation> simulation = core.createBuffer<Simulation>(
+			vkcv::BufferType::UNIFORM, 1, vkcv::BufferMemoryType::HOST_VISIBLE
+	);
+	
+	Simulation* sim = simulation.map();
+	
+	glm::vec3 initialVelocity (0.0f, 0.1f, 0.0f);
+	
+	sim->density = 2500.0f;
+	sim->size = 0.1f;
+	sim->lame1 = 10.0f;
+	sim->lame2 = 20.0f;
+	sim->form = SIM_FORM_SPHERE;
+	sim->type = SIM_TYPE_HYPERELASTIC;
+	sim->K = 2.2f;
+	sim->E = 35.0f;
+	sim->gamma = 1.330f;
+	
+	resetParticles(particles, initialVelocity, sim->density, sim->size, sim->form);
 	
 	vkcv::shader::GLSLCompiler compiler;
 	
@@ -296,8 +342,9 @@ int main(int argc, const char **argv) {
 	{
 		vkcv::DescriptorWrites writes;
 		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, grid.getHandle()));
-		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
+		writes.uniformBufferWrites.push_back(vkcv::BufferDescriptorWrite(1, simulation.getHandle()));
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(2, grid.getHandle()));
+		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(3, gridSampler));
 		core.writeDescriptorSet(updateParticleVelocitiesSets[0], writes);
 	}
 	
@@ -404,6 +451,7 @@ int main(int argc, const char **argv) {
 		vkcv::DescriptorWrites writes;
 		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(0, grid.getHandle()));
 		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(1, gridSampler));
+		writes.uniformBufferWrites.push_back(vkcv::BufferDescriptorWrite(2, simulation.getHandle()));
 		core.writeDescriptorSet(gfxSetGrid, writes);
 	}
 	
@@ -435,7 +483,6 @@ int main(int argc, const char **argv) {
 	gfxPipelineConfigGrid.m_VertexLayout = vertexLayoutGrid;
 	gfxPipelineConfigGrid.m_DescriptorLayouts = { gfxSetLayoutGrid };
 	gfxPipelineConfigGrid.m_UseDynamicViewport = true;
-	gfxPipelineConfigGrid.m_blendMode = vkcv::BlendMode::Additive;
 	
 	vkcv::VertexLayout vertexLayoutParticles ({
 		vkcv::VertexBinding(0, gfxProgramParticles.getVertexAttachments())
@@ -548,8 +595,6 @@ int main(int argc, const char **argv) {
 	
 	bool renderGrid = true;
 	
-	float lame1 = 10.0f;
-	float lame2 = 20.0f;
 	float speed_factor = 1.0f;
 	
 	auto start = std::chrono::system_clock::now();
@@ -585,8 +630,6 @@ int main(int argc, const char **argv) {
 		current = next;
 		
 		Physics physics;
-		physics.lame1 = lame1;
-		physics.lame2 = lame2;
 		physics.t = static_cast<float>(0.000001 * static_cast<double>(time.count()));
 		physics.dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
 		physics.speedfactor = speed_factor;
@@ -642,6 +685,7 @@ int main(int argc, const char **argv) {
 			
 			core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE VELOCITIES", {0.78f, 0.89f, 0.94f, 1.0f});
 			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.recordBufferMemoryBarrier(cmdStream, simulation.getHandle());
 			core.prepareImageForSampling(cmdStream, grid.getHandle());
 			
 			core.recordComputeDispatchToCmdStream(
@@ -665,6 +709,7 @@ int main(int argc, const char **argv) {
 		
 		if (renderGrid) {
 			core.recordBeginDebugLabel(cmdStream, "RENDER GRID", { 0.13f, 0.20f, 0.22f, 1.0f });
+			core.recordBufferMemoryBarrier(cmdStream, simulation.getHandle());
 			core.prepareImageForSampling(cmdStream, grid.getHandle());
 			
 			core.recordDrawcallsToCmdStream(
@@ -714,25 +759,27 @@ int main(int argc, const char **argv) {
 		
 		gui.beginGUI();
 		ImGui::Begin("Settings");
+		
+		ImGui::Combo("Type", &(sim->type), "Hyperelastic\0Fluid", 2);
 
-		ImGui::SliderFloat("Density", &density, std::numeric_limits<float>::epsilon(), 5000.0f);
+		ImGui::SliderFloat("Density", &(sim->density), std::numeric_limits<float>::epsilon(), 5000.0f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::SmallButton("Reset##density")) {
-			density = 2500.0f;
+			sim->density = 2500.0f;
 		}
 		
-		ImGui::SliderFloat("Radius", &radius, 0.0f, 0.5f);
+		ImGui::SliderFloat("Radius", &(sim->size), 0.0f, 0.5f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::SmallButton("Reset##radius")) {
-			radius = 0.1f;
+			sim->size = 0.1f;
 		}
-
-		ImGui::BeginGroup();
-		ImGui::SliderFloat("Compression Modulus", &lame1, 0.0f, 100.0f);
-		ImGui::EndGroup();
 		
 		ImGui::BeginGroup();
-		ImGui::SliderFloat("Elasticity Modulus", &lame2, 0.0f, 100.0f);
+		ImGui::SliderFloat("Bulk Modulus", &(sim->K), 0.0f, 100.0f);
+		ImGui::SliderFloat("Young's Modulus", &(sim->E), 0.0f, 100.0f);
+		ImGui::SliderFloat("Heat Capacity Ratio", &(sim->gamma), 1.0f, 2.0f);
+		ImGui::SliderFloat("Lame1", &(sim->lame1), 0.0f, 100.0f);
+		ImGui::SliderFloat("Lame2", &(sim->lame2), 0.0f, 100.0f);
 		ImGui::EndGroup();
 
 		ImGui::Spacing();
@@ -745,7 +792,7 @@ int main(int argc, const char **argv) {
 		ImGui::DragFloat3("Initial Velocity", reinterpret_cast<float*>(&initialVelocity), 0.001f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::Button("Reset##particle_velocity")) {
-			resetParticles(particles, initialVelocity, density, radius);
+			resetParticles(particles, initialVelocity, sim->density, sim->size, sim->form);
 		}
 		
 		ImGui::End();
@@ -754,5 +801,6 @@ int main(int argc, const char **argv) {
 		core.endFrame(windowHandle);
 	}
 	
+	simulation.unmap();
 	return 0;
 }

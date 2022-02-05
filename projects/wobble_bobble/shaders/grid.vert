@@ -6,6 +6,10 @@
 layout(set=0, binding=0) uniform texture3D gridImage;
 layout(set=0, binding=1) uniform sampler gridSampler;
 
+layout(set=0, binding=2) uniform simulationBlock {
+    Simulation simulation;
+};
+
 layout(location = 0) in vec2 vertexPos;
 
 layout(location = 0) out vec2 passPos;
@@ -32,13 +36,17 @@ void main()	{
     gridID = actual_mod(gridID, gridResolution);
 
     vec3 position = (vec3(gridID) + vec3(0.5f)) / gridResolution;
-    float size = 1.0f / length(vec3(gridResolution));
+
+    vec3 size = vec3(1.0f) / vec3(gridResolution);
+    float volume = size.x * size.y * size.z;
+    float radius = cube_radius(volume);
 
     vec4 gridData = texture(sampler3D(gridImage, gridSampler), position);
 
     float mass = gridData.w;
-    float density = mass / sphere_volume(size);
-    float alpha = clamp(density / 10000.0f, 0.0f, 1.0f);
+    float density = mass / volume;
+
+    float alpha = clamp(density / simulation.density, 0.0f, 1.0f);
 
     passPos = vertexPos;
     passVelocity = gridData.xyz;
@@ -46,5 +54,5 @@ void main()	{
 
     // align voxel to face camera
     gl_Position = mvp * vec4(position, 1);      // transform position into projected view space
-    gl_Position.xy += vertexPos * mix(0.0f, size * 2.0f, alpha);  // move position directly in view space
+    gl_Position.xy += vertexPos * (radius * 2.0f) * alpha;  // move position directly in view space
 }

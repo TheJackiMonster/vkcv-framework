@@ -19,6 +19,24 @@ struct Particle {
 	mat4 mls;
 };
 
+#define SIM_FORM_SPHERE 0
+#define SIM_FORM_CUBE 1
+
+#define SIM_TYPE_HYPERELASTIC 0
+#define SIM_TYPE_FLUID 1
+
+struct Simulation {
+	float density;
+	float size;
+	float lame1;
+	float lame2;
+	int form;
+	int type;
+	float K;
+	float E;
+	float gamma;
+};
+
 const float PI = 3.1415926535897932384626433832795;
 
 float sphere_volume(float radius) {
@@ -27,6 +45,25 @@ float sphere_volume(float radius) {
 
 float sphere_radius(float volume) {
 	return pow(volume * 3.0f / 4.0f / PI, 1.0f / 3.0f);
+}
+
+float cube_volume(float radius) {
+	return 8.0f * (radius * radius * radius);
+}
+
+float cube_radius(float volume) {
+	return pow(volume / 8.0f, 1.0f / 3.0f);
+}
+
+float simulationMass(float density, float size, int form) {
+	switch (form) {
+		case SIM_FORM_SPHERE:
+			return density * sphere_volume(size);
+		case SIM_FORM_CUBE:
+			return density * cube_volume(size);
+		default:
+			return 0.0f;
+	}
 }
 
 float weight_A(float x) {
