@@ -42,6 +42,7 @@ struct Simulation {
 	float gamma;
 	int mode;
 	float gravity;
+	int count;
 };
 
 struct Physics {
@@ -235,8 +236,13 @@ vkcv::ComputePipelineHandle createComputePipeline(vkcv::Core& core, vkcv::shader
 	return core.createComputePipeline(config);
 }
 
-void resetParticles(vkcv::Buffer<Particle>& particles, const glm::vec3& velocity,
+vkcv::BufferHandle resetParticles(vkcv::Core& core, size_t count, const glm::vec3& velocity,
 					float density, float size, int form, int mode) {
+	vkcv::Buffer<Particle> particles = core.createBuffer<Particle>(
+			vkcv::BufferType::STORAGE,
+			count
+	);
+	
 	std::vector<Particle> particles_vec (particles.getCount());
 	
 	switch (form) {
@@ -267,6 +273,7 @@ void resetParticles(vkcv::Buffer<Particle>& particles, const glm::vec3& velocity
 	}
 	
 	particles.fill(particles_vec);
+	return particles.getHandle();
 }
 
 int main(int argc, const char **argv) {
@@ -302,16 +309,11 @@ int main(int argc, const char **argv) {
 			swapchainExtent.height
 	).getHandle();
 	
-	vkcv::Buffer<Particle> particles = core.createBuffer<Particle>(
-			vkcv::BufferType::STORAGE,
-			1024
-	);
-	
 	vkcv::Image grid = core.createImage(
 			vk::Format::eR16G16B16A16Sfloat,
-			64,
-			64,
-			64,
+			32,
+			32,
+			32,
 			false,
 			true
 	);
@@ -344,8 +346,17 @@ int main(int argc, const char **argv) {
 	sim->gamma = 1.330f;
 	sim->mode = SIM_MODE_RANDOM;
 	sim->gravity = 9.81f;
+	sim->count = 1024;
 	
-	resetParticles(particles, initialVelocity, sim->density, sim->size, sim->form, sim->mode);
+	vkcv::BufferHandle particlesHandle = resetParticles(
+			core,
+			sim->count,
+			initialVelocity,
+			sim->density,
+			sim->size,
+			sim->form,
+			sim->mode
+	);
 	
 	vkcv::shader::GLSLCompiler compiler;
 	
@@ -358,10 +369,15 @@ int main(int argc, const char **argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(1, grid.getHandle()));
-		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(2, gridSampler));
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particlesHandle));
 		core.writeDescriptorSet(initParticleWeightsSets[0], writes);
+	}
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(0, grid.getHandle()));
+		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(1, gridSampler));
+		core.writeDescriptorSet(initParticleWeightsSets[1], writes);
 	}
 	
 	std::vector<vkcv::DescriptorSetHandle> transformParticlesToGridSets;
@@ -373,10 +389,20 @@ int main(int argc, const char **argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		writes.uniformBufferWrites.push_back(vkcv::BufferDescriptorWrite(1, simulation.getHandle()));
-		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(2, grid.getHandle()));
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particlesHandle));
 		core.writeDescriptorSet(transformParticlesToGridSets[0], writes);
+	}
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.uniformBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, simulation.getHandle()));
+		core.writeDescriptorSet(transformParticlesToGridSets[1], writes);
+	}
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(0, grid.getHandle()));
+		core.writeDescriptorSet(transformParticlesToGridSets[2], writes);
 	}
 	
 	std::vector<vkcv::DescriptorSetHandle> updateParticleVelocitiesSets;
@@ -388,11 +414,21 @@ int main(int argc, const char **argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
-		writes.uniformBufferWrites.push_back(vkcv::BufferDescriptorWrite(1, simulation.getHandle()));
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(2, grid.getHandle()));
-		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(3, gridSampler));
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particlesHandle));
 		core.writeDescriptorSet(updateParticleVelocitiesSets[0], writes);
+	}
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.uniformBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, simulation.getHandle()));
+		core.writeDescriptorSet(updateParticleVelocitiesSets[1], writes);
+	}
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(0, grid.getHandle()));
+		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(1, gridSampler));
+		core.writeDescriptorSet(updateParticleVelocitiesSets[2], writes);
 	}
 	
 	vkcv::ShaderProgram gfxProgramGrid;
@@ -510,7 +546,7 @@ int main(int argc, const char **argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particles.getHandle()));
+		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particlesHandle));
 		core.writeDescriptorSet(gfxSetParticles, writes);
 	}
 	
@@ -629,7 +665,7 @@ int main(int argc, const char **argv) {
 	drawcallsParticles.push_back(vkcv::DrawcallInfo(
 			triangleMesh,
 			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(gfxSetParticles).vulkanHandle) },
-			particles.getCount()
+			sim->count
 	));
 	
 	std::vector<vkcv::DrawcallInfo> drawcallsLines;
@@ -693,37 +729,50 @@ int main(int argc, const char **argv) {
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
 		const uint32_t dispatchSizeGrid[3] = {grid.getWidth() / 4, grid.getHeight() / 4, grid.getDepth() / 4};
-		const uint32_t dispatchSizeParticles[3] = {static_cast<uint32_t>(particles.getCount() + 63) / 64, 1, 1};
+		const uint32_t dispatchSizeParticles[3] = {static_cast<uint32_t>(sim->count + 63) / 64, 1, 1};
 		
 		for (int step = 0; step < 1; step++) {
 			core.recordBeginDebugLabel(cmdStream, "INIT PARTICLE WEIGHTS", {0.78f, 0.89f, 0.94f, 1.0f});
-			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.recordBufferMemoryBarrier(cmdStream, particlesHandle);
 			core.prepareImageForSampling(cmdStream, grid.getHandle());
 			
 			core.recordComputeDispatchToCmdStream(
 					cmdStream,
 					initParticleWeightsPipeline,
 					dispatchSizeParticles,
-					{vkcv::DescriptorSetUsage(
-							0, core.getDescriptorSet(initParticleWeightsSets[0]).vulkanHandle
-					)},
+					{
+						vkcv::DescriptorSetUsage(
+								0, core.getDescriptorSet(initParticleWeightsSets[0]).vulkanHandle
+						),
+						vkcv::DescriptorSetUsage(
+								1, core.getDescriptorSet(initParticleWeightsSets[1]).vulkanHandle
+						)
+					},
 					vkcv::PushConstants(0)
 			);
 			
-			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.recordBufferMemoryBarrier(cmdStream, particlesHandle);
 			core.recordEndDebugLabel(cmdStream);
 			
 			core.recordBeginDebugLabel(cmdStream, "TRANSFORM PARTICLES TO GRID", {0.47f, 0.77f, 0.85f, 1.0f});
-			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.recordBufferMemoryBarrier(cmdStream, particlesHandle);
 			core.prepareImageForStorage(cmdStream, grid.getHandle());
 			
 			core.recordComputeDispatchToCmdStream(
 					cmdStream,
 					transformParticlesToGridPipeline,
 					dispatchSizeGrid,
-					{vkcv::DescriptorSetUsage(
-							0, core.getDescriptorSet(transformParticlesToGridSets[0]).vulkanHandle
-					)},
+					{
+						vkcv::DescriptorSetUsage(
+								0, core.getDescriptorSet(transformParticlesToGridSets[0]).vulkanHandle
+						),
+						vkcv::DescriptorSetUsage(
+								1, core.getDescriptorSet(transformParticlesToGridSets[1]).vulkanHandle
+						),
+						vkcv::DescriptorSetUsage(
+								2, core.getDescriptorSet(transformParticlesToGridSets[2]).vulkanHandle
+						)
+					},
 					physicsPushConstants
 			);
 			
@@ -731,7 +780,7 @@ int main(int argc, const char **argv) {
 			core.recordEndDebugLabel(cmdStream);
 			
 			core.recordBeginDebugLabel(cmdStream, "UPDATE PARTICLE VELOCITIES", {0.78f, 0.89f, 0.94f, 1.0f});
-			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.recordBufferMemoryBarrier(cmdStream, particlesHandle);
 			core.recordBufferMemoryBarrier(cmdStream, simulation.getHandle());
 			core.prepareImageForSampling(cmdStream, grid.getHandle());
 			
@@ -739,13 +788,21 @@ int main(int argc, const char **argv) {
 					cmdStream,
 					updateParticleVelocitiesPipeline,
 					dispatchSizeParticles,
-					{vkcv::DescriptorSetUsage(
-							0, core.getDescriptorSet(updateParticleVelocitiesSets[0]).vulkanHandle
-					)},
+					{
+						vkcv::DescriptorSetUsage(
+								0, core.getDescriptorSet(updateParticleVelocitiesSets[0]).vulkanHandle
+						),
+						vkcv::DescriptorSetUsage(
+								1, core.getDescriptorSet(updateParticleVelocitiesSets[1]).vulkanHandle
+						),
+						vkcv::DescriptorSetUsage(
+								2, core.getDescriptorSet(updateParticleVelocitiesSets[2]).vulkanHandle
+						)
+					},
 					physicsPushConstants
 			);
 			
-			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.recordBufferMemoryBarrier(cmdStream, particlesHandle);
 			core.recordEndDebugLabel(cmdStream);
 		}
 		
@@ -772,7 +829,7 @@ int main(int argc, const char **argv) {
 			core.recordEndDebugLabel(cmdStream);
 		} else {
 			core.recordBeginDebugLabel(cmdStream, "RENDER PARTICLES", { 0.13f, 0.20f, 0.22f, 1.0f });
-			core.recordBufferMemoryBarrier(cmdStream, particles.getHandle());
+			core.recordBufferMemoryBarrier(cmdStream, particlesHandle);
 			
 			core.recordDrawcallsToCmdStream(
 					cmdStream,
@@ -815,6 +872,7 @@ int main(int argc, const char **argv) {
 		
 		ImGui::Spacing();
 		
+		ImGui::SliderInt("Particle Count", &(sim->count), 1, 100000);
 		ImGui::SliderFloat("Density", &(sim->density), std::numeric_limits<float>::epsilon(), 5000.0f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::SmallButton("Reset##density")) {
@@ -847,7 +905,24 @@ int main(int argc, const char **argv) {
 		ImGui::DragFloat3("Initial Velocity", reinterpret_cast<float*>(&initialVelocity), 0.001f);
 		ImGui::SameLine(0.0f, 10.0f);
 		if (ImGui::Button("Reset##particle_velocity")) {
-			resetParticles(particles, initialVelocity, sim->density, sim->size, sim->form, sim->mode);
+			particlesHandle = resetParticles(
+					core,
+					sim->count,
+					initialVelocity,
+					sim->density,
+					sim->size,
+					sim->form,
+					sim->mode
+			);
+			
+			vkcv::DescriptorWrites writes;
+			writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particlesHandle));
+			
+			core.writeDescriptorSet(initParticleWeightsSets[0], writes);
+			core.writeDescriptorSet(transformParticlesToGridSets[0], writes);
+			core.writeDescriptorSet(updateParticleVelocitiesSets[0], writes);
+			
+			core.writeDescriptorSet(gfxSetParticles, writes);
 		}
 		
 		ImGui::SliderFloat("Gravity", &(sim->gravity), 0.0f, 10.0f);

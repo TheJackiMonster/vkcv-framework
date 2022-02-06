@@ -9,8 +9,8 @@ layout(set=0, binding=0, std430) restrict buffer particleBuffer {
     Particle particles [];
 };
 
-layout(set=0, binding=1) uniform texture3D gridImage;
-layout(set=0, binding=2) uniform sampler gridSampler;
+layout(set=1, binding=0) uniform texture3D gridImage;
+layout(set=1, binding=1) uniform sampler gridSampler;
 
 void main()	{
     if (gl_GlobalInvocationID.x < particles.length()) {
