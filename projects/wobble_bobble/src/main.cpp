@@ -308,21 +308,13 @@ int main(int argc, const char **argv) {
 	);
 	
 	vkcv::Image grid = core.createImage(
-			vk::Format::eR32G32B32A32Sfloat,
+			vk::Format::eR16G16B16A16Sfloat,
 			64,
 			64,
 			64,
 			false,
 			true
 	);
-	
-	std::vector<glm::vec4> grid_vec (grid.getWidth() * grid.getHeight() * grid.getDepth());
-	
-	for (size_t i = 0; i < grid_vec.size(); i++) {
-		grid_vec[i] = glm::vec4(0.0f);
-	}
-	
-	grid.fill(grid_vec.data());
 	
 	vkcv::SamplerHandle gridSampler = core.createSampler(
 			vkcv::SamplerFilterType::LINEAR,

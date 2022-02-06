@@ -353,6 +353,8 @@ namespace vkcv {
 				return 4;
 			case vk::Format::eR8G8B8A8Unorm:
 				return 4;
+			case vk::Format::eR16G16B16A16Sfloat:
+				return 8;
 			case vk::Format::eR32G32B32A32Sfloat:
 				return 16;
 			default:

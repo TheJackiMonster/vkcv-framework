@@ -62,17 +62,6 @@ float cube_radius(float volume) {
 	return pow(volume / 8.0f, 1.0f / 3.0f);
 }
 
-float simulationMass(float density, float size, int form) {
-	switch (form) {
-		case SIM_FORM_SPHERE:
-			return density * sphere_volume(size);
-		case SIM_FORM_CUBE:
-			return density * cube_volume(size);
-		default:
-			return 0.0f;
-	}
-}
-
 float weight_A(float x) {
 	return max(1.0f - x, 0.0f);
 }
