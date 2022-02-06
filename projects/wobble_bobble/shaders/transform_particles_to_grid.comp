@@ -93,9 +93,6 @@ void main()	{
 
     gridValue.xyz = mix(gridValue.xyz, -gridValue.xyz, collision);
 
-    barrier();
-    memoryBarrierShared();
-
     imageStore(
         gridImage,
         ivec3(gl_GlobalInvocationID),

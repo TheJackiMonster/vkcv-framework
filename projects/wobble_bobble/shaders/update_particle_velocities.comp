@@ -24,9 +24,6 @@ layout( push_constant ) uniform constants {
 };
 
 void main()	{
-    memoryBarrierBuffer();
-    memoryBarrierImage();
-
     float dts = dt * speedfactor;
 
     if (gl_GlobalInvocationID.x < particles.length()) {
@@ -69,9 +66,6 @@ void main()	{
                 }
             }
         }
-
-        barrier();
-        memoryBarrierBuffer();
 
         mat3 mls_Q = mat3(0.0f);
         mat3 affine_C = mat3(0.0f);
@@ -159,15 +153,9 @@ void main()	{
             }
         }
 
-        barrier();
-        memoryBarrierBuffer();
-
         particles[gl_GlobalInvocationID.x].minimal.position = position;
         particles[gl_GlobalInvocationID.x].minimal.velocity = velocity_pic;
         particles[gl_GlobalInvocationID.x].deformation = mat4(F);
         particles[gl_GlobalInvocationID.x].mls = mat4(mls_Q);
     }
-
-    barrier();
-    memoryBarrierBuffer();
 }
