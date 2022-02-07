@@ -61,15 +61,10 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram sceneShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
-					 [&sceneShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		sceneShaderProgram.addShader(shaderStage, path);
-	});
-	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
-					 [&sceneShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		sceneShaderProgram.addShader(shaderStage, path);
-	});
+	compiler.compileProgram(sceneShaderProgram, {
+		{ vkcv::ShaderStage::VERTEX, "assets/shaders/shader.vert" },
+		{ vkcv::ShaderStage::FRAGMENT, "assets/shaders/shader.frag" }
+	}, nullptr);
 
 	const std::vector<vkcv::VertexAttachment> vertexAttachments = sceneShaderProgram.getVertexAttachments();
 	std::vector<vkcv::VertexBinding> bindings;

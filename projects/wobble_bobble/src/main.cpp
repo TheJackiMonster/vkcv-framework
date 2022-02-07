@@ -433,57 +433,24 @@ int main(int argc, const char **argv) {
 	
 	vkcv::ShaderProgram gfxProgramGrid;
 	
-	compiler.compile(
-			vkcv::ShaderStage::VERTEX,
-			"shaders/grid.vert",
-			[&gfxProgramGrid](vkcv::ShaderStage stage, const std::filesystem::path& path) {
-				gfxProgramGrid.addShader(stage, path);
-			}
-	);
-	
-	compiler.compile(
-			vkcv::ShaderStage::FRAGMENT,
-			"shaders/grid.frag",
-			[&gfxProgramGrid](vkcv::ShaderStage stage, const std::filesystem::path& path) {
-				gfxProgramGrid.addShader(stage, path);
-			}
-	);
+	compiler.compileProgram(gfxProgramGrid, {
+			{ vkcv::ShaderStage::VERTEX, "shaders/grid.vert" },
+			{ vkcv::ShaderStage::FRAGMENT, "shaders/grid.frag" }
+	}, nullptr);
 	
 	vkcv::ShaderProgram gfxProgramParticles;
 	
-	compiler.compile(
-			vkcv::ShaderStage::VERTEX,
-			"shaders/particle.vert",
-			[&gfxProgramParticles](vkcv::ShaderStage stage, const std::filesystem::path& path) {
-				gfxProgramParticles.addShader(stage, path);
-			}
-	);
-	
-	compiler.compile(
-			vkcv::ShaderStage::FRAGMENT,
-			"shaders/particle.frag",
-			[&gfxProgramParticles](vkcv::ShaderStage stage, const std::filesystem::path& path) {
-				gfxProgramParticles.addShader(stage, path);
-			}
-	);
+	compiler.compileProgram(gfxProgramParticles, {
+		{ vkcv::ShaderStage::VERTEX, "shaders/particle.vert" },
+		{ vkcv::ShaderStage::FRAGMENT, "shaders/particle.frag" }
+	}, nullptr);
 	
 	vkcv::ShaderProgram gfxProgramLines;
 	
-	compiler.compile(
-			vkcv::ShaderStage::VERTEX,
-			"shaders/lines.vert",
-			[&gfxProgramLines](vkcv::ShaderStage stage, const std::filesystem::path& path) {
-				gfxProgramLines.addShader(stage, path);
-			}
-	);
-	
-	compiler.compile(
-			vkcv::ShaderStage::FRAGMENT,
-			"shaders/lines.frag",
-			[&gfxProgramLines](vkcv::ShaderStage stage, const std::filesystem::path& path) {
-				gfxProgramLines.addShader(stage, path);
-			}
-	);
+	compiler.compileProgram(gfxProgramLines, {
+			{ vkcv::ShaderStage::VERTEX, "shaders/lines.vert" },
+			{ vkcv::ShaderStage::FRAGMENT, "shaders/lines.frag" }
+	}, nullptr);
 	
 	vkcv::PassConfig passConfigGrid ({
 		vkcv::AttachmentDescription(

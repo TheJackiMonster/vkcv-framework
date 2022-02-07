@@ -47,15 +47,10 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram triangleShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/shader.vert"),
-					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		 triangleShaderProgram.addShader(shaderStage, path);
-	});
-	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/shader.frag"),
-					 [&triangleShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		triangleShaderProgram.addShader(shaderStage, path);
-	});
+	compiler.compileProgram(triangleShaderProgram, {
+		{vkcv::ShaderStage::VERTEX, "shaders/shader.vert"},
+		{ vkcv::ShaderStage::FRAGMENT, "shaders/shader.frag" }
+	}, nullptr);
 	
 	const auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 

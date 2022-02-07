@@ -73,18 +73,12 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram firstMeshProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
-					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		firstMeshProgram.addShader(shaderStage, path);
-	});
-	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
-					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		firstMeshProgram.addShader(shaderStage, path);
-	});
+	compiler.compileProgram(firstMeshProgram, {
+		{ vkcv::ShaderStage::VERTEX, "assets/shaders/shader.vert" },
+		{ vkcv::ShaderStage::FRAGMENT, "assets/shaders/shader.frag" }
+	}, nullptr);
  
 	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
-
 	
 	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
