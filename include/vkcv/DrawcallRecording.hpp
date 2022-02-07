@@ -52,8 +52,6 @@ namespace vkcv {
 
     };
 
-    vk::IndexType getIndexType(IndexBitCount indexByteCount);
-
     struct DrawcallInfo {
         inline DrawcallInfo(const Mesh& mesh, const std::vector<DescriptorSetUsage>& descriptorSets, const uint32_t instanceCount = 1)
             : mesh(mesh), descriptorSets(descriptorSets), instanceCount(instanceCount){}
@@ -62,23 +60,6 @@ namespace vkcv {
         std::vector<DescriptorSetUsage> descriptorSets;
         uint32_t                        instanceCount;
     };
-
-    void recordDrawcall(
-		const Core				&core,
-        const DrawcallInfo      &drawcall,
-        vk::CommandBuffer       cmdBuffer,
-        vk::PipelineLayout      pipelineLayout,
-        const PushConstants     &pushConstants,
-        const size_t            drawcallIndex);
-
-    void recordIndirectDrawcall(
-            const DrawcallInfo                                  &drawcall,
-            vk::CommandBuffer                                   cmdBuffer,
-            const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &drawBuffer,
-            const uint32_t                                      drawCount,
-            vk::PipelineLayout                                  pipelineLayout,
-            const PushConstants                                 &pushConstants,
-            const size_t                                        drawcallIndex);
 
     void InitMeshShaderDrawFunctions(vk::Device device);
 

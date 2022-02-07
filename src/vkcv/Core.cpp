@@ -268,6 +268,56 @@ namespace vkcv
 		cmdBuffer.setViewport(0, 1, &dynamicViewport);
 		cmdBuffer.setScissor(0, 1, &dynamicScissor);
 	}
+	
+	vk::IndexType getIndexType(IndexBitCount indexByteCount){
+		switch (indexByteCount) {
+			case IndexBitCount::Bit16: return vk::IndexType::eUint16;
+			case IndexBitCount::Bit32: return vk::IndexType::eUint32;
+			default:
+			vkcv_log(LogLevel::ERROR, "unknown Enum");
+				return vk::IndexType::eUint16;
+		}
+	}
+	
+	void recordDrawcall(
+			const Core				&core,
+			const DrawcallInfo      &drawcall,
+			vk::CommandBuffer       cmdBuffer,
+			vk::PipelineLayout      pipelineLayout,
+			const PushConstants     &pushConstants,
+			const size_t            drawcallIndex) {
+		
+		for (uint32_t i = 0; i < drawcall.mesh.vertexBufferBindings.size(); i++) {
+			const auto& vertexBinding = drawcall.mesh.vertexBufferBindings[i];
+			cmdBuffer.bindVertexBuffers(i, vertexBinding.buffer, vertexBinding.offset);
+		}
+		
+		for (const auto& descriptorUsage : drawcall.descriptorSets) {
+			cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eGraphics,
+					pipelineLayout,
+					descriptorUsage.setLocation,
+					core.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
+					nullptr);
+		}
+		
+		if (pushConstants.getSizePerDrawcall() > 0) {
+			cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eAll,
+					0,
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getDrawcallData(drawcallIndex));
+		}
+		
+		if (drawcall.mesh.indexBuffer) {
+			cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, getIndexType(drawcall.mesh.indexBitCount));
+			cmdBuffer.drawIndexed(drawcall.mesh.indexCount, drawcall.instanceCount, 0, 0, {});
+		}
+		else {
+			cmdBuffer.draw(drawcall.mesh.indexCount, drawcall.instanceCount, 0, 0, {});
+		}
+	}
 
 	void Core::recordDrawcallsToCmdStream(
 		const CommandStreamHandle&      cmdStreamHandle,
