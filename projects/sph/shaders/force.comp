@@ -80,6 +80,7 @@ void main() {
     particle_data[gl_LocalInvocationIndex].pressure = inParticle[id].pressure;
 
     memoryBarrierShared();
+    barrier();
 
     const float h6 = pow(h, 6);
     externalForce = particle_data[gl_LocalInvocationIndex].density * gravity * vec3(-gravityDir.x,gravityDir.y,gravityDir.z);

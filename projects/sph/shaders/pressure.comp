@@ -63,6 +63,7 @@ void main() {
     position_data[gl_LocalInvocationIndex] = inParticle[id].position;
 
     memoryBarrierShared();
+    barrier();
 
     for(uint j = 1; j < gl_WorkGroupSize.x; j++) {
         uint i = (gl_LocalInvocationIndex + j) % gl_WorkGroupSize.x;
