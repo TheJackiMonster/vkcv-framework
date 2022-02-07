@@ -656,7 +656,7 @@ int main(int argc, const char **argv) {
 	
 	drawcallsGrid.push_back(vkcv::DrawcallInfo(
 			triangleMesh,
-			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(gfxSetGrid).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, gfxSetGrid) },
 			grid.getWidth() * grid.getHeight() * grid.getDepth()
 	));
 	
@@ -664,7 +664,7 @@ int main(int argc, const char **argv) {
 	
 	drawcallsParticles.push_back(vkcv::DrawcallInfo(
 			triangleMesh,
-			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(gfxSetParticles).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, gfxSetParticles) },
 			sim->count
 	));
 	
@@ -742,10 +742,10 @@ int main(int argc, const char **argv) {
 					dispatchSizeParticles,
 					{
 						vkcv::DescriptorSetUsage(
-								0, core.getDescriptorSet(initParticleWeightsSets[0]).vulkanHandle
+								0, initParticleWeightsSets[0]
 						),
 						vkcv::DescriptorSetUsage(
-								1, core.getDescriptorSet(initParticleWeightsSets[1]).vulkanHandle
+								1, initParticleWeightsSets[1]
 						)
 					},
 					vkcv::PushConstants(0)
@@ -764,13 +764,13 @@ int main(int argc, const char **argv) {
 					dispatchSizeGrid,
 					{
 						vkcv::DescriptorSetUsage(
-								0, core.getDescriptorSet(transformParticlesToGridSets[0]).vulkanHandle
+								0, transformParticlesToGridSets[0]
 						),
 						vkcv::DescriptorSetUsage(
-								1, core.getDescriptorSet(transformParticlesToGridSets[1]).vulkanHandle
+								1, transformParticlesToGridSets[1]
 						),
 						vkcv::DescriptorSetUsage(
-								2, core.getDescriptorSet(transformParticlesToGridSets[2]).vulkanHandle
+								2, transformParticlesToGridSets[2]
 						)
 					},
 					physicsPushConstants
@@ -790,13 +790,13 @@ int main(int argc, const char **argv) {
 					dispatchSizeParticles,
 					{
 						vkcv::DescriptorSetUsage(
-								0, core.getDescriptorSet(updateParticleVelocitiesSets[0]).vulkanHandle
+								0, updateParticleVelocitiesSets[0]
 						),
 						vkcv::DescriptorSetUsage(
-								1, core.getDescriptorSet(updateParticleVelocitiesSets[1]).vulkanHandle
+								1, updateParticleVelocitiesSets[1]
 						),
 						vkcv::DescriptorSetUsage(
-								2, core.getDescriptorSet(updateParticleVelocitiesSets[2]).vulkanHandle
+								2, updateParticleVelocitiesSets[2]
 						)
 					},
 					physicsPushConstants

@@ -145,7 +145,7 @@ void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStre
             cmdStream,
             m_DownsamplePipe,
             initialDispatchCount,
-            {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_DownsampleDescSets[0]).vulkanHandle)},
+            {vkcv::DescriptorSetUsage(0, m_DownsampleDescSets[0])},
             vkcv::PushConstants(0));
 
     // downsample dispatches of blur buffer's mip maps
@@ -180,7 +180,7 @@ void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStre
                 cmdStream,
                 m_DownsamplePipe,
                 mipDispatchCount,
-                {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_DownsampleDescSets[mipLevel]).vulkanHandle)},
+                {vkcv::DescriptorSetUsage(0, m_DownsampleDescSets[mipLevel])},
                 vkcv::PushConstants(0));
 
         // image barrier between mips
@@ -229,7 +229,7 @@ void BloomAndFlares::execUpsamplePipe(const vkcv::CommandStreamHandle &cmdStream
                 cmdStream,
                 m_UpsamplePipe,
                 upsampleDispatchCount,
-                {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_UpsampleDescSets[mipLevel]).vulkanHandle)},
+                {vkcv::DescriptorSetUsage(0, m_UpsampleDescSets[mipLevel])},
                 vkcv::PushConstants(0)
         );
         // image barrier between mips
@@ -268,7 +268,7 @@ void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStr
             cmdStream,
             m_LensFlarePipe,
             lensFeatureDispatchCount,
-            {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_LensFlareDescSet).vulkanHandle)},
+            {vkcv::DescriptorSetUsage(0, m_LensFlareDescSet)},
             vkcv::PushConstants(0));
 
     // upsample dispatch
@@ -301,7 +301,7 @@ void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStr
             cmdStream,
             m_UpsamplePipe,
             upsampleDispatchCount,
-            { vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_UpsampleLensFlareDescSets[i]).vulkanHandle) },
+            { vkcv::DescriptorSetUsage(0, m_UpsampleLensFlareDescSets[i]) },
             vkcv::PushConstants(0)
         );
         // image barrier between mips
@@ -348,7 +348,7 @@ void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStrea
         cmdStream,
         m_CompositePipe,
         compositeDispatchCount,
-        {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_CompositeDescSet).vulkanHandle)},
+        {vkcv::DescriptorSetUsage(0, m_CompositeDescSet)},
         pushConstants);
 
     p_Core->recordEndDebugLabel(cmdStream);

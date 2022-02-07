@@ -167,7 +167,7 @@ int main(int argc, const char** argv) {
 
 	const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
 
-	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+	vkcv::DescriptorSetUsage    descriptorUsage(0, descriptorSet);
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage },1);
 
     vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));

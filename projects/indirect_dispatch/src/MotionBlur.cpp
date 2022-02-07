@@ -120,7 +120,7 @@ vkcv::ImageHandle MotionBlur::render(
 		cmdStream,
 		m_tileResetPass.pipeline,
 		dispatchSizeOne,
-		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_tileResetPass.descriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_tileResetPass.descriptorSet) },
 		vkcv::PushConstants(0));
 
 	m_core->recordBufferMemoryBarrier(cmdStream, m_fullPathWorkTileBuffer);
@@ -166,7 +166,7 @@ vkcv::ImageHandle MotionBlur::render(
 		cmdStream,
 		m_tileClassificationPass.pipeline,
 		tileClassificationDispatch.data(),
-		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_tileClassificationPass.descriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_tileClassificationPass.descriptorSet) },
 		classificationPushConstants);
 
 	m_core->recordBufferMemoryBarrier(cmdStream, m_fullPathWorkTileBuffer);
@@ -254,7 +254,7 @@ vkcv::ImageHandle MotionBlur::render(
 			m_motionBlurPass.pipeline,
 			m_fullPathWorkTileBuffer,
 			0,
-			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionBlurPass.descriptorSet).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, m_motionBlurPass.descriptorSet) },
 			motionBlurPushConstants);
 
 		m_core->recordComputeIndirectDispatchToCmdStream(
@@ -262,7 +262,7 @@ vkcv::ImageHandle MotionBlur::render(
 			m_colorCopyPass.pipeline,
 			m_copyPathWorkTileBuffer,
 			0,
-			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_colorCopyPass.descriptorSet).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, m_colorCopyPass.descriptorSet) },
 			vkcv::PushConstants(0));
 
 		m_core->recordComputeIndirectDispatchToCmdStream(
@@ -270,7 +270,7 @@ vkcv::ImageHandle MotionBlur::render(
 			m_motionBlurFastPathPass.pipeline,
 			m_fastPathWorkTileBuffer,
 			0,
-			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionBlurFastPathPass.descriptorSet).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, m_motionBlurFastPathPass.descriptorSet) },
 			fastPathPushConstants);
 	}
 	else if(mode == eMotionBlurMode::Disabled) {
@@ -305,7 +305,7 @@ vkcv::ImageHandle MotionBlur::render(
 			cmdStream,
 			m_tileVisualisationPass.pipeline,
 			dispatchCounts,
-			{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_tileVisualisationPass.descriptorSet).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, m_tileVisualisationPass.descriptorSet) },
 			vkcv::PushConstants(0));
 	}
 	else {
@@ -371,7 +371,7 @@ vkcv::ImageHandle MotionBlur::renderMotionVectorVisualisation(
 		cmdStream,
 		m_motionVectorVisualisationPass.pipeline,
 		dispatchSizes.data(),
-		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionVectorVisualisationPass.descriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_motionVectorVisualisationPass.descriptorSet) },
 		motionVectorVisualisationPushConstants);
 
 	return m_renderTargets.outputColor;
@@ -406,7 +406,7 @@ void MotionBlur::computeMotionTiles(
 		cmdStream,
 		m_motionVectorMinMaxPass.pipeline,
 		motionTileDispatchCounts.data(),
-		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionVectorMinMaxPass.descriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_motionVectorMinMaxPass.descriptorSet) },
 		vkcv::PushConstants(0));
 
 	// motion vector min max neighbourhood
@@ -432,6 +432,6 @@ void MotionBlur::computeMotionTiles(
 		cmdStream,
 		m_motionVectorMinMaxNeighbourhoodPass.pipeline,
 		motionTileDispatchCounts.data(),
-		{ vkcv::DescriptorSetUsage(0, m_core->getDescriptorSet(m_motionVectorMinMaxNeighbourhoodPass.descriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_motionVectorMinMaxNeighbourhoodPass.descriptorSet) },
 		vkcv::PushConstants(0));
 }

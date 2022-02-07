@@ -323,7 +323,7 @@ namespace vkcv
 			}
 
 			for (size_t i = 0; i < drawcalls.size(); i++) {
-				recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
+				recordDrawcall(*this, drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
 			}
 
 			cmdBuffer.endRenderPass();
@@ -490,6 +490,7 @@ namespace vkcv
 			for (size_t i = 0; i < drawcalls.size(); i++) {
                 const uint32_t pushConstantOffset = i * pushConstantData.getSizePerDrawcall();
                 recordMeshShaderDrawcall(
+					*this,
                     cmdBuffer,
                     pipelineLayout,
                     pushConstantData,
@@ -529,7 +530,7 @@ namespace vkcv
 					vk::PipelineBindPoint::eRayTracingKHR,
 					rtxPipelineLayout,
 					usage.setLocation,
-					{ usage.vulkanHandle },
+					{ getDescriptorSet(usage.descriptorSet).vulkanHandle },
 					usage.dynamicOffsets
 				);
 			}
@@ -570,7 +571,7 @@ namespace vkcv
 					vk::PipelineBindPoint::eCompute,
 					pipelineLayout,
 					usage.setLocation,
-					{ usage.vulkanHandle },
+					{ getDescriptorSet(usage.descriptorSet).vulkanHandle },
 					usage.dynamicOffsets
 				);
 			}
@@ -649,7 +650,7 @@ namespace vkcv
 					vk::PipelineBindPoint::eCompute,
 					pipelineLayout,
 					usage.setLocation,
-					{ usage.vulkanHandle },
+					{ getDescriptorSet(usage.descriptorSet).vulkanHandle },
 					usage.dynamicOffsets
 				);
 			}

@@ -527,11 +527,11 @@ int main(int argc, const char** argv) {
 	for (size_t i = 0; i < meshes.size(); i++) {
 
 		drawcalls.push_back(vkcv::DrawcallInfo(meshes[i], { 
-			vkcv::DescriptorSetUsage(0, core.getDescriptorSet(forwardShadingDescriptorSet).vulkanHandle),
-			vkcv::DescriptorSetUsage(1, core.getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) }));
+			vkcv::DescriptorSetUsage(0, forwardShadingDescriptorSet),
+			vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i]) }));
 		prepassDrawcalls.push_back(vkcv::DrawcallInfo(meshes[i], {
-			vkcv::DescriptorSetUsage(0, core.getDescriptorSet(prepassDescriptorSet).vulkanHandle),
-			vkcv::DescriptorSetUsage(1, core.getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) }));
+			vkcv::DescriptorSetUsage(0, prepassDescriptorSet),
+			vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i]) }));
 	}
 
 	vkcv::SamplerHandle voxelSampler = core.createSampler(
@@ -859,7 +859,7 @@ int main(int argc, const char** argv) {
 					cmdStream,
 					resolvePipeline,
 					fulsscreenDispatchCount,
-					{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(resolveDescriptorSet).vulkanHandle) },
+					{ vkcv::DescriptorSetUsage(0, resolveDescriptorSet) },
 					vkcv::PushConstants(0));
 
 				core.recordImageMemoryBarrier(cmdStream, resolvedColorBuffer);
@@ -882,9 +882,7 @@ int main(int argc, const char** argv) {
 			cmdStream, 
 			tonemappingPipeline, 
 			fulsscreenDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(
-					tonemappingDescriptorSet
-			).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, tonemappingDescriptorSet) },
 			vkcv::PushConstants(0)
 		);
 		
@@ -920,9 +918,7 @@ int main(int argc, const char** argv) {
 				cmdStream,
 				postEffectsPipeline,
 				fulsscreenDispatchCount,
-				{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(
-						postEffectsDescriptorSet
-				).vulkanHandle) },
+				{ vkcv::DescriptorSetUsage(0, postEffectsDescriptorSet) },
 				timePushConstants
 		);
 		core.recordEndDebugLabel(cmdStream);

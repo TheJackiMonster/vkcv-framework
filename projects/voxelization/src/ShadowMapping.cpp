@@ -296,7 +296,7 @@ void ShadowMapping::recordShadowMapRendering(
 		cmdStream,
 		m_depthToMomentsPipe,
 		dispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_depthToMomentsDescriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_depthToMomentsDescriptorSet) },
 		msaaPushConstants);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMap.getHandle());
 	m_corePtr->recordEndDebugLabel(cmdStream);
@@ -309,7 +309,7 @@ void ShadowMapping::recordShadowMapRendering(
 		cmdStream,
 		m_shadowBlurXPipe,
 		dispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_shadowBlurXDescriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_shadowBlurXDescriptorSet) },
 		vkcv::PushConstants(0));
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMapIntermediate.getHandle());
 
@@ -319,7 +319,7 @@ void ShadowMapping::recordShadowMapRendering(
 		cmdStream,
 		m_shadowBlurYPipe,
 		dispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_shadowBlurYDescriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_shadowBlurYDescriptorSet) },
 		vkcv::PushConstants(0));
 	m_shadowMap.recordMipChainGeneration(cmdStream);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMap.getHandle());

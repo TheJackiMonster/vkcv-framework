@@ -168,7 +168,7 @@ Voxelization::Voxelization(
 		voxelIndexData.push_back(static_cast<uint16_t>(i));
 	}
 
-	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle);
+	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_visualisationDescriptorSet);
 
 	vkcv::ShaderProgram resetVoxelShader = loadVoxelResetShader();
 
@@ -259,7 +259,7 @@ void Voxelization::voxelizeMeshes(
 		cmdStream,
 		m_voxelResetPipe,
 		resetVoxelDispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_voxelResetDescriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_voxelResetDescriptorSet) },
 		voxelCountPushConstants);
 	m_corePtr->recordBufferMemoryBarrier(cmdStream, m_voxelBuffer.getHandle());
 	m_corePtr->recordEndDebugLabel(cmdStream);
@@ -270,8 +270,8 @@ void Voxelization::voxelizeMeshes(
 		drawcalls.push_back(vkcv::DrawcallInfo(
 			meshes[i],
 			{ 
-				vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_voxelizationDescriptorSet).vulkanHandle),
-				vkcv::DescriptorSetUsage(1, m_corePtr->getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) 
+				vkcv::DescriptorSetUsage(0, m_voxelizationDescriptorSet),
+				vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i])
 			},1));
 	}
 
@@ -299,7 +299,7 @@ void Voxelization::voxelizeMeshes(
 		cmdStream,
 		m_bufferToImagePipe,
 		bufferToImageDispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_bufferToImageDescriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_bufferToImageDescriptorSet) },
 		vkcv::PushConstants(0));
 
 	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImageIntermediate.getHandle());
@@ -318,7 +318,7 @@ void Voxelization::voxelizeMeshes(
 		cmdStream,
 		m_secondaryBouncePipe,
 		bufferToImageDispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_secondaryBounceDescriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_secondaryBounceDescriptorSet) },
 		vkcv::PushConstants(0));
 	m_voxelImage.recordMipChainGeneration(cmdStream);
 	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImage.getHandle());
@@ -355,7 +355,7 @@ void Voxelization::renderVoxelVisualisation(
 
 	const auto drawcall = vkcv::DrawcallInfo(
 		vkcv::Mesh({}, nullptr, drawVoxelCount),
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle) },1);
+		{ vkcv::DescriptorSetUsage(0, m_visualisationDescriptorSet) },1);
 
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel visualisation", { 1, 1, 1, 1 });
 	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImage.getHandle());

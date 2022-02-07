@@ -1,5 +1,7 @@
-#include <vkcv/DrawcallRecording.hpp>
-#include <vkcv/Logger.hpp>
+
+#include "vkcv/DrawcallRecording.hpp"
+#include "vkcv/Logger.hpp"
+#include "vkcv/Core.hpp"
 
 namespace vkcv {
 
@@ -14,6 +16,7 @@ namespace vkcv {
     }
 
     void recordDrawcall(
+		const Core				&core,
         const DrawcallInfo      &drawcall,
         vk::CommandBuffer       cmdBuffer,
         vk::PipelineLayout      pipelineLayout,
@@ -30,7 +33,7 @@ namespace vkcv {
                 vk::PipelineBindPoint::eGraphics,
                 pipelineLayout,
                 descriptorUsage.setLocation,
-                descriptorUsage.vulkanHandle,
+                core.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
                 nullptr);
         }
 
@@ -78,6 +81,7 @@ namespace vkcv {
     }
 
     void recordMeshShaderDrawcall(
+		const Core&								core,
         vk::CommandBuffer                       cmdBuffer,
         vk::PipelineLayout                      pipelineLayout,
         const PushConstants&                    pushConstantData,
@@ -90,7 +94,7 @@ namespace vkcv {
                 vk::PipelineBindPoint::eGraphics,
                 pipelineLayout,
                 descriptorUsage.setLocation,
-                descriptorUsage.vulkanHandle,
+				core.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
                 nullptr);
         }
 

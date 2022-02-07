@@ -70,11 +70,10 @@ namespace vkcv::scene {
 		
 		if (*this) {
 			const auto& material = getMaterial();
-			const auto& descriptorSet = core.getDescriptorSet(material.getDescriptorSet());
 			
 			drawcalls.push_back(DrawcallInfo(
 					vkcv::Mesh(m_vertexBindings, indexBuffer.getVulkanHandle(), m_indexCount),
-					{ DescriptorSetUsage(0, descriptorSet.vulkanHandle) }
+					{ DescriptorSetUsage(0, material.getDescriptorSet()) }
 			));
 		}
 	}

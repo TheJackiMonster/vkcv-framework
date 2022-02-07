@@ -204,7 +204,7 @@ int main(int argc, const char **argv) {
 
     const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(),
                                 particleIndexBuffer.getCount());
-    vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+    vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
 
     auto pos = glm::vec2(0.f);
 
@@ -329,7 +329,7 @@ int main(int argc, const char **argv) {
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline1,
                                               computeDispatchCount,
-                                              {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet1).vulkanHandle)},
+                                              {vkcv::DescriptorSetUsage(0, computeDescriptorSet1)},
 											  pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
@@ -338,7 +338,7 @@ int main(int argc, const char **argv) {
 		core.recordComputeDispatchToCmdStream(cmdStream,
 											  computePipeline2,
 											  computeDispatchCount,
-											  {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet2).vulkanHandle)},
+											  {vkcv::DescriptorSetUsage(0, computeDescriptorSet2)},
 											  pushConstantsCompute);
 
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
@@ -347,7 +347,7 @@ int main(int argc, const char **argv) {
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline3,
                                               computeDispatchCount,
-                                              { vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet3).vulkanHandle) },
+                                              { vkcv::DescriptorSetUsage(0, computeDescriptorSet3) },
                                               pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
@@ -356,7 +356,7 @@ int main(int argc, const char **argv) {
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline4,
                                               computeDispatchCount,
-                                              { vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet4).vulkanHandle) },
+                                              { vkcv::DescriptorSetUsage(0, computeDescriptorSet4) },
                                               pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
@@ -397,7 +397,7 @@ int main(int argc, const char **argv) {
             cmdStream, 
             tonemappingPipe, 
             tonemappingDispatchCount, 
-            {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptor).vulkanHandle) },
+            {vkcv::DescriptorSetUsage(0, tonemappingDescriptor) },
             vkcv::PushConstants(0));
 
         core.prepareSwapchainImageForPresent(cmdStream);

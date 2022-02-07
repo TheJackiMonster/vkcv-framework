@@ -180,7 +180,7 @@ int main(int argc, const char **argv) {
 
     const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(),
                                 particleIndexBuffer.getCount());
-    vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+    vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
 
     auto pos = glm::vec2(0.f);
     auto spawnPosition = glm::vec3(0.f);
@@ -283,7 +283,7 @@ int main(int argc, const char **argv) {
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline,
                                               computeDispatchCount,
-                                              {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet).vulkanHandle)},
+                                              {vkcv::DescriptorSetUsage(0, computeDescriptorSet)},
 											  pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer.getHandle());
@@ -321,7 +321,7 @@ int main(int argc, const char **argv) {
             cmdStream, 
             tonemappingPipe, 
             tonemappingDispatchCount, 
-            {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptor).vulkanHandle) },
+            {vkcv::DescriptorSetUsage(0, tonemappingDescriptor) },
             vkcv::PushConstants(0));
 
         core.prepareSwapchainImageForPresent(cmdStream);
