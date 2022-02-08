@@ -53,20 +53,20 @@ void main() {
     
     uint id = gl_GlobalInvocationID.x;
 
-    if(id >= int(particleCount))
-    {
-        return;
+    if (id >= int(particleCount)) {
+        position_data[gl_LocalInvocationIndex] = vec3(0.0f);
+    } else {
+        position_data[gl_LocalInvocationIndex] = inParticle[id].position;
     }
 
     uint index_offset = gl_WorkGroupID.x * gl_WorkGroupSize.x;
-
-    position_data[gl_LocalInvocationIndex] = inParticle[id].position;
+    uint group_size = min(index_offset + gl_WorkGroupSize.x, int(particleCount)) - index_offset;
 
     memoryBarrierShared();
     barrier();
 
-    for(uint j = 1; j < gl_WorkGroupSize.x; j++) {
-        uint i = (gl_LocalInvocationIndex + j) % gl_WorkGroupSize.x;
+    for(uint j = 1; j < group_size; j++) {
+        uint i = (gl_LocalInvocationIndex + j) % group_size;
 
         float dist = distance(position_data[gl_LocalInvocationIndex], position_data[i]);
         densitySum += mass * poly6(dist);
@@ -78,15 +78,17 @@ void main() {
         densitySum += mass * poly6(dist);
     }
 
-    for(uint i = index_offset + gl_WorkGroupSize.x; i < int(particleCount); i++)
+    for(uint i = index_offset + group_size; i < int(particleCount); i++)
     {
         float dist = distance(position_data[gl_LocalInvocationIndex], inParticle[i].position);
         densitySum += mass * poly6(dist);
     }
 
-    outParticle[id].density = max(densitySum,0.0000001f);
-    outParticle[id].pressure = max((densitySum - offset), 0.0000001f) * gasConstant;
-    outParticle[id].position = position_data[gl_LocalInvocationIndex];
-    outParticle[id].velocity = inParticle[id].velocity;
-    outParticle[id].force = inParticle[id].force;
+    if (id < int(particleCount)) {
+        outParticle[id].density = max(densitySum, 0.0000001f);
+        outParticle[id].pressure = max((densitySum - offset), 0.0000001f) * gasConstant;
+        outParticle[id].position = position_data[gl_LocalInvocationIndex];
+        outParticle[id].velocity = inParticle[id].velocity;
+        outParticle[id].force = inParticle[id].force;
+    }
 }

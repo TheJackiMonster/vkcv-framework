@@ -67,17 +67,20 @@ shared ParticleData particle_data [256];
 void main() {
     uint id = gl_GlobalInvocationID.x;
 
-    if(id >= int(particleCount))
-    {
-        return;
+    if (id >= int(particleCount)) {
+        particle_data[gl_LocalInvocationIndex].position = vec3(0.0f);
+        particle_data[gl_LocalInvocationIndex].density  = 0.0f;
+        particle_data[gl_LocalInvocationIndex].velocity = vec3(0.0f);
+        particle_data[gl_LocalInvocationIndex].pressure = 0.0f;
+    } else {
+        particle_data[gl_LocalInvocationIndex].position = inParticle[id].position;
+        particle_data[gl_LocalInvocationIndex].density  = inParticle[id].density;
+        particle_data[gl_LocalInvocationIndex].velocity = inParticle[id].velocity;
+        particle_data[gl_LocalInvocationIndex].pressure = inParticle[id].pressure;
     }
 
     uint index_offset = gl_WorkGroupID.x * gl_WorkGroupSize.x;
-
-    particle_data[gl_LocalInvocationIndex].position = inParticle[id].position;
-    particle_data[gl_LocalInvocationIndex].density  = inParticle[id].density;
-    particle_data[gl_LocalInvocationIndex].velocity = inParticle[id].velocity;
-    particle_data[gl_LocalInvocationIndex].pressure = inParticle[id].pressure;
+    uint group_size = min(index_offset + gl_WorkGroupSize.x, int(particleCount)) - index_offset;
 
     memoryBarrierShared();
     barrier();
@@ -85,8 +88,8 @@ void main() {
     const float h6 = pow(h, 6);
     externalForce = particle_data[gl_LocalInvocationIndex].density * gravity * vec3(-gravityDir.x,gravityDir.y,gravityDir.z);
 
-    for(uint j = 1; j < gl_WorkGroupSize.x; j++) {
-        uint i = (gl_LocalInvocationIndex + j) % gl_WorkGroupSize.x;
+    for(uint j = 1; j < group_size; j++) {
+        uint i = (gl_LocalInvocationIndex + j) % group_size;
 
         vec3 dir = particle_data[gl_LocalInvocationIndex].position - particle_data[i].position;
         float dist = length(dir);
@@ -120,7 +123,7 @@ void main() {
         }
     }
 
-    for(uint i = index_offset + gl_WorkGroupSize.x; i < int(particleCount); i++)
+    for(uint i = index_offset + group_size; i < int(particleCount); i++)
     {
         vec3 dir = particle_data[gl_LocalInvocationIndex].position - inParticle[i].position;
         float dist = length(dir);
@@ -139,9 +142,11 @@ void main() {
 
     viscosityForce *= viscosity;
 
-    outParticle[id].force = externalForce + pressureForce + viscosityForce;
-    outParticle[id].density = particle_data[gl_LocalInvocationIndex].density;
-    outParticle[id].pressure = particle_data[gl_LocalInvocationIndex].pressure;
-    outParticle[id].position = particle_data[gl_LocalInvocationIndex].position;
-    outParticle[id].velocity = particle_data[gl_LocalInvocationIndex].velocity;
+    if (id < int(particleCount)) {
+        outParticle[id].force = externalForce + pressureForce + viscosityForce;
+        outParticle[id].density = particle_data[gl_LocalInvocationIndex].density;
+        outParticle[id].pressure = particle_data[gl_LocalInvocationIndex].pressure;
+        outParticle[id].position = particle_data[gl_LocalInvocationIndex].position;
+        outParticle[id].velocity = particle_data[gl_LocalInvocationIndex].velocity;
+    }
 }
