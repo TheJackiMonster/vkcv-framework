@@ -345,7 +345,7 @@ namespace vkcv {
 		recordImageBarrier(cmdBuffer, transitionBarrier);
 	}
 	
-	constexpr uint32_t getChannelsByFormat(vk::Format format) {
+	constexpr uint32_t getBytesPerPixel(vk::Format format) {
 		switch (format) {
 			case vk::Format::eR8Unorm:
 				return 1;
@@ -353,6 +353,10 @@ namespace vkcv {
 				return 4;
 			case vk::Format::eR8G8B8A8Unorm:
 				return 4;
+			case vk::Format::eR16G16B16A16Sfloat:
+				return 8;
+			case vk::Format::eR32G32B32A32Sfloat:
+				return 16;
 			default:
 				std::cerr << "Unknown image format" << std::endl;
 				return 4;
@@ -379,15 +383,15 @@ namespace vkcv {
 				handle,
 				vk::ImageLayout::eTransferDstOptimal);
 		
-		uint32_t channels = getChannelsByFormat(image.m_format);
 		const size_t image_size = (
-				image.m_width * image.m_height * image.m_depth * channels
+				image.m_width * image.m_height * image.m_depth *
+				getBytesPerPixel(image.m_format)
 		);
 		
 		const size_t max_size = std::min(size, image_size);
 		
 		BufferHandle bufferHandle = m_bufferManager.createBuffer(
-				BufferType::STAGING, max_size, BufferMemoryType::HOST_VISIBLE, false
+				BufferType::STAGING, max_size, BufferMemoryType::DEVICE_LOCAL, false
 		);
 		
 		m_bufferManager.fillBuffer(bufferHandle, data, max_size, 0);

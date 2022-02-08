@@ -18,11 +18,13 @@ namespace vkcv {
 												SamplerFilterType minFilter,
 												SamplerMipmapMode mipmapMode,
 												SamplerAddressMode addressMode,
-												float mipLodBias) {
+												float mipLodBias,
+												SamplerBorderColor borderColor) {
 		vk::Filter vkMagFilter;
 		vk::Filter vkMinFilter;
 		vk::SamplerMipmapMode vkMipmapMode;
 		vk::SamplerAddressMode vkAddressMode;
+		vk::BorderColor vkBorderColor;
 		
 		switch (magFilter) {
 			case SamplerFilterType::NEAREST:
@@ -70,6 +72,32 @@ namespace vkcv {
 			case SamplerAddressMode::MIRROR_CLAMP_TO_EDGE:
 				vkAddressMode = vk::SamplerAddressMode::eMirrorClampToEdge;
 				break;
+			case SamplerAddressMode::CLAMP_TO_BORDER:
+				vkAddressMode = vk::SamplerAddressMode::eClampToBorder;
+				break;
+			default:
+				return SamplerHandle();
+		}
+		
+		switch (borderColor) {
+			case SamplerBorderColor::INT_ZERO_OPAQUE:
+				vkBorderColor = vk::BorderColor::eIntOpaqueBlack;
+				break;
+			case SamplerBorderColor::INT_ZERO_TRANSPARENT:
+				vkBorderColor = vk::BorderColor::eIntTransparentBlack;
+				break;
+			case SamplerBorderColor::FLOAT_ZERO_OPAQUE:
+				vkBorderColor = vk::BorderColor::eFloatOpaqueBlack;
+				break;
+			case SamplerBorderColor::FLOAT_ZERO_TRANSPARENT:
+				vkBorderColor = vk::BorderColor::eFloatTransparentBlack;
+				break;
+			case SamplerBorderColor::INT_ONE_OPAQUE:
+				vkBorderColor = vk::BorderColor::eIntOpaqueWhite;
+				break;
+			case SamplerBorderColor::FLOAT_ONE_OPAQUE:
+				vkBorderColor = vk::BorderColor::eFloatOpaqueWhite;
+				break;
 			default:
 				return SamplerHandle();
 		}
@@ -89,7 +117,7 @@ namespace vkcv {
 				vk::CompareOp::eAlways,
 				-1000.0f,
 				1000.0f,
-				vk::BorderColor::eIntOpaqueBlack,
+				vkBorderColor,
 				false
 		);
 		

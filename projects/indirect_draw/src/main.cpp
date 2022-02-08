@@ -536,7 +536,7 @@ int main(int argc, const char** argv) {
     const uint32_t dispatchCount[3] = {static_cast<uint32_t>(ceiledDispatchCount), 1, 1};
 
 
-    vkcv::DescriptorSetUsage cullingUsage(0, core.getDescriptorSet(cullingDescSet).vulkanHandle, {});
+    vkcv::DescriptorSetUsage cullingUsage(0, cullingDescSet, {});
     vkcv::PushConstants emptyPushConstant(0);
 
     bool updateFrustumPlanes    = true;

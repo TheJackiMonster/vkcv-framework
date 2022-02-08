@@ -11,7 +11,7 @@ namespace vkcv
 	store_operation{store_op},
 	load_operation{load_op},
 	format(format)
-    {};
+    {}
 
     PassConfig::PassConfig(std::vector<AttachmentDescription> attachments, Multisampling msaa) noexcept :
     attachments{std::move(attachments) }, msaa(msaa)

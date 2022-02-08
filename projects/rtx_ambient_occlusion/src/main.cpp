@@ -148,7 +148,7 @@ int main(int argc, const char** argv) {
 			rtxRegions.rmissRegion,
 			rtxRegions.rchitRegion,
 			rtxRegions.rcallRegion,
-			{	vkcv::DescriptorSetUsage(0, core.getDescriptorSet(rtxShaderDescriptorSet).vulkanHandle)},
+			{	vkcv::DescriptorSetUsage(0, rtxShaderDescriptorSet)},
 			pushConstantsRTX,
 			windowHandle);
 

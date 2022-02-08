@@ -344,9 +344,7 @@ namespace vkcv::upscaling {
 					cmdStream,
 					m_easuPipeline,
 					dispatch,
-					{DescriptorSetUsage(0, m_core.getDescriptorSet(
-							m_easuDescriptorSet
-					).vulkanHandle, { 0 })},
+					{DescriptorSetUsage(0, m_easuDescriptorSet, { 0 })},
 					PushConstants(0)
 			);
 			
@@ -366,9 +364,7 @@ namespace vkcv::upscaling {
 					cmdStream,
 					m_rcasPipeline,
 					dispatch,
-					{DescriptorSetUsage(0, m_core.getDescriptorSet(
-							m_rcasDescriptorSet
-					).vulkanHandle, { 0 })},
+					{DescriptorSetUsage(0,m_rcasDescriptorSet, { 0 })},
 					PushConstants(0)
 			);
 			
@@ -386,9 +382,7 @@ namespace vkcv::upscaling {
 					cmdStream,
 					m_easuPipeline,
 					dispatch,
-					{DescriptorSetUsage(0, m_core.getDescriptorSet(
-							m_easuDescriptorSet
-					).vulkanHandle, { 0 })},
+					{DescriptorSetUsage(0, m_easuDescriptorSet, { 0 })},
 					PushConstants(0)
 			);
 		}

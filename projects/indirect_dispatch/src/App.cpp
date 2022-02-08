@@ -261,7 +261,7 @@ void App::run() {
 		for (const Object& obj : sceneObjects) {
 			forwardSceneDrawcalls.push_back(vkcv::DrawcallInfo(
 				obj.meshResources.mesh, 
-				{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_meshPass.descriptorSet).vulkanHandle) }));
+				{ vkcv::DescriptorSetUsage(0, m_meshPass.descriptorSet) }));
 		}
 
 		m_core.recordDrawcallsToCmdStream(
@@ -338,7 +338,7 @@ void App::run() {
 			cmdStream,
 			m_gammaCorrectionPass.pipeline,
 			fullScreenImageDispatch,
-			{ vkcv::DescriptorSetUsage(0, m_core.getDescriptorSet(m_gammaCorrectionPass.descriptorSet).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, m_gammaCorrectionPass.descriptorSet) },
 			vkcv::PushConstants(0));
 
 		m_core.prepareSwapchainImageForPresent(cmdStream);

@@ -354,7 +354,7 @@ int main(int argc, const char** argv) {
 
 		if (useMeshShader) {
 
-			vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(meshShaderDescriptorSet).vulkanHandle);
+			vkcv::DescriptorSetUsage descriptorUsage(0, meshShaderDescriptorSet);
 			const uint32_t taskCount = (meshShaderModelData.meshlets.size() + 31) / 32;
 
 			core.recordMeshShaderDrawcalls(
@@ -368,7 +368,7 @@ int main(int argc, const char** argv) {
 		}
 		else {
 
-			vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(vertexShaderDescriptorSet).vulkanHandle);
+			vkcv::DescriptorSetUsage descriptorUsage(0, vertexShaderDescriptorSet);
 
 			core.recordDrawcallsToCmdStream(
 				cmdStream,

@@ -1,11 +1,12 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
-#include <vkcv/Handles.hpp>
-#include <vkcv/DescriptorConfig.hpp>
-#include <vkcv/PushConstants.hpp>
+#include "vkcv/Handles.hpp"
+#include "vkcv/DescriptorConfig.hpp"
+#include "vkcv/PushConstants.hpp"
 #include "Buffer.hpp"
 
 namespace vkcv {
+	
     struct VertexBufferBinding {
         inline VertexBufferBinding(vk::DeviceSize offset, vk::Buffer buffer) noexcept
             : offset(offset), buffer(buffer) {}
@@ -20,12 +21,12 @@ namespace vkcv {
     };
 
     struct DescriptorSetUsage {
-        inline DescriptorSetUsage(uint32_t setLocation, vk::DescriptorSet vulkanHandle,
+        inline DescriptorSetUsage(uint32_t setLocation, DescriptorSetHandle descriptorSet,
 								  const std::vector<uint32_t>& dynamicOffsets = {}) noexcept
-            : setLocation(setLocation), vulkanHandle(vulkanHandle), dynamicOffsets(dynamicOffsets) {}
+            : setLocation(setLocation), descriptorSet(descriptorSet), dynamicOffsets(dynamicOffsets) {}
 
         const uint32_t          	setLocation;
-        const vk::DescriptorSet 	vulkanHandle;
+        const DescriptorSetHandle 	descriptorSet;
         const std::vector<uint32_t> dynamicOffsets;
     };
 
@@ -51,8 +52,6 @@ namespace vkcv {
 
     };
 
-    vk::IndexType getIndexType(IndexBitCount indexByteCount);
-
     struct DrawcallInfo {
         inline DrawcallInfo(const Mesh& mesh, const std::vector<DescriptorSetUsage>& descriptorSets, const uint32_t instanceCount = 1)
             : mesh(mesh), descriptorSets(descriptorSets), instanceCount(instanceCount){}
@@ -61,22 +60,6 @@ namespace vkcv {
         std::vector<DescriptorSetUsage> descriptorSets;
         uint32_t                        instanceCount;
     };
-
-    void recordDrawcall(
-        const DrawcallInfo      &drawcall,
-        vk::CommandBuffer       cmdBuffer,
-        vk::PipelineLayout      pipelineLayout,
-        const PushConstants     &pushConstants,
-        const size_t            drawcallIndex);
-
-    void recordIndirectDrawcall(
-            const DrawcallInfo                                  &drawcall,
-            vk::CommandBuffer                                   cmdBuffer,
-            const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &drawBuffer,
-            const uint32_t                                      drawCount,
-            vk::PipelineLayout                                  pipelineLayout,
-            const PushConstants                                 &pushConstants,
-            const size_t                                        drawcallIndex);
 
     void InitMeshShaderDrawFunctions(vk::Device device);
 
@@ -89,9 +72,10 @@ namespace vkcv {
     };
 
     void recordMeshShaderDrawcall(
+		const Core&								core,
         vk::CommandBuffer                       cmdBuffer,
         vk::PipelineLayout                      pipelineLayout,
-        const PushConstants&                 pushConstantData,
+        const PushConstants&                 	pushConstantData,
         const uint32_t                          pushConstantOffset,
         const MeshShaderDrawcall&               drawcall,
         const uint32_t                          firstTask);
