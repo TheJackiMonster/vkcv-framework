@@ -33,8 +33,13 @@ if (CMAKE_BUILD_TYPE)
 	set(vkcv_build_${_vkcv_build_type} 1)
 endif()
 
+if (EXISTS "/usr/bin/mold")
+	set(CMAKE_LINKER "/usr/bin/mold")
+endif()
+
 message(STATUS "Language: [ C++ " ${CMAKE_CXX_STANDARD} " ]")
 message(STATUS "Compiler: [ " ${CMAKE_CXX_COMPILER_ID} " " ${CMAKE_CXX_COMPILER_VERSION} " ]")
+message(STATUS "Linker: [ " ${CMAKE_LINKER} " ]")
 
 if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0.0"))
 	message(FATAL_ERROR "Upgrade your compiler! GCC 9.0+ is required!")
