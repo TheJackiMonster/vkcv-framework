@@ -13,6 +13,7 @@
 #include "vkcv/Handles.hpp"
 #include "vkcv/GraphicsPipelineConfig.hpp"
 #include "PassManager.hpp"
+#include "DescriptorManager.hpp"
 
 namespace vkcv
 {
@@ -36,9 +37,12 @@ namespace vkcv
          * On application level it is necessary first to fill a PipelineConfig Struct.
          * @param config Hands over all needed information for pipeline creation.
          * @param passManager Hands over the corresponding render pass.
+         * @param descriptorManager Hands over the corresponding descriptor set layouts
          * @return A Handler to the created Graphics Pipeline Object.
          */
-		GraphicsPipelineHandle createPipeline(const GraphicsPipelineConfig &config, PassManager& passManager);
+		GraphicsPipelineHandle createPipeline(const GraphicsPipelineConfig &config,
+											  const PassManager& passManager,
+											  const DescriptorManager& descriptorManager);
 
         /**
          * Returns a vk::Pipeline object by handle.

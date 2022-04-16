@@ -6,6 +6,7 @@
 
 #include <vkcv/Event.hpp>
 #include <vkcv/ShaderStage.hpp>
+#include <vkcv/ShaderProgram.hpp>
 
 namespace vkcv::shader {
 
@@ -19,8 +20,13 @@ namespace vkcv::shader {
      * An event function type to be called on compilation completion.
      */
 	typedef typename event_function<ShaderStage, const std::filesystem::path&>::type ShaderCompiledFunction;
-
-    /**
+	
+	/**
+     * An event function type to be called on program compilation completion.
+     */
+	typedef typename event_function<ShaderProgram&>::type ShaderProgramCompiledFunction;
+	
+	/**
      * An abstract class to handle runtime shader compilation.
      */
 	class Compiler {
@@ -58,8 +64,23 @@ namespace vkcv::shader {
 		virtual void compile(ShaderStage shaderStage, const std::filesystem::path& shaderPath,
 							 const ShaderCompiledFunction& compiled,
 							 const std::filesystem::path& includePath, bool update) = 0;
-
-        /**
+		
+		/**
+         * Compile a shader program from a specific map of given file paths for
+         * target pipeline stages with a custom shader include path and an event
+         * function called if the compilation completes.
+         * @param[in,out] program Shader program
+         * @param[in] stages Shader pipeline stages
+         * @param[in] compiled Shader program compilation event
+         * @param[in] includePath Include path for shaders
+         * @param[in] update Flag to update shaders during runtime
+         */
+		void compileProgram(ShaderProgram& program,
+							const std::unordered_map<ShaderStage, const std::filesystem::path>& stages,
+							const ShaderProgramCompiledFunction& compiled,
+							const std::filesystem::path& includePath = "", bool update = false);
+		
+		/**
          * Return the definition value of a macro for shader compilation.
          * @param[in] name Macro definition name
          * @return Macro definition value

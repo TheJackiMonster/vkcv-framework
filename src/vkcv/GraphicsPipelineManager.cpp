@@ -51,6 +51,8 @@ namespace vkcv
                 return vk::PrimitiveTopology::eLineList;
             case(PrimitiveTopology::TriangleList):
                 return vk::PrimitiveTopology::eTriangleList;
+			case(PrimitiveTopology::PatchList):
+				return vk::PrimitiveTopology::ePatchList;
             default:
             vkcv_log(LogLevel::ERROR, "Unknown primitive topology type");
                 return vk::PrimitiveTopology::eTriangleList;
@@ -193,6 +195,15 @@ namespace vkcv
 		);
 		
 		return pipelineInputAssemblyStateCreateInfo;
+	}
+	
+	vk::PipelineTessellationStateCreateInfo createPipelineTessellationStateCreateInfo(const GraphicsPipelineConfig &config) {
+		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo(
+				{},
+				config.m_tessellationControlPoints
+		);
+		
+		return pipelineTessellationStateCreateInfo;
 	}
 	
 	/**
@@ -350,7 +361,8 @@ namespace vkcv
 	 * @param config sets Push Constant Size and Descriptor Layouts.
 	 * @return Pipeline Layout Create Info Struct
 	 */
-	vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(const GraphicsPipelineConfig &config) {
+	vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(const GraphicsPipelineConfig &config,
+																const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) {
 		static vk::PushConstantRange pushConstantRange;
 		
 		const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
@@ -360,7 +372,7 @@ namespace vkcv
 		
 		vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
 				{},
-				(config.m_DescriptorLayouts),
+				(descriptorSetLayouts),
 				(pushConstantRange)
 		);
 		
@@ -416,7 +428,9 @@ namespace vkcv
 		return dynamicStateCreateInfo;
 	}
 
-    GraphicsPipelineHandle GraphicsPipelineManager::createPipeline(const GraphicsPipelineConfig &config, PassManager& passManager) {
+    GraphicsPipelineHandle GraphicsPipelineManager::createPipeline(const GraphicsPipelineConfig &config,
+																   const PassManager& passManager,
+																   const DescriptorManager& descriptorManager) {
         const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
 
         const bool existsTaskShader     = config.m_ShaderProgram.existsShader(ShaderStage::TASK);
@@ -424,7 +438,13 @@ namespace vkcv
         const bool existsVertexShader   = config.m_ShaderProgram.existsShader(ShaderStage::VERTEX);
         const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
         const bool existsGeometryShader = config.m_ShaderProgram.existsShader(ShaderStage::GEOMETRY);
-        const bool validGeometryStages  = existsVertexShader || (existsTaskShader && existsMeshShader);
+		const bool existsTessellationControlShader = config.m_ShaderProgram.existsShader(ShaderStage::TESS_CONTROL);
+		const bool existsTessellationEvaluationShader = config.m_ShaderProgram.existsShader(ShaderStage::TESS_EVAL);
+		
+        const bool validGeometryStages  = (
+				(existsVertexShader && (existsTessellationControlShader == existsTessellationEvaluationShader)) ||
+				(existsTaskShader && existsMeshShader)
+		);
 
         if (!validGeometryStages)
         {
@@ -529,6 +549,40 @@ namespace vkcv
                 return GraphicsPipelineHandle();
             }
         }
+	
+		if (existsTessellationControlShader) {
+			vk::PipelineShaderStageCreateInfo createInfo;
+			const bool success = createPipelineShaderStageCreateInfo(
+					config.m_ShaderProgram,
+					ShaderStage::TESS_CONTROL,
+					m_Device,
+					&createInfo);
+		
+			if (success) {
+				shaderStages.push_back(createInfo);
+			}
+			else {
+				destroyShaderModules();
+				return GraphicsPipelineHandle();
+			}
+		}
+	
+		if (existsTessellationEvaluationShader) {
+			vk::PipelineShaderStageCreateInfo createInfo;
+			const bool success = createPipelineShaderStageCreateInfo(
+					config.m_ShaderProgram,
+					ShaderStage::TESS_EVAL,
+					m_Device,
+					&createInfo);
+		
+			if (success) {
+				shaderStages.push_back(createInfo);
+			}
+			else {
+				destroyShaderModules();
+				return GraphicsPipelineHandle();
+			}
+		}
 
         // vertex input state
         // Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
@@ -545,6 +599,10 @@ namespace vkcv
         vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo =
                 createPipelineInputAssemblyStateCreateInfo(config);
 
+		// tesselation state
+		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo =
+				createPipelineTessellationStateCreateInfo(config);
+		
         // viewport state
         vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo =
                 createPipelineViewportStateCreateInfo(config);
@@ -570,9 +628,15 @@ namespace vkcv
         vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo =
                 createPipelineDynamicStateCreateInfo(config);
 
+		std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+		descriptorSetLayouts.reserve(config.m_DescriptorLayouts.size());
+		for (const auto& handle : config.m_DescriptorLayouts) {
+			descriptorSetLayouts.push_back(descriptorManager.getDescriptorSetLayout(handle).vulkanHandle);
+		}
+		
         // pipeline layout
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-                createPipelineLayoutCreateInfo(config);
+                createPipelineLayoutCreateInfo(config, descriptorSetLayouts);
 
         vk::PipelineLayout vkPipelineLayout{};
         if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess) {
@@ -601,7 +665,7 @@ namespace vkcv
                 shaderStages.data(),
                 &pipelineVertexInputStateCreateInfo,
                 &pipelineInputAssemblyStateCreateInfo,
-                nullptr,
+                &pipelineTessellationStateCreateInfo,
                 &pipelineViewportStateCreateInfo,
                 &pipelineRasterizationStateCreateInfo,
                 &pipelineMultisampleStateCreateInfo,

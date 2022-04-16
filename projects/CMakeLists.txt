@@ -1,4 +1,6 @@
 
+include(${vkcv_config_ext}/ProjectFix.cmake)
+
 # Add new projects/examples here:
 add_subdirectory(first_triangle)
 add_subdirectory(first_mesh)
@@ -13,3 +15,4 @@ add_subdirectory(bindless_textures)
 add_subdirectory(saf_r)
 add_subdirectory(indirect_dispatch)
 add_subdirectory(path_tracer)
+add_subdirectory(wobble_bobble)

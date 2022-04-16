@@ -323,7 +323,9 @@ namespace vkcv::rtx {
         bufferInstances.bufferType = RTXBufferType::GPU;
         bufferInstances.deviceSize = sizeof(accelerationStructureInstanceKhr);
         bufferInstances.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddress
-            | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eTransferSrc;
+            | vk::BufferUsageFlagBits::eTransferDst
+			| vk::BufferUsageFlagBits::eTransferSrc
+			| vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
         bufferInstances.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eDeviceLocal;
 
         createBuffer(bufferInstances);

@@ -122,12 +122,12 @@ bool loadGraphicPass(
 
 	const auto descriptorBindings = shaderProgram.getReflectedDescriptors();
 	const bool hasDescriptor = descriptorBindings.size() > 0;
-	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts = {};
+	std::vector<vkcv::DescriptorSetLayoutHandle> descriptorSetLayouts = {};
 	if (hasDescriptor)
 	{
 	    outPassHandles->descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings.at(0));
 	    outPassHandles->descriptorSet = core.createDescriptorSet(outPassHandles->descriptorSetLayout);
-	    descriptorSetLayouts.push_back(core.getDescriptorSetLayout(outPassHandles->descriptorSetLayout).vulkanHandle);
+	    descriptorSetLayouts.push_back(outPassHandles->descriptorSetLayout);
 	}
 
 
@@ -138,7 +138,8 @@ bool loadGraphicPass(
 		outPassHandles->renderPass,
 		{ vertexLayout },
 		descriptorSetLayouts,
-		true };
+		true
+	};
 	pipelineConfig.m_depthTest  = depthTest;
 	outPassHandles->pipeline    = core.createGraphicsPipeline(pipelineConfig);
 
@@ -260,7 +261,7 @@ bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, Comput
 	outComputePass->descriptorSet = core.createDescriptorSet(outComputePass->descriptorSetLayout);
 	outComputePass->pipeline = core.createComputePipeline({
 		shaderProgram,
-		{ core.getDescriptorSetLayout(outComputePass->descriptorSetLayout).vulkanHandle }});
+		{ outComputePass->descriptorSetLayout }});
 
 	if (!outComputePass->pipeline) {
 		vkcv_log(vkcv::LogLevel::ERROR, "Compute shader pipeline creation failed");

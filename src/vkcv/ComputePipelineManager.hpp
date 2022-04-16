@@ -1,7 +1,7 @@
 #pragma once
 
 /**
- * @authors Mark Mints
+ * @authors Mark Mints, Tobias Frisch
  * @file src/vkcv/ComputePipelineManager.hpp
  * @brief Creation and handling of Compute Pipelines
  */
@@ -49,10 +49,12 @@ namespace vkcv
          * Creates a Compute Pipeline based on the set shader stages in the Config Struct.
          * This function is wrapped in /src/vkcv/Core.cpp by Core::createComputePipeline(const ComputePipelineConfig &config).
          * On application level it is necessary first to fill a ComputePipelineConfig Struct.
-         * @param config Hands over all needed information for pipeline creation.
+         * @param shaderProgram Hands over all needed information for pipeline creation.
+         * @param descriptorSetLayouts Hands over all needed information for pipeline creation.
          * @return A Handler to the created Compute Pipeline Object.
          */
-        ComputePipelineHandle createComputePipeline(const ComputePipelineConfig& config);
+        ComputePipelineHandle createComputePipeline(const ShaderProgram& shaderProgram,
+													const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
 
     private:
         struct ComputePipeline {

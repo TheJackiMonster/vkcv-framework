@@ -1,0 +1,43 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+#include "particle.inc"
+
+layout(set=0, binding=0, std430) restrict buffer particleBuffer {
+    Particle particles [];
+};
+
+layout(set=1, binding=0) uniform texture3D gridImage;
+layout(set=1, binding=1) uniform sampler gridSampler;
+
+void main()	{
+    if (gl_GlobalInvocationID.x < particles.length()) {
+        ParticleMinimal minimal = particles[gl_GlobalInvocationID.x].minimal;
+
+        minimal.weight_sum = 1.0f;
+
+        ivec3 gridResolution = textureSize(sampler3D(gridImage, gridSampler), 0);
+        ivec3 gridWindow = ivec3(minimal.size * 2.0f * gridResolution);
+
+        float weight_sum = 0.0f;
+
+        int i, j, k;
+
+        for (i = -gridWindow.x; i <= gridWindow.x; i++) {
+            for (j = -gridWindow.y; j <= gridWindow.y; j++) {
+                for (k = -gridWindow.z; k <= gridWindow.z; k++) {
+                    vec3 offset = vec3(i, j, k) / gridResolution;
+                    vec3 voxel = minimal.position + offset;
+
+                    weight_sum += voxel_particle_weight(voxel, minimal);
+                }
+            }
+        }
+
+        if (weight_sum > 0.0f) {
+            particles[gl_GlobalInvocationID.x].minimal.weight_sum = weight_sum;
+        }
+    }
+}

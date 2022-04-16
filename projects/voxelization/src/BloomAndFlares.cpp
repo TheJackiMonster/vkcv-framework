@@ -51,7 +51,7 @@ BloomAndFlares::BloomAndFlares(
     }
 
     m_DownsamplePipe = p_Core->createComputePipeline({
-        dsProg, { p_Core->getDescriptorSetLayout(m_DownsampleDescSetLayouts[0]).vulkanHandle }
+        dsProg, m_DownsampleDescSetLayouts
     });
 
     // UPSAMPLE
@@ -77,7 +77,7 @@ BloomAndFlares::BloomAndFlares(
     }
 
     m_UpsamplePipe = p_Core->createComputePipeline({
-        usProg, { p_Core->getDescriptorSetLayout(m_UpsampleDescSetLayouts[0]).vulkanHandle }
+        usProg, m_UpsampleDescSetLayouts
     });
 
     // LENS FEATURES
@@ -92,7 +92,8 @@ BloomAndFlares::BloomAndFlares(
     m_LensFlareDescSetLayout = p_Core->createDescriptorSetLayout(lensProg.getReflectedDescriptors().at(0));
     m_LensFlareDescSet = p_Core->createDescriptorSet(m_LensFlareDescSetLayout);
     m_LensFlarePipe = p_Core->createComputePipeline(
-        { lensProg, { p_Core->getDescriptorSetLayout(m_LensFlareDescSetLayout).vulkanHandle } });
+        { lensProg, { m_LensFlareDescSetLayout }
+	});
 
 
     // COMPOSITE
@@ -107,7 +108,8 @@ BloomAndFlares::BloomAndFlares(
     m_CompositeDescSetLayout = p_Core->createDescriptorSetLayout(compProg.getReflectedDescriptors().at(0));
     m_CompositeDescSet = p_Core->createDescriptorSet(m_CompositeDescSetLayout);
     m_CompositePipe = p_Core->createComputePipeline(
-        { compProg, { p_Core->getDescriptorSetLayout(m_CompositeDescSetLayout).vulkanHandle } });
+        { compProg, { m_CompositeDescSetLayout }
+	});
 
     // radial LUT
     const auto texture = vkcv::asset::loadTexture("assets/RadialLUT.png");
@@ -143,7 +145,7 @@ void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStre
             cmdStream,
             m_DownsamplePipe,
             initialDispatchCount,
-            {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_DownsampleDescSets[0]).vulkanHandle)},
+            {vkcv::DescriptorSetUsage(0, m_DownsampleDescSets[0])},
             vkcv::PushConstants(0));
 
     // downsample dispatches of blur buffer's mip maps
@@ -178,7 +180,7 @@ void BloomAndFlares::execDownsamplePipe(const vkcv::CommandStreamHandle &cmdStre
                 cmdStream,
                 m_DownsamplePipe,
                 mipDispatchCount,
-                {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_DownsampleDescSets[mipLevel]).vulkanHandle)},
+                {vkcv::DescriptorSetUsage(0, m_DownsampleDescSets[mipLevel])},
                 vkcv::PushConstants(0));
 
         // image barrier between mips
@@ -227,7 +229,7 @@ void BloomAndFlares::execUpsamplePipe(const vkcv::CommandStreamHandle &cmdStream
                 cmdStream,
                 m_UpsamplePipe,
                 upsampleDispatchCount,
-                {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_UpsampleDescSets[mipLevel]).vulkanHandle)},
+                {vkcv::DescriptorSetUsage(0, m_UpsampleDescSets[mipLevel])},
                 vkcv::PushConstants(0)
         );
         // image barrier between mips
@@ -266,7 +268,7 @@ void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStr
             cmdStream,
             m_LensFlarePipe,
             lensFeatureDispatchCount,
-            {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_LensFlareDescSet).vulkanHandle)},
+            {vkcv::DescriptorSetUsage(0, m_LensFlareDescSet)},
             vkcv::PushConstants(0));
 
     // upsample dispatch
@@ -299,7 +301,7 @@ void BloomAndFlares::execLensFeaturePipe(const vkcv::CommandStreamHandle &cmdStr
             cmdStream,
             m_UpsamplePipe,
             upsampleDispatchCount,
-            { vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_UpsampleLensFlareDescSets[i]).vulkanHandle) },
+            { vkcv::DescriptorSetUsage(0, m_UpsampleLensFlareDescSets[i]) },
             vkcv::PushConstants(0)
         );
         // image barrier between mips
@@ -346,7 +348,7 @@ void BloomAndFlares::execCompositePipe(const vkcv::CommandStreamHandle &cmdStrea
         cmdStream,
         m_CompositePipe,
         compositeDispatchCount,
-        {vkcv::DescriptorSetUsage(0, p_Core->getDescriptorSet(m_CompositeDescSet).vulkanHandle)},
+        {vkcv::DescriptorSetUsage(0, m_CompositeDescSet)},
         pushConstants);
 
     p_Core->recordEndDebugLabel(cmdStream);

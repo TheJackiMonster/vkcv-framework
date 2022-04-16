@@ -121,8 +121,9 @@ int main(int argc, const char **argv) {
             UINT32_MAX,
             particlePass,
             {particleLayout},
-            {core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle},
-            true};
+            {descriptorSetLayout},
+            true
+	};
     particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 
     const std::vector<glm::vec3> vertices = {glm::vec3(-0.012, 0.012, 0),
@@ -133,7 +134,9 @@ int main(int argc, const char **argv) {
 
     vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
-    vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline({ computeShaderProgram, {core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle} });
+    vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline({
+		computeShaderProgram, {computeDescriptorSetLayout}
+	});
 
     vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
             vkcv::BufferType::UNIFORM,
@@ -177,7 +180,7 @@ int main(int argc, const char **argv) {
 
     const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(),
                                 particleIndexBuffer.getCount());
-    vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+    vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
 
     auto pos = glm::vec2(0.f);
     auto spawnPosition = glm::vec3(0.f);
@@ -238,7 +241,8 @@ int main(int argc, const char **argv) {
     vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingDescriptorLayout);
     vkcv::ComputePipelineHandle tonemappingPipe = core.createComputePipeline({
         tonemappingShader, 
-        { core.getDescriptorSetLayout(tonemappingDescriptorLayout).vulkanHandle }});
+        { tonemappingDescriptorLayout }
+	});
 
     std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
     std::default_random_engine rdmEngine;
@@ -279,7 +283,7 @@ int main(int argc, const char **argv) {
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               computePipeline,
                                               computeDispatchCount,
-                                              {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet).vulkanHandle)},
+                                              {vkcv::DescriptorSetUsage(0, computeDescriptorSet)},
 											  pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer.getHandle());
@@ -317,7 +321,7 @@ int main(int argc, const char **argv) {
             cmdStream, 
             tonemappingPipe, 
             tonemappingDispatchCount, 
-            {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptor).vulkanHandle) },
+            {vkcv::DescriptorSetUsage(0, tonemappingDescriptor) },
             vkcv::PushConstants(0));
 
         core.prepareSwapchainImageForPresent(cmdStream);

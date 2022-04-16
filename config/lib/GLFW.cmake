@@ -6,14 +6,14 @@ if (glfw3_FOUND)
 
     message(${vkcv_config_msg} " GLFW    -   " ${glfw3_VERSION})
 else()
-    if (EXISTS "${vkcv_lib_path}/glfw")
+    use_git_submodule("${vkcv_lib_path}/glfw" glfw_status)
+
+    if (${glfw_status})
         add_subdirectory(${vkcv_lib}/glfw)
 
         list(APPEND vkcv_libraries glfw)
         list(APPEND vkcv_includes ${vkcv_lib_path}/glfw/include)
 
         message(${vkcv_config_msg} " GLFW    -   " ${glfw3_VERSION})
-    else()
-        message(WARNING "GLFW is required..! Update the submodules!")
     endif ()
 endif ()

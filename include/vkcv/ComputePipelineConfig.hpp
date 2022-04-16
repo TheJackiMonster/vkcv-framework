@@ -7,13 +7,14 @@
 
 #include <vector>
 
+#include "Handles.hpp"
 #include "ShaderProgram.hpp"
 
 namespace vkcv {
 	
     struct ComputePipelineConfig {
         ShaderProgram&                          m_ShaderProgram;
-        std::vector<vk::DescriptorSetLayout>  	m_DescriptorSetLayouts;
+        std::vector<DescriptorSetLayoutHandle>	m_DescriptorSetLayouts;
     };
 	
 }

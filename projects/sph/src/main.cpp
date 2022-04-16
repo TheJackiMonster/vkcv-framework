@@ -122,8 +122,9 @@ int main(int argc, const char **argv) {
             UINT32_MAX,
             particlePass,
             {particleLayout},
-            {core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle},
-            true};
+            {descriptorSetLayout},
+            true
+	};
     particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 
     const std::vector<glm::vec3> vertices = {glm::vec3(-0.012, 0.012, 0),
@@ -206,7 +207,7 @@ int main(int argc, const char **argv) {
 
     const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(),
                                 particleIndexBuffer.getCount());
-    vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+    vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
 
     auto pos = glm::vec2(0.f);
 
@@ -332,7 +333,7 @@ int main(int argc, const char **argv) {
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               pressurePipeline,
                                               computeDispatchCount,
-                                              {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(pressureDescriptorSet).vulkanHandle)},
+                                              {vkcv::DescriptorSetUsage(0, pressureDescriptorSet)},
 											  pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
@@ -340,10 +341,10 @@ int main(int argc, const char **argv) {
 
         // computing force pipeline
 		core.recordComputeDispatchToCmdStream(cmdStream,
-                                              forcePipeline,
-                                              computeDispatchCount,
-                                              {vkcv::DescriptorSetUsage(0,core.getDescriptorSet(forceDescriptorSet).vulkanHandle)},
-                                              pushConstantsCompute);
+											  forcePipeline,
+											  computeDispatchCount,
+											  {vkcv::DescriptorSetUsage(0, forceDescriptorSet)},
+											  pushConstantsCompute);
 
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
@@ -352,7 +353,7 @@ int main(int argc, const char **argv) {
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               updateDataPipeline,
                                               computeDispatchCount,
-                                              { vkcv::DescriptorSetUsage(0,core.getDescriptorSet(updateDataDescriptorSet).vulkanHandle) },
+                                              { vkcv::DescriptorSetUsage(0, updateDataDescriptorSet) },
                                               pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
@@ -362,7 +363,7 @@ int main(int argc, const char **argv) {
         core.recordComputeDispatchToCmdStream(cmdStream,
                                               flipPipeline,
                                               computeDispatchCount,
-                                              { vkcv::DescriptorSetUsage(0,core.getDescriptorSet(flipDescriptorSet).vulkanHandle) },
+                                              { vkcv::DescriptorSetUsage(0, flipDescriptorSet) },
                                               pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
@@ -403,7 +404,7 @@ int main(int argc, const char **argv) {
             cmdStream, 
             tonemappingPipe, 
             tonemappingDispatchCount, 
-            {vkcv::DescriptorSetUsage(0, core.getDescriptorSet(tonemappingDescriptor).vulkanHandle) },
+            {vkcv::DescriptorSetUsage(0, tonemappingDescriptor) },
             vkcv::PushConstants(0));
 
         core.prepareSwapchainImageForPresent(cmdStream);

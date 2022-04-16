@@ -110,11 +110,10 @@ Voxelization::Voxelization(
 		voxelResolution,
 		m_voxelizationPass,
 		dependencies.vertexLayout,
-		{ 
-		    m_corePtr->getDescriptorSetLayout(m_voxelizationDescriptorSetLayout).vulkanHandle,
-		    m_corePtr->getDescriptorSetLayout(dummyPerMeshDescriptorSetLayout).vulkanHandle},
+		{ m_voxelizationDescriptorSetLayout, dummyPerMeshDescriptorSetLayout },
 		false,
-		true };
+		true
+	};
 	m_voxelizationPipe = m_corePtr->createGraphicsPipeline(voxelizationPipeConfig);
 
 	vkcv::DescriptorWrites voxelizationDescriptorWrites;
@@ -156,10 +155,11 @@ Voxelization::Voxelization(
 		0,
 		m_visualisationPass,
 		{},
-		{ m_corePtr->getDescriptorSetLayout(m_visualisationDescriptorSetLayout).vulkanHandle },
+		{ m_visualisationDescriptorSetLayout },
 		true,
 		false,
-		vkcv::PrimitiveTopology::PointList };	// points are extended to cubes in the geometry shader
+		vkcv::PrimitiveTopology::PointList
+	};	// points are extended to cubes in the geometry shader
 	voxelVisualisationPipeConfig.m_multisampling = msaa;
 	m_visualisationPipe = m_corePtr->createGraphicsPipeline(voxelVisualisationPipeConfig);
 
@@ -168,7 +168,7 @@ Voxelization::Voxelization(
 		voxelIndexData.push_back(static_cast<uint16_t>(i));
 	}
 
-	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle);
+	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_visualisationDescriptorSet);
 
 	vkcv::ShaderProgram resetVoxelShader = loadVoxelResetShader();
 
@@ -176,7 +176,8 @@ Voxelization::Voxelization(
 	m_voxelResetDescriptorSet = m_corePtr->createDescriptorSet(m_voxelResetDescriptorSetLayout);
 	m_voxelResetPipe = m_corePtr->createComputePipeline({
 		resetVoxelShader,
-		{ m_corePtr->getDescriptorSetLayout(m_voxelResetDescriptorSetLayout).vulkanHandle }});
+		{ m_voxelResetDescriptorSetLayout }
+	});
 
 	vkcv::DescriptorWrites resetVoxelWrites;
 	resetVoxelWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
@@ -189,7 +190,8 @@ Voxelization::Voxelization(
 	m_bufferToImageDescriptorSet = m_corePtr->createDescriptorSet(m_bufferToImageDescriptorSetLayout);
 	m_bufferToImagePipe = m_corePtr->createComputePipeline({
 		bufferToImageShader,
-		{ m_corePtr->getDescriptorSetLayout(m_bufferToImageDescriptorSetLayout).vulkanHandle }});
+		{ m_bufferToImageDescriptorSetLayout }
+	});
 
 	vkcv::DescriptorWrites bufferToImageDescriptorWrites;
 	bufferToImageDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
@@ -203,7 +205,8 @@ Voxelization::Voxelization(
 	m_secondaryBounceDescriptorSet = m_corePtr->createDescriptorSet(m_secondaryBounceDescriptorSetLayout);
 	m_secondaryBouncePipe = m_corePtr->createComputePipeline({
 		secondaryBounceShader,
-		{ m_corePtr->getDescriptorSetLayout(m_secondaryBounceDescriptorSetLayout).vulkanHandle }});
+		{ m_secondaryBounceDescriptorSetLayout }
+	});
 
 	vkcv::DescriptorWrites secondaryBounceDescriptorWrites;
 	secondaryBounceDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
@@ -256,7 +259,7 @@ void Voxelization::voxelizeMeshes(
 		cmdStream,
 		m_voxelResetPipe,
 		resetVoxelDispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_voxelResetDescriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_voxelResetDescriptorSet) },
 		voxelCountPushConstants);
 	m_corePtr->recordBufferMemoryBarrier(cmdStream, m_voxelBuffer.getHandle());
 	m_corePtr->recordEndDebugLabel(cmdStream);
@@ -267,8 +270,8 @@ void Voxelization::voxelizeMeshes(
 		drawcalls.push_back(vkcv::DrawcallInfo(
 			meshes[i],
 			{ 
-				vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_voxelizationDescriptorSet).vulkanHandle),
-				vkcv::DescriptorSetUsage(1, m_corePtr->getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) 
+				vkcv::DescriptorSetUsage(0, m_voxelizationDescriptorSet),
+				vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i])
 			},1));
 	}
 
@@ -296,7 +299,7 @@ void Voxelization::voxelizeMeshes(
 		cmdStream,
 		m_bufferToImagePipe,
 		bufferToImageDispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_bufferToImageDescriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_bufferToImageDescriptorSet) },
 		vkcv::PushConstants(0));
 
 	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImageIntermediate.getHandle());
@@ -315,7 +318,7 @@ void Voxelization::voxelizeMeshes(
 		cmdStream,
 		m_secondaryBouncePipe,
 		bufferToImageDispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_secondaryBounceDescriptorSet).vulkanHandle) },
+		{ vkcv::DescriptorSetUsage(0, m_secondaryBounceDescriptorSet) },
 		vkcv::PushConstants(0));
 	m_voxelImage.recordMipChainGeneration(cmdStream);
 	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImage.getHandle());
@@ -352,7 +355,7 @@ void Voxelization::renderVoxelVisualisation(
 
 	const auto drawcall = vkcv::DrawcallInfo(
 		vkcv::Mesh({}, nullptr, drawVoxelCount),
-		{ vkcv::DescriptorSetUsage(0, m_corePtr->getDescriptorSet(m_visualisationDescriptorSet).vulkanHandle) },1);
+		{ vkcv::DescriptorSetUsage(0, m_visualisationDescriptorSet) },1);
 
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel visualisation", { 1, 1, 1, 1 });
 	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImage.getHandle());

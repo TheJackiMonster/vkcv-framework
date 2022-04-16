@@ -175,7 +175,7 @@ int main(int argc, const char** argv) {
 			(uint32_t)windowHeight,
 			safrPass,
 			{},
-			{ core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle },
+			{ descriptorSetLayout },
 			false
 	};
 
@@ -183,7 +183,7 @@ int main(int argc, const char** argv) {
 
 	const vkcv::ComputePipelineConfig computePipelineConfig{
 			computeShaderProgram,
-			{core.getDescriptorSetLayout(computeDescriptorSetLayout).vulkanHandle}
+			{computeDescriptorSetLayout}
 	};
 
 	vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline(computePipelineConfig);
@@ -197,7 +197,7 @@ int main(int argc, const char** argv) {
 	auto start = std::chrono::system_clock::now();
 
 	const vkcv::Mesh renderMesh({}, safrIndexBuffer.getVulkanHandle(), 3);
-	vkcv::DescriptorSetUsage descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+	vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
 	vkcv::DrawcallInfo drawcall(renderMesh, { descriptorUsage }, 1);
 
 	//create the camera
@@ -279,7 +279,7 @@ int main(int argc, const char** argv) {
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			computePipeline,
 			computeDispatchCount,
-			{ vkcv::DescriptorSetUsage(0,core.getDescriptorSet(computeDescriptorSet).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, computeDescriptorSet) },
 			pushConstantsCompute);
 
 		core.recordBufferMemoryBarrier(cmdStream, lightsBuffer.getHandle());

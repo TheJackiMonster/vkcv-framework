@@ -123,18 +123,12 @@ int main(int argc, const char** argv) {
 	vkcv::ShaderProgram firstMeshProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
-					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		firstMeshProgram.addShader(shaderStage, path);
-	});
-	
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
-					 [&firstMeshProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		firstMeshProgram.addShader(shaderStage, path);
-	});
+	compiler.compileProgram(firstMeshProgram, {
+		{ vkcv::ShaderStage::VERTEX, "resources/shaders/shader.vert" },
+		{ vkcv::ShaderStage::FRAGMENT, "resources/shaders/shader.frag" }
+	}, nullptr);
  
 	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
-
 	
 	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
 		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
@@ -162,7 +156,7 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
         firstMeshPass,
         {firstMeshLayout},
-		{ core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle },
+		{ descriptorSetLayout },
 		true
 	};
 	vkcv::GraphicsPipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
@@ -218,7 +212,7 @@ int main(int argc, const char** argv) {
 
 	const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
 
-	vkcv::DescriptorSetUsage    descriptorUsage(0, core.getDescriptorSet(descriptorSet).vulkanHandle);
+	vkcv::DescriptorSetUsage    descriptorUsage(0, descriptorSet);
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage },1);
 
     vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));

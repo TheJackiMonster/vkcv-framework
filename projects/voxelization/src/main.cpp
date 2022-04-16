@@ -317,10 +317,9 @@ int main(int argc, const char** argv) {
 		swapchainExtent.height,
 		prepassPass,
 		vertexLayout,
-		{ 
-		    core.getDescriptorSetLayout(prepassDescriptorSetLayout).vulkanHandle,
-			core.getDescriptorSetLayout(perMeshDescriptorSetLayouts[0]).vulkanHandle },
-		true };
+		{ prepassDescriptorSetLayout, perMeshDescriptorSetLayouts[0] },
+		true
+	};
 	prepassPipelineConfig.m_culling         = vkcv::CullMode::Back;
 	prepassPipelineConfig.m_multisampling   = msaa;
 	prepassPipelineConfig.m_depthTest       = vkcv::DepthTest::LessEqual;
@@ -335,9 +334,7 @@ int main(int argc, const char** argv) {
 		swapchainExtent.height,
 		forwardPass,
 		vertexLayout,
-		{	
-		    core.getDescriptorSetLayout(forwardShadingDescriptorSetLayout).vulkanHandle,
-			core.getDescriptorSetLayout(perMeshDescriptorSetLayouts[0]).vulkanHandle },
+		{ forwardShadingDescriptorSetLayout, perMeshDescriptorSetLayouts[0] },
 		true
 	};
     forwardPipelineConfig.m_culling         = vkcv::CullMode::Back;
@@ -468,7 +465,8 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(tonemappingDescriptorSetLayout);
 	vkcv::ComputePipelineHandle tonemappingPipeline = core.createComputePipeline({
 		tonemappingProgram,
-		{ core.getDescriptorSetLayout(tonemappingDescriptorSetLayout).vulkanHandle }});
+		{ tonemappingDescriptorSetLayout }
+	});
 	
 	// tonemapping compute shader
 	vkcv::ShaderProgram postEffectsProgram;
@@ -482,7 +480,8 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle postEffectsDescriptorSet = core.createDescriptorSet(postEffectsDescriptorSetLayout);
 	vkcv::ComputePipelineHandle postEffectsPipeline = core.createComputePipeline({
 			postEffectsProgram,
-			{ core.getDescriptorSetLayout(postEffectsDescriptorSetLayout).vulkanHandle }});
+			{ postEffectsDescriptorSetLayout }
+	});
 
 	// resolve compute shader
 	vkcv::ShaderProgram resolveProgram;
@@ -496,7 +495,8 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle resolveDescriptorSet = core.createDescriptorSet(resolveDescriptorSetLayout);
 	vkcv::ComputePipelineHandle resolvePipeline = core.createComputePipeline({
 		resolveProgram,
-		{ core.getDescriptorSetLayout(resolveDescriptorSetLayout).vulkanHandle }});
+		{ resolveDescriptorSetLayout }
+	});
 
 	vkcv::SamplerHandle resolveSampler = core.createSampler(
 		vkcv::SamplerFilterType::NEAREST,
@@ -527,11 +527,11 @@ int main(int argc, const char** argv) {
 	for (size_t i = 0; i < meshes.size(); i++) {
 
 		drawcalls.push_back(vkcv::DrawcallInfo(meshes[i], { 
-			vkcv::DescriptorSetUsage(0, core.getDescriptorSet(forwardShadingDescriptorSet).vulkanHandle),
-			vkcv::DescriptorSetUsage(1, core.getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) }));
+			vkcv::DescriptorSetUsage(0, forwardShadingDescriptorSet),
+			vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i]) }));
 		prepassDrawcalls.push_back(vkcv::DrawcallInfo(meshes[i], {
-			vkcv::DescriptorSetUsage(0, core.getDescriptorSet(prepassDescriptorSet).vulkanHandle),
-			vkcv::DescriptorSetUsage(1, core.getDescriptorSet(perMeshDescriptorSets[i]).vulkanHandle) }));
+			vkcv::DescriptorSetUsage(0, prepassDescriptorSet),
+			vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i]) }));
 	}
 
 	vkcv::SamplerHandle voxelSampler = core.createSampler(
@@ -859,7 +859,7 @@ int main(int argc, const char** argv) {
 					cmdStream,
 					resolvePipeline,
 					fulsscreenDispatchCount,
-					{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(resolveDescriptorSet).vulkanHandle) },
+					{ vkcv::DescriptorSetUsage(0, resolveDescriptorSet) },
 					vkcv::PushConstants(0));
 
 				core.recordImageMemoryBarrier(cmdStream, resolvedColorBuffer);
@@ -882,9 +882,7 @@ int main(int argc, const char** argv) {
 			cmdStream, 
 			tonemappingPipeline, 
 			fulsscreenDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(
-					tonemappingDescriptorSet
-			).vulkanHandle) },
+			{ vkcv::DescriptorSetUsage(0, tonemappingDescriptorSet) },
 			vkcv::PushConstants(0)
 		);
 		
@@ -920,9 +918,7 @@ int main(int argc, const char** argv) {
 				cmdStream,
 				postEffectsPipeline,
 				fulsscreenDispatchCount,
-				{ vkcv::DescriptorSetUsage(0, core.getDescriptorSet(
-						postEffectsDescriptorSet
-				).vulkanHandle) },
+				{ vkcv::DescriptorSetUsage(0, postEffectsDescriptorSet) },
 				timePushConstants
 		);
 		core.recordEndDebugLabel(cmdStream);
@@ -1001,7 +997,8 @@ int main(int argc, const char** argv) {
 
 				vkcv::ComputePipelineHandle newPipeline = core.createComputePipeline({
 					newProgram,
-					{ core.getDescriptorSetLayout(tonemappingDescriptorSetLayout).vulkanHandle }});
+					{ tonemappingDescriptorSetLayout }
+				});
 
 				if (newPipeline) {
 					tonemappingPipeline = newPipeline;

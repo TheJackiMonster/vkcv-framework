@@ -80,12 +80,19 @@ namespace vkcv
 	
 	GraphicsPipelineHandle Core::createGraphicsPipeline(const GraphicsPipelineConfig &config)
     {
-        return m_PipelineManager->createPipeline(config, *m_PassManager);
+        return m_PipelineManager->createPipeline(config, *m_PassManager, *m_DescriptorManager);
     }
 
     ComputePipelineHandle Core::createComputePipeline(const ComputePipelineConfig &config)
     {
-        return m_ComputePipelineManager->createComputePipeline(config);
+		std::vector<vk::DescriptorSetLayout> layouts;
+		layouts.resize(config.m_DescriptorSetLayouts.size());
+	
+		for (size_t i = 0; i < layouts.size(); i++) {
+			layouts[i] = getDescriptorSetLayout(config.m_DescriptorSetLayouts[i]).vulkanHandle;
+		}
+		
+        return m_ComputePipelineManager->createComputePipeline(config.m_ShaderProgram, layouts);
     }
 
     PassHandle Core::createPass(const PassConfig &config)
@@ -261,6 +268,56 @@ namespace vkcv
 		cmdBuffer.setViewport(0, 1, &dynamicViewport);
 		cmdBuffer.setScissor(0, 1, &dynamicScissor);
 	}
+	
+	vk::IndexType getIndexType(IndexBitCount indexByteCount){
+		switch (indexByteCount) {
+			case IndexBitCount::Bit16: return vk::IndexType::eUint16;
+			case IndexBitCount::Bit32: return vk::IndexType::eUint32;
+			default:
+			vkcv_log(LogLevel::ERROR, "unknown Enum");
+				return vk::IndexType::eUint16;
+		}
+	}
+	
+	void recordDrawcall(
+			const Core				&core,
+			const DrawcallInfo      &drawcall,
+			vk::CommandBuffer       cmdBuffer,
+			vk::PipelineLayout      pipelineLayout,
+			const PushConstants     &pushConstants,
+			const size_t            drawcallIndex) {
+		
+		for (uint32_t i = 0; i < drawcall.mesh.vertexBufferBindings.size(); i++) {
+			const auto& vertexBinding = drawcall.mesh.vertexBufferBindings[i];
+			cmdBuffer.bindVertexBuffers(i, vertexBinding.buffer, vertexBinding.offset);
+		}
+		
+		for (const auto& descriptorUsage : drawcall.descriptorSets) {
+			cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eGraphics,
+					pipelineLayout,
+					descriptorUsage.setLocation,
+					core.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
+					nullptr);
+		}
+		
+		if (pushConstants.getSizePerDrawcall() > 0) {
+			cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eAll,
+					0,
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getDrawcallData(drawcallIndex));
+		}
+		
+		if (drawcall.mesh.indexBuffer) {
+			cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, getIndexType(drawcall.mesh.indexBitCount));
+			cmdBuffer.drawIndexed(drawcall.mesh.indexCount, drawcall.instanceCount, 0, 0, {});
+		}
+		else {
+			cmdBuffer.draw(drawcall.mesh.indexCount, drawcall.instanceCount, 0, 0, {});
+		}
+	}
 
 	void Core::recordDrawcallsToCmdStream(
 		const CommandStreamHandle&      cmdStreamHandle,
@@ -316,7 +373,7 @@ namespace vkcv
 			}
 
 			for (size_t i = 0; i < drawcalls.size(); i++) {
-				recordDrawcall(drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
+				recordDrawcall(*this, drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
 			}
 
 			cmdBuffer.endRenderPass();
@@ -483,6 +540,7 @@ namespace vkcv
 			for (size_t i = 0; i < drawcalls.size(); i++) {
                 const uint32_t pushConstantOffset = i * pushConstantData.getSizePerDrawcall();
                 recordMeshShaderDrawcall(
+					*this,
                     cmdBuffer,
                     pipelineLayout,
                     pushConstantData,
@@ -522,7 +580,7 @@ namespace vkcv
 					vk::PipelineBindPoint::eRayTracingKHR,
 					rtxPipelineLayout,
 					usage.setLocation,
-					{ usage.vulkanHandle },
+					{ getDescriptorSet(usage.descriptorSet).vulkanHandle },
 					usage.dynamicOffsets
 				);
 			}
@@ -563,7 +621,7 @@ namespace vkcv
 					vk::PipelineBindPoint::eCompute,
 					pipelineLayout,
 					usage.setLocation,
-					{ usage.vulkanHandle },
+					{ getDescriptorSet(usage.descriptorSet).vulkanHandle },
 					usage.dynamicOffsets
 				);
 			}
@@ -642,7 +700,7 @@ namespace vkcv
 					vk::PipelineBindPoint::eCompute,
 					pipelineLayout,
 					usage.setLocation,
-					{ usage.vulkanHandle },
+					{ getDescriptorSet(usage.descriptorSet).vulkanHandle },
 					usage.dynamicOffsets
 				);
 			}
@@ -756,8 +814,8 @@ namespace vkcv
 
 	SamplerHandle Core::createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
 									  SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode,
-									  float mipLodBias) {
-		return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode, mipLodBias);
+									  float mipLodBias, SamplerBorderColor borderColor) {
+		return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode, mipLodBias, borderColor);
 	}
 
 	Image Core::createImage(

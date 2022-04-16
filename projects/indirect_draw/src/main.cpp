@@ -467,7 +467,7 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
         passHandle,
         {sponzaVertexLayout},
-		{ core.getDescriptorSetLayout(descriptorSetLayout).vulkanHandle },
+		{ descriptorSetLayout },
 		true
 	};
 	vkcv::GraphicsPipelineHandle sponzaPipelineHandle = core.createGraphicsPipeline(sponzaPipelineConfig);
@@ -512,7 +512,7 @@ int main(int argc, const char** argv) {
 
     const vkcv::ComputePipelineConfig computeCullingConfig {
         cullingProgram,
-        {core.getDescriptorSetLayout(cullingSetLayout).vulkanHandle}
+        {cullingSetLayout}
     };
     vkcv::ComputePipelineHandle cullingPipelineHandle = core.createComputePipeline(computeCullingConfig);
     if (!cullingPipelineHandle) {
@@ -536,7 +536,7 @@ int main(int argc, const char** argv) {
     const uint32_t dispatchCount[3] = {static_cast<uint32_t>(ceiledDispatchCount), 1, 1};
 
 
-    vkcv::DescriptorSetUsage cullingUsage(0, core.getDescriptorSet(cullingDescSet).vulkanHandle, {});
+    vkcv::DescriptorSetUsage cullingUsage(0, cullingDescSet, {});
     vkcv::PushConstants emptyPushConstant(0);
 
     bool updateFrustumPlanes    = true;
