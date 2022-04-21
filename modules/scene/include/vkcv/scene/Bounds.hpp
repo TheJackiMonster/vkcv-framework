@@ -32,6 +32,13 @@ namespace vkcv::scene {
          * box.
          */
 		Bounds();
+		
+		/**
+         * Constructor creating a zero volume axis aligned bounding
+         * box around a certain point.
+         * @param[in] point Center of the box as 3D vector
+         */
+		Bounds(const glm::vec3& point);
 
         /**
          * Constructor creating an axis aligned bounding box with given
