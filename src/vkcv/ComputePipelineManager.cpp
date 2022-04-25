@@ -59,9 +59,9 @@ namespace vkcv
 
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo({}, descriptorSetLayouts);
 
-        const size_t pushConstantSize = shaderProgram.getPushConstantSize();
-        vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute, 0, pushConstantSize);
-        if (pushConstantSize > 0) {
+        const size_t pushConstantsSize = shaderProgram.getPushConstantsSize();
+        vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute, 0, pushConstantsSize);
+        if (pushConstantsSize > 0) {
             pipelineLayoutCreateInfo.setPushConstantRangeCount(1);
             pipelineLayoutCreateInfo.setPPushConstantRanges(&pushConstantRange);
         }

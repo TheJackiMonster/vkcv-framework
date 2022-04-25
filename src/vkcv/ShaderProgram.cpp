@@ -76,32 +76,32 @@ namespace vkcv {
     m_DescriptorSets{}
 	{}
 
-	bool ShaderProgram::addShader(ShaderStage shaderStage, const std::filesystem::path &shaderPath)
+	bool ShaderProgram::addShader(ShaderStage stage, const std::filesystem::path &path)
 	{
-	    if(m_Shaders.find(shaderStage) != m_Shaders.end()) {
+	    if(m_Shaders.find(stage) != m_Shaders.end()) {
 			vkcv_log(LogLevel::WARNING, "Overwriting existing shader stage");
 		}
 
-	    const std::vector<char> shaderCode = readShaderCode(shaderPath);
+	    const std::vector<char> shaderCode = readShaderCode(path);
 	    
 	    if (shaderCode.empty()) {
 			return false;
 		} else {
-            Shader shader{shaderCode, shaderStage};
-            m_Shaders.insert(std::make_pair(shaderStage, shader));
-            reflectShader(shaderStage);
+            Shader shader{shaderCode, stage};
+            m_Shaders.insert(std::make_pair(stage, shader));
+            reflectShader(stage);
             return true;
         }
 	}
 
-    const Shader &ShaderProgram::getShader(ShaderStage shaderStage) const
+    const Shader &ShaderProgram::getShader(ShaderStage stage) const
     {
-	    return m_Shaders.at(shaderStage);
+	    return m_Shaders.at(stage);
 	}
 
-    bool ShaderProgram::existsShader(ShaderStage shaderStage) const
+    bool ShaderProgram::existsShader(ShaderStage stage) const
     {
-	    if(m_Shaders.find(shaderStage) == m_Shaders.end())
+	    if(m_Shaders.find(stage) == m_Shaders.end())
 	        return false;
 	    else
 	        return true;
@@ -346,7 +346,7 @@ namespace vkcv {
 			for (const auto &range : comp.get_active_buffer_ranges(pushConstantBuffer.id))
 			{
 				const size_t size = range.range + range.offset;
-				m_pushConstantSize = std::max(m_pushConstantSize, size);
+				m_pushConstantsSize = std::max(m_pushConstantsSize, size);
 			}
 		}
     }
@@ -361,8 +361,8 @@ namespace vkcv {
         return m_DescriptorSets;
     }
 
-	size_t ShaderProgram::getPushConstantSize() const
+	size_t ShaderProgram::getPushConstantsSize() const
 	{
-		return m_pushConstantSize;
+		return m_pushConstantsSize;
 	}
 }

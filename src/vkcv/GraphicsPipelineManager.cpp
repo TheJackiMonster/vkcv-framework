@@ -365,9 +365,9 @@ namespace vkcv
 																const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) {
 		static vk::PushConstantRange pushConstantRange;
 		
-		const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
+		const size_t pushConstantsSize = config.m_ShaderProgram.getPushConstantsSize();
 		pushConstantRange = vk::PushConstantRange(
-				vk::ShaderStageFlagBits::eAll, 0, pushConstantSize
+				vk::ShaderStageFlagBits::eAll, 0, pushConstantsSize
 		);
 		
 		vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
@@ -376,7 +376,7 @@ namespace vkcv
 				(pushConstantRange)
 		);
 		
-		if (pushConstantSize == 0) {
+		if (pushConstantsSize == 0) {
 			pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 		}
 		
