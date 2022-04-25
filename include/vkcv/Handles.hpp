@@ -24,12 +24,22 @@ namespace vkcv
 		HandleDestroyFunction m_destroy;
 	
 	protected:
+		/**
+		 * @brief Constructor of an invalid handle
+		 */
 		Handle();
 		
+		/**
+		 * @brief Constructor of a valid handle with an
+		 * unique id and an optional destroy callback.
+		 *
+		 * @param id Unique handle id
+		 * @param destroy Destroy callback (optional)
+		 */
 		explicit Handle(uint64_t id, const HandleDestroyFunction& destroy = nullptr);
 		
 		/**
-		 * Returns the actual handle id of a handle.
+		 * @brief Returns the actual handle id of a handle.
 		 *
 		 * @return Handle id
 		 */
@@ -37,7 +47,7 @@ namespace vkcv
 		uint64_t getId() const;
 		
 		/**
-		 * Returns the reference counter of a handle
+		 * @brief Returns the reference counter of a handle
 		 *
 		 * @return Reference counter
 		 */
@@ -53,7 +63,18 @@ namespace vkcv
 		Handle& operator=(const Handle& other);
 		Handle& operator=(Handle&& other) noexcept;
 		
+		/**
+		 * @brief Returns whether a handle is valid to use.
+		 *
+		 * @return True, if the handle is valid, else false.
+		 */
 		explicit operator bool() const;
+		
+		/**
+		 * @brief Returns whether a handle is invalid to use.
+		 *
+		 * @return True, if the handle is invalid, else false.
+		 */
 		bool operator!() const;
 		
 	};
@@ -108,9 +129,21 @@ namespace vkcv
 	private:
 		using Handle::Handle;
 	public:
+		/**
+		 * @brief Returns whether the handle represents an swapchain image.
+		 *
+		 * @return True, if the handle represents a swapchain image, else false.
+		 */
 		[[nodiscard]]
 		bool isSwapchainImage() const;
 		
+		/**
+		 * @brief Creates a valid image handle to represent a swapchain image
+		 * using an optional destroy callback.
+		 *
+		 * @param destroy Destroy callback (optional)
+		 * @return New swapchain image handle
+		 */
 		static ImageHandle createSwapchainImageHandle(const HandleDestroyFunction& destroy = nullptr);
 		
 	};
