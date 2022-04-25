@@ -320,8 +320,6 @@ namespace vkcv
 		 */
 		DescriptorSetLayout getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const;
 
-		// TODO: existsDescriptorSetLayout function that checks and returns fitting layout upon existence.
-
 		/**
 		 * @brief Creates a new descriptor set
 		 * 
