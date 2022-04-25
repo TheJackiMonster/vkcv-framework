@@ -889,9 +889,9 @@ namespace vkcv
 		return getSwapchain(swapchainHandle);
 	}
 
-	DescriptorSetLayoutHandle Core::createDescriptorSetLayout(const DescriptorBindings &bindingsMap)
+	DescriptorSetLayoutHandle Core::createDescriptorSetLayout(const DescriptorBindings &bindings)
 	{
-	    return m_DescriptorManager->createDescriptorSetLayout(bindingsMap);
+	    return m_DescriptorManager->createDescriptorSetLayout(bindings);
 	}
 
 	DescriptorSetLayout Core::getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const

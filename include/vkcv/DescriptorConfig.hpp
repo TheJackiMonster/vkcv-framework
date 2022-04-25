@@ -80,7 +80,8 @@ namespace vkcv
     struct DescriptorSetLayout
     {
         vk::DescriptorSetLayout vulkanHandle;
-        DescriptorBindings descriptorBindings;
+        DescriptorBindings      descriptorBindings;
+        size_t                  layoutUsageCount;
     };
 
     struct DescriptorSet

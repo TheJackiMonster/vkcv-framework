@@ -1,7 +1,7 @@
 #pragma once
 
 /**
- * @authors Artur Wasmut, Susanne D�tsch, Simeon Hermann
+ * @authors Artur Wasmut, Susanne D�tsch, Simeon Hermann, Tobias Frisch
  * @file src/vkcv/DescriptorManager.cpp
  * @brief Creation and handling of descriptor sets and the respective descriptor pools
  */
@@ -23,7 +23,7 @@ namespace vkcv
 	    explicit DescriptorManager(vk::Device device) noexcept;
 	    ~DescriptorManager() noexcept;
 
-	    DescriptorSetLayoutHandle createDescriptorSetLayout(const DescriptorBindings &setBindingsMap);
+	    DescriptorSetLayoutHandle createDescriptorSetLayout(const DescriptorBindings &bindings);
         DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle &setLayoutHandle);
 
 		void writeDescriptorSet(
@@ -45,33 +45,38 @@ namespace vkcv
 		vk::DescriptorPoolCreateInfo m_PoolInfo;
 
 		/**
-        * Contains all the descriptor set layout descriptions
-        * that were requested by the user in calls of createDescriptorSetLayout.
-        */
+         * Contains all the descriptor set layout descriptions
+         * that were requested by the user in calls of createDescriptorSetLayout.
+         */
         std::vector<DescriptorSetLayout> m_DescriptorSetLayouts;
 
         /**
-		* Contains all the descriptor sets that were created by the user in calls of createDescriptorSet.
-		*/
+		 * Contains all the descriptor sets that were created by the user in calls of createDescriptorSet.
+		 */
         std::vector<DescriptorSet> m_DescriptorSets;
 
 		/**
-		* Destroys a specific descriptor set
-		* @param[in] the DescriptorSetHandle
-		*/
+		 * @brief Destroys a specific descriptor set.
+		 *
+		 * @param[in] the DescriptorSetHandle
+		 */
 		void destroyDescriptorSetById(uint64_t id);
 
 		/**
-        * Destroys a specific descriptor set LAYOUT (not the set)
-        * @param[in] the DescriptorSetLayoutHandle
-        */
+         * @brief Revokes the usage of a specific descriptor set layout and
+         * destroys it once the usage count is at zero.
+         *
+         * @param[in] the DescriptorSetLayoutHandle
+         */
 		void destroyDescriptorSetLayoutById(uint64_t id);
 
 		/**
-		* creates a descriptor pool based on the poolSizes and poolInfo defined in the constructor
-		* is called initially in the constructor and then every time the pool runs out memory
-		* @return a DescriptorPool object
-		*/
+		 * @brief Creates a descriptor pool based on the poolSizes and poolInfo defined in the
+		 * constructor is called initially in the constructor and then every time the pool runs
+		 * out memory.
+		 *
+		 * @return a DescriptorPool object
+		 */
 		vk::DescriptorPool allocateDescriptorPool();
 		
 	};

@@ -35,6 +35,8 @@ namespace vkcv
         }
 		
 		for (uint64_t id = 0; id < m_DescriptorSetLayouts.size(); id++) {
+			// Resets the usage count to zero for destruction.
+			m_DescriptorSetLayouts[id].layoutUsageCount = 0;
 			destroyDescriptorSetLayoutById(id);
 		}
         
@@ -48,15 +50,16 @@ namespace vkcv
 		}
     }
 
-    DescriptorSetLayoutHandle DescriptorManager::createDescriptorSetLayout(const DescriptorBindings &setBindingsMap)
+    DescriptorSetLayoutHandle DescriptorManager::createDescriptorSetLayout(const DescriptorBindings &bindings)
     {
         for (size_t i = 0; i < m_DescriptorSetLayouts.size(); i++)
         {
-            if(m_DescriptorSetLayouts[i].descriptorBindings.size() != setBindingsMap.size())
+            if(m_DescriptorSetLayouts[i].descriptorBindings.size() != bindings.size())
                 continue;
 
-            if (m_DescriptorSetLayouts[i].descriptorBindings == setBindingsMap)
+            if (m_DescriptorSetLayouts[i].descriptorBindings == bindings)
             {
+				m_DescriptorSetLayouts[i].layoutUsageCount++;
                 return DescriptorSetLayoutHandle(i, [&](uint64_t id) { destroyDescriptorSetLayoutById(id); });
             }
         }
@@ -65,7 +68,7 @@ namespace vkcv
         std::vector<vk::DescriptorSetLayoutBinding> bindingsVector = {};
 		std::vector<vk::DescriptorBindingFlags> bindingsFlags = {};
 		
-        for (auto bindingElem : setBindingsMap)
+        for (auto bindingElem : bindings)
         {
             DescriptorBinding binding = bindingElem.second;
             uint32_t bindingID = bindingElem.first;
@@ -104,7 +107,7 @@ namespace vkcv
         };
 
         const uint64_t id = m_DescriptorSetLayouts.size();
-        m_DescriptorSetLayouts.push_back({vulkanHandle, setBindingsMap});
+        m_DescriptorSetLayouts.push_back({vulkanHandle, bindings, 1});
         return DescriptorSetLayoutHandle(id, [&](uint64_t id) { destroyDescriptorSetLayoutById(id); });
     }
 
@@ -341,6 +344,13 @@ namespace vkcv
 	    }
 
 	    auto& layout = m_DescriptorSetLayouts[id];
+
+		if (layout.layoutUsageCount > 1) {
+			layout.layoutUsageCount--;
+			return;
+		} else {
+			layout.layoutUsageCount = 0;
+		}
 		
 	    if (layout.vulkanHandle){
 	        m_Device.destroy(layout.vulkanHandle);

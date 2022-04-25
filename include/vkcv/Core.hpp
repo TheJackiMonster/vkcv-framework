@@ -85,7 +85,7 @@ namespace vkcv
 		uint32_t            m_currentSwapchainImageIndex;
 
 		/**
-		 * sets up swapchain images
+		 * Sets up swapchain images
 		 * @param handle Handle of swapchain
 		 */
 		void setSwapchainImages(SwapchainHandle handle);
@@ -234,7 +234,7 @@ namespace vkcv
 			Multisampling   multisampling = Multisampling::None);
 
         /**
-         * creates a new window and returns it's handle
+         * Creates a new window and returns it's handle
          * @param applicationName window name
          * @param windowWidth
          * @param windowHeight
@@ -249,7 +249,7 @@ namespace vkcv
 				bool resizeable);
 
 		/**
-		 * getter for window reference
+		 * Getter for window reference
 		 * @param handle of the window
 		 * @return the window
 		 */
@@ -257,14 +257,14 @@ namespace vkcv
 		Window& getWindow(const WindowHandle& handle );
 
 		/**
-		 * gets the swapchain of the current focused window
+		 * Gets the swapchain of the current focused window
 		 * @return swapchain
 		 */
 		[[nodiscard]]
 		Swapchain& getSwapchainOfCurrentWindow();
 
 		/**
-		 * returns the swapchain reference
+		 * Returns the swapchain reference
 		 * @param handle of the swapchain
 		 * @return swapchain
 		 */
@@ -272,7 +272,7 @@ namespace vkcv
 		Swapchain& getSwapchain(const SwapchainHandle& handle);
 
 		/**
-		 * gets the swapchain handle from the window
+		 * Gets the swapchain handle from the window
 		 * @param handle of the window
 		 * @return the swapchain from getSwapchain( SwapchainHandle )
 		 */
@@ -280,7 +280,7 @@ namespace vkcv
 		Swapchain& getSwapchain(const WindowHandle& handle);
 
 		/**
-		 * returns the image width
+		 * Returns the image width
 		 * @param image handle
 		 * @return imageWidth
 		 */
@@ -288,7 +288,7 @@ namespace vkcv
         uint32_t getImageWidth(const ImageHandle& image);
 
         /**
-         * returns the image height
+         * Returns the image height
          * @param image handle
          * @return imageHeight
          */
@@ -296,19 +296,28 @@ namespace vkcv
         uint32_t getImageHeight(const ImageHandle& image);
 
         /**
-         * returns the image format of the image
+         * Returns the image format of the image
          * @param image handle
          * @return imageFormat
          */
 		[[nodiscard]]
 		vk::Format getImageFormat(const ImageHandle& image);
 
-		/** TODO:
-		 * @param bindings
-		 * @return
+		/**
+		 * @brief Creates a descriptor set layout handle by a set of descriptor bindings.
+		 *
+		 * @param bindings Descriptor bindings
+		 * @return Descriptor set layout handle
 		 */
 		[[nodiscard]]
-		DescriptorSetLayoutHandle createDescriptorSetLayout(const std::unordered_map<uint32_t, DescriptorBinding> &bindingsMap);
+		DescriptorSetLayoutHandle createDescriptorSetLayout(const DescriptorBindings &bindings);
+		
+		/**
+		 * @brief Returns the descriptor set layout of a descriptor set layout handle.
+		 *
+		 * @param handle Descriptor set layout handle
+		 * @return Descriptor set layout
+		 */
 		DescriptorSetLayout getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const;
 
 		// TODO: existsDescriptorSetLayout function that checks and returns fitting layout upon existence.
@@ -341,7 +350,7 @@ namespace vkcv
 
 
 		/**
-		 * @brief start recording command buffers and increment frame index
+		 * @brief Start recording command buffers and increment frame index
 		*/
 		bool beginFrame(uint32_t& width, uint32_t& height, const WindowHandle &windowHandle);
 
@@ -415,6 +424,7 @@ namespace vkcv
         /**
          * Records the rtx ray generation to the @p cmdStreamHandle.
          * Currently only supports @p closestHit, @p rayGen and @c miss shaderstages @c.
+         *
          * @param cmdStreamHandle The command stream handle which receives relevant commands for drawing.
          * @param rtxPipeline The raytracing pipeline from the RTXModule.
          * @param rtxPipelineLayout The raytracing pipeline layout from the RTXModule.
@@ -491,7 +501,7 @@ namespace vkcv
 			const PushConstants&                    pushConstants);
 
 		/**
-		 * @brief end recording and present image
+		 * @brief End recording and present image
 		 */
 		void endFrame( const WindowHandle& windowHandle );
 
@@ -635,13 +645,68 @@ namespace vkcv
 		void recordBlitImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst,
 							 SamplerFilterType filterType);
 	
+		/**
+		 * @brief Sets a debug label to a buffer handle.
+		 *
+		 * @param handle Buffer handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const BufferHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to a pass handle.
+		 *
+		 * @param handle Pass handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const PassHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to a graphics pipeline handle.
+		 *
+		 * @param handle Graphics pipeline handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const GraphicsPipelineHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to a compute pipeline handle.
+		 *
+		 * @param handle Compute pipeline handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const ComputePipelineHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to a descriptor set handle.
+		 *
+		 * @param handle Descriptor set handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const DescriptorSetHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to a sampler handle.
+		 *
+		 * @param handle Sampler handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const SamplerHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to an image handle.
+		 *
+		 * @param handle Image handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const ImageHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to a command stream handle.
+		 *
+		 * @param handle Command stream handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const CommandStreamHandle &handle, const std::string &label);
 		
     };
