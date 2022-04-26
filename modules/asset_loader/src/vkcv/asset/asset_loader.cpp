@@ -8,7 +8,7 @@
 #include <stb_image.h>
 #include <vkcv/Logger.hpp>
 #include <algorithm>
-
+#include <future>
 
 namespace vkcv::asset {
 
@@ -498,7 +498,11 @@ namespace vkcv::asset {
 			if (path.extension() == ".glb") {
 				sceneObjects = fx::gltf::LoadFromBinary(path.string());
 			} else {
-				sceneObjects = fx::gltf::LoadFromText(path.string());
+				sceneObjects = fx::gltf::LoadFromText(path.string(), {
+					fx::gltf::detail::DefaultMaxBufferCount,
+					fx::gltf::detail::DefaultMaxMemoryAllocation,
+					fx::gltf::detail::DefaultMaxMemoryAllocation * 8,
+				});
 			}
 		} catch (const std::system_error& err) {
 			recurseExceptionPrint(err, path.string());
@@ -756,17 +760,31 @@ namespace vkcv::asset {
 			return result;
 		}
 		
-		for (size_t i = 0; i < scene.meshes.size(); i++) {
-			result = loadMesh(scene, static_cast<int>(i));
+		std::vector<std::future<int>> results;
+		results.reserve(scene.meshes.size());
+		
+		size_t i;
+		for (i = 0; i < scene.meshes.size(); i++) {
+			results.push_back(std::async(std::launch::async, [&scene](int id) {
+				return loadMesh(scene, id);
+			}, static_cast<int>(i)));
+		}
+		
+		for (i = 0; i < results.size(); i++) {
+			result = results[i].get();
 			
 			if (result != ASSET_SUCCESS) {
 				vkcv_log(LogLevel::ERROR, "Loading mesh with index %d failed '%s'",
 						 static_cast<int>(i), path.c_str());
-				return result;
+				break;
 			}
 		}
 		
-		return ASSET_SUCCESS;
+		for (; i < results.size(); i++) {
+			results[i].wait();
+		}
+		
+		return result;
 	}
 	
 	Texture loadTexture(const std::filesystem::path& path) {
