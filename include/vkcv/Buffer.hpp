@@ -20,6 +20,8 @@ namespace vkcv {
 		Buffer() = delete;
 		
 		/**
+		 * @brief Returns the buffers handle.
+		 *
 		 * @return The #BufferHandle to be used with the #Core
 		 */
 		[[nodiscard]]
@@ -28,6 +30,8 @@ namespace vkcv {
 		}
 		
 		/**
+		 * @brief Returns the type of the buffer.
+		 *
 		 * @return The #BufferType of the #Buffer
 		 */
 		[[nodiscard]]
@@ -36,6 +40,8 @@ namespace vkcv {
 		};
 		
 		/**
+		 * @brief Returns the count of elements in the buffer.
+		 *
 		 * @return The number of objects of type T the #Buffer holds
 		 */
 		[[nodiscard]]
@@ -44,6 +50,8 @@ namespace vkcv {
 		}
 		
 		/**
+		 * @brief Returns the size of the buffer in bytes.
+		 *
 		 * @return The size of the #Buffer in bytes
 		 */
 		[[nodiscard]]
@@ -52,6 +60,8 @@ namespace vkcv {
 		}
 
 		/**
+		 * @brief Returns the vulkan buffer handle of the buffer.
+		 *
 		 * @return The vulkan handle of the #Buffer to be used for manual vulkan commands
 		 */
         [[nodiscard]]
@@ -60,40 +70,44 @@ namespace vkcv {
         }
 
 		/**
-		 * Fill the #Buffer with data of type T
+		 * @brief Fills the #Buffer with data of type T.
 		 * 
-		 * @param data Pointer to the array of object type T
-		 * @param count The number of objects to copy from the data array
-		 * @param offset The offset into the #Buffer where the data is copied into
+		 * @param[in] data Pointer to the array of object type T
+		 * @param[in] count The number of objects to copy from the data array
+		 * @param[in] offset The offset into the #Buffer where the data is copied into
 		 */
-		void fill(const T* data, size_t count = 0, size_t offset = 0) {
+		void fill(const T* data,
+				  size_t count = 0,
+				  size_t offset = 0) {
 			 m_manager->fillBuffer(m_handle, data, count * sizeof(T), offset * sizeof(T));
 		}
 		
 		/**
-		 * Fill the #Buffer with data from a vector of type T
+		 * @brief Fills the #Buffer with data from a vector of type T.
 		 * 
 		 * @param vector Vector of type T to be copied into the #Buffer
 		 * @param offset The offset into the #Buffer where the data is copied into
 		 */
-		void fill(const std::vector<T>& vector, size_t offset = 0) {
+		void fill(const std::vector<T>& vector,
+				  size_t offset = 0) {
 			fill( static_cast<const T*>(vector.data()), static_cast<size_t>(vector.size()), offset);
 		}
 		
 		/**
-		 * Maps memory to the #Buffer and returns it
+		 * @brief Maps memory to the #Buffer and returns it.
 		 *
-		 * @param offset Offset of mapping in objects of type T
-		 * @param count Count of objects of type T that are mapped
+		 * @param[in] offset Offset of mapping in objects of type T
+		 * @param[in] count Count of objects of type T that are mapped
 		 * @return Pointer to mapped memory as type T
 		 */
 		[[nodiscard]]
-		T* map(size_t offset = 0, size_t count = 0) {
+		T* map(size_t offset = 0,
+			   size_t count = 0) {
 			return reinterpret_cast<T*>(m_manager->mapBuffer(m_handle, offset * sizeof(T), count * sizeof(T)));
 		}
 
 		/**
-		 * Unmap the #Buffer, invalidates the pointer obtained by map()
+		 * @brief Unmaps the #Buffer, invalidates the pointer obtained by map().
 		 */
 		void unmap() {
 			m_manager->unmapBuffer(m_handle);
@@ -106,7 +120,20 @@ namespace vkcv {
 		const size_t m_count;
 		const BufferMemoryType m_memoryType;
 		
-		Buffer(BufferManager* manager, BufferHandle handle, BufferType type, size_t count, BufferMemoryType memoryType) :
+		/**
+		 * @brief Constructor of the buffer object.
+		 *
+		 * @param[in,out] manager Buffer manager
+		 * @param[in] handle Buffer handle
+		 * @param[in] type Type of buffer
+		 * @param[in] count Count of elements
+		 * @param[in] memoryType Type of memory
+		 */
+		Buffer(BufferManager* manager,
+			   BufferHandle handle,
+			   BufferType type,
+			   size_t count,
+			   BufferMemoryType memoryType) :
 				m_manager(manager),
 				m_handle(handle),
 				m_type(type),
@@ -114,9 +141,36 @@ namespace vkcv {
 				m_memoryType(memoryType)
 		{}
 		
+		/**
+		 * @brief Creates a buffer object of type T with
+		 * a selected type, count of elements, memory type
+		 * and support of indirect usage.
+		 *
+		 * @param[in,out] manager Buffer manager
+		 * @param[in] type Buffer type
+		 * @param[in] count Count of elements
+		 * @param[in] memoryType Type of memory
+		 * @param[in] supportIndirect Support indirect usage
+		 * @return New buffer object
+		 */
 		[[nodiscard]]
-		static Buffer<T> create(BufferManager* manager, BufferType type, size_t count, BufferMemoryType memoryType, bool supportIndirect) {
-			return Buffer<T>(manager, manager->createBuffer(type, count * sizeof(T), memoryType, supportIndirect), type, count, memoryType);
+		static Buffer<T> create(BufferManager* manager,
+								BufferType type,
+								size_t count,
+								BufferMemoryType memoryType,
+								bool supportIndirect) {
+			return Buffer<T>(
+				manager,
+				manager->createBuffer(
+					type,
+					count * sizeof(T),
+					memoryType,
+					supportIndirect
+				),
+				type,
+				count,
+				memoryType
+			);
 		}
 		
 	};
