@@ -152,7 +152,7 @@ namespace vkcv
 		width = extent.width;
 		height = extent.height;
 		
-		if ((width < MIN_SWAPCHAIN_SIZE) || (height < MIN_SWAPCHAIN_SIZE)) {
+		if ((width < MIN_SURFACE_SIZE) || (height < MIN_SURFACE_SIZE)) {
 			return false;
 		}
 		

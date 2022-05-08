@@ -42,6 +42,9 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/ImageManager.cpp
 		
 		${vkcv_include}/vkcv/Logger.hpp
+		
+		${vkcv_include}/vkcv/Surface.hpp
+		${vkcv_source}/vkcv/Surface.cpp
 
 		${vkcv_include}/vkcv/Swapchain.hpp
 		${vkcv_source}/vkcv/Swapchain.cpp

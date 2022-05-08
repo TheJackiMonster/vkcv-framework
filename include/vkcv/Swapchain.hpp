@@ -9,59 +9,35 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Context.hpp"
+#include "Surface.hpp"
 #include "Window.hpp"
 
 namespace vkcv
 {
-	
-	const uint32_t MIN_SWAPCHAIN_SIZE = 2;
 	
     class Swapchain final {
     private:
     	friend class Core;
     	friend class Window;
     	friend class SwapchainManager;
-
-        struct Surface
-        {
-            vk::SurfaceKHR handle;
-            std::vector<vk::SurfaceFormatKHR> formats;
-            vk::SurfaceCapabilitiesKHR capabilities;
-            std::vector<vk::PresentModeKHR> presentModes;
-			uint32_t presentQueueIndex;
-        };
-        
+     
+		const Context *m_Context;
         Surface m_Surface;
-
         vk::SwapchainKHR m_Swapchain;
-        vk::Format m_Format;
-        vk::ColorSpaceKHR m_ColorSpace;
-        vk::PresentModeKHR m_PresentMode;
-		uint32_t m_ImageCount;
-	
-		vk::Extent2D m_Extent;
-	
 		std::atomic<bool> m_RecreationRequired;
 
 		/**
 		 * Constructor of a SwapChain object
 		 * glfw is not initialized in this class because ist must be sure that there exists a context first
 		 * glfw is already initialized by the window class
+		 *
+		 * @param context Current context
 		 * @param surface used by the swapchain
 		 * @param swapchain to show images in the window
-		 * @param format of the swapchain
-		 * @param colorSpace of the swapchain
-		 * @param presentMode of the swapchain
-		 * @param imageCount of the swapchain
-		 * @param extent of the swapchain
 		 */
-        Swapchain(const Surface &surface,
-                  vk::SwapchainKHR swapchain,
-                  vk::Format format,
-                  vk::ColorSpaceKHR colorSpace,
-                  vk::PresentModeKHR presentMode,
-                  uint32_t imageCount,
-				  vk::Extent2D extent) noexcept;
+        Swapchain(const Context &context,
+				  const Surface &surface,
+                  vk::SwapchainKHR swapchain) noexcept;
 	
 		/**
 		 * checks if the update flag is true
@@ -96,7 +72,7 @@ namespace vkcv
          * @return current surface
          */
         [[nodiscard]]
-        vk::SurfaceKHR getSurface() const;
+        const Surface& getSurface() const;
 
         /**
          * gets the chosen swapchain format
@@ -133,7 +109,7 @@ namespace vkcv
 		 * @return the familyQueueIndex for the surface
 		 */
 		[[nodiscard]]
-		const uint32_t& getPresentQueueIndex() const;
+		uint32_t getPresentQueueIndex() const;
 
 	};
     
