@@ -3,7 +3,7 @@
 #extension GL_GOOGLE_include_directive : enable
 
 layout(triangles) in;
-layout(triangle_strip, max_vertices = 3) out;
+layout(points, max_vertices = 1) out;
 
 layout(location = 0) in vec3 geomNormal[];
 
@@ -35,19 +35,17 @@ void main()	{
     float dy = abs(v0.y - clipY) + abs(v1.y - clipY) + abs(v2.y - clipY);
     float dz = abs(v0.z - clipZ) + abs(v1.z - clipZ) + abs(v2.z - clipZ);
 
-    if (dx * dy * dz > 0.0f) {
-        gl_Position = mvp * (v0 * CLIP_SCALE);
-        passNormal = geomNormal[0];
-        EmitVertex();
+    if (dx * dy * dz <= 0.0f) {
+        v0 = clipByLimit(mvp * gl_in[0].gl_Position);
+        v1 = clipByLimit(mvp * gl_in[1].gl_Position);
+        v2 = clipByLimit(mvp * gl_in[2].gl_Position);
 
-        gl_Position = mvp * (v1 * CLIP_SCALE);
-        passNormal = geomNormal[1];
-        EmitVertex();
+        if ((v0.x < clipLimit) || (v1.x < clipLimit) || (v2.x < clipLimit)) {
+            gl_Position = (v0 + v1 + v2) / 3;
+            passNormal = (geomNormal[0] + geomNormal[1] + geomNormal[2]) / 3;
+            EmitVertex();
 
-        gl_Position = mvp * (v2 * CLIP_SCALE);
-        passNormal = geomNormal[2];
-        EmitVertex();
-
-        EndPrimitive();
+            EndPrimitive();
+        }
     }
 }

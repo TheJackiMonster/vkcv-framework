@@ -38,33 +38,55 @@ int main(int argc, const char** argv) {
 			argc > 1 ? argv[1] : "assets/skull_scaled/scene.gltf"
 	));
 	
-	const vkcv::AttachmentDescription present_color_attachment(
+	const vkcv::AttachmentDescription present_color_attachment0(
 			vkcv::AttachmentOperation::STORE,
 			vkcv::AttachmentOperation::CLEAR,
 			core.getSwapchain(windowHandle).getFormat()
 	);
 	
-	const vkcv::AttachmentDescription depth_attachment(
+	const vkcv::AttachmentDescription depth_attachment0(
 			vkcv::AttachmentOperation::STORE,
 			vkcv::AttachmentOperation::CLEAR,
 			vk::Format::eD32Sfloat
 	);
 	
-	vkcv::PassConfig scenePassDefinition({ present_color_attachment, depth_attachment });
+	vkcv::PassConfig scenePassDefinition({ present_color_attachment0, depth_attachment0 });
 	vkcv::PassHandle scenePass = core.createPass(scenePassDefinition);
 	
-	if (!scenePass) {
+	const vkcv::AttachmentDescription present_color_attachment1(
+			vkcv::AttachmentOperation::STORE,
+			vkcv::AttachmentOperation::LOAD,
+			core.getSwapchain(windowHandle).getFormat()
+	);
+	
+	const vkcv::AttachmentDescription depth_attachment1(
+			vkcv::AttachmentOperation::STORE,
+			vkcv::AttachmentOperation::LOAD,
+			vk::Format::eD32Sfloat
+	);
+	
+	vkcv::PassConfig linePassDefinition({ present_color_attachment1, depth_attachment1 });
+	vkcv::PassHandle linePass = core.createPass(linePassDefinition);
+	
+	if ((!scenePass) || (!linePass)) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 	
 	vkcv::ShaderProgram sceneShaderProgram;
+	vkcv::ShaderProgram lineShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
 	
 	compiler.compileProgram(sceneShaderProgram, {
 			{ vkcv::ShaderStage::VERTEX, "assets/shaders/shader.vert" },
 			{ vkcv::ShaderStage::GEOMETRY, "assets/shaders/shader.geom" },
 			{ vkcv::ShaderStage::FRAGMENT, "assets/shaders/shader.frag" }
+	}, nullptr);
+	
+	compiler.compileProgram(lineShaderProgram, {
+			{ vkcv::ShaderStage::VERTEX, "assets/shaders/shader.vert" },
+			{ vkcv::ShaderStage::GEOMETRY, "assets/shaders/wired.geom" },
+			{ vkcv::ShaderStage::FRAGMENT, "assets/shaders/red.frag" }
 	}, nullptr);
 	
 	const std::vector<vkcv::VertexAttachment> vertexAttachments = sceneShaderProgram.getVertexAttachments();
@@ -84,7 +106,7 @@ int main(int argc, const char** argv) {
 	float clipZ = 0.0f;
 	
 	auto clipBuffer = core.createBuffer<float>(vkcv::BufferType::UNIFORM, 4);
-	clipBuffer.fill({ clipLimit, clipX, clipY, clipZ });
+	clipBuffer.fill({ clipLimit, -clipX, -clipY, -clipZ });
 	
 	vkcv::DescriptorWrites clipWrites;
 	clipWrites.uniformBufferWrites = {
@@ -128,9 +150,21 @@ int main(int argc, const char** argv) {
 			{ material0.getDescriptorSetLayout(), clipDescriptorSetLayout },
 			true
 	};
-	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
 	
-	if (!scenePipeline) {
+	const vkcv::GraphicsPipelineConfig linePipelineDefinition{
+			lineShaderProgram,
+			UINT32_MAX,
+			UINT32_MAX,
+			linePass,
+			{sceneLayout},
+			{ material0.getDescriptorSetLayout(), clipDescriptorSetLayout },
+			true
+	};
+	
+	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
+	vkcv::GraphicsPipelineHandle linePipeline = core.createGraphicsPipeline(linePipelineDefinition);
+	
+	if ((!scenePipeline) || (!linePipeline)) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -170,7 +204,7 @@ int main(int argc, const char** argv) {
 		start = end;
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
 		
-		clipBuffer.fill({ clipLimit, clipX, clipY, clipZ });
+		clipBuffer.fill({ clipLimit, -clipX, -clipY, -clipZ });
 		
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
@@ -188,6 +222,15 @@ int main(int argc, const char** argv) {
 							  cameraManager.getActiveCamera(),
 							  scenePass,
 							  scenePipeline,
+							  sizeof(glm::mat4),
+							  recordMesh,
+							  renderTargets,
+							  windowHandle);
+		
+		scene.recordDrawcalls(cmdStream,
+							  cameraManager.getActiveCamera(),
+							  linePass,
+							  linePipeline,
 							  sizeof(glm::mat4),
 							  recordMesh,
 							  renderTargets,
