@@ -71,8 +71,23 @@ namespace vkcv::scene {
 		if (*this) {
 			const auto& material = getMaterial();
 			
+			IndexBitCount indexBitCount;
+			
+			switch (vertexGroup.indexBuffer.type) {
+				case asset::IndexType::UINT16:
+					indexBitCount = IndexBitCount::Bit16;
+					break;
+				case asset::IndexType::UINT32:
+					indexBitCount = IndexBitCount::Bit32;
+					break;
+				default:
+					indexBitCount = IndexBitCount::Bit16;
+					vkcv_log(LogLevel::WARNING, "Unsupported index type!");
+					break;
+			}
+			
 			drawcalls.push_back(DrawcallInfo(
-					vkcv::Mesh(m_vertexBindings, indexBuffer.getVulkanHandle(), m_indexCount),
+					vkcv::Mesh(m_vertexBindings, indexBuffer.getVulkanHandle(), m_indexCount, indexBitCount),
 					{ DescriptorSetUsage(0, material.getDescriptorSet()) }
 			));
 		}
