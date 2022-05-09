@@ -98,6 +98,7 @@ endif()
 include(${vkcv_config}/Sources.cmake)
 
 message(STATUS "Framework:")
+message(" - Includes: [ ${vkcv_includes} ]")
 message(" - Libraries: [ ${vkcv_libraries} ]")
 message(" - Flags: [ ${vkcv_flags} ]")
 
