@@ -147,7 +147,7 @@ namespace vkcv::rtx {
 
     void RTXModule::createRTXPipelineAndLayout(uint32_t pushConstantSize, std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rtxShader) {
         // -- process vkcv::ShaderProgram into vk::ShaderModule
-        std::vector<char> rayGenShaderCode = rtxShader.getShader(ShaderStage::RAY_GEN).shaderCode;
+        std::vector<char> rayGenShaderCode = rtxShader.getShaderBinary(ShaderStage::RAY_GEN);
 
         vk::ShaderModuleCreateInfo rayGenShaderModuleInfo(
             vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
@@ -159,7 +159,7 @@ namespace vkcv::rtx {
             vkcv_log(LogLevel::ERROR, "The Ray Generation Shader Module could not be created!");
         }
 
-        std::vector<char> rayMissShaderCode = rtxShader.getShader(ShaderStage::RAY_MISS).shaderCode;
+        std::vector<char> rayMissShaderCode = rtxShader.getShaderBinary(ShaderStage::RAY_MISS);
         vk::ShaderModuleCreateInfo rayMissShaderModuleInfo(
             vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
             rayMissShaderCode.size(), //size_t codeSize
@@ -171,7 +171,7 @@ namespace vkcv::rtx {
             vkcv_log(LogLevel::ERROR, "The Ray Miss Shader Module could not be created!");
         }
 
-        std::vector<char> rayClosestHitShaderCode = rtxShader.getShader(ShaderStage::RAY_CLOSEST_HIT).shaderCode;
+        std::vector<char> rayClosestHitShaderCode = rtxShader.getShaderBinary(ShaderStage::RAY_CLOSEST_HIT);
         vk::ShaderModuleCreateInfo rayClosestHitShaderModuleInfo(
             vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
             rayClosestHitShaderCode.size(), //size_t codeSize

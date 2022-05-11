@@ -87,14 +87,13 @@ namespace vkcv {
 	    if (shaderCode.empty()) {
 			return false;
 		} else {
-            Shader shader{shaderCode, stage};
-            m_Shaders.insert(std::make_pair(stage, shader));
+            m_Shaders.insert(std::make_pair(stage, shaderCode));
             reflectShader(stage);
             return true;
         }
 	}
 
-    const Shader &ShaderProgram::getShader(ShaderStage stage) const
+    const std::vector<char> &ShaderProgram::getShaderBinary(ShaderStage stage) const
     {
 	    return m_Shaders.at(stage);
 	}
@@ -109,7 +108,7 @@ namespace vkcv {
 
     void ShaderProgram::reflectShader(ShaderStage shaderStage)
     {
-        auto shaderCodeChar = m_Shaders.at(shaderStage).shaderCode;
+        auto shaderCodeChar = m_Shaders.at(shaderStage);
         std::vector<uint32_t> shaderCode;
 
         for (uint32_t i = 0; i < shaderCodeChar.size()/4; i++)

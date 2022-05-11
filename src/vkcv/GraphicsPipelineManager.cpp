@@ -110,7 +110,7 @@ namespace vkcv
             vk::PipelineShaderStageCreateInfo*  outCreateInfo) {
 
         assert(outCreateInfo);
-        std::vector<char>           code = shaderProgram.getShader(stage).shaderCode;
+        std::vector<char>           code = shaderProgram.getShaderBinary(stage);
         vk::ShaderModuleCreateInfo  vertexModuleInfo({}, code.size(), reinterpret_cast<uint32_t*>(code.data()));
         vk::ShaderModule            shaderModule;
         if (device.createShaderModule(&vertexModuleInfo, nullptr, &shaderModule) != vk::Result::eSuccess)
