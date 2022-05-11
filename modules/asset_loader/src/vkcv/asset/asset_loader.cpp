@@ -171,7 +171,7 @@ namespace vkcv::asset {
 	static std::array<float, 16> calculateModelMatrix(const std::array<float, 3>& translation,
 													  const std::array<float, 3>& scale,
 													  const std::array<float, 4>& rotation,
-													  const std::array<float, 16>& matrix){
+													  const std::array<float, 16>& matrix) {
 		std::array<float, 16> modelMatrix = {
 				1,0,0,0,
 				0,1,0,0,
@@ -185,31 +185,54 @@ namespace vkcv::asset {
 			// translation
 			modelMatrix[3] = translation[0];
 			modelMatrix[7] = translation[1];
-			modelMatrix[11] = translation[2];
+			modelMatrix[11] = -translation[2]; // flip Z to convert from GLTF to Vulkan
 			
 			// rotation and scale
-			auto a = rotation[0];
-			auto q1 = rotation[1];
-			auto q2 = rotation[2];
-			auto q3 = rotation[3];
-	
-			modelMatrix[0] = (2 * (a * a + q1 * q1) - 1) * scale[0];
-			modelMatrix[1] = (2 * (q1 * q2 - a * q3)) * scale[1];
-			modelMatrix[2] = (2 * (q1 * q3 + a * q2)) * scale[2];
-	
-			modelMatrix[4] = (2 * (q1 * q2 + a * q3)) * scale[0];
-			modelMatrix[5] = (2 * (a * a + q2 * q2) - 1) * scale[1];
-			modelMatrix[6] = (2 * (q2 * q3 - a * q1)) * scale[2];
-	
-			modelMatrix[8] = (2 * (q1 * q3 - a * q2)) * scale[0];
-			modelMatrix[9] = (2 * (q2 * q3 + a * q1)) * scale[1];
-			modelMatrix[10] = (2 * (a * a + q3 * q3) - 1) * scale[2];
-	
-			// flip y, because GLTF uses y up, but vulkan -y up
-			modelMatrix[5] *= -1;
+			auto a = rotation[3];
+			auto q1 = rotation[0];
+			auto q2 = rotation[1];
+			auto q3 = rotation[2];
+			
+			auto s = 2 / (a * a + q1 * q1 + q2 * q2 + q3 * q3);
+			
+			auto s1 = scale[0];
+			auto s2 = scale[1];
+			auto s3 = -scale[2]; // flip Z to convert from GLTF to Vulkan
+			
+			modelMatrix[0]  = (1 - s * (q2 * q2 + q3 * q3)) * s1;
+			modelMatrix[1]  = (    s * (q1 * q2 - q3 *  a)) * s2;
+			modelMatrix[2]  = (    s * (q1 * q3 + q2 *  a)) * s3;
+			
+			modelMatrix[4]  = (    s * (q1 * q2 + q3 *  a)) * s1;
+			modelMatrix[5]  = (1 - s * (q1 * q1 + q3 * q3)) * s2;
+			modelMatrix[6]  = (    s * (q2 * q3 - q1 *  a)) * s3;
+			
+			modelMatrix[8]  = (    s * (q1 * q3 - q2 *  a)) * s1;
+			modelMatrix[9]  = (    s * (q2 * q3 + q1 *  a)) * s2;
+			modelMatrix[10] = (1 - s * (q1 * q1 + q2 * q2)) * s3;
 	
 			return modelMatrix;
 		}
+	}
+	
+	static std::array<float, 16> multiplyMatrix(const std::array<float, 16>& matrix,
+												const std::array<float, 16>& other) {
+		std::array<float, 16> result;
+		size_t i, j, k;
+		
+		for (i = 0; i < 4; i++) {
+			for (j = 0; j < 4; j++) {
+				float sum = 0.0f;
+				
+				for (k = 0; k < 4; k++) {
+					sum += matrix[i * 4 + k] * other[k * 4 + j];
+				}
+				
+				result[i * 4 + j] = sum;
+			}
+		}
+		
+		return result;
 	}
 
 	bool Material::hasTexture(const PBRTextureTarget target) const {
@@ -496,9 +519,23 @@ namespace vkcv::asset {
 	
 		try {
 			if (path.extension() == ".glb") {
-				sceneObjects = fx::gltf::LoadFromBinary(path.string());
+				sceneObjects = fx::gltf::LoadFromBinary(
+						path.string(),
+						{
+								fx::gltf::detail::DefaultMaxBufferCount,
+								fx::gltf::detail::DefaultMaxMemoryAllocation * 16,
+								fx::gltf::detail::DefaultMaxMemoryAllocation * 8
+						}
+				);
 			} else {
-				sceneObjects = fx::gltf::LoadFromText(path.string());
+				sceneObjects = fx::gltf::LoadFromText(
+						path.string(),
+						{
+							fx::gltf::detail::DefaultMaxBufferCount,
+							fx::gltf::detail::DefaultMaxMemoryAllocation,
+							fx::gltf::detail::DefaultMaxMemoryAllocation * 8
+						}
+				);
 			}
 		} catch (const std::system_error& err) {
 			recurseExceptionPrint(err, path.string());
@@ -536,15 +573,54 @@ namespace vkcv::asset {
 				scene.meshes.push_back(mesh);
 			}
 			
-			// This only works if the node has a mesh and it only loads the meshes and ignores cameras and lights
-			for (const auto& node : sceneObjects.nodes) {
+			std::vector< std::array<float, 16> > matrices;
+			std::vector< int32_t > parents;
+			
+			matrices.reserve(sceneObjects.nodes.size());
+			parents.resize(sceneObjects.nodes.size(), -1);
+			
+			for (size_t i = 0; i < sceneObjects.nodes.size(); i++) {
+				const auto &node = sceneObjects.nodes[i];
+				
+				matrices.push_back(calculateModelMatrix(
+						node.translation,
+						node.scale,
+						node.rotation,
+						node.matrix
+				));
+				
+				for (int32_t child : node.children)
+					if ((child >= 0) && (child < parents.size()))
+						parents[child] = static_cast<int32_t>(i);
+			}
+			
+			std::vector< std::array<float, 16> > final_matrices;
+			final_matrices.reserve(matrices.size());
+			
+			for (size_t i = 0; i < matrices.size(); i++) {
+				std::vector<int> order;
+				order.push_back(static_cast<int32_t>(i));
+				
+				while (parents[ order[order.size() - 1] ] >= 0)
+					order.push_back(parents[ order[order.size() - 1] ]);
+				
+				std::array<float, 16> matrix = matrices[ order[order.size() - 1] ];
+				
+				for (size_t j = order.size() - 1; j > 0; j--) {
+					const auto id = order[j - 1];
+					const std::array<float, 16> matrix_other = matrices[ id ];
+					
+					matrix = multiplyMatrix(matrix, matrix_other);
+				}
+				
+				final_matrices.push_back(matrix);
+			}
+			
+			for (size_t i = 0; i < sceneObjects.nodes.size(); i++) {
+				const auto &node = sceneObjects.nodes[i];
+				
 				if ((node.mesh >= 0) && (node.mesh < scene.meshes.size())) {
-					scene.meshes[node.mesh].modelMatrix = calculateModelMatrix(
-							node.translation,
-							node.scale,
-							node.rotation,
-							node.matrix
-					);
+					scene.meshes[node.mesh].modelMatrix = final_matrices[i];
 				}
 			}
 		}

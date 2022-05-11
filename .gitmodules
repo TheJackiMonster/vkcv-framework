@@ -28,3 +28,9 @@
 [submodule "modules/upscaling/lib/FidelityFX-FSR"]
 	path = modules/upscaling/lib/FidelityFX-FSR
 	url = https://github.com/GPUOpen-Effects/FidelityFX-FSR.git
+[submodule "lib/Vulkan-Headers"]
+	path = lib/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "lib/Vulkan-Hpp"]
+	path = lib/Vulkan-Hpp
+	url = https://github.com/KhronosGroup/Vulkan-Hpp
