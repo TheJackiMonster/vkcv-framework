@@ -14,19 +14,25 @@ namespace vkcv {
      * @param[in] relative path to the shader code
      * @return vector of chars as a buffer for the code
      */
-	std::vector<char> readShaderCode(const std::filesystem::path &shaderPath) {
+	std::vector<uint32_t> readShaderCode(const std::filesystem::path &shaderPath) {
 		std::ifstream file (shaderPath.string(), std::ios::ate | std::ios::binary);
 		
 		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened");
-			return std::vector<char>{};
+			vkcv_log(LogLevel::ERROR, "The file could not be opened: %s", shaderPath.c_str());
+			return std::vector<uint32_t>();
 		}
 		
 		size_t fileSize = (size_t)file.tellg();
-		std::vector<char> buffer(fileSize);
+
+        if (fileSize % sizeof(uint32_t) != 0) {
+            vkcv_log(LogLevel::ERROR, "The file is not a valid shader: %s", shaderPath.c_str());
+            return std::vector<uint32_t>();
+        }
+
+		std::vector<uint32_t> buffer(fileSize / sizeof(uint32_t));
 		
 		file.seekg(0);
-		file.read(buffer.data(), fileSize);
+		file.read(reinterpret_cast<char*>(buffer.data()), fileSize);
 		file.close();
 		
         return buffer;
@@ -82,7 +88,7 @@ namespace vkcv {
 			vkcv_log(LogLevel::WARNING, "Overwriting existing shader stage");
 		}
 
-	    const std::vector<char> shaderCode = readShaderCode(path);
+	    const std::vector<uint32_t> shaderCode = readShaderCode(path);
 	    
 	    if (shaderCode.empty()) {
 			return false;
@@ -93,7 +99,7 @@ namespace vkcv {
         }
 	}
 
-    const std::vector<char> &ShaderProgram::getShaderBinary(ShaderStage stage) const
+    const std::vector<uint32_t> &ShaderProgram::getShaderBinary(ShaderStage stage) const
     {
 	    return m_Shaders.at(stage);
 	}
@@ -108,13 +114,9 @@ namespace vkcv {
 
     void ShaderProgram::reflectShader(ShaderStage shaderStage)
     {
-        auto shaderCodeChar = m_Shaders.at(shaderStage);
-        std::vector<uint32_t> shaderCode;
+        auto shaderCode = m_Shaders.at(shaderStage);
 
-        for (uint32_t i = 0; i < shaderCodeChar.size()/4; i++)
-            shaderCode.push_back(((uint32_t*) shaderCodeChar.data())[i]);
-
-        spirv_cross::Compiler comp(move(shaderCode));
+        spirv_cross::Compiler comp(shaderCode);
         spirv_cross::ShaderResources resources = comp.get_shader_resources();
 
         //reflect vertex input

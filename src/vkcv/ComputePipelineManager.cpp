@@ -112,8 +112,8 @@ namespace vkcv
 
     vk::Result ComputePipelineManager::createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, const ShaderStage stage)
     {
-        std::vector<char> code = shaderProgram.getShaderBinary(stage);
-        vk::ShaderModuleCreateInfo moduleInfo({}, code.size(), reinterpret_cast<uint32_t*>(code.data()));
+        std::vector<uint32_t> code = shaderProgram.getShaderBinary(stage);
+        vk::ShaderModuleCreateInfo moduleInfo({}, code.size() * sizeof(uint32_t), code.data());
         return m_Device.createShaderModule(&moduleInfo, nullptr, &module);
     }
 }

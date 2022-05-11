@@ -48,7 +48,7 @@ namespace vkcv {
          * @param[in] stage The stage of the shader
          * @return Shader code binary of the given stage
          */
-        const std::vector<char> &getShaderBinary(ShaderStage stage) const;
+        const std::vector<uint32_t> &getShaderBinary(ShaderStage stage) const;
 
 		/**
 		 * @brief Returns whether a shader exists in the program for a
@@ -91,7 +91,7 @@ namespace vkcv {
 	     */
         void reflectShader(ShaderStage shaderStage);
 
-        std::unordered_map<ShaderStage, std::vector<char> > m_Shaders;
+        std::unordered_map<ShaderStage, std::vector<uint32_t> > m_Shaders;
 
         // contains all vertex input attachments used in the vertex buffer
         std::vector<VertexAttachment> m_VertexAttachments;
