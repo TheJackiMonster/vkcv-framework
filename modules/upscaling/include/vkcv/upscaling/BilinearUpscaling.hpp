@@ -7,7 +7,7 @@ namespace vkcv::upscaling {
 	class BilinearUpscaling : public Upscaling {
 	private:
 	public:
-		BilinearUpscaling(Core& core);
+		explicit BilinearUpscaling(Core& core);
 		
 		void recordUpscaling(const CommandStreamHandle& cmdStream,
 							 const ImageHandle& input,

@@ -10,7 +10,7 @@ namespace vkcv::upscaling {
 		Core& m_core;
 	
 	public:
-		Upscaling(Core& core);
+		explicit Upscaling(Core& core);
 		
 		~Upscaling() = default;
 		
