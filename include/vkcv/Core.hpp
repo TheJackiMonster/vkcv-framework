@@ -265,7 +265,7 @@ namespace vkcv
 		 * @return swapchain
 		 */
 		[[nodiscard]]
-		Swapchain& getSwapchain(const SwapchainHandle& handle);
+		Swapchain& getSwapchain(const SwapchainHandle &handle);
 
 		/**
 		 * gets the swapchain handle from the window
@@ -273,7 +273,7 @@ namespace vkcv
 		 * @return the swapchain from getSwapchain( SwapchainHandle )
 		 */
 		[[nodiscard]]
-		Swapchain& getSwapchain(const WindowHandle& handle);
+		Swapchain& getSwapchain(const WindowHandle &handle);
 
 		/**
 		 * returns the image width
@@ -281,7 +281,7 @@ namespace vkcv
 		 * @return imageWidth
 		 */
         [[nodiscard]]
-        uint32_t getImageWidth(const ImageHandle& image);
+        uint32_t getImageWidth(const ImageHandle &image);
 
         /**
          * returns the image height
@@ -289,7 +289,7 @@ namespace vkcv
          * @return imageHeight
          */
         [[nodiscard]]
-        uint32_t getImageHeight(const ImageHandle& image);
+        uint32_t getImageHeight(const ImageHandle &image);
 
         /**
          * returns the image format of the image
@@ -297,7 +297,16 @@ namespace vkcv
          * @return imageFormat
          */
 		[[nodiscard]]
-		vk::Format getImageFormat(const ImageHandle& image);
+		vk::Format getImageFormat(const ImageHandle &image);
+		
+		/**
+		 * @brief Returns the images amount of mip levels.
+		 *
+		 * @param image Image handle
+		 * @return Amount of mip levels
+		 */
+		[[nodiscard]]
+		uint32_t getImageMipLevels(const ImageHandle &image);
 
 		/** TODO:
 		 * @param bindings

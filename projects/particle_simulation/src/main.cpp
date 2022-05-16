@@ -8,7 +8,7 @@
 #include <glm/gtc/matrix_access.hpp>
 #include <ctime>
 #include <vkcv/shader/GLSLCompiler.hpp>
-#include "BloomAndFlares.hpp"
+#include <vkcv/effects/BloomAndFlaresEffect.hpp>
 
 int main(int argc, const char **argv) {
     const char *applicationName = "Particlesystem";
@@ -220,7 +220,10 @@ int main(int argc, const char **argv) {
 			swapchainExtent.height,
 			1, false, true, true
 	).getHandle();
-    BloomAndFlares bloomAndFlares(&core, colorFormat, swapchainExtent.width, swapchainExtent.height);
+	
+	vkcv::effects::BloomAndFlaresEffect bloomAndFlares (core);
+	bloomAndFlares.setUpsamplingLimit(3);
+	
     window.e_resize.add([&](int width, int height) {
 		swapchainExtent = core.getSwapchain(windowHandle).getExtent();
         colorBuffer = core.createImage(
@@ -229,7 +232,6 @@ int main(int argc, const char **argv) {
 				swapchainExtent.height,
 				1, false, true, true
 		).getHandle();
-        bloomAndFlares.updateImageDimensions(width, height);
     });
 
     vkcv::ShaderProgram tonemappingShader;
@@ -299,8 +301,8 @@ int main(int argc, const char **argv) {
                 {drawcalls},
                 { colorBuffer },
                 windowHandle);
-
-        bloomAndFlares.execWholePipeline(cmdStream, colorBuffer);
+	
+		bloomAndFlares.recordEffect(cmdStream, colorBuffer, colorBuffer);
 
         core.prepareImageForStorage(cmdStream, colorBuffer);
         core.prepareImageForStorage(cmdStream, swapchainInput);

@@ -9,7 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <time.h>
 #include <vkcv/shader/GLSLCompiler.hpp>
-#include "BloomAndFlares.hpp"
+#include <vkcv/effects/BloomAndFlaresEffect.hpp>
 #include "PipelineInit.hpp"
 #include "Particle.hpp"
 
@@ -234,7 +234,9 @@ int main(int argc, const char **argv) {
 			swapchainExtent.height,
 			1, false, true, true
 	).getHandle();
-    BloomAndFlares bloomAndFlares(&core, colorFormat, swapchainExtent.width, swapchainExtent.height);
+	
+	vkcv::effects::BloomAndFlaresEffect bloomAndFlares (core);
+	bloomAndFlares.setUpsamplingLimit(3);
 
     //tone mapping shader & pipeline
     vkcv::ComputePipelineHandle tonemappingPipe;
@@ -375,8 +377,8 @@ int main(int argc, const char **argv) {
                 {drawcalls},
                 { colorBuffer },
                 windowHandle);
-
-        bloomAndFlares.execWholePipeline(cmdStream, colorBuffer);
+	
+		bloomAndFlares.recordEffect(cmdStream, colorBuffer, colorBuffer);
 
         core.prepareImageForStorage(cmdStream, colorBuffer);
         core.prepareImageForStorage(cmdStream, swapchainInput);

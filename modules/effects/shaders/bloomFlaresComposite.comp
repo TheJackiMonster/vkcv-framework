@@ -5,11 +5,16 @@ layout(set=0, binding=0) uniform texture2D                          blurImage;
 layout(set=0, binding=1) uniform texture2D                          lensImage;
 layout(set=0, binding=2) uniform sampler                            linearSampler;
 layout(set=0, binding=3, r11f_g11f_b10f) uniform image2D            colorBuffer;
+
+#ifdef ADVANCED_FEATURES
 layout(set=0, binding=4) uniform texture2D                          radialLUT;
 layout(set=0, binding=5) uniform sampler                            radialLUTSampler;
 layout(set=0, binding=6) uniform texture2D                          dirtTexture;
+#endif
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+#ifdef ADVANCED_FEATURES
 
 layout( push_constant ) uniform constants{
     vec3 cameraForward;
@@ -52,6 +57,8 @@ float getLensDirtWeight(vec2 uv){
     return mix(1, dirt, dirtStrength);
 }
 
+#endif
+
 void main()
 {
     if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(colorBuffer)))){
@@ -73,17 +80,17 @@ void main()
     float lens_weight  = 0.02f;
     float main_weight = 1 - (bloom_weight + lens_weight);
 
+#ifdef ADVANCED_FEATURES
     lens_color *= starburst(UV);
     
     float lensDirtWeight = getLensDirtWeight(UV);
     bloom_weight        *= lensDirtWeight;
     lens_weight         *= lensDirtWeight;
+#endif
     
     composite_color.rgb = blur_color * bloom_weight +
                           lens_color * lens_weight  +
                           main_color * main_weight;
-                          
-    //composite_color.rgb = vec3(1) * starburst(UV);
 
     imageStore(colorBuffer, pixel_coord, composite_color);
 }

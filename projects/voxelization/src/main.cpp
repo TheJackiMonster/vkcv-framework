@@ -8,9 +8,9 @@
 #include "Voxelization.hpp"
 #include "vkcv/gui/GUI.hpp"
 #include "ShadowMapping.hpp"
-#include "BloomAndFlares.hpp"
 #include <vkcv/upscaling/FSRUpscaling.hpp>
 #include <vkcv/upscaling/BilinearUpscaling.hpp>
+#include <vkcv/effects/BloomAndFlaresEffect.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";
@@ -556,14 +556,7 @@ int main(int argc, const char** argv) {
 		voxelSampler,
 		msaa);
 
-	BloomAndFlares bloomFlares(&core, colorBufferFormat, swapchainExtent.width, swapchainExtent.height);
-
-	window.e_key.add([&](int key, int scancode, int action, int mods) {
-		if (key == GLFW_KEY_R && action == GLFW_PRESS) {
-			bloomFlares = BloomAndFlares(&core, colorBufferFormat, swapchainExtent.width, swapchainExtent.height);
-		}
-	});
-
+	vkcv::effects::BloomAndFlaresEffect bloomFlares (core, true);
 	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
 
 	struct VolumetricSettings {
@@ -701,8 +694,6 @@ int main(int argc, const char** argv) {
 					swapchainWidth, swapchainHeight, 1,
 					false, true
 			).getHandle();
-			
-			bloomFlares.updateImageDimensions(swapchainWidth, swapchainHeight);
 		}
 
 		auto end = std::chrono::system_clock::now();
@@ -869,10 +860,9 @@ int main(int argc, const char** argv) {
 			}
 			core.recordEndDebugLabel(cmdStream);
 		}
-
-		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer, fsrWidth, fsrHeight,
-			glm::normalize(cameraManager.getActiveCamera().getFront())
-		);
+		
+		bloomFlares.updateCameraDirection(cameraManager.getActiveCamera());
+		bloomFlares.recordEffect(cmdStream, resolvedColorBuffer, resolvedColorBuffer);
 
 		core.prepareImageForStorage(cmdStream, swapBuffer);
 		core.prepareImageForSampling(cmdStream, resolvedColorBuffer);

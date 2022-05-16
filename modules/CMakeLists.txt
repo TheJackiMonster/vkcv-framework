@@ -5,6 +5,7 @@ set(vkcv_modules_libraries)
 # Add new modules here:
 add_subdirectory(asset_loader)
 add_subdirectory(camera)
+add_subdirectory(effects)
 add_subdirectory(gui)
 add_subdirectory(material)
 add_subdirectory(meshlet)
