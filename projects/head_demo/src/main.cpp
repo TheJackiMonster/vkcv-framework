@@ -7,6 +7,8 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/scene/Scene.hpp>
+#include <vkcv/effects/BloomAndFlaresEffect.hpp>
+#include <vkcv/upscaling/FSRUpscaling.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Scene";
@@ -20,7 +22,7 @@ int main(int argc, const char** argv) {
 			{vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
 			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
-	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
 	vkcv::Window& window = core.getWindow(windowHandle);
 	vkcv::camera::CameraManager cameraManager(window);
 	
@@ -38,10 +40,12 @@ int main(int argc, const char** argv) {
 			argc > 1 ? argv[1] : "assets/skull_scaled/scene.gltf"
 	));
 	
-	const vkcv::AttachmentDescription present_color_attachment0(
+	vk::Format colorFormat = vk::Format::eR16G16B16A16Sfloat;
+	
+	const vkcv::AttachmentDescription color_attachment0(
 			vkcv::AttachmentOperation::STORE,
 			vkcv::AttachmentOperation::CLEAR,
-			core.getSwapchain(windowHandle).getFormat()
+			colorFormat
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment0(
@@ -50,13 +54,10 @@ int main(int argc, const char** argv) {
 			vk::Format::eD32Sfloat
 	);
 	
-	vkcv::PassConfig scenePassDefinition({ present_color_attachment0, depth_attachment0 });
-	vkcv::PassHandle scenePass = core.createPass(scenePassDefinition);
-	
-	const vkcv::AttachmentDescription present_color_attachment1(
+	const vkcv::AttachmentDescription color_attachment1(
 			vkcv::AttachmentOperation::STORE,
 			vkcv::AttachmentOperation::LOAD,
-			core.getSwapchain(windowHandle).getFormat()
+			colorFormat
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment1(
@@ -65,8 +66,11 @@ int main(int argc, const char** argv) {
 			vk::Format::eD32Sfloat
 	);
 	
-	vkcv::PassConfig linePassDefinition({ present_color_attachment1, depth_attachment1 });
+	vkcv::PassConfig linePassDefinition({ color_attachment0, depth_attachment0 });
 	vkcv::PassHandle linePass = core.createPass(linePassDefinition);
+	
+	vkcv::PassConfig scenePassDefinition({ color_attachment1, depth_attachment1 });
+	vkcv::PassHandle scenePass = core.createPass(scenePassDefinition);
 	
 	if ((!scenePass) || (!linePass)) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
@@ -177,7 +181,17 @@ int main(int argc, const char** argv) {
 			swapchainExtent.height
 	).getHandle();
 	
+	vkcv::ImageHandle colorBuffer = core.createImage(
+			colorFormat,
+			swapchainExtent.width,
+			swapchainExtent.height,
+			1, false, true, true
+	).getHandle();
+	
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+	
+	vkcv::effects::BloomAndFlaresEffect bloomAndFlares (core);
+	vkcv::upscaling::FSRUpscaling upscaling (core);
 	
 	auto start = std::chrono::system_clock::now();
 	while (vkcv::Window::hasOpenWindow()) {
@@ -194,6 +208,13 @@ int main(int argc, const char** argv) {
 		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
 			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
 			
+			colorBuffer = core.createImage(
+					colorFormat,
+					swapchainExtent.width,
+					swapchainExtent.height,
+					1, false, true, true
+			).getHandle();
+			
 			swapchainExtent.width = swapchainWidth;
 			swapchainExtent.height = swapchainHeight;
 		}
@@ -206,7 +227,7 @@ int main(int argc, const char** argv) {
 		
 		clipBuffer.fill({ clipLimit, -clipX, -clipY, -clipZ });
 		
-		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
+		const std::vector<vkcv::ImageHandle> renderTargets = { colorBuffer, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
 		auto recordMesh = [&](const glm::mat4& MVP, const glm::mat4& M,
@@ -220,6 +241,17 @@ int main(int argc, const char** argv) {
 		
 		scene.recordDrawcalls(cmdStream,
 							  cameraManager.getActiveCamera(),
+							  linePass,
+							  linePipeline,
+							  sizeof(glm::mat4),
+							  recordMesh,
+							  renderTargets,
+							  windowHandle);
+		
+		bloomAndFlares.recordEffect(cmdStream, colorBuffer, colorBuffer);
+		
+		scene.recordDrawcalls(cmdStream,
+							  cameraManager.getActiveCamera(),
 							  scenePass,
 							  scenePipeline,
 							  sizeof(glm::mat4),
@@ -227,14 +259,9 @@ int main(int argc, const char** argv) {
 							  renderTargets,
 							  windowHandle);
 		
-		scene.recordDrawcalls(cmdStream,
-							  cameraManager.getActiveCamera(),
-							  linePass,
-							  linePipeline,
-							  sizeof(glm::mat4),
-							  recordMesh,
-							  renderTargets,
-							  windowHandle);
+		core.prepareImageForSampling(cmdStream, colorBuffer);
+		core.prepareImageForStorage(cmdStream, swapchainInput);
+		upscaling.recordUpscaling(cmdStream, colorBuffer, swapchainInput);
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

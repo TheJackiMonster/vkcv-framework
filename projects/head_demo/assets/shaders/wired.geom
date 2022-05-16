@@ -8,6 +8,7 @@ layout(points, max_vertices = 1) out;
 layout(location = 0) in vec3 geomNormal[];
 
 layout(location = 0) out vec3 passNormal;
+layout(location = 1) out vec3 passEdge;
 
 layout(set=1, binding=0) uniform clipBuffer {
     float clipLimit;
@@ -43,6 +44,7 @@ void main()	{
         if ((v0.x < clipLimit) || (v1.x < clipLimit) || (v2.x < clipLimit)) {
             gl_Position = (v0 + v1 + v2) / 3;
             passNormal = (geomNormal[0] + geomNormal[1] + geomNormal[2]) / 3;
+            passEdge = vec3(dx, dy, dz);
             EmitVertex();
 
             EndPrimitive();
