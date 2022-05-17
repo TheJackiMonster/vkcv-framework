@@ -22,7 +22,7 @@ int main(int argc, const char **argv) {
             {vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
 			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
     );
-	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
     vkcv::Window& window = core.getWindow(windowHandle);
 	vkcv::camera::CameraManager cameraManager(window);
 
@@ -212,7 +212,7 @@ int main(int argc, const char **argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
-	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
+	const auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 	
     vkcv::ImageHandle colorBuffer = core.createImage(
 			colorFormat,
@@ -223,16 +223,6 @@ int main(int argc, const char **argv) {
 	
 	vkcv::effects::BloomAndFlaresEffect bloomAndFlares (core);
 	bloomAndFlares.setUpsamplingLimit(3);
-	
-    window.e_resize.add([&](int width, int height) {
-		swapchainExtent = core.getSwapchain(windowHandle).getExtent();
-        colorBuffer = core.createImage(
-				colorFormat,
-				swapchainExtent.width,
-				swapchainExtent.height,
-				1, false, true, true
-		).getHandle();
-    });
 
     vkcv::ShaderProgram tonemappingShader;
     compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/tonemapping.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
@@ -255,6 +245,16 @@ int main(int argc, const char **argv) {
         if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
             continue;
         }
+	
+		if ((core.getImageWidth(colorBuffer) != swapchainWidth) ||
+			(core.getImageHeight(colorBuffer) != swapchainHeight)) {
+			colorBuffer = core.createImage(
+					colorFormat,
+					swapchainWidth,
+					swapchainHeight,
+					1, false, true, true
+			).getHandle();
+		}
 
         color.fill(&colorData);
         position.fill(&pos);
@@ -315,8 +315,8 @@ int main(int argc, const char **argv) {
         core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
 
         uint32_t tonemappingDispatchCount[3];
-        tonemappingDispatchCount[0] = std::ceil(swapchainExtent.width / 8.f);
-        tonemappingDispatchCount[1] = std::ceil(swapchainExtent.height / 8.f);
+        tonemappingDispatchCount[0] = std::ceil(swapchainWidth / 8.f);
+        tonemappingDispatchCount[1] = std::ceil(swapchainHeight / 8.f);
         tonemappingDispatchCount[2] = 1;
 
         core.recordComputeDispatchToCmdStream(

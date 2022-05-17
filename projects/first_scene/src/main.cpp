@@ -20,7 +20,7 @@ int main(int argc, const char** argv) {
 			{vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
 			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
-	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
 	vkcv::Window& window = core.getWindow(windowHandle);
 	vkcv::camera::CameraManager cameraManager(window);
 
@@ -92,13 +92,7 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
-
-	vkcv::ImageHandle depthBuffer = core.createImage(
-			vk::Format::eD32Sfloat,
-			swapchainExtent.width,
-			swapchainExtent.height
-	).getHandle();
+	vkcv::ImageHandle depthBuffer;
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	
@@ -114,11 +108,14 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 		
-		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
-			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
-			
-			swapchainExtent.width = swapchainWidth;
-			swapchainExtent.height = swapchainHeight;
+		if ((!depthBuffer) ||
+			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
+			(swapchainHeight != core.getImageHeight(depthBuffer))) {
+			depthBuffer = core.createImage(
+					vk::Format::eD32Sfloat,
+					swapchainWidth,
+					swapchainHeight
+			).getHandle();
 		}
   
 		auto end = std::chrono::system_clock::now();

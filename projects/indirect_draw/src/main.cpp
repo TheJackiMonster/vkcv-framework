@@ -259,9 +259,6 @@ void compileMeshForIndirectDraw(vkcv::Core &core,
 int main(int argc, const char** argv) {
 	const char* applicationName = "Indirect draw";
 
-	uint32_t windowWidth = 800;
-	uint32_t windowHeight = 600;
-
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     features.requireFeature([](vk::PhysicalDeviceFeatures &features){
@@ -305,7 +302,7 @@ int main(int argc, const char** argv) {
 		features
 	);
 
-	vkcv::WindowHandle windowHandle = core.createWindow(applicationName,windowWidth,windowHeight,false);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName,800,600,true);
 
     vkcv::gui::GUI gui (core, windowHandle);
 
@@ -526,7 +523,8 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
 	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 20.f);
 
-    vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
+    vkcv::ImageHandle depthBuffer;
+	
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
     auto start = std::chrono::system_clock::now();
@@ -552,11 +550,10 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 		
-		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
+		if ((!depthBuffer) ||
+			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
+			(swapchainHeight != core.getImageHeight(depthBuffer))) {
 			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
-			
-			windowWidth = swapchainWidth;
-			windowHeight = swapchainHeight;
 		}
   
 		auto end = std::chrono::system_clock::now();

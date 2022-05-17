@@ -56,12 +56,12 @@ int main(int argc, const char** argv) {
 
 	const vkcv::GraphicsPipelineConfig trianglePipelineDefinition {
 		triangleShaderProgram,
-		swapchainExtent.width,
-		swapchainExtent.height,
+		UINT32_MAX,
+		UINT32_MAX,
 		trianglePass,
 		{},
 		{},
-		false
+		true
 	};
 
 	vkcv::GraphicsPipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);

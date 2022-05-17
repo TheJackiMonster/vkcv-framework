@@ -13,9 +13,6 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "RTX Ambient Occlusion";
 
-	uint32_t windowWidth = 800;
-	uint32_t windowHeight = 600;
-
 	// prepare raytracing extensions. IMPORTANT: configure compiler to build in 64 bit mode
 	vkcv::rtx::RTXExtensions rtxExtensions;
 	std::vector<const char*> raytracingInstanceExtensions = rtxExtensions.getInstanceExtensions();
@@ -35,7 +32,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::rtx::ASManager asManager(&core);
 
-	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 800, 600, true);
 
 	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
 	uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
@@ -91,7 +88,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::rtx::ShaderBindingTableRegions rtxRegions = rtxModule.createRegions();
 
-	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight).getHandle();
+	vkcv::ImageHandle depthBuffer;
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -109,11 +106,14 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 
-		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
-			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
-
-			windowWidth = swapchainWidth;
-			windowHeight = swapchainHeight;
+		if ((!depthBuffer) ||
+			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
+			((swapchainHeight != core.getImageHeight(depthBuffer)))) {
+			depthBuffer = core.createImage(
+					vk::Format::eD32Sfloat,
+					swapchainWidth,
+					swapchainHeight
+			).getHandle();
 		}
 
 		auto end = std::chrono::system_clock::now();

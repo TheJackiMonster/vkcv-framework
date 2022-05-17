@@ -7,10 +7,7 @@
 #include <vkcv/shader/GLSLCompiler.hpp>
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "First Mesh";
-
-	uint32_t windowWidth = 800;
-	uint32_t windowHeight = 600;
+	const char* applicationName = "Bindless Textures";
 
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -48,7 +45,7 @@ int main(int argc, const char** argv) {
 		features
 	);
 
-	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth,windowHeight,false);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 800, 600, true);
 
 	vkcv::asset::Scene mesh;
 
@@ -206,7 +203,7 @@ int main(int argc, const char** argv) {
 
 	core.writeDescriptorSet(descriptorSet, setWrites);
 
-	vkcv::ImageHandle depthBuffer = core.createImage(vk::Format::eD32Sfloat, windowWidth, windowHeight, 1, false).getHandle();
+	vkcv::ImageHandle depthBuffer;
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -234,11 +231,14 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 		
-		if ((swapchainWidth != windowWidth) || ((swapchainHeight != windowHeight))) {
-			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
-			
-			windowWidth = swapchainWidth;
-			windowHeight = swapchainHeight;
+		if ((!depthBuffer) ||
+			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
+			(swapchainHeight != core.getImageHeight(depthBuffer))) {
+			depthBuffer = core.createImage(
+					vk::Format::eD32Sfloat,
+					swapchainWidth,
+					swapchainHeight
+			).getHandle();
 		}
   
 		auto end = std::chrono::system_clock::now();
