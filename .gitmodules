@@ -34,3 +34,6 @@
 [submodule "lib/Vulkan-Hpp"]
 	path = lib/Vulkan-Hpp
 	url = https://github.com/KhronosGroup/Vulkan-Hpp
+[submodule "modules/upscaling/lib/NVIDIAImageScaling"]
+	path = modules/upscaling/lib/NVIDIAImageScaling
+	url = https://github.com/NVIDIAGameWorks/NVIDIAImageScaling.git

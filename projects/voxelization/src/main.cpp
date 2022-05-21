@@ -10,6 +10,7 @@
 #include "ShadowMapping.hpp"
 #include <vkcv/upscaling/FSRUpscaling.hpp>
 #include <vkcv/upscaling/BilinearUpscaling.hpp>
+#include <vkcv/upscaling/NISUpscaling.hpp>
 #include <vkcv/effects/BloomAndFlaresEffect.hpp>
 
 int main(int argc, const char** argv) {
@@ -600,8 +601,15 @@ int main(int argc, const char** argv) {
 	bool fsrMipLoadBiasFlagBackup = fsrMipLoadBiasFlag;
 	
 	vkcv::upscaling::BilinearUpscaling upscaling1 (core);
+	vkcv::upscaling::NISUpscaling upscaling2 (core);
 	
-	bool bilinearUpscaling = false;
+	const std::vector<const char*> modeNames = {
+			"Bilinear Upscaling",
+			"FSR Upscaling",
+			"NIS Upscaling"
+	};
+	
+	int upscalingMode = 0;
 	
 	vkcv::gui::GUI gui(core, windowHandle);
 
@@ -880,10 +888,18 @@ int main(int argc, const char** argv) {
 		core.prepareImageForSampling(cmdStream, swapBuffer);
 		core.recordEndDebugLabel(cmdStream);
 		
-		if (bilinearUpscaling) {
-			upscaling1.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
-		} else {
-			upscaling.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+		switch (upscalingMode) {
+			case 0:
+				upscaling1.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+				break;
+			case 1:
+				upscaling.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+				break;
+			case 2:
+				upscaling2.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+				break;
+			default:
+				break;
 		}
 		
 		core.prepareImageForStorage(cmdStream, swapchainInput);
@@ -946,18 +962,19 @@ int main(int argc, const char** argv) {
 			ImGui::DragFloat("Absorption density", &absorptionDensity, 0.0001);
 			ImGui::DragFloat("Volumetric ambient", &volumetricAmbient, 0.002);
 			
-			float fsrSharpness = upscaling.getSharpness();
+			float sharpness = upscaling.getSharpness();
 			
 			ImGui::Combo("FSR Quality Mode", &fsrModeIndex, fsrModeNames.data(), fsrModeNames.size());
-			ImGui::DragFloat("FSR Sharpness", &fsrSharpness, 0.001, 0.0f, 1.0f);
+			ImGui::DragFloat("FSR Sharpness", &sharpness, 0.001, 0.0f, 1.0f);
 			ImGui::Checkbox("FSR Mip Lod Bias", &fsrMipLoadBiasFlag);
-			ImGui::Checkbox("Bilinear Upscaling", &bilinearUpscaling);
+			ImGui::Combo("Upscaling Mode", &upscalingMode, modeNames.data(), modeNames.size());
 			
 			if ((fsrModeIndex >= 0) && (fsrModeIndex <= 4)) {
 				fsrMode = static_cast<vkcv::upscaling::FSRQualityMode>(fsrModeIndex);
 			}
 			
-			upscaling.setSharpness(fsrSharpness);
+			upscaling.setSharpness(sharpness);
+			upscaling2.setSharpness(sharpness);
 
 			if (ImGui::Button("Reload forward pass")) {
 

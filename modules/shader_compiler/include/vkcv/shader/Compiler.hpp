@@ -35,6 +35,7 @@ namespace vkcv::shader {
 		std::string getDefine(const std::string& name) const;
 		
 		void setDefine(const std::string& name, const std::string& value);
+		
 	};
 	
 }
