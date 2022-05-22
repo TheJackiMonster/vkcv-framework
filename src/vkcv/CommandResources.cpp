@@ -75,10 +75,10 @@ namespace vkcv {
 
 	void submitCommandBufferToQueue(
 		vk::Queue							queue,
-		vk::CommandBuffer					cmdBuffer,
-		vk::Fence							fence,
-		const std::vector<vk::Semaphore>&	waitSemaphores,
-		const std::vector<vk::Semaphore>&	signalSemaphores) {
+		const vk::CommandBuffer				&cmdBuffer,
+		const vk::Fence						&fence,
+		const std::vector<vk::Semaphore>	&waitSemaphores,
+		const std::vector<vk::Semaphore>	&signalSemaphores) {
 
 		const std::vector<vk::PipelineStageFlags> waitDstStageMasks(waitSemaphores.size(), vk::PipelineStageFlagBits::eAllCommands);
 		const vk::SubmitInfo queueSubmitInfo(waitSemaphores, waitDstStageMasks, cmdBuffer, signalSemaphores);
