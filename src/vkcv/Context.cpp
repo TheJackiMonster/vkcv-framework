@@ -341,25 +341,16 @@ namespace vkcv
 
 		vma::AllocatorCreateFlags vmaFlags;
 		const vma::AllocatorCreateInfo allocatorCreateInfo (
-				vma::AllocatorCreateFlags(),
+				vmaFlags,
 				physicalDevice,
 				device,
 				0,
 				nullptr,
 				nullptr,
-				0,
-				nullptr,
 				nullptr,
 				nullptr,
 				instance,
-				
-				/* Uses default version when set to 0 (currently VK_VERSION_1_0):
-				 *
-				 * The reason for this is that the allocator restricts the allowed version
-				 * to be at maximum VK_VERSION_1_1 which is already less than
-				 * VK_HEADER_VERSION_COMPLETE at most platforms.
-				 * */
-				0
+				VK_HEADER_VERSION_COMPLETE
 		);
 		
 		vma::Allocator allocator = vma::createAllocator(allocatorCreateInfo);

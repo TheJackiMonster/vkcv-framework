@@ -93,6 +93,7 @@ namespace vkcv::shader {
          * @param[in] value Macro definition value
          */
 		void setDefine(const std::string& name, const std::string& value);
+		
 	};
 
     /** @} */

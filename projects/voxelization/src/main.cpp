@@ -8,9 +8,10 @@
 #include "Voxelization.hpp"
 #include "vkcv/gui/GUI.hpp"
 #include "ShadowMapping.hpp"
-#include "BloomAndFlares.hpp"
 #include <vkcv/upscaling/FSRUpscaling.hpp>
 #include <vkcv/upscaling/BilinearUpscaling.hpp>
+#include <vkcv/upscaling/NISUpscaling.hpp>
+#include <vkcv/effects/BloomAndFlaresEffect.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";
@@ -556,14 +557,7 @@ int main(int argc, const char** argv) {
 		voxelSampler,
 		msaa);
 
-	BloomAndFlares bloomFlares(&core, colorBufferFormat, swapchainExtent.width, swapchainExtent.height);
-
-	window.e_key.add([&](int key, int scancode, int action, int mods) {
-		if (key == GLFW_KEY_R && action == GLFW_PRESS) {
-			bloomFlares = BloomAndFlares(&core, colorBufferFormat, swapchainExtent.width, swapchainExtent.height);
-		}
-	});
-
+	vkcv::effects::BloomAndFlaresEffect bloomFlares (core, true);
 	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
 
 	struct VolumetricSettings {
@@ -607,8 +601,15 @@ int main(int argc, const char** argv) {
 	bool fsrMipLoadBiasFlagBackup = fsrMipLoadBiasFlag;
 	
 	vkcv::upscaling::BilinearUpscaling upscaling1 (core);
+	vkcv::upscaling::NISUpscaling upscaling2 (core);
 	
-	bool bilinearUpscaling = false;
+	const std::vector<const char*> modeNames = {
+			"Bilinear Upscaling",
+			"FSR Upscaling",
+			"NIS Upscaling"
+	};
+	
+	int upscalingMode = 0;
 	
 	vkcv::gui::GUI gui(core, windowHandle);
 
@@ -701,8 +702,6 @@ int main(int argc, const char** argv) {
 					swapchainWidth, swapchainHeight, 1,
 					false, true
 			).getHandle();
-			
-			bloomFlares.updateImageDimensions(swapchainWidth, swapchainHeight);
 		}
 
 		auto end = std::chrono::system_clock::now();
@@ -869,10 +868,9 @@ int main(int argc, const char** argv) {
 			}
 			core.recordEndDebugLabel(cmdStream);
 		}
-
-		bloomFlares.execWholePipeline(cmdStream, resolvedColorBuffer, fsrWidth, fsrHeight,
-			glm::normalize(cameraManager.getActiveCamera().getFront())
-		);
+		
+		bloomFlares.updateCameraDirection(cameraManager.getActiveCamera());
+		bloomFlares.recordEffect(cmdStream, resolvedColorBuffer, resolvedColorBuffer);
 
 		core.prepareImageForStorage(cmdStream, swapBuffer);
 		core.prepareImageForSampling(cmdStream, resolvedColorBuffer);
@@ -890,10 +888,18 @@ int main(int argc, const char** argv) {
 		core.prepareImageForSampling(cmdStream, swapBuffer);
 		core.recordEndDebugLabel(cmdStream);
 		
-		if (bilinearUpscaling) {
-			upscaling1.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
-		} else {
-			upscaling.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+		switch (upscalingMode) {
+			case 0:
+				upscaling1.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+				break;
+			case 1:
+				upscaling.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+				break;
+			case 2:
+				upscaling2.recordUpscaling(cmdStream, swapBuffer, swapBuffer2);
+				break;
+			default:
+				break;
 		}
 		
 		core.prepareImageForStorage(cmdStream, swapchainInput);
@@ -956,18 +962,19 @@ int main(int argc, const char** argv) {
 			ImGui::DragFloat("Absorption density", &absorptionDensity, 0.0001);
 			ImGui::DragFloat("Volumetric ambient", &volumetricAmbient, 0.002);
 			
-			float fsrSharpness = upscaling.getSharpness();
+			float sharpness = upscaling.getSharpness();
 			
 			ImGui::Combo("FSR Quality Mode", &fsrModeIndex, fsrModeNames.data(), fsrModeNames.size());
-			ImGui::DragFloat("FSR Sharpness", &fsrSharpness, 0.001, 0.0f, 1.0f);
+			ImGui::DragFloat("FSR Sharpness", &sharpness, 0.001, 0.0f, 1.0f);
 			ImGui::Checkbox("FSR Mip Lod Bias", &fsrMipLoadBiasFlag);
-			ImGui::Checkbox("Bilinear Upscaling", &bilinearUpscaling);
+			ImGui::Combo("Upscaling Mode", &upscalingMode, modeNames.data(), modeNames.size());
 			
 			if ((fsrModeIndex >= 0) && (fsrModeIndex <= 4)) {
 				fsrMode = static_cast<vkcv::upscaling::FSRQualityMode>(fsrModeIndex);
 			}
 			
-			upscaling.setSharpness(fsrSharpness);
+			upscaling.setSharpness(sharpness);
+			upscaling2.setSharpness(sharpness);
 
 			if (ImGui::Button("Reload forward pass")) {
 

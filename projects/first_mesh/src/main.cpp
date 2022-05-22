@@ -8,9 +8,6 @@
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Mesh";
 
-	uint32_t windowWidth = 800;
-	uint32_t windowHeight = 600;
-
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
@@ -18,7 +15,7 @@ int main(int argc, const char** argv) {
 		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
 
-	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 800, 600, true);
 
 	vkcv::asset::Scene mesh;
 
@@ -148,14 +145,7 @@ int main(int argc, const char** argv) {
 
 	core.writeDescriptorSet(descriptorSet, setWrites);
 	
-	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
-	
-	vkcv::ImageHandle depthBuffer = core.createImage(
-			vk::Format::eD32Sfloat,
-			swapchainExtent.width,
-			swapchainExtent.height,
-			1, false
-	).getHandle();
+	vkcv::ImageHandle depthBuffer;
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -182,11 +172,14 @@ int main(int argc, const char** argv) {
 			continue;
 		}
 		
-		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
-			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
-			
-			swapchainExtent.width = swapchainWidth;
-			swapchainExtent.height = swapchainHeight;
+		if ((!depthBuffer) ||
+			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
+			(swapchainHeight != core.getImageHeight(depthBuffer))) {
+			depthBuffer = core.createImage(
+					vk::Format::eD32Sfloat,
+					swapchainWidth,
+					swapchainHeight
+			).getHandle();
 		}
   
 		auto end = std::chrono::system_clock::now();

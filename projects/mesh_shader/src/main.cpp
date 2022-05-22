@@ -77,9 +77,6 @@ CameraPlanes computeCameraPlanes(const vkcv::camera::Camera& camera) {
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Mesh shader";
-
-	const int windowWidth = 1280;
-	const int windowHeight = 720;
 	
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -95,7 +92,7 @@ int main(int argc, const char** argv) {
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
 		features
 	);
-	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 1280, 720, true);
 	vkcv::Window &window = core.getWindow(windowHandle);
 
     vkcv::gui::GUI gui (core, windowHandle);
@@ -202,17 +199,15 @@ int main(int argc, const char** argv) {
 
     vkcv::DescriptorSetLayoutHandle vertexShaderDescriptorSetLayout = core.createDescriptorSetLayout(bunnyShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(vertexShaderDescriptorSetLayout);
-
-	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 	
 	const vkcv::GraphicsPipelineConfig bunnyPipelineDefinition {
 			bunnyShaderProgram,
-			swapchainExtent.width,
-			swapchainExtent.height,
+			UINT32_MAX,
+			UINT32_MAX,
 			renderPass,
 			{ bunnyLayout },
 			{ vertexShaderDescriptorSetLayout },
-			false
+			true
 	};
 
 	struct ObjectMatrices {
@@ -257,12 +252,12 @@ int main(int argc, const char** argv) {
 
 	const vkcv::GraphicsPipelineConfig meshShaderPipelineDefinition{
 		meshShaderProgram,
-		swapchainExtent.width,
-		swapchainExtent.height,
+		UINT32_MAX,
+		UINT32_MAX,
 		renderPass,
 		{meshShaderLayout},
 		{meshShaderDescriptorSetLayout},
-		false
+		true
 	};
 
 	vkcv::GraphicsPipelineHandle meshShaderPipeline = core.createGraphicsPipeline(meshShaderPipelineDefinition);
@@ -289,12 +284,7 @@ int main(int argc, const char** argv) {
 
     core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
 
-    vkcv::ImageHandle depthBuffer = core.createImage(
-			vk::Format::eD32Sfloat,
-			swapchainExtent.width,
-			swapchainExtent.height,
-			1, false
-	).getHandle();
+    vkcv::ImageHandle depthBuffer;
 
     auto start = std::chrono::system_clock::now();
 
@@ -319,6 +309,16 @@ int main(int argc, const char** argv) {
 		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
 		if (!core.beginFrame(swapchainWidth, swapchainHeight,windowHandle)) {
 			continue;
+		}
+		
+		if ((!depthBuffer) ||
+			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
+			(swapchainHeight != core.getImageHeight(depthBuffer))) {
+			depthBuffer = core.createImage(
+					vk::Format::eD32Sfloat,
+					swapchainWidth,
+					swapchainHeight
+			).getHandle();
 		}
 		
 		auto end = std::chrono::system_clock::now();

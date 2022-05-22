@@ -17,6 +17,9 @@ set(vkcv_upscaling_sources
 		
 		${vkcv_upscaling_include}/vkcv/upscaling/FSRUpscaling.hpp
 		${vkcv_upscaling_source}/vkcv/upscaling/FSRUpscaling.cpp
+		
+		${vkcv_upscaling_include}/vkcv/upscaling/NISUpscaling.hpp
+		${vkcv_upscaling_source}/vkcv/upscaling/NISUpscaling.cpp
 )
 
 # Setup some path variables to load libraries
@@ -25,6 +28,9 @@ set(vkcv_upscaling_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_upscaling_lib})
 
 # Check and load FidelityFX_FSR
 include(config/FidelityFX_FSR.cmake)
+
+# Check and load NVIDIAImageScaling
+include(config/NVIDIAImageScaling.cmake)
 
 # adding source files to the project
 add_library(vkcv_upscaling ${vkcv_build_attribute} ${vkcv_upscaling_sources})

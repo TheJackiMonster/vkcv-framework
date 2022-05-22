@@ -1,3 +1,4 @@
+
 #include "vkcv/upscaling/FSRUpscaling.hpp"
 
 #include <cstdint>
@@ -104,7 +105,6 @@ namespace vkcv::upscaling {
 	    descriptorBindings.insert(std::make_pair(3, binding_3));
 
 	    return descriptorBindings;
-
 	}
 	
 	template<typename T>
@@ -159,10 +159,11 @@ namespace vkcv::upscaling {
 			return false;
 		}
 		
-		return compiler.compileSource(vkcv::ShaderStage::COMPUTE,
-									  FSR_PASS_GLSL_SHADER.c_str(),
-									  [&directory, &compiled] (vkcv::ShaderStage shaderStage,
-									  		const std::filesystem::path& path) {
+		return compiler.compileSource(
+				vkcv::ShaderStage::COMPUTE,
+				FSR_PASS_GLSL_SHADER.c_str(),
+				[&directory, &compiled] (vkcv::ShaderStage shaderStage,
+										 const std::filesystem::path& path) {
 				if (compiled) {
 					compiled(shaderStage, path);
 				}
@@ -198,6 +199,7 @@ namespace vkcv::upscaling {
 			SamplerMipmapMode::NEAREST,
 			SamplerAddressMode::CLAMP_TO_EDGE
 	)),
+	
 	m_hdr(false),
 	m_sharpness(0.875f) {
 		vkcv::shader::GLSLCompiler easuCompiler;

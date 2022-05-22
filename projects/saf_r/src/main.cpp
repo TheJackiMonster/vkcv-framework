@@ -38,7 +38,7 @@ int main(int argc, const char** argv) {
 		{ "VK_KHR_swapchain" }
 	);
 
-	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, false);
+	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
 
 	//configuring the compute Shader
 	vkcv::PassConfig computePassDefinition({});
@@ -171,12 +171,12 @@ int main(int argc, const char** argv) {
 	//create the render pipeline + compute pipeline
 	const vkcv::GraphicsPipelineConfig safrPipelineDefinition{
 			safrShaderProgram,
-			(uint32_t)windowWidth,
-			(uint32_t)windowHeight,
+			UINT32_MAX,
+			UINT32_MAX,
 			safrPass,
 			{},
 			{ descriptorSetLayout },
-			false
+			true
 	};
 
 	vkcv::GraphicsPipelineHandle safrPipeline = core.createGraphicsPipeline(safrPipelineDefinition);
@@ -273,7 +273,7 @@ int main(int argc, const char** argv) {
         pushConstantsCompute.appendDrawcall(raytracingPushData);
 
 		//dispatch compute shader
-		uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil( swapchainWidth/16.f)),
+		uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(swapchainWidth/16.f)),
                                             static_cast<uint32_t> (std::ceil(swapchainHeight/16.f)),
                                             1 }; // Anzahl workgroups
 		core.recordComputeDispatchToCmdStream(cmdStream,

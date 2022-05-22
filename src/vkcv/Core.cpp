@@ -875,6 +875,10 @@ namespace vkcv
 	vk::Format Core::getImageFormat(const ImageHandle& image) {
 		return m_ImageManager->getImageFormat(image);
 	}
+	
+	uint32_t Core::getImageMipLevels(const ImageHandle &image) {
+		return m_ImageManager->getImageMipCount(image);
+	}
 
 	Swapchain& Core::getSwapchainOfCurrentWindow() {
 		return m_SwapchainManager->getSwapchain(Window::getFocusedWindow().getSwapchainHandle());
