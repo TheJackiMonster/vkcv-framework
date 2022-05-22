@@ -147,23 +147,23 @@ namespace vkcv::rtx {
 
     void RTXModule::createRTXPipelineAndLayout(uint32_t pushConstantSize, std::vector<DescriptorSetLayoutHandle> descriptorSetLayouts, ShaderProgram &rtxShader) {
         // -- process vkcv::ShaderProgram into vk::ShaderModule
-        std::vector<char> rayGenShaderCode = rtxShader.getShader(ShaderStage::RAY_GEN).shaderCode;
+        std::vector<uint32_t> rayGenShaderCode = rtxShader.getShaderBinary(ShaderStage::RAY_GEN);
 
         vk::ShaderModuleCreateInfo rayGenShaderModuleInfo(
             vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
-            rayGenShaderCode.size(), // size_t codeSize
-            (const uint32_t*)rayGenShaderCode.data() // const uint32_t* pCode
+            rayGenShaderCode.size() * sizeof(uint32_t), // size_t codeSize
+            rayGenShaderCode.data() // const uint32_t* pCode
         );
         vk::ShaderModule rayGenShaderModule = m_core->getContext().getDevice().createShaderModule(rayGenShaderModuleInfo);
         if (!rayGenShaderModule) {
             vkcv_log(LogLevel::ERROR, "The Ray Generation Shader Module could not be created!");
         }
 
-        std::vector<char> rayMissShaderCode = rtxShader.getShader(ShaderStage::RAY_MISS).shaderCode;
+        std::vector<uint32_t> rayMissShaderCode = rtxShader.getShaderBinary(ShaderStage::RAY_MISS);
         vk::ShaderModuleCreateInfo rayMissShaderModuleInfo(
             vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
-            rayMissShaderCode.size(), //size_t codeSize
-            (const uint32_t*)rayMissShaderCode.data() // const uint32_t* pCode
+            rayMissShaderCode.size() * sizeof(uint32_t), //size_t codeSize
+            rayMissShaderCode.data() // const uint32_t* pCode
         );
 
         vk::ShaderModule rayMissShaderModule = m_core->getContext().getDevice().createShaderModule(rayMissShaderModuleInfo);
@@ -171,11 +171,11 @@ namespace vkcv::rtx {
             vkcv_log(LogLevel::ERROR, "The Ray Miss Shader Module could not be created!");
         }
 
-        std::vector<char> rayClosestHitShaderCode = rtxShader.getShader(ShaderStage::RAY_CLOSEST_HIT).shaderCode;
+        std::vector<uint32_t> rayClosestHitShaderCode = rtxShader.getShaderBinary(ShaderStage::RAY_CLOSEST_HIT);
         vk::ShaderModuleCreateInfo rayClosestHitShaderModuleInfo(
             vk::ShaderModuleCreateFlags(), // vk::ShaderModuleCreateFlags flags_,
-            rayClosestHitShaderCode.size(), //size_t codeSize
-            (const uint32_t*)rayClosestHitShaderCode.data() // const uint32_t* pCode_
+            rayClosestHitShaderCode.size() * sizeof(uint32_t), //size_t codeSize
+            rayClosestHitShaderCode.data() // const uint32_t* pCode_
         );
         vk::ShaderModule rayClosestHitShaderModule = m_core->getContext().getDevice().createShaderModule(rayClosestHitShaderModuleInfo);
         if (!rayClosestHitShaderModule) {

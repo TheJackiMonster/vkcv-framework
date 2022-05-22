@@ -19,12 +19,6 @@
 
 namespace vkcv {
 
-    struct Shader
-    {
-        std::vector<char> shaderCode;
-        ShaderStage shaderStage;
-    };
-
 	class ShaderProgram
 	{
     public:
@@ -48,14 +42,13 @@ namespace vkcv {
         bool addShader(ShaderStage stage, const std::filesystem::path &path);
 
         /**
-         * @brief Returns the shader of a specified stage from the program.
+         * @brief Returns the shader binary of a specified stage from the program.
          * Needed for the transfer to the pipeline.
          *
          * @param[in] stage The stage of the shader
-         * @return Shader object consisting of buffer with shader code and
-         * shader stage enum
+         * @return Shader code binary of the given stage
          */
-        const Shader &getShader(ShaderStage stage) const;
+        const std::vector<uint32_t> &getShaderBinary(ShaderStage stage) const;
 
 		/**
 		 * @brief Returns whether a shader exists in the program for a
@@ -98,11 +91,12 @@ namespace vkcv {
 	     */
         void reflectShader(ShaderStage shaderStage);
 
-        std::unordered_map<ShaderStage, Shader> m_Shaders;
+        std::unordered_map<ShaderStage, std::vector<uint32_t> > m_Shaders;
 
         // contains all vertex input attachments used in the vertex buffer
         std::vector<VertexAttachment> m_VertexAttachments;
         std::unordered_map<uint32_t, DescriptorBindings> m_DescriptorSets;
 		size_t m_pushConstantsSize = 0;
 	};
+
 }
