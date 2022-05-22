@@ -34,7 +34,10 @@ namespace vkcv {
 		PushConstants& operator=(PushConstants&& other) = default;
 		
 		/**
-		 * @return The size of the data that is bound per drawcall in bytes
+		 * @brief Returns the size of the data that is bound
+		 * per drawcall in bytes.
+		 *
+		 * @return Size of data per drawcall
 		 */
 		[[nodiscard]]
 		size_t getSizePerDrawcall() const {
@@ -42,7 +45,10 @@ namespace vkcv {
 		}
 		
 		/**
-		 * @return The size of the total data stored for push constants in bytes
+		 * @brief Returns the size of total data stored for
+		 * push constants in bytes
+		 *
+		 * @return Total size of data
 		 */
 		[[nodiscard]]
 		size_t getFullSize() const {
@@ -50,7 +56,10 @@ namespace vkcv {
 		}
 		
 		/**
-		 * @return The number of drawcalls that data is stored for
+		 * @brief Returns the number of drawcalls that data
+		 * is stored for.
+		 *
+		 * @return Number of drawcalls
 		 */
 		[[nodiscard]]
 		size_t getDrawcallCount() const {
@@ -58,18 +67,20 @@ namespace vkcv {
 		}
 		
 		/**
-		 * @brief Clear the drawcall data
+		 * @brief Clears the data for all drawcalls currently.
+		 * stored.
 		*/
 		void clear() {
 			m_data.clear();
 		}
 		
 		/**
-		 * @brief Append data for a single drawcall
+		 * @brief Appends data for a single drawcall to the
+		 * storage with a given type.
 		 * 
-		 * @tparam T Type of data to append, must match the size of the #PushConstants per drawcall size
-		 * @param value Data to append
-		 * @return If operation was successfull
+		 * @tparam T Type of data (must match the size per drawcall)
+		 * @param[in] value Data to append
+		 * @return True, if operation was successfull, otherwise false
 		 */
 		template<typename T = uint8_t>
 		bool appendDrawcall(const T& value) {
@@ -86,10 +97,11 @@ namespace vkcv {
 		}
 		
 		/**
-		 * @brief Get the data for a single drawcall as reference
+		 * @brief Returns the data of the drawcall by a given index
+		 * as reference.
 		 * 
-		 * @tparam T Type of data to return
-		 * @param index Index of the drawcall data to return
+		 * @tparam T Type of data
+		 * @param[in] index Index of the drawcall
 		 * @return Drawcall data
 		 */
 		template<typename T = uint8_t>
@@ -99,10 +111,11 @@ namespace vkcv {
 		}
 		
 		/**
-		 * @brief Get the data for a single drawcall as const reference
+		 * @brief Returns the data of the drawcall by a given index
+		 * as const reference.
 		 *
-		 * @tparam T Type of data to return
-		 * @param index Index of the drawcall data to return
+		 * @tparam T Type of data
+		 * @param[in] index Index of the drawcall
 		 * @return Drawcall data
 		 */
 		template<typename T = uint8_t>
@@ -112,9 +125,10 @@ namespace vkcv {
 		}
 		
 		/**
-		 * @brief Get the data for a single drawcall as a void pointer
+		 * @brief Returns the data of the drawcall by a given index
+		 * as a pointer.
 		 * 
-		 * @param index Index of the drawcall data to return
+		 * @param[in] index Index of the drawcall
 		 * @return Drawcall data
 		 */
 		[[nodiscard]]
@@ -124,9 +138,10 @@ namespace vkcv {
 		}
 		
 		/**
-		 * @return Raw pointer to the entire drawcall data array, 
-		 * might be nullptr if data is empty, 
-		 * pointer might be invalidated by clearing or adding data
+		 * @brief Returns the pointer to the entire drawcall data which
+		 * might be nullptr if the data is empty.
+		 *
+		 * @return Pointer to the data
 		 */
 		[[nodiscard]]
 		const void* getData() const {

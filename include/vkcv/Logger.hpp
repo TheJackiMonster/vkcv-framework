@@ -20,8 +20,10 @@ namespace vkcv {
 	};
 	
 	/**
-	 * Return the fitting output stream to print messages of a given level of logging.
-	 * @param level Level of logging
+	 * @brief Return the fitting output stream to print messages
+	 * of a given level of logging.
+	 *
+	 * @param[in] level Level of logging
 	 * @return Output stream (stdout or stderr)
 	 */
 	constexpr auto getLogOutput(LogLevel level) {
@@ -35,8 +37,10 @@ namespace vkcv {
 	}
 	
 	/**
-	 * Return the fitting identifier for messages of a given level of logging.
-	 * @param level Level of logging
+	 * @brief Returns the fitting identifier for messages of
+	 * a given level of logging.
+	 *
+	 * @param[in] level Level of logging
 	 * @return Identifier of the given level of logging
 	 */
 	constexpr const char* getLogName(LogLevel level) {
@@ -63,8 +67,10 @@ namespace vkcv {
 #endif
 
 /**
- * Macro-function to log formatting messages with a specific level of logging.
- * @param level Level of logging
+ * @brief Macro-function to log formatting messages with
+ * a specific level of logging.
+ *
+ * @param[in] level Level of logging
  */
 #define vkcv_log(level, ...) {             \
   char output_message [                    \
@@ -99,8 +105,10 @@ namespace vkcv {
 
 #else
 /**
- * Macro-function to log formatting messages with a specific level of logging.
- * @param level Level of logging
+ * @brief Macro-function to log formatting messages with
+ * a specific level of logging.
+ *
+ * @param[in] level Level of logging
  */
 #define vkcv_log(level, ...) {}
 #endif
