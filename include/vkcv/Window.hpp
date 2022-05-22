@@ -51,14 +51,14 @@ namespace vkcv {
 		/**
 		* @brief Copy-constructor of a #Window
 		*
-		* @param other Other instance of #Window
+		* @param[in] other Other instance of #Window
 		*/
 		Window(const Window& other) = delete;
 	
 		/**
 		* @brief Copy-operator of a #Window
 		*
-		* @param other Other instance of #Window
+		* @param[in] other Other instance of #Window
 		* @return Reference to itself
 		*/
 		Window &operator=(const Window &other) = delete;
@@ -73,7 +73,7 @@ namespace vkcv {
         bool isOpen() const;
 
 		/**
-		 * @brief Gets the currently focused window and returns it
+		 * @brief Returns the currently focused window.
 		 * TODO: only accessible to WindowManager
 		 *
 		 * @return Current window in focus
@@ -81,14 +81,14 @@ namespace vkcv {
 		static Window& getFocusedWindow();
 		
 		/**
-		 * @brief Checks if any GLFWWindows are open
+		 * @brief Checks if any windows are active and open.
 		 *
 		 * @return True, if any window is open, else false
 		 */
 		static bool hasOpenWindow();
 
         /**
-         * @brief Polls all events on the GLFWwindow
+         * @brief Polls all events on the active windows.
          */
         static void pollEvents();
 		
@@ -148,12 +148,13 @@ namespace vkcv {
         bool isResizable() const;
 
         /**
-         * Destructor of #Window, terminates GLFW
+         * @brief Destructor of the window which terminates GLFW in case
+         * of the last window got destroyed.
          */
         virtual ~Window();
 
         /**
-         * Requests the windows framebuffer size
+         * @brief Requests the windows framebuffer size.
          *
          * @param[out] width
          * @param[out] height
@@ -161,7 +162,7 @@ namespace vkcv {
         void getFramebufferSize(int& width, int& height) const;
 
         /**
-         * @brief Retruns the andle of the swapchain in use by the window.
+         * @brief Retruns the handle of the swapchain in use by the window.
          *
          * @return Swapchain handle
          */
