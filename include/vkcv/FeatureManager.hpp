@@ -47,8 +47,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -57,8 +57,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDevice16BitStorageFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -67,8 +67,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDevice8BitStorageFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -77,8 +77,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceBufferDeviceAddressFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -87,8 +87,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceDescriptorIndexingFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -97,8 +97,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceHostQueryResetFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -107,8 +107,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceImagelessFramebufferFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -117,8 +117,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceMultiviewFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -127,8 +127,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceProtectedMemoryFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -137,8 +137,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceSamplerYcbcrConversionFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -147,8 +147,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceScalarBlockLayoutFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -157,8 +157,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceSeparateDepthStencilLayoutsFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -167,8 +167,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceShaderAtomicInt64Features.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -177,8 +177,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceShaderFloat16Int8Features.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -187,8 +187,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceShaderSubgroupExtendedTypesFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -197,8 +197,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceTimelineSemaphoreFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -207,8 +207,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceUniformBufferStandardLayoutFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -217,8 +217,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceVariablePointersFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -227,8 +227,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceVulkanMemoryModelFeatures.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -237,8 +237,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceMeshShaderFeaturesNV.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -247,8 +247,8 @@ namespace vkcv {
 		/**
 		 * @brief Checks support of the @p vk::PhysicalDeviceShaderAtomicFloatFeaturesEXT.
 		 *
-		 * @param features The features
-		 * @param required True, if the @p features are required, else false
+		 * @param[in] features The features
+		 * @param[in] required True, if the @p features are required, else false
 		 * @return @p True, if the @p features are supported, else @p false
 		 */
 		[[nodiscard]]
@@ -257,8 +257,8 @@ namespace vkcv {
 		/**
 		 * @brief Checks support of the @p vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT.
 		 *
-		 * @param features The features
-		 * @param required True, if the @p features are required, else false
+		 * @param[in] features The features
+		 * @param[in] required True, if the @p features are required, else false
 		 * @return @p True, if the @p features are supported, else @p false
 		 */
 		[[nodiscard]]
@@ -267,8 +267,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceVulkan12Features.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -277,8 +277,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceVulkan11Features.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -287,8 +287,8 @@ namespace vkcv {
 		/**
 		 * @brief Checks support of the @p vk::PhysicalDeviceAccelerationStructureFeaturesKHR.
 		 *
-		 * @param features The features
-		 * @param required True, if the @p features are required, else false
+		 * @param[in] features The features
+		 * @param[in] required True, if the @p features are required, else false
 		 * @return @p True, if the @p features are supported, else @p false
 		 */
 		[[nodiscard]]
@@ -297,8 +297,8 @@ namespace vkcv {
 		/**
          * @brief Checks support of the @p vk::PhysicalDeviceRayTracingPipelineFeaturesKHR.
          *
-         * @param features The features
-         * @param required True, if the @p features are required, else false
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
          * @return @p True, if the @p features are supported, else @p false
          */
 		[[nodiscard]]
@@ -307,7 +307,7 @@ namespace vkcv {
 		/**
 		 * @brief Searches for a base structure of a given structure type.
 		 *
-		 * @param type Structure type
+		 * @param[in] type Structure type
 		 * @return Pointer to first matching base structure or nullptr
 		 */
 		[[nodiscard]]
@@ -317,7 +317,7 @@ namespace vkcv {
 		/**
 		 * @brief Constructor of a feature manager with a given physical device.
 		 *
-		 * @param physicalDevice Physical device
+		 * @param[in,out] physicalDevice Physical device
 		 */
 		explicit FeatureManager(vk::PhysicalDevice& physicalDevice);
 		
@@ -326,7 +326,7 @@ namespace vkcv {
 		/**
 		 * @brief Move-constructor of a feature manager.
 		 *
-		 * @param other Other feature manager instance
+		 * @param[in,out] other Other feature manager instance
 		 */
 		FeatureManager(FeatureManager&& other) noexcept;
 		
@@ -340,7 +340,7 @@ namespace vkcv {
 		/**
 		 * @brief Move-operator of a feature manager.
 		 *
-		 * @param other Other feature manager instance
+		 * @param[in,out] other Other feature manager instance
 		 * @return Reference to the feature manager itself
 		 */
 		FeatureManager& operator=(FeatureManager&& other) noexcept;
@@ -348,7 +348,7 @@ namespace vkcv {
 		/**
 		 * @brief Check if a specific extension is supported by the managers physical device.
 		 *
-		 * @param extension Extension identifier string
+		 * @param[in] extension Extension identifier string
 		 * @return @p True, if the @p extension is supported, else @p false
 		 */
 		[[nodiscard]]
@@ -357,8 +357,8 @@ namespace vkcv {
 		/**
 		 * @brief Activate a specific extension if supported by the managers physical device.
 		 *
-		 * @param extension Extension identifier string
-		 * @param required True, if the @p extension is required, else false
+		 * @param[in] extension Extension identifier string
+		 * @param[in] required True, if the @p extension is required, else false
 		 * @return @p True, if the @p extension could be activated, else @p false
 		 */
 		bool useExtension(const std::string& extension, bool required = true);
@@ -366,7 +366,7 @@ namespace vkcv {
 		/**
 		 * @brief Check if a specific extension is activated by the manager.
 		 *
-		 * @param extension Extension identifier string
+		 * @param[in] extension Extension identifier string
 		 * @return @p True, if the @p extension is activated, else @p false
 		 */
 		[[nodiscard]]
@@ -383,8 +383,8 @@ namespace vkcv {
 		/**
 		 * @brief Request specific features for optional or required usage ( only core Vulkan 1.0 ).
 		 *
-		 * @param featureFunction Function or lambda to request specific features
-		 * @param required True, if the @p features are required, else false
+		 * @param[in] featureFunction Function or lambda to request specific features
+		 * @param[in] required True, if the @p features are required, else false
 		 * @return @p True, if the requested features could be activated, else @p false
 		 */
 		bool useFeatures(const std::function<void(vk::PhysicalDeviceFeatures&)>& featureFunction, bool required = true);
@@ -393,8 +393,8 @@ namespace vkcv {
 		 * @brief Request specific features for optional or required usage.
 		 *
 		 * @tparam T Template parameter to use specific base structure types
-		 * @param featureFunction Function or lambda to request specific features
-		 * @param required True, if the @p features are required, else false
+		 * @param[in] featureFunction Function or lambda to request specific features
+		 * @param[in] required True, if the @p features are required, else false
 		 * @return @p True, if the requested features could be activated, else @p false
 		 * @see checkSupport()
 		 */

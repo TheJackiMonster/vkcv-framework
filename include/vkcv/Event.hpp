@@ -19,11 +19,21 @@
 
 namespace vkcv {
 	
+	/**
+	 * @brief Template for a function handle to an event
+	 *
+	 * @tparam T Event parameter type list
+	 */
 	template<typename... T>
 	struct event_handle {
 		uint32_t id;
 	};
 
+	/**
+	 * @brief Template for an event function
+	 *
+	 * @tparam T Event parameter type list
+	 */
     template<typename... T>
     struct event_function {
         typedef std::function<void(T...)> type;
@@ -33,8 +43,9 @@ namespace vkcv {
     };
 
     /**
-     * template for event handling
-     * @tparam T parameter list
+     * @brief Template for event handling
+     *
+     * @tparam T Event parameter type list
      */
     template<typename... T>
     struct event {
@@ -53,8 +64,9 @@ namespace vkcv {
     public:
 
         /**
-         * calls all function handles with the given arguments
-         * @param arguments of the given function
+         * @brief Calls all function handles with the given arguments.
+         *
+         * @param[in,out] arguments Arguments of the given event
          */
         void operator()(T... arguments) {
 			lock();
@@ -67,9 +79,10 @@ namespace vkcv {
         }
 
         /**
-         * adds a function handle to the event to be called
-         * @param callback of the function
-         * @return handle of the function
+         * @brief Adds a function handle to the event to be called.
+         *
+         * @param[in] callback Event callback
+         * @return Handle of the function
          */
 		event_handle<T...> add(typename event_function<T...>::type callback) {
 			event_function<T...> function;
@@ -80,8 +93,9 @@ namespace vkcv {
         }
 
         /**
-         * removes a function handle of the event
-         * @param handle of the function
+         * @brief Removes a function handle of the event.
+         *
+         * @param handle Handle of the function
          */
         void remove(event_handle<T...> handle) {
             this->m_functions.erase(
@@ -93,7 +107,8 @@ namespace vkcv {
         }
         
         /**
-         * locks the event so its function handles won't be called
+         * @brief Locks the event so its function handles won't
+         * be called until unlocked.
          */
         void lock() {
 #ifndef __MINGW32__
@@ -106,8 +121,9 @@ namespace vkcv {
         }
 	
 		/**
-		* unlocks the event so its function handles can be called after locking
-		*/
+		 * @brief Unlocks the event so its function handles can
+		 * be called after locking.
+		 */
         void unlock() {
 #ifndef __MINGW32__
 #ifdef __NO_SEMAPHORES__
