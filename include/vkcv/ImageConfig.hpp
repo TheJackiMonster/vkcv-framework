@@ -11,7 +11,22 @@ namespace vkcv {
 	
 	enum class Multisampling { None, MSAA2X, MSAA4X, MSAA8X };
 
+	/**
+	 * @brief Returns the sample count flag bits of a given
+	 * multi-sample anti-aliasing mode.
+	 *
+	 * @param[in] msaa MSAA mode
+	 * @return Sample count flag bits
+	 */
 	vk::SampleCountFlagBits msaaToVkSampleCountFlag(Multisampling msaa);
-	uint32_t                msaaToSampleCount(Multisampling msaa);
+	
+	/**
+	 * @brief Returns the amount of samples of a given
+	 * multi-sample anti-aliasing mode.
+	 *
+	 * @param msaa MSAA mode
+	 * @return Number of samples
+	 */
+	uint32_t msaaToSampleCount(Multisampling msaa);
 	
 }
