@@ -33,8 +33,8 @@ namespace vkcv
 		 * @brief Constructor of a valid handle with an
 		 * unique id and an optional destroy callback.
 		 *
-		 * @param id Unique handle id
-		 * @param destroy Destroy callback (optional)
+		 * @param[in] id Unique handle id
+		 * @param[in] destroy Destroy callback (optional)
 		 */
 		explicit Handle(uint64_t id, const HandleDestroyFunction& destroy = nullptr);
 		
@@ -79,6 +79,14 @@ namespace vkcv
 		
 	};
 	
+	/**
+	 * @brief Stream operator to print a handle into an output
+	 * stream.
+	 *
+	 * @param[out] out Output stream
+	 * @param[in] handle
+	 * @return Output stream after printing
+	 */
 	std::ostream& operator << (std::ostream& out, const Handle& handle);
 	
     // Handle returned for any buffer created with the core/context objects
@@ -141,7 +149,7 @@ namespace vkcv
 		 * @brief Creates a valid image handle to represent a swapchain image
 		 * using an optional destroy callback.
 		 *
-		 * @param destroy Destroy callback (optional)
+		 * @param[in] destroy Destroy callback (optional)
 		 * @return New swapchain image handle
 		 */
 		static ImageHandle createSwapchainImageHandle(const HandleDestroyFunction& destroy = nullptr);
