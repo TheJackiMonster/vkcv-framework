@@ -263,6 +263,9 @@ namespace vkcv
 			case CullMode::Back:
 				cullMode = vk::CullModeFlagBits::eBack;
 				break;
+			case CullMode::Both:
+				cullMode = vk::CullModeFlagBits::eFrontAndBack;
+				break;
 			default:
 			vkcv_log(LogLevel::ERROR, "Unknown CullMode");
 				cullMode = vk::CullModeFlagBits::eNone;
