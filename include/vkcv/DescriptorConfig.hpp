@@ -13,11 +13,8 @@
 
 namespace vkcv
 {
-    /*
-    * All the types of descriptors (resources) that can be retrieved by the shaders
-    */
-    enum class DescriptorType
-    {
+
+    enum class DescriptorType {
         UNIFORM_BUFFER,
         STORAGE_BUFFER,
         SAMPLER,
@@ -26,13 +23,15 @@ namespace vkcv
         UNIFORM_BUFFER_DYNAMIC,
         STORAGE_BUFFER_DYNAMIC,
         ACCELERATION_STRUCTURE_KHR
-    };    
+    };
 
     /**
-    * Converts the descriptor types from VulkanCV (vkcv) to native Vulkan (vk).
-    * @param[in] vkcv DescriptorType
-    * @return vk DescriptorType
-    */
+     * @brief Converts the descriptor type from the frameworks enumeration
+     * to the Vulkan type specifier.
+     *
+     * @param[in] type Descriptor type
+     * @return Vulkan descriptor type
+     */
     constexpr vk::DescriptorType getVkDescriptorType(DescriptorType type) noexcept {
         switch (type)
         {
@@ -56,14 +55,7 @@ namespace vkcv
                 return vk::DescriptorType::eMutableVALVE;
         }
     }
-
-    /*
-    * One binding for a descriptor set
-    * @param[in] a unique binding ID
-    * @param[in] a descriptor type
-    * @param[in] the number of descriptors of this type (arrays of the same type possible)
-    * @param[in] the shader stage where the descriptor is supposed to be retrieved
-    */
+	
     struct DescriptorBinding
     {
         uint32_t        bindingID;
@@ -90,4 +82,5 @@ namespace vkcv
         DescriptorSetLayoutHandle   setLayoutHandle;
         size_t                      poolIndex;
     };
+	
 }

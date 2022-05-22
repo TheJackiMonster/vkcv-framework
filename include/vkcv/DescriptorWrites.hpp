@@ -45,10 +45,7 @@ namespace vkcv {
 		uint32_t		binding;
 		SamplerHandle	sampler;
 	};
-
-	/**
-	 * @brief Only used for RTX. Used to bind the Acceleration Structure.
-	 */
+	
 	struct AccelerationDescriptorWrite {
 	    inline AccelerationDescriptorWrite(uint32_t binding) : binding(binding) {};
 	    uint32_t    binding;
