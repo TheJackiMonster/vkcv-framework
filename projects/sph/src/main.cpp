@@ -180,15 +180,16 @@ int main(int argc, const char **argv) {
 	particleBuffer2.fill(particles);
 
     vkcv::DescriptorWrites setWrites;
-    setWrites.uniformBufferWrites = {vkcv::BufferDescriptorWrite(0,color.getHandle()),
-                                     vkcv::BufferDescriptorWrite(1,position.getHandle())};
-    setWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(2,particleBuffer1.getHandle()),
-									  vkcv::BufferDescriptorWrite(3,particleBuffer2.getHandle())};
+    setWrites.writeUniformBuffer(0, color.getHandle()).writeUniformBuffer(1, position.getHandle());
+    setWrites.writeStorageBuffer(2, particleBuffer1.getHandle()).writeStorageBuffer(3, particleBuffer2.getHandle());
     core.writeDescriptorSet(descriptorSet, setWrites);
 
     vkcv::DescriptorWrites computeWrites;
-    computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,particleBuffer1.getHandle()),
-										  vkcv::BufferDescriptorWrite(1,particleBuffer2.getHandle())};
+    computeWrites.writeStorageBuffer(
+			0, particleBuffer1.getHandle()
+	).writeStorageBuffer(
+			1, particleBuffer2.getHandle()
+	);
     
     core.writeDescriptorSet(pressureDescriptorSet, computeWrites);
 	core.writeDescriptorSet(forceDescriptorSet, computeWrites);
@@ -404,10 +405,12 @@ int main(int argc, const char **argv) {
         core.prepareImageForStorage(cmdStream, swapchainInput);
 
         vkcv::DescriptorWrites tonemappingDescriptorWrites;
-        tonemappingDescriptorWrites.storageImageWrites = {
-            vkcv::StorageImageDescriptorWrite(0, colorBuffer),
-            vkcv::StorageImageDescriptorWrite(1, swapchainInput)
-        };
+        tonemappingDescriptorWrites.writeStorageImage(
+				0, colorBuffer
+		).writeStorageImage(
+				1, swapchainInput
+		);
+		
         core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
 
         uint32_t tonemappingDispatchCount[3];

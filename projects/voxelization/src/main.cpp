@@ -288,14 +288,15 @@ int main(int argc, const char** argv) {
 		const vkcv::ImageHandle specularHandle = sceneImages.back().getHandle();
 
 		vkcv::DescriptorWrites setWrites;
-		setWrites.sampledImageWrites = {
-			vkcv::SampledImageDescriptorWrite(0, albedoHandle),
-			vkcv::SampledImageDescriptorWrite(2, normalHandle),
-			vkcv::SampledImageDescriptorWrite(3, specularHandle)
-		};
-		setWrites.samplerWrites = {
-			vkcv::SamplerDescriptorWrite(1, colorSampler),
-		};
+		setWrites.writeSampledImage(
+				0, albedoHandle
+		).writeSampledImage(
+				2, normalHandle
+		).writeSampledImage(
+				3, specularHandle
+		);
+		
+		setWrites.writeSampler(1, colorSampler);
 		core.writeDescriptorSet(materialDescriptorSets.back(), setWrites);
 	}
 
@@ -570,17 +571,28 @@ int main(int argc, const char** argv) {
 
 	// write forward pass descriptor set
 	vkcv::DescriptorWrites forwardDescriptorWrites;
-	forwardDescriptorWrites.uniformBufferWrites = {
-		vkcv::BufferDescriptorWrite(0, shadowMapping.getLightInfoBuffer()),
-		vkcv::BufferDescriptorWrite(3, cameraPosBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(6, voxelization.getVoxelInfoBufferHandle()),
-		vkcv::BufferDescriptorWrite(7, volumetricSettingsBuffer.getHandle())};
-	forwardDescriptorWrites.sampledImageWrites = {
-		vkcv::SampledImageDescriptorWrite(1, shadowMapping.getShadowMap()),
-		vkcv::SampledImageDescriptorWrite(4, voxelization.getVoxelImageHandle()) };
-	forwardDescriptorWrites.samplerWrites = { 
-		vkcv::SamplerDescriptorWrite(2, shadowMapping.getShadowSampler()),
-		vkcv::SamplerDescriptorWrite(5, voxelSampler) };
+	forwardDescriptorWrites.writeUniformBuffer(
+			0, shadowMapping.getLightInfoBuffer()
+	).writeUniformBuffer(
+			3, cameraPosBuffer.getHandle()
+	).writeUniformBuffer(
+			6, voxelization.getVoxelInfoBufferHandle()
+	).writeUniformBuffer(
+			7, volumetricSettingsBuffer.getHandle()
+	);
+	
+	forwardDescriptorWrites.writeSampledImage(
+			1, shadowMapping.getShadowMap()
+	).writeSampledImage(
+			4, voxelization.getVoxelImageHandle()
+	);
+	
+	forwardDescriptorWrites.writeSampler(
+			2, shadowMapping.getShadowSampler()
+	).writeSampler(
+			5, voxelSampler
+	);
+	
 	core.writeDescriptorSet(forwardShadingDescriptorSet, forwardDescriptorWrites);
 
 	vkcv::upscaling::FSRUpscaling upscaling (core);
@@ -661,9 +673,7 @@ int main(int argc, const char** argv) {
 			
 			for (size_t i = 0; i < scene.materials.size(); i++) {
 				vkcv::DescriptorWrites setWrites;
-				setWrites.samplerWrites = {
-						vkcv::SamplerDescriptorWrite(1, colorSampler),
-				};
+				setWrites.writeSampler(1, colorSampler);
 				core.writeDescriptorSet(materialDescriptorSets[i], setWrites);
 			}
 			
@@ -709,25 +719,25 @@ int main(int argc, const char** argv) {
 
 		// update descriptor sets which use swapchain image
 		vkcv::DescriptorWrites tonemappingDescriptorWrites;
-		tonemappingDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(0, resolvedColorBuffer) };
-		tonemappingDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(1, colorSampler) };
-		tonemappingDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, swapBuffer) };
+		tonemappingDescriptorWrites.writeSampledImage(0, resolvedColorBuffer);
+		tonemappingDescriptorWrites.writeSampler(1, colorSampler);
+		tonemappingDescriptorWrites.writeStorageImage(2, swapBuffer);
 
 		core.writeDescriptorSet(tonemappingDescriptorSet, tonemappingDescriptorWrites);
 		
 		// update descriptor sets which use swapchain image
 		vkcv::DescriptorWrites postEffectsDescriptorWrites;
-		postEffectsDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(0, swapBuffer2) };
-		postEffectsDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(1, colorSampler) };
-		postEffectsDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, swapchainInput) };
+		postEffectsDescriptorWrites.writeSampledImage(0, swapBuffer2);
+		postEffectsDescriptorWrites.writeSampler(1, colorSampler);
+		postEffectsDescriptorWrites.writeStorageImage(2, swapchainInput);
 		
 		core.writeDescriptorSet(postEffectsDescriptorSet, postEffectsDescriptorWrites);
 
 		// update resolve descriptor, color images could be changed
 		vkcv::DescriptorWrites resolveDescriptorWrites;
-		resolveDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(0, colorBuffer) };
-		resolveDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(1, resolveSampler) };
-		resolveDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(2, resolvedColorBuffer) };
+		resolveDescriptorWrites.writeSampledImage(0, colorBuffer);
+		resolveDescriptorWrites.writeSampler(1, resolveSampler);
+		resolveDescriptorWrites.writeStorageImage(2, resolvedColorBuffer);
 		core.writeDescriptorSet(resolveDescriptorSet, resolveDescriptorWrites);
 
 		start = end;

@@ -135,7 +135,7 @@ int main(int argc, const char** argv) {
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-		rtxWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(0, swapchainInput) };
+		rtxWrites.writeStorageImage(0, swapchainInput);
 		core.writeDescriptorSet(rtxShaderDescriptorSet, rtxWrites);
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);

@@ -218,7 +218,7 @@ int main(int argc, const char** argv) {
 	vkcv::Buffer<ObjectMatrices> matrixBuffer = core.createBuffer<ObjectMatrices>(vkcv::BufferType::STORAGE, objectCount);
 
 	vkcv::DescriptorWrites vertexShaderDescriptorWrites;
-	vertexShaderDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, matrixBuffer.getHandle()) };
+	vertexShaderDescriptorWrites.writeStorageBuffer(0, matrixBuffer.getHandle());
 	core.writeDescriptorSet(vertexShaderDescriptorSet, vertexShaderDescriptorWrites);
 
 	vkcv::GraphicsPipelineHandle bunnyPipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
@@ -271,16 +271,19 @@ int main(int argc, const char** argv) {
 	vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = core.createBuffer<CameraPlanes>(vkcv::BufferType::UNIFORM, 1);
 
 	vkcv::DescriptorWrites meshShaderWrites;
-	meshShaderWrites.storageBufferWrites = {
-		vkcv::BufferDescriptorWrite(0, meshShaderVertexBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(1, meshShaderIndexBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(2, meshletBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(4, matrixBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(5, meshletBuffer.getHandle()),
-	};
-	meshShaderWrites.uniformBufferWrites = {
-		vkcv::BufferDescriptorWrite(3, cameraPlaneBuffer.getHandle()),
-	};
+	meshShaderWrites.writeStorageBuffer(
+			0, meshShaderVertexBuffer.getHandle()
+	).writeStorageBuffer(
+			1, meshShaderIndexBuffer.getHandle()
+	).writeStorageBuffer(
+			2, meshletBuffer.getHandle()
+	).writeStorageBuffer(
+			4, matrixBuffer.getHandle()
+	).writeStorageBuffer(
+			5, meshletBuffer.getHandle()
+	);
+	
+	meshShaderWrites.writeUniformBuffer(3, cameraPlaneBuffer.getHandle());
 
     core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
 

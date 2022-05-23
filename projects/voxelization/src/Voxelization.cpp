@@ -117,14 +117,16 @@ Voxelization::Voxelization(
 	m_voxelizationPipe = m_corePtr->createGraphicsPipeline(voxelizationPipeConfig);
 
 	vkcv::DescriptorWrites voxelizationDescriptorWrites;
-	voxelizationDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
-	voxelizationDescriptorWrites.uniformBufferWrites = { 
-		vkcv::BufferDescriptorWrite(1, m_voxelInfoBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(3, lightInfoBuffer)
-	};
-	voxelizationDescriptorWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(4, shadowMap) };
-	voxelizationDescriptorWrites.samplerWrites      = { vkcv::SamplerDescriptorWrite(5, shadowSampler) };
-	voxelizationDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(2, m_voxelImageIntermediate.getHandle()) };
+	voxelizationDescriptorWrites.writeStorageBuffer(0, m_voxelBuffer.getHandle());
+	voxelizationDescriptorWrites.writeUniformBuffer(
+			1, m_voxelInfoBuffer.getHandle()
+	).writeUniformBuffer(
+			3, lightInfoBuffer
+	);
+	
+	voxelizationDescriptorWrites.writeSampledImage(4, shadowMap);
+	voxelizationDescriptorWrites.writeSampler(5, shadowSampler);
+	voxelizationDescriptorWrites.writeStorageImage(2, m_voxelImageIntermediate.getHandle());
 	m_corePtr->writeDescriptorSet(m_voxelizationDescriptorSet, voxelizationDescriptorWrites);
 
 	vkcv::ShaderProgram voxelVisualisationShader = loadVoxelVisualisationShader();
@@ -180,7 +182,7 @@ Voxelization::Voxelization(
 	});
 
 	vkcv::DescriptorWrites resetVoxelWrites;
-	resetVoxelWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
+	resetVoxelWrites.writeStorageBuffer(0, m_voxelBuffer.getHandle());
 	m_corePtr->writeDescriptorSet(m_voxelResetDescriptorSet, resetVoxelWrites);
 
 	// buffer to image
@@ -194,8 +196,8 @@ Voxelization::Voxelization(
 	});
 
 	vkcv::DescriptorWrites bufferToImageDescriptorWrites;
-	bufferToImageDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
-	bufferToImageDescriptorWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(1, m_voxelImageIntermediate.getHandle()) };
+	bufferToImageDescriptorWrites.writeStorageBuffer(0, m_voxelBuffer.getHandle());
+	bufferToImageDescriptorWrites.writeStorageImage(1, m_voxelImageIntermediate.getHandle());
 	m_corePtr->writeDescriptorSet(m_bufferToImageDescriptorSet, bufferToImageDescriptorWrites);
 
 	// secondary bounce
@@ -209,11 +211,11 @@ Voxelization::Voxelization(
 	});
 
 	vkcv::DescriptorWrites secondaryBounceDescriptorWrites;
-	secondaryBounceDescriptorWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0, m_voxelBuffer.getHandle()) };
-	secondaryBounceDescriptorWrites.sampledImageWrites  = { vkcv::SampledImageDescriptorWrite(1, m_voxelImageIntermediate.getHandle()) };
-	secondaryBounceDescriptorWrites.samplerWrites       = { vkcv::SamplerDescriptorWrite(2, voxelSampler) };
-	secondaryBounceDescriptorWrites.storageImageWrites  = { vkcv::StorageImageDescriptorWrite(3, m_voxelImage.getHandle()) };
-	secondaryBounceDescriptorWrites.uniformBufferWrites = { vkcv::BufferDescriptorWrite(4, m_voxelInfoBuffer.getHandle()) };
+	secondaryBounceDescriptorWrites.writeStorageBuffer(0, m_voxelBuffer.getHandle());
+	secondaryBounceDescriptorWrites.writeSampledImage(1, m_voxelImageIntermediate.getHandle());
+	secondaryBounceDescriptorWrites.writeSampler(2, voxelSampler);
+	secondaryBounceDescriptorWrites.writeStorageImage(3, m_voxelImage.getHandle());
+	secondaryBounceDescriptorWrites.writeUniformBuffer(4, m_voxelInfoBuffer.getHandle());
 	m_corePtr->writeDescriptorSet(m_secondaryBounceDescriptorSet, secondaryBounceDescriptorWrites);
 }
 
@@ -345,10 +347,8 @@ void Voxelization::renderVoxelVisualisation(
 
 	// write descriptor set
 	vkcv::DescriptorWrites voxelVisualisationDescriptorWrite;
-	voxelVisualisationDescriptorWrite.storageImageWrites =
-	{ vkcv::StorageImageDescriptorWrite(0, m_voxelImage.getHandle(), mipLevel) };
-	voxelVisualisationDescriptorWrite.uniformBufferWrites =
-	{ vkcv::BufferDescriptorWrite(1, m_voxelInfoBuffer.getHandle()) };
+	voxelVisualisationDescriptorWrite.writeStorageImage(0, m_voxelImage.getHandle(), mipLevel);
+	voxelVisualisationDescriptorWrite.writeUniformBuffer(1, m_voxelInfoBuffer.getHandle());
 	m_corePtr->writeDescriptorSet(m_visualisationDescriptorSet, voxelVisualisationDescriptorWrite);
 
 	uint32_t drawVoxelCount = voxelCount / exp2(mipLevel);

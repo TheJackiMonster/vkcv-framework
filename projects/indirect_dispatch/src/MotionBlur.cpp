@@ -75,13 +75,15 @@ bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, con
 		true).getHandle();
 
 	vkcv::DescriptorWrites tileResetDescriptorWrites;
-	tileResetDescriptorWrites.storageBufferWrites = {
-		vkcv::BufferDescriptorWrite(0, m_fullPathWorkTileBuffer),
-		vkcv::BufferDescriptorWrite(1, m_copyPathWorkTileBuffer),
-		vkcv::BufferDescriptorWrite(2, m_fastPathWorkTileBuffer) };
+	tileResetDescriptorWrites.writeStorageBuffer(
+			0, m_fullPathWorkTileBuffer
+	).writeStorageBuffer(
+			1, m_copyPathWorkTileBuffer
+	).writeStorageBuffer(
+			2, m_fastPathWorkTileBuffer
+	);
 
 	m_core->writeDescriptorSet(m_tileResetPass.descriptorSet, tileResetDescriptorWrites);
-
 
 	m_renderTargets = MotionBlurSetup::createRenderTargets(targetWidth, targetHeight, *m_core);
 
@@ -129,15 +131,20 @@ vkcv::ImageHandle MotionBlur::render(
 
 	// work tile classification
 	vkcv::DescriptorWrites tileClassificationDescriptorWrites;
-	tileClassificationDescriptorWrites.sampledImageWrites = {
-		vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionMaxNeighbourhood),
-		vkcv::SampledImageDescriptorWrite(1, m_renderTargets.motionMinNeighbourhood) };
-	tileClassificationDescriptorWrites.samplerWrites = {
-		vkcv::SamplerDescriptorWrite(2, m_nearestSampler) };
-	tileClassificationDescriptorWrites.storageBufferWrites = {
-		vkcv::BufferDescriptorWrite(3, m_fullPathWorkTileBuffer),
-		vkcv::BufferDescriptorWrite(4, m_copyPathWorkTileBuffer),
-		vkcv::BufferDescriptorWrite(5, m_fastPathWorkTileBuffer) };
+	tileClassificationDescriptorWrites.writeSampledImage(
+			0, m_renderTargets.motionMaxNeighbourhood
+	).writeSampledImage(
+			1, m_renderTargets.motionMinNeighbourhood
+	);
+	
+	tileClassificationDescriptorWrites.writeSampler(2, m_nearestSampler);
+	tileClassificationDescriptorWrites.writeStorageBuffer(
+			3, m_fullPathWorkTileBuffer
+	).writeStorageBuffer(
+			4, m_copyPathWorkTileBuffer
+	).writeStorageBuffer(
+			5, m_fastPathWorkTileBuffer
+	);
 
 	m_core->writeDescriptorSet(m_tileClassificationPass.descriptorSet, tileClassificationDescriptorWrites);
 
@@ -174,44 +181,41 @@ vkcv::ImageHandle MotionBlur::render(
 	m_core->recordBufferMemoryBarrier(cmdStream, m_fastPathWorkTileBuffer);
 
 	vkcv::DescriptorWrites motionBlurDescriptorWrites;
-	motionBlurDescriptorWrites.sampledImageWrites = {
-		vkcv::SampledImageDescriptorWrite(0, colorBuffer),
-		vkcv::SampledImageDescriptorWrite(1, depthBuffer),
-		vkcv::SampledImageDescriptorWrite(2, motionBufferFullRes),
-		vkcv::SampledImageDescriptorWrite(3, m_renderTargets.motionMaxNeighbourhood) };
-	motionBlurDescriptorWrites.samplerWrites = {
-		vkcv::SamplerDescriptorWrite(4, m_nearestSampler) };
-	motionBlurDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(5, m_renderTargets.outputColor) };
-	motionBlurDescriptorWrites.storageBufferWrites = {
-		vkcv::BufferDescriptorWrite(6, m_fullPathWorkTileBuffer)};
+	motionBlurDescriptorWrites.writeSampledImage(
+			0, colorBuffer
+	).writeSampledImage(
+			1, depthBuffer
+	).writeSampledImage(
+			2, motionBufferFullRes
+	).writeSampledImage(
+			3, m_renderTargets.motionMaxNeighbourhood
+	);
+	
+	motionBlurDescriptorWrites.writeSampler(4, m_nearestSampler);
+	motionBlurDescriptorWrites.writeStorageImage(5, m_renderTargets.outputColor);
+	motionBlurDescriptorWrites.writeStorageBuffer(6, m_fullPathWorkTileBuffer);
 
 	m_core->writeDescriptorSet(m_motionBlurPass.descriptorSet, motionBlurDescriptorWrites);
 
-
 	vkcv::DescriptorWrites colorCopyDescriptorWrites;
-	colorCopyDescriptorWrites.sampledImageWrites = {
-		vkcv::SampledImageDescriptorWrite(0, colorBuffer) };
-	colorCopyDescriptorWrites.samplerWrites = {
-		vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
-	colorCopyDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(2, m_renderTargets.outputColor) };
-	colorCopyDescriptorWrites.storageBufferWrites = {
-		vkcv::BufferDescriptorWrite(3, m_copyPathWorkTileBuffer) };
+	colorCopyDescriptorWrites.writeSampledImage(0, colorBuffer);
+	colorCopyDescriptorWrites.writeSampler(1, m_nearestSampler);
+	colorCopyDescriptorWrites.writeStorageImage(2, m_renderTargets.outputColor);
+	colorCopyDescriptorWrites.writeStorageBuffer(3, m_copyPathWorkTileBuffer);
 
 	m_core->writeDescriptorSet(m_colorCopyPass.descriptorSet, colorCopyDescriptorWrites);
 
 
 	vkcv::DescriptorWrites fastPathDescriptorWrites;
-	fastPathDescriptorWrites.sampledImageWrites = {
-		vkcv::SampledImageDescriptorWrite(0, colorBuffer),
-		vkcv::SampledImageDescriptorWrite(1, m_renderTargets.motionMaxNeighbourhood) };
-	fastPathDescriptorWrites.samplerWrites = {
-		vkcv::SamplerDescriptorWrite(2, m_nearestSampler) };
-	fastPathDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(3, m_renderTargets.outputColor) };
-	fastPathDescriptorWrites.storageBufferWrites = {
-		vkcv::BufferDescriptorWrite(4, m_fastPathWorkTileBuffer) };
+	fastPathDescriptorWrites.writeSampledImage(
+			0, colorBuffer
+	).writeSampledImage(
+			1, m_renderTargets.motionMaxNeighbourhood
+	);
+	
+	fastPathDescriptorWrites.writeSampler(2, m_nearestSampler);
+	fastPathDescriptorWrites.writeStorageImage(3, m_renderTargets.outputColor);
+	fastPathDescriptorWrites.writeStorageBuffer(4, m_fastPathWorkTileBuffer);
 
 	m_core->writeDescriptorSet(m_motionBlurFastPathPass.descriptorSet, fastPathDescriptorWrites);
 
@@ -279,16 +283,17 @@ vkcv::ImageHandle MotionBlur::render(
 	else if (mode == eMotionBlurMode::TileVisualisation) {
 
 		vkcv::DescriptorWrites visualisationDescriptorWrites;
-		visualisationDescriptorWrites.sampledImageWrites = { 
-			vkcv::SampledImageDescriptorWrite(0, colorBuffer) };
-		visualisationDescriptorWrites.samplerWrites = {
-			vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
-		visualisationDescriptorWrites.storageImageWrites = {
-			vkcv::StorageImageDescriptorWrite(2, m_renderTargets.outputColor)};
-		visualisationDescriptorWrites.storageBufferWrites = {
-			vkcv::BufferDescriptorWrite(3, m_fullPathWorkTileBuffer),
-			vkcv::BufferDescriptorWrite(4, m_copyPathWorkTileBuffer),
-			vkcv::BufferDescriptorWrite(5, m_fastPathWorkTileBuffer) };
+		visualisationDescriptorWrites.writeSampledImage(0, colorBuffer);
+		visualisationDescriptorWrites.writeSampler(1, m_nearestSampler);
+		visualisationDescriptorWrites.writeStorageImage(2, m_renderTargets.outputColor);
+		
+		visualisationDescriptorWrites.writeStorageBuffer(
+				3, m_fullPathWorkTileBuffer
+		).writeStorageBuffer(
+				4, m_copyPathWorkTileBuffer
+		).writeStorageBuffer(
+				5, m_fastPathWorkTileBuffer
+		);
 
 		m_core->writeDescriptorSet(m_tileVisualisationPass.descriptorSet, visualisationDescriptorWrites);
 
@@ -345,12 +350,9 @@ vkcv::ImageHandle MotionBlur::renderMotionVectorVisualisation(
 	}
 
 	vkcv::DescriptorWrites motionVectorVisualisationDescriptorWrites;
-	motionVectorVisualisationDescriptorWrites.sampledImageWrites = {
-		vkcv::SampledImageDescriptorWrite(0, visualisationInput) };
-	motionVectorVisualisationDescriptorWrites.samplerWrites = {
-		vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
-	motionVectorVisualisationDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(2, m_renderTargets.outputColor) };
+	motionVectorVisualisationDescriptorWrites.writeSampledImage(0, visualisationInput);
+	motionVectorVisualisationDescriptorWrites.writeSampler(1, m_nearestSampler);
+	motionVectorVisualisationDescriptorWrites.writeStorageImage(2, m_renderTargets.outputColor);
 
 	m_core->writeDescriptorSet(
 		m_motionVectorVisualisationPass.descriptorSet,
@@ -383,13 +385,13 @@ void MotionBlur::computeMotionTiles(
 
 	// motion vector min max tiles
 	vkcv::DescriptorWrites motionVectorMaxTilesDescriptorWrites;
-	motionVectorMaxTilesDescriptorWrites.sampledImageWrites = {
-		vkcv::SampledImageDescriptorWrite(0, motionBufferFullRes) };
-	motionVectorMaxTilesDescriptorWrites.samplerWrites = {
-		vkcv::SamplerDescriptorWrite(1, m_nearestSampler) };
-	motionVectorMaxTilesDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(2, m_renderTargets.motionMax),
-		vkcv::StorageImageDescriptorWrite(3, m_renderTargets.motionMin) };
+	motionVectorMaxTilesDescriptorWrites.writeSampledImage(0, motionBufferFullRes);
+	motionVectorMaxTilesDescriptorWrites.writeSampler(1, m_nearestSampler);
+	motionVectorMaxTilesDescriptorWrites.writeStorageImage(
+			2, m_renderTargets.motionMax
+	).writeStorageImage(
+			3, m_renderTargets.motionMin
+	);
 
 	m_core->writeDescriptorSet(m_motionVectorMinMaxPass.descriptorSet, motionVectorMaxTilesDescriptorWrites);
 
@@ -411,14 +413,18 @@ void MotionBlur::computeMotionTiles(
 
 	// motion vector min max neighbourhood
 	vkcv::DescriptorWrites motionVectorMaxNeighbourhoodDescriptorWrites;
-	motionVectorMaxNeighbourhoodDescriptorWrites.sampledImageWrites = {
-		vkcv::SampledImageDescriptorWrite(0, m_renderTargets.motionMax),
-		vkcv::SampledImageDescriptorWrite(1, m_renderTargets.motionMin) };
-	motionVectorMaxNeighbourhoodDescriptorWrites.samplerWrites = {
-		vkcv::SamplerDescriptorWrite(2, m_nearestSampler) };
-	motionVectorMaxNeighbourhoodDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(3, m_renderTargets.motionMaxNeighbourhood),
-		vkcv::StorageImageDescriptorWrite(4, m_renderTargets.motionMinNeighbourhood) };
+	motionVectorMaxNeighbourhoodDescriptorWrites.writeSampledImage(
+			0, m_renderTargets.motionMax
+	).writeSampledImage(
+			1, m_renderTargets.motionMin
+	);
+	
+	motionVectorMaxNeighbourhoodDescriptorWrites.writeSampler(2, m_nearestSampler);
+	motionVectorMaxNeighbourhoodDescriptorWrites.writeStorageImage(
+			3, m_renderTargets.motionMaxNeighbourhood
+	).writeStorageImage(
+			4, m_renderTargets.motionMinNeighbourhood
+	);
 
 	m_core->writeDescriptorSet(m_motionVectorMinMaxNeighbourhoodPass.descriptorSet, motionVectorMaxNeighbourhoodDescriptorWrites);
 

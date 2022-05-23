@@ -176,7 +176,7 @@ namespace vkcv
 		
 		std::vector<WriteDescriptorSetInfo> writeInfos;
 
-		for (const auto& write : writes.sampledImageWrites)
+		for (const auto& write : writes.getSampledImageWrites())
 		{
 		    vk::ImageLayout layout = write.useGeneralLayout ? vk::ImageLayout::eGeneral : vk::ImageLayout::eShaderReadOnlyOptimal;
 			const vk::DescriptorImageInfo imageInfo(
@@ -198,7 +198,7 @@ namespace vkcv
 			writeInfos.push_back(vulkanWrite);
 		}
 
-		for (const auto& write : writes.storageImageWrites) {
+		for (const auto& write : writes.getStorageImageWrites()) {
 			const vk::DescriptorImageInfo imageInfo(
 				nullptr,
 				imageManager.getVulkanImageView(write.image, write.mipLevel),
@@ -218,7 +218,7 @@ namespace vkcv
 			writeInfos.push_back(vulkanWrite);
 		}
 
-		for (const auto& write : writes.uniformBufferWrites) {
+		for (const auto& write : writes.getUniformBufferWrites()) {
 			const size_t size = bufferManager.getBufferSize(write.buffer);
 			const uint32_t offset = std::clamp<uint32_t>(write.offset, 0, size);
 			
@@ -245,7 +245,7 @@ namespace vkcv
 			writeInfos.push_back(vulkanWrite);
 		}
 
-		for (const auto& write : writes.storageBufferWrites) {
+		for (const auto& write : writes.getStorageBufferWrites()) {
 			const size_t size = bufferManager.getBufferSize(write.buffer);
 			const uint32_t offset = std::clamp<uint32_t>(write.offset, 0, size);
 			
@@ -272,7 +272,7 @@ namespace vkcv
 			writeInfos.push_back(vulkanWrite);
 		}
 
-		for (const auto& write : writes.samplerWrites) {
+		for (const auto& write : writes.getSamplerWrites()) {
 			const vk::Sampler& sampler = samplerManager.getVulkanSampler(write.sampler);
 			
 			const vk::DescriptorImageInfo imageInfo(

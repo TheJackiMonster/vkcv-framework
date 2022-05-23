@@ -188,18 +188,20 @@ int main(int argc, const char** argv) {
 		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
 	vkcv::DescriptorWrites setWrites;
-	std::vector<vkcv::SampledImageDescriptorWrite> texturesArrayWrites;
+	
 	for(uint32_t i = 0; i < 6; i++)
 	{
-	    texturesArrayWrites.push_back(vkcv::SampledImageDescriptorWrite(1,
-                                                                        texturesArray[i].getHandle(),
-                                                                        0,
-                                                                        false,
-                                                                        i));
+		
+		setWrites.writeSampledImage(
+				1,
+				texturesArray[i].getHandle(),
+				0,
+				false,
+				i
+		);
 	}
 
-	setWrites.sampledImageWrites	= texturesArrayWrites;
-	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(0, sampler) };
+	setWrites.writeSampler(0, sampler);
 
 	core.writeDescriptorSet(descriptorSet, setWrites);
 

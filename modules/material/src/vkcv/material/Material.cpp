@@ -201,8 +201,8 @@ namespace vkcv::material {
 		vkcv::DescriptorWrites setWrites;
 		
 		for (size_t i = 0; i < material.m_Textures.size(); i++) {
-			setWrites.sampledImageWrites.emplace_back(i * 2, material.m_Textures[i].m_Image);
-			setWrites.samplerWrites.emplace_back(i * 2 + 1, material.m_Textures[i].m_Sampler);
+			setWrites.writeSampledImage(i * 2, material.m_Textures[i].m_Image);
+			setWrites.writeSampler(i * 2 + 1, material.m_Textures[i].m_Sampler);
 		}
 		
 		core.writeDescriptorSet(material.m_DescriptorSet, setWrites);

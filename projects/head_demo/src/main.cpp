@@ -113,9 +113,7 @@ int main(int argc, const char** argv) {
 	clipBuffer.fill({ clipLimit, -clipX, -clipY, -clipZ });
 	
 	vkcv::DescriptorWrites clipWrites;
-	clipWrites.uniformBufferWrites = {
-			vkcv::BufferDescriptorWrite(0, clipBuffer.getHandle())
-	};
+	clipWrites.writeUniformBuffer(0, clipBuffer.getHandle());
 	
 	core.writeDescriptorSet(clipDescriptorSet, clipWrites);
 	

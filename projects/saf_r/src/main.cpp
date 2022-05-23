@@ -145,8 +145,12 @@ int main(int argc, const char** argv) {
 	sphereBuffer.fill(spheres);
 
 	vkcv::DescriptorWrites computeWrites;
-	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,lightsBuffer.getHandle()),
-                                          vkcv::BufferDescriptorWrite(1,sphereBuffer.getHandle())};
+	computeWrites.writeStorageBuffer(
+			0, lightsBuffer.getHandle()
+	).writeStorageBuffer(
+			1, sphereBuffer.getHandle()
+	);
+	
     core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
 	auto safrIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
@@ -253,7 +257,7 @@ int main(int argc, const char** argv) {
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
 		//configure the outImage for compute shader (render into the swapchain image)
-        computeWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(2, swapchainInput)};
+        computeWrites.writeStorageImage(2, swapchainInput);
         core.writeDescriptorSet(computeDescriptorSet, computeWrites);
         core.prepareImageForStorage (cmdStream, swapchainInput);
 

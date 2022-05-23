@@ -444,18 +444,17 @@ int main(int argc, const char** argv) {
             vkcv::SamplerMipmapMode::LINEAR,
             vkcv::SamplerAddressMode::REPEAT
     );
-
+	
+	vkcv::DescriptorWrites setWrites;
+	
     std::vector<vkcv::SampledImageDescriptorWrite> textureArrayWrites;
     for(uint32_t i = 0; i < compiledMaterial.baseColor.size(); i++)
     {
-        vkcv::SampledImageDescriptorWrite baseColorWrite(2, compiledMaterial.baseColor[i].getHandle(), 0, false, i);
-        textureArrayWrites.push_back(baseColorWrite);
+		setWrites.writeSampledImage(2, compiledMaterial.baseColor[i].getHandle(), 0, false, i);
     }
-
-    vkcv::DescriptorWrites setWrites;
-    setWrites.sampledImageWrites	= textureArrayWrites;
-    setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(0, standardSampler) };
-	setWrites.storageBufferWrites   = { vkcv::BufferDescriptorWrite(1, modelBuffer.getHandle())};
+    
+    setWrites.writeSampler(0, standardSampler);
+	setWrites.writeStorageBuffer(1, modelBuffer.getHandle());
     core.writeDescriptorSet(descriptorSet, setWrites);
 
 	const vkcv::GraphicsPipelineConfig sponzaPipelineConfig {
@@ -481,29 +480,10 @@ int main(int argc, const char** argv) {
             vkcv::BufferType::UNIFORM,
             1);
 
-    //Plane dummyPlane{};
-    //dummyPlane.pointOnPlane = glm::vec3(0.0f);
-    //dummyPlane.padding0 = 0.0f;
-    //dummyPlane.normal = glm::vec3(0.0f);
-    //dummyPlane.padding1 = 0.0f;
-
-    //CameraPlanes dummyCameraPlane{};
-    //dummyCameraPlane.planes[0] = dummyPlane;
-    //dummyCameraPlane.planes[1] = dummyPlane;
-    //dummyCameraPlane.planes[2] = dummyPlane;
-    //dummyCameraPlane.planes[3] = dummyPlane;
-    //dummyCameraPlane.planes[4] = dummyPlane;
-    //dummyCameraPlane.planes[5] = dummyPlane;
-
-    //cameraPlaneBuffer.fill(&dummyCameraPlane);
-
-    vkcv::BufferDescriptorWrite cameraPlaneWrite(0, cameraPlaneBuffer.getHandle());
-    vkcv::BufferDescriptorWrite drawCommandsWrite(1, indirectBuffer.getHandle());
-    vkcv::BufferDescriptorWrite boundingBoxWrite(2, boundingBoxBuffer.getHandle());
-
     vkcv::DescriptorWrites cullingWrites;
-    cullingWrites.storageBufferWrites = {drawCommandsWrite, boundingBoxWrite};
-    cullingWrites.uniformBufferWrites = {cameraPlaneWrite};
+	cullingWrites.writeStorageBuffer(1, indirectBuffer.getHandle());
+	cullingWrites.writeStorageBuffer(2, boundingBoxBuffer.getHandle());
+    cullingWrites.writeUniformBuffer(0, cameraPlaneBuffer.getHandle());
     core.writeDescriptorSet(cullingDescSet, cullingWrites);
 
 

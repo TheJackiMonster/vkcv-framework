@@ -369,14 +369,14 @@ int main(int argc, const char **argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particlesHandle));
+		writes.writeStorageBuffer(0, particlesHandle);
 		core.writeDescriptorSet(initParticleWeightsSets[0], writes);
 	}
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(0, grid.getHandle()));
-		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(1, gridSampler));
+		writes.writeSampledImage(0, grid.getHandle());
+		writes.writeSampler(1, gridSampler);
 		core.writeDescriptorSet(initParticleWeightsSets[1], writes);
 	}
 	
@@ -389,19 +389,19 @@ int main(int argc, const char **argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particlesHandle));
+		writes.writeStorageBuffer(0, particlesHandle);
 		core.writeDescriptorSet(transformParticlesToGridSets[0], writes);
 	}
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.uniformBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, simulation.getHandle()));
+		writes.writeUniformBuffer(0, simulation.getHandle());
 		core.writeDescriptorSet(transformParticlesToGridSets[1], writes);
 	}
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.storageImageWrites.push_back(vkcv::StorageImageDescriptorWrite(0, grid.getHandle()));
+		writes.writeStorageImage(0, grid.getHandle());
 		core.writeDescriptorSet(transformParticlesToGridSets[2], writes);
 	}
 	
@@ -414,20 +414,20 @@ int main(int argc, const char **argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particlesHandle));
+		writes.writeStorageBuffer(0, particlesHandle);
 		core.writeDescriptorSet(updateParticleVelocitiesSets[0], writes);
 	}
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.uniformBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, simulation.getHandle()));
+		writes.writeUniformBuffer(0, simulation.getHandle());
 		core.writeDescriptorSet(updateParticleVelocitiesSets[1], writes);
 	}
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(0, grid.getHandle()));
-		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(1, gridSampler));
+		writes.writeSampledImage(0, grid.getHandle());
+		writes.writeSampler(1, gridSampler);
 		core.writeDescriptorSet(updateParticleVelocitiesSets[2], writes);
 	}
 	
@@ -499,9 +499,9 @@ int main(int argc, const char **argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.sampledImageWrites.push_back(vkcv::SampledImageDescriptorWrite(0, grid.getHandle()));
-		writes.samplerWrites.push_back(vkcv::SamplerDescriptorWrite(1, gridSampler));
-		writes.uniformBufferWrites.push_back(vkcv::BufferDescriptorWrite(2, simulation.getHandle()));
+		writes.writeSampledImage(0, grid.getHandle());
+		writes.writeSampler(1, gridSampler);
+		writes.writeUniformBuffer(2, simulation.getHandle());
 		core.writeDescriptorSet(gfxSetGrid, writes);
 	}
 	
@@ -513,7 +513,7 @@ int main(int argc, const char **argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particlesHandle));
+		writes.writeStorageBuffer(0, particlesHandle);
 		core.writeDescriptorSet(gfxSetParticles, writes);
 	}
 	
@@ -883,7 +883,7 @@ int main(int argc, const char **argv) {
 			);
 			
 			vkcv::DescriptorWrites writes;
-			writes.storageBufferWrites.push_back(vkcv::BufferDescriptorWrite(0, particlesHandle));
+			writes.writeStorageBuffer(0, particlesHandle);
 			
 			core.writeDescriptorSet(initParticleWeightsSets[0], writes);
 			core.writeDescriptorSet(transformParticlesToGridSets[0], writes);

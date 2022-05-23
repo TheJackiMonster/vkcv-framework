@@ -51,8 +51,6 @@ int main(int argc, const char** argv) {
 		{vkcv::ShaderStage::VERTEX, "shaders/shader.vert"},
 		{ vkcv::ShaderStage::FRAGMENT, "shaders/shader.frag" }
 	}, nullptr);
-	
-	const auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 
 	const vkcv::GraphicsPipelineConfig trianglePipelineDefinition {
 		triangleShaderProgram,

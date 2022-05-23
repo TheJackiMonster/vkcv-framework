@@ -108,10 +108,7 @@ int main(int argc, const char** argv) {
 	});
 
 	vkcv::DescriptorWrites imageCombineDescriptorWrites;
-	imageCombineDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(0, outputImage),
-		vkcv::StorageImageDescriptorWrite(1, meanImage)
-	};
+	imageCombineDescriptorWrites.writeStorageImage(0, outputImage).writeStorageImage(1, meanImage);
 	core.writeDescriptorSet(imageCombineDescriptorSet, imageCombineDescriptorWrites);
 
 	// image present shader
@@ -145,9 +142,7 @@ int main(int argc, const char** argv) {
 	});
 
 	vkcv::DescriptorWrites imageClearDescriptorWrites;
-	imageClearDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(0, meanImage)
-	};
+	imageClearDescriptorWrites.writeStorageImage(0, meanImage);
 	core.writeDescriptorSet(imageClearDescriptorSet, imageClearDescriptorWrites);
 
 	// buffers
@@ -194,12 +189,15 @@ int main(int argc, const char** argv) {
 		materialSettings.size());
 
 	vkcv::DescriptorWrites traceDescriptorWrites;
-	traceDescriptorWrites.storageBufferWrites = { 
-		vkcv::BufferDescriptorWrite(0, sphereBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(1, planeBuffer.getHandle()),
-		vkcv::BufferDescriptorWrite(2, materialBuffer.getHandle())};
-	traceDescriptorWrites.storageImageWrites = {
-		vkcv::StorageImageDescriptorWrite(3, outputImage)};
+	traceDescriptorWrites.writeStorageBuffer(
+			0, sphereBuffer.getHandle()
+	).writeStorageBuffer(
+			1, planeBuffer.getHandle()
+	).writeStorageBuffer(
+			2, materialBuffer.getHandle()
+	);
+	
+	traceDescriptorWrites.writeStorageImage(3, outputImage);
 	core.writeDescriptorSet(traceDescriptorSet, traceDescriptorWrites);
 
 	vkcv::ComputePipelineHandle tracePipeline = core.createComputePipeline({
@@ -272,21 +270,20 @@ int main(int argc, const char** argv) {
 				true).getHandle();
 
 			// update descriptor sets
-			traceDescriptorWrites.storageImageWrites = {
-			vkcv::StorageImageDescriptorWrite(3, outputImage) };
+			traceDescriptorWrites.writeStorageImage(3, outputImage);
 			core.writeDescriptorSet(traceDescriptorSet, traceDescriptorWrites);
 
 			vkcv::DescriptorWrites imageCombineDescriptorWrites;
-			imageCombineDescriptorWrites.storageImageWrites = {
-				vkcv::StorageImageDescriptorWrite(0, outputImage),
-				vkcv::StorageImageDescriptorWrite(1, meanImage)
-			};
+			imageCombineDescriptorWrites.writeStorageImage(
+					0, outputImage
+			).writeStorageImage(
+					1, meanImage
+			);
+			
 			core.writeDescriptorSet(imageCombineDescriptorSet, imageCombineDescriptorWrites);
 
 			vkcv::DescriptorWrites imageClearDescriptorWrites;
-			imageClearDescriptorWrites.storageImageWrites = {
-				vkcv::StorageImageDescriptorWrite(0, meanImage)
-			};
+			imageClearDescriptorWrites.writeStorageImage(0, meanImage);
 			core.writeDescriptorSet(imageClearDescriptorSet, imageClearDescriptorWrites);
 
 			widthPrevious  = swapchainWidth;
@@ -397,9 +394,12 @@ int main(int argc, const char** argv) {
 		const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
 		vkcv::DescriptorWrites presentDescriptorWrites;
-		presentDescriptorWrites.storageImageWrites = {
-			vkcv::StorageImageDescriptorWrite(0, meanImage),
-			vkcv::StorageImageDescriptorWrite(1, swapchainInput) };
+		presentDescriptorWrites.writeStorageImage(
+				0, meanImage
+		).writeStorageImage(
+				1, swapchainInput
+		);
+		
 		core.writeDescriptorSet(presentDescriptorSet, presentDescriptorWrites);
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
