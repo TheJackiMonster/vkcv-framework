@@ -11,7 +11,14 @@
 
 namespace vkcv {
 	
+	/**
+	 * @brief Function to be called for recording a command buffer.
+	 */
 	typedef typename event_function<const vk::CommandBuffer&>::type RecordCommandFunction;
+	
+	/**
+	 * @brief Function to be called after finishing a given process.
+	 */
 	typedef typename event_function<>::type FinishCommandFunction;
 	
 }

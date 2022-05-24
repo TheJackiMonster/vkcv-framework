@@ -12,6 +12,9 @@
 
 namespace vkcv {
 	
+	/**
+	 * @brief Structure to configure a compute pipeline before its creation.
+	 */
     struct ComputePipelineConfig {
         ShaderProgram&                          m_ShaderProgram;
         std::vector<DescriptorSetLayoutHandle>	m_DescriptorSetLayouts;

@@ -14,6 +14,13 @@
 
 namespace vkcv
 {
+	
+	/**
+	 * @brief Class to manage the vulkan resources as an instance,
+	 * a device, a physical device and a memory allocator. Additionally
+	 * instances of this class will hold the feature manager and the
+	 * queue manager.
+	 */
     class Context
     {
         friend class Core;
@@ -119,4 +126,5 @@ namespace vkcv
 		vma::Allocator 		m_Allocator;
 		
     };
+	
 }

@@ -52,6 +52,10 @@ namespace vkcv
 		std::vector<vk::Semaphore> signalSemaphores;
 	};
 
+	/**
+	 * @brief The class handles the core functionality of the framework with
+	 * most calls addressing resource management via more simplified abstraction.
+	 */
     class Core final
     {
     private:

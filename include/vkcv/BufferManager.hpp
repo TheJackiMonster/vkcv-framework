@@ -29,6 +29,10 @@ namespace vkcv
 	
 	class Core;
 	
+	/**
+	 * @brief Class to manage the creation, destruction, allocation
+	 * and filling of buffers.
+	 */
 	class BufferManager
 	{
 		friend class Core;

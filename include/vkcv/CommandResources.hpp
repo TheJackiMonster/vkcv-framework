@@ -12,6 +12,10 @@
 
 namespace vkcv {
 	
+	/**
+	 * @brief Structure to store command pools for given queue families
+	 * of a device.
+	 */
 	struct CommandResources {
 		std::vector<vk::CommandPool> cmdPoolPerQueueFamily;
 	};

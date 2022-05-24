@@ -12,6 +12,11 @@
 
 namespace vkcv {
 
+	/**
+	 * @brief Template class for buffer management and filling data.
+	 *
+	 * @tparam T Buffer content type
+	 */
 	template<typename T>
 	class Buffer {
 		friend class Core;
