@@ -16,7 +16,9 @@ namespace vkcv
 {
 	
 	/**
-	 * @brief Class to manage the vulkan resources as an instance,
+	 * @brief Class to manage core resources for vulkan callbacks.
+	 *
+	 * The class to manage the vulkan resources as an instance,
 	 * a device, a physical device and a memory allocator. Additionally
 	 * instances of this class will hold the feature manager and the
 	 * queue manager.

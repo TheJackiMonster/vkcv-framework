@@ -53,8 +53,10 @@ namespace vkcv
 	};
 
 	/**
-	 * @brief The class handles the core functionality of the framework with
-	 * most calls addressing resource management via more simplified abstraction.
+	 * @brief Class to handle the core functionality of the framework.
+	 *
+	 * The class handles the core functionality of the framework with most
+	 * calls addressing resource management via more simplified abstraction.
 	 */
     class Core final
     {
