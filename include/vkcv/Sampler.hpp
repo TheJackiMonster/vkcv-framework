@@ -8,7 +8,7 @@
 namespace vkcv {
 
     /**
-     * Enum class to specify a samplers type to filter during access.
+     * @brief Enum class to specify a samplers type to filter during access.
      */
 	enum class SamplerFilterType {
 		NEAREST = 1,
@@ -16,7 +16,7 @@ namespace vkcv {
 	};
 
     /**
-     * Enum class to specify a samplers mode to access mipmaps.
+     * @brief Enum class to specify a samplers mode to access mipmaps.
      */
 	enum class SamplerMipmapMode {
 		NEAREST = 1,
@@ -24,7 +24,7 @@ namespace vkcv {
 	};
 
     /**
-     * Enum class to specify a samplers mode to access via address space.
+     * @brief Enum class to specify a samplers mode to access via address space.
      */
 	enum class SamplerAddressMode {
 		REPEAT = 1,
@@ -35,7 +35,7 @@ namespace vkcv {
 	};
 
     /**
-     * Enum class to specify a samplers color beyond a textures border.
+     * @brief Enum class to specify a samplers color beyond a textures border.
      */
 	enum class SamplerBorderColor {
 		INT_ZERO_OPAQUE = 1,

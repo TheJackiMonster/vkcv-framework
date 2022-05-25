@@ -23,6 +23,9 @@ namespace vkcv {
 	 */
 	bool isDepthFormat(const vk::Format format);
 
+    /**
+     * @brief Class for image handling and filling data.
+     */
 	class Image {
 		friend class Core;
 	public:

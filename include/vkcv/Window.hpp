@@ -19,6 +19,9 @@ struct GLFWwindow;
 
 namespace vkcv {
 
+    /**
+     * @brief Class to handle a window.
+     */
     class Window {
 		friend class WindowManager;
 		friend class SwapchainManager;

@@ -13,7 +13,10 @@ namespace vkcv
 {
 	
 	typedef typename event_function<uint64_t>::type HandleDestroyFunction;
-	
+
+    /**
+     * Class for general memory management via handles.
+     */
 	class Handle {
 		friend std::ostream& operator << (std::ostream& out, const Handle& handle);
 		
@@ -88,50 +91,73 @@ namespace vkcv
 	 * @return Output stream after printing
 	 */
 	std::ostream& operator << (std::ostream& out, const Handle& handle);
-	
-    // Handle returned for any buffer created with the core/context objects
+
+    /**
+     * @brief Handle class for buffers.
+     */
     class BufferHandle : public Handle {
     	friend class BufferManager;
 	private:
 		using Handle::Handle;
     };
-	
+
+    /**
+     * @brief Handle class for render passes.
+     */
 	class PassHandle : public Handle {
 		friend class PassManager;
 	private:
 		using Handle::Handle;
 	};
-	
+
+    /**
+     * @brief Handle class for graphics pipelines.
+     */
 	class GraphicsPipelineHandle : public Handle {
 		friend class GraphicsPipelineManager;
 	private:
 		using Handle::Handle;
 	};
 
+    /**
+     * @brief Handle class for compute pipelines.
+     */
     class ComputePipelineHandle : public Handle {
         friend class ComputePipelineManager;
     private:
         using Handle::Handle;
     };
-	
+
+    /**
+     * @brief Handle class for descriptor sets.
+     */
 	class DescriptorSetHandle : public Handle {
 		friend class DescriptorManager;
 	private:
 		using Handle::Handle;
 	};
 
+    /**
+     * @brief Handle class for descriptor set layouts.
+     */
 	class DescriptorSetLayoutHandle : public Handle {
 	    friend class DescriptorManager;
 	private:
 	    using Handle::Handle;
 	};
-	
+
+    /**
+     * @brief Handle class for samplers.
+     */
 	class SamplerHandle : public Handle {
 		friend class SamplerManager;
 	private:
 		using Handle::Handle;
 	};
 
+    /**
+     * @brief Handle class for images.
+     */
 	class ImageHandle : public Handle {
 		friend class ImageManager;
 	private:
@@ -156,18 +182,27 @@ namespace vkcv
 		
 	};
 
+    /**
+     * @brief Handle class for windows.
+     */
 	class WindowHandle : public Handle {
 		friend class WindowManager;
 	private:
 		using Handle::Handle;
 	};
 
+    /**
+     * @brief Handle class for swapchains.
+     */
 	class SwapchainHandle : public Handle {
 		friend class SwapchainManager;
 	private:
 		using Handle::Handle;
 	};
 
+    /**
+     * @brief Handle class for command streams.
+     */
     class CommandStreamHandle : public Handle {
         friend class CommandStreamManager;
     private:

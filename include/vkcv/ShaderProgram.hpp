@@ -19,6 +19,9 @@
 
 namespace vkcv {
 
+    /**
+     * @brief Class to manage and reflect shaders as a program.
+     */
 	class ShaderProgram
 	{
     public:
@@ -97,6 +100,7 @@ namespace vkcv {
         std::vector<VertexAttachment> m_VertexAttachments;
         std::unordered_map<uint32_t, DescriptorBindings> m_DescriptorSets;
 		size_t m_pushConstantsSize = 0;
+
 	};
 
 }

@@ -13,7 +13,7 @@
 namespace vkcv {
 
 	/**
-	 * @brief Template class for buffer management and filling data.
+	 * @brief Template class for buffer handling and filling data.
 	 *
 	 * @tparam T Buffer content type
 	 */

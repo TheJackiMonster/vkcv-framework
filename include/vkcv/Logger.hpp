@@ -10,7 +10,7 @@
 namespace vkcv {
 	
 	/**
-	 * Enum class to specify the level of logging.
+	 * @brief Enum class to specify the level of logging.
 	 */
 	enum class LogLevel {
 		RAW_INFO,

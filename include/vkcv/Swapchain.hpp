@@ -14,7 +14,10 @@
 
 namespace vkcv
 {
-	
+
+    /**
+     * @brief Class to handle swapchains using a context.
+     */
     class Swapchain final {
     private:
     	friend class Core;

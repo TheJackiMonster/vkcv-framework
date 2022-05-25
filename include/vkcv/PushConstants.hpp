@@ -11,7 +11,10 @@
 #include "Logger.hpp"
 
 namespace vkcv {
-	
+
+    /**
+     * @brief Class to handle push constants data per drawcall.
+     */
 	class PushConstants {
 	private:
 		std::vector<uint8_t> m_data;

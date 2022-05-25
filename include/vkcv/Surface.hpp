@@ -14,7 +14,10 @@ namespace vkcv {
 	
 	const uint32_t MIN_SURFACE_SIZE = 2;
 
-	class Surface {
+    /**
+     * @brief Class to handle surfaces to use with a swapchain.
+     */
+	class Surface final {
 	private:
 		friend class Swapchain;
 		friend class SwapchainManager;
