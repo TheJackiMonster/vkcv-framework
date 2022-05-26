@@ -9,6 +9,9 @@
 
 namespace vkcv {
 	
+	/**
+	 * @brief Enum class to specify the stage of a shader.
+	 */
 	enum class ShaderStage : VkShaderStageFlags {
 		VERTEX = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eVertex),
 		TESS_CONTROL = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eTessellationControl),

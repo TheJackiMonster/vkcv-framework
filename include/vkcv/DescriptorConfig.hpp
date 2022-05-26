@@ -14,6 +14,9 @@
 namespace vkcv
 {
 
+	/**
+	 * @brief Enum class to specify the type of a descriptor set binding.
+	 */
     enum class DescriptorType {
         UNIFORM_BUFFER,
         STORAGE_BUFFER,

@@ -9,10 +9,14 @@
 
 namespace vkcv {
 	
+	/**
+	 * @brief Structure to store vulkan resources for presenting
+	 * with a pipeline.
+	 */
 	struct SyncResources {
-		vk::Semaphore	renderFinished;
-		vk::Semaphore	swapchainImageAcquired;
-		vk::Fence		presentFinished;
+		vk::Semaphore renderFinished;
+		vk::Semaphore swapchainImageAcquired;
+		vk::Fence presentFinished;
 	};
 
 	/**

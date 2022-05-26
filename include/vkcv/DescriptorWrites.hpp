@@ -11,6 +11,9 @@
 
 namespace vkcv {
 	
+	/**
+	 * @brief Structure to store details writing a sampled image to a descriptor set.
+	 */
 	struct SampledImageDescriptorWrite {
 		uint32_t binding;
 		ImageHandle image;
@@ -18,13 +21,19 @@ namespace vkcv {
 		bool useGeneralLayout;
 		uint32_t arrayIndex;
 	};
-
+	
+	/**
+	 * @brief Structure to store details writing a storage image to a descriptor set.
+	 */
 	struct StorageImageDescriptorWrite {
 		uint32_t binding;
 		ImageHandle image;
 		uint32_t mipLevel;
 	};
-
+	
+	/**
+	 * @brief Structure to store details writing a buffer to a descriptor set.
+	 */
 	struct BufferDescriptorWrite {
 		uint32_t binding;
 		BufferHandle buffer;
@@ -32,12 +41,19 @@ namespace vkcv {
 		uint32_t offset;
 		uint32_t size;
 	};
-
+	
+	/**
+	 * @brief Structure to store details writing a sampler to a descriptor set.
+	 */
 	struct SamplerDescriptorWrite {
 		uint32_t binding;
 		SamplerHandle sampler;
 	};
 	
+	/**
+	 * @brief Structure to store details writing an acceleration structure to
+	 * a descriptor set.
+	 */
 	struct AccelerationDescriptorWrite {
 	    uint32_t binding;
 	};

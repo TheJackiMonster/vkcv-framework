@@ -12,10 +12,13 @@
 namespace vkcv
 {
 	
+	/**
+	 * @brief Function to be called when a handles resources can be destroyed.
+	 */
 	typedef typename event_function<uint64_t>::type HandleDestroyFunction;
 
     /**
-     * Class for general memory management via handles.
+     * @brief Class for general memory management via handles.
      */
 	class Handle {
 		friend std::ostream& operator << (std::ostream& out, const Handle& handle);

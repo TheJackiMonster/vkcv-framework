@@ -12,6 +12,9 @@
 
 namespace vkcv {
 	
+	/**
+	 * @brief Enum class to specify the format of vertex attributes.
+	 */
     enum class VertexAttachmentFormat{
         FLOAT,
         FLOAT2,
@@ -23,6 +26,13 @@ namespace vkcv {
         INT4
     };
 
+	/**
+	 * @brief Returns the size in bytes of a vertex with a
+	 * given vertex format.
+	 *
+	 * @param[in] format Vertex format
+	 * @return Size in bytes
+	 */
 	uint32_t getFormatSize(VertexAttachmentFormat format);
 
     struct VertexAttachment{

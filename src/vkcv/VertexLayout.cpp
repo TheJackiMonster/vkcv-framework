@@ -6,6 +6,7 @@
 #include "vkcv/Logger.hpp"
 
 namespace vkcv {
+	
     uint32_t getFormatSize(VertexAttachmentFormat format) {
         switch (format) {
             case VertexAttachmentFormat::FLOAT:

@@ -271,11 +271,15 @@ namespace vkcv
 	
 	vk::IndexType getIndexType(IndexBitCount indexByteCount){
 		switch (indexByteCount) {
-			case IndexBitCount::Bit16: return vk::IndexType::eUint16;
-			case IndexBitCount::Bit32: return vk::IndexType::eUint32;
-			default:
-			vkcv_log(LogLevel::ERROR, "unknown Enum");
+			case IndexBitCount::Bit8:
+				return vk::IndexType::eUint8EXT;
+			case IndexBitCount::Bit16:
 				return vk::IndexType::eUint16;
+			case IndexBitCount::Bit32:
+				return vk::IndexType::eUint32;
+			default:
+				vkcv_log(LogLevel::ERROR, "unknown Enum");
+				return vk::IndexType::eNoneKHR;
 		}
 	}
 	

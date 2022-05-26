@@ -23,7 +23,11 @@ namespace vkcv {
         vk::Buffer      buffer;
     };
 
-    enum class IndexBitCount{
+	/**
+	 * @brief Enum class to specify the size of indexes.
+	 */
+    enum class IndexBitCount {
+		Bit8,
         Bit16,
         Bit32
     };
