@@ -141,20 +141,20 @@ namespace vkcv
         const Context &getContext() const;
 
         /**
-             * Creates a #Core with given @p applicationName and @p applicationVersion for your application.
-             *
-             * It is also possible to require a specific amount of queues, ask for specific queue-flags or
-             * extensions. This function will take care of the required arguments as best as possible.
-             *
-             * To pass a valid version for your application, you should use #VK_MAKE_VERSION().
-             *
-             * @param[in] applicationName Name of the application
-             * @param[in] applicationVersion Version of the application
-             * @param[in] queueFlags (optional) Requested flags of queues
-             * @param[in] instanceExtensions (optional) Requested instance extensions
-             * @param[in] deviceExtensions (optional) Requested device extensions
-             * @return New instance of #Context
-             */
+		 * Creates a #Core with given @p applicationName and @p applicationVersion for your application.
+		 *
+		 * It is also possible to require a specific amount of queues, ask for specific queue-flags or
+		 * extensions. This function will take care of the required arguments as best as possible.
+		 *
+		 * To pass a valid version for your application, you should use #VK_MAKE_VERSION().
+		 *
+		 * @param[in] applicationName Name of the application
+		 * @param[in] applicationVersion Version of the application
+		 * @param[in] queueFlags (optional) Requested flags of queues
+		 * @param[in] instanceExtensions (optional) Requested instance extensions
+		 * @param[in] deviceExtensions (optional) Requested device extensions
+		 * @return New instance of #Context
+		 */
         static Core create(const char *applicationName,
                            uint32_t applicationVersion,
                            const std::vector<vk::QueueFlagBits>& queueFlags    = {},
