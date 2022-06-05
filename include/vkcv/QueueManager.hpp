@@ -10,7 +10,7 @@
 namespace vkcv {
 
 	/**
-	 * Enum class to represent types of queues.
+	 * @brief Enum class to represent types of queues.
 	 */
 	enum class QueueType {
 		Compute,
@@ -20,7 +20,7 @@ namespace vkcv {
 	};
 
 	/**
-	 * Struct to represent a queue, provide its family and its index.
+	 * @brief Structure to represent a queue and its details.
 	 */
 	struct Queue {
 		int familyIndex;
@@ -30,7 +30,7 @@ namespace vkcv {
 	};
 	
 	/**
-	 * Class to manage queues of a device.
+	 * @brief Class to manage queues of a device.
 	 */
 	class QueueManager {
 	public:

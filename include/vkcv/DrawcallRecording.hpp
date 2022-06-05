@@ -31,7 +31,10 @@ namespace vkcv {
         Bit16,
         Bit32
     };
-
+	
+	/**
+	 * @brief Structure to configure a descriptor set usage.
+	 */
     struct DescriptorSetUsage {
         inline DescriptorSetUsage(uint32_t setLocation, DescriptorSetHandle descriptorSet,
 								  const std::vector<uint32_t>& dynamicOffsets = {}) noexcept :
@@ -43,7 +46,10 @@ namespace vkcv {
         const DescriptorSetHandle 	descriptorSet;
         const std::vector<uint32_t> dynamicOffsets;
     };
-
+	
+	/**
+	 * @brief Structure to store details of a mesh to draw.
+	 */
     struct Mesh {
         inline Mesh() {}
 
@@ -62,7 +68,10 @@ namespace vkcv {
         IndexBitCount indexBitCount;
 
     };
-
+	
+	/**
+	 * @brief Structure to store details for a drawcall.
+	 */
     struct DrawcallInfo {
         inline DrawcallInfo(const Mesh& mesh,
 							const std::vector<DescriptorSetUsage>& descriptorSets,
@@ -78,6 +87,9 @@ namespace vkcv {
 
     void InitMeshShaderDrawFunctions(vk::Device device);
 
+	/**
+	 * @brief Structure to store details for a mesh shader drawcall.
+	 */
     struct MeshShaderDrawcall {
         std::vector<DescriptorSetUsage> descriptorSets;
         uint32_t taskCount;
