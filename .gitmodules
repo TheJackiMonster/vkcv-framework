@@ -34,3 +34,6 @@
 [submodule "modules/upscaling/lib/NVIDIAImageScaling"]
 	path = modules/upscaling/lib/NVIDIAImageScaling
 	url = https://github.com/NVIDIAGameWorks/NVIDIAImageScaling.git
+[submodule "lib/VulkanMemoryAllocator-Hpp"]
+	path = lib/VulkanMemoryAllocator-Hpp
+	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp.git
