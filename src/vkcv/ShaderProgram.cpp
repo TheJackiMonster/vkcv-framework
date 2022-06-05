@@ -136,7 +136,12 @@ namespace vkcv {
 				// vertex input format (implies its size)
 				const VertexAttachmentFormat attachment_format = convertFormat(base_type.basetype, base_type.vecsize);
 
-                m_VertexAttachments.emplace_back(attachment_loc, attachment_name, attachment_format);
+                m_VertexAttachments.push_back({
+					attachment_loc,
+					attachment_name,
+					attachment_format,
+					0
+				});
             }
 		}
 
@@ -352,7 +357,7 @@ namespace vkcv {
 		}
     }
 
-    const std::vector<VertexAttachment> &ShaderProgram::getVertexAttachments() const
+    const VertexAttachments &ShaderProgram::getVertexAttachments() const
     {
         return m_VertexAttachments;
 	}

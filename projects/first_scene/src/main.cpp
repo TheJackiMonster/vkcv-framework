@@ -50,7 +50,11 @@ int main(int argc, const char** argv) {
 		vk::Format::eD32Sfloat
 	);
 
-	vkcv::PassConfig scenePassDefinition({ present_color_attachment, depth_attachment });
+	vkcv::PassConfig scenePassDefinition(
+			{ present_color_attachment, depth_attachment },
+			vkcv::Multisampling::None
+	);
+	
 	vkcv::PassHandle scenePass = core.createPass(scenePassDefinition);
 
 	if (!scenePass) {
@@ -68,12 +72,12 @@ int main(int argc, const char** argv) {
 
 	const std::vector<vkcv::VertexAttachment> vertexAttachments = sceneShaderProgram.getVertexAttachments();
 	std::vector<vkcv::VertexBinding> bindings;
+	
 	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+		bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
 	}
 
-	const vkcv::VertexLayout sceneLayout(bindings);
-	
+	const vkcv::VertexLayout sceneLayout { bindings };
 	const auto& material0 = scene.getMaterial(0);
 
 	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{

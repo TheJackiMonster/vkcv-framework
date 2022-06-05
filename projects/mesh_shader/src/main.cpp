@@ -168,7 +168,11 @@ int main(int argc, const char** argv) {
             vk::Format::eD32Sfloat
     );
 
-	vkcv::PassConfig bunnyPassDefinition({ present_color_attachment, depth_attachment });
+	vkcv::PassConfig bunnyPassDefinition(
+			{ present_color_attachment, depth_attachment },
+			vkcv::Multisampling::None
+	);
+	
 	vkcv::PassHandle renderPass = core.createPass(bunnyPassDefinition);
 
 	if (!renderPass)
@@ -193,9 +197,9 @@ int main(int argc, const char** argv) {
     const std::vector<vkcv::VertexAttachment> vertexAttachments = bunnyShaderProgram.getVertexAttachments();
     std::vector<vkcv::VertexBinding> bindings;
     for (size_t i = 0; i < vertexAttachments.size(); i++) {
-        bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+        bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
     }
-    const vkcv::VertexLayout bunnyLayout (bindings);
+    const vkcv::VertexLayout bunnyLayout { bindings };
 
     vkcv::DescriptorSetLayoutHandle vertexShaderDescriptorSetLayout = core.createDescriptorSetLayout(bunnyShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(vertexShaderDescriptorSetLayout);

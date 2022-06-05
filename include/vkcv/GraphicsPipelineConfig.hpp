@@ -15,13 +15,47 @@
 
 namespace vkcv {
 
-    enum class PrimitiveTopology{PointList, LineList, TriangleList, PatchList };
-	enum class CullMode{ None, Front, Back, Both };
-    enum class DepthTest { None, Less, LessEqual, Greater, GreatherEqual, Equal };
+	/**
+	 * @brief Enum class to specify types of primitive topology.
+	 */
+    enum class PrimitiveTopology {
+		PointList,
+		LineList,
+		TriangleList,
+		PatchList
+	};
+	
+	/**
+	 * @brief Enum class to specify modes of culling.
+	 */
+	enum class CullMode {
+		None,
+		Front,
+		Back,
+		Both
+	};
+	
+	/**
+	 * @brief Enum class to specify depth-test modes.
+	 */
+    enum class DepthTest {
+		None,
+		Less,
+		LessEqual,
+		Greater,
+		GreatherEqual,
+		Equal
+	};
 
     // add more as needed
     // alternatively we could expose the blend factors directly
-    enum class BlendMode{ None, Additive };
+	/**
+	 * @brief Enum class to specify blending modes.
+	 */
+    enum class BlendMode {
+		None,
+		Additive
+	};
 	
 	/**
 	 * @brief Structure to configure a graphics pipeline before its creation.

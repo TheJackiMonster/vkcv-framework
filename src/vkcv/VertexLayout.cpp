@@ -30,34 +30,18 @@ namespace vkcv {
                 return 0;
         }
     }
+	
+	VertexBinding createVertexBinding(uint32_t bindingLocation, const VertexAttachments &attachments) {
+		VertexBinding binding { bindingLocation, 0, attachments };
+		uint32_t offset = 0;
+		
+		for (auto& attachment : binding.vertexAttachments) {
+			attachment.offset = offset;
+			offset += getFormatSize(attachment.format);
+		}
+		
+		binding.stride = offset;
+		return binding;
+	}
 
-    VertexAttachment::VertexAttachment(uint32_t inputLocation, const std::string &name, VertexAttachmentFormat format) noexcept:
-            inputLocation{inputLocation},
-            name{name},
-            format{format},
-            offset{0}
-    {}
-
-
-    VertexBinding::VertexBinding(uint32_t bindingLocation, const std::vector<VertexAttachment> &attachments) noexcept :
-    bindingLocation{bindingLocation},
-    stride{0},
-    vertexAttachments{attachments}
-    {
-        uint32_t offset = 0;
-        for (auto &attachment : vertexAttachments)
-        {
-            attachment.offset = offset;
-            offset += getFormatSize(attachment.format);
-        }
-        stride = offset;
-    }
-
-    VertexLayout::VertexLayout() noexcept :
-    vertexBindings{}
-    {}
-
-    VertexLayout::VertexLayout(const std::vector<VertexBinding> &bindings) noexcept :
-    vertexBindings{bindings}
-    {}
 }

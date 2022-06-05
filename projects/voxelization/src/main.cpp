@@ -195,9 +195,9 @@ int main(int argc, const char** argv) {
 
 	std::vector<vkcv::VertexBinding> vertexBindings;
 	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		vertexBindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+		vertexBindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
 	}
-	const vkcv::VertexLayout vertexLayout (vertexBindings);
+	const vkcv::VertexLayout vertexLayout { vertexBindings };
 
 	vkcv::DescriptorSetLayoutHandle forwardShadingDescriptorSetLayout = core.createDescriptorSetLayout(forwardProgram.getReflectedDescriptors().at(0));
 	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = core.createDescriptorSet(forwardShadingDescriptorSetLayout);
@@ -217,9 +217,9 @@ int main(int argc, const char** argv) {
 
 	std::vector<vkcv::VertexBinding> prepassVertexBindings;
 	for (size_t i = 0; i < prepassVertexAttachments.size(); i++) {
-		prepassVertexBindings.push_back(vkcv::VertexBinding(i, { prepassVertexAttachments[i] }));
+		prepassVertexBindings.push_back(vkcv::createVertexBinding(i, { prepassVertexAttachments[i] }));
 	}
-	const vkcv::VertexLayout prepassVertexLayout(prepassVertexBindings);
+	const vkcv::VertexLayout prepassVertexLayout { prepassVertexBindings };
 
 	const vkcv::AttachmentDescription prepassAttachment(
 		vkcv::AttachmentOperation::STORE,

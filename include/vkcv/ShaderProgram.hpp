@@ -97,7 +97,7 @@ namespace vkcv {
         std::unordered_map<ShaderStage, std::vector<uint32_t> > m_Shaders;
 
         // contains all vertex input attachments used in the vertex buffer
-        std::vector<VertexAttachment> m_VertexAttachments;
+        VertexAttachments m_VertexAttachments;
         std::unordered_map<uint32_t, DescriptorBindings> m_DescriptorSets;
 		size_t m_pushConstantsSize = 0;
 

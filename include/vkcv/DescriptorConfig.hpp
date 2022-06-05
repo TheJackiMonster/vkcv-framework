@@ -59,31 +59,37 @@ namespace vkcv
         }
     }
 	
-    struct DescriptorBinding
-    {
-        uint32_t        bindingID;
-        DescriptorType  descriptorType;
-        uint32_t        descriptorCount;
-        ShaderStages    shaderStages;
-        bool            variableCount;
+	/**
+	 * @brief Structure to store details from a descriptor binding.
+	 */
+    struct DescriptorBinding {
+        uint32_t bindingID;
+        DescriptorType descriptorType;
+        uint32_t descriptorCount;
+        ShaderStages shaderStages;
+        bool variableCount;
 
         bool operator ==(const DescriptorBinding &other) const;
     };
     
     typedef std::unordered_map<uint32_t, DescriptorBinding> DescriptorBindings;
-
-    struct DescriptorSetLayout
-    {
+	
+	/**
+	 * @brief Structure to store details about a descriptor set layout.
+	 */
+    struct DescriptorSetLayout {
         vk::DescriptorSetLayout vulkanHandle;
-        DescriptorBindings      descriptorBindings;
-        size_t                  layoutUsageCount;
+        DescriptorBindings descriptorBindings;
+        size_t layoutUsageCount;
     };
-
-    struct DescriptorSet
-    {
-        vk::DescriptorSet           vulkanHandle;
-        DescriptorSetLayoutHandle   setLayoutHandle;
-        size_t                      poolIndex;
+	
+	/**
+	 * @brief Structure to store details about a descriptor set.
+	 */
+    struct DescriptorSet {
+        vk::DescriptorSet vulkanHandle;
+        DescriptorSetLayoutHandle setLayoutHandle;
+        size_t poolIndex;
     };
 	
 }

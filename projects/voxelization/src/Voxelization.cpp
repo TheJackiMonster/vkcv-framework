@@ -92,10 +92,13 @@ Voxelization::Voxelization(
 
 	const vkcv::ShaderProgram voxelizationShader = loadVoxelizationShader();
 
-	const vkcv::PassConfig voxelizationPassConfig({vkcv::AttachmentDescription(
-		vkcv::AttachmentOperation::DONT_CARE, 
-		vkcv::AttachmentOperation::DONT_CARE, 
-		voxelizationDummyFormat) });
+	const vkcv::PassConfig voxelizationPassConfig {{
+		  {
+				  vkcv::AttachmentOperation::DONT_CARE,
+				  vkcv::AttachmentOperation::DONT_CARE,
+				  voxelizationDummyFormat
+		  }
+	}, vkcv::Multisampling::None };
 	m_voxelizationPass = m_corePtr->createPass(voxelizationPassConfig);
 
 	m_voxelizationDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(voxelizationShader.getReflectedDescriptors().at(0));
@@ -146,9 +149,11 @@ Voxelization::Voxelization(
 		dependencies.depthBufferFormat
 	);
 
-	vkcv::PassConfig voxelVisualisationPassDefinition(
-		{ voxelVisualisationColorAttachments, voxelVisualisationDepthAttachments });
-	voxelVisualisationPassDefinition.msaa = msaa;
+	vkcv::PassConfig voxelVisualisationPassDefinition{
+		{ voxelVisualisationColorAttachments, voxelVisualisationDepthAttachments },
+		msaa
+	};
+	
 	m_visualisationPass = m_corePtr->createPass(voxelVisualisationPassDefinition);
 
 	vkcv::GraphicsPipelineConfig voxelVisualisationPipeConfig{

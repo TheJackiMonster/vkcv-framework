@@ -334,7 +334,7 @@ int main(int argc, const char** argv) {
 			vk::Format::eD32Sfloat
 	);
 
-	vkcv::PassConfig passDefinition({ present_color_attachment, depth_attachment });
+	vkcv::PassConfig passDefinition({ present_color_attachment, depth_attachment }, vkcv::Multisampling::None);
 	vkcv::PassHandle passHandle = core.createPass(passDefinition);
 	if (!passHandle) {
 		std::cerr << "Error. Could not create renderpass. Exiting." << std::endl;
@@ -361,7 +361,9 @@ int main(int argc, const char** argv) {
 
     // vertex layout for the pipeline. (assumed to be) used by all sponza meshes.
     const std::vector<vkcv::VertexAttachment> vertexAttachments = sponzaProgram.getVertexAttachments();
-	const vkcv::VertexLayout sponzaVertexLayout({ vkcv::VertexBinding(0, { vertexAttachments }) });
+	const vkcv::VertexLayout sponzaVertexLayout {
+		{ vkcv::createVertexBinding(0, { vertexAttachments }) }
+	};
 
     std::vector<uint8_t> compiledVertexBuffer; // IGNORED, since the vertex buffer is not interleaved!
 

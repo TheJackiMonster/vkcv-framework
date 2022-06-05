@@ -17,7 +17,6 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/File.cpp
 
 		${vkcv_include}/vkcv/PassConfig.hpp
-		${vkcv_source}/vkcv/PassConfig.cpp
 
 		${vkcv_source}/vkcv/PassManager.hpp
 		${vkcv_source}/vkcv/PassManager.cpp

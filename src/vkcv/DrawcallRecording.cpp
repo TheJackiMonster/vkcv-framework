@@ -19,14 +19,13 @@ namespace vkcv {
         MeshShaderFunctions.cmdDrawMeshTasksIndirectCount = PFN_vkCmdDrawMeshTasksIndirectCountNV (device.getProcAddr( "vkCmdDrawMeshTasksIndirectCountNV"));
     }
 
-    void recordMeshShaderDrawcall(
-		const Core&								core,
-        vk::CommandBuffer                       cmdBuffer,
-        vk::PipelineLayout                      pipelineLayout,
-        const PushConstants&                    pushConstantData,
-        const uint32_t                          pushConstantOffset,
-        const MeshShaderDrawcall&               drawcall,
-        const uint32_t                          firstTask) {
+    void recordMeshShaderDrawcall(const Core& core,
+                                  vk::CommandBuffer cmdBuffer,
+                                  vk::PipelineLayout pipelineLayout,
+                                  const PushConstants& pushConstantData,
+                                  uint32_t pushConstantOffset,
+                                  const MeshShaderDrawcall& drawcall,
+                                  uint32_t firstTask) {
 
         for (const auto& descriptorUsage : drawcall.descriptorSets) {
             cmdBuffer.bindDescriptorSets(

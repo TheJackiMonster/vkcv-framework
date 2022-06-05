@@ -59,7 +59,11 @@ int main(int argc, const char** argv) {
 			vk::Format::eD32Sfloat
 	);
 
-	vkcv::PassConfig firstMeshPassDefinition({ present_color_attachment, depth_attachment });
+	vkcv::PassConfig firstMeshPassDefinition(
+			{ present_color_attachment, depth_attachment },
+			vkcv::Multisampling::None
+	);
+
 	vkcv::PassHandle firstMeshPass = core.createPass(firstMeshPassDefinition);
 
 	if (!firstMeshPass) {
@@ -84,11 +88,10 @@ int main(int argc, const char** argv) {
     const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
 	std::vector<vkcv::VertexBinding> bindings;
 	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+		bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
 	}
 	
-	const vkcv::VertexLayout firstMeshLayout (bindings);
-
+	const vkcv::VertexLayout firstMeshLayout { bindings };
 
 	// since we only use one descriptor set (namely, desc set 0), directly address it
 	// recreate copies of the bindings and the handles (to check whether they are properly reused instead of actually recreated)

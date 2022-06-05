@@ -38,7 +38,7 @@ int main(int argc, const char **argv) {
             colorFormat);
 
 
-    vkcv::PassConfig particlePassDefinition({present_color_attachment});
+    vkcv::PassConfig particlePassDefinition({present_color_attachment}, vkcv::Multisampling::None);
     vkcv::PassHandle particlePass = core.createPass(particlePassDefinition);
 
     vkcv::PassConfig computePassDefinition({});
@@ -109,10 +109,10 @@ int main(int argc, const char **argv) {
 
     std::vector<vkcv::VertexBinding> bindings;
     for (size_t i = 0; i < vertexAttachments.size(); i++) {
-        bindings.push_back(vkcv::VertexBinding(i, {vertexAttachments[i]}));
+        bindings.push_back(vkcv::createVertexBinding(i, {vertexAttachments[i]}));
     }
 
-    const vkcv::VertexLayout particleLayout(bindings);
+    const vkcv::VertexLayout particleLayout { bindings };
 
     // initializing graphics pipeline
     vkcv::GraphicsPipelineConfig particlePipelineDefinition{

@@ -33,7 +33,7 @@ int main(int argc, const char** argv) {
 		vkcv::AttachmentOperation::CLEAR,
 		core.getSwapchain(windowHandle).getFormat());
 
-	vkcv::PassConfig trianglePassDefinition({ present_color_attachment });
+	vkcv::PassConfig trianglePassDefinition({ present_color_attachment }, vkcv::Multisampling::None);
 	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
 
 	if (!trianglePass)

@@ -115,10 +115,10 @@ bool loadGraphicPass(
 	const std::vector<vkcv::VertexAttachment> vertexAttachments = shaderProgram.getVertexAttachments();
 	std::vector<vkcv::VertexBinding> bindings;
 	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+		bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
 	}
 
-	const vkcv::VertexLayout vertexLayout(bindings);
+	const vkcv::VertexLayout vertexLayout { bindings };
 
 	const auto descriptorBindings = shaderProgram.getReflectedDescriptors();
 	const bool hasDescriptor = descriptorBindings.size() > 0;
@@ -169,7 +169,10 @@ bool loadMeshPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 		core,
 		"assets/shaders/mesh.vert",
 		"assets/shaders/mesh.frag",
-		vkcv::PassConfig({ colorAttachment, depthAttachment }),
+		vkcv::PassConfig(
+				{ colorAttachment, depthAttachment },
+				vkcv::Multisampling::None
+		),
 		vkcv::DepthTest::Equal,
 		outHandles);
 }
@@ -192,7 +195,10 @@ bool loadSkyPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 		core,
 		"assets/shaders/sky.vert",
 		"assets/shaders/sky.frag",
-		vkcv::PassConfig({ colorAttachment, depthAttachment }),
+		vkcv::PassConfig(
+				{ colorAttachment, depthAttachment },
+				vkcv::Multisampling::None
+		),
 		vkcv::DepthTest::Equal,
 		outHandles);
 }
@@ -214,7 +220,10 @@ bool loadPrePass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 		core,
 		"assets/shaders/prepass.vert",
 		"assets/shaders/prepass.frag",
-		vkcv::PassConfig({ motionAttachment, depthAttachment }),
+		vkcv::PassConfig(
+				{ motionAttachment, depthAttachment },
+				vkcv::Multisampling::None
+		),
 		vkcv::DepthTest::LessEqual,
 		outHandles);
 }
@@ -236,7 +245,10 @@ bool loadSkyPrePass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 		core,
 		"assets/shaders/skyPrepass.vert",
 		"assets/shaders/skyPrepass.frag",
-		vkcv::PassConfig({ motionAttachment, depthAttachment }),
+		vkcv::PassConfig(
+				{ motionAttachment, depthAttachment },
+				vkcv::Multisampling::None
+		),
 		vkcv::DepthTest::LessEqual,
 		outHandles);
 }

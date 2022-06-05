@@ -452,7 +452,7 @@ int main(int argc, const char **argv) {
 			{ vkcv::ShaderStage::FRAGMENT, "shaders/lines.frag" }
 	}, nullptr);
 	
-	vkcv::PassConfig passConfigGrid ({
+	vkcv::PassConfig passConfigGrid {{
 		vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,
 				vkcv::AttachmentOperation::CLEAR,
@@ -463,9 +463,9 @@ int main(int argc, const char **argv) {
 				vkcv::AttachmentOperation::CLEAR,
 				vk::Format::eD32Sfloat
 		)
-	});
+	}, vkcv::Multisampling::None };
 	
-	vkcv::PassConfig passConfigParticles ({
+	vkcv::PassConfig passConfigParticles {{
 		vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,
 				vkcv::AttachmentOperation::CLEAR,
@@ -476,9 +476,9 @@ int main(int argc, const char **argv) {
 				vkcv::AttachmentOperation::CLEAR,
 				vk::Format::eD32Sfloat
 		)
-	});
+	}, vkcv::Multisampling::None };
 	
-	vkcv::PassConfig passConfigLines ({
+	vkcv::PassConfig passConfigLines {{
 		vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,
 				vkcv::AttachmentOperation::LOAD,
@@ -489,7 +489,7 @@ int main(int argc, const char **argv) {
 				vkcv::AttachmentOperation::LOAD,
 				vk::Format::eD32Sfloat
 		)
-	});
+	}, vkcv::Multisampling::None };
 	
 	vkcv::DescriptorSetLayoutHandle gfxSetLayoutGrid = core.createDescriptorSetLayout(
 			gfxProgramGrid.getReflectedDescriptors().at(0)
@@ -522,7 +522,7 @@ int main(int argc, const char **argv) {
 	vkcv::PassHandle gfxPassLines = core.createPass(passConfigLines);
 	
 	vkcv::VertexLayout vertexLayoutGrid ({
-		vkcv::VertexBinding(0, gfxProgramGrid.getVertexAttachments())
+		vkcv::createVertexBinding(0, gfxProgramGrid.getVertexAttachments())
 	});
 	
 	vkcv::GraphicsPipelineConfig gfxPipelineConfigGrid;
@@ -535,7 +535,7 @@ int main(int argc, const char **argv) {
 	gfxPipelineConfigGrid.m_UseDynamicViewport = true;
 	
 	vkcv::VertexLayout vertexLayoutParticles ({
-		vkcv::VertexBinding(0, gfxProgramParticles.getVertexAttachments())
+		vkcv::createVertexBinding(0, gfxProgramParticles.getVertexAttachments())
 	});
 	
 	vkcv::GraphicsPipelineConfig gfxPipelineConfigParticles;
@@ -548,7 +548,7 @@ int main(int argc, const char **argv) {
 	gfxPipelineConfigParticles.m_UseDynamicViewport = true;
 	
 	vkcv::VertexLayout vertexLayoutLines ({
-		vkcv::VertexBinding(0, gfxProgramLines.getVertexAttachments())
+		vkcv::createVertexBinding(0, gfxProgramLines.getVertexAttachments())
 	});
 	
 	vkcv::GraphicsPipelineConfig gfxPipelineConfigLines;

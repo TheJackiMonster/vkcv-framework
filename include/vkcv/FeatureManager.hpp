@@ -15,7 +15,7 @@
 namespace vkcv {
 
 	/**
-	 * Class to manage extension and feature requirements, support and usage.
+	 * @brief Class to manage extension and feature requirements, support and usage.
 	 */
 	class FeatureManager {
 	private:

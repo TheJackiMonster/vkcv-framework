@@ -19,7 +19,7 @@ namespace vkcv {
 	typedef std::function<bool(FeatureManager&)> Feature;
 	
 	/**
-	 * Class to manage a list of feature requests at once.
+	 * @brief Class to manage a list of feature requests at once.
 	 */
 	class Features {
 	private:

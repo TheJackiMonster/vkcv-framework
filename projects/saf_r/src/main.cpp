@@ -86,9 +86,9 @@ int main(int argc, const char** argv) {
 
 	std::vector<vkcv::VertexBinding> computeBindings;
 	for (size_t i = 0; i < computeVertexAttachments.size(); i++) {
-		computeBindings.push_back(vkcv::VertexBinding(i, { computeVertexAttachments[i] }));
+		computeBindings.push_back(vkcv::createVertexBinding(i, { computeVertexAttachments[i] }));
 	}
-	const vkcv::VertexLayout computeLayout(computeBindings);
+	const vkcv::VertexLayout computeLayout { computeBindings };
 	
 	/*
 	* create the scene
@@ -163,7 +163,7 @@ int main(int argc, const char** argv) {
 		vkcv::AttachmentOperation::CLEAR,
 		core.getSwapchain(windowHandle).getFormat());
 
-	vkcv::PassConfig safrPassDefinition({ present_color_attachment });
+	vkcv::PassConfig safrPassDefinition({ present_color_attachment }, vkcv::Multisampling::None);
 	vkcv::PassHandle safrPass = core.createPass(safrPassDefinition);
 
 	if (!safrPass)
