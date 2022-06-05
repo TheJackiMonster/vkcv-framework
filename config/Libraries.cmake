@@ -3,7 +3,8 @@ set(vkcv_config_lib ${vkcv_config}/lib)
 set(vkcv_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_lib})
 
 if(NOT WIN32)
-	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	if (((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.1.0")) OR
+		((CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0.0")))
 		set(vkcv_libraries stdc++fs)
 	endif()
 	
