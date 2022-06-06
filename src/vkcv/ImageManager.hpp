@@ -14,8 +14,19 @@
 
 namespace vkcv {
 	
+	/**
+	 * @brief Determine whether an image format is valid
+	 * for depth buffers.
+	 *
+	 * @param[in] format Image format
+	 * @return True, if the format is usable for depth buffers, otherwise false.
+	 */
 	bool isDepthImageFormat(vk::Format format);
 
+	/**
+	 * @brief Class to manage the creation, destruction, allocation
+	 * and filling of images.
+	 */
 	class ImageManager
 	{
 		friend class Core;

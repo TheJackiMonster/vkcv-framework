@@ -59,9 +59,9 @@ namespace vkcv
 
         vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo({}, descriptorSetLayouts);
 
-        const size_t pushConstantSize = shaderProgram.getPushConstantSize();
-        vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute, 0, pushConstantSize);
-        if (pushConstantSize > 0) {
+        const size_t pushConstantsSize = shaderProgram.getPushConstantsSize();
+        vk::PushConstantRange pushConstantRange(vk::ShaderStageFlagBits::eCompute, 0, pushConstantsSize);
+        if (pushConstantsSize > 0) {
             pipelineLayoutCreateInfo.setPushConstantRangeCount(1);
             pipelineLayoutCreateInfo.setPPushConstantRanges(&pushConstantRange);
         }
@@ -112,8 +112,8 @@ namespace vkcv
 
     vk::Result ComputePipelineManager::createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, const ShaderStage stage)
     {
-        std::vector<char> code = shaderProgram.getShader(stage).shaderCode;
-        vk::ShaderModuleCreateInfo moduleInfo({}, code.size(), reinterpret_cast<uint32_t*>(code.data()));
+        std::vector<uint32_t> code = shaderProgram.getShaderBinary(stage);
+        vk::ShaderModuleCreateInfo moduleInfo({}, code.size() * sizeof(uint32_t), code.data());
         return m_Device.createShaderModule(&moduleInfo, nullptr, &module);
     }
 }

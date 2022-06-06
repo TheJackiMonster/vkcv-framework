@@ -7,6 +7,11 @@ namespace vkcv::scene {
 	m_min(glm::vec3(0)),
 	m_max(glm::vec3(0)) {}
 	
+	Bounds::Bounds(const glm::vec3 &point) :
+	m_min(point),
+	m_max(point)
+	{}
+	
 	Bounds::Bounds(const glm::vec3 &min, const glm::vec3 &max) :
 	m_min(min),
 	m_max(max)

@@ -40,9 +40,9 @@ namespace vkcv {
 			swapchain.m_Swapchain = nullptr;
 		}
 		
-		if (swapchain.m_Surface.handle) {
-			m_context->getInstance().destroySurfaceKHR(swapchain.m_Surface.handle);
-			swapchain.m_Surface.handle = nullptr;
+		if (swapchain.m_Surface.m_Handle) {
+			m_context->getInstance().destroySurfaceKHR(swapchain.m_Surface.m_Handle);
+			swapchain.m_Surface.m_Handle = nullptr;
 		}
 	}
 

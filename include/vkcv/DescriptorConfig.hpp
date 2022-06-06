@@ -1,18 +1,23 @@
 #pragma once
+/**
+ * @authors Artur Wasmut, Tobias Frisch, Simeon Hermann, Alexander Gauggel, Vanessa Karolek
+ * @file vkcv/DescriptorConfig.hpp
+ * @brief Structures to handle descriptor types and bindings.
+ */
 
 #include <unordered_map>
 
-#include "vkcv/Handles.hpp"
-#include "vkcv/ShaderStage.hpp"
-#include "vkcv/Logger.hpp"
+#include "Handles.hpp"
+#include "ShaderStage.hpp"
+#include "Logger.hpp"
 
 namespace vkcv
 {
-    /*
-    * All the types of descriptors (resources) that can be retrieved by the shaders
-    */
-    enum class DescriptorType
-    {
+
+	/**
+	 * @brief Enum class to specify the type of a descriptor set binding.
+	 */
+    enum class DescriptorType {
         UNIFORM_BUFFER,
         STORAGE_BUFFER,
         SAMPLER,
@@ -21,13 +26,15 @@ namespace vkcv
         UNIFORM_BUFFER_DYNAMIC,
         STORAGE_BUFFER_DYNAMIC,
         ACCELERATION_STRUCTURE_KHR
-    };    
+    };
 
     /**
-    * Converts the descriptor types from VulkanCV (vkcv) to native Vulkan (vk).
-    * @param[in] vkcv DescriptorType
-    * @return vk DescriptorType
-    */
+     * @brief Converts the descriptor type from the frameworks enumeration
+     * to the Vulkan type specifier.
+     *
+     * @param[in] type Descriptor type
+     * @return Vulkan descriptor type
+     */
     constexpr vk::DescriptorType getVkDescriptorType(DescriptorType type) noexcept {
         switch (type)
         {
@@ -51,37 +58,38 @@ namespace vkcv
                 return vk::DescriptorType::eMutableVALVE;
         }
     }
-
-    /*
-    * One binding for a descriptor set
-    * @param[in] a unique binding ID
-    * @param[in] a descriptor type
-    * @param[in] the number of descriptors of this type (arrays of the same type possible)
-    * @param[in] the shader stage where the descriptor is supposed to be retrieved
-    */
-    struct DescriptorBinding
-    {
-        uint32_t        bindingID;
-        DescriptorType  descriptorType;
-        uint32_t        descriptorCount;
-        ShaderStages    shaderStages;
-        bool            variableCount;
+	
+	/**
+	 * @brief Structure to store details from a descriptor binding.
+	 */
+    struct DescriptorBinding {
+        uint32_t bindingID;
+        DescriptorType descriptorType;
+        uint32_t descriptorCount;
+        ShaderStages shaderStages;
+        bool variableCount;
 
         bool operator ==(const DescriptorBinding &other) const;
     };
     
     typedef std::unordered_map<uint32_t, DescriptorBinding> DescriptorBindings;
-
-    struct DescriptorSetLayout
-    {
+	
+	/**
+	 * @brief Structure to store details about a descriptor set layout.
+	 */
+    struct DescriptorSetLayout {
         vk::DescriptorSetLayout vulkanHandle;
         DescriptorBindings descriptorBindings;
+        size_t layoutUsageCount;
     };
-
-    struct DescriptorSet
-    {
-        vk::DescriptorSet           vulkanHandle;
-        DescriptorSetLayoutHandle   setLayoutHandle;
-        size_t                      poolIndex;
+	
+	/**
+	 * @brief Structure to store details about a descriptor set.
+	 */
+    struct DescriptorSet {
+        vk::DescriptorSet vulkanHandle;
+        DescriptorSetLayoutHandle setLayoutHandle;
+        size_t poolIndex;
     };
+	
 }

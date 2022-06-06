@@ -66,10 +66,18 @@ int main(int argc, const char** argv) {
 			vk::Format::eD32Sfloat
 	);
 	
-	vkcv::PassConfig linePassDefinition({ color_attachment0, depth_attachment0 });
+	vkcv::PassConfig linePassDefinition(
+			{ color_attachment0, depth_attachment0 },
+			vkcv::Multisampling::None
+	);
+	
 	vkcv::PassHandle linePass = core.createPass(linePassDefinition);
 	
-	vkcv::PassConfig scenePassDefinition({ color_attachment1, depth_attachment1 });
+	vkcv::PassConfig scenePassDefinition(
+			{ color_attachment1, depth_attachment1 },
+			vkcv::Multisampling::None
+	);
+	
 	vkcv::PassHandle scenePass = core.createPass(scenePassDefinition);
 	
 	if ((!scenePass) || (!linePass)) {
@@ -95,8 +103,9 @@ int main(int argc, const char** argv) {
 	
 	const std::vector<vkcv::VertexAttachment> vertexAttachments = sceneShaderProgram.getVertexAttachments();
 	std::vector<vkcv::VertexBinding> bindings;
+	
 	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+		bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
 	}
 	
 	const auto& clipBindings = sceneShaderProgram.getReflectedDescriptors().at(1);
@@ -113,9 +122,7 @@ int main(int argc, const char** argv) {
 	clipBuffer.fill({ clipLimit, -clipX, -clipY, -clipZ });
 	
 	vkcv::DescriptorWrites clipWrites;
-	clipWrites.uniformBufferWrites = {
-			vkcv::BufferDescriptorWrite(0, clipBuffer.getHandle())
-	};
+	clipWrites.writeUniformBuffer(0, clipBuffer.getHandle());
 	
 	core.writeDescriptorSet(clipDescriptorSet, clipWrites);
 	
@@ -141,8 +148,7 @@ int main(int argc, const char** argv) {
 		}
 	});
 	
-	const vkcv::VertexLayout sceneLayout(bindings);
-	
+	const vkcv::VertexLayout sceneLayout { bindings };
 	const auto& material0 = scene.getMaterial(0);
 	
 	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{

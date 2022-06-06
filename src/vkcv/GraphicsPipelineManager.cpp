@@ -110,8 +110,8 @@ namespace vkcv
             vk::PipelineShaderStageCreateInfo*  outCreateInfo) {
 
         assert(outCreateInfo);
-        std::vector<char>           code = shaderProgram.getShader(stage).shaderCode;
-        vk::ShaderModuleCreateInfo  vertexModuleInfo({}, code.size(), reinterpret_cast<uint32_t*>(code.data()));
+        std::vector<uint32_t>       code = shaderProgram.getShaderBinary(stage);
+        vk::ShaderModuleCreateInfo  vertexModuleInfo({}, code.size() * sizeof(uint32_t), code.data());
         vk::ShaderModule            shaderModule;
         if (device.createShaderModule(&vertexModuleInfo, nullptr, &shaderModule) != vk::Result::eSuccess)
             return false;
@@ -263,6 +263,9 @@ namespace vkcv
 			case CullMode::Back:
 				cullMode = vk::CullModeFlagBits::eBack;
 				break;
+			case CullMode::Both:
+				cullMode = vk::CullModeFlagBits::eFrontAndBack;
+				break;
 			default:
 			vkcv_log(LogLevel::ERROR, "Unknown CullMode");
 				cullMode = vk::CullModeFlagBits::eNone;
@@ -365,9 +368,9 @@ namespace vkcv
 																const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) {
 		static vk::PushConstantRange pushConstantRange;
 		
-		const size_t pushConstantSize = config.m_ShaderProgram.getPushConstantSize();
+		const size_t pushConstantsSize = config.m_ShaderProgram.getPushConstantsSize();
 		pushConstantRange = vk::PushConstantRange(
-				vk::ShaderStageFlagBits::eAll, 0, pushConstantSize
+				vk::ShaderStageFlagBits::eAll, 0, pushConstantsSize
 		);
 		
 		vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo(
@@ -376,7 +379,7 @@ namespace vkcv
 				(pushConstantRange)
 		);
 		
-		if (pushConstantSize == 0) {
+		if (pushConstantsSize == 0) {
 			pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 		}
 		

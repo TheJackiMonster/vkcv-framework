@@ -16,6 +16,9 @@
 namespace vkcv
 {
 
+	/**
+	 * @brief Class to manage compute pipelines.
+	 */
     class ComputePipelineManager
     {
     public:

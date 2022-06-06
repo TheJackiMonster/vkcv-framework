@@ -1,12 +1,13 @@
 #pragma once
 /**
- * @authors Mara Vogt, Mark Mints
- * @file src/vkcv/PipelineConfig.hpp
+ * @authors Mara Vogt, Mark Mints, Tobias Frisch
+ * @file vkcv/GraphicsPipelineConfig.hpp
  * @brief Graphics Pipeline Config Struct to hand over required information to Pipeline Creation
  */
 
 #include <vector>
 #include <cstdint>
+
 #include "Handles.hpp"
 #include "ShaderProgram.hpp"
 #include "VertexLayout.hpp"
@@ -14,14 +15,51 @@
 
 namespace vkcv {
 
-    enum class PrimitiveTopology{PointList, LineList, TriangleList, PatchList };
-	enum class CullMode{ None, Front, Back };
-    enum class DepthTest { None, Less, LessEqual, Greater, GreatherEqual, Equal };
+	/**
+	 * @brief Enum class to specify types of primitive topology.
+	 */
+    enum class PrimitiveTopology {
+		PointList,
+		LineList,
+		TriangleList,
+		PatchList
+	};
+	
+	/**
+	 * @brief Enum class to specify modes of culling.
+	 */
+	enum class CullMode {
+		None,
+		Front,
+		Back,
+		Both
+	};
+	
+	/**
+	 * @brief Enum class to specify depth-test modes.
+	 */
+    enum class DepthTest {
+		None,
+		Less,
+		LessEqual,
+		Greater,
+		GreatherEqual,
+		Equal
+	};
 
     // add more as needed
     // alternatively we could expose the blend factors directly
-    enum class BlendMode{ None, Additive };
-
+	/**
+	 * @brief Enum class to specify blending modes.
+	 */
+    enum class BlendMode {
+		None,
+		Additive
+	};
+	
+	/**
+	 * @brief Structure to configure a graphics pipeline before its creation.
+	 */
     struct GraphicsPipelineConfig {
         ShaderProgram                         	m_ShaderProgram;
         uint32_t                              	m_Width;

@@ -1,13 +1,22 @@
 #pragma once
+/**
+ * @authors Alexander Gauggel, Artur Wasmut, Tobias Frisch
+ * @file vkcv/PassConfig.hpp
+ * @brief Enums and structures to handle render pass configuration.
+ */
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
+
 #include "ImageConfig.hpp"
 
 namespace vkcv
 {
-    enum class AttachmentLayout
-    {
+	
+	/**
+	 * @brief Enum class to specify kinds of attachment layouts.
+	 */
+    enum class AttachmentLayout {
         UNDEFINED,
         GENERAL,
 
@@ -23,31 +32,31 @@ namespace vkcv
         PRESENTATION
     };
 
-    enum class AttachmentOperation
-    {
+	/**
+	 * @brief Enum class to specify types of attachment operations.
+	 */
+    enum class AttachmentOperation {
         LOAD,
         CLEAR,
         STORE,
         DONT_CARE
     };
 
-    struct AttachmentDescription
-    {
-        AttachmentDescription(
-            AttachmentOperation store_op,
-            AttachmentOperation load_op,
-            vk::Format format) noexcept;
-
+	/**
+	 * @brief Structure to store details about an attachment of a pass.
+	 */
+    struct AttachmentDescription {
         AttachmentOperation store_operation;
         AttachmentOperation load_operation;
-
         vk::Format format;
     };
 
-    struct PassConfig
-    {
-        explicit PassConfig(std::vector<AttachmentDescription> attachments, Multisampling msaa = Multisampling::None) noexcept;
-        std::vector<AttachmentDescription> attachments{};
+	/**
+	 * @brief Structure to configure a pass for usage.
+	 */
+    struct PassConfig {
+		std::vector<AttachmentDescription> attachments;
         Multisampling msaa;
     };
+	
 }

@@ -33,7 +33,7 @@ int main(int argc, const char** argv) {
 		vkcv::AttachmentOperation::CLEAR,
 		core.getSwapchain(windowHandle).getFormat());
 
-	vkcv::PassConfig trianglePassDefinition({ present_color_attachment });
+	vkcv::PassConfig trianglePassDefinition({ present_color_attachment }, vkcv::Multisampling::None);
 	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
 
 	if (!trianglePass)
@@ -51,8 +51,6 @@ int main(int argc, const char** argv) {
 		{vkcv::ShaderStage::VERTEX, "shaders/shader.vert"},
 		{ vkcv::ShaderStage::FRAGMENT, "shaders/shader.frag" }
 	}, nullptr);
-	
-	const auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 
 	const vkcv::GraphicsPipelineConfig trianglePipelineDefinition {
 		triangleShaderProgram,

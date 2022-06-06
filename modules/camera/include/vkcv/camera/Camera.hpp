@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @authors Vanessa Karolek, Josch Morgenstern, Sebastian Gaida, Katharina Krämer, Tobias Frisch, Alexander Gauggel
+ * @file include/vkcv/camera/Camera.hpp
+ * @brief Camera class of the camera module for the vkcv framework.
+ */
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -8,6 +13,12 @@
 #include <glm/mat4x4.hpp>
 
 namespace vkcv::camera {
+
+    /**
+     * @defgroup vkcv_camera Camera Module
+     * A module to manage intrinsic and extrinsic parameters with camera instances.
+     * @{
+     */
 
     /**
      * @brief Used to create a camera which governs the view and projection matrices.
@@ -207,5 +218,7 @@ namespace vkcv::camera {
          */
         void setUp(const glm::vec3 &up);
     };
+
+    /** @} */
 
 }

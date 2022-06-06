@@ -1,4 +1,10 @@
 #pragma once
+/**
+ * @authors Vanessa Karolek, Josch Morgenstern, Sebastian Gaida, Katharina Krämer, Tobias Frisch, Alexander Gauggel
+ * @file include/vkcv/camera/CameraManager.hpp
+ * @brief CameraManager class of the camera module for the vkcv framework. The camera manager manages several camera
+ * controller objects. Camera objects can be created and bound to a specific camera controller via this class.
+ */
 
 #include "PilotCameraController.hpp"
 #include "TrackballCameraController.hpp"
@@ -8,6 +14,11 @@
 #include <functional>
 
 namespace vkcv::camera {
+
+    /**
+     * @addtogroup vkcv_camera
+     * @{
+     */
 
     /**
      * @brief Used for specifying existing types of camera controllers when adding a new controller object to the
@@ -192,4 +203,7 @@ namespace vkcv::camera {
          */
         void update(double deltaTime);
     };
+
+    /** @} */
+
 }

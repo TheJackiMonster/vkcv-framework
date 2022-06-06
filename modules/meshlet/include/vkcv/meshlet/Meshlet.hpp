@@ -7,6 +7,12 @@
 
 namespace vkcv::meshlet {
 
+    /**
+     * @defgroup vkcv_meshlet Meshlet Module
+     * A module to convert meshes into meshlets for rendering via mesh shaders.
+     * @{
+     */
+
     struct Vertex {
         glm::vec3   position;
         float       padding0;
@@ -55,5 +61,7 @@ namespace vkcv::meshlet {
     std::vector<uint32_t> assetLoaderIndicesTo32BitIndices(
             const std::vector<uint8_t>& indexData,
             vkcv::asset::IndexType indexType);
+
+    /** @} */
 
 }

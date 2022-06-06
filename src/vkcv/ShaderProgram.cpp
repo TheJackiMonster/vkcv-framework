@@ -14,19 +14,25 @@ namespace vkcv {
      * @param[in] relative path to the shader code
      * @return vector of chars as a buffer for the code
      */
-	std::vector<char> readShaderCode(const std::filesystem::path &shaderPath) {
+	std::vector<uint32_t> readShaderCode(const std::filesystem::path &shaderPath) {
 		std::ifstream file (shaderPath.string(), std::ios::ate | std::ios::binary);
 		
 		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened");
-			return std::vector<char>{};
+			vkcv_log(LogLevel::ERROR, "The file could not be opened: %s", shaderPath.c_str());
+			return std::vector<uint32_t>();
 		}
 		
 		size_t fileSize = (size_t)file.tellg();
-		std::vector<char> buffer(fileSize);
+
+        if (fileSize % sizeof(uint32_t) != 0) {
+            vkcv_log(LogLevel::ERROR, "The file is not a valid shader: %s", shaderPath.c_str());
+            return std::vector<uint32_t>();
+        }
+
+		std::vector<uint32_t> buffer(fileSize / sizeof(uint32_t));
 		
 		file.seekg(0);
-		file.read(buffer.data(), fileSize);
+		file.read(reinterpret_cast<char*>(buffer.data()), fileSize);
 		file.close();
 		
         return buffer;
@@ -76,32 +82,31 @@ namespace vkcv {
     m_DescriptorSets{}
 	{}
 
-	bool ShaderProgram::addShader(ShaderStage shaderStage, const std::filesystem::path &shaderPath)
+	bool ShaderProgram::addShader(ShaderStage stage, const std::filesystem::path &path)
 	{
-	    if(m_Shaders.find(shaderStage) != m_Shaders.end()) {
+	    if(m_Shaders.find(stage) != m_Shaders.end()) {
 			vkcv_log(LogLevel::WARNING, "Overwriting existing shader stage");
 		}
 
-	    const std::vector<char> shaderCode = readShaderCode(shaderPath);
+	    const std::vector<uint32_t> shaderCode = readShaderCode(path);
 	    
 	    if (shaderCode.empty()) {
 			return false;
 		} else {
-            Shader shader{shaderCode, shaderStage};
-            m_Shaders.insert(std::make_pair(shaderStage, shader));
-            reflectShader(shaderStage);
+            m_Shaders.insert(std::make_pair(stage, shaderCode));
+            reflectShader(stage);
             return true;
         }
 	}
 
-    const Shader &ShaderProgram::getShader(ShaderStage shaderStage) const
+    const std::vector<uint32_t> &ShaderProgram::getShaderBinary(ShaderStage stage) const
     {
-	    return m_Shaders.at(shaderStage);
+	    return m_Shaders.at(stage);
 	}
 
-    bool ShaderProgram::existsShader(ShaderStage shaderStage) const
+    bool ShaderProgram::existsShader(ShaderStage stage) const
     {
-	    if(m_Shaders.find(shaderStage) == m_Shaders.end())
+	    if(m_Shaders.find(stage) == m_Shaders.end())
 	        return false;
 	    else
 	        return true;
@@ -109,13 +114,9 @@ namespace vkcv {
 
     void ShaderProgram::reflectShader(ShaderStage shaderStage)
     {
-        auto shaderCodeChar = m_Shaders.at(shaderStage).shaderCode;
-        std::vector<uint32_t> shaderCode;
+        auto shaderCode = m_Shaders.at(shaderStage);
 
-        for (uint32_t i = 0; i < shaderCodeChar.size()/4; i++)
-            shaderCode.push_back(((uint32_t*) shaderCodeChar.data())[i]);
-
-        spirv_cross::Compiler comp(move(shaderCode));
+        spirv_cross::Compiler comp(shaderCode);
         spirv_cross::ShaderResources resources = comp.get_shader_resources();
 
         //reflect vertex input
@@ -135,7 +136,12 @@ namespace vkcv {
 				// vertex input format (implies its size)
 				const VertexAttachmentFormat attachment_format = convertFormat(base_type.basetype, base_type.vecsize);
 
-                m_VertexAttachments.emplace_back(attachment_loc, attachment_name, attachment_format);
+                m_VertexAttachments.push_back({
+					attachment_loc,
+					attachment_name,
+					attachment_format,
+					0
+				});
             }
 		}
 
@@ -346,12 +352,12 @@ namespace vkcv {
 			for (const auto &range : comp.get_active_buffer_ranges(pushConstantBuffer.id))
 			{
 				const size_t size = range.range + range.offset;
-				m_pushConstantSize = std::max(m_pushConstantSize, size);
+				m_pushConstantsSize = std::max(m_pushConstantsSize, size);
 			}
 		}
     }
 
-    const std::vector<VertexAttachment> &ShaderProgram::getVertexAttachments() const
+    const VertexAttachments &ShaderProgram::getVertexAttachments() const
     {
         return m_VertexAttachments;
 	}
@@ -361,8 +367,8 @@ namespace vkcv {
         return m_DescriptorSets;
     }
 
-	size_t ShaderProgram::getPushConstantSize() const
+	size_t ShaderProgram::getPushConstantsSize() const
 	{
-		return m_pushConstantSize;
+		return m_pushConstantsSize;
 	}
 }

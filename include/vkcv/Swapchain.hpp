@@ -1,77 +1,64 @@
 #pragma once
-#include "vulkan/vulkan.hpp"
-#include "Context.hpp"
-#include "vkcv/Window.hpp"
+/**
+ * @authors Sebastian Gaida, Tobias Frisch
+ * @file vkcv/Swapchain.hpp
+ * @brief Class to manage the state of a swapchain and its transitions.
+ */
 
 #include <atomic>
+#include <vulkan/vulkan.hpp>
+
+#include "Context.hpp"
+#include "Surface.hpp"
+#include "Window.hpp"
 
 namespace vkcv
 {
-	
-	const uint32_t MIN_SWAPCHAIN_SIZE = 2;
-	
+
+    /**
+     * @brief Class to handle swapchains using a context.
+     */
     class Swapchain final {
     private:
     	friend class Core;
     	friend class Window;
     	friend class SwapchainManager;
-
-        struct Surface
-        {
-            vk::SurfaceKHR handle;
-            std::vector<vk::SurfaceFormatKHR> formats;
-            vk::SurfaceCapabilitiesKHR capabilities;
-            std::vector<vk::PresentModeKHR> presentModes;
-			uint32_t presentQueueIndex;
-        };
-        
+     
+		const Context *m_Context;
         Surface m_Surface;
-
         vk::SwapchainKHR m_Swapchain;
-        vk::Format m_Format;
-        vk::ColorSpaceKHR m_ColorSpace;
-        vk::PresentModeKHR m_PresentMode;
-		uint32_t m_ImageCount;
-	
-		vk::Extent2D m_Extent;
-	
 		std::atomic<bool> m_RecreationRequired;
 
 		/**
-		 * Constructor of a SwapChain object
-		 * glfw is not initialized in this class because ist must be sure that there exists a context first
-		 * glfw is already initialized by the window class
-		 * @param surface used by the swapchain
-		 * @param swapchain to show images in the window
-		 * @param format of the swapchain
-		 * @param colorSpace of the swapchain
-		 * @param presentMode of the swapchain
-		 * @param imageCount of the swapchain
-		 * @param extent of the swapchain
+		 * @brief Constructor of the swapchain with the current context,
+		 * a surface and a given vulkan swapchain object.
+		 *
+		 * @param[in,out] context Current context
+		 * @param[in] surface used by the swapchain
+		 * @param[in,out] swapchain to show images in the window
 		 */
-        Swapchain(const Surface &surface,
-                  vk::SwapchainKHR swapchain,
-                  vk::Format format,
-                  vk::ColorSpaceKHR colorSpace,
-                  vk::PresentModeKHR presentMode,
-                  uint32_t imageCount,
-				  vk::Extent2D extent) noexcept;
+        Swapchain(const Context &context,
+				  const Surface &surface,
+                  vk::SwapchainKHR swapchain) noexcept;
 	
 		/**
-		 * checks if the update flag is true
-		 * @return if an update is needed
+		 * @brief Checks whether the swapchain needs to be recreated.
+		 *
+		 * @return True, if the swapchain should be updated,
+		 * otherwise false.
 		 */
 		bool shouldUpdateSwapchain() const;
 	
 		/**
-		 * recreates the swapchain
-		 * context
-		 * window
+		 * @brief Updates and recreates the swapchain.
+		 *
+		 * @param[in,out] context that holds the device to recreate the swapchain
+		 * @param[in] window that the new swapchain gets bound to
 		 */
 		void updateSwapchain(const Context &context, const Window &window);
 	
 		/**
-		 * signal that the swapchain needs to be recreated
+		 * @brief Signals the swapchain to be recreated.
 		 */
 		void signalSwapchainRecreation();
 
@@ -79,6 +66,8 @@ namespace vkcv
     	Swapchain(const Swapchain& other);
 
         /**
+         * @brief Returns the vulkan swapchain object of the swapchain.
+         *
          * @return The swapchain linked with the #SwapChain class
          * @note The reference to our Swapchain variable is needed for the recreation step
          */
@@ -86,48 +75,61 @@ namespace vkcv
         const vk::SwapchainKHR& getSwapchain() const;
 
         /**
-         * gets the current surface object
-         * @return current surface
+         * @brief Returns the current surface of the swapchain.
+         *
+         * @return Current surface
          */
         [[nodiscard]]
-        vk::SurfaceKHR getSurface() const;
+        const Surface& getSurface() const;
 
         /**
-         * gets the chosen swapchain format
-         * @return gets the chosen swapchain format
+         * @brief Returns the image format for the current surface
+         * of the swapchain.
+         *
+         * @return Swapchain image format
          */
         [[nodiscard]]
         vk::Format getFormat() const;
 
         /**
-         * creates a swap chain object out of the given window and the given context
-         * @param window a wrapper that represents a glfw window
-         * @param context of the application
-         * @return returns an object of swapChain
+         * @brief Creates a swapchain for a specific window and
+         * a given context.
+         *
+         * @param[in,out] window Window
+         * @param[in,out] context Context
+         * @return New created swapchain
          */
         static Swapchain create(const Window &window, const Context &context);
 
         /**
-         * Destructor of SwapChain
+         * Destructor of thw swapchain.
          */
         virtual ~Swapchain();
 
 		/**
-		 * @return number of images in swapchain
+		 * @brief Returns the amount of images for the swapchain.
+		 *
+		 * @return Number of images
 		*/
 		uint32_t getImageCount() const;
 	
         /**
-         * @return the 2d extent of the swapchain
+         * @brief Returns the extent from the current surface of
+         * the swapchain.
+         *
+         * @return Extent of the swapchains surface
          */
         [[nodiscard]]
 		const vk::Extent2D& getExtent() const;
 
 		/**
-		 * @return the familyQueueIndex for the surface
+		 * @brief Returns the present queue index to be used with
+		 * the swapchain and its current surface.
+		 *
+		 * @return Present queue family index
 		 */
 		[[nodiscard]]
-		const uint32_t& getPresentQueueIndex() const;
+		uint32_t getPresentQueueIndex() const;
 
 	};
     

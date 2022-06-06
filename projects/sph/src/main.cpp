@@ -1,13 +1,9 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
-#include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <random>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_access.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <time.h>
+#include <ctime>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/effects/BloomAndFlaresEffect.hpp>
 #include "PipelineInit.hpp"
@@ -16,6 +12,7 @@
 int main(int argc, const char **argv) {
     const char *applicationName = "SPH";
 
+    // creating core object that will handle all vulkan objects
     vkcv::Core core = vkcv::Core::create(
         applicationName,
         VK_MAKE_VERSION(0, 0, 1),
@@ -41,7 +38,7 @@ int main(int argc, const char **argv) {
             colorFormat);
 
 
-    vkcv::PassConfig particlePassDefinition({present_color_attachment});
+    vkcv::PassConfig particlePassDefinition({present_color_attachment}, vkcv::Multisampling::None);
     vkcv::PassHandle particlePass = core.createPass(particlePassDefinition);
 
     vkcv::PassConfig computePassDefinition({});
@@ -68,26 +65,26 @@ int main(int argc, const char **argv) {
     }
 	vkcv::shader::GLSLCompiler compiler;
 
-// comp shader 1
-    vkcv::ComputePipelineHandle computePipeline1;
-    vkcv::DescriptorSetHandle computeDescriptorSet1 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
-                                                                          "shaders/pressure.comp", computePipeline1);
-// comp shader 2
-    vkcv::ComputePipelineHandle computePipeline2;
-    vkcv::DescriptorSetHandle computeDescriptorSet2 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
-                                                                          "shaders/force.comp", computePipeline2);
+    // pressure shader --> computes the pressure for all particles
+    vkcv::ComputePipelineHandle pressurePipeline;
+    vkcv::DescriptorSetHandle pressureDescriptorSet = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
+                                                                                        "shaders/pressure.comp", pressurePipeline);
+    // force shader --> computes the force that effects the particles
+    vkcv::ComputePipelineHandle forcePipeline;
+    vkcv::DescriptorSetHandle forceDescriptorSet = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
+                                                                                     "shaders/force.comp", forcePipeline);
 
-//comp shader 3
-    vkcv::ComputePipelineHandle computePipeline3;
-    vkcv::DescriptorSetHandle computeDescriptorSet3 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
-                                                                           "shaders/updateData.comp", computePipeline3);
+    // update data shader --> applies the force on all particles and updates their position
+    vkcv::ComputePipelineHandle updateDataPipeline;
+    vkcv::DescriptorSetHandle updateDataDescriptorSet = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
+                                                                                          "shaders/updateData.comp", updateDataPipeline);
 
-//comp shader 4
-    vkcv::ComputePipelineHandle computePipeline4;
-    vkcv::DescriptorSetHandle computeDescriptorSet4 = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
-                                                                            "shaders/flip.comp", computePipeline4);
+    // flip shader --> flips input and output buffer
+    vkcv::ComputePipelineHandle flipPipeline;
+    vkcv::DescriptorSetHandle flipDescriptorSet = PipelineInit::ComputePipelineInit(&core, vkcv::ShaderStage::COMPUTE,
+                                                                                    "shaders/flip.comp", flipPipeline);
 
-// shader
+    // particle rendering shaders
     vkcv::ShaderProgram particleShaderProgram{};
     compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/shader.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
         particleShaderProgram.addShader(shaderStage, path);
@@ -96,6 +93,7 @@ int main(int argc, const char **argv) {
         particleShaderProgram.addShader(shaderStage, path);
     });
 
+    // generating descriptorsets from shader reflection
     vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(
             particleShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
@@ -111,11 +109,12 @@ int main(int argc, const char **argv) {
 
     std::vector<vkcv::VertexBinding> bindings;
     for (size_t i = 0; i < vertexAttachments.size(); i++) {
-        bindings.push_back(vkcv::VertexBinding(i, {vertexAttachments[i]}));
+        bindings.push_back(vkcv::createVertexBinding(i, {vertexAttachments[i]}));
     }
 
-    const vkcv::VertexLayout particleLayout(bindings);
+    const vkcv::VertexLayout particleLayout { bindings };
 
+    // initializing graphics pipeline
     vkcv::GraphicsPipelineConfig particlePipelineDefinition{
             particleShaderProgram,
             UINT32_MAX,
@@ -145,6 +144,7 @@ int main(int argc, const char **argv) {
             1
     );
 
+    // generating particles
     int numberParticles = 20000;
     std::vector<Particle> particles;
     for (int i = 0; i < numberParticles; i++) {
@@ -164,6 +164,7 @@ int main(int argc, const char **argv) {
         particles.push_back(Particle(pos, vel));
     }
 
+    // creating and filling particle buffer
     vkcv::Buffer<Particle> particleBuffer1 = core.createBuffer<Particle>(
             vkcv::BufferType::STORAGE,
             numberParticles * sizeof(glm::vec4) * 3
@@ -179,24 +180,26 @@ int main(int argc, const char **argv) {
 	particleBuffer2.fill(particles);
 
     vkcv::DescriptorWrites setWrites;
-    setWrites.uniformBufferWrites = {vkcv::BufferDescriptorWrite(0,color.getHandle()),
-                                     vkcv::BufferDescriptorWrite(1,position.getHandle())};
-    setWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(2,particleBuffer1.getHandle()),
-									  vkcv::BufferDescriptorWrite(3,particleBuffer2.getHandle())};
+    setWrites.writeUniformBuffer(0, color.getHandle()).writeUniformBuffer(1, position.getHandle());
+    setWrites.writeStorageBuffer(2, particleBuffer1.getHandle()).writeStorageBuffer(3, particleBuffer2.getHandle());
     core.writeDescriptorSet(descriptorSet, setWrites);
 
     vkcv::DescriptorWrites computeWrites;
-    computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,particleBuffer1.getHandle()),
-										  vkcv::BufferDescriptorWrite(1,particleBuffer2.getHandle())};
+    computeWrites.writeStorageBuffer(
+			0, particleBuffer1.getHandle()
+	).writeStorageBuffer(
+			1, particleBuffer2.getHandle()
+	);
     
-    core.writeDescriptorSet(computeDescriptorSet1, computeWrites);
-	core.writeDescriptorSet(computeDescriptorSet2, computeWrites);
-    core.writeDescriptorSet(computeDescriptorSet3, computeWrites);
-	core.writeDescriptorSet(computeDescriptorSet4, computeWrites);
+    core.writeDescriptorSet(pressureDescriptorSet, computeWrites);
+	core.writeDescriptorSet(forceDescriptorSet, computeWrites);
+    core.writeDescriptorSet(updateDataDescriptorSet, computeWrites);
+	core.writeDescriptorSet(flipDescriptorSet, computeWrites);
 
-    if (!particlePipeline || !computePipeline1 || !computePipeline2 || !computePipeline3 || !computePipeline4)
+    // error message if creation of one pipeline failed
+    if (!particlePipeline || !pressurePipeline || !forcePipeline || !updateDataPipeline || !flipPipeline)
     {
-        std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
+        std::cout << "Error. Could not create at least one pipeline. Exiting." << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -340,38 +343,42 @@ int main(int argc, const char **argv) {
         pushConstantsCompute.appendDrawcall(pushData);
 
         uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(numberParticles/256.f)),1,1};
-        
+
+        // computing pressure pipeline
         core.recordComputeDispatchToCmdStream(cmdStream,
-                                              computePipeline1,
+                                              pressurePipeline,
                                               computeDispatchCount,
-                                              {vkcv::DescriptorSetUsage(0, computeDescriptorSet1)},
+                                              {vkcv::DescriptorSetUsage(0, pressureDescriptorSet)},
 											  pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
+        // computing force pipeline
 		core.recordComputeDispatchToCmdStream(cmdStream,
-											  computePipeline2,
+											  forcePipeline,
 											  computeDispatchCount,
-											  {vkcv::DescriptorSetUsage(0, computeDescriptorSet2)},
+											  {vkcv::DescriptorSetUsage(0, forceDescriptorSet)},
 											  pushConstantsCompute);
 
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
+        // computing update data pipeline
         core.recordComputeDispatchToCmdStream(cmdStream,
-                                              computePipeline3,
+                                              updateDataPipeline,
                                               computeDispatchCount,
-                                              { vkcv::DescriptorSetUsage(0, computeDescriptorSet3) },
+                                              { vkcv::DescriptorSetUsage(0, updateDataDescriptorSet) },
                                               pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
+        // computing flip pipeline
         core.recordComputeDispatchToCmdStream(cmdStream,
-                                              computePipeline4,
+                                              flipPipeline,
                                               computeDispatchCount,
-                                              { vkcv::DescriptorSetUsage(0, computeDescriptorSet4) },
+                                              { vkcv::DescriptorSetUsage(0, flipDescriptorSet) },
                                               pushConstantsCompute);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
@@ -398,10 +405,12 @@ int main(int argc, const char **argv) {
         core.prepareImageForStorage(cmdStream, swapchainInput);
 
         vkcv::DescriptorWrites tonemappingDescriptorWrites;
-        tonemappingDescriptorWrites.storageImageWrites = {
-            vkcv::StorageImageDescriptorWrite(0, colorBuffer),
-            vkcv::StorageImageDescriptorWrite(1, swapchainInput)
-        };
+        tonemappingDescriptorWrites.writeStorageImage(
+				0, colorBuffer
+		).writeStorageImage(
+				1, swapchainInput
+		);
+		
         core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
 
         uint32_t tonemappingDispatchCount[3];

@@ -109,7 +109,7 @@ int main(int argc, const char** argv) {
 			vk::Format::eD32Sfloat
 	);
 
-	vkcv::PassConfig firstMeshPassDefinition({ present_color_attachment, depth_attachment });
+	vkcv::PassConfig firstMeshPassDefinition({ present_color_attachment, depth_attachment }, vkcv::Multisampling::None);
 	vkcv::PassHandle firstMeshPass = core.createPass(firstMeshPassDefinition);
 
 	if (!firstMeshPass) {
@@ -134,11 +134,10 @@ int main(int argc, const char** argv) {
     const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
 	std::vector<vkcv::VertexBinding> bindings;
 	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::VertexBinding(i, { vertexAttachments[i] }));
+		bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
 	}
 	
-	const vkcv::VertexLayout firstMeshLayout (bindings);
-
+	const vkcv::VertexLayout firstMeshLayout { bindings };
 	const std::unordered_map<uint32_t, vkcv::DescriptorBinding> &descriptorBindings = firstMeshProgram.getReflectedDescriptors().at(0);
 
     std::unordered_map<uint32_t, vkcv::DescriptorBinding> adjustedBindings = descriptorBindings;
@@ -188,18 +187,20 @@ int main(int argc, const char** argv) {
 		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
 
 	vkcv::DescriptorWrites setWrites;
-	std::vector<vkcv::SampledImageDescriptorWrite> texturesArrayWrites;
+	
 	for(uint32_t i = 0; i < 6; i++)
 	{
-	    texturesArrayWrites.push_back(vkcv::SampledImageDescriptorWrite(1,
-                                                                        texturesArray[i].getHandle(),
-                                                                        0,
-                                                                        false,
-                                                                        i));
+		
+		setWrites.writeSampledImage(
+				1,
+				texturesArray[i].getHandle(),
+				0,
+				false,
+				i
+		);
 	}
 
-	setWrites.sampledImageWrites	= texturesArrayWrites;
-	setWrites.samplerWrites			= { vkcv::SamplerDescriptorWrite(0, sampler) };
+	setWrites.writeSampler(0, sampler);
 
 	core.writeDescriptorSet(descriptorSet, setWrites);
 

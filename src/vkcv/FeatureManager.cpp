@@ -1,9 +1,12 @@
 
 #include "vkcv/FeatureManager.hpp"
 
-#include <stddef.h>
-#include <string.h>
+#include <cstddef>
+#include <cstring>
+
+#ifdef _MSVC_LANG
 #include <type_traits>
+#endif
 
 namespace vkcv {
 	

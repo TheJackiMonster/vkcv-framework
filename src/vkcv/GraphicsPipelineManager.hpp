@@ -17,6 +17,10 @@
 
 namespace vkcv
 {
+	
+	/**
+	 * @brief Class to manage graphics pipelines.
+	 */
     class GraphicsPipelineManager
     {
     public:
@@ -82,4 +86,5 @@ namespace vkcv
         void destroyPipelineById(uint64_t id);
 
     };
+	
 }

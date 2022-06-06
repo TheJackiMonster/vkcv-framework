@@ -35,6 +35,8 @@ namespace vkcv
         }
 		
 		for (uint64_t id = 0; id < m_DescriptorSetLayouts.size(); id++) {
+			// Resets the usage count to zero for destruction.
+			m_DescriptorSetLayouts[id].layoutUsageCount = 0;
 			destroyDescriptorSetLayoutById(id);
 		}
         
@@ -48,15 +50,16 @@ namespace vkcv
 		}
     }
 
-    DescriptorSetLayoutHandle DescriptorManager::createDescriptorSetLayout(const DescriptorBindings &setBindingsMap)
+    DescriptorSetLayoutHandle DescriptorManager::createDescriptorSetLayout(const DescriptorBindings &bindings)
     {
         for (size_t i = 0; i < m_DescriptorSetLayouts.size(); i++)
         {
-            if(m_DescriptorSetLayouts[i].descriptorBindings.size() != setBindingsMap.size())
+            if(m_DescriptorSetLayouts[i].descriptorBindings.size() != bindings.size())
                 continue;
 
-            if (m_DescriptorSetLayouts[i].descriptorBindings == setBindingsMap)
+            if (m_DescriptorSetLayouts[i].descriptorBindings == bindings)
             {
+				m_DescriptorSetLayouts[i].layoutUsageCount++;
                 return DescriptorSetLayoutHandle(i, [&](uint64_t id) { destroyDescriptorSetLayoutById(id); });
             }
         }
@@ -65,7 +68,7 @@ namespace vkcv
         std::vector<vk::DescriptorSetLayoutBinding> bindingsVector = {};
 		std::vector<vk::DescriptorBindingFlags> bindingsFlags = {};
 		
-        for (auto bindingElem : setBindingsMap)
+        for (auto bindingElem : bindings)
         {
             DescriptorBinding binding = bindingElem.second;
             uint32_t bindingID = bindingElem.first;
@@ -104,14 +107,14 @@ namespace vkcv
         };
 
         const uint64_t id = m_DescriptorSetLayouts.size();
-        m_DescriptorSetLayouts.push_back({vulkanHandle, setBindingsMap});
+        m_DescriptorSetLayouts.push_back({vulkanHandle, bindings, 1});
         return DescriptorSetLayoutHandle(id, [&](uint64_t id) { destroyDescriptorSetLayoutById(id); });
     }
 
-    DescriptorSetHandle DescriptorManager::createDescriptorSet(const DescriptorSetLayoutHandle &setLayoutHandle)
+    DescriptorSetHandle DescriptorManager::createDescriptorSet(const DescriptorSetLayoutHandle &layout)
     {
         //create and allocate the set based on the layout provided
-        DescriptorSetLayout setLayout = m_DescriptorSetLayouts[setLayoutHandle.getId()];
+        DescriptorSetLayout setLayout = m_DescriptorSetLayouts[layout.getId()];
         vk::DescriptorSet vulkanHandle;
         vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), 1, &setLayout.vulkanHandle);
 
@@ -148,10 +151,13 @@ namespace vkcv
 	
 		size_t poolIndex = (m_Pools.size() - 1);
         const uint64_t id = m_DescriptorSets.size();
-        m_DescriptorSets.push_back({vulkanHandle, setLayoutHandle, poolIndex});
+        m_DescriptorSets.push_back({ vulkanHandle, layout, poolIndex });
         return DescriptorSetHandle(id, [&](uint64_t id) { destroyDescriptorSetById(id); });
     }
     
+	/**
+	 * @brief Structure to store details to write to a descriptor set.
+	 */
     struct WriteDescriptorSetInfo {
 		size_t imageInfoIndex;
 		size_t bufferInfoIndex;
@@ -173,7 +179,7 @@ namespace vkcv
 		
 		std::vector<WriteDescriptorSetInfo> writeInfos;
 
-		for (const auto& write : writes.sampledImageWrites)
+		for (const auto& write : writes.getSampledImageWrites())
 		{
 		    vk::ImageLayout layout = write.useGeneralLayout ? vk::ImageLayout::eGeneral : vk::ImageLayout::eShaderReadOnlyOptimal;
 			const vk::DescriptorImageInfo imageInfo(
@@ -195,7 +201,7 @@ namespace vkcv
 			writeInfos.push_back(vulkanWrite);
 		}
 
-		for (const auto& write : writes.storageImageWrites) {
+		for (const auto& write : writes.getStorageImageWrites()) {
 			const vk::DescriptorImageInfo imageInfo(
 				nullptr,
 				imageManager.getVulkanImageView(write.image, write.mipLevel),
@@ -215,7 +221,7 @@ namespace vkcv
 			writeInfos.push_back(vulkanWrite);
 		}
 
-		for (const auto& write : writes.uniformBufferWrites) {
+		for (const auto& write : writes.getUniformBufferWrites()) {
 			const size_t size = bufferManager.getBufferSize(write.buffer);
 			const uint32_t offset = std::clamp<uint32_t>(write.offset, 0, size);
 			
@@ -242,7 +248,7 @@ namespace vkcv
 			writeInfos.push_back(vulkanWrite);
 		}
 
-		for (const auto& write : writes.storageBufferWrites) {
+		for (const auto& write : writes.getStorageBufferWrites()) {
 			const size_t size = bufferManager.getBufferSize(write.buffer);
 			const uint32_t offset = std::clamp<uint32_t>(write.offset, 0, size);
 			
@@ -269,7 +275,7 @@ namespace vkcv
 			writeInfos.push_back(vulkanWrite);
 		}
 
-		for (const auto& write : writes.samplerWrites) {
+		for (const auto& write : writes.getSamplerWrites()) {
 			const vk::Sampler& sampler = samplerManager.getVulkanSampler(write.sampler);
 			
 			const vk::DescriptorImageInfo imageInfo(
@@ -341,6 +347,13 @@ namespace vkcv
 	    }
 
 	    auto& layout = m_DescriptorSetLayouts[id];
+
+		if (layout.layoutUsageCount > 1) {
+			layout.layoutUsageCount--;
+			return;
+		} else {
+			layout.layoutUsageCount = 0;
+		}
 		
 	    if (layout.vulkanHandle){
 	        m_Device.destroy(layout.vulkanHandle);

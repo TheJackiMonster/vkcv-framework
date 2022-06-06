@@ -1,7 +1,9 @@
 #pragma once
 /**
- * @file src/vkcv/Core.hpp
- * @brief Handling of global states regarding dependencies
+ * @authors Alexander Gauggel, Tobias Frisch, Sebastian Gaida, Artur Wasmut, Lars Hoerttrich,
+ *          Mara Vogt, Mark Mints, Simeon Hermann, Alex Laptop, Katharina Krämer, Vanessa Karolek
+ * @file vkcv/Core.hpp
+ * @brief Handling of global states regarding dependencies.
  */
 
 #include <memory>
@@ -25,8 +27,6 @@
 #include "Event.hpp"
 #include "DrawcallRecording.hpp"
 #include "CommandRecordingFunctionTypes.hpp"
-#include "../../src/vkcv/WindowManager.hpp"
-#include "../../src/vkcv/SwapchainManager.hpp"
 
 #define VKCV_FRAMEWORK_NAME "VkCV"
 #define VKCV_FRAMEWORK_VERSION (VK_MAKE_VERSION(0, 1, 0))
@@ -46,12 +46,21 @@ namespace vkcv
 	class WindowManager;
 	class SwapchainManager;
 
+	/**
+	 * @brief Structure to store details about a queue submission.
+	 */
 	struct SubmitInfo {
 		QueueType queueType;
 		std::vector<vk::Semaphore> waitSemaphores;
 		std::vector<vk::Semaphore> signalSemaphores;
 	};
 
+	/**
+	 * @brief Class to handle the core functionality of the framework.
+	 *
+	 * The class handles the core functionality of the framework with most
+	 * calls addressing resource management via more simplified abstraction.
+	 */
     class Core final
     {
     private:
@@ -85,8 +94,8 @@ namespace vkcv
 		uint32_t            m_currentSwapchainImageIndex;
 
 		/**
-		 * sets up swapchain images
-		 * @param swapchainHandles of swapchain
+		 * Sets up swapchain images
+		 * @param handle Handle of swapchain
 		 */
 		void setSwapchainImages(SwapchainHandle handle);
 
@@ -113,7 +122,7 @@ namespace vkcv
         /**
          * Copy assignment operator of #Core is deleted!
          *
-         * @param other Other instance of #Context
+         * @param other Other instance of Context
          * @return Reference to itself
          */
         Core & operator=(const Core &other) = delete;
@@ -121,29 +130,34 @@ namespace vkcv
         /**
          * Move assignment operator of #Core uses default behavior!
          *
-         * @param other Other instance of #Context
+         * @param other Other instance of Context
          * @return Reference to itself
          */
         Core & operator=(Core &&other) = delete;
 
+		/**
+		 * Returns the context of a Core instance.
+		 *
+		 * @return Current Context
+		 */
         [[nodiscard]]
         const Context &getContext() const;
 
         /**
-             * Creates a #Core with given @p applicationName and @p applicationVersion for your application.
-             *
-             * It is also possible to require a specific amount of queues, ask for specific queue-flags or
-             * extensions. This function will take care of the required arguments as best as possible.
-             *
-             * To pass a valid version for your application, you should use #VK_MAKE_VERSION().
-             *
-             * @param[in] applicationName Name of the application
-             * @param[in] applicationVersion Version of the application
-             * @param[in] queueFlags (optional) Requested flags of queues
-             * @param[in] instanceExtensions (optional) Requested instance extensions
-             * @param[in] deviceExtensions (optional) Requested device extensions
-             * @return New instance of #Context
-             */
+		 * Creates a #Core with given @p applicationName and @p applicationVersion for your application.
+		 *
+		 * It is also possible to require a specific amount of queues, ask for specific queue-flags or
+		 * extensions. This function will take care of the required arguments as best as possible.
+		 *
+		 * To pass a valid version for your application, you should use #VK_MAKE_VERSION().
+		 *
+		 * @param[in] applicationName Name of the application
+		 * @param[in] applicationVersion Version of the application
+		 * @param[in] queueFlags (optional) Requested flags of queues
+		 * @param[in] instanceExtensions (optional) Requested instance extensions
+		 * @param[in] deviceExtensions (optional) Requested device extensions
+		 * @return New instance of #Context
+		 */
         static Core create(const char *applicationName,
                            uint32_t applicationVersion,
                            const std::vector<vk::QueueFlagBits>& queueFlags    = {},
@@ -172,12 +186,11 @@ namespace vkcv
         ComputePipelineHandle createComputePipeline(const ComputePipelineConfig &config);
 
         /**
-         * Creates a basic vulkan render pass using @p config from the render pass config class and returns it using the @p handle.
+         * Creates a basic vulkan render pass using @p config from the render pass config class and returns it.
          * Fixed Functions for pipeline are set with standard values.
          *
          * @param config a render pass config object from the render pass config class
-         * @param handle a handle to return the created vulkan handle
-         * @return True if render pass creation was successful, False if not
+         * @return A handle to represent the created pass
          */
         [[nodiscard]]
         PassHandle createPass(const PassConfig &config);
@@ -230,7 +243,7 @@ namespace vkcv
 			Multisampling   multisampling = Multisampling::None);
 
         /**
-         * creates a new window and returns it's handle
+         * Creates a new window and returns it's handle
          * @param applicationName window name
          * @param windowWidth
          * @param windowHeight
@@ -245,7 +258,7 @@ namespace vkcv
 				bool resizeable);
 
 		/**
-		 * getter for window reference
+		 * Getter for window reference
 		 * @param handle of the window
 		 * @return the window
 		 */
@@ -253,14 +266,14 @@ namespace vkcv
 		Window& getWindow(const WindowHandle& handle );
 
 		/**
-		 * gets the swapchain of the current focused window
+		 * Gets the swapchain of the current focused window
 		 * @return swapchain
 		 */
 		[[nodiscard]]
 		Swapchain& getSwapchainOfCurrentWindow();
 
 		/**
-		 * returns the swapchain reference
+		 * Returns the swapchain reference
 		 * @param handle of the swapchain
 		 * @return swapchain
 		 */
@@ -268,7 +281,7 @@ namespace vkcv
 		Swapchain& getSwapchain(const SwapchainHandle &handle);
 
 		/**
-		 * gets the swapchain handle from the window
+		 * Gets the swapchain handle from the window
 		 * @param handle of the window
 		 * @return the swapchain from getSwapchain( SwapchainHandle )
 		 */
@@ -276,7 +289,7 @@ namespace vkcv
 		Swapchain& getSwapchain(const WindowHandle &handle);
 
 		/**
-		 * returns the image width
+		 * Returns the image width
 		 * @param image handle
 		 * @return imageWidth
 		 */
@@ -284,7 +297,7 @@ namespace vkcv
         uint32_t getImageWidth(const ImageHandle &image);
 
         /**
-         * returns the image height
+         * Returns the image height
          * @param image handle
          * @return imageHeight
          */
@@ -292,7 +305,7 @@ namespace vkcv
         uint32_t getImageHeight(const ImageHandle &image);
 
         /**
-         * returns the image format of the image
+         * Returns the image format of the image
          * @param image handle
          * @return imageFormat
          */
@@ -308,31 +321,66 @@ namespace vkcv
 		[[nodiscard]]
 		uint32_t getImageMipLevels(const ImageHandle &image);
 
-		/** TODO:
-		 * @param bindings
-		 * @return
+		/**
+		 * @brief Creates a descriptor set layout handle by a set of descriptor bindings.
+		 *
+		 * @param bindings Descriptor bindings
+		 * @return Descriptor set layout handle
 		 */
 		[[nodiscard]]
-		DescriptorSetLayoutHandle createDescriptorSetLayout(const std::unordered_map<uint32_t, DescriptorBinding> &bindingsMap);
+		DescriptorSetLayoutHandle createDescriptorSetLayout(const DescriptorBindings &bindings);
+		
+		/**
+		 * @brief Returns the descriptor set layout of a descriptor set layout handle.
+		 *
+		 * @param handle Descriptor set layout handle
+		 * @return Descriptor set layout
+		 */
 		DescriptorSetLayout getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const;
 
-		// TODO: existsDescriptorSetLayout function that checks and returns fitting layout upon existence.
-
-        /** TODO:
-         *   @param setDescriptions
-         *   @return
-         */
+		/**
+		 * @brief Creates a new descriptor set
+		 * 
+		 * @param layoutHandle Handle to the layout that the descriptor set will use
+		 * @return Handle that represents the descriptor set
+		 */
         [[nodiscard]]
         DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle &layoutHandle);
+
+		/**
+		 * @brief Writes resources bindings to a descriptor set
+		 * 
+		 * @param handle Handle of the descriptor set
+		 * @param writes Struct containing the resource bindings to be written
+		 * must be compatible with the descriptor set's layout
+		*/
 		void writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites& writes);
+
+		/**
+		 * @brief Returns information about a descriptor set
+		 * 
+		 * @param handle Handle of the descriptor set
+		 * @return Struct containing the descriptor set's vulkan handle, layout handle and descriptor pool index
+		*/
 		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
 
 
 		/**
-		 * @brief start recording command buffers and increment frame index
+		 * @brief Start recording command buffers and increment frame index
 		*/
 		bool beginFrame(uint32_t& width, uint32_t& height, const WindowHandle &windowHandle);
 
+		/**
+		 * @brief Records drawcalls to a command stream
+		 * 
+		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
+		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
+		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
+		 * @param pushConstants Push constants that are used for the drawcalls, ignored if constant size is set to 0
+		 * @param drawcalls Information about each drawcall, consisting of mesh handle, descriptor set bindings and instance count
+		 * @param renderTargets Image handles that are used as render targets
+		 * @param windowHandle Window handle that is used to retrieve the corresponding swapchain
+		*/
 		void recordDrawcallsToCmdStream(
 			const CommandStreamHandle&      cmdStreamHandle,
 			const PassHandle&               renderpassHandle,
@@ -341,7 +389,22 @@ namespace vkcv
 			const std::vector<DrawcallInfo> &drawcalls,
 			const std::vector<ImageHandle>  &renderTargets,
 			const WindowHandle              &windowHandle);
-
+	
+		/**
+		 * @brief Records indirect drawcalls to a command stream
+		 *
+		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
+		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
+		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
+		 * @param pushConstantData Push constants that are used for the drawcalls, ignored if constant size is set to 0
+		 * @param compiledDescriptorSet TODO
+		 * @param compiledMesh TODO
+		 * @param drawcalls Information about each drawcall, consisting of mesh handle, descriptor set bindings and instance count
+		 * @param renderTargets Image handles that are used as render targets
+		 * @param indirectBuffer TODO
+		 * @param drawCount TODO
+		 * @param windowHandle Window handle that is used to retrieve the corresponding swapchain
+		*/
 		void recordIndexedIndirectDrawcallsToCmdStream(
 				const CommandStreamHandle                           cmdStreamHandle,
 				const PassHandle                                    renderpassHandle,
@@ -353,7 +416,18 @@ namespace vkcv
 				const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
 				const uint32_t                                      drawCount,
 				const WindowHandle                                  &windowHandle);
-
+		
+		/**
+		 * @brief Records mesh shader drawcalls to a command stream
+		 *
+		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
+		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
+		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
+		 * @param pushConstantData Push constants that are used for the drawcalls, ignored if constant size is set to 0
+		 * @param drawcalls Information about each drawcall, consisting of descriptor set bindings and task shader dispatch count
+		 * @param renderTargets Image handles that are used as render targets
+		 * @param windowHandle Window handle that is used to retrieve the corresponding swapchain
+		*/
 		void recordMeshShaderDrawcalls(
 			const CommandStreamHandle&              cmdStreamHandle,
 			const PassHandle&                       renderpassHandle,
@@ -362,11 +436,11 @@ namespace vkcv
             const std::vector<MeshShaderDrawcall>&  drawcalls,
 			const std::vector<ImageHandle>&         renderTargets,
 			const WindowHandle&                     windowHandle);
-        
-
+		
         /**
          * Records the rtx ray generation to the @p cmdStreamHandle.
          * Currently only supports @p closestHit, @p rayGen and @c miss shaderstages @c.
+         *
          * @param cmdStreamHandle The command stream handle which receives relevant commands for drawing.
          * @param rtxPipeline The raytracing pipeline from the RTXModule.
          * @param rtxPipelineLayout The raytracing pipeline layout from the RTXModule.
@@ -390,6 +464,15 @@ namespace vkcv
             const PushConstants& pushConstants,
             const WindowHandle windowHandle);
 
+		/**
+		 * @brief Record a compute shader dispatch into a command stream
+		 * 
+		 * @param cmdStream Handle of the command stream that the dispatch is recorded into
+		 * @param computePipeline Handle of the pipeline that is used for the dispatch
+		 * @param dispatchCount How many work groups are dispatched
+		 * @param descriptorSetUsages Descriptor set bindings of the dispatch
+		 * @param pushConstants Push constant data for the dispatch
+		 */
 		void recordComputeDispatchToCmdStream(
 			CommandStreamHandle cmdStream,
             ComputePipelineHandle computePipeline,
@@ -397,12 +480,34 @@ namespace vkcv
 			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
 			const PushConstants& pushConstants);
 		
+		/**
+		 * @brief Record the start of a debug label into a command stream. 
+		 * Debug labels are displayed in GPU debuggers, such as RenderDoc
+		 * 
+		 * @param cmdStream Handle of the command stream that the label start is recorded into
+		 * @param label Label name, which is displayed in a debugger
+		 * @param color Display color for the label in a debugger
+		*/
 		void recordBeginDebugLabel(const CommandStreamHandle &cmdStream,
 								   const std::string& label,
 								   const std::array<float, 4>& color);
 		
+		/**
+		 * @brief Record the end of a debug label into a command stream
+		 * @param cmdStream Handle of the command stream that the label end is recorded into
+		*/
 		void recordEndDebugLabel(const CommandStreamHandle &cmdStream);
 
+		/**
+		 * @brief Record an indirect compute shader dispatch into a command stream
+		 *
+		 * @param cmdStream Handle of the command stream that the indirect dispatch is recorded into
+		 * @param computePipeline Handle of the pipeline that is used for the indirect dispatch
+		 * @param buffer GPU Buffer from which the dispatch counts are read
+		 * @param bufferArgOffset Offset into the GPU Buffer from where the dispatch counts are read
+		 * @param descriptorSetUsages Descriptor set bindings of the indirect dispatch
+		 * @param pushConstants Push constant data for the indirect dispatch
+		 */
 		void recordComputeIndirectDispatchToCmdStream(
 			const CommandStreamHandle               cmdStream,
 			const ComputePipelineHandle             computePipeline,
@@ -412,8 +517,8 @@ namespace vkcv
 			const PushConstants&                    pushConstants);
 
 		/**
-		 * @brief end recording and present image
-		*/
+		 * @brief End recording and present image
+		 */
 		void endFrame( const WindowHandle& windowHandle );
 
 		/**
@@ -430,46 +535,194 @@ namespace vkcv
 			const RecordCommandFunction &record, 
 			const FinishCommandFunction &finish);
 
+		/**
+		 * @brief Create a new command stream
+		 * 
+		 * @param queueType The type of queue to which the command stream will be submitted to
+		 * @return Handle which represents the command stream
+		 */
 		CommandStreamHandle createCommandStream(QueueType queueType);
 
+		/**
+		 * @brief Record commands to a command stream by providing a function
+		 * 
+		 * @param cmdStreamHandle Handle of the command stream to record to
+		 * @param record Recording function
+		 * @param finish Finish function, called after execution of commands is finished
+		 */
 		void recordCommandsToStream(
 			const CommandStreamHandle   cmdStreamHandle,
 			const RecordCommandFunction &record,
 			const FinishCommandFunction &finish);
 
+		/**
+		 * @brief Submit command stream to GPU for actual execution
+		 * 
+		 * @param handle command stream to submit
+		 */
 		void submitCommandStream(const CommandStreamHandle& handle);
-		void prepareSwapchainImageForPresent(const CommandStreamHandle& handle);
-		void prepareImageForSampling(const CommandStreamHandle& cmdStream, const ImageHandle& image);
-		void prepareImageForStorage(const CommandStreamHandle& cmdStream, const ImageHandle& image);
 
-		// normally layout transitions for attachments are handled by the core
-		// however for manual vulkan use, e.g. ImGui integration, this function is exposed
-		// this is also why the command buffer is passed directly, instead of the command stream handle
+		/**
+		 * @brief Prepare swapchain image for presentation to screen.
+		 * Handles internal state such as image format, also acts as a memory barrier
+		 * 
+		 * @param handle Handle of the command stream to record the preparation commands to
+		 */
+		void prepareSwapchainImageForPresent(const CommandStreamHandle& handle);
+
+		/**
+		 * @brief Prepare image for use as a sampled image.
+		 * Handles internal state such as image format, also acts as a memory barrier
+		 * 
+		 * @param cmdStream Handle of the command stream to record the preparation commands to
+		 * @param image Handle of the image to prepare
+		 */
+		void prepareImageForSampling(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+
+		/**
+		 * @brief Prepare image for use as a storage image.
+		 * Handles internal state such as image format, also acts as a memory barrier
+		 *
+		 * @param cmdStream Handle of the command stream to record the preparation commands to
+		 * @param image Handle of the image to prepare
+		 */
+		void prepareImageForStorage(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+		
+		/**
+		 * @brief Manual trigger to record commands to prepare an image for use as an attachment
+		 *
+		 * normally layout transitions for attachments are handled by the core
+		 * however for manual vulkan use, e.g. ImGui integration, this function is exposed
+		 * this is also why the command buffer is passed directly, instead of the command stream handle
+		 * 
+		 * @param cmdBuffer The vulkan command buffer to record to
+		 * @param image Handle of the image to prepare
+		 */
 		void prepareImageForAttachmentManually(const vk::CommandBuffer& cmdBuffer, const ImageHandle& image);
 
-		// if manual vulkan work, e.g. ImGui integration, changes an image layout this function must be used
-		// to update the internal image state
+		/**
+		 * @brief Indicate an external change of an image's layout
+		 * 
+		 * if manual vulkan work, e.g. ImGui integration, changes an image layout this function must be used
+		 * to update the internal image state
+		 * 
+		 * @param image Handle of the image whose layout was changed
+		 * @param layout The current layout of the image
+		*/
 		void updateImageLayoutManual(const vkcv::ImageHandle& image, const vk::ImageLayout layout);
 
+		/**
+		 * @brief Records a memory barrier to synchronize subsequent accesses to the image's data
+		 * 
+		 * @param cmdStream Handle of the command stream to record the barrier to
+		 * @param image Handle of the image the barrier belongs to
+		 */
 		void recordImageMemoryBarrier(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+
+		/**
+		 * @brief Records a buffer barrier to synchronize subsequent accesses to the buffer's data
+		 * 
+		 * @param cmdStream Handle of the command stream to record the barrier to
+		 * @param buffer Handle of the buffer the barrier belongs to
+		 */
 		void recordBufferMemoryBarrier(const CommandStreamHandle& cmdStream, const BufferHandle& buffer);
+
+		/**
+		 * @brief Resolve a source MSAA image into a destination image for further use
+		 * 
+		 * @param cmdStream Handle of the command stream to record the resolve to
+		 * @param src The MSAA image that is resolved
+		 * @param dst The target non-MSAA image that is resolved into
+		 */
 		void resolveMSAAImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst);
 
+		/**
+		 * @return Vulkan image view of the current swapchain image
+		 */
 		[[nodiscard]]
 		vk::ImageView getSwapchainImageView() const;
 	
+		/**
+		 * @brief Records a generic memory barrier to a command stream
+		 * 
+		 * @param cmdStream Handle of the command stream the barrier is recorded to
+		 */
 		void recordMemoryBarrier(const CommandStreamHandle& cmdStream);
 		
+		/**
+		 * @brief Record a blit (bit block image transfer) of a source image into a destination image, 
+		 * mip 0 is used for both
+		 * 
+		 * @param cmdStream Handle of the command stream the blit operation is recorded into
+		 * @param src The source image that is read from
+		 * @param dst The destination image that is written into
+		 * @param filterType The type of interpolation that is used
+		 */
 		void recordBlitImage(const CommandStreamHandle& cmdStream, const ImageHandle& src, const ImageHandle& dst,
 							 SamplerFilterType filterType);
 	
+		/**
+		 * @brief Sets a debug label to a buffer handle.
+		 *
+		 * @param handle Buffer handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const BufferHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to a pass handle.
+		 *
+		 * @param handle Pass handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const PassHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to a graphics pipeline handle.
+		 *
+		 * @param handle Graphics pipeline handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const GraphicsPipelineHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to a compute pipeline handle.
+		 *
+		 * @param handle Compute pipeline handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const ComputePipelineHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to a descriptor set handle.
+		 *
+		 * @param handle Descriptor set handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const DescriptorSetHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to a sampler handle.
+		 *
+		 * @param handle Sampler handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const SamplerHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to an image handle.
+		 *
+		 * @param handle Image handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const ImageHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Sets a debug label to a command stream handle.
+		 *
+		 * @param handle Command stream handle
+		 * @param label Debug label
+		 */
 		void setDebugLabel(const CommandStreamHandle &handle, const std::string &label);
 		
     };

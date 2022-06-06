@@ -186,13 +186,13 @@ namespace vkcv::upscaling {
 			
 			
 			DescriptorWrites writes;
-			writes.uniformBufferWrites.emplace_back(
+			writes.writeUniformBuffer(
 					0, m_scalerConstants.getHandle(), true
 			);
 			
-			writes.samplerWrites.emplace_back(1, m_sampler);
-			writes.sampledImageWrites.emplace_back(4, m_coefScaleImage);
-			writes.sampledImageWrites.emplace_back(5, m_coefUsmImage);
+			writes.writeSampler(1, m_sampler);
+			writes.writeSampledImage(4, m_coefScaleImage);
+			writes.writeSampledImage(5, m_coefUsmImage);
 			
 			m_core.writeDescriptorSet(m_scalerDescriptorSet, writes);
 		}
@@ -242,8 +242,8 @@ namespace vkcv::upscaling {
 		
 		{
 			DescriptorWrites writes;
-			writes.sampledImageWrites.emplace_back(2, input);
-			writes.storageImageWrites.emplace_back(3, output);
+			writes.writeSampledImage(2, input);
+			writes.writeStorageImage(3, output);
 			
 			m_core.writeDescriptorSet(m_scalerDescriptorSet, writes);
 		}

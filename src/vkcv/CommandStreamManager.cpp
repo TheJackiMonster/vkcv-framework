@@ -1,4 +1,4 @@
-#include "vkcv/CommandStreamManager.hpp"
+#include "CommandStreamManager.hpp"
 #include "vkcv/Core.hpp"
 
 #include "vkcv/Logger.hpp"
@@ -22,7 +22,7 @@ namespace vkcv {
 	}
 
 	CommandStreamHandle CommandStreamManager::createCommandStream(
-		const vk::Queue queue, 
+		const vk::Queue &queue,
 		vk::CommandPool cmdPool) {
 
 		const vk::CommandBuffer cmdBuffer = allocateCommandBuffer(m_core->getContext().getDevice(), cmdPool);
@@ -53,8 +53,8 @@ namespace vkcv {
     }
 
 	void CommandStreamManager::recordCommandsToStream(
-		const CommandStreamHandle   handle, 
-		const RecordCommandFunction record) {
+		const CommandStreamHandle   &handle,
+		const RecordCommandFunction &record) {
 
 		const size_t id = handle.getId();
 		if (id >= m_commandStreams.size()) {
@@ -67,8 +67,8 @@ namespace vkcv {
 	}
 
 	void CommandStreamManager::addFinishCallbackToStream(
-		const CommandStreamHandle   handle, 
-		const FinishCommandFunction finish) {
+		const CommandStreamHandle   &handle,
+		const FinishCommandFunction &finish) {
 
 		const size_t id = handle.getId();
 		if (id >= m_commandStreams.size()) {
@@ -81,7 +81,7 @@ namespace vkcv {
 	}
 
 	void CommandStreamManager::submitCommandStreamSynchronous(
-		const CommandStreamHandle   handle,
+		const CommandStreamHandle   &handle,
 		std::vector<vk::Semaphore>  &waitSemaphores,
 		std::vector<vk::Semaphore>  &signalSemaphores) {
 
@@ -109,7 +109,7 @@ namespace vkcv {
 		}
 	}
 
-	vk::CommandBuffer CommandStreamManager::getStreamCommandBuffer(const CommandStreamHandle handle) {
+	vk::CommandBuffer CommandStreamManager::getStreamCommandBuffer(const CommandStreamHandle &handle) {
 		const size_t id = handle.getId();
 		if (id >= m_commandStreams.size()) {
 			vkcv_log(LogLevel::ERROR, "Requires valid handle");

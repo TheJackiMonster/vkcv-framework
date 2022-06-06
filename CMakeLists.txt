@@ -43,6 +43,8 @@ message(STATUS "Linker: [ " ${CMAKE_LINKER} " ]")
 
 if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0.0"))
 	message(FATAL_ERROR "Upgrade your compiler! GCC 9.0+ is required!")
+elseif(MINGW)
+	message(WARNING "MinGW is impressively unstable! So beware it may not compile or crash during runtime!")
 endif()
 
 # setting up different paths

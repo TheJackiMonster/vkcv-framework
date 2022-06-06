@@ -1,6 +1,6 @@
 #include "vkcv/camera/Camera.hpp"
 
-#include <math.h>
+#include <cmath>
 
 namespace vkcv::camera {
 

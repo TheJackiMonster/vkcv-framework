@@ -1,9 +1,17 @@
 #pragma once
+/**
+ * @authors Artur Wasmut, Simeon Hermann, Tobias Frisch, Vanessa Karolek, Alexander Gauggel, Lars Hoerttrich
+ * @file vkcv/ShaderStage.hpp
+ * @brief Enum and struct to operate with multiple shader stages.
+ */
 
 #include <vulkan/vulkan.hpp>
 
 namespace vkcv {
 	
+	/**
+	 * @brief Enum class to specify the stage of a shader.
+	 */
 	enum class ShaderStage : VkShaderStageFlags {
 		VERTEX = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eVertex),
 		TESS_CONTROL = static_cast<VkShaderStageFlags>(vk::ShaderStageFlagBits::eTessellationControl),
@@ -72,4 +80,5 @@ namespace vkcv {
 	constexpr ShaderStages operator~(ShaderStage stage) noexcept {
 		return ~(ShaderStages(stage));
 	}
+	
 }

@@ -5,10 +5,9 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <chrono>
-#include <limits>
 #include <cmath>
 #include <vector>
-#include <string.h>	// memcpy(3)
+#include <cstring>
 #include "safrScene.hpp"
 
 
@@ -87,9 +86,9 @@ int main(int argc, const char** argv) {
 
 	std::vector<vkcv::VertexBinding> computeBindings;
 	for (size_t i = 0; i < computeVertexAttachments.size(); i++) {
-		computeBindings.push_back(vkcv::VertexBinding(i, { computeVertexAttachments[i] }));
+		computeBindings.push_back(vkcv::createVertexBinding(i, { computeVertexAttachments[i] }));
 	}
-	const vkcv::VertexLayout computeLayout(computeBindings);
+	const vkcv::VertexLayout computeLayout { computeBindings };
 	
 	/*
 	* create the scene
@@ -146,8 +145,12 @@ int main(int argc, const char** argv) {
 	sphereBuffer.fill(spheres);
 
 	vkcv::DescriptorWrites computeWrites;
-	computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,lightsBuffer.getHandle()),
-                                          vkcv::BufferDescriptorWrite(1,sphereBuffer.getHandle())};
+	computeWrites.writeStorageBuffer(
+			0, lightsBuffer.getHandle()
+	).writeStorageBuffer(
+			1, sphereBuffer.getHandle()
+	);
+	
     core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
 	auto safrIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
@@ -160,7 +163,7 @@ int main(int argc, const char** argv) {
 		vkcv::AttachmentOperation::CLEAR,
 		core.getSwapchain(windowHandle).getFormat());
 
-	vkcv::PassConfig safrPassDefinition({ present_color_attachment });
+	vkcv::PassConfig safrPassDefinition({ present_color_attachment }, vkcv::Multisampling::None);
 	vkcv::PassHandle safrPass = core.createPass(safrPassDefinition);
 
 	if (!safrPass)
@@ -254,7 +257,7 @@ int main(int argc, const char** argv) {
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
 		//configure the outImage for compute shader (render into the swapchain image)
-        computeWrites.storageImageWrites = { vkcv::StorageImageDescriptorWrite(2, swapchainInput)};
+        computeWrites.writeStorageImage(2, swapchainInput);
         core.writeDescriptorSet(computeDescriptorSet, computeWrites);
         core.prepareImageForStorage (cmdStream, swapchainInput);
 

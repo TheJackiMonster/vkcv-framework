@@ -16,7 +16,7 @@
 #include "DescriptorManager.hpp"
 #include "WindowManager.hpp"
 #include "ImageLayoutTransitions.hpp"
-#include "vkcv/CommandStreamManager.hpp"
+#include "CommandStreamManager.hpp"
 #include <cmath>
 #include "vkcv/Logger.hpp"
 
@@ -152,7 +152,7 @@ namespace vkcv
 		width = extent.width;
 		height = extent.height;
 		
-		if ((width < MIN_SWAPCHAIN_SIZE) || (height < MIN_SWAPCHAIN_SIZE)) {
+		if ((width < MIN_SURFACE_SIZE) || (height < MIN_SURFACE_SIZE)) {
 			return false;
 		}
 		
@@ -271,11 +271,15 @@ namespace vkcv
 	
 	vk::IndexType getIndexType(IndexBitCount indexByteCount){
 		switch (indexByteCount) {
-			case IndexBitCount::Bit16: return vk::IndexType::eUint16;
-			case IndexBitCount::Bit32: return vk::IndexType::eUint32;
-			default:
-			vkcv_log(LogLevel::ERROR, "unknown Enum");
+			case IndexBitCount::Bit8:
+				return vk::IndexType::eUint8EXT;
+			case IndexBitCount::Bit16:
 				return vk::IndexType::eUint16;
+			case IndexBitCount::Bit32:
+				return vk::IndexType::eUint32;
+			default:
+				vkcv_log(LogLevel::ERROR, "unknown Enum");
+				return vk::IndexType::eNoneKHR;
 		}
 	}
 	
@@ -893,9 +897,9 @@ namespace vkcv
 		return getSwapchain(swapchainHandle);
 	}
 
-	DescriptorSetLayoutHandle Core::createDescriptorSetLayout(const DescriptorBindings &bindingsMap)
+	DescriptorSetLayoutHandle Core::createDescriptorSetLayout(const DescriptorBindings &bindings)
 	{
-	    return m_DescriptorManager->createDescriptorSetLayout(bindingsMap);
+	    return m_DescriptorManager->createDescriptorSetLayout(bindings);
 	}
 
 	DescriptorSetLayout Core::getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const
@@ -1067,7 +1071,7 @@ namespace vkcv
 	
 	static void setDebugObjectLabel(const vk::Device& device, const vk::ObjectType& type,
 									uint64_t handle, const std::string& label) {
-#ifndef VULKAN_DEBUG_LABELS
+#ifdef VULKAN_DEBUG_LABELS
 		static PFN_vkSetDebugUtilsObjectNameEXT setDebugLabel = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
 				device.getProcAddr("vkSetDebugUtilsObjectNameEXT")
 		);

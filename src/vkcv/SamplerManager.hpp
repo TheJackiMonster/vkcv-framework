@@ -10,6 +10,9 @@ namespace vkcv {
 	
 	class Core;
 	
+	/**
+	 * @brief Class to manage the creation and destruction of samplers.
+	 */
 	class SamplerManager {
 		friend class Core;
 	private:

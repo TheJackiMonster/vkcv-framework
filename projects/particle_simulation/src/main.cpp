@@ -39,7 +39,7 @@ int main(int argc, const char **argv) {
             colorFormat);
 
 
-    vkcv::PassConfig particlePassDefinition({present_color_attachment});
+    vkcv::PassConfig particlePassDefinition({present_color_attachment}, vkcv::Multisampling::None);
     vkcv::PassHandle particlePass = core.createPass(particlePassDefinition);
 
     vkcv::PassConfig computePassDefinition({});
@@ -83,9 +83,9 @@ int main(int argc, const char **argv) {
 
     std::vector<vkcv::VertexBinding> computeBindings;
     for (size_t i = 0; i < computeVertexAttachments.size(); i++) {
-        computeBindings.push_back(vkcv::VertexBinding(i, { computeVertexAttachments[i] }));
+        computeBindings.push_back(vkcv::createVertexBinding(i, { computeVertexAttachments[i] }));
     }
-    const vkcv::VertexLayout computeLayout(computeBindings);
+    const vkcv::VertexLayout computeLayout { computeBindings };
 
     vkcv::ShaderProgram particleShaderProgram{};
     compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/shader.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
@@ -110,10 +110,10 @@ int main(int argc, const char **argv) {
 
     std::vector<vkcv::VertexBinding> bindings;
     for (size_t i = 0; i < vertexAttachments.size(); i++) {
-        bindings.push_back(vkcv::VertexBinding(i, {vertexAttachments[i]}));
+        bindings.push_back(vkcv::createVertexBinding(i, {vertexAttachments[i]}));
     }
 
-    const vkcv::VertexLayout particleLayout(bindings);
+    const vkcv::VertexLayout particleLayout { bindings };
 
     vkcv::GraphicsPipelineConfig particlePipelineDefinition{
             particleShaderProgram,
@@ -161,13 +161,12 @@ int main(int argc, const char **argv) {
     particleBuffer.fill(particleSystem.getParticles());
 
     vkcv::DescriptorWrites setWrites;
-    setWrites.uniformBufferWrites = {vkcv::BufferDescriptorWrite(0,color.getHandle()),
-                                     vkcv::BufferDescriptorWrite(1,position.getHandle())};
-    setWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(2,particleBuffer.getHandle())};
+    setWrites.writeUniformBuffer(0, color.getHandle()).writeUniformBuffer(1, position.getHandle());
+    setWrites.writeStorageBuffer(2, particleBuffer.getHandle());
     core.writeDescriptorSet(descriptorSet, setWrites);
 
     vkcv::DescriptorWrites computeWrites;
-    computeWrites.storageBufferWrites = { vkcv::BufferDescriptorWrite(0,particleBuffer.getHandle())};
+    computeWrites.writeStorageBuffer(0, particleBuffer.getHandle());
     core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
     if (!particlePipeline || !computePipeline)
@@ -308,10 +307,12 @@ int main(int argc, const char **argv) {
         core.prepareImageForStorage(cmdStream, swapchainInput);
 
         vkcv::DescriptorWrites tonemappingDescriptorWrites;
-        tonemappingDescriptorWrites.storageImageWrites = {
-            vkcv::StorageImageDescriptorWrite(0, colorBuffer),
-            vkcv::StorageImageDescriptorWrite(1, swapchainInput)
-        };
+        tonemappingDescriptorWrites.writeStorageImage(
+				0, colorBuffer
+		).writeStorageImage(
+				1, swapchainInput
+		);
+		
         core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
 
         uint32_t tonemappingDispatchCount[3];

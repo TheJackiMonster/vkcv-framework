@@ -9,21 +9,35 @@
 #include "SwapchainManager.hpp"
 
 namespace vkcv {
+	
 	class Context;
 
 	class SwapchainManager;
 
+	/**
+	 * @brief Class to manage the windows of applications.
+	 */
 	class WindowManager {
 		friend class Core;
 
 	private:
+		/**
+		 * vector of all managed windows
+		 */
 		std::vector<Window*> m_windows;
 
+		/**
+		 * destroys a specific window by a given id
+		 * @param id of the window to be destroyed
+		 */
 		void destroyWindowById(uint64_t id);
 
 	public:
 		WindowManager() noexcept;
 
+		/**
+		 * destroys every window
+		 */
 		~WindowManager() noexcept;
 
 		WindowManager(WindowManager &&other) = delete;
@@ -55,4 +69,5 @@ namespace vkcv {
 		Window &getWindow(const WindowHandle handle) const;
 
 	};
+	
 }

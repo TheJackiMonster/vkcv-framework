@@ -1,8 +1,8 @@
 
 #include "vkcv/upscaling/FSRUpscaling.hpp"
 
-#include <stdint.h>
-#include <math.h>
+#include <cstdint>
+#include <cmath>
 
 #define A_CPU 1
 #include <ffx_a.h>
@@ -240,11 +240,11 @@ namespace vkcv::upscaling {
 
 			
 			DescriptorWrites writes;
-			writes.uniformBufferWrites.emplace_back(
+			writes.writeUniformBuffer(
 					0, m_easuConstants.getHandle(),true
 			);
 			
-			writes.samplerWrites.emplace_back(3, m_sampler);
+			writes.writeSampler(3, m_sampler);
 			
 			m_core.writeDescriptorSet(m_easuDescriptorSet, writes);
 		}
@@ -261,11 +261,11 @@ namespace vkcv::upscaling {
 			}});
 
 			DescriptorWrites writes;
-			writes.uniformBufferWrites.emplace_back(
+			writes.writeUniformBuffer(
 					0, m_rcasConstants.getHandle(),true
 			);
 			
-			writes.samplerWrites.emplace_back(3, m_sampler);
+			writes.writeSampler(3, m_sampler);
 			
 			m_core.writeDescriptorSet(m_rcasDescriptorSet, writes);
 		}
@@ -329,15 +329,15 @@ namespace vkcv::upscaling {
 		if (rcasEnabled) {
 			{
 				DescriptorWrites writes;
-				writes.sampledImageWrites.emplace_back(1, input);
-				writes.storageImageWrites.emplace_back(2, m_intermediateImage);
+				writes.writeSampledImage(1, input);
+				writes.writeStorageImage(2, m_intermediateImage);
 				
 				m_core.writeDescriptorSet(m_easuDescriptorSet, writes);
 			}
 			{
 				DescriptorWrites writes;
-				writes.sampledImageWrites.emplace_back(1, m_intermediateImage);
-				writes.storageImageWrites.emplace_back(2, output);
+				writes.writeSampledImage(1, m_intermediateImage);
+				writes.writeStorageImage(2, output);
 				
 				m_core.writeDescriptorSet(m_rcasDescriptorSet, writes);
 			}
@@ -374,8 +374,8 @@ namespace vkcv::upscaling {
 		} else {
 			{
 				DescriptorWrites writes;
-				writes.sampledImageWrites.emplace_back(1, input);
-				writes.storageImageWrites.emplace_back(2, output);
+				writes.writeSampledImage(1, input);
+				writes.writeStorageImage(2, output);
 				
 				m_core.writeDescriptorSet(m_easuDescriptorSet, writes);
 			}

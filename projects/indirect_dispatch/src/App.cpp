@@ -73,8 +73,8 @@ bool App::initialize() {
 	m_cameraManager.getCamera(cameraIndex).setNearFar(0.1f, 30.f);
 	
 	vkcv::DescriptorWrites meshPassDescriptorWrites;
-	meshPassDescriptorWrites.sampledImageWrites = { vkcv::SampledImageDescriptorWrite(0, m_gridTexture) };
-	meshPassDescriptorWrites.samplerWrites = { vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
+	meshPassDescriptorWrites.writeSampledImage(0, m_gridTexture);
+	meshPassDescriptorWrites.writeSampler(1, m_linearSampler);
 	m_core.writeDescriptorSet(m_meshPass.descriptorSet, meshPassDescriptorWrites);
 
 	return true;
@@ -317,12 +317,9 @@ void App::run() {
 
 		// gamma correction
 		vkcv::DescriptorWrites gammaCorrectionDescriptorWrites;
-		gammaCorrectionDescriptorWrites.sampledImageWrites = {
-			vkcv::SampledImageDescriptorWrite(0, motionBlurOutput) };
-		gammaCorrectionDescriptorWrites.samplerWrites = {
-			vkcv::SamplerDescriptorWrite(1, m_linearSampler) };
-		gammaCorrectionDescriptorWrites.storageImageWrites = {
-			vkcv::StorageImageDescriptorWrite(2, swapchainInput) };
+		gammaCorrectionDescriptorWrites.writeSampledImage(0, motionBlurOutput);
+		gammaCorrectionDescriptorWrites.writeSampler(1, m_linearSampler);
+		gammaCorrectionDescriptorWrites.writeStorageImage(2, swapchainInput);
 
 		m_core.writeDescriptorSet(m_gammaCorrectionPass.descriptorSet, gammaCorrectionDescriptorWrites);
 

@@ -17,7 +17,6 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/File.cpp
 
 		${vkcv_include}/vkcv/PassConfig.hpp
-		${vkcv_source}/vkcv/PassConfig.cpp
 
 		${vkcv_source}/vkcv/PassManager.hpp
 		${vkcv_source}/vkcv/PassManager.cpp
@@ -42,6 +41,9 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/ImageManager.cpp
 		
 		${vkcv_include}/vkcv/Logger.hpp
+		
+		${vkcv_include}/vkcv/Surface.hpp
+		${vkcv_source}/vkcv/Surface.cpp
 
 		${vkcv_include}/vkcv/Swapchain.hpp
 		${vkcv_source}/vkcv/Swapchain.cpp
@@ -83,6 +85,9 @@ set(vkcv_sources
 		${vkcv_include}/vkcv/DescriptorConfig.hpp
 		${vkcv_source}/vkcv/DescriptorConfig.cpp
 		
+		${vkcv_include}/vkcv/DescriptorWrites.hpp
+		${vkcv_source}/vkcv/DescriptorWrites.cpp
+		
 		${vkcv_source}/vkcv/SamplerManager.hpp
 		${vkcv_source}/vkcv/SamplerManager.cpp
 
@@ -97,7 +102,7 @@ set(vkcv_sources
         ${vkcv_include}/vkcv/DrawcallRecording.hpp
         ${vkcv_source}/vkcv/DrawcallRecording.cpp
         
-        ${vkcv_include}/vkcv/CommandStreamManager.hpp
+        ${vkcv_source}/vkcv/CommandStreamManager.hpp
         ${vkcv_source}/vkcv/CommandStreamManager.cpp
         
         ${vkcv_include}/vkcv/CommandRecordingFunctionTypes.hpp

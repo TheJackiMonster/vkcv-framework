@@ -272,13 +272,13 @@ namespace vkcv::effects {
 			DescriptorWrites mipDownsampleWrites;
 			
 			if (mipLevel > 0) {
-				mipDownsampleWrites.sampledImageWrites = {SampledImageDescriptorWrite(0, sample, mipLevel - 1, true)};
+				mipDownsampleWrites.writeSampledImage(0, sample, mipLevel - 1, true);
 			} else {
-				mipDownsampleWrites.sampledImageWrites = {SampledImageDescriptorWrite(0, input)};
+				mipDownsampleWrites.writeSampledImage(0, input);
 			}
 			
-			mipDownsampleWrites.samplerWrites      = {SamplerDescriptorWrite(1, m_linearSampler)};
-			mipDownsampleWrites.storageImageWrites = {StorageImageDescriptorWrite(2, sample, mipLevel) };
+			mipDownsampleWrites.writeSampler(1, m_linearSampler);
+			mipDownsampleWrites.writeStorageImage(2, sample, mipLevel);
 			
 			m_core.writeDescriptorSet(mipDescriptorSets[mipLevel], mipDownsampleWrites);
 			
@@ -325,9 +325,9 @@ namespace vkcv::effects {
 		for(uint32_t mipLevel = mipDescriptorSets.size(); mipLevel > 0; mipLevel--) {
 			// mip descriptor writes
 			DescriptorWrites mipUpsampleWrites;
-			mipUpsampleWrites.sampledImageWrites = {SampledImageDescriptorWrite(0, sample, mipLevel, true)};
-			mipUpsampleWrites.samplerWrites      = {SamplerDescriptorWrite(1, m_linearSampler)};
-			mipUpsampleWrites.storageImageWrites = {StorageImageDescriptorWrite(2, sample, mipLevel - 1) };
+			mipUpsampleWrites.writeSampledImage(0, sample, mipLevel, true);
+			mipUpsampleWrites.writeSampler(1, m_linearSampler);
+			mipUpsampleWrites.writeStorageImage(2, sample, mipLevel - 1);
 			
 			m_core.writeDescriptorSet(mipDescriptorSets[mipLevel - 1], mipUpsampleWrites);
 			
@@ -370,9 +370,9 @@ namespace vkcv::effects {
 		const uint32_t flaresHeight = m_core.getImageHeight(m_flaresImage);
 		
 		DescriptorWrites lensFlaresWrites;
-		lensFlaresWrites.sampledImageWrites = {SampledImageDescriptorWrite(0, m_blurImage, 0)};
-		lensFlaresWrites.samplerWrites = {SamplerDescriptorWrite(1, m_linearSampler)};
-		lensFlaresWrites.storageImageWrites = {StorageImageDescriptorWrite(2, m_flaresImage, mipLevel)};
+		lensFlaresWrites.writeSampledImage(0, m_blurImage, 0);
+		lensFlaresWrites.writeSampler(1, m_linearSampler);
+		lensFlaresWrites.writeStorageImage(2, m_flaresImage, mipLevel);
 		
 		m_core.writeDescriptorSet(m_lensFlaresDescriptorSet, lensFlaresWrites);
 		
@@ -415,34 +415,33 @@ namespace vkcv::effects {
 		vkcv::DescriptorWrites compositeWrites;
 		
 		if (m_advanced) {
-			compositeWrites.sampledImageWrites = {
-					SampledImageDescriptorWrite(0, m_blurImage),
-					SampledImageDescriptorWrite(1, m_flaresImage),
-					SampledImageDescriptorWrite(4, m_radialLut),
-					SampledImageDescriptorWrite(6, m_lensDirt)
-			};
+			compositeWrites.writeSampledImage(
+					0, m_blurImage
+			).writeSampledImage(
+					1, m_flaresImage
+			).writeSampledImage(
+					4, m_radialLut
+			).writeSampledImage(
+					6, m_lensDirt
+			);
 			
-			compositeWrites.samplerWrites = {
-					SamplerDescriptorWrite(2, m_linearSampler),
-					SamplerDescriptorWrite(5, m_radialLutSampler)
-			};
+			compositeWrites.writeSampler(
+					2, m_linearSampler
+			).writeSampler(
+					5, m_radialLutSampler
+			);
 			
-			compositeWrites.storageImageWrites = {
-					StorageImageDescriptorWrite(3, output)
-			};
+			compositeWrites.writeStorageImage(3, output);
 		} else {
-			compositeWrites.sampledImageWrites = {
-					SampledImageDescriptorWrite(0, m_blurImage),
-					SampledImageDescriptorWrite(1, m_flaresImage)
-			};
+			compositeWrites.writeSampledImage(
+					0, m_blurImage
+			).writeSampledImage(
+					1, m_flaresImage
+			);
 			
-			compositeWrites.samplerWrites = {
-					SamplerDescriptorWrite(2, m_linearSampler)
-			};
+			compositeWrites.writeSampler(2, m_linearSampler);
 			
-			compositeWrites.storageImageWrites = {
-					StorageImageDescriptorWrite(3, output)
-			};
+			compositeWrites.writeStorageImage(3, output);
 		}
 		
 		m_core.writeDescriptorSet(m_compositeDescriptorSet, compositeWrites);
@@ -477,11 +476,11 @@ namespace vkcv::effects {
 				0.0f, 1.0f, 1.0f, 1.0f
 		});
 		
-		const uint32_t halfWidth = static_cast<uint32_t>(std::ceil(
+		const auto halfWidth = static_cast<uint32_t>(std::ceil(
 				static_cast<float>(m_core.getImageWidth(output)) * 0.5f
 		));
 		
-		const uint32_t halfHeight = static_cast<uint32_t>(std::ceil(
+		const auto halfHeight = static_cast<uint32_t>(std::ceil(
 				static_cast<float>(m_core.getImageHeight(output)) * 0.5f
 		));
 		

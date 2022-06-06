@@ -8,8 +8,13 @@
 #include "vkcv/Handles.hpp"
 
 namespace vkcv {
+	
 	class Core;
-
+	
+	/**
+	 * @brief Class to manage the creation, destruction and
+	 * allocation of swapchains.
+	 */
 	class SwapchainManager {
 		friend class Core;
 
@@ -20,11 +25,18 @@ namespace vkcv {
 
 		Context *m_context;
 
+		/**
+		 * destroys a specific swapchain by a given id
+		 * @param id of the swapchain to be destroyed
+		 */
 		void destroySwapchainById(uint64_t id);
 
 	public:
 		SwapchainManager() noexcept;
 
+		/**
+		 * destroys every swapchain
+		 */
 		~SwapchainManager() noexcept;
 
 		SwapchainManager(SwapchainManager &&other) = delete;
@@ -69,4 +81,5 @@ namespace vkcv {
 		 */
 		std::vector<vk::ImageView> createSwapchainImageViews(SwapchainHandle& handle);
 	};
+	
 }

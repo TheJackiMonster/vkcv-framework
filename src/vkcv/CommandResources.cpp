@@ -40,7 +40,7 @@ namespace vkcv {
 		}
 	}
 
-	vk::CommandBuffer allocateCommandBuffer(const vk::Device& device, const vk::CommandPool cmdPool) {
+	vk::CommandBuffer allocateCommandBuffer(const vk::Device& device, const vk::CommandPool &cmdPool) {
 		const vk::CommandBufferAllocateInfo info(cmdPool, vk::CommandBufferLevel::ePrimary, 1);
 		return device.allocateCommandBuffers(info).front();
 	}
@@ -49,7 +49,7 @@ namespace vkcv {
 		return cmdResources.cmdPoolPerQueueFamily[queue.familyIndex];
 	}
 
-	Queue getQueueForSubmit(const QueueType type, const QueueManager& queueManager) {
+	Queue getQueueForSubmit(QueueType type, const QueueManager& queueManager) {
 		if (type == QueueType::Graphics) {
 			return queueManager.getGraphicsQueues().front();
 		}
@@ -68,17 +68,17 @@ namespace vkcv {
 		}
 	}
 
-	void beginCommandBuffer(const vk::CommandBuffer cmdBuffer, const vk::CommandBufferUsageFlags flags) {
+	void beginCommandBuffer(const vk::CommandBuffer &cmdBuffer, vk::CommandBufferUsageFlags flags) {
 		const vk::CommandBufferBeginInfo beginInfo(flags);
 		cmdBuffer.begin(beginInfo);
 	}
 
 	void submitCommandBufferToQueue(
-		const vk::Queue						queue,
-		const vk::CommandBuffer				cmdBuffer,
-		const vk::Fence						fence,
-		const std::vector<vk::Semaphore>&	waitSemaphores,
-		const std::vector<vk::Semaphore>&	signalSemaphores) {
+		vk::Queue							queue,
+		const vk::CommandBuffer				&cmdBuffer,
+		const vk::Fence						&fence,
+		const std::vector<vk::Semaphore>	&waitSemaphores,
+		const std::vector<vk::Semaphore>	&signalSemaphores) {
 
 		const std::vector<vk::PipelineStageFlags> waitDstStageMasks(waitSemaphores.size(), vk::PipelineStageFlagBits::eAllCommands);
 		const vk::SubmitInfo queueSubmitInfo(waitSemaphores, waitDstStageMasks, cmdBuffer, signalSemaphores);
