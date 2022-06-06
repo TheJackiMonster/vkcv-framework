@@ -111,6 +111,9 @@ namespace vkcv {
 		return BufferHandle(id, [&](uint64_t id) { destroyBufferById(id); });
 	}
 	
+	/**
+	 * @brief Structure to store details required for a staging process.
+	 */
 	struct StagingStepInfo {
 		const void* data;
 		size_t size;

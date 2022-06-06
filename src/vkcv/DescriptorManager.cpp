@@ -111,10 +111,10 @@ namespace vkcv
         return DescriptorSetLayoutHandle(id, [&](uint64_t id) { destroyDescriptorSetLayoutById(id); });
     }
 
-    DescriptorSetHandle DescriptorManager::createDescriptorSet(const DescriptorSetLayoutHandle &setLayoutHandle)
+    DescriptorSetHandle DescriptorManager::createDescriptorSet(const DescriptorSetLayoutHandle &layout)
     {
         //create and allocate the set based on the layout provided
-        DescriptorSetLayout setLayout = m_DescriptorSetLayouts[setLayoutHandle.getId()];
+        DescriptorSetLayout setLayout = m_DescriptorSetLayouts[layout.getId()];
         vk::DescriptorSet vulkanHandle;
         vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), 1, &setLayout.vulkanHandle);
 
@@ -151,10 +151,13 @@ namespace vkcv
 	
 		size_t poolIndex = (m_Pools.size() - 1);
         const uint64_t id = m_DescriptorSets.size();
-        m_DescriptorSets.push_back({vulkanHandle, setLayoutHandle, poolIndex});
+        m_DescriptorSets.push_back({ vulkanHandle, layout, poolIndex });
         return DescriptorSetHandle(id, [&](uint64_t id) { destroyDescriptorSetById(id); });
     }
     
+	/**
+	 * @brief Structure to store details to write to a descriptor set.
+	 */
     struct WriteDescriptorSetInfo {
 		size_t imageInfoIndex;
 		size_t bufferInfoIndex;

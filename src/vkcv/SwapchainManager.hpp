@@ -8,8 +8,13 @@
 #include "vkcv/Handles.hpp"
 
 namespace vkcv {
+	
 	class Core;
-
+	
+	/**
+	 * @brief Class to manage the creation, destruction and
+	 * allocation of swapchains.
+	 */
 	class SwapchainManager {
 		friend class Core;
 
@@ -76,4 +81,5 @@ namespace vkcv {
 		 */
 		std::vector<vk::ImageView> createSwapchainImageViews(SwapchainHandle& handle);
 	};
+	
 }

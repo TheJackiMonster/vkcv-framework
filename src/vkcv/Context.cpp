@@ -495,10 +495,6 @@ namespace vkcv
 		deviceCreateInfo.setPNext(&(featureManager.getFeatures()));
 		
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
-
-		if (featureManager.isExtensionActive(VK_NV_MESH_SHADER_EXTENSION_NAME)) {
-			InitMeshShaderDrawFunctions(device);
-		}
 		
 		QueueManager queueManager = QueueManager::create(
 				device,

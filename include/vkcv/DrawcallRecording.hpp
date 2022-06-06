@@ -84,9 +84,7 @@ namespace vkcv {
         std::vector<DescriptorSetUsage> descriptorSets;
         uint32_t instanceCount;
     };
-
-    void InitMeshShaderDrawFunctions(vk::Device device);
-
+	
 	/**
 	 * @brief Structure to store details for a mesh shader drawcall.
 	 */

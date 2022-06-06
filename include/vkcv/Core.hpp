@@ -46,6 +46,9 @@ namespace vkcv
 	class WindowManager;
 	class SwapchainManager;
 
+	/**
+	 * @brief Structure to store details about a queue submission.
+	 */
 	struct SubmitInfo {
 		QueueType queueType;
 		std::vector<vk::Semaphore> waitSemaphores;

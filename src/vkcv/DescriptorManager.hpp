@@ -17,24 +17,60 @@
 
 namespace vkcv
 {
+	
+	/**
+	 * @brief Class to manage descriptor sets and descriptor set layouts.
+	 */
 	class DescriptorManager
 	{
 	public:
+		/**
+		 * @brief Constructor of the descriptor manager
+		 *
+		 * @param[in,out] device Vulkan device
+		 */
 	    explicit DescriptorManager(vk::Device device) noexcept;
+		
+		/**
+		 * @brief Destructor of the descriptor manager
+		 */
 	    ~DescriptorManager() noexcept;
 
+		/**
+		 * @brief Creates a descriptor set layout with given descriptor bindings
+		 * or returns a matching handle.
+		 *
+		 * @param[in] bindings Descriptor bindings
+		 * @return Handle of descriptor set layout
+		 */
 	    DescriptorSetLayoutHandle createDescriptorSetLayout(const DescriptorBindings &bindings);
-        DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle &setLayoutHandle);
+		
+		/**
+		 * @brief Creates a descriptor set using a given descriptor set layout.
+		 *
+		 * @param[in] layout Handle of descriptor set layout
+		 * @return Handle of descriptor set
+		 */
+        DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle &layout);
 
-		void writeDescriptorSet(
-			const DescriptorSetHandle	&handle,
-			const DescriptorWrites  &writes,
-			const ImageManager      &imageManager,
-			const BufferManager     &bufferManager,
-			const SamplerManager    &samplerManager);
+		/**
+		 * @brief Writes to a descriptor set using writes and all required managers.
+		 *
+		 * @param[in] handle Handle of descriptor set
+		 * @param[in] writes Descriptor set writes
+		 * @param[in] imageManager Image manager
+		 * @param[in] bufferManager Buffer manager
+		 * @param[in] samplerManager Sampler manager
+		 */
+		void writeDescriptorSet(const DescriptorSetHandle &handle,
+								const DescriptorWrites &writes,
+								const ImageManager &imageManager,
+								const BufferManager &bufferManager,
+								const SamplerManager &samplerManager);
 
 		[[nodiscard]]
 		DescriptorSetLayout getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const;
+		
 		[[nodiscard]]
 		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
 
@@ -80,4 +116,5 @@ namespace vkcv
 		vk::DescriptorPool allocateDescriptorPool();
 		
 	};
+	
 }

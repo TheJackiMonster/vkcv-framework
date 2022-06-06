@@ -13,6 +13,10 @@
 
 namespace vkcv
 {
+	
+	/**
+	 * @brief Enum class to specify types of buffers.
+	 */
 	enum class BufferType {
 		INDEX,
 		VERTEX,
@@ -22,6 +26,9 @@ namespace vkcv
 		INDIRECT
 	};
 	
+	/**
+	 * @brief Enum class to specify types of buffer memory.
+	 */
 	enum class BufferMemoryType {
 		DEVICE_LOCAL,
 		HOST_VISIBLE

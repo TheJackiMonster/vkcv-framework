@@ -1071,7 +1071,7 @@ namespace vkcv
 	
 	static void setDebugObjectLabel(const vk::Device& device, const vk::ObjectType& type,
 									uint64_t handle, const std::string& label) {
-#ifndef VULKAN_DEBUG_LABELS
+#ifdef VULKAN_DEBUG_LABELS
 		static PFN_vkSetDebugUtilsObjectNameEXT setDebugLabel = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
 				device.getProcAddr("vkSetDebugUtilsObjectNameEXT")
 		);

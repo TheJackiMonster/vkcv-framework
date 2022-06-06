@@ -7,6 +7,10 @@
 
 namespace vkcv
 {
+	
+	/**
+	 * @brief Class to manage the creation and destruction of passes.
+	 */
     class PassManager
     {
     private:
@@ -40,4 +44,5 @@ namespace vkcv
         const PassConfig& getPassConfig(const PassHandle &handle) const;
         
     };
+	
 }

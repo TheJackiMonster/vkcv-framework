@@ -5,20 +5,6 @@
 
 namespace vkcv {
 
-    struct MeshShaderFunctions
-    {
-        PFN_vkCmdDrawMeshTasksNV cmdDrawMeshTasks                           = nullptr;
-        PFN_vkCmdDrawMeshTasksIndirectNV cmdDrawMeshTasksIndirect           = nullptr;
-        PFN_vkCmdDrawMeshTasksIndirectCountNV cmdDrawMeshTasksIndirectCount = nullptr;
-    } MeshShaderFunctions;
-
-    void InitMeshShaderDrawFunctions(vk::Device device)
-    {
-        MeshShaderFunctions.cmdDrawMeshTasks = PFN_vkCmdDrawMeshTasksNV(device.getProcAddr("vkCmdDrawMeshTasksNV"));
-        MeshShaderFunctions.cmdDrawMeshTasksIndirect = PFN_vkCmdDrawMeshTasksIndirectNV(device.getProcAddr("vkCmdDrawMeshTasksIndirectNV"));
-        MeshShaderFunctions.cmdDrawMeshTasksIndirectCount = PFN_vkCmdDrawMeshTasksIndirectCountNV (device.getProcAddr( "vkCmdDrawMeshTasksIndirectCountNV"));
-    }
-
     void recordMeshShaderDrawcall(const Core& core,
                                   vk::CommandBuffer cmdBuffer,
                                   vk::PipelineLayout pipelineLayout,
@@ -26,6 +12,14 @@ namespace vkcv {
                                   uint32_t pushConstantOffset,
                                   const MeshShaderDrawcall& drawcall,
                                   uint32_t firstTask) {
+        static PFN_vkCmdDrawMeshTasksNV cmdDrawMeshTasks = reinterpret_cast<PFN_vkCmdDrawMeshTasksNV>(
+                core.getContext().getDevice().getProcAddr("vkCmdDrawMeshTasksNV")
+        );
+	
+		if (!cmdDrawMeshTasks) {
+			vkcv_log(LogLevel::ERROR, "Mesh shader drawcalls are not supported");
+			return;
+		}
 
         for (const auto& descriptorUsage : drawcall.descriptorSets) {
             cmdBuffer.bindDescriptorSets(
@@ -47,7 +41,7 @@ namespace vkcv {
                 pushConstantData.getSizePerDrawcall(),
                 drawcallPushConstantData);
         }
-
-        MeshShaderFunctions.cmdDrawMeshTasks(VkCommandBuffer(cmdBuffer), drawcall.taskCount, firstTask);
+    
+        cmdDrawMeshTasks(VkCommandBuffer(cmdBuffer), drawcall.taskCount, firstTask);
     }
 }

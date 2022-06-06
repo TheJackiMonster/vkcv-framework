@@ -9,10 +9,14 @@
 #include "SwapchainManager.hpp"
 
 namespace vkcv {
+	
 	class Context;
 
 	class SwapchainManager;
 
+	/**
+	 * @brief Class to manage the windows of applications.
+	 */
 	class WindowManager {
 		friend class Core;
 
@@ -65,4 +69,5 @@ namespace vkcv {
 		Window &getWindow(const WindowHandle handle) const;
 
 	};
+	
 }
