@@ -30,7 +30,11 @@ message(STATUS "VMA_DEBUG_INITIALIZE_ALLOCATIONS = ${VMA_DEBUG_INITIALIZE_ALLOCA
 message(STATUS "VMA_DEBUG_GLOBAL_MUTEX = ${VMA_DEBUG_GLOBAL_MUTEX}")
 message(STATUS "VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT = ${VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT}")
 
-add_library(VulkanMemoryAllocator vma.cpp)
+if (${VMA_STATIC_VULKAN_FUNCTIONS})
+	add_library(VulkanMemoryAllocator STATIC vma.cpp)
+else()
+	add_library(VulkanMemoryAllocator SHARED vma.cpp)
+endif()
 
 set_target_properties(
 		VulkanMemoryAllocator PROPERTIES
