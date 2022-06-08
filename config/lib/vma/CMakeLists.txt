@@ -6,6 +6,9 @@ find_package(Vulkan REQUIRED)
 
 option(VMA_HPP_PATH "Location of C++ headers" "")
 
+option(VMA_VULKAN_H_PATH "Location of Vulkan C headers" "")
+option(VMA_VULKAN_HPP_PATH "Location of Vulkan C++ headers" "")
+
 message(STATUS "VMA_BUILD_SAMPLE = ${VMA_BUILD_SAMPLE}")
 message(STATUS "VMA_BUILD_SAMPLE_SHADERS = ${VMA_BUILD_SAMPLE_SHADERS}")
 message(STATUS "VMA_BUILD_REPLAY = ${VMA_BUILD_REPLAY}")
@@ -38,6 +41,7 @@ set_target_properties(
 		CXX_STANDARD_REQUIRED ON
 )
 
+target_include_directories(VulkanMemoryAllocator SYSTEM BEFORE PRIVATE ${VMA_VULKAN_H_PATH} ${VMA_VULKAN_HPP_PATH})
 target_include_directories(VulkanMemoryAllocator PUBLIC ${VMA_HPP_PATH})
 
 # Only link to Vulkan if static linking is used

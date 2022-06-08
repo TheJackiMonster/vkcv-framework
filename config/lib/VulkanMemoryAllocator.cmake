@@ -8,6 +8,9 @@ if (${vma_hpp_status})
 		set(VMA_HPP_PATH "${vkcv_lib_path}/VulkanMemoryAllocator-Hpp" CACHE INTERNAL "")
 	endif()
 	
+	set(VMA_VULKAN_H_PATH "${vkcv_lib_path}/Vulkan-Headers/include" CACHE INTERNAL "")
+	set(VMA_VULKAN_HPP_PATH "${vkcv_lib_path}/Vulkan-Hpp" CACHE INTERNAL "")
+	
 	set(VMA_RECORDING_ENABLED OFF CACHE INTERNAL "")
 	set(VMA_USE_STL_CONTAINERS OFF CACHE INTERNAL "")
 	set(VMA_STATIC_VULKAN_FUNCTIONS ON CACHE INTERNAL "")
