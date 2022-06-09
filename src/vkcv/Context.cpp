@@ -85,50 +85,13 @@ namespace vkcv
     }
 	
 	/**
-	 * @brief The physical device is evaluated by three categories:
-	 * discrete GPU vs. integrated GPU, amount of queues and its abilities, and VRAM.physicalDevice.
-	 * @param physicalDevice The physical device
-	 * @return Device score as integer
-	*/
-	int deviceScore(const vk::PhysicalDevice& physicalDevice)
-	{
-		int score = 0;
-		vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
-		std::vector<vk::QueueFamilyProperties> qFamilyProperties = physicalDevice.getQueueFamilyProperties();
-		
-		// for every queue family compute queue flag bits and the amount of queues
-		for (const auto& qFamily : qFamilyProperties) {
-			uint32_t qCount = qFamily.queueCount;
-			uint32_t bitCount = (static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eCompute) != 0)
-								+ (static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eGraphics) != 0)
-								+ (static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eTransfer) != 0)
-								+ (static_cast<uint32_t>(qFamily.queueFlags & vk::QueueFlagBits::eSparseBinding) != 0);
-			score += static_cast<int>(qCount * bitCount);
-		}
-		
-		// compute the VRAM of the physical device
-		vk::PhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getMemoryProperties();
-		auto vram = static_cast<int>(memoryProperties.memoryHeaps[0].size / static_cast<uint32_t>(1E9));
-		score *= vram;
-		
-		if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
-			score *= 2;
-		}
-		else if (properties.deviceType != vk::PhysicalDeviceType::eIntegratedGpu) {
-			score = -1;
-		}
-		
-		return score;
-	}
-	
-	/**
-	 * @brief All existing physical devices will be evaluated by deviceScore.
+	 * @brief All existing physical devices will be evaluated.
 	 * @param instance The instance
 	 * @param physicalDevice The optimal physical device
 	 * @return Returns if a suitable GPU is found as physical device
 	 * @see Context.deviceScore
 	*/
-	bool pickPhysicalDevice(const vk::Instance& instance, vk::PhysicalDevice& physicalDevice)
+	static bool pickPhysicalDevice(const vk::Instance& instance, vk::PhysicalDevice& physicalDevice)
 	{
 		const std::vector<vk::PhysicalDevice>& devices = instance.enumeratePhysicalDevices();
 		
@@ -137,21 +100,42 @@ namespace vkcv
 			return false;
 		}
 		
-		int max_score = -1;
+		vk::PhysicalDeviceType type = vk::PhysicalDeviceType::eOther;
+		vk::DeviceSize vramSize = 0;
+		
 		for (const auto& device : devices) {
-			int score = deviceScore(device);
-			if (score > max_score) {
-				max_score = score;
+			const auto& properties = device.getProperties();
+			
+			if (vk::PhysicalDeviceType::eOther == type) {
+				type = properties.deviceType;
 				physicalDevice = device;
+				continue;
+			}
+			
+			if (vk::PhysicalDeviceType::eDiscreteGpu != properties.deviceType)
+				continue;
+			
+			if (vk::PhysicalDeviceType::eDiscreteGpu != type) {
+				type = properties.deviceType;
+				physicalDevice = device;
+				continue;
+			}
+			
+			vk::PhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getMemoryProperties();
+			vk::DeviceSize maxSize = 0;
+			
+			for (uint32_t i = 0; i < memoryProperties.memoryHeapCount; i++)
+				if (memoryProperties.memoryHeaps[i].size > maxSize)
+					maxSize = memoryProperties.memoryHeaps[i].size;
+			
+			if (maxSize > vramSize) {
+				type = properties.deviceType;
+				physicalDevice = device;
+				vramSize = maxSize;
 			}
 		}
 		
-		if (max_score == -1) {
-			vkcv_log(LogLevel::ERROR, "Failed to find a suitable GPU");
-			return false;
-		} else {
-			return true;
-		}
+		return true;
 	}
 	
 	/**
