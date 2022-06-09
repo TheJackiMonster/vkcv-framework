@@ -39,7 +39,7 @@ add_library(vkcv_upscaling ${vkcv_build_attribute} ${vkcv_upscaling_sources})
 target_link_libraries(vkcv_upscaling ${vkcv_upscaling_libraries} vkcv vkcv_shader_compiler)
 
 # including headers of dependencies and the VkCV framework
-target_include_directories(vkcv_upscaling SYSTEM BEFORE PRIVATE ${vkcv_upscaling_includes} ${vkcv_include} ${vkcv_shader_compiler_include})
+target_include_directories(vkcv_upscaling SYSTEM BEFORE PRIVATE ${vkcv_upscaling_includes} ${vkcv_include} ${vkcv_includes} ${vkcv_shader_compiler_include})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_upscaling BEFORE PUBLIC ${vkcv_upscaling_include})

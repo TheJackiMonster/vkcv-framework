@@ -40,7 +40,7 @@ add_library(vkcv_effects ${vkcv_build_attribute} ${vkcv_effects_sources})
 target_link_libraries(vkcv_effects ${vkcv_effects_libraries} vkcv vkcv_shader_compiler vkcv_camera vkcv_asset_loader)
 
 # including headers of dependencies and the VkCV framework
-target_include_directories(vkcv_effects SYSTEM BEFORE PRIVATE ${vkcv_effects_includes} ${vkcv_include} ${vkcv_shader_compiler_include} ${vkcv_camera_include} {vkcv_asset_loader_include})
+target_include_directories(vkcv_effects SYSTEM BEFORE PRIVATE ${vkcv_effects_includes} ${vkcv_include} ${vkcv_includes} ${vkcv_shader_compiler_include} ${vkcv_camera_include} {vkcv_asset_loader_include})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_effects BEFORE PUBLIC ${vkcv_effects_include})

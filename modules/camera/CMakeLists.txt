@@ -31,7 +31,7 @@ include(config/GLM.cmake)
 
 target_link_libraries(vkcv_camera PUBLIC ${vkcv_camera_libraries} vkcv)
 
-target_include_directories(vkcv_camera SYSTEM BEFORE PRIVATE ${vkcv_camera_includes} ${vkcv_include})
+target_include_directories(vkcv_camera SYSTEM BEFORE PRIVATE ${vkcv_camera_includes} ${vkcv_include} ${vkcv_includes})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_camera BEFORE PUBLIC ${vkcv_camera_include} ${vkcv_camera_includes})
