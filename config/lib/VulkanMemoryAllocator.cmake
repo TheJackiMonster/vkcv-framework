@@ -1,4 +1,20 @@
 
+find_package(Vulkan QUIET)
+
+if (Vulkan_VERSION)
+	set(BUILD_VMA_VULKAN_VERSION ${Vulkan_VERSION})
+endif()
+
+set(VMA_VULKAN_VERSION OFF CACHE INTERNAL "")
+
+if (BUILD_VMA_VULKAN_VERSION)
+	string(REGEX REPLACE "(\\.[0-9]+)+$" "" VMA_VULKAN_MAJOR_VERSION ${BUILD_VMA_VULKAN_VERSION})
+	string(REGEX REPLACE "^[0-9]+\\.([0-9]+)(\\.[0-9]+)?" "\\1" VMA_VULKAN_MINOR_VERSION ${BUILD_VMA_VULKAN_VERSION})
+	string(REGEX REPLACE "^([0-9]+\\.)+" "" VMA_VULKAN_PATCH_VERSION ${BUILD_VMA_VULKAN_VERSION})
+	
+	math(EXPR VMA_VULKAN_VERSION "1000000 * ${VMA_VULKAN_MAJOR_VERSION} + 1000 * ${VMA_VULKAN_MINOR_VERSION} + ${VMA_VULKAN_PATCH_VERSION}" OUTPUT_FORMAT DECIMAL)
+endif()
+
 use_git_submodule("${vkcv_lib_path}/VulkanMemoryAllocator-Hpp" vma_hpp_status)
 
 if (${vma_hpp_status})
@@ -34,5 +50,9 @@ if (${vma_hpp_status})
 	list(APPEND vkcv_libraries VulkanMemoryAllocator)
 	list(APPEND vkcv_includes ${VMA_HPP_PATH})
 	
-	message(${vkcv_config_msg} " VMA     - ")
+	if (VMA_VULKAN_VERSION)
+		list(APPEND vkcv_definitions "VMA_VULKAN_VERSION=${VMA_VULKAN_VERSION}")
+	endif()
+	
+	message(${vkcv_config_msg} " VMA     -   " ${BUILD_VMA_VULKAN_VERSION})
 endif ()

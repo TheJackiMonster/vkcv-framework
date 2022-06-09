@@ -4,6 +4,7 @@ project(VulkanMemoryAllocator)
 
 find_package(Vulkan REQUIRED)
 
+option(VMA_VULKAN_VERSION "Enforced Vulkan version" OFF)
 option(VMA_HPP_PATH "Location of C++ headers" "")
 
 option(VMA_VULKAN_H_PATH "Location of Vulkan C headers" "")
@@ -64,4 +65,5 @@ target_compile_definitions(
 		VMA_DEBUG_GLOBAL_MUTEX=$<BOOL:${VMA_DEBUG_GLOBAL_MUTEX}>
 		VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT=$<BOOL:${VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT}>
 		VMA_RECORDING_ENABLED=$<BOOL:${VMA_RECORDING_ENABLED}>
+		VMA_VULKAN_VERSION=${VMA_VULKAN_VERSION}
 )

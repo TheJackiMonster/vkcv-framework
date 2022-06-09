@@ -89,7 +89,6 @@ namespace vkcv
 	 * @param instance The instance
 	 * @param physicalDevice The optimal physical device
 	 * @return Returns if a suitable GPU is found as physical device
-	 * @see Context.deviceScore
 	*/
 	static bool pickPhysicalDevice(const vk::Instance& instance, vk::PhysicalDevice& physicalDevice)
 	{

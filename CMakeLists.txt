@@ -6,6 +6,7 @@ option(BUILD_MODULES "Enables building VkCV as shared libraries" ON)
 option(BUILD_PROJECTS "Enables building the VkCV projects" ON)
 option(BUILD_DOXYGEN_DOCS "Enables building the VkCV doxygen documentation" OFF)
 option(BUILD_SHARED "Enables building VkCV as shared libraries" OFF)
+option(BUILD_VMA_VULKAN_VERSION "Enforce a specific Vulkan version for VMA" OFF)
 
 if (BUILD_PROJECTS)
 	set(BUILD_MODULES ${BUILD_PROJECTS})
