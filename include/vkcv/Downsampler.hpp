@@ -33,7 +33,7 @@ namespace vkcv {
 		 * @param[in] image
 		 */
 		virtual void recordDownsampling(const CommandStreamHandle& cmdStream,
-										const ImageHandle& image) const = 0;
+										const ImageHandle& image) = 0;
 		
 	};
 	

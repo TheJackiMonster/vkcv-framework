@@ -161,7 +161,7 @@ namespace vkcv::scene {
 			//asset_sampler = &(asset_scene.samplers[asset_texture.sampler]); // TODO
 		}
 		
-		Image img = core.createImage(format, asset_texture.w, asset_texture.h);
+		Image img = core.createImage(format, asset_texture.w, asset_texture.h, 1, true);
 		img.fill(asset_texture.data.data());
 		image = img.getHandle();
 		
@@ -195,7 +195,7 @@ namespace vkcv::scene {
 		SamplerHandle normalSmp;
 		
 		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
-			loadImage(*m_core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Srgb,
+			loadImage(*m_core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Unorm,
 					  diffuseImg,diffuseSmp);
 		}
 		
@@ -203,7 +203,7 @@ namespace vkcv::scene {
 		SamplerHandle metalRoughSmp;
 		
 		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
-			loadImage(*m_core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Srgb,
+			loadImage(*m_core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Unorm,
 					  diffuseImg,diffuseSmp);
 		}
 		
@@ -211,7 +211,7 @@ namespace vkcv::scene {
 		SamplerHandle occlusionSmp;
 		
 		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
-			loadImage(*m_core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Srgb,
+			loadImage(*m_core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Unorm,
 					  diffuseImg,diffuseSmp);
 		}
 		

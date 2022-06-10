@@ -16,7 +16,7 @@ namespace vkcv {
 	
 	public:
 		void recordDownsampling(const CommandStreamHandle& cmdStream,
-								const ImageHandle& image) const override;
+								const ImageHandle& image) override;
 	};
 	
 }

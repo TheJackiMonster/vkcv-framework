@@ -71,7 +71,7 @@ namespace vkcv{
 	}
 
 	void Image::recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream,
-										 const Downsampler &downsampler) {
+										 Downsampler &downsampler) {
 		downsampler.recordDownsampling(cmdStream, m_handle);
 	}
 	

@@ -35,10 +35,14 @@ namespace vkcv {
 		{
 			vk::Image                   m_handle;
 			vma::Allocation             m_allocation;
+			
 			std::vector<vk::ImageView>  m_viewPerMip;
+			std::vector<vk::ImageView>  m_arrayViewPerMip;
+			
 			uint32_t                    m_width;
 			uint32_t                    m_height;
 			uint32_t                    m_depth;
+			
 			vk::Format                  m_format;
 			uint32_t                    m_layers;
 			vk::ImageLayout             m_layout;
@@ -94,7 +98,9 @@ namespace vkcv {
 		vk::DeviceMemory getVulkanDeviceMemory(const ImageHandle& handle) const;
 		
 		[[nodiscard]]
-		vk::ImageView getVulkanImageView(const ImageHandle& handle, size_t mipLevel = 0) const;
+		vk::ImageView getVulkanImageView(const ImageHandle& handle,
+										 size_t mipLevel = 0,
+										 bool arrayView = false) const;
 
 		void switchImageLayoutImmediate(const ImageHandle& handle, vk::ImageLayout newLayout);
 		

@@ -805,7 +805,10 @@ namespace vkcv
 		const RecordCommandFunction &record, 
 		const FinishCommandFunction &finish) {
 
-		m_CommandStreamManager->recordCommandsToStream(cmdStreamHandle, record);
+		if (record) {
+			m_CommandStreamManager->recordCommandsToStream(cmdStreamHandle, record);
+		}
+		
 		if (finish) {
 			m_CommandStreamManager->addFinishCallbackToStream(cmdStreamHandle, finish);
 		}
@@ -858,7 +861,7 @@ namespace vkcv
 			multisampling);
 	}
 	
-	const Downsampler &Core::getDownsampler() const {
+	Downsampler &Core::getDownsampler() {
 		return *m_downsampler;
 	}
 

@@ -80,7 +80,9 @@ namespace vkcv {
 		
 		vk::ImageCreateFlags createFlags;
 		vk::ImageUsageFlags imageUsageFlags = (
-				vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc
+				vk::ImageUsageFlagBits::eSampled |
+				vk::ImageUsageFlagBits::eTransferDst |
+				vk::ImageUsageFlagBits::eTransferSrc
 		);
 		
 		vk::ImageTiling imageTiling = vk::ImageTiling::eOptimal;
@@ -130,8 +132,12 @@ namespace vkcv {
 			imageTiling = vk::ImageTiling::eLinear;
 		}
 		
-		const vk::ImageFormatProperties imageFormatProperties = 
-			physicalDevice.getImageFormatProperties(format, imageType, imageTiling, imageUsageFlags);
+		const vk::ImageFormatProperties imageFormatProperties = physicalDevice.getImageFormatProperties(
+				format,
+				imageType,
+				imageTiling,
+				imageUsageFlags
+		);
 		
 		const uint32_t arrayLayers = std::min<uint32_t>(1, imageFormatProperties.maxArrayLayers);
 
@@ -179,32 +185,74 @@ namespace vkcv {
 		const vk::Device& device = m_core->getContext().getDevice();
 		
 		std::vector<vk::ImageView> views;
+		std::vector<vk::ImageView> arrayViews;
+		
 		for (uint32_t mip = 0; mip < mipCount; mip++) {
-			const vk::ImageViewCreateInfo imageViewCreateInfo(
-				{},
-				image,
-				imageViewType,
-				format,
-				vk::ComponentMapping(
-					vk::ComponentSwizzle::eIdentity,
-					vk::ComponentSwizzle::eIdentity,
-					vk::ComponentSwizzle::eIdentity,
-					vk::ComponentSwizzle::eIdentity
-				),
-				vk::ImageSubresourceRange(
-					aspectFlags,
-					mip,
-					mipCount - mip,
-					0,
-					arrayLayers
-				)
-			);
-
-			views.push_back(device.createImageView(imageViewCreateInfo));
+			{
+				const vk::ImageViewCreateInfo imageViewCreateInfo(
+						{},
+						image,
+						imageViewType,
+						format,
+						vk::ComponentMapping(
+								vk::ComponentSwizzle::eIdentity,
+								vk::ComponentSwizzle::eIdentity,
+								vk::ComponentSwizzle::eIdentity,
+								vk::ComponentSwizzle::eIdentity
+						),
+						vk::ImageSubresourceRange(
+								aspectFlags,
+								mip,
+								mipCount - mip,
+								0,
+								arrayLayers
+						)
+				);
+				
+				views.push_back(device.createImageView(imageViewCreateInfo));
+			}
+			
+			{
+				const vk::ImageViewCreateInfo imageViewCreateInfo(
+						{},
+						image,
+						vk::ImageViewType::e2DArray,
+						format,
+						vk::ComponentMapping(
+								vk::ComponentSwizzle::eIdentity,
+								vk::ComponentSwizzle::eIdentity,
+								vk::ComponentSwizzle::eIdentity,
+								vk::ComponentSwizzle::eIdentity
+						),
+						vk::ImageSubresourceRange(
+								aspectFlags,
+								mip,
+								1,
+								0,
+								arrayLayers
+						)
+				);
+				
+				arrayViews.push_back(device.createImageView(imageViewCreateInfo));
+			}
 		}
 		
 		const uint64_t id = m_images.size();
-		m_images.push_back({ image, allocation, views, width, height, depth, format, arrayLayers, vk::ImageLayout::eUndefined });
+		m_images.push_back({
+			image,
+			allocation,
+			
+			views,
+			arrayViews,
+			
+			width,
+			height,
+			depth,
+			
+			format,
+			arrayLayers,
+			vk::ImageLayout::eUndefined
+		});
 		return ImageHandle(id, [&](uint64_t id) { destroyImageById(id); });
 	}
 	
@@ -253,7 +301,9 @@ namespace vkcv {
 		return info.deviceMemory;
 	}
 	
-	vk::ImageView ImageManager::getVulkanImageView(const ImageHandle &handle, size_t mipLevel) const {
+	vk::ImageView ImageManager::getVulkanImageView(const ImageHandle &handle,
+												   size_t mipLevel,
+												   bool arrayView) const {
 		
 		if (handle.isSwapchainImage()) {
 			return m_swapchainImages[m_currentSwapchainInputImage].m_viewPerMip[0];
@@ -266,13 +316,14 @@ namespace vkcv {
 		}
 		
 		const auto& image = m_images[id];
-
-		if (mipLevel >= image.m_viewPerMip.size()) {
+		const auto& views = arrayView? image.m_arrayViewPerMip : image.m_viewPerMip;
+		
+		if (mipLevel >= views.size()) {
 			vkcv_log(LogLevel::ERROR, "Image does not have requested mipLevel");
 			return nullptr;
 		}
-
-		return image.m_viewPerMip[mipLevel];
+		
+		return views[mipLevel];
 	}
 	
 	static vk::ImageMemoryBarrier createImageLayoutTransitionBarrier(const ImageManager::Image &image,
@@ -665,6 +716,13 @@ namespace vkcv {
 			}
 		}
 		
+		for (auto& view : image.m_arrayViewPerMip) {
+			if (view) {
+				device.destroyImageView(view);
+				view = nullptr;
+			}
+		}
+		
 		const vma::Allocator& allocator = m_core->getContext().getAllocator();
 
 		if (image.m_handle) {
@@ -724,6 +782,7 @@ namespace vkcv {
 				images[i],
 				nullptr,
 				{ views[i] },
+				{},
 				width,
 				height,
 				1,

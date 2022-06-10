@@ -12,7 +12,7 @@ namespace vkcv {
 		m_imageManager(imageManager) {}
 	
 	void BlitDownsampler::recordDownsampling(const CommandStreamHandle &cmdStream,
-											 const ImageHandle &image) const {
+											 const ImageHandle &image) {
 		m_imageManager.recordImageMipChainGenerationToCmdStream(cmdStream, image);
 		m_core.prepareImageForSampling(cmdStream, image);
 	}

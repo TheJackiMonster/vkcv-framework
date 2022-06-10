@@ -8,16 +8,34 @@ namespace vkcv {
 														  uint32_t mipLevel,
 														  bool useGeneralLayout,
 														  uint32_t arrayIndex,
-														  uint32_t mipCount) {
-		m_sampledImageWrites.emplace_back(binding, image, mipLevel, useGeneralLayout, arrayIndex, mipCount);
+														  uint32_t mipCount,
+														  bool arrayView) {
+		m_sampledImageWrites.emplace_back(
+				binding,
+				image,
+				mipLevel,
+				useGeneralLayout,
+				arrayIndex,
+				mipCount,
+				arrayView
+		);
+		
 		return *this;
 	}
 	
 	DescriptorWrites &DescriptorWrites::writeStorageImage(uint32_t binding,
 														  ImageHandle image,
 														  uint32_t mipLevel,
-														  uint32_t mipCount) {
-		m_storageImageWrites.emplace_back(binding, image, mipLevel, mipCount);
+														  uint32_t mipCount,
+														  bool arrayView) {
+		m_storageImageWrites.emplace_back(
+				binding,
+				image,
+				mipLevel,
+				mipCount,
+				arrayView
+		);
+		
 		return *this;
 	}
 	

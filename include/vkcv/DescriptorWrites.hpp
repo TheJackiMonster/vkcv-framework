@@ -21,6 +21,7 @@ namespace vkcv {
 		bool useGeneralLayout;
 		uint32_t arrayIndex;
 		uint32_t mipCount;
+		bool arrayView;
 	};
 	
 	/**
@@ -31,6 +32,7 @@ namespace vkcv {
 		ImageHandle image;
 		uint32_t mipLevel;
 		uint32_t mipCount;
+		bool arrayView;
 	};
 	
 	/**
@@ -91,7 +93,8 @@ namespace vkcv {
 											uint32_t mipLevel = 0,
 											bool useGeneralLayout = false,
 											uint32_t arrayIndex = 0,
-											uint32_t mipCount = 1);
+											uint32_t mipCount = 1,
+											bool arrayView = false);
 		
 		/**
 		 * @brief Adds an entry to write an image to a given binding
@@ -106,7 +109,8 @@ namespace vkcv {
 		DescriptorWrites& writeStorageImage(uint32_t binding,
 											ImageHandle image,
 											uint32_t mipLevel = 0,
-											uint32_t mipCount = 1);
+											uint32_t mipCount = 1,
+											bool arrayView = false);
 		
 		/**
 		 * @brief Adds an entry to write a buffer to a given binding

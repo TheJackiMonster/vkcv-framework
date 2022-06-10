@@ -125,7 +125,7 @@ namespace vkcv::algorithm {
 		 m_pipeline(),
 		
 		 m_descriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings(sampler))),
-		 m_descriptorSet(m_core.createDescriptorSet(m_descriptorSetLayout)),
+		 m_descriptorSets(),
 		
 		 m_globalCounter(m_core.createBuffer<uint32_t>(
 				 vkcv::BufferType::STORAGE,
@@ -202,30 +202,38 @@ namespace vkcv::algorithm {
 		uint32_t zeroes [m_globalCounter.getCount()];
 		memset(zeroes, 0, m_globalCounter.getSize());
 		m_globalCounter.fill(zeroes);
-		
-		vkcv::DescriptorWrites writes;
-		writes.writeStorageBuffer(2, m_globalCounter.getHandle());
-		
-		if (m_sampler) {
-			writes.writeSampler(4, m_sampler);
-		}
-		
-		m_core.writeDescriptorSet(m_descriptorSet, writes);
 	}
 	
 	void SinglePassDownsampler::recordDownsampling(const CommandStreamHandle &cmdStream,
-												   const ImageHandle &image) const {
-		vkcv::DescriptorWrites writes;
-		writes.writeStorageImage(1, image, 6);
+												   const ImageHandle &image) {
+		const uint32_t mipLevels = m_core.getImageMipLevels(image);
 		
-		if (m_sampler) {
-			writes.writeStorageImage(0, image, 0, m_core.getImageMipLevels(image) - 1);
-			writes.writeSampledImage(3, image);
-		} else {
-			writes.writeStorageImage(0, image, 0, m_core.getImageMipLevels(image));
+		if (mipLevels < 7) {
+			m_core.getDownsampler().recordDownsampling(cmdStream, image);
+			return;
 		}
 		
-		m_core.writeDescriptorSet(m_descriptorSet, writes);
+		auto descriptorSet = m_core.createDescriptorSet(m_descriptorSetLayout);
+		
+		vkcv::DescriptorWrites writes;
+		writes.writeStorageImage(1, image, 6, 1, true);
+		writes.writeStorageBuffer(2, m_globalCounter.getHandle());
+		
+		if (m_sampler) {
+			writes.writeStorageImage(0, image, 1, mipLevels - 1, true);
+			
+			writes.writeSampledImage(3, image, 0, false, 0, 1, true);
+			writes.writeSampler(4, m_sampler);
+		} else {
+			writes.writeStorageImage(0, image, 0, mipLevels, true);
+		}
+		
+		m_core.writeDescriptorSet(descriptorSet, writes);
+		m_descriptorSets.push_back(descriptorSet);
+		
+		m_core.recordCommandsToStream(cmdStream, nullptr, [this]() {
+			m_descriptorSets.erase(m_descriptorSets.begin());
+		});
 		
 		varAU2(dispatchThreadGroupCountXY);
 		varAU2(workGroupOffset);
@@ -237,11 +245,16 @@ namespace vkcv::algorithm {
 				m_core.getImageHeight(image)
 		);
 		
-		SpdSetup(dispatchThreadGroupCountXY, workGroupOffset, numWorkGroupsAndMips, rectInfo);
+		SpdSetup(
+				dispatchThreadGroupCountXY,
+				workGroupOffset,
+				numWorkGroupsAndMips,
+				rectInfo
+		);
 		
 		if (m_sampler) {
-			m_core.prepareImageForStorage(cmdStream, image, m_core.getImageMipLevels(image) - 1, 1);
 			m_core.prepareImageForSampling(cmdStream, image, 1);
+			m_core.prepareImageForStorage(cmdStream, image, m_core.getImageMipLevels(image) - 1, 1);
 		} else {
 			m_core.prepareImageForStorage(cmdStream, image);
 		}
@@ -274,11 +287,11 @@ namespace vkcv::algorithm {
 		}
 		
 		m_core.recordComputeDispatchToCmdStream(cmdStream, m_pipeline, dispatch, {
-			vkcv::DescriptorSetUsage(0, m_descriptorSet)
+			vkcv::DescriptorSetUsage(0, descriptorSet)
 		}, pushConstants);
 		
 		if (m_sampler) {
-			m_core.prepareImageForSampling(cmdStream, image, m_core.getImageMipLevels(image) - 1, 1);
+			m_core.prepareImageForSampling(cmdStream, image, mipLevels - 1, 1);
 		} else {
 			m_core.prepareImageForSampling(cmdStream, image);
 		}

@@ -190,7 +190,11 @@ namespace vkcv
 			for (uint32_t i = 0; i < write.mipCount; i++) {
 				const vk::DescriptorImageInfo imageInfo(
 						nullptr,
-						imageManager.getVulkanImageView(write.image, write.mipLevel + i),
+						imageManager.getVulkanImageView(
+								write.image,
+								write.mipLevel + i,
+								write.arrayView
+						),
 						layout
 				);
 				
@@ -213,7 +217,11 @@ namespace vkcv
 			for (uint32_t i = 0; i < write.mipCount; i++) {
 				const vk::DescriptorImageInfo imageInfo(
 						nullptr,
-						imageManager.getVulkanImageView(write.image, write.mipLevel + i),
+						imageManager.getVulkanImageView(
+								write.image,
+								write.mipLevel + i,
+								write.arrayView
+						),
 						vk::ImageLayout::eGeneral
 				);
 				

@@ -28,7 +28,7 @@ namespace vkcv::material {
 	}
 	
 	void Material::recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream,
-											const Downsampler &downsampler) {
+											Downsampler &downsampler) {
 		for (auto& texture : m_Textures) {
 			downsampler.recordDownsampling(cmdStream, texture.m_Image);
 		}

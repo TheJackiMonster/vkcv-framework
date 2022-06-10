@@ -251,7 +251,7 @@ namespace vkcv
 		 * @return Blit-downsampler
 		 */
 		[[nodiscard]]
-		const Downsampler& getDownsampler() const;
+		Downsampler& getDownsampler();
 
         /**
          * Creates a new window and returns it's handle

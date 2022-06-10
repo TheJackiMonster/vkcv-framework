@@ -101,10 +101,10 @@ namespace vkcv {
 		 * mip level zero is used as source
 		 * 
 		 * @param[out] cmdStream Command stream that the commands are recorded into
-		 * @param[in] downsampler Downsampler to generate mip levels with
+		 * @param[in,out] downsampler Downsampler to generate mip levels with
 		 */
 		void recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream,
-									  const Downsampler &downsampler);
+									  Downsampler &downsampler);
 		
 	private:
 	    // TODO: const qualifier removed, very hacky!!!

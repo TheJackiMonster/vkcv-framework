@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <vkcv/Core.hpp>
 #include <vkcv/Downsampler.hpp>
 #include <vkcv/ShaderProgram.hpp>
@@ -27,7 +29,7 @@ namespace vkcv::algorithm {
 		ComputePipelineHandle m_pipeline;
 		
 		DescriptorSetLayoutHandle m_descriptorSetLayout;
-		DescriptorSetHandle m_descriptorSet;
+		std::vector<DescriptorSetHandle> m_descriptorSets;
 		
 		Buffer<uint32_t> m_globalCounter;
 		
@@ -38,7 +40,7 @@ namespace vkcv::algorithm {
 									   const SamplerHandle &sampler = SamplerHandle());
 		
 		void recordDownsampling(const CommandStreamHandle& cmdStream,
-								const ImageHandle& image) const override;
+								const ImageHandle& image) override;
 	
 	};
 

@@ -251,7 +251,8 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DescriptorSetHandle> materialDescriptorSets;
 	std::vector<vkcv::Image> sceneImages;
 	
-	const vkcv::Downsampler &downsampler = core.getDownsampler();
+	vkcv::algorithm::SinglePassDownsampler spdDownsampler (core);
+	vkcv::Downsampler &downsampler = core.getDownsampler();
 	
 	auto mipStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
@@ -287,15 +288,15 @@ int main(int argc, const char** argv) {
 		const vkcv::ImageHandle albedoHandle = sceneImages.back().getHandle();
 
 		// normal texture
-		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Unorm, normalTexture.w, normalTexture.h, 1, true));
+		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Unorm, normalTexture.w, normalTexture.h, 1, true, true));
 		sceneImages.back().fill(normalTexture.data.data());
-		sceneImages.back().recordMipChainGeneration(mipStream, downsampler);
+		sceneImages.back().recordMipChainGeneration(mipStream, spdDownsampler);
 		const vkcv::ImageHandle normalHandle = sceneImages.back().getHandle();
 
 		// specular texture
-		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Unorm, specularTexture.w, specularTexture.h, 1, true));
+		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Unorm, specularTexture.w, specularTexture.h, 1, true, true));
 		sceneImages.back().fill(specularTexture.data.data());
-		sceneImages.back().recordMipChainGeneration(mipStream, downsampler);
+		sceneImages.back().recordMipChainGeneration(mipStream, spdDownsampler);
 		const vkcv::ImageHandle specularHandle = sceneImages.back().getHandle();
 
 		vkcv::DescriptorWrites setWrites;
