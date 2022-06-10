@@ -71,9 +71,6 @@ set(vkcv_sources
         ${vkcv_include}/vkcv/QueueManager.hpp
         ${vkcv_source}/vkcv/QueueManager.cpp
 
-        ${vkcv_source}/vkcv/ImageLayoutTransitions.hpp
-        ${vkcv_source}/vkcv/ImageLayoutTransitions.cpp
-
 		${vkcv_include}/vkcv/VertexLayout.hpp
 		${vkcv_source}/vkcv/VertexLayout.cpp
 
@@ -109,4 +106,10 @@ set(vkcv_sources
         
         ${vkcv_include}/vkcv/ImageConfig.hpp
         ${vkcv_source}/vkcv/ImageConfig.cpp
+		
+		${vkcv_include}/vkcv/Downsampler.hpp
+		${vkcv_source}/vkcv/Downsampler.cpp
+		
+		${vkcv_include}/vkcv/BlitDownsampler.hpp
+		${vkcv_source}/vkcv/BlitDownsampler.cpp
 )

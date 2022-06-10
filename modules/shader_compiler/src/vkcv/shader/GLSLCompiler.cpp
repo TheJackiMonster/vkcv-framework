@@ -13,7 +13,9 @@ namespace vkcv::shader {
 	
 	static uint32_t s_CompilerCount = 0;
 	
-	GLSLCompiler::GLSLCompiler() : Compiler() {
+	GLSLCompiler::GLSLCompiler(GLSLCompileTarget target) :
+		Compiler(),
+		m_target(target) {
 		if (s_CompilerCount == 0) {
 			glslang::InitializeProcess();
 		}
@@ -56,17 +58,17 @@ namespace vkcv::shader {
 				return EShLangTaskNV;
 			case ShaderStage::MESH:
 				return EShLangMeshNV;
-			case ShaderStage::RAY_GEN: // for RTX
+			case ShaderStage::RAY_GEN:
 			    return EShLangRayGen;
-			case ShaderStage::RAY_CLOSEST_HIT: // for RTX
+			case ShaderStage::RAY_CLOSEST_HIT:
 			    return EShLangClosestHit;
-			case ShaderStage::RAY_MISS: // for RTX
+			case ShaderStage::RAY_MISS:
 			    return EShLangMiss;
-			case ShaderStage::RAY_INTERSECTION: // for RTX
+			case ShaderStage::RAY_INTERSECTION:
 				return EShLangIntersect;
-			case ShaderStage::RAY_ANY_HIT: // for RTX
+			case ShaderStage::RAY_ANY_HIT:
 				return EShLangAnyHit;
-			case ShaderStage::RAY_CALLABLE: // for RTX
+			case ShaderStage::RAY_CALLABLE:
 				return EShLangCallable;
 			default:
 				return EShLangCount;
@@ -226,18 +228,20 @@ namespace vkcv::shader {
 		}
 		
 		glslang::TShader shader (language);
-
-		// configure environment for rtx shaders by adjusting versions of Vulkan and SPIR-V, else rtx shader cannot be compiled.
-		if((shaderStage == ShaderStage::RAY_GEN) || (shaderStage == ShaderStage::RAY_ANY_HIT)
-		|| (shaderStage == ShaderStage::RAY_CLOSEST_HIT) || (shaderStage == ShaderStage::RAY_MISS)
-		|| (shaderStage == ShaderStage::RAY_INTERSECTION) || (shaderStage == ShaderStage::RAY_CALLABLE)){
-
-		    shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_2);
-		    shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_4);
+		switch (m_target) {
+			case GLSLCompileTarget::SUBGROUP_OP:
+				shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_1);
+				shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_3);
+				break;
+			case GLSLCompileTarget::RAY_TRACING:
+				shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_2);
+				shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_4);
+				break;
+			default:
+				break;
 		}
 
 		glslang::TProgram program;
-		
 		std::string source (shaderSource);
 		
 		if (!m_defines.empty()) {

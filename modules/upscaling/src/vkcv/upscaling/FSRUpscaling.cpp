@@ -107,26 +107,6 @@ namespace vkcv::upscaling {
 	    return descriptorBindings;
 	}
 	
-	template<typename T>
-	bool checkFeatures(const vk::BaseInStructure* base, vk::StructureType type, bool (*check)(const T& features)) {
-		if (base->sType == type) {
-			return check(*reinterpret_cast<const T*>(base));
-		} else
-		if (base->pNext) {
-			return checkFeatures<T>(base->pNext, type, check);
-		} else {
-			return false;
-		}
-	}
-	
-	static bool checkFloat16(const vk::PhysicalDeviceFloat16Int8FeaturesKHR& features) {
-		return features.shaderFloat16;
-	}
-	
-	static bool check16Storage(const vk::PhysicalDevice16BitStorageFeaturesKHR& features) {
-		return features.storageBuffer16BitAccess;
-	}
-	
 	static bool writeShaderCode(const std::filesystem::path &shaderPath, const std::string& code) {
 		std::ofstream file (shaderPath.string(), std::ios::out);
 		
@@ -205,17 +185,20 @@ namespace vkcv::upscaling {
 		vkcv::shader::GLSLCompiler easuCompiler;
 		vkcv::shader::GLSLCompiler rcasCompiler;
 		
-		const auto& features = m_core.getContext().getFeatureManager().getFeatures();
+		const auto& featureManager = m_core.getContext().getFeatureManager();
+		
 		const bool float16Support = (
-				checkFeatures<vk::PhysicalDeviceFloat16Int8FeaturesKHR>(
-						reinterpret_cast<const vk::BaseInStructure*>(&features),
+				featureManager.checkFeatures<vk::PhysicalDeviceFloat16Int8FeaturesKHR>(
 						vk::StructureType::ePhysicalDeviceShaderFloat16Int8FeaturesKHR,
-						checkFloat16
+						[](const vk::PhysicalDeviceFloat16Int8FeaturesKHR& features) {
+							return features.shaderFloat16;
+						}
 				) &&
-				checkFeatures<vk::PhysicalDevice16BitStorageFeaturesKHR>(
-						reinterpret_cast<const vk::BaseInStructure*>(&features),
+				featureManager.checkFeatures<vk::PhysicalDevice16BitStorageFeaturesKHR>(
 						vk::StructureType::ePhysicalDevice16BitStorageFeaturesKHR,
-						check16Storage
+						[](const vk::PhysicalDevice16BitStorageFeaturesKHR& features) {
+							return features.storageBuffer16BitAccess;
+						}
 				)
 		);
 		

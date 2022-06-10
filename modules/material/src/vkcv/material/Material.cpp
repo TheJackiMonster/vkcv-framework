@@ -27,6 +27,13 @@ namespace vkcv::material {
 		return (m_Type == MaterialType::UNKNOWN);
 	}
 	
+	void Material::recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream,
+											const Downsampler &downsampler) {
+		for (auto& texture : m_Textures) {
+			downsampler.recordDownsampling(cmdStream, texture.m_Image);
+		}
+	}
+	
 	const DescriptorBindings& Material::getDescriptorBindings(MaterialType type)
 	{
 		static DescriptorBindings pbr_bindings = {};

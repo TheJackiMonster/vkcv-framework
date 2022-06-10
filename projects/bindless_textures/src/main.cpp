@@ -56,15 +56,14 @@ int main(int argc, const char** argv) {
                                         "resources/cube/Grass001_1K_Displacement.jpg",
                                         "resources/cube/Grass001_1K_Normal.jpg",
                                         "resources/cube/Grass001_1K_Roughness.jpg" };
-    for(uint32_t i = 0; i < 5; i++)
+	
+    for (uint32_t i = 0; i < 5; i++)
     {
         std::filesystem::path grassPath(grassPaths[i]);
         vkcv::asset::Texture grassTexture = vkcv::asset::loadTexture(grassPath);
 
         vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, grassTexture.width, grassTexture.height);
         texture.fill(grassTexture.data.data());
-        texture.generateMipChainImmediate();
-        texture.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
         texturesArray.push_back(texture);
     }
@@ -167,12 +166,20 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	vkcv::asset::Texture &tex = mesh.textures[0];
-	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
-	texture.fill(tex.data.data());
-	texture.generateMipChainImmediate();
-	texture.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-	texturesArray.push_back(texture);
+	{
+		vkcv::asset::Texture &tex = mesh.textures[0];
+		vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
+		texture.fill(tex.data.data());
+		texturesArray.push_back(texture);
+	}
+	
+	auto downsampleStream = core.createCommandStream(vkcv::QueueType::Graphics);
+	
+	for (auto& texture : texturesArray) {
+		texture.recordMipChainGeneration(downsampleStream, core.getDownsampler());
+	}
+	
+	core.submitCommandStream(downsampleStream, false);
 
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,

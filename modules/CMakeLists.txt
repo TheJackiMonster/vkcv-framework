@@ -3,6 +3,7 @@ set(vkcv_modules_includes)
 set(vkcv_modules_libraries)
 
 # Add new modules here:
+add_subdirectory(algorithm)
 add_subdirectory(asset_loader)
 add_subdirectory(camera)
 add_subdirectory(effects)

@@ -75,8 +75,12 @@ bool loadImage(vkcv::Core& core, const std::filesystem::path& path, vkcv::ImageH
 		true);
 
 	image.fill(textureData.data.data(), textureData.data.size());
-	image.generateMipChainImmediate();
-	image.switchLayout(vk::ImageLayout::eReadOnlyOptimalKHR);
+	
+	{
+		auto mipStream = core.createCommandStream(vkcv::QueueType::Graphics);
+		image.recordMipChainGeneration(mipStream, core.getDownsampler());
+		core.submitCommandStream(mipStream, false);
+	}
 
 	*outImage = image.getHandle();
 	return true;

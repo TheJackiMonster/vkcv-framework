@@ -274,6 +274,14 @@ namespace vkcv::scene {
 			scene.getNode(root).loadMesh(asset_scene, mesh);
 		}
 		
+		auto mipStream = core.createCommandStream(vkcv::QueueType::Graphics);
+		
+		for (auto& material : scene.m_materials) {
+			material.m_data.recordMipChainGeneration(mipStream, core.getDownsampler());
+		}
+		
+		core.submitCommandStream(mipStream, false);
+		
 		scene.getNode(root).splitMeshesToSubNodes(128);
 		return scene;
 	}

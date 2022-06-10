@@ -12,6 +12,7 @@
 #include <vkcv/upscaling/BilinearUpscaling.hpp>
 #include <vkcv/upscaling/NISUpscaling.hpp>
 #include <vkcv/effects/BloomAndFlaresEffect.hpp>
+#include <vkcv/algorithm/SinglePassDownsampler.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";
@@ -21,6 +22,14 @@ int main(int argc, const char** argv) {
 
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	
+	features.tryExtensionFeature<vk::PhysicalDeviceShaderSubgroupExtendedTypesFeatures>(
+		VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES_EXTENSION_NAME,
+		[](vk::PhysicalDeviceShaderSubgroupExtendedTypesFeatures& features) {
+			features.setShaderSubgroupExtendedTypes(true);
+		}
+	);
+	
 	features.tryExtensionFeature<vk::PhysicalDevice16BitStorageFeatures>(
 		VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME,
 		[](vk::PhysicalDevice16BitStorageFeatures& features) {
@@ -44,6 +53,7 @@ int main(int argc, const char** argv) {
 			{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
 			features
 	);
+	
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
 	vkcv::Window& window = core.getWindow(windowHandle);
 
@@ -240,6 +250,10 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DescriptorSetLayoutHandle> materialDescriptorSetLayouts;
 	std::vector<vkcv::DescriptorSetHandle> materialDescriptorSets;
 	std::vector<vkcv::Image> sceneImages;
+	
+	const vkcv::Downsampler &downsampler = core.getDownsampler();
+	
+	auto mipStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
 	for (const auto& material : scene.materials) {
 		int albedoIndex     = material.baseColor;
@@ -269,22 +283,19 @@ int main(int argc, const char** argv) {
 		// albedo texture
 		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, albedoTexture.w, albedoTexture.h, 1, true));
 		sceneImages.back().fill(albedoTexture.data.data());
-		sceneImages.back().generateMipChainImmediate();
-		sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		sceneImages.back().recordMipChainGeneration(mipStream, downsampler);
 		const vkcv::ImageHandle albedoHandle = sceneImages.back().getHandle();
 
 		// normal texture
 		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Unorm, normalTexture.w, normalTexture.h, 1, true));
 		sceneImages.back().fill(normalTexture.data.data());
-		sceneImages.back().generateMipChainImmediate();
-		sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		sceneImages.back().recordMipChainGeneration(mipStream, downsampler);
 		const vkcv::ImageHandle normalHandle = sceneImages.back().getHandle();
 
 		// specular texture
 		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Unorm, specularTexture.w, specularTexture.h, 1, true));
 		sceneImages.back().fill(specularTexture.data.data());
-		sceneImages.back().generateMipChainImmediate();
-		sceneImages.back().switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		sceneImages.back().recordMipChainGeneration(mipStream, downsampler);
 		const vkcv::ImageHandle specularHandle = sceneImages.back().getHandle();
 
 		vkcv::DescriptorWrites setWrites;
@@ -299,6 +310,8 @@ int main(int argc, const char** argv) {
 		setWrites.writeSampler(1, colorSampler);
 		core.writeDescriptorSet(materialDescriptorSets.back(), setWrites);
 	}
+	
+	core.submitCommandStream(mipStream, false);
 
 	std::vector<vkcv::DescriptorSetLayoutHandle> perMeshDescriptorSetLayouts;
 	std::vector<vkcv::DescriptorSetHandle> perMeshDescriptorSets;

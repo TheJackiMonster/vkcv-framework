@@ -11,17 +11,28 @@ namespace vkcv::shader {
      * @addtogroup vkcv_shader
      * @{
      */
+     
+	enum class GLSLCompileTarget {
+		SUBGROUP_OP,
+		RAY_TRACING,
+		
+		UNKNOWN
+	};
 
     /**
      * A class to handle GLSL runtime shader compilation.
      */
 	class GLSLCompiler : public Compiler {
 	private:
+		GLSLCompileTarget m_target;
+		
 	public:
         /**
          * The constructor of a runtime GLSL shader compiler instance.
+         *
+         * @param[in] target Compile target (optional)
          */
-		GLSLCompiler();
+		GLSLCompiler(GLSLCompileTarget target = GLSLCompileTarget::UNKNOWN);
 
         /**
          * The copy-constructor of a runtime GLSL shader compiler instance.

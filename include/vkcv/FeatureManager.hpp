@@ -440,12 +440,36 @@ namespace vkcv {
 		}
 		
 		/**
-		 * @brief Return feature structure chain to request activated features.
+		 * @brief Return feature structure chain to request all activated features.
 		 *
 		 * @return Head of feature structure chain
 		 */
 		[[nodiscard]]
 		const vk::PhysicalDeviceFeatures2& getFeatures() const;
+		
+		/**
+		 * @brief Checks all activated features for a specific feature and returns its state.
+		 *
+		 * @tparam T Template parameter to use specific base structure types
+		 * @param[in] type Vulkan structure type identifier
+		 * @param[in] featureTestFunction Function to test feature structure with for requested attributes
+		 * @return True, if the requested attributes are available, else false
+		 */
+		template<typename T>
+		bool checkFeatures(vk::StructureType type,
+						   const std::function<bool(const T&)>& featureTestFunction) const {
+			const auto* base = reinterpret_cast<const vk::BaseInStructure*>(&getFeatures());
+			
+			while (base) {
+				if ((base->sType == type) && (featureTestFunction(*reinterpret_cast<const T*>(base)))) {
+					return true;
+				}
+				
+				base = base->pNext;
+			}
+			
+			return false;
+		}
 		
 	};
 	

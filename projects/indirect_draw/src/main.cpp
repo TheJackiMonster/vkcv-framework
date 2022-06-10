@@ -172,7 +172,9 @@ void compileMeshForIndirectDraw(vkcv::Core &core,
     vkcv::Image pseudoImg = core.createImage(vk::Format::eR8G8B8A8Srgb, 2, 2);
     std::vector<uint8_t> pseudoData = {0, 0, 0, 0};
     pseudoImg.fill(pseudoData.data());
-    pseudoImg.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+	
+	auto mipStream = core.createCommandStream(vkcv::QueueType::Graphics);
+	pseudoImg.recordMipChainGeneration(mipStream, core.getDownsampler());
 
 	uint32_t vertexOffset = 0;
     for (const auto &mesh : scene.meshes)
@@ -194,8 +196,7 @@ void compileMeshForIndirectDraw(vkcv::Core &core,
 
                 vkcv::Image baseColorImg = core.createImage(vk::Format::eR8G8B8A8Srgb, baseColor.w, baseColor.h);
                 baseColorImg.fill(baseColor.data.data());
-                baseColorImg.generateMipChainImmediate();
-                baseColorImg.switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+				baseColorImg.recordMipChainGeneration(mipStream, core.getDownsampler());
 
                 compiledMat.baseColor.push_back(baseColorImg);
             }
@@ -254,6 +255,8 @@ void compileMeshForIndirectDraw(vkcv::Core &core,
 			}
         }
     }
+	
+	core.submitCommandStream(mipStream, false);
 }
 
 int main(int argc, const char** argv) {

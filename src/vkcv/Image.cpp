@@ -4,6 +4,8 @@
  * @brief class for image handles
  */
 #include "vkcv/Image.hpp"
+
+#include "vkcv/Downsampler.hpp"
 #include "ImageManager.hpp"
 
 namespace vkcv{
@@ -68,12 +70,9 @@ namespace vkcv{
 		m_manager->fillImage(m_handle, data, size);
 	}
 
-	void Image::generateMipChainImmediate() {
-		m_manager->generateImageMipChainImmediate(m_handle);
-	}
-
-	void Image::recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream) {
-		m_manager->recordImageMipChainGenerationToCmdStream(cmdStream, m_handle);
+	void Image::recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream,
+										 const Downsampler &downsampler) {
+		downsampler.recordDownsampling(cmdStream, m_handle);
 	}
 	
 	Image::Image(ImageManager* manager, const ImageHandle& handle) :

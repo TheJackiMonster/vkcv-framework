@@ -97,8 +97,11 @@ namespace vkcv {
 		vk::ImageView getVulkanImageView(const ImageHandle& handle, size_t mipLevel = 0) const;
 
 		void switchImageLayoutImmediate(const ImageHandle& handle, vk::ImageLayout newLayout);
+		
 		void recordImageLayoutTransition(
-			const ImageHandle& handle, 
+			const ImageHandle& handle,
+			uint32_t mipLevelCount,
+			uint32_t mipLevelOffset,
 			vk::ImageLayout newLayout, 
 			vk::CommandBuffer cmdBuffer);
 
@@ -107,7 +110,6 @@ namespace vkcv {
 			vk::CommandBuffer cmdBuffer);
 
 		void fillImage(const ImageHandle& handle, const void* data, size_t size);
-		void generateImageMipChainImmediate(const ImageHandle& handle);
 		void recordImageMipChainGenerationToCmdStream(const vkcv::CommandStreamHandle& cmdStream, const ImageHandle& handle);
 		void recordMSAAResolve(vk::CommandBuffer cmdBuffer, ImageHandle src, ImageHandle dst);
 

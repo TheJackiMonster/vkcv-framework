@@ -15,10 +15,10 @@
 #include "ImageManager.hpp"
 #include "DescriptorManager.hpp"
 #include "WindowManager.hpp"
-#include "ImageLayoutTransitions.hpp"
 #include "CommandStreamManager.hpp"
 #include <cmath>
 #include "vkcv/Logger.hpp"
+#include "vkcv/BlitDownsampler.hpp"
 
 namespace vkcv
 {
@@ -62,13 +62,15 @@ namespace vkcv
 			m_WindowManager(std::make_unique<WindowManager>()),
 			m_SwapchainManager(std::make_unique<SwapchainManager>()),
             m_CommandResources(commandResources),
-            m_SyncResources(syncResources)
+            m_SyncResources(syncResources),
+			m_downsampler(nullptr)
 	{
 		m_BufferManager->m_core = this;
 		m_BufferManager->init();
 		m_CommandStreamManager->init(this);
 		m_SwapchainManager->m_context = &m_Context;
 		m_ImageManager->m_core = this;
+		m_downsampler = std::unique_ptr<Downsampler>(new BlitDownsampler(*this, *m_ImageManager));
 	}
 
 	Core::~Core() noexcept {
@@ -231,7 +233,7 @@ namespace vkcv
 			const bool isDepthImage = isDepthFormat(imageManager.getImageFormat(handle));
 			const vk::ImageLayout targetLayout =
 				isDepthImage ? vk::ImageLayout::eDepthStencilAttachmentOptimal : vk::ImageLayout::eColorAttachmentOptimal;
-			imageManager.recordImageLayoutTransition(handle, targetLayout, cmdBuffer);
+			imageManager.recordImageLayoutTransition(handle, 0, 0, targetLayout, cmdBuffer);
 		}
 	}
 
@@ -809,10 +811,16 @@ namespace vkcv
 		}
 	}
 
-	void Core::submitCommandStream(const CommandStreamHandle& handle) {
+	void Core::submitCommandStream(const CommandStreamHandle& handle,
+								   bool signalRendering) {
 		std::vector<vk::Semaphore> waitSemaphores;
+		
 		// FIXME: add proper user controllable sync
-		std::vector<vk::Semaphore> signalSemaphores = { m_SyncResources.renderFinished };
+		std::vector<vk::Semaphore> signalSemaphores;
+		if (signalRendering) {
+			signalSemaphores.push_back(m_SyncResources.renderFinished);
+		}
+		
 		m_CommandStreamManager->submitCommandStreamSynchronous(handle, waitSemaphores, signalSemaphores);
 	}
 
@@ -848,6 +856,10 @@ namespace vkcv
 			supportStorage,
 			supportColorAttachment,
 			multisampling);
+	}
+	
+	const Downsampler &Core::getDownsampler() const {
+		return *m_downsampler;
 	}
 
 	WindowHandle Core::createWindow(
@@ -928,19 +940,43 @@ namespace vkcv
 	void Core::prepareSwapchainImageForPresent(const CommandStreamHandle& cmdStream) {
 		auto swapchainHandle = ImageHandle::createSwapchainImageHandle();
 		recordCommandsToStream(cmdStream, [swapchainHandle, this](const vk::CommandBuffer cmdBuffer) {
-			m_ImageManager->recordImageLayoutTransition(swapchainHandle, vk::ImageLayout::ePresentSrcKHR, cmdBuffer);
+			m_ImageManager->recordImageLayoutTransition(
+					swapchainHandle,
+					0,
+					0,
+					vk::ImageLayout::ePresentSrcKHR,
+					cmdBuffer
+			);
 		}, nullptr);
 	}
 
-	void Core::prepareImageForSampling(const CommandStreamHandle& cmdStream, const ImageHandle& image) {
-		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
-			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eShaderReadOnlyOptimal, cmdBuffer);
+	void Core::prepareImageForSampling(const CommandStreamHandle& cmdStream,
+									   const ImageHandle& image,
+									   uint32_t mipLevelCount,
+									   uint32_t mipLevelOffset) {
+		recordCommandsToStream(cmdStream, [image, mipLevelCount, mipLevelOffset, this](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordImageLayoutTransition(
+					image,
+					mipLevelCount,
+					mipLevelOffset,
+					vk::ImageLayout::eShaderReadOnlyOptimal,
+					cmdBuffer
+			);
 		}, nullptr);
 	}
 
-	void Core::prepareImageForStorage(const CommandStreamHandle& cmdStream, const ImageHandle& image) {
-		recordCommandsToStream(cmdStream, [image, this](const vk::CommandBuffer cmdBuffer) {
-			m_ImageManager->recordImageLayoutTransition(image, vk::ImageLayout::eGeneral, cmdBuffer);
+	void Core::prepareImageForStorage(const CommandStreamHandle& cmdStream,
+									  const ImageHandle& image,
+									  uint32_t mipLevelCount,
+									  uint32_t mipLevelOffset) {
+		recordCommandsToStream(cmdStream, [image, mipLevelCount, mipLevelOffset, this](const vk::CommandBuffer cmdBuffer) {
+			m_ImageManager->recordImageLayoutTransition(
+					image,
+					mipLevelCount,
+					mipLevelOffset,
+					vk::ImageLayout::eGeneral,
+					cmdBuffer
+			);
 		}, nullptr);
 	}
 
@@ -996,11 +1032,11 @@ namespace vkcv
 							   SamplerFilterType filterType) {
 		recordCommandsToStream(cmdStream, [&](const vk::CommandBuffer cmdBuffer) {
 			m_ImageManager->recordImageLayoutTransition(
-					src, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer
+					src, 0, 0, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer
 			);
 			
 			m_ImageManager->recordImageLayoutTransition(
-					dst, vk::ImageLayout::eTransferDstOptimal, cmdBuffer
+					dst, 0, 0, vk::ImageLayout::eTransferDstOptimal, cmdBuffer
 			);
 			
 			const std::array<vk::Offset3D, 2> srcOffsets = {

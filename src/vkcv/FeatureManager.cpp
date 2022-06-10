@@ -576,4 +576,5 @@ m_physicalDevice.getFeatures2(&query)
 	const vk::PhysicalDeviceFeatures2& FeatureManager::getFeatures() const {
 		return m_featuresBase;
 	}
+	
 }

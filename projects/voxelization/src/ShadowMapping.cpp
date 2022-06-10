@@ -321,8 +321,7 @@ void ShadowMapping::recordShadowMapRendering(
 		dispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_shadowBlurYDescriptorSet) },
 		vkcv::PushConstants(0));
-	m_shadowMap.recordMipChainGeneration(cmdStream);
-	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMap.getHandle());
+	m_shadowMap.recordMipChainGeneration(cmdStream, m_corePtr->getDownsampler());
 
 	m_corePtr->recordEndDebugLabel(cmdStream);
 }

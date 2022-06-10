@@ -16,6 +16,7 @@
 #include "Handles.hpp"
 #include "Buffer.hpp"
 #include "Image.hpp"
+#include "BlitDownsampler.hpp"
 #include "GraphicsPipelineConfig.hpp"
 #include "ComputePipelineConfig.hpp"
 #include "CommandResources.hpp"
@@ -92,6 +93,8 @@ namespace vkcv
 		CommandResources    m_CommandResources;
 		SyncResources       m_SyncResources;
 		uint32_t            m_currentSwapchainImageIndex;
+		
+		std::unique_ptr<Downsampler> m_downsampler;
 
 		/**
 		 * Sets up swapchain images
@@ -241,6 +244,14 @@ namespace vkcv
 			bool            supportStorage = false,
 			bool            supportColorAttachment = false,
 			Multisampling   multisampling = Multisampling::None);
+		
+		/**
+		 * @brief Returns the default blit-downsampler.
+		 *
+		 * @return Blit-downsampler
+		 */
+		[[nodiscard]]
+		const Downsampler& getDownsampler() const;
 
         /**
          * Creates a new window and returns it's handle
@@ -558,9 +569,11 @@ namespace vkcv
 		/**
 		 * @brief Submit command stream to GPU for actual execution
 		 * 
-		 * @param handle command stream to submit
+		 * @param[in] handle Command stream to submit
+		 * @param[in] signalRendering Flag to specify if the command stream finishes rendering
 		 */
-		void submitCommandStream(const CommandStreamHandle& handle);
+		void submitCommandStream(const CommandStreamHandle& handle,
+								 bool signalRendering = true);
 
 		/**
 		 * @brief Prepare swapchain image for presentation to screen.
@@ -574,19 +587,29 @@ namespace vkcv
 		 * @brief Prepare image for use as a sampled image.
 		 * Handles internal state such as image format, also acts as a memory barrier
 		 * 
-		 * @param cmdStream Handle of the command stream to record the preparation commands to
-		 * @param image Handle of the image to prepare
+		 * @param[in] cmdStream Handle of the command stream to record the preparation commands to
+		 * @param[in] image Handle of the image to prepare
+		 * @param[in] mipLevelCount Count of mip levels to prepare
+		 * @param[in] mipLevelOffset Offset to start preparing mip levels
 		 */
-		void prepareImageForSampling(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+		void prepareImageForSampling(const CommandStreamHandle& cmdStream,
+									 const ImageHandle& image,
+									 uint32_t mipLevelCount = 0,
+									 uint32_t mipLevelOffset = 0);
 
 		/**
 		 * @brief Prepare image for use as a storage image.
 		 * Handles internal state such as image format, also acts as a memory barrier
 		 *
-		 * @param cmdStream Handle of the command stream to record the preparation commands to
-		 * @param image Handle of the image to prepare
+		 * @param[in] cmdStream Handle of the command stream to record the preparation commands to
+		 * @param[in] image Handle of the image to prepare
+		 * @param[in] mipLevelCount Count of mip levels to prepare
+		 * @param[in] mipLevelOffset Offset to start preparing mip levels
 		 */
-		void prepareImageForStorage(const CommandStreamHandle& cmdStream, const ImageHandle& image);
+		void prepareImageForStorage(const CommandStreamHandle& cmdStream,
+									const ImageHandle& image,
+									uint32_t mipLevelCount = 0,
+									uint32_t mipLevelOffset = 0);
 		
 		/**
 		 * @brief Manual trigger to record commands to prepare an image for use as an attachment

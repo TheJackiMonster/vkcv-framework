@@ -12,6 +12,7 @@
 
 namespace vkcv {
 	
+	class Downsampler;
 	class ImageManager;
 
 	/**
@@ -96,18 +97,14 @@ namespace vkcv {
 		void fill(const void* data, size_t size = SIZE_MAX);
 
 		/**
-		 * @brief Generates the entire mip chain from mip level zero,
-		 * returns after operation is finished
-		 */
-		void generateMipChainImmediate();
-
-		/**
 		 * @brief Records mip chain generation to command stream,
 		 * mip level zero is used as source
 		 * 
 		 * @param[out] cmdStream Command stream that the commands are recorded into
+		 * @param[in] downsampler Downsampler to generate mip levels with
 		 */
-		void recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream);
+		void recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream,
+									  const Downsampler &downsampler);
 		
 	private:
 	    // TODO: const qualifier removed, very hacky!!!

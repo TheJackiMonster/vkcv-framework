@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <vkcv/Core.hpp>
+#include <vkcv/Downsampler.hpp>
 #include <vkcv/Handles.hpp>
 
 namespace vkcv::material {
@@ -146,6 +147,15 @@ namespace vkcv::material {
          * @return true if the material is invalid, otherwise false
          */
 		bool operator!() const;
+		
+		/**
+		 * @brief Records mip chain generation to command stream of the whole material.
+		 *
+		 * @param[out] cmdStream Command stream that the commands are recorded into
+		 * @param[in] downsampler Downsampler to generate mip levels with
+		 */
+		void recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream,
+									  const Downsampler &downsampler);
 
         /**
          * Returns the descriptor bindings required by a given material

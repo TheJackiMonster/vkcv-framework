@@ -5,7 +5,6 @@
  */
 #include "ImageManager.hpp"
 #include "vkcv/Core.hpp"
-#include "ImageLayoutTransitions.hpp"
 #include "vkcv/Logger.hpp"
 
 #include <algorithm>
@@ -276,6 +275,46 @@ namespace vkcv {
 		return image.m_viewPerMip[mipLevel];
 	}
 	
+	static vk::ImageMemoryBarrier createImageLayoutTransitionBarrier(const ImageManager::Image &image,
+																	 uint32_t mipLevelCount,
+																	 uint32_t mipLevelOffset,
+																	 vk::ImageLayout newLayout) {
+		vk::ImageAspectFlags aspectFlags;
+		if (isDepthFormat(image.m_format)) {
+			aspectFlags = vk::ImageAspectFlagBits::eDepth;
+		} else {
+			aspectFlags = vk::ImageAspectFlagBits::eColor;
+		}
+		
+		const uint32_t mipLevelsMax = image.m_viewPerMip.size();
+		
+		if (mipLevelOffset > mipLevelsMax)
+			mipLevelOffset = mipLevelsMax;
+		
+		if ((!mipLevelCount) || (mipLevelOffset + mipLevelCount > mipLevelsMax))
+			mipLevelCount = mipLevelsMax - mipLevelOffset;
+		
+		vk::ImageSubresourceRange imageSubresourceRange(
+				aspectFlags,
+				mipLevelOffset,
+				mipLevelCount,
+				0,
+				image.m_layers
+		);
+		
+		// TODO: precise AccessFlagBits, will require a lot of context
+		return vk::ImageMemoryBarrier(
+				vk::AccessFlagBits::eMemoryWrite,
+				vk::AccessFlagBits::eMemoryRead,
+				image.m_layout,
+				newLayout,
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+				image.m_handle,
+				imageSubresourceRange
+		);
+	}
+	
 	void ImageManager::switchImageLayoutImmediate(const ImageHandle& handle, vk::ImageLayout newLayout) {
 		uint64_t id = handle.getId();
 		
@@ -287,7 +326,7 @@ namespace vkcv {
 		}
 		
 		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
-		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, newLayout);
+		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, 0, 0, newLayout);
 		
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Graphics;
@@ -309,11 +348,11 @@ namespace vkcv {
 		image.m_layout = newLayout;
 	}
 
-	void ImageManager::recordImageLayoutTransition(
-		const ImageHandle& handle, 
-		vk::ImageLayout newLayout, 
-		vk::CommandBuffer cmdBuffer) {
-
+	void ImageManager::recordImageLayoutTransition(const ImageHandle& handle,
+												   uint32_t mipLevelCount,
+												   uint32_t mipLevelOffset,
+												   vk::ImageLayout newLayout,
+												   vk::CommandBuffer cmdBuffer) {
 		const uint64_t id = handle.getId();
 		const bool isSwapchainImage = handle.isSwapchainImage();
 
@@ -323,8 +362,22 @@ namespace vkcv {
 		}
 
 		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
-		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, newLayout);
-		recordImageBarrier(cmdBuffer, transitionBarrier);
+		const auto transitionBarrier = createImageLayoutTransitionBarrier(
+				image,
+				mipLevelCount,
+				mipLevelOffset,
+				newLayout
+		);
+		
+		cmdBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eAllCommands,
+				vk::PipelineStageFlagBits::eAllCommands,
+				{},
+				nullptr,
+				nullptr,
+				transitionBarrier
+		);
+		
 		image.m_layout = newLayout;
 	}
 
@@ -341,8 +394,16 @@ namespace vkcv {
 		}
 
 		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
-		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, image.m_layout);
-		recordImageBarrier(cmdBuffer, transitionBarrier);
+		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, 0, 0, image.m_layout);
+		
+		cmdBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eAllCommands,
+				vk::PipelineStageFlagBits::eAllCommands,
+				{},
+				nullptr,
+				nullptr,
+				transitionBarrier
+		);
 	}
 	
 	constexpr uint32_t getBytesPerPixel(vk::Format format) {
@@ -452,7 +513,7 @@ namespace vkcv {
 		}
 
 		auto& image = m_images[id];
-		recordImageLayoutTransition(handle, vk::ImageLayout::eGeneral, cmdBuffer);
+		recordImageLayoutTransition(handle, 0, 0, vk::ImageLayout::eGeneral, cmdBuffer);
 
 		vk::ImageAspectFlags aspectMask = isDepthImageFormat(image.m_format) ?
 			vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
@@ -497,22 +558,6 @@ namespace vkcv {
 		}
 	}
 
-	void ImageManager::generateImageMipChainImmediate(const ImageHandle& handle) {
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Graphics;
-
-		if (handle.isSwapchainImage()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "You cannot generate a mip chain for the swapchain, what are you smoking?");
-			return;
-		}
-
-		const auto record = [this, handle](const vk::CommandBuffer cmdBuffer) {
-			recordImageMipGenerationToCmdBuffer(cmdBuffer, handle);
-		};
-
-		m_core->recordAndSubmitCommandsImmediate(submitInfo, record, nullptr);
-	}
-
 	void ImageManager::recordImageMipChainGenerationToCmdStream(
 		const vkcv::CommandStreamHandle& cmdStream,
 		const ImageHandle& handle) {
@@ -549,8 +594,8 @@ namespace vkcv {
 			vk::Offset3D(0, 0, 0), 
 			vk::Extent3D(dstImage.m_width, dstImage.m_height, dstImage.m_depth));
 
-		recordImageLayoutTransition(src, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer);
-		recordImageLayoutTransition(dst, vk::ImageLayout::eTransferDstOptimal, cmdBuffer);
+		recordImageLayoutTransition(src, 0, 0, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer);
+		recordImageLayoutTransition(dst, 0, 0, vk::ImageLayout::eTransferDstOptimal, cmdBuffer);
 
 		cmdBuffer.resolveImage(
 			srcImage.m_handle,

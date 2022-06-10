@@ -28,7 +28,8 @@ target_include_directories(voxelization SYSTEM BEFORE PRIVATE
 		${vkcv_shader_compiler_include}
 		${vkcv_gui_include}
 		${vkcv_upscaling_include}
-		${vkcv_effects_include})
+		${vkcv_effects_include}
+		${vkcv_algorithm_include})
 
 # linking with libraries from all dependencies and the VkCV framework
 target_link_libraries(voxelization
@@ -40,4 +41,5 @@ target_link_libraries(voxelization
 		vkcv_shader_compiler
 		vkcv_gui
 		vkcv_upscaling
-		vkcv_effects)
+		vkcv_effects
+		vkcv_algorithm)

@@ -20,6 +20,7 @@ namespace vkcv {
 		uint32_t mipLevel;
 		bool useGeneralLayout;
 		uint32_t arrayIndex;
+		uint32_t mipCount;
 	};
 	
 	/**
@@ -29,6 +30,7 @@ namespace vkcv {
 		uint32_t binding;
 		ImageHandle image;
 		uint32_t mipLevel;
+		uint32_t mipCount;
 	};
 	
 	/**
@@ -81,13 +83,15 @@ namespace vkcv {
 		 * @param[in] mipLevel Mip level index
 		 * @param[in] useGeneralLayout Flag to use a general layout
 		 * @param[in] arrayIndex Image array index
+		 * @param[in] mipCount Mip level count
 		 * @return Instance of descriptor writes
 		 */
 		DescriptorWrites& writeSampledImage(uint32_t binding,
 											ImageHandle image,
 											uint32_t mipLevel = 0,
 											bool useGeneralLayout = false,
-											uint32_t arrayIndex = 0);
+											uint32_t arrayIndex = 0,
+											uint32_t mipCount = 1);
 		
 		/**
 		 * @brief Adds an entry to write an image to a given binding
@@ -96,11 +100,13 @@ namespace vkcv {
 		 * @param[in] binding Binding index
 		 * @param[in,out] image Image handle
 		 * @param[in] mipLevel Mip level index
+		 * @param[in] mipCount Mip level count
 		 * @return Instance of descriptor writes
 		 */
 		DescriptorWrites& writeStorageImage(uint32_t binding,
 											ImageHandle image,
-											uint32_t mipLevel = 0);
+											uint32_t mipLevel = 0,
+											uint32_t mipCount = 1);
 		
 		/**
 		 * @brief Adds an entry to write a buffer to a given binding

@@ -37,3 +37,6 @@
 [submodule "lib/VulkanMemoryAllocator-Hpp"]
 	path = lib/VulkanMemoryAllocator-Hpp
 	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp.git
+[submodule "modules/algorithm/lib/FidelityFX-SPD"]
+	path = modules/algorithm/lib/FidelityFX-SPD
+	url = https://github.com/GPUOpen-Effects/FidelityFX-SPD.git

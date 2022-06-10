@@ -43,7 +43,7 @@ int main(int argc, const char** argv) {
     std::vector<float> vertices = teapot.getVertices();
     std::vector<uint32_t> indices = teapot.getIndices();
 
-	vkcv::shader::GLSLCompiler compiler;
+	vkcv::shader::GLSLCompiler compiler (vkcv::shader::GLSLCompileTarget::RAY_TRACING);
 
 	vkcv::ShaderProgram rtxShaderProgram;
 	compiler.compile(vkcv::ShaderStage::RAY_GEN, std::filesystem::path("resources/shaders/ambientOcclusion.rgen"),

@@ -163,6 +163,7 @@ namespace vkcv
 		size_t bufferInfoIndex;
 		uint32_t binding;
 		uint32_t arrayElementIndex;
+		uint32_t descriptorCount;
 		vk::DescriptorType type;
     };
 
@@ -181,20 +182,27 @@ namespace vkcv
 
 		for (const auto& write : writes.getSampledImageWrites())
 		{
-		    vk::ImageLayout layout = write.useGeneralLayout ? vk::ImageLayout::eGeneral : vk::ImageLayout::eShaderReadOnlyOptimal;
-			const vk::DescriptorImageInfo imageInfo(
-				nullptr,
-				imageManager.getVulkanImageView(write.image, write.mipLevel),
-                layout
+		    const vk::ImageLayout layout = (write.useGeneralLayout?
+					vk::ImageLayout::eGeneral :
+					vk::ImageLayout::eShaderReadOnlyOptimal
 			);
 			
-			imageInfos.push_back(imageInfo);
+			for (uint32_t i = 0; i < write.mipCount; i++) {
+				const vk::DescriptorImageInfo imageInfo(
+						nullptr,
+						imageManager.getVulkanImageView(write.image, write.mipLevel + i),
+						layout
+				);
+				
+				imageInfos.push_back(imageInfo);
+			}
 			
 			WriteDescriptorSetInfo vulkanWrite = {
-					imageInfos.size(),
+					imageInfos.size() + 1 - write.mipCount,
 					0,
 					write.binding,
 					write.arrayIndex,
+					write.mipCount,
 					vk::DescriptorType::eSampledImage,
 			};
 			
@@ -202,19 +210,22 @@ namespace vkcv
 		}
 
 		for (const auto& write : writes.getStorageImageWrites()) {
-			const vk::DescriptorImageInfo imageInfo(
-				nullptr,
-				imageManager.getVulkanImageView(write.image, write.mipLevel),
-				vk::ImageLayout::eGeneral
-			);
-			
-			imageInfos.push_back(imageInfo);
+			for (uint32_t i = 0; i < write.mipCount; i++) {
+				const vk::DescriptorImageInfo imageInfo(
+						nullptr,
+						imageManager.getVulkanImageView(write.image, write.mipLevel + i),
+						vk::ImageLayout::eGeneral
+				);
+				
+				imageInfos.push_back(imageInfo);
+			}
 			
 			WriteDescriptorSetInfo vulkanWrite = {
-					imageInfos.size(),
+					imageInfos.size() + 1 - write.mipCount,
 					0,
 					write.binding,
 					0,
+					write.mipCount,
 					vk::DescriptorType::eStorageImage
 			};
 			
@@ -240,6 +251,7 @@ namespace vkcv
 					bufferInfos.size(),
 					write.binding,
 					0,
+					1,
 					write.dynamic?
 					vk::DescriptorType::eUniformBufferDynamic :
 					vk::DescriptorType::eUniformBuffer
@@ -267,6 +279,7 @@ namespace vkcv
 					bufferInfos.size(),
 					write.binding,
 					0,
+					1,
 					write.dynamic?
 					vk::DescriptorType::eStorageBufferDynamic :
 					vk::DescriptorType::eStorageBuffer
@@ -291,6 +304,7 @@ namespace vkcv
 					0,
 					write.binding,
 					0,
+					1,
 					vk::DescriptorType::eSampler
 			};
 			
@@ -304,7 +318,7 @@ namespace vkcv
 					set,
 					write.binding,
 					write.arrayElementIndex,
-					1,
+					write.descriptorCount,
 					write.type,
 					(write.imageInfoIndex > 0? &(imageInfos[write.imageInfoIndex - 1]) : nullptr),
 					(write.bufferInfoIndex > 0? &(bufferInfos[write.bufferInfoIndex - 1]) : nullptr)
