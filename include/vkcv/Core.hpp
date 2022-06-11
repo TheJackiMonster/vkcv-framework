@@ -314,6 +314,14 @@ namespace vkcv
          */
         [[nodiscard]]
         uint32_t getImageHeight(const ImageHandle &image);
+	
+		/**
+         * Returns the image depth
+         * @param image handle
+         * @return imageDepth
+         */
+		[[nodiscard]]
+		uint32_t getImageDepth(const ImageHandle &image);
 
         /**
          * Returns the image format of the image
@@ -331,6 +339,15 @@ namespace vkcv
 		 */
 		[[nodiscard]]
 		uint32_t getImageMipLevels(const ImageHandle &image);
+		
+		/**
+		 * @brief Returns the images amount of array layers.
+		 *
+		 * @param image Image handle
+		 * @return Amount of array layers
+		 */
+		[[nodiscard]]
+		uint32_t getImageArrayLayers(const ImageHandle &image);
 
 		/**
 		 * @brief Creates a descriptor set layout handle by a set of descriptor bindings.

@@ -81,14 +81,15 @@ namespace vkcv
 					nullptr
 			);
 			
-			if (binding.variableCount) {
-				bindingsFlags.push_back(
-						vk::DescriptorBindingFlagBits::eVariableDescriptorCount |
-						vk::DescriptorBindingFlagBits::ePartiallyBound
-				);
-			} else {
-				bindingsFlags.emplace_back();
-			}
+			vk::DescriptorBindingFlags flags;
+			
+			if (binding.variableCount)
+				flags |= vk::DescriptorBindingFlagBits::eVariableDescriptorCount;
+			
+			if (binding.partialBinding)
+				flags |= vk::DescriptorBindingFlagBits::ePartiallyBound;
+	
+			bindingsFlags.push_back(flags);
         }
 		
         vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo (

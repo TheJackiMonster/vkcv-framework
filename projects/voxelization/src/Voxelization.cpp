@@ -229,7 +229,8 @@ void Voxelization::voxelizeMeshes(
 	const std::vector<vkcv::Mesh>&                  meshes,
 	const std::vector<glm::mat4>&                   modelMatrices,
 	const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets,
-	const vkcv::WindowHandle&                       windowHandle) {
+	const vkcv::WindowHandle&                       windowHandle,
+	vkcv::Downsampler&								downsampler) {
 
 	m_voxelInfoBuffer.fill({ m_voxelInfo });
 
@@ -314,7 +315,7 @@ void Voxelization::voxelizeMeshes(
 
 	// intermediate image mipchain
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Intermediate Voxel mipmap generation", { 1, 1, 1, 1 });
-	m_voxelImageIntermediate.recordMipChainGeneration(cmdStream, m_corePtr->getDownsampler());
+	m_voxelImageIntermediate.recordMipChainGeneration(cmdStream, downsampler);
 	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// secondary bounce
@@ -326,12 +327,12 @@ void Voxelization::voxelizeMeshes(
 		bufferToImageDispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_secondaryBounceDescriptorSet) },
 		vkcv::PushConstants(0));
-	m_voxelImage.recordMipChainGeneration(cmdStream, m_corePtr->getDownsampler());
+	m_voxelImage.recordMipChainGeneration(cmdStream, downsampler);
 	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// final image mipchain
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel mipmap generation", { 1, 1, 1, 1 });
-	m_voxelImage.recordMipChainGeneration(cmdStream, m_corePtr->getDownsampler());
+	m_voxelImage.recordMipChainGeneration(cmdStream, downsampler);
 	m_corePtr->recordEndDebugLabel(cmdStream);
 }
 

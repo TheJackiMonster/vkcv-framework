@@ -167,11 +167,14 @@ namespace vkcv {
                     variableCount = true;
             }
 
-            DescriptorBinding binding{bindingID,
-                                      DescriptorType::UNIFORM_BUFFER,
-                                      descriptorCount,
-                                      shaderStage,
-                                      variableCount};
+            DescriptorBinding binding {
+				bindingID,
+				DescriptorType::UNIFORM_BUFFER,
+				descriptorCount,
+				shaderStage,
+				variableCount,
+				variableCount // partialBinding == variableCount
+			};
 
             auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
             if(!insertionResult.second)
@@ -202,12 +205,14 @@ namespace vkcv {
                     variableCount = true;
             }
 
-            DescriptorBinding binding{bindingID,
-                                      DescriptorType::STORAGE_BUFFER,
-                                      descriptorCount,
-                                      shaderStage,
-                                      variableCount};
-
+            DescriptorBinding binding {
+				bindingID,
+				DescriptorType::STORAGE_BUFFER,
+				descriptorCount,
+				shaderStage,
+				variableCount,
+				variableCount // partialBinding == variableCount
+			};
 
             auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
             if(!insertionResult.second)
@@ -237,11 +242,14 @@ namespace vkcv {
                     variableCount = true;
             }
 
-            DescriptorBinding binding {bindingID,
-                                       DescriptorType::SAMPLER,
-                                       descriptorCount,
-                                       shaderStage,
-                                       variableCount};
+            DescriptorBinding binding {
+				bindingID,
+				DescriptorType::SAMPLER,
+				descriptorCount,
+				shaderStage,
+				variableCount,
+				variableCount // partialBinding == variableCount
+			};
 
             auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
             if(!insertionResult.second)
@@ -271,11 +279,14 @@ namespace vkcv {
                     variableCount = true;
             }
 
-            DescriptorBinding binding {bindingID,
-                                       DescriptorType::IMAGE_SAMPLED,
-                                       descriptorCount,
-                                       shaderStage,
-                                       variableCount};
+            DescriptorBinding binding {
+				bindingID,
+				DescriptorType::IMAGE_SAMPLED,
+				descriptorCount,
+				shaderStage,
+				variableCount,
+				variableCount // partialBinding == variableCount
+			};
 
             auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
             if(!insertionResult.second)
@@ -305,11 +316,14 @@ namespace vkcv {
                     variableCount = true;
             }
 
-            DescriptorBinding binding {bindingID,
-                                       DescriptorType::IMAGE_STORAGE,
-                                       descriptorCount,
-                                       shaderStage,
-                                       variableCount};
+            DescriptorBinding binding {
+				bindingID,
+				DescriptorType::IMAGE_STORAGE,
+				descriptorCount,
+				shaderStage,
+				variableCount,
+				variableCount // partialBinding == variableCount
+			};
 
             auto insertionResult = m_DescriptorSets[setID].insert(std::make_pair(bindingID, binding));
             if(!insertionResult.second)
@@ -333,6 +347,7 @@ namespace vkcv {
                 DescriptorType::ACCELERATION_STRUCTURE_KHR,
                 base_type.vecsize,
                 shaderStage,
+				false,
 				false
 			};
 

@@ -125,6 +125,10 @@ namespace vkcv {
 			imageViewType = vk::ImageViewType::e2D;
 		}
 		
+		if (vk::ImageType::e3D == imageType) {
+			createFlags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
+		}
+		
 		if (!formatProperties.optimalTilingFeatures) {
 			if (!formatProperties.linearTilingFeatures)
 				return ImageHandle();
@@ -188,53 +192,51 @@ namespace vkcv {
 		std::vector<vk::ImageView> arrayViews;
 		
 		for (uint32_t mip = 0; mip < mipCount; mip++) {
-			{
-				const vk::ImageViewCreateInfo imageViewCreateInfo(
-						{},
-						image,
-						imageViewType,
-						format,
-						vk::ComponentMapping(
-								vk::ComponentSwizzle::eIdentity,
-								vk::ComponentSwizzle::eIdentity,
-								vk::ComponentSwizzle::eIdentity,
-								vk::ComponentSwizzle::eIdentity
-						),
-						vk::ImageSubresourceRange(
-								aspectFlags,
-								mip,
-								mipCount - mip,
-								0,
-								arrayLayers
-						)
-				);
-				
-				views.push_back(device.createImageView(imageViewCreateInfo));
-			}
+			const vk::ImageViewCreateInfo imageViewCreateInfo(
+					{},
+					image,
+					imageViewType,
+					format,
+					vk::ComponentMapping(
+							vk::ComponentSwizzle::eIdentity,
+							vk::ComponentSwizzle::eIdentity,
+							vk::ComponentSwizzle::eIdentity,
+							vk::ComponentSwizzle::eIdentity
+					),
+					vk::ImageSubresourceRange(
+							aspectFlags,
+							mip,
+							mipCount - mip,
+							0,
+							arrayLayers
+					)
+			);
 			
-			{
-				const vk::ImageViewCreateInfo imageViewCreateInfo(
-						{},
-						image,
-						vk::ImageViewType::e2DArray,
-						format,
-						vk::ComponentMapping(
-								vk::ComponentSwizzle::eIdentity,
-								vk::ComponentSwizzle::eIdentity,
-								vk::ComponentSwizzle::eIdentity,
-								vk::ComponentSwizzle::eIdentity
-						),
-						vk::ImageSubresourceRange(
-								aspectFlags,
-								mip,
-								1,
-								0,
-								arrayLayers
-						)
-				);
-				
-				arrayViews.push_back(device.createImageView(imageViewCreateInfo));
-			}
+			views.push_back(device.createImageView(imageViewCreateInfo));
+		}
+		
+		for (uint32_t mip = 0; mip < mipCount; mip++) {
+			const vk::ImageViewCreateInfo imageViewCreateInfo(
+					{},
+					image,
+					vk::ImageViewType::e2DArray,
+					format,
+					vk::ComponentMapping(
+							vk::ComponentSwizzle::eIdentity,
+							vk::ComponentSwizzle::eIdentity,
+							vk::ComponentSwizzle::eIdentity,
+							vk::ComponentSwizzle::eIdentity
+					),
+					vk::ImageSubresourceRange(
+							aspectFlags,
+							mip,
+							1,
+							0,
+							arrayLayers
+					)
+			);
+			
+			arrayViews.push_back(device.createImageView(imageViewCreateInfo));
 		}
 		
 		const uint64_t id = m_images.size();
@@ -253,6 +255,7 @@ namespace vkcv {
 			arrayLayers,
 			vk::ImageLayout::eUndefined
 		});
+		
 		return ImageHandle(id, [&](uint64_t id) { destroyImageById(id); });
 	}
 	
@@ -395,7 +398,9 @@ namespace vkcv {
 				transitionBarrier
 				);
 			},
-			nullptr);
+			nullptr
+		);
+		
 		image.m_layout = newLayout;
 	}
 
@@ -759,6 +764,21 @@ namespace vkcv {
 		}
 
 		return m_images[id].m_viewPerMip.size();
+	}
+	
+	uint32_t ImageManager::getImageArrayLayers(const ImageHandle& handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (handle.isSwapchainImage()) {
+			return m_swapchainImages[0].m_layers;
+		}
+		
+		if (id >= m_images.size()) {
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
+			return 0;
+		}
+		
+		return m_images[id].m_layers;
 	}
 
 	void ImageManager::setCurrentSwapchainImageIndex(int index) {

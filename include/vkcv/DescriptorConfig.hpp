@@ -68,6 +68,7 @@ namespace vkcv
         uint32_t descriptorCount;
         ShaderStages shaderStages;
         bool variableCount;
+		bool partialBinding;
 
         bool operator ==(const DescriptorBinding &other) const;
     };

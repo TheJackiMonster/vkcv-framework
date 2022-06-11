@@ -1,6 +1,7 @@
 #pragma once
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/Camera.hpp>
+#include <vkcv/Downsampler.hpp>
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL // use this before inclusion, else error!
@@ -29,7 +30,8 @@ public:
 		const vkcv::camera::Camera&         camera,
 		const glm::vec3&                    voxelVolumeOffset,
 		float                               voxelVolumeExtent,
-		const vkcv::WindowHandle&           windowHandle);
+		const vkcv::WindowHandle&           windowHandle,
+		vkcv::Downsampler&					downsampler);
 
 	vkcv::ImageHandle   getShadowMap();
 	vkcv::SamplerHandle getShadowSampler();

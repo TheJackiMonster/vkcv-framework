@@ -891,12 +891,21 @@ namespace vkcv
 		return m_ImageManager->getImageHeight(image);
 	}
 	
+	uint32_t Core::getImageDepth(const ImageHandle& image)
+	{
+		return m_ImageManager->getImageDepth(image);
+	}
+	
 	vk::Format Core::getImageFormat(const ImageHandle& image) {
 		return m_ImageManager->getImageFormat(image);
 	}
 	
 	uint32_t Core::getImageMipLevels(const ImageHandle &image) {
 		return m_ImageManager->getImageMipCount(image);
+	}
+	
+	uint32_t Core::getImageArrayLayers(const ImageHandle &image) {
+		return m_ImageManager->getImageArrayLayers(image);
 	}
 
 	Swapchain& Core::getSwapchainOfCurrentWindow() {

@@ -236,7 +236,8 @@ void ShadowMapping::recordShadowMapRendering(
 	const vkcv::camera::Camera&         camera,
 	const glm::vec3&                    voxelVolumeOffset,
 	float                               voxelVolumeExtent,
-	const vkcv::WindowHandle&           windowHandle) {
+	const vkcv::WindowHandle&           windowHandle,
+	vkcv::Downsampler&					downsampler) {
 
 	LightInfo lightInfo;
 	lightInfo.sunColor = lightColor;
@@ -260,7 +261,6 @@ void ShadowMapping::recordShadowMapRendering(
 		shadowPushConstants.appendDrawcall(lightInfo.lightMatrix * m);
 	}
 	
-
 	std::vector<vkcv::DrawcallInfo> drawcalls;
 	for (const auto& mesh : meshes) {
 		drawcalls.push_back(vkcv::DrawcallInfo(mesh, {}));
@@ -321,7 +321,7 @@ void ShadowMapping::recordShadowMapRendering(
 		dispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_shadowBlurYDescriptorSet) },
 		vkcv::PushConstants(0));
-	m_shadowMap.recordMipChainGeneration(cmdStream, m_corePtr->getDownsampler());
+	m_shadowMap.recordMipChainGeneration(cmdStream, downsampler);
 
 	m_corePtr->recordEndDebugLabel(cmdStream);
 }

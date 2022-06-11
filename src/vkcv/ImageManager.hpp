@@ -133,6 +133,9 @@ namespace vkcv {
 
 		[[nodiscard]]
 		uint32_t getImageMipCount(const ImageHandle& handle) const;
+		
+		[[nodiscard]]
+		uint32_t getImageArrayLayers(const ImageHandle& handle) const;
 
 		void setCurrentSwapchainImageIndex(int index);
 		

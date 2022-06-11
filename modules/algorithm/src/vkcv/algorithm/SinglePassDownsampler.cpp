@@ -27,7 +27,8 @@ namespace vkcv::algorithm {
 				DescriptorType::IMAGE_STORAGE,
 				SPD_MAX_MIP_LEVELS + 1,
 				ShaderStage::COMPUTE,
-				false
+				false,
+				true
 		};
 		
 		auto binding_1 = DescriptorBinding {
@@ -35,6 +36,7 @@ namespace vkcv::algorithm {
 				DescriptorType::IMAGE_STORAGE,
 				1,
 				ShaderStage::COMPUTE,
+				false,
 				false
 		};
 		
@@ -43,6 +45,7 @@ namespace vkcv::algorithm {
 				DescriptorType::STORAGE_BUFFER,
 				1,
 				ShaderStage::COMPUTE,
+				false,
 				false
 		};
 		
@@ -50,14 +53,18 @@ namespace vkcv::algorithm {
 				3,
 				DescriptorType::IMAGE_SAMPLED,
 				1,
-				ShaderStage::COMPUTE
+				ShaderStage::COMPUTE,
+				false,
+				false
 		};
 		
 		auto binding_4 = DescriptorBinding{
 				4,
 				DescriptorType::SAMPLER,
 				1,
-				ShaderStage::COMPUTE
+				ShaderStage::COMPUTE,
+				false,
+				false
 		};
 		
 		descriptorBindings.insert(std::make_pair(0, binding_0));
@@ -195,9 +202,10 @@ namespace vkcv::algorithm {
 			);
 		}
 		
-		m_pipeline = m_core.createComputePipeline({program,{
-				m_descriptorSetLayout
-		}});
+		m_pipeline = m_core.createComputePipeline({
+			program,
+			{ m_descriptorSetLayout }
+		});
 		
 		uint32_t zeroes [m_globalCounter.getCount()];
 		memset(zeroes, 0, m_globalCounter.getSize());
@@ -207,8 +215,11 @@ namespace vkcv::algorithm {
 	void SinglePassDownsampler::recordDownsampling(const CommandStreamHandle &cmdStream,
 												   const ImageHandle &image) {
 		const uint32_t mipLevels = m_core.getImageMipLevels(image);
+		const uint32_t depth = m_core.getImageDepth(image);
 		
-		if (mipLevels < 7) {
+		m_core.prepareImageForSampling(cmdStream, image);
+		
+		if ((mipLevels < 4) || (depth > 1)) {
 			m_core.getDownsampler().recordDownsampling(cmdStream, image);
 			return;
 		}
@@ -262,7 +273,7 @@ namespace vkcv::algorithm {
 		uint32_t dispatch [3];
 		dispatch[0] = dispatchThreadGroupCountXY[0];
 		dispatch[1] = dispatchThreadGroupCountXY[1];
-		dispatch[2] = 1; // TODO: No array size supported by images yet!
+		dispatch[2] = m_core.getImageArrayLayers(image);
 		
 		vkcv::PushConstants pushConstants (m_sampler? sizeof(SPDConstantsSampler) : sizeof(SPDConstants));
 		

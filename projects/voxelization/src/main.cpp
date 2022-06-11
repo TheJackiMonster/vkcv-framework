@@ -23,6 +23,13 @@ int main(int argc, const char** argv) {
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 	
+	features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
+			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+			[](vk::PhysicalDeviceDescriptorIndexingFeatures& features) {
+				features.setDescriptorBindingPartiallyBound(true);
+			}
+	);
+	
 	features.tryExtensionFeature<vk::PhysicalDeviceShaderSubgroupExtendedTypesFeatures>(
 		VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES_EXTENSION_NAME,
 		[](vk::PhysicalDeviceShaderSubgroupExtendedTypesFeatures& features) {
@@ -251,7 +258,7 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::DescriptorSetHandle> materialDescriptorSets;
 	std::vector<vkcv::Image> sceneImages;
 	
-	vkcv::algorithm::SinglePassDownsampler spdDownsampler (core);
+	vkcv::algorithm::SinglePassDownsampler spdDownsampler (core, colorSampler);
 	vkcv::Downsampler &downsampler = core.getDownsampler();
 	
 	auto mipStream = core.createCommandStream(vkcv::QueueType::Graphics);
@@ -775,7 +782,9 @@ int main(int argc, const char** argv) {
 			cameraManager.getActiveCamera(),
 			voxelization.getVoxelOffset(),
 			voxelization.getVoxelExtent(),
-			windowHandle);
+			windowHandle,
+			spdDownsampler
+		);
 
 		// voxelization
 		voxelization.setVoxelExtent(voxelizationExtent);
@@ -784,7 +793,9 @@ int main(int argc, const char** argv) {
 			meshes, 
 			modelMatrices,
 			perMeshDescriptorSets,
-			windowHandle);
+			windowHandle,
+			spdDownsampler
+		);
 
 		// depth prepass
 		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();

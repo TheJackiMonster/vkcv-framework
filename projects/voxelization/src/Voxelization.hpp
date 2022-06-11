@@ -2,6 +2,7 @@
 #include <vkcv/Core.hpp>
 #include <glm/glm.hpp>
 #include <vkcv/camera/Camera.hpp>
+#include <vkcv/Downsampler.hpp>
 
 class Voxelization{
 public:
@@ -24,7 +25,8 @@ public:
 		const std::vector<vkcv::Mesh>&                  meshes,
 		const std::vector<glm::mat4>&                   modelMatrices,
 		const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets,
-		const vkcv::WindowHandle&                       windowHandle);
+		const vkcv::WindowHandle&                       windowHandle,
+		vkcv::Downsampler&								downsampler);
 
 	void renderVoxelVisualisation(
 		vkcv::CommandStreamHandle               cmdStream,

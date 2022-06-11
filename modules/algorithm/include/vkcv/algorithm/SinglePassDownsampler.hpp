@@ -21,7 +21,6 @@ namespace vkcv::algorithm {
 		int numWorkGroupsPerSlice;
 		int workGroupOffset[2];
 		float invInputSize[2];
-		float padding[2];
 	};
 
 	class SinglePassDownsampler : public vkcv::Downsampler {
