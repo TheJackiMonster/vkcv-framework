@@ -19,6 +19,7 @@ namespace vkcv {
 	public:
 		/**
          * Constructor to create a downsampler instance.
+         *
          * @param[in,out] core Reference to a Core instance
          */
 		explicit Downsampler(Core& core);
@@ -29,8 +30,8 @@ namespace vkcv {
 		 * Record the commands of the given downsampler instance to
          * scale the image down on its own mip levels.
 		 *
-		 * @param[in] cmdStream
-		 * @param[in] image
+		 * @param[in] cmdStream Command stream handle
+		 * @param[in] image Image handle
 		 */
 		virtual void recordDownsampling(const CommandStreamHandle& cmdStream,
 										const ImageHandle& image) = 0;

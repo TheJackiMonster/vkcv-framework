@@ -24,6 +24,7 @@ namespace vkcv::upscaling {
 	public:
         /**
          * Constructor to create an upscaling instance.
+         *
          * @param[in,out] core Reference to a Core instance
          */
 		explicit Upscaling(Core& core);
@@ -34,6 +35,7 @@ namespace vkcv::upscaling {
          * Record the comands of the given upscaling instance to
          * scale the image of the input handle to the resolution of
          * the output image handle.
+         *
          * @param[in] cmdStream Command stream handle to record commands
          * @param[in] input Input image handle
          * @param[in] output Output image handle

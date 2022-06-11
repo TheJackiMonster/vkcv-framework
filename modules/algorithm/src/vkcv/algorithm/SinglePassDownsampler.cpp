@@ -19,6 +19,21 @@
 
 namespace vkcv::algorithm {
 	
+	#define SPD_MAX_MIP_LEVELS 12
+	
+	struct SPDConstants {
+		int mips;
+		int numWorkGroupsPerSlice;
+		int workGroupOffset[2];
+	};
+	
+	struct SPDConstantsSampler {
+		int mips;
+		int numWorkGroupsPerSlice;
+		int workGroupOffset[2];
+		float invInputSize[2];
+	};
+	
 	static DescriptorBindings getDescriptorBindings(const SamplerHandle &sampler) {
 		DescriptorBindings descriptorBindings = {};
 		

@@ -49,6 +49,7 @@ namespace vkcv::upscaling {
     /**
      * Calculates the internal resolution for actual rendering if
      * a specific mode of quality is used for upscaling with FSR.
+     *
      * @param[in] mode Mode of quality
      * @param[in] outputWidth Final resolution width
      * @param[in] outputHeight Final resolution height
@@ -62,6 +63,7 @@ namespace vkcv::upscaling {
     /**
      * Returns the matching negative lod bias to reduce artifacts
      * upscaling with FSR under a given mode of quality.
+     *
      * @param mode Mode of quality
      * @return Lod bias
      */
@@ -179,6 +181,7 @@ namespace vkcv::upscaling {
 	public:
         /**
          * Constructor to create instance for FSR upscaling.
+         *
          * @param[in,out] core Reference to a Core instance
          */
 		explicit FSRUpscaling(Core& core);
@@ -187,6 +190,7 @@ namespace vkcv::upscaling {
          * Record the comands of the FSR upscaling instance to
          * scale the image of the input handle to the resolution of
          * the output image handle via FidelityFX Super Resolution.
+         *
          * @param[in] cmdStream Command stream handle to record commands
          * @param[in] input Input image handle
          * @param[in] output Output image handle
@@ -197,6 +201,7 @@ namespace vkcv::upscaling {
 
         /**
          * Checks if HDR support is enabled and returns the status as boolean.
+         *
          * @return true if HDR is supported, otherwise false
          */
 		[[nodiscard]]
@@ -204,12 +209,14 @@ namespace vkcv::upscaling {
 
         /**
          * Changes the status of HDR support of the FSR upscaling instance.
+         *
          * @param[in] enabled New status of HDR support
          */
 		void setHdrEnabled(bool enabled);
 
         /**
          * Returns the amount of sharpness the FSR upscaling instance is using.
+         *
          * @return The amount of sharpness
          */
 		[[nodiscard]]
@@ -219,6 +226,7 @@ namespace vkcv::upscaling {
          * Changes the amount of sharpness of the FSR upscaling instance.
          * The new sharpness value is restricted by 0.0f as lower and 1.0f
          * as upper boundary.
+         *
          * @param[in] sharpness New sharpness value
          */
 		void setSharpness(float sharpness);
