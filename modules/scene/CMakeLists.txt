@@ -36,13 +36,24 @@ add_library(vkcv_scene ${vkcv_build_attribute} ${vkcv_scene_sources})
 target_link_libraries(vkcv_scene vkcv)
 
 # including headers of dependencies and the VkCV framework
-target_include_directories(vkcv_scene SYSTEM BEFORE PRIVATE ${vkcv_include} ${vkcv_includes} ${vkcv_asset_loader_include} ${vkcv_material_include} ${vkcv_camera_include})
+target_include_directories(vkcv_scene SYSTEM BEFORE PRIVATE
+		${vkcv_include}
+		${vkcv_includes}
+		${vkcv_asset_loader_include}
+		${vkcv_material_include}
+		${vkcv_camera_include}
+		${vkcv_algorithm_include})
 
 # add the own include directory for public headers
 target_include_directories(vkcv_scene BEFORE PUBLIC ${vkcv_scene_include})
 
 # linking with libraries from all dependencies and the VkCV framework
-target_link_libraries(vkcv_scene vkcv vkcv_asset_loader vkcv_material vkcv_camera)
+target_link_libraries(vkcv_scene
+		vkcv
+		vkcv_asset_loader
+		vkcv_material
+		vkcv_camera
+		vkcv_algorithm)
 
 if (vkcv_parent_scope)
 	list(APPEND vkcv_modules_includes ${vkcv_scene_include})

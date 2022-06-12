@@ -92,6 +92,9 @@ namespace vkcv {
 			
 			if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eStorageImage)) {
 				imageTiling = vk::ImageTiling::eLinear;
+				
+				if (!(formatProperties.linearTilingFeatures & vk::FormatFeatureFlagBits::eStorageImage))
+					return ImageHandle();
 			}
 		}
 		
@@ -253,7 +256,8 @@ namespace vkcv {
 			
 			format,
 			arrayLayers,
-			vk::ImageLayout::eUndefined
+			vk::ImageLayout::eUndefined,
+			supportStorage
 		});
 		
 		return ImageHandle(id, [&](uint64_t id) { destroyImageById(id); });
@@ -750,6 +754,22 @@ namespace vkcv {
 
 		return isSwapchainFormat ? m_swapchainImages[m_currentSwapchainInputImage].m_format : m_images[id].m_format;
 	}
+	
+	bool ImageManager::isImageSupportingStorage(const ImageHandle& handle) const {
+		const uint64_t id = handle.getId();
+		const bool isSwapchainFormat = handle.isSwapchainImage();
+		
+		if (isSwapchainFormat) {
+			return false;
+		}
+		
+		if (id >= m_images.size()) {
+			vkcv_log(LogLevel::ERROR, "Invalid handle");
+			return false;
+		}
+		
+		return m_images[id].m_storage;
+	}
 
 	uint32_t ImageManager::getImageMipCount(const ImageHandle& handle) const {
 		const uint64_t id = handle.getId();
@@ -808,7 +828,8 @@ namespace vkcv {
 				1,
 				format,
 				1,
-				vk::ImageLayout::eUndefined
+				vk::ImageLayout::eUndefined,
+				false
 			});
 		}
 	}

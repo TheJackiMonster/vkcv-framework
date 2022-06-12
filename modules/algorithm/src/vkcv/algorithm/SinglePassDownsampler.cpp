@@ -234,7 +234,7 @@ namespace vkcv::algorithm {
 		
 		m_core.prepareImageForSampling(cmdStream, image);
 		
-		if ((mipLevels < 4) || (depth > 1)) {
+		if ((mipLevels < 4) || (depth > 1) || (!m_core.isImageSupportingStorage(image))) {
 			m_core.getDownsampler().recordDownsampling(cmdStream, image);
 			return;
 		}

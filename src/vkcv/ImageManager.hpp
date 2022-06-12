@@ -46,6 +46,7 @@ namespace vkcv {
 			vk::Format                  m_format;
 			uint32_t                    m_layers;
 			vk::ImageLayout             m_layout;
+			bool 						m_storage;
 		private:
 			friend ImageManager;
 		};
@@ -130,6 +131,9 @@ namespace vkcv {
 		
 		[[nodiscard]]
 		vk::Format getImageFormat(const ImageHandle& handle) const;
+		
+		[[nodiscard]]
+		bool isImageSupportingStorage(const ImageHandle& handle) const;
 
 		[[nodiscard]]
 		uint32_t getImageMipCount(const ImageHandle& handle) const;

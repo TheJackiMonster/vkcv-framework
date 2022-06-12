@@ -900,6 +900,10 @@ namespace vkcv
 		return m_ImageManager->getImageFormat(image);
 	}
 	
+	bool Core::isImageSupportingStorage(const ImageHandle &image) {
+		return m_ImageManager->isImageSupportingStorage(image);
+	}
+	
 	uint32_t Core::getImageMipLevels(const ImageHandle &image) {
 		return m_ImageManager->getImageMipCount(image);
 	}
@@ -931,9 +935,9 @@ namespace vkcv
 	    return m_DescriptorManager->getDescriptorSetLayout(handle);
 	}
 
-	DescriptorSetHandle Core::createDescriptorSet(const DescriptorSetLayoutHandle &layoutHandle)
+	DescriptorSetHandle Core::createDescriptorSet(const DescriptorSetLayoutHandle &layout)
     {
-        return m_DescriptorManager->createDescriptorSet(layoutHandle);
+        return m_DescriptorManager->createDescriptorSet(layout);
     }
 
 	void Core::writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites &writes) {

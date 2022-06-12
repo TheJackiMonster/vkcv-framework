@@ -300,41 +300,54 @@ namespace vkcv
 		Swapchain& getSwapchain(const WindowHandle &handle);
 
 		/**
-		 * Returns the image width
-		 * @param image handle
+		 * @brief Returns the image width.
+		 *
+		 * @param image Image handle
 		 * @return imageWidth
 		 */
         [[nodiscard]]
         uint32_t getImageWidth(const ImageHandle &image);
 
         /**
-         * Returns the image height
-         * @param image handle
+         * @brief Returns the image height.
+         *
+         * @param[in] image Image handle
          * @return imageHeight
          */
         [[nodiscard]]
         uint32_t getImageHeight(const ImageHandle &image);
 	
 		/**
-         * Returns the image depth
-         * @param image handle
+         * @brief Returns the image depth.
+         *
+         * @param[in] image Image handle
          * @return imageDepth
          */
 		[[nodiscard]]
 		uint32_t getImageDepth(const ImageHandle &image);
 
         /**
-         * Returns the image format of the image
-         * @param image handle
+         * @brief Returns the image format of the image.
+         *
+         * @param[in] image Image handle
          * @return imageFormat
          */
 		[[nodiscard]]
 		vk::Format getImageFormat(const ImageHandle &image);
+	
+		/**
+		 * @brief Returns whether the image supports storage or not.
+		 *
+		 * @param[in] image Image handle
+		 * @return True, if the image supports storage, otherwise false.
+		 */
+		[[nodiscard]]
+		bool isImageSupportingStorage(const ImageHandle& image);
 		
 		/**
 		 * @brief Returns the images amount of mip levels.
 		 *
-		 * @param image Image handle
+		 * @param[in] image Image handle
 		 * @return Amount of mip levels
 		 */
 		[[nodiscard]]
@@ -343,7 +356,7 @@ namespace vkcv
 		/**
 		 * @brief Returns the images amount of array layers.
 		 *
-		 * @param image Image handle
+		 * @param[in] image Image handle
 		 * @return Amount of array layers
 		 */
 		[[nodiscard]]
@@ -352,7 +365,7 @@ namespace vkcv
 		/**
 		 * @brief Creates a descriptor set layout handle by a set of descriptor bindings.
 		 *
-		 * @param bindings Descriptor bindings
+		 * @param[in] bindings Descriptor bindings
 		 * @return Descriptor set layout handle
 		 */
 		[[nodiscard]]
@@ -361,7 +374,7 @@ namespace vkcv
 		/**
 		 * @brief Returns the descriptor set layout of a descriptor set layout handle.
 		 *
-		 * @param handle Descriptor set layout handle
+		 * @param[in] handle Descriptor set layout handle
 		 * @return Descriptor set layout
 		 */
 		DescriptorSetLayout getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const;
@@ -369,11 +382,11 @@ namespace vkcv
 		/**
 		 * @brief Creates a new descriptor set
 		 * 
-		 * @param layoutHandle Handle to the layout that the descriptor set will use
+		 * @param[in] layout Handle to the layout that the descriptor set will use
 		 * @return Handle that represents the descriptor set
 		 */
         [[nodiscard]]
-        DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle &layoutHandle);
+        DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle &layout);
 
 		/**
 		 * @brief Writes resources bindings to a descriptor set

@@ -4,6 +4,8 @@
 #include <vkcv/Logger.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 
+#include <vkcv/algorithm/SinglePassDownsampler.hpp>
+
 namespace vkcv::scene {
 	
 	Scene::Scene(Core* core) :
@@ -274,10 +276,34 @@ namespace vkcv::scene {
 			scene.getNode(root).loadMesh(asset_scene, mesh);
 		}
 		
+		vkcv::SamplerHandle sampler = core.createSampler(
+				vkcv::SamplerFilterType::LINEAR,
+				vkcv::SamplerFilterType::LINEAR,
+				vkcv::SamplerMipmapMode::LINEAR,
+				vkcv::SamplerAddressMode::REPEAT
+		);
+		
+		const vkcv::FeatureManager& featureManager = core.getContext().getFeatureManager();
+		const bool partialBound = featureManager.checkFeatures<vk::PhysicalDeviceDescriptorIndexingFeatures>(
+				vk::StructureType::ePhysicalDeviceDescriptorIndexingFeatures,
+				[](const vk::PhysicalDeviceDescriptorIndexingFeatures& features) {
+					return features.descriptorBindingPartiallyBound;
+				}
+		);
+		
+		vkcv::Downsampler& downsampler = core.getDownsampler();
+		vkcv::algorithm::SinglePassDownsampler spdDownsampler (core, sampler);
+		
 		auto mipStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
-		for (auto& material : scene.m_materials) {
-			material.m_data.recordMipChainGeneration(mipStream, core.getDownsampler());
+		if (partialBound) {
+			for (auto& material : scene.m_materials) {
+				material.m_data.recordMipChainGeneration(mipStream, spdDownsampler);
+			}
+		} else {
+			for (auto& material : scene.m_materials) {
+				material.m_data.recordMipChainGeneration(mipStream, downsampler);
+			}
 		}
 		
 		core.submitCommandStream(mipStream, false);

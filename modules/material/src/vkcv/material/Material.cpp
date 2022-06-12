@@ -119,21 +119,21 @@ namespace vkcv::material {
 		}
 		
 		if (!normalImg) {
-			vkcv::Image defaultNormal = core.createImage(vk::Format::eR8G8B8A8Srgb, 2, 2);
+			vkcv::Image defaultNormal = core.createImage(vk::Format::eR8G8B8A8Unorm, 2, 2);
 			float normalData [4] = { 0, 0, 1, 0 };
 			fillImage(defaultNormal, normalData);
 			images[1] = defaultNormal.getHandle();
 		}
 		
 		if (!metRoughImg) {
-			vkcv::Image defaultRough = core.createImage(vk::Format::eR8G8B8A8Srgb, 2, 2);
+			vkcv::Image defaultRough = core.createImage(vk::Format::eR8G8B8A8Unorm, 2, 2);
 			float roughData [4] = { 228, 51, 255, 1 };
 			fillImage(defaultRough, roughData);
 			images[2] = defaultRough.getHandle();
 		}
 		
 		if (!occlusionImg) {
-			vkcv::Image defaultOcclusion = core.createImage(vk::Format::eR8G8B8A8Srgb, 2, 2);
+			vkcv::Image defaultOcclusion = core.createImage(vk::Format::eR8G8B8A8Unorm, 2, 2);
 			float occlusionData [4] = { 228, 51, 255, 1 };
 			fillImage(defaultOcclusion, occlusionData);
 			images[3] = defaultOcclusion.getHandle();

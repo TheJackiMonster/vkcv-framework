@@ -7,18 +7,28 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/scene/Scene.hpp>
+#include <vkcv/Features.hpp>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Scene";
 
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
+	
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
+			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+			[](vk::PhysicalDeviceDescriptorIndexingFeatures& features) {
+				features.setDescriptorBindingPartiallyBound(true);
+			}
+	);
 
 	vkcv::Core core = vkcv::Core::create(
 			applicationName,
 			VK_MAKE_VERSION(0, 0, 1),
 			{vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
-			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
+			features
 	);
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
 	vkcv::Window& window = core.getWindow(windowHandle);

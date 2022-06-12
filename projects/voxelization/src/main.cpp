@@ -291,7 +291,7 @@ int main(int argc, const char** argv) {
 		// albedo texture
 		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, albedoTexture.w, albedoTexture.h, 1, true));
 		sceneImages.back().fill(albedoTexture.data.data());
-		sceneImages.back().recordMipChainGeneration(mipStream, downsampler);
+		sceneImages.back().recordMipChainGeneration(mipStream, spdDownsampler);
 		const vkcv::ImageHandle albedoHandle = sceneImages.back().getHandle();
 
 		// normal texture
