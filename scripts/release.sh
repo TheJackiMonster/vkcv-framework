@@ -6,7 +6,7 @@ if [ "$VKCV_BRANCH" != "develop" ]; then
 	exit
 fi
 
-VKCV_VERSION="$(cat include/vkcv/Core.hpp | grep "#define VKCV_FRAMEWORK_VERSION" | awk 'NR == 1 { $1=""; $2=""; print }' | sed -e 's/[^0-9 ]//g' -- | awk '{print $1"."$2"."$3}')"
+VKCV_VERSION="$(grep -oEi "#define.+VKCV_FRAMEWORK_VERSION.+\(VK_MAKE_VERSION\(([0-9]+,.*[0-9]+,.*[0-9]+)\)\)" include/vkcv/Core.hpp | awk 'match($0, /.*\(([0-9]+),.*([0-9]+),.*([0-9]+)\)/, a) {print a[1]"."a[2]"."a[3]}')"
 
 if [ $(git tag | grep "$VKCV_VERSION" | wc -l) -gt 0 ]; then
 	echo "WARNING: Please adjust the version of the framework before uploading a release! (Duplicate version: $VKCV_VERSION)"
