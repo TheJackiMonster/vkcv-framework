@@ -112,4 +112,17 @@ set(vkcv_sources
 		
 		${vkcv_include}/vkcv/BlitDownsampler.hpp
 		${vkcv_source}/vkcv/BlitDownsampler.cpp
+		
+		${vkcv_include}/vkcv/Sampler.hpp
+		
+		${vkcv_include}/vkcv/Result.hpp
 )
+
+if (BUILD_CLANG_FORMAT)
+	message(STATUS "Clang-Format: ON")
+	
+	# add clang-format as target if installed
+	include(${vkcv_config}/ext/ClangFormat.cmake)
+else()
+	message(STATUS "Clang-Format: OFF")
+endif()
