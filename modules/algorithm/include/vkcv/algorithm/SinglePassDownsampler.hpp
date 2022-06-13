@@ -15,7 +15,7 @@ namespace vkcv::algorithm {
 	*/
 
 	/**
-	 * A class to handle downsampling via FidelityFX Single Pass Downsampler.
+	 * @brief A class to handle downsampling via FidelityFX Single Pass Downsampler.
 	 * https://github.com/GPUOpen-Effects/FidelityFX-SPD
 	 */
 	class SinglePassDownsampler : public vkcv::Downsampler {
@@ -47,7 +47,7 @@ namespace vkcv::algorithm {
 		
 	public:
 		/**
-		 * Constructor to create instance for single pass downsampling.
+		 * @brief Constructor to create instance for single pass downsampling.
 		 *
 		 * @param[in,out] core Reference to a Core instance
 		 * @param[in] sampler Sampler handle
@@ -56,7 +56,7 @@ namespace vkcv::algorithm {
 									   const SamplerHandle &sampler = SamplerHandle());
 		
 		/**
-		 * Record the comands of the downsampling instance to
+		 * @brief Record the commands of the downsampling instance to
 		 * generate all mip levels of an input image via a
 		 * command stream.
 		 *

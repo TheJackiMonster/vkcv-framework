@@ -7,7 +7,7 @@ namespace vkcv {
 	class Core;
 	
 	/**
-	 * An abstract class to handle downsampling of images for mip generation.
+	 * @brief An abstract class to handle downsampling of images for mip generation.
 	 */
 	class Downsampler {
 	protected:
@@ -18,7 +18,7 @@ namespace vkcv {
 		
 	public:
 		/**
-         * Constructor to create a downsampler instance.
+         * @brief Constructor to create a downsampler instance.
          *
          * @param[in,out] core Reference to a Core instance
          */
@@ -27,7 +27,7 @@ namespace vkcv {
 		~Downsampler() = default;
 		
 		/**
-		 * Record the commands of the given downsampler instance to
+		 * @brief Record the commands of the given downsampler instance to
          * scale the image down on its own mip levels.
 		 *
 		 * @param[in] cmdStream Command stream handle
