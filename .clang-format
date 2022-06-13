@@ -65,6 +65,6 @@ SpacesInLineCommentPrefix:
 SpacesInParentheses: false
 
 TabWidth: 4
-UseTab: Never
+UseTab: ForContinuationAndIndentation
 
 UseCRLF: false
