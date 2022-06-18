@@ -832,9 +832,9 @@ int main(int argc, const char **argv) {
 		ImGui::Begin("Settings");
 		
 		ImGui::BeginGroup();
-		ImGui::Combo("Mode", &(sim->mode), "Random\0Ordered", 2);
-		ImGui::Combo("Form", &(sim->form), "Sphere\0Cube", 2);
-		ImGui::Combo("Type", &(sim->type), "Hyperelastic\0Fluid", 2);
+		ImGui::Combo("Mode", &(sim->mode), "Random\0Ordered\0", 2);
+		ImGui::Combo("Form", &(sim->form), "Sphere\0Cube\0", 2);
+		ImGui::Combo("Type", &(sim->type), "Hyperelastic\0Fluid\0", 2);
 		ImGui::EndGroup();
 		
 		ImGui::Spacing();
