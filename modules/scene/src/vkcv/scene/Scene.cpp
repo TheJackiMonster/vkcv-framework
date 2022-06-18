@@ -284,26 +284,12 @@ namespace vkcv::scene {
 		);
 		
 		const vkcv::FeatureManager& featureManager = core.getContext().getFeatureManager();
-		const bool partialBound = featureManager.checkFeatures<vk::PhysicalDeviceDescriptorIndexingFeatures>(
-				vk::StructureType::ePhysicalDeviceDescriptorIndexingFeatures,
-				[](const vk::PhysicalDeviceDescriptorIndexingFeatures& features) {
-					return features.descriptorBindingPartiallyBound;
-				}
-		);
 		
-		vkcv::Downsampler& downsampler = core.getDownsampler();
 		vkcv::algorithm::SinglePassDownsampler spdDownsampler (core, sampler);
-		
 		auto mipStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
-		if (partialBound) {
-			for (auto& material : scene.m_materials) {
-				material.m_data.recordMipChainGeneration(mipStream, spdDownsampler);
-			}
-		} else {
-			for (auto& material : scene.m_materials) {
-				material.m_data.recordMipChainGeneration(mipStream, downsampler);
-			}
+		for (auto& material : scene.m_materials) {
+			material.m_data.recordMipChainGeneration(mipStream, spdDownsampler);
 		}
 		
 		core.submitCommandStream(mipStream, false);
