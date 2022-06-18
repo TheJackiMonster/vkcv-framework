@@ -38,47 +38,8 @@ namespace vkcv {
         return buffer;
 	}
 
-	VertexAttachmentFormat convertFormat(spirv_cross::SPIRType::BaseType basetype, uint32_t vecsize){
-        switch (basetype) {
-            case spirv_cross::SPIRType::Int:
-                switch (vecsize) {
-                    case 1:
-                        return VertexAttachmentFormat::INT;
-                    case 2:
-                        return VertexAttachmentFormat::INT2;
-                    case 3:
-                        return VertexAttachmentFormat::INT3;
-                    case 4:
-                        return VertexAttachmentFormat::INT4;
-                    default:
-                        break;
-                }
-                break;
-            case spirv_cross::SPIRType::Float:
-                switch (vecsize) {
-                    case 1:
-                        return VertexAttachmentFormat::FLOAT;
-                    case 2:
-                        return VertexAttachmentFormat::FLOAT2;
-                    case 3:
-                        return VertexAttachmentFormat::FLOAT3;
-                    case 4:
-                        return VertexAttachmentFormat::FLOAT4;
-                    default:
-                        break;
-                }
-                break;
-            default:
-                break;
-        }
-		
-		vkcv_log(LogLevel::WARNING, "Unknown vertex format");
-        return VertexAttachmentFormat::FLOAT;
-	}
-
 	ShaderProgram::ShaderProgram() noexcept :
 	m_Shaders{},
-    m_VertexAttachments{},
     m_DescriptorSets{}
 	{}
 
@@ -122,27 +83,9 @@ namespace vkcv {
         //reflect vertex input
 		if (shaderStage == ShaderStage::VERTEX)
 		{
-			// spirv-cross API (hopefully) returns the stage_inputs in order
-			for (uint32_t i = 0; i < resources.stage_inputs.size(); i++)
-			{
-                // spirv-cross specific objects
-				auto& stage_input = resources.stage_inputs[i];
-				const spirv_cross::SPIRType& base_type = comp.get_type(stage_input.base_type_id);
-
-				// vertex input location
-				const uint32_t attachment_loc = comp.get_decoration(stage_input.id, spv::DecorationLocation);
-                // vertex input name
-                const std::string attachment_name = stage_input.name;
-				// vertex input format (implies its size)
-				const VertexAttachmentFormat attachment_format = convertFormat(base_type.basetype, base_type.vecsize);
-
-                m_VertexAttachments.push_back({
-					attachment_loc,
-					attachment_name,
-					attachment_format,
-					0
-				});
-            }
+			if (!resources.stage_inputs.empty()) {
+				vkcv_log(LogLevel::WARNING, "Vertex bindings are not supported");
+			}
 		}
 
 		//reflect descriptor sets (uniform buffer, storage buffer, sampler, sampled image, storage image)
@@ -371,11 +314,6 @@ namespace vkcv {
 			}
 		}
     }
-
-    const VertexAttachments &ShaderProgram::getVertexAttachments() const
-    {
-        return m_VertexAttachments;
-	}
 
 	const std::unordered_map<uint32_t, DescriptorBindings>& ShaderProgram::getReflectedDescriptors() const
     {

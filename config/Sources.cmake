@@ -71,9 +71,6 @@ set(vkcv_sources
         ${vkcv_include}/vkcv/QueueManager.hpp
         ${vkcv_source}/vkcv/QueueManager.cpp
 
-		${vkcv_include}/vkcv/VertexLayout.hpp
-		${vkcv_source}/vkcv/VertexLayout.cpp
-
 		${vkcv_include}/vkcv/Event.hpp
 
 		${vkcv_source}/vkcv/DescriptorManager.hpp

@@ -10,7 +10,6 @@
 
 #include "Handles.hpp"
 #include "ShaderProgram.hpp"
-#include "VertexLayout.hpp"
 #include "ImageConfig.hpp"
 
 namespace vkcv {
@@ -65,7 +64,6 @@ namespace vkcv {
         uint32_t                              	m_Width;
 		uint32_t                              	m_Height;
         PassHandle                            	m_PassHandle;
-        VertexLayout                          	m_VertexLayout;
         std::vector<DescriptorSetLayoutHandle>	m_DescriptorLayouts;
         bool                                  	m_UseDynamicViewport;
         bool                                  	m_UseConservativeRasterization 	= false;

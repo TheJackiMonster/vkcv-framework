@@ -18,31 +18,6 @@ namespace vkcv
         }
     }
 
-    // currently assuming default 32 bit formats, no lower precision or normalized variants supported
-    vk::Format vertexFormatToVulkanFormat(const VertexAttachmentFormat format) {
-        switch (format) {
-            case VertexAttachmentFormat::FLOAT:
-                return vk::Format::eR32Sfloat;
-            case VertexAttachmentFormat::FLOAT2:
-                return vk::Format::eR32G32Sfloat;
-            case VertexAttachmentFormat::FLOAT3:
-                return vk::Format::eR32G32B32Sfloat;
-            case VertexAttachmentFormat::FLOAT4:
-                return vk::Format::eR32G32B32A32Sfloat;
-            case VertexAttachmentFormat::INT:
-                return vk::Format::eR32Sint;
-            case VertexAttachmentFormat::INT2:
-                return vk::Format::eR32G32Sint;
-            case VertexAttachmentFormat::INT3:
-                return vk::Format::eR32G32B32Sint;
-            case VertexAttachmentFormat::INT4:
-                return vk::Format::eR32G32B32A32Sint;
-            default:
-            vkcv_log(LogLevel::WARNING, "Unknown vertex format");
-                return vk::Format::eUndefined;
-        }
-    }
-
     vk::PrimitiveTopology primitiveTopologyToVulkanPrimitiveTopology(const PrimitiveTopology topology) {
         switch (topology) {
             case(PrimitiveTopology::PointList):
@@ -128,56 +103,17 @@ namespace vkcv
     }
 	
 	/**
-	 * Fills Vertex Attribute and Binding Description with the corresponding objects form the Vertex Layout.
-	 * @param vertexAttributeDescriptions
-	 * @param vertexBindingDescriptions
-	 * @param existsVertexShader
-	 * @param config
-	 */
-	void fillVertexInputDescription(
-			std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
-			std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions,
-			const bool existsVertexShader,
-			const GraphicsPipelineConfig &config) {
-		
-		if (existsVertexShader) {
-			const VertexLayout& layout = config.m_VertexLayout;
-			
-			// iterate over the layout's specified, mutually exclusive buffer bindings that make up a vertex buffer
-			for (const auto& vertexBinding : layout.vertexBindings)
-			{
-				vertexBindingDescriptions.emplace_back(vertexBinding.bindingLocation,
-													   vertexBinding.stride,
-													   vk::VertexInputRate::eVertex);
-				
-				// iterate over the bindings' specified, mutually exclusive vertex input attachments that make up a vertex
-				for (const auto& vertexAttachment : vertexBinding.vertexAttachments)
-				{
-					vertexAttributeDescriptions.emplace_back(vertexAttachment.inputLocation,
-															 vertexBinding.bindingLocation,
-															 vertexFormatToVulkanFormat(vertexAttachment.format),
-															 vertexAttachment.offset % vertexBinding.stride);
-				}
-			}
-		}
-	}
-	
-	/**
-	 * Creates a Pipeline Vertex Input State Create Info Struct and fills it with Attribute and Binding data.
-	 * @param vertexAttributeDescriptions
-	 * @param vertexBindingDescriptions
+	 * Creates a Pipeline Vertex Input State Create Info Struct.
 	 * @return Pipeline Vertex Input State Create Info Struct
 	 */
-	vk::PipelineVertexInputStateCreateInfo createPipelineVertexInputStateCreateInfo(
-			std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
-			std::vector<vk::VertexInputBindingDescription>   &vertexBindingDescriptions) {
+	vk::PipelineVertexInputStateCreateInfo createPipelineVertexInputStateCreateInfo() {
 		
 		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
 				{},
-				vertexBindingDescriptions.size(),
-				vertexBindingDescriptions.data(),
-				vertexAttributeDescriptions.size(),
-				vertexAttributeDescriptions.data()
+				0,
+				nullptr,
+				0,
+				nullptr
 		);
 		return pipelineVertexInputStateCreateInfo;
 	}
@@ -587,16 +523,9 @@ namespace vkcv
 			}
 		}
 
-        // vertex input state
-        // Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
-        std::vector<vk::VertexInputAttributeDescription>	vertexAttributeDescriptions;
-        std::vector<vk::VertexInputBindingDescription>		vertexBindingDescriptions;
-        fillVertexInputDescription(vertexAttributeDescriptions, vertexBindingDescriptions, existsVertexShader, config);
-
         // Handover Containers to PipelineVertexInputStateCreateIngo Struct
         vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo =
-                createPipelineVertexInputStateCreateInfo(vertexAttributeDescriptions,
-                                                         vertexBindingDescriptions);
+                createPipelineVertexInputStateCreateInfo();
 
         // input assembly state
         vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo =

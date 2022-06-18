@@ -293,11 +293,6 @@ namespace vkcv
 			const PushConstants     &pushConstants,
 			const size_t            drawcallIndex) {
 		
-		for (uint32_t i = 0; i < drawcall.mesh.vertexBufferBindings.size(); i++) {
-			const auto& vertexBinding = drawcall.mesh.vertexBufferBindings[i];
-			cmdBuffer.bindVertexBuffers(i, vertexBinding.buffer, vertexBinding.offset);
-		}
-		
 		for (const auto& descriptorUsage : drawcall.descriptorSets) {
 			cmdBuffer.bindDescriptorSets(
 					vk::PipelineBindPoint::eGraphics,
@@ -470,8 +465,6 @@ namespace vkcv
                     descSet.vulkanHandle,
                     nullptr);
 
-			vk::DeviceSize deviceSize = 0;
-			cmdBuffer.bindVertexBuffers(0, 1, &compiledMesh.vertexBufferBindings[0].buffer,&deviceSize);
             cmdBuffer.bindIndexBuffer(compiledMesh.indexBuffer, 0, getIndexType(compiledMesh.indexBitCount));
 
             cmdBuffer.drawIndexedIndirect(

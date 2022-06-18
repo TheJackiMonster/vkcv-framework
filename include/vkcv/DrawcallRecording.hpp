@@ -14,14 +14,6 @@
 #include "Buffer.hpp"
 
 namespace vkcv {
-	
-	/**
-	 * @brief Structure to store details about a vertex buffer binding.
-	 */
-    struct VertexBufferBinding {
-        vk::DeviceSize offset;
-        vk::Buffer buffer;
-    };
 
 	/**
 	 * @brief Enum class to specify the size of indexes.
@@ -53,16 +45,13 @@ namespace vkcv {
     struct Mesh {
         inline Mesh() {}
 
-        inline Mesh(std::vector<VertexBufferBinding> vertexBufferBindings,
-					vk::Buffer indexBuffer,
+        inline Mesh(vk::Buffer indexBuffer,
 					size_t indexCount,
 					IndexBitCount indexBitCount = IndexBitCount::Bit16) noexcept :
-			vertexBufferBindings(vertexBufferBindings),
 			indexBuffer(indexBuffer),
             indexCount(indexCount),
             indexBitCount(indexBitCount) {}
 
-        std::vector<VertexBufferBinding> vertexBufferBindings;
         vk::Buffer indexBuffer;
         size_t indexCount;
         IndexBitCount indexBitCount;
