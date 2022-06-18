@@ -146,7 +146,7 @@ namespace vkcv::algorithm {
 		 vkcv::Downsampler(core),
 		 m_pipeline(),
 		
-		 m_descriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings(sampler))),
+		 m_descriptorSetLayout(),
 		 m_descriptorSets(),
 		
 		 m_globalCounter(m_core.createBuffer<uint32_t>(
@@ -155,6 +155,21 @@ namespace vkcv::algorithm {
 		 )),
 		 
 		 m_sampler(sampler) {
+		const auto& featureManager = m_core.getContext().getFeatureManager();
+		
+		const bool partialBound = featureManager.checkFeatures<vk::PhysicalDeviceDescriptorIndexingFeatures>(
+				vk::StructureType::ePhysicalDeviceDescriptorIndexingFeatures,
+				[](const vk::PhysicalDeviceDescriptorIndexingFeatures& features) {
+					return features.descriptorBindingPartiallyBound;
+				}
+		);
+		
+		if (!partialBound) {
+			return;
+		}
+		
+		m_descriptorSetLayout = m_core.createDescriptorSetLayout(getDescriptorBindings(sampler));
+		
 		vkcv::shader::GLSLCompiler compiler (vkcv::shader::GLSLCompileTarget::SUBGROUP_OP);
 		
 		vk::PhysicalDeviceSubgroupProperties subgroupProperties;
@@ -168,8 +183,6 @@ namespace vkcv::algorithm {
 		if (no_subgroup_quad) {
 			compiler.setDefine("SPD_NO_WAVE_OPERATIONS", "1");
 		}
-		
-		const auto& featureManager = m_core.getContext().getFeatureManager();
 		
 		const bool float16Support = (
 				featureManager.checkFeatures<vk::PhysicalDeviceFloat16Int8FeaturesKHR>(
@@ -229,13 +242,20 @@ namespace vkcv::algorithm {
 	
 	void SinglePassDownsampler::recordDownsampling(const CommandStreamHandle &cmdStream,
 												   const ImageHandle &image) {
+		Downsampler& fallback = m_core.getDownsampler();
+		
+		if (m_pipeline) {
+			fallback.recordDownsampling(cmdStream, image);
+			return;
+		}
+		
 		const uint32_t mipLevels = m_core.getImageMipLevels(image);
 		const uint32_t depth = m_core.getImageDepth(image);
 		
 		m_core.prepareImageForSampling(cmdStream, image);
 		
 		if ((mipLevels < 4) || (depth > 1) || (!m_core.isImageSupportingStorage(image))) {
-			m_core.getDownsampler().recordDownsampling(cmdStream, image);
+			fallback.recordDownsampling(cmdStream, image);
 			return;
 		}
 		
