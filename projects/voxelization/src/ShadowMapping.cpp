@@ -149,7 +149,7 @@ glm::mat4 computeShadowViewProjectionMatrix(
 	return vulkanCorrectionMatrix * crop * view;
 }
 
-ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vertexLayout) : 
+ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::DescriptorSetLayoutHandle &layoutHandle) :
 	m_corePtr(corePtr),
 	m_shadowMap(corePtr->createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1, true, true)),
 	m_shadowMapIntermediate(corePtr->createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1, false, true)),
@@ -171,8 +171,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 		shadowMapResolution,
 		shadowMapResolution,
 		m_shadowMapPass,
-		vertexLayout,
-		{},
+		{ layoutHandle },
 		false
 	};
 	shadowPipeConfig.m_multisampling        = msaa;
@@ -232,6 +231,7 @@ void ShadowMapping::recordShadowMapRendering(
 	float                               lightStrength,
 	float                               maxShadowDistance,
 	const std::vector<vkcv::Mesh>&      meshes,
+	const std::vector<vkcv::DescriptorSetHandle> &vertexDescriptorSets,
 	const std::vector<glm::mat4>&       modelMatrices,
 	const vkcv::camera::Camera&         camera,
 	const glm::vec3&                    voxelVolumeOffset,
@@ -262,8 +262,14 @@ void ShadowMapping::recordShadowMapRendering(
 	}
 	
 	std::vector<vkcv::DrawcallInfo> drawcalls;
+	drawcalls.reserve(meshes.size());
+	
 	for (const auto& mesh : meshes) {
-		drawcalls.push_back(vkcv::DrawcallInfo(mesh, {}));
+		const size_t meshIndex = drawcalls.size();
+		
+		drawcalls.push_back(vkcv::DrawcallInfo(mesh, {
+			vkcv::DescriptorSetUsage(0, vertexDescriptorSets[meshIndex])
+		}));
 	}
 
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Shadow map depth", {1, 1, 1, 1});

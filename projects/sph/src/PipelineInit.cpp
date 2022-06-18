@@ -11,14 +11,6 @@ vkcv::DescriptorSetHandle PipelineInit::ComputePipelineInit(vkcv::Core *pCore, v
             shaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle descriptorSet = pCore->createDescriptorSet(descriptorSetLayout);
 
-    const std::vector<vkcv::VertexAttachment> vertexAttachments = shaderProgram.getVertexAttachments();
-
-    std::vector<vkcv::VertexBinding> bindings;
-    for (size_t i = 0; i < vertexAttachments.size(); i++) {
-        bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
-    }
-    const vkcv::VertexLayout layout { bindings };
-
     pipeline = pCore->createComputePipeline({
             shaderProgram,
             { descriptorSetLayout }

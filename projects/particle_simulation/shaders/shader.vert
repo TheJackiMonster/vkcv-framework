@@ -1,8 +1,6 @@
 #version 460 core
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) in vec3 particle;
-
 struct Particle
 {
     vec3 position;
@@ -29,17 +27,23 @@ layout(location = 2) out float passlifeTime;
 
 void main()
 {
+    vec2 positions[3] = {
+        vec2(-0.012f, 0.012f),
+        vec2(0.012f, 0.012f),
+        vec2(0.0f, -0.012f)
+    };
+
     int id = gl_InstanceIndex;
     passVelocity = inParticle[id].velocity;
     passlifeTime = inParticle[id].lifeTime;
     // particle position in view space
     vec4 positionView = view * vec4(inParticle[id].position, 1);
     // by adding the triangle position in view space the mesh is always camera facing
-    positionView.xyz += particle;
+    positionView.xyz += vec3(positions[gl_VertexIndex], 0.0f);
     // multiply with projection matrix for final position
 	gl_Position = projection * positionView;
     
     // 0.01 corresponds to vertex position size in main
     float normalizationDivider  = 0.012;
-    passTriangleCoordinates     = particle.xy / normalizationDivider;
+    passTriangleCoordinates     = positions[gl_VertexIndex] / normalizationDivider;
 }

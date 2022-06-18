@@ -10,8 +10,6 @@ layout(set=0, binding=2) uniform simulationBlock {
     Simulation simulation;
 };
 
-layout(location = 0) in vec2 vertexPos;
-
 layout(location = 0) out vec2 passPos;
 layout(location = 1) out vec3 passVelocity;
 layout(location = 2) out float passMass;
@@ -25,6 +23,12 @@ ivec3 actual_mod(ivec3 x, ivec3 y) {
 }
 
 void main()	{
+    const vec2 positions[3] = {
+        vec2(-1.0f, -1.0f),
+        vec2(+0.0f, +1.5f),
+        vec2(+1.0f, -1.0f)
+    };
+
     ivec3 gridResolution = textureSize(sampler3D(gridImage, gridSampler), 0);
 
     ivec3 gridID = ivec3(
@@ -48,11 +52,11 @@ void main()	{
 
     float alpha = clamp(density / simulation.density, 0.0f, 1.0f);
 
-    passPos = vertexPos;
+    passPos = positions[gl_VertexIndex];
     passVelocity = gridData.xyz;
     passMass = mass;
 
     // align voxel to face camera
     gl_Position = mvp * vec4(position, 1);      // transform position into projected view space
-    gl_Position.xy += vertexPos * (radius * 2.0f) * alpha;  // move position directly in view space
+    gl_Position.xy += positions[gl_VertexIndex] * (radius * 2.0f) * alpha;  // move position directly in view space
 }

@@ -85,7 +85,9 @@ void App::run() {
 	auto                        frameStartTime = std::chrono::system_clock::now();
 	const auto                  appStartTime   = std::chrono::system_clock::now();
 	const vkcv::ImageHandle     swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-	const vkcv::DrawcallInfo    skyDrawcall(m_cubeMesh.mesh, {}, 1);
+	const vkcv::DrawcallInfo    skyDrawcall(m_cubeMesh.mesh, {
+		vkcv::DescriptorSetUsage(0, m_cubeMesh.descSet)
+	}, 1);
 
 	vkcv::gui::GUI gui(m_core, m_windowHandle);
 
@@ -218,7 +220,9 @@ void App::run() {
 
 		std::vector<vkcv::DrawcallInfo> prepassSceneDrawcalls;
 		for (const Object& obj : sceneObjects) {
-			prepassSceneDrawcalls.push_back(vkcv::DrawcallInfo(obj.meshResources.mesh, {}));
+			prepassSceneDrawcalls.push_back(vkcv::DrawcallInfo(obj.meshResources.mesh, {
+				vkcv::DescriptorSetUsage(0, obj.meshResources.descSet)
+			}));
 		}
 
 		m_core.recordDrawcallsToCmdStream(
@@ -260,8 +264,12 @@ void App::run() {
 		std::vector<vkcv::DrawcallInfo> forwardSceneDrawcalls;
 		for (const Object& obj : sceneObjects) {
 			forwardSceneDrawcalls.push_back(vkcv::DrawcallInfo(
-				obj.meshResources.mesh, 
-				{ vkcv::DescriptorSetUsage(0, m_meshPass.descriptorSet) }));
+				obj.meshResources.mesh,
+				{
+					vkcv::DescriptorSetUsage(0, m_meshPass.descriptorSet),
+					vkcv::DescriptorSetUsage(1, obj.meshResources.descSet),
+				}
+			));
 		}
 
 		m_core.recordDrawcallsToCmdStream(

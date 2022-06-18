@@ -1,10 +1,13 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec2 inUV;
-layout(location = 3) in vec4 inTangent;
+#extension GL_GOOGLE_include_directive : enable
+
+#include "vertex.inc"
+
+layout(std430, set=2, binding=0) readonly buffer buffer_vertexBuffer {
+    vertex_t vertices [];
+};
 
 layout(location = 0) out vec3 passNormal;
 layout(location = 1) out vec2 passUV;
@@ -17,9 +20,12 @@ layout( push_constant ) uniform constants{
 };
 
 void main()	{
-	gl_Position = mvp * vec4(inPosition, 1.0);
-	passNormal  = mat3(model) * inNormal;    // assuming no weird stuff like shearing or non-uniform scaling
-    passUV      = inUV;
-    passPos     = (model * vec4(inPosition, 1)).xyz;
-    passTangent = vec4(mat3(model) * inTangent.xyz, inTangent.w);
+    vec3 position = vertices[gl_VertexIndex].position;
+    vec4 tangent = vertices[gl_VertexIndex].tangent;
+
+	gl_Position = mvp * vec4(position, 1.0);
+	passNormal  = mat3(model) * vertices[gl_VertexIndex].normal;    // assuming no weird stuff like shearing or non-uniform scaling
+    passUV      = vec2(vertices[gl_VertexIndex].u, vertices[gl_VertexIndex].v);
+    passPos     = (model * vec4(position, 1)).xyz;
+    passTangent = vec4(mat3(model) * tangent.xyz, tangent.w);
 }

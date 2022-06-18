@@ -98,39 +98,16 @@ int main(int argc, const char **argv) {
             particleShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
-    vkcv::Buffer<glm::vec3> vertexBuffer = core.createBuffer<glm::vec3>(
-            vkcv::BufferType::VERTEX,
-            3
-    );
-    const std::vector<vkcv::VertexAttachment> vertexAttachments = particleShaderProgram.getVertexAttachments();
-
-    const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-            vkcv::VertexBufferBinding(0, vertexBuffer.getVulkanHandle())};
-
-    std::vector<vkcv::VertexBinding> bindings;
-    for (size_t i = 0; i < vertexAttachments.size(); i++) {
-        bindings.push_back(vkcv::createVertexBinding(i, {vertexAttachments[i]}));
-    }
-
-    const vkcv::VertexLayout particleLayout { bindings };
-
     // initializing graphics pipeline
     vkcv::GraphicsPipelineConfig particlePipelineDefinition{
             particleShaderProgram,
             UINT32_MAX,
             UINT32_MAX,
             particlePass,
-            {particleLayout},
             {descriptorSetLayout},
             true
 	};
     particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
-
-    const std::vector<glm::vec3> vertices = {glm::vec3(-0.012, 0.012, 0),
-                                             glm::vec3(0.012, 0.012, 0),
-                                             glm::vec3(0, -0.012, 0)};
-
-    vertexBuffer.fill(vertices);
 
     vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
@@ -205,7 +182,7 @@ int main(int argc, const char **argv) {
 
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(),
+    const vkcv::Mesh renderMesh(particleIndexBuffer.getVulkanHandle(),
                                 particleIndexBuffer.getCount());
     vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
 

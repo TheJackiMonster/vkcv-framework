@@ -3,6 +3,11 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
+struct vertex_t {
+	float positionU [4];
+	float normalV [4];
+};
+
 bool loadMesh(vkcv::Core& core, const std::filesystem::path& path, MeshResources* outMesh) {
 	assert(outMesh);
 
@@ -20,38 +25,80 @@ bool loadMesh(vkcv::Core& core, const std::filesystem::path& path, MeshResources
 	}
 	assert(!scene.vertexGroups.empty());
 
-	auto& vertexData = scene.vertexGroups[0].vertexBuffer;
-	auto& indexData  = scene.vertexGroups[0].indexBuffer;
-
-	vkcv::Buffer vertexBuffer = core.createBuffer<uint8_t>(
-		vkcv::BufferType::VERTEX,
-		vertexData.data.size(),
+	vkcv::Buffer vertexBuffer = core.createBuffer<vertex_t>(
+		vkcv::BufferType::STORAGE,
+		scene.vertexGroups[0].numVertices,
 		vkcv::BufferMemoryType::DEVICE_LOCAL);
+	
+	std::vector<vertex_t> vertices;
+	vertices.reserve(vertexBuffer.getCount());
+	
+	for (const auto& attribute : scene.vertexGroups[0].vertexBuffer.attributes) {
+		if (attribute.componentType != vkcv::asset::ComponentType::FLOAT32) {
+			continue;
+		}
+		
+		size_t offset = attribute.offset;
+		
+		for (size_t i = 0; i < vertexBuffer.getCount(); i++) {
+			const auto *data = reinterpret_cast<const float*>(
+					scene.vertexGroups[0].vertexBuffer.data.data() + offset
+			);
+			
+			switch (attribute.type) {
+				case vkcv::asset::PrimitiveType::POSITION:
+					memcpy(vertices[i].positionU, data, sizeof(float) * attribute.componentCount);
+					break;
+				case vkcv::asset::PrimitiveType::NORMAL:
+					memcpy(vertices[i].normalV, data, sizeof(float) * attribute.componentCount);
+					break;
+				case vkcv::asset::PrimitiveType::TEXCOORD_0:
+					if (attribute.componentCount != 2) {
+						break;
+					}
+					
+					vertices[i].positionU[3] = data[0];
+					vertices[i].normalV[3] = data[1];
+					break;
+				default:
+					break;
+			}
+			
+			offset += attribute.stride;
+		}
+	}
+	
+	vertexBuffer.fill(vertices);
 
 	vkcv::Buffer indexBuffer = core.createBuffer<uint8_t>(
 		vkcv::BufferType::INDEX,
-		indexData.data.size(),
+		scene.vertexGroups[0].indexBuffer.data.size(),
 		vkcv::BufferMemoryType::DEVICE_LOCAL);
 
-	vertexBuffer.fill(vertexData.data);
-	indexBuffer.fill(indexData.data);
+	indexBuffer.fill(scene.vertexGroups[0].indexBuffer.data);
 
 	outMesh->vertexBuffer = vertexBuffer.getHandle();
 	outMesh->indexBuffer  = indexBuffer.getHandle();
 
-	auto& attributes = vertexData.attributes;
-
-	std::sort(attributes.begin(), attributes.end(),
-		[](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-	});
-
-	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
-
-	outMesh->mesh = vkcv::Mesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), scene.vertexGroups[0].numIndices);
+	outMesh->mesh = vkcv::Mesh(indexBuffer.getVulkanHandle(), scene.vertexGroups[0].numIndices);
+	
+	vkcv::DescriptorBindings descriptorBindings;
+	descriptorBindings.insert(std::make_pair(0, vkcv::DescriptorBinding {
+		0,
+		vkcv::DescriptorType::STORAGE_BUFFER,
+		1,
+		vkcv::ShaderStage::VERTEX,
+		false,
+		false
+	}));
+	
+	outMesh->descSetLayout = core.createDescriptorSetLayout(descriptorBindings);
+	outMesh->descSet = core.createDescriptorSet(outMesh->descSetLayout);
+	
+	core.writeDescriptorSet(
+			outMesh->descSet,
+			vkcv::DescriptorWrites().writeStorageBuffer(0, outMesh->vertexBuffer)
+	);
 
 	return true;
 }
@@ -116,31 +163,27 @@ bool loadGraphicPass(
 		shaderProgram.addShader(shaderStage, path);
 	});
 
-	const std::vector<vkcv::VertexAttachment> vertexAttachments = shaderProgram.getVertexAttachments();
-	std::vector<vkcv::VertexBinding> bindings;
-	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
-	}
-
-	const vkcv::VertexLayout vertexLayout { bindings };
-
 	const auto descriptorBindings = shaderProgram.getReflectedDescriptors();
 	const bool hasDescriptor = descriptorBindings.size() > 0;
 	std::vector<vkcv::DescriptorSetLayoutHandle> descriptorSetLayouts = {};
+	
 	if (hasDescriptor)
 	{
-	    outPassHandles->descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings.at(0));
+		descriptorSetLayouts.reserve(descriptorBindings.size());
+		
+		for (size_t i = 0; i < descriptorBindings.size(); i++) {
+			descriptorSetLayouts.push_back(core.createDescriptorSetLayout(descriptorBindings.at(i)));
+		}
+		
+	    outPassHandles->descriptorSetLayout = descriptorSetLayouts[0];
 	    outPassHandles->descriptorSet = core.createDescriptorSet(outPassHandles->descriptorSetLayout);
-	    descriptorSetLayouts.push_back(outPassHandles->descriptorSetLayout);
 	}
-
 
 	vkcv::GraphicsPipelineConfig pipelineConfig{
 		shaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
 		outPassHandles->renderPass,
-		{ vertexLayout },
 		descriptorSetLayouts,
 		true
 	};
@@ -148,7 +191,8 @@ bool loadGraphicPass(
 	outPassHandles->pipeline    = core.createGraphicsPipeline(pipelineConfig);
 
 	if (!outPassHandles->pipeline) {
-		vkcv_log(vkcv::LogLevel::ERROR, "Error: Could not create graphics pipeline");
+		vkcv_log(vkcv::LogLevel::ERROR, "Error: Could not create graphics pipeline [%s]",
+				 vertexPath.c_str());
 		return false;
 	}
 

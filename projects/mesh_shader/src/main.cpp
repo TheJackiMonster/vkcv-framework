@@ -75,6 +75,13 @@ CameraPlanes computeCameraPlanes(const vkcv::camera::Camera& camera) {
 	return cameraPlanes;
 }
 
+struct vertex_t {
+	float position [3];
+	float pad0;
+	float normal [3];
+	float pad1;
+};
+
 int main(int argc, const char** argv) {
 	const char* applicationName = "Mesh shader";
 	
@@ -103,12 +110,61 @@ int main(int argc, const char** argv) {
 
     assert(!mesh.vertexGroups.empty());
 
-    auto vertexBuffer = core.createBuffer<uint8_t>(
-            vkcv::BufferType::VERTEX,
-            mesh.vertexGroups[0].vertexBuffer.data.size(),
+    auto vertexBuffer = core.createBuffer<vertex_t>(
+            vkcv::BufferType::STORAGE,
+            mesh.vertexGroups[0].numVertices,
             vkcv::BufferMemoryType::DEVICE_LOCAL
     );
-    vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
+	
+	std::vector<vertex_t> vertices;
+	vertices.reserve(vertexBuffer.getCount());
+	
+	const vkcv::asset::VertexAttribute* attr_position = nullptr;
+	const vkcv::asset::VertexAttribute* attr_normal = nullptr;
+	
+	for (const auto& attribute : mesh.vertexGroups[0].vertexBuffer.attributes) {
+		if (attribute.componentType != vkcv::asset::ComponentType::FLOAT32) {
+			continue;
+		}
+		
+		switch (attribute.type) {
+			case vkcv::asset::PrimitiveType::POSITION:
+				attr_position = &attribute;
+				break;
+			case vkcv::asset::PrimitiveType::NORMAL:
+				attr_normal = &attribute;
+				break;
+			default:
+				break;
+		}
+		
+		size_t offset = attribute.offset;
+		
+		for (size_t i = 0; i < vertexBuffer.getCount(); i++) {
+			const auto *data = reinterpret_cast<const float*>(
+					mesh.vertexGroups[0].vertexBuffer.data.data() + offset
+			);
+			
+			switch (attribute.type) {
+				case vkcv::asset::PrimitiveType::POSITION:
+					memcpy(vertices[i].position, data, sizeof(float) * attribute.componentCount);
+					break;
+				case vkcv::asset::PrimitiveType::NORMAL:
+					memcpy(vertices[i].normal, data, sizeof(float) * attribute.componentCount);
+					break;
+				default:
+					break;
+			}
+			
+			offset += attribute.stride;
+		}
+	}
+	
+	vertexBuffer.fill(vertices);
+	
+	if ((nullptr == attr_position) || (nullptr == attr_normal)) {
+		return 1;
+	}
 
     auto indexBuffer = core.createBuffer<uint8_t>(
             vkcv::BufferType::INDEX,
@@ -117,20 +173,8 @@ int main(int argc, const char** argv) {
     );
     indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
 
-	// format data for mesh shader
-	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
-
-	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-	});
-
-	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
-
 	const auto& bunny = mesh.vertexGroups[0];
-	std::vector<vkcv::meshlet::Vertex> interleavedVertices = vkcv::meshlet::convertToVertices(bunny.vertexBuffer.data, bunny.numVertices, attributes[0], attributes[1]);
+	std::vector<vkcv::meshlet::Vertex> interleavedVertices = vkcv::meshlet::convertToVertices(bunny.vertexBuffer.data, bunny.numVertices, *attr_position, *attr_normal);
 	// mesh shader buffers
 	const auto& assetLoaderIndexBuffer                    = mesh.vertexGroups[0].indexBuffer;
 	std::vector<uint32_t> indexBuffer32Bit                = vkcv::meshlet::assetLoaderIndicesTo32BitIndices(assetLoaderIndexBuffer.data, assetLoaderIndexBuffer.type);
@@ -194,13 +238,6 @@ int main(int argc, const char** argv) {
 		bunnyShaderProgram.addShader(shaderStage, path);
 	});
 
-    const std::vector<vkcv::VertexAttachment> vertexAttachments = bunnyShaderProgram.getVertexAttachments();
-    std::vector<vkcv::VertexBinding> bindings;
-    for (size_t i = 0; i < vertexAttachments.size(); i++) {
-        bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
-    }
-    const vkcv::VertexLayout bunnyLayout { bindings };
-
     vkcv::DescriptorSetLayoutHandle vertexShaderDescriptorSetLayout = core.createDescriptorSetLayout(bunnyShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(vertexShaderDescriptorSetLayout);
 	
@@ -209,7 +246,6 @@ int main(int argc, const char** argv) {
 			UINT32_MAX,
 			UINT32_MAX,
 			renderPass,
-			{ bunnyLayout },
 			{ vertexShaderDescriptorSetLayout },
 			true
 	};
@@ -223,6 +259,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorWrites vertexShaderDescriptorWrites;
 	vertexShaderDescriptorWrites.writeStorageBuffer(0, matrixBuffer.getHandle());
+	vertexShaderDescriptorWrites.writeStorageBuffer(1, vertexBuffer.getHandle());
 	core.writeDescriptorSet(vertexShaderDescriptorSet, vertexShaderDescriptorWrites);
 
 	vkcv::GraphicsPipelineHandle bunnyPipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
@@ -252,14 +289,12 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorSetLayoutHandle meshShaderDescriptorSetLayout = core.createDescriptorSetLayout(meshShaderProgram.getReflectedDescriptors().at(0));
 	vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet(meshShaderDescriptorSetLayout);
-	const vkcv::VertexLayout meshShaderLayout(bindings);
 
 	const vkcv::GraphicsPipelineConfig meshShaderPipelineDefinition{
 		meshShaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
 		renderPass,
-		{meshShaderLayout},
 		{meshShaderDescriptorSetLayout},
 		true
 	};
@@ -297,7 +332,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::ImageHandle swapchainImageHandle = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices, vkcv::IndexBitCount::Bit32);
+    const vkcv::Mesh renderMesh(indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices, vkcv::IndexBitCount::Bit32);
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 

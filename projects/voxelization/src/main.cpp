@@ -14,6 +14,12 @@
 #include <vkcv/effects/BloomAndFlaresEffect.hpp>
 #include <vkcv/algorithm/SinglePassDownsampler.hpp>
 
+struct vertex_t {
+	float positionU [4];
+	float normalV [4];
+	float tangent [4];
+};
+
 int main(int argc, const char** argv) {
 	const char* applicationName = "Voxelization";
 
@@ -132,31 +138,91 @@ int main(int argc, const char** argv) {
 
 	// build index and vertex buffers
 	assert(!scene.vertexGroups.empty());
-	std::vector<std::vector<uint8_t>> vBuffers;
 	std::vector<std::vector<uint8_t>> iBuffers;
 
-	std::vector<vkcv::VertexBufferBinding> vBufferBindings;
-	std::vector<std::vector<vkcv::VertexBufferBinding>> vertexBufferBindings;
 	std::vector<vkcv::asset::VertexAttribute> vAttributes;
 
 	for (size_t i = 0; i < scene.vertexGroups.size(); i++) {
-
-		vBuffers.push_back(scene.vertexGroups[i].vertexBuffer.data);
 		iBuffers.push_back(scene.vertexGroups[i].indexBuffer.data);
-
-		auto& attributes = scene.vertexGroups[i].vertexBuffer.attributes;
-
-		std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-			return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-		});
 	}
 
-	std::vector<vkcv::Buffer<uint8_t>> vertexBuffers;
+	std::vector<vkcv::Buffer<vertex_t>> vertexBuffers;
+	vertexBuffers.reserve(scene.vertexGroups.size());
+	
 	for (const vkcv::asset::VertexGroup& group : scene.vertexGroups) {
-		vertexBuffers.push_back(core.createBuffer<uint8_t>(
-			vkcv::BufferType::VERTEX,
-			group.vertexBuffer.data.size()));
-		vertexBuffers.back().fill(group.vertexBuffer.data);
+		vertexBuffers.push_back(core.createBuffer<vertex_t>(
+			vkcv::BufferType::STORAGE,
+			group.numVertices));
+		
+		std::vector<vertex_t> vertices;
+		vertices.reserve(group.numVertices);
+		
+		for (const auto& attribute : group.vertexBuffer.attributes) {
+			if (attribute.componentType != vkcv::asset::ComponentType::FLOAT32) {
+				continue;
+			}
+			
+			size_t offset = attribute.offset;
+			
+			for (size_t i = 0; i < group.numVertices; i++) {
+				const auto *data = reinterpret_cast<const float*>(
+						group.vertexBuffer.data.data() + offset
+				);
+				
+				switch (attribute.type) {
+					case vkcv::asset::PrimitiveType::POSITION:
+						memcpy(vertices[i].positionU, data, sizeof(float) * attribute.componentCount);
+						break;
+					case vkcv::asset::PrimitiveType::NORMAL:
+						memcpy(vertices[i].normalV, data, sizeof(float) * attribute.componentCount);
+						break;
+					case vkcv::asset::PrimitiveType::TEXCOORD_0:
+						if (attribute.componentCount != 2) {
+							break;
+						}
+						
+						vertices[i].positionU[3] = data[0];
+						vertices[i].normalV[3] = data[1];
+						break;
+					case vkcv::asset::PrimitiveType::TANGENT:
+						memcpy(vertices[i].tangent, data, sizeof(float) * attribute.componentCount);
+						break;
+					default:
+						break;
+				}
+				
+				offset += attribute.stride;
+			}
+		}
+		
+		vertexBuffers.back().fill(vertices);
+	}
+	
+	vkcv::DescriptorBindings vertexDescriptorBindings;
+	vertexDescriptorBindings.insert(std::make_pair(0, vkcv::DescriptorBinding{
+		0,
+		vkcv::DescriptorType::STORAGE_BUFFER,
+		1,
+		vkcv::ShaderStage::VERTEX,
+		false,
+		false
+	}));
+	
+	vkcv::DescriptorSetLayoutHandle vertexDescriptorSetLayout = core.createDescriptorSetLayout(
+			vertexDescriptorBindings
+	);
+	
+	std::vector<vkcv::DescriptorSetHandle> vertexDescriptorSets;
+	vertexDescriptorSets.reserve(vertexBuffers.size());
+	
+	for (const auto& buffer : vertexBuffers) {
+		auto descriptorSet = core.createDescriptorSet(vertexDescriptorSetLayout);
+		
+		vkcv::DescriptorWrites writes;
+		writes.writeStorageBuffer(0, buffer.getHandle());
+		core.writeDescriptorSet(descriptorSet, writes);
+		
+		vertexDescriptorSets.push_back(descriptorSet);
 	}
 
 	std::vector<vkcv::Buffer<uint8_t>> indexBuffers;
@@ -165,17 +231,6 @@ int main(int argc, const char** argv) {
 			vkcv::BufferType::INDEX,
 			dataBuffer.size()));
 		indexBuffers.back().fill(dataBuffer);
-	}
-
-	int vertexBufferIndex = 0;
-	for (const auto& vertexGroup : scene.vertexGroups) {
-		for (const auto& attribute : vertexGroup.vertexBuffer.attributes) {
-			vAttributes.push_back(attribute);
-			vBufferBindings.push_back(vkcv::VertexBufferBinding(attribute.offset, vertexBuffers[vertexBufferIndex].getVulkanHandle()));
-		}
-		vertexBufferBindings.push_back(vBufferBindings);
-		vBufferBindings.clear();
-		vertexBufferIndex++;
 	}
 
 	const vk::Format colorBufferFormat = vk::Format::eB10G11R11UfloatPack32;
@@ -208,14 +263,6 @@ int main(int argc, const char** argv) {
 		forwardProgram.addShader(shaderStage, path);
 	});
 
-	const std::vector<vkcv::VertexAttachment> vertexAttachments = forwardProgram.getVertexAttachments();
-
-	std::vector<vkcv::VertexBinding> vertexBindings;
-	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		vertexBindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
-	}
-	const vkcv::VertexLayout vertexLayout { vertexBindings };
-
 	vkcv::DescriptorSetLayoutHandle forwardShadingDescriptorSetLayout = core.createDescriptorSetLayout(forwardProgram.getReflectedDescriptors().at(0));
 	vkcv::DescriptorSetHandle forwardShadingDescriptorSet = core.createDescriptorSet(forwardShadingDescriptorSetLayout);
 
@@ -229,14 +276,6 @@ int main(int argc, const char** argv) {
 		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		depthPrepassShader.addShader(shaderStage, path);
 	});
-
-	const std::vector<vkcv::VertexAttachment> prepassVertexAttachments = depthPrepassShader.getVertexAttachments();
-
-	std::vector<vkcv::VertexBinding> prepassVertexBindings;
-	for (size_t i = 0; i < prepassVertexAttachments.size(); i++) {
-		prepassVertexBindings.push_back(vkcv::createVertexBinding(i, { prepassVertexAttachments[i] }));
-	}
-	const vkcv::VertexLayout prepassVertexLayout { prepassVertexBindings };
 
 	const vkcv::AttachmentDescription prepassAttachment(
 		vkcv::AttachmentOperation::STORE,
@@ -259,7 +298,6 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::Image> sceneImages;
 	
 	vkcv::algorithm::SinglePassDownsampler spdDownsampler (core, colorSampler);
-	vkcv::Downsampler &downsampler = core.getDownsampler();
 	
 	auto mipStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
@@ -339,8 +377,7 @@ int main(int argc, const char** argv) {
 		swapchainExtent.width,
 		swapchainExtent.height,
 		prepassPass,
-		vertexLayout,
-		{ prepassDescriptorSetLayout, perMeshDescriptorSetLayouts[0] },
+		{ prepassDescriptorSetLayout, perMeshDescriptorSetLayouts[0], vertexDescriptorSetLayout },
 		true
 	};
 	prepassPipelineConfig.m_culling         = vkcv::CullMode::Back;
@@ -356,8 +393,7 @@ int main(int argc, const char** argv) {
 		swapchainExtent.width,
 		swapchainExtent.height,
 		forwardPass,
-		vertexLayout,
-		{ forwardShadingDescriptorSetLayout, perMeshDescriptorSetLayouts[0] },
+		{ forwardShadingDescriptorSetLayout, perMeshDescriptorSetLayouts[0], vertexDescriptorSetLayout },
 		true
 	};
     forwardPipelineConfig.m_culling         = vkcv::CullMode::Back;
@@ -409,7 +445,6 @@ int main(int argc, const char** argv) {
 	skyPipeConfig.m_Width               = swapchainExtent.width;
 	skyPipeConfig.m_Height              = swapchainExtent.height;
 	skyPipeConfig.m_PassHandle          = skyPass;
-	skyPipeConfig.m_VertexLayout        = vkcv::VertexLayout();
 	skyPipeConfig.m_DescriptorLayouts   = {};
 	skyPipeConfig.m_UseDynamicViewport  = true;
 	skyPipeConfig.m_multisampling       = msaa;
@@ -541,7 +576,7 @@ int main(int argc, const char** argv) {
 	// prepare meshes
 	std::vector<vkcv::Mesh> meshes;
 	for (size_t i = 0; i < scene.vertexGroups.size(); i++) {
-		vkcv::Mesh mesh(vertexBufferBindings[i], indexBuffers[i].getVulkanHandle(), scene.vertexGroups[i].numIndices);
+		vkcv::Mesh mesh(indexBuffers[i].getVulkanHandle(), scene.vertexGroups[i].numIndices);
 		meshes.push_back(mesh);
 	}
 
@@ -551,10 +586,14 @@ int main(int argc, const char** argv) {
 
 		drawcalls.push_back(vkcv::DrawcallInfo(meshes[i], { 
 			vkcv::DescriptorSetUsage(0, forwardShadingDescriptorSet),
-			vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i]) }));
+			vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i]),
+			vkcv::DescriptorSetUsage(2, vertexDescriptorSets[i])
+		}));
 		prepassDrawcalls.push_back(vkcv::DrawcallInfo(meshes[i], {
 			vkcv::DescriptorSetUsage(0, prepassDescriptorSet),
-			vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i]) }));
+			vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i]),
+			vkcv::DescriptorSetUsage(2, vertexDescriptorSets[i])
+		}));
 	}
 
 	vkcv::SamplerHandle voxelSampler = core.createSampler(
@@ -564,12 +603,11 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
 	);
 
-	ShadowMapping shadowMapping(&core, vertexLayout);
+	ShadowMapping shadowMapping(&core, vertexDescriptorSetLayout);
 
 	Voxelization::Dependencies voxelDependencies;
 	voxelDependencies.colorBufferFormat = colorBufferFormat;
 	voxelDependencies.depthBufferFormat = depthBufferFormat;
-	voxelDependencies.vertexLayout = vertexLayout;
 	Voxelization voxelization(
 		&core,
 		voxelDependencies,
@@ -577,7 +615,8 @@ int main(int argc, const char** argv) {
 		shadowMapping.getShadowMap(),
 		shadowMapping.getShadowSampler(),
 		voxelSampler,
-		msaa);
+		msaa,
+		vertexDescriptorSetLayout);
 
 	vkcv::effects::BloomAndFlaresEffect bloomFlares (core, true);
 	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
@@ -778,6 +817,7 @@ int main(int argc, const char** argv) {
 			lightStrength,
 			maxShadowDistance,
 			meshes,
+			vertexDescriptorSets,
 			modelMatrices,
 			cameraManager.getActiveCamera(),
 			voxelization.getVoxelOffset(),
@@ -793,6 +833,7 @@ int main(int argc, const char** argv) {
 			meshes, 
 			modelMatrices,
 			perMeshDescriptorSets,
+			vertexDescriptorSets,
 			windowHandle,
 			spdDownsampler
 		);
@@ -863,7 +904,7 @@ int main(int argc, const char** argv) {
 			skyPass,
 			skyPipe,
 			skySettingsPushConstants,
-			{ vkcv::DrawcallInfo(vkcv::Mesh({}, nullptr, 3), {}) },
+			{ vkcv::DrawcallInfo(vkcv::Mesh(nullptr, 3), {}) },
 			renderTargets,
 			windowHandle);
 		core.recordEndDebugLabel(cmdStream);

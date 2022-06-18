@@ -81,14 +81,6 @@ int main(int argc, const char** argv) {
 	
 	vkcv::DescriptorSetLayoutHandle computeDescriptorSetLayout = core.createDescriptorSetLayout(computeDescriptorBindings);
 	vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeDescriptorSetLayout);
-
-	const std::vector<vkcv::VertexAttachment> computeVertexAttachments = computeShaderProgram.getVertexAttachments();
-
-	std::vector<vkcv::VertexBinding> computeBindings;
-	for (size_t i = 0; i < computeVertexAttachments.size(); i++) {
-		computeBindings.push_back(vkcv::createVertexBinding(i, { computeVertexAttachments[i] }));
-	}
-	const vkcv::VertexLayout computeLayout { computeBindings };
 	
 	/*
 	* create the scene
@@ -178,7 +170,6 @@ int main(int argc, const char** argv) {
 			UINT32_MAX,
 			UINT32_MAX,
 			safrPass,
-			{},
 			{ descriptorSetLayout },
 			true
 	};
@@ -200,7 +191,7 @@ int main(int argc, const char** argv) {
 	
 	auto start = std::chrono::system_clock::now();
 
-	const vkcv::Mesh renderMesh({}, safrIndexBuffer.getVulkanHandle(), 3);
+	const vkcv::Mesh renderMesh(safrIndexBuffer.getVulkanHandle(), 3);
 	vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
 	vkcv::DrawcallInfo drawcall(renderMesh, { descriptorUsage }, 1);
 

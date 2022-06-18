@@ -81,7 +81,8 @@ Voxelization::Voxelization(
 	vkcv::ImageHandle   shadowMap,
 	vkcv::SamplerHandle shadowSampler,
 	vkcv::SamplerHandle voxelSampler,
-	vkcv::Multisampling msaa)
+	vkcv::Multisampling msaa,
+	const vkcv::DescriptorSetLayoutHandle &layoutHandle)
 	:
 	m_corePtr(corePtr),
 	m_voxelImageIntermediate(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
@@ -105,15 +106,13 @@ Voxelization::Voxelization(
 	m_voxelizationDescriptorSet = m_corePtr->createDescriptorSet(m_voxelizationDescriptorSetLayout);
 
 	vkcv::DescriptorSetLayoutHandle dummyPerMeshDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(voxelizationShader.getReflectedDescriptors().at(1));
-	vkcv::DescriptorSetHandle dummyPerMeshDescriptorSet = m_corePtr->createDescriptorSet(dummyPerMeshDescriptorSetLayout);
 
 	const vkcv::GraphicsPipelineConfig voxelizationPipeConfig{
 		voxelizationShader,
 		voxelResolution,
 		voxelResolution,
 		m_voxelizationPass,
-		dependencies.vertexLayout,
-		{ m_voxelizationDescriptorSetLayout, dummyPerMeshDescriptorSetLayout },
+		{ m_voxelizationDescriptorSetLayout, dummyPerMeshDescriptorSetLayout, layoutHandle },
 		false,
 		true
 	};
@@ -161,7 +160,6 @@ Voxelization::Voxelization(
 		0,
 		0,
 		m_visualisationPass,
-		{},
 		{ m_visualisationDescriptorSetLayout },
 		true,
 		false,
@@ -229,6 +227,7 @@ void Voxelization::voxelizeMeshes(
 	const std::vector<vkcv::Mesh>&                  meshes,
 	const std::vector<glm::mat4>&                   modelMatrices,
 	const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets,
+	const std::vector<vkcv::DescriptorSetHandle>&   vertexDescriptorSets,
 	const vkcv::WindowHandle&                       windowHandle,
 	vkcv::Downsampler&								downsampler) {
 
@@ -279,7 +278,8 @@ void Voxelization::voxelizeMeshes(
 			meshes[i],
 			{ 
 				vkcv::DescriptorSetUsage(0, m_voxelizationDescriptorSet),
-				vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i])
+				vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i]),
+				vkcv::DescriptorSetUsage(2, vertexDescriptorSets[i])
 			},1));
 	}
 
@@ -357,7 +357,7 @@ void Voxelization::renderVoxelVisualisation(
 	uint32_t drawVoxelCount = voxelCount / exp2(mipLevel);
 
 	const auto drawcall = vkcv::DrawcallInfo(
-		vkcv::Mesh({}, nullptr, drawVoxelCount),
+		vkcv::Mesh(nullptr, drawVoxelCount),
 		{ vkcv::DescriptorSetUsage(0, m_visualisationDescriptorSet) },1);
 
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel visualisation", { 1, 1, 1, 1 });

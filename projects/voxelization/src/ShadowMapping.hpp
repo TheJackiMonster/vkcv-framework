@@ -17,7 +17,7 @@ struct LightInfo {
 
 class ShadowMapping {
 public:
-	ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vertexLayout);
+	ShadowMapping(vkcv::Core* corePtr, const vkcv::DescriptorSetLayoutHandle &layoutHandle);
 
 	void recordShadowMapRendering(
 		const vkcv::CommandStreamHandle&    cmdStream,
@@ -26,6 +26,7 @@ public:
 		float                               lightStrength,
 		float                               maxShadowDistance,
 		const std::vector<vkcv::Mesh>&      meshes,
+		const std::vector<vkcv::DescriptorSetHandle> &vertexDescriptorSets,
 		const std::vector<glm::mat4>&       modelMatrices,
 		const vkcv::camera::Camera&         camera,
 		const glm::vec3&                    voxelVolumeOffset,

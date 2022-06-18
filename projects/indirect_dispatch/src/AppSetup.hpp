@@ -24,6 +24,8 @@ struct MeshResources {
 	vkcv::Mesh          mesh;
 	vkcv::BufferHandle  vertexBuffer;
 	vkcv::BufferHandle  indexBuffer;
+	vkcv::DescriptorSetLayoutHandle descSetLayout;
+	vkcv::DescriptorSetHandle descSet;
 };
 
 // loads position, uv and normal of the first mesh in a scene

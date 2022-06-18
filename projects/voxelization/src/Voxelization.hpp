@@ -7,10 +7,10 @@
 class Voxelization{
 public:
 	struct Dependencies {
-		vkcv::VertexLayout  vertexLayout;
 		vk::Format          colorBufferFormat;
 		vk::Format          depthBufferFormat;
 	};
+	
 	Voxelization(
 		vkcv::Core*         corePtr, 
 		const Dependencies& dependencies, 
@@ -18,13 +18,15 @@ public:
 		vkcv::ImageHandle   shadowMap,
 		vkcv::SamplerHandle shadowSampler,
 		vkcv::SamplerHandle voxelSampler,
-		vkcv::Multisampling msaa);
+		vkcv::Multisampling msaa,
+		const vkcv::DescriptorSetLayoutHandle& layoutHandle);
 
 	void voxelizeMeshes(
 		vkcv::CommandStreamHandle                       cmdStream,
 		const std::vector<vkcv::Mesh>&                  meshes,
 		const std::vector<glm::mat4>&                   modelMatrices,
 		const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets,
+		const std::vector<vkcv::DescriptorSetHandle>&   vertexDescriptorSets,
 		const vkcv::WindowHandle&                       windowHandle,
 		vkcv::Downsampler&								downsampler);
 

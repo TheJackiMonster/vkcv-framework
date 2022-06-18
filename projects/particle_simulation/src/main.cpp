@@ -79,14 +79,6 @@ int main(int argc, const char **argv) {
     vkcv::DescriptorSetLayoutHandle computeDescriptorSetLayout = core.createDescriptorSetLayout(computeShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle computeDescriptorSet = core.createDescriptorSet(computeDescriptorSetLayout);
 
-    const std::vector<vkcv::VertexAttachment> computeVertexAttachments = computeShaderProgram.getVertexAttachments();
-
-    std::vector<vkcv::VertexBinding> computeBindings;
-    for (size_t i = 0; i < computeVertexAttachments.size(); i++) {
-        computeBindings.push_back(vkcv::createVertexBinding(i, { computeVertexAttachments[i] }));
-    }
-    const vkcv::VertexLayout computeLayout { computeBindings };
-
     vkcv::ShaderProgram particleShaderProgram{};
     compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/shader.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
         particleShaderProgram.addShader(shaderStage, path);
@@ -99,38 +91,15 @@ int main(int argc, const char **argv) {
             particleShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
-    vkcv::Buffer<glm::vec3> vertexBuffer = core.createBuffer<glm::vec3>(
-            vkcv::BufferType::VERTEX,
-            3
-    );
-    const std::vector<vkcv::VertexAttachment> vertexAttachments = particleShaderProgram.getVertexAttachments();
-
-    const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-            vkcv::VertexBufferBinding(0, vertexBuffer.getVulkanHandle())};
-
-    std::vector<vkcv::VertexBinding> bindings;
-    for (size_t i = 0; i < vertexAttachments.size(); i++) {
-        bindings.push_back(vkcv::createVertexBinding(i, {vertexAttachments[i]}));
-    }
-
-    const vkcv::VertexLayout particleLayout { bindings };
-
     vkcv::GraphicsPipelineConfig particlePipelineDefinition{
             particleShaderProgram,
             UINT32_MAX,
             UINT32_MAX,
             particlePass,
-            {particleLayout},
             {descriptorSetLayout},
             true
 	};
     particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
-
-    const std::vector<glm::vec3> vertices = {glm::vec3(-0.012, 0.012, 0),
-                                             glm::vec3(0.012, 0.012, 0),
-                                             glm::vec3(0, -0.012, 0)};
-
-    vertexBuffer.fill(vertices);
 
     vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
@@ -163,6 +132,7 @@ int main(int argc, const char **argv) {
     vkcv::DescriptorWrites setWrites;
     setWrites.writeUniformBuffer(0, color.getHandle()).writeUniformBuffer(1, position.getHandle());
     setWrites.writeStorageBuffer(2, particleBuffer.getHandle());
+	
     core.writeDescriptorSet(descriptorSet, setWrites);
 
     vkcv::DescriptorWrites computeWrites;
@@ -177,7 +147,7 @@ int main(int argc, const char **argv) {
 
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(),
+    const vkcv::Mesh renderMesh(particleIndexBuffer.getVulkanHandle(),
                                 particleIndexBuffer.getCount());
     vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
 
