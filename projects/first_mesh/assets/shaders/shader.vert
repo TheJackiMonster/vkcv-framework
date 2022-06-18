@@ -8,7 +8,7 @@ struct vertex_t {
     float v;
 };
 
-layout(std430, set=0, binding=2) buffer buffer_vertexBuffer {
+layout(std430, set=0, binding=2) readonly buffer buffer_vertexBuffer {
     vertex_t vertices [];
 };
 

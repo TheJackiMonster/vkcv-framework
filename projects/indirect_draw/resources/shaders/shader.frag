@@ -8,8 +8,8 @@ layout(location = 2) in flat uint passDrawIndex;
 
 layout(location = 0) out vec3 outColor;
 
-layout(set=0, binding=0) uniform sampler standardSampler;
-layout(set=0, binding=2) uniform texture2D baseColorTex[];
+layout(set=0, binding=2) uniform sampler standardSampler;
+layout(set=0, binding=3) uniform texture2D baseColorTex[];
 
 
 void main()

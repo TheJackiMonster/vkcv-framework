@@ -72,9 +72,8 @@ CameraPlanes computeCameraPlanes(const vkcv::camera::Camera& camera) {
 
 struct Vertex
 {
-	glm::vec3 position;
-	glm::vec3 normal;
-	glm::vec2 uv;
+	glm::vec4 positionU;
+	glm::vec4 normalV;
 };
 
 struct CompiledMaterial
@@ -130,12 +129,19 @@ void interleaveScene(vkcv::asset::Scene scene,
                 const size_t uvOffset       = uvAttribute.offset       + uvStride * i;
 
                 Vertex v;
+				
+				const glm::vec2& uv = *reinterpret_cast<const glm::vec2*>(
+						&(vertexData[uvOffset])
+				);
+				
+				const glm::vec3& position = *reinterpret_cast<const glm::vec3*>(
+						&(vertexData[positionOffset])
+				);
 
-                v.position = *reinterpret_cast<const glm::vec3*>(&(vertexData[positionOffset]));
-                v.normal   = *reinterpret_cast<const glm::vec3*>(&(vertexData[normalOffset]));
-                v.uv       = *reinterpret_cast<const glm::vec3*>(&(vertexData[uvOffset]));
+                v.positionU = glm::vec4(position, uv[0]);
+                v.normalV   = glm::vec4(*reinterpret_cast<const glm::vec3*>(&(vertexData[normalOffset])), uv[1]);
 
-                glm::vec3 posWorld = glm::make_mat4(mesh.modelMatrix.data()) * glm::vec4(v.position, 1);
+                glm::vec3 posWorld = glm::make_mat4(mesh.modelMatrix.data()) * glm::vec4(position, 1);
 
                 max_pos.x = glm::max(max_pos.x, posWorld.x);
                 max_pos.y = glm::max(max_pos.y, posWorld.y);
@@ -362,12 +368,6 @@ int main(int argc, const char** argv) {
         cullingProgram.addShader(shaderStage, path);
     });
 
-    // vertex layout for the pipeline. (assumed to be) used by all sponza meshes.
-    const std::vector<vkcv::VertexAttachment> vertexAttachments = sponzaProgram.getVertexAttachments();
-	const vkcv::VertexLayout sponzaVertexLayout {
-		{ vkcv::createVertexBinding(0, { vertexAttachments }) }
-	};
-
     std::vector<uint8_t> compiledVertexBuffer; // IGNORED, since the vertex buffer is not interleaved!
 
     std::vector<uint8_t> compiledIndexBuffer;
@@ -388,16 +388,16 @@ int main(int argc, const char** argv) {
                     compiledBoundingBoxBuffer);
 
 	std::vector<Vertex> compiledInterleavedVertexBuffer;
-	for(auto& vertexGroup : interleavedVertices )
-	{
+	for(auto& vertexGroup : interleavedVertices ) {
         compiledInterleavedVertexBuffer.insert(compiledInterleavedVertexBuffer.end(),vertexGroup.begin(),vertexGroup.end());
 	}
 
 	auto vkCompiledVertexBuffer = core.createBuffer<Vertex>(
-			vkcv::BufferType::VERTEX,
+			vkcv::BufferType::STORAGE,
             compiledInterleavedVertexBuffer.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL
-			);
+	);
+	
     vkCompiledVertexBuffer.fill(compiledInterleavedVertexBuffer.data());
 
     auto vkCompiledIndexBuffer = core.createBuffer<uint8_t>(
@@ -429,16 +429,12 @@ int main(int argc, const char** argv) {
 			);
 	modelBuffer.fill(modelMatrix);
 
-	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize> (0), vkCompiledVertexBuffer.getVulkanHandle() )
-	};
-
-	const vkcv::Mesh compiledMesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), 0, vkcv::IndexBitCount::Bit32);
+	const vkcv::Mesh compiledMesh(vkCompiledIndexBuffer.getVulkanHandle(), 0, vkcv::IndexBitCount::Bit32);
 
     //assert(compiledMaterial.baseColor.size() == compiledMaterial.metalRough.size());
 
 	vkcv::DescriptorBindings descriptorBindings = sponzaProgram.getReflectedDescriptors().at(0);
-    descriptorBindings[2].descriptorCount = compiledMaterial.baseColor.size();
+    descriptorBindings[3].descriptorCount = compiledMaterial.baseColor.size();
 
 	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
@@ -451,15 +447,16 @@ int main(int argc, const char** argv) {
     );
 	
 	vkcv::DescriptorWrites setWrites;
+	setWrites.writeStorageBuffer(0, vkCompiledVertexBuffer.getHandle());
+	setWrites.writeStorageBuffer(1, modelBuffer.getHandle());
+	setWrites.writeSampler(2, standardSampler);
 	
     std::vector<vkcv::SampledImageDescriptorWrite> textureArrayWrites;
     for(uint32_t i = 0; i < compiledMaterial.baseColor.size(); i++)
     {
-		setWrites.writeSampledImage(2, compiledMaterial.baseColor[i].getHandle(), 0, false, i);
+		setWrites.writeSampledImage(3, compiledMaterial.baseColor[i].getHandle(), 0, false, i);
     }
-    
-    setWrites.writeSampler(0, standardSampler);
-	setWrites.writeStorageBuffer(1, modelBuffer.getHandle());
+	
     core.writeDescriptorSet(descriptorSet, setWrites);
 
 	const vkcv::GraphicsPipelineConfig sponzaPipelineConfig {
@@ -467,7 +464,6 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
         UINT32_MAX,
         passHandle,
-        {sponzaVertexLayout},
 		{ descriptorSetLayout },
 		true
 	};
