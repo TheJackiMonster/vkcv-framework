@@ -58,7 +58,6 @@ int main(int argc, const char** argv) {
 		UINT32_MAX,
 		trianglePass,
 		{},
-		{},
 		true
 	};
 
@@ -74,7 +73,7 @@ int main(int argc, const char** argv) {
 	
 	auto start = std::chrono::system_clock::now();
 
-	const vkcv::Mesh renderMesh({}, triangleIndexBuffer.getVulkanHandle(), 3);
+	const vkcv::Mesh renderMesh(triangleIndexBuffer.getVulkanHandle(), 3);
 	vkcv::DrawcallInfo drawcall(renderMesh, {},1);
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();

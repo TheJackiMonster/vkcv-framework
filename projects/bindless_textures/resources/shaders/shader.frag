@@ -8,8 +8,8 @@ layout(location = 2) in flat int passTextureIndex;
 
 layout(location = 0) out vec3 outColor;
 
-layout(set=0, binding=0) uniform sampler    textureSampler;
-layout(set=0, binding=1) uniform texture2D  materialTextures[];
+layout(set=0, binding=1) uniform sampler    textureSampler;
+layout(set=0, binding=2) uniform texture2D  materialTextures[];
 
 void main()	{
 	outColor =  texture(sampler2D(materialTextures[nonuniformEXT(passTextureIndex)], textureSampler), passUV).rgb;

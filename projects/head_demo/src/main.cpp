@@ -101,14 +101,7 @@ int main(int argc, const char** argv) {
 			{ vkcv::ShaderStage::FRAGMENT, "assets/shaders/red.frag" }
 	}, nullptr);
 	
-	const std::vector<vkcv::VertexAttachment> vertexAttachments = sceneShaderProgram.getVertexAttachments();
-	std::vector<vkcv::VertexBinding> bindings;
-	
-	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
-	}
-	
-	const auto& clipBindings = sceneShaderProgram.getReflectedDescriptors().at(1);
+	const auto& clipBindings = sceneShaderProgram.getReflectedDescriptors().at(2);
 	
 	auto clipDescriptorSetLayout = core.createDescriptorSetLayout(clipBindings);
 	auto clipDescriptorSet = core.createDescriptorSet(clipDescriptorSetLayout);
@@ -148,7 +141,6 @@ int main(int argc, const char** argv) {
 		}
 	});
 	
-	const vkcv::VertexLayout sceneLayout { bindings };
 	const auto& material0 = scene.getMaterial(0);
 	
 	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
@@ -156,8 +148,11 @@ int main(int argc, const char** argv) {
 			UINT32_MAX,
 			UINT32_MAX,
 			scenePass,
-			{sceneLayout},
-			{ material0.getDescriptorSetLayout(), clipDescriptorSetLayout },
+			{
+				scene.getDescriptorSetLayout(),
+				material0.getDescriptorSetLayout(),
+				clipDescriptorSetLayout
+			},
 			true
 	};
 	
@@ -166,8 +161,11 @@ int main(int argc, const char** argv) {
 			UINT32_MAX,
 			UINT32_MAX,
 			linePass,
-			{sceneLayout},
-			{ material0.getDescriptorSetLayout(), clipDescriptorSetLayout },
+			{
+					scene.getDescriptorSetLayout(),
+					material0.getDescriptorSetLayout(),
+					clipDescriptorSetLayout
+			},
 			true
 	};
 	
@@ -241,7 +239,7 @@ int main(int argc, const char** argv) {
 							 vkcv::DrawcallInfo& drawcallInfo) {
 			pushConstants.appendDrawcall(MVP);
 			drawcallInfo.descriptorSets.push_back(
-					vkcv::DescriptorSetUsage(1, clipDescriptorSet)
+					vkcv::DescriptorSetUsage(2, clipDescriptorSet)
 			);
 		};
 		

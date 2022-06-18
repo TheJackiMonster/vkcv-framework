@@ -80,14 +80,6 @@ int main(int argc, const char** argv) {
 		{ vkcv::ShaderStage::FRAGMENT, "assets/shaders/shader.frag" }
 	}, nullptr);
 
-	const std::vector<vkcv::VertexAttachment> vertexAttachments = sceneShaderProgram.getVertexAttachments();
-	std::vector<vkcv::VertexBinding> bindings;
-	
-	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
-	}
-
-	const vkcv::VertexLayout sceneLayout { bindings };
 	const auto& material0 = scene.getMaterial(0);
 
 	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
@@ -95,10 +87,10 @@ int main(int argc, const char** argv) {
 		UINT32_MAX,
 		UINT32_MAX,
 		scenePass,
-		{sceneLayout},
-		{ material0.getDescriptorSetLayout() },
+		{ scene.getDescriptorSetLayout(), material0.getDescriptorSetLayout() },
 		true
 	};
+	
 	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
 	
 	if (!scenePipeline) {

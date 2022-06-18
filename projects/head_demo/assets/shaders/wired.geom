@@ -10,7 +10,7 @@ layout(location = 0) in vec3 geomNormal[];
 layout(location = 0) out vec3 passNormal;
 layout(location = 1) out vec3 passEdge;
 
-layout(set=1, binding=0) uniform clipBuffer {
+layout(set=2, binding=0) uniform clipBuffer {
     float clipLimit;
     float clipX;
     float clipY;

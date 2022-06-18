@@ -6,6 +6,11 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
+struct vertex_t {
+	float positionU [4];
+	float normalV [4];
+};
+
 int main(int argc, const char** argv) {
 	const char* applicationName = "Bindless Textures";
 
@@ -79,13 +84,51 @@ int main(int argc, const char** argv) {
 	}
 
 	assert(!mesh.vertexGroups.empty());
-	auto vertexBuffer = core.createBuffer<uint8_t>(
-			vkcv::BufferType::VERTEX,
-			mesh.vertexGroups[0].vertexBuffer.data.size(),
+	auto vertexBuffer = core.createBuffer<vertex_t>(
+			vkcv::BufferType::STORAGE,
+			mesh.vertexGroups[0].numVertices,
 			vkcv::BufferMemoryType::DEVICE_LOCAL
 	);
 	
-	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
+	std::vector<vertex_t> vertices;
+	vertices.reserve(vertexBuffer.getCount());
+	
+	for (const auto& attribute : mesh.vertexGroups[0].vertexBuffer.attributes) {
+		if (attribute.componentType != vkcv::asset::ComponentType::FLOAT32) {
+			continue;
+		}
+		
+		size_t offset = attribute.offset;
+		
+		for (size_t i = 0; i < vertexBuffer.getCount(); i++) {
+			const auto *data = reinterpret_cast<const float*>(
+					mesh.vertexGroups[0].vertexBuffer.data.data() + offset
+			);
+			
+			switch (attribute.type) {
+				case vkcv::asset::PrimitiveType::POSITION:
+					memcpy(vertices[i].positionU, data, sizeof(float) * attribute.componentCount);
+					break;
+				case vkcv::asset::PrimitiveType::NORMAL:
+					memcpy(vertices[i].normalV, data, sizeof(float) * attribute.componentCount);
+					break;
+				case vkcv::asset::PrimitiveType::TEXCOORD_0:
+					if (attribute.componentCount != 2) {
+						break;
+					}
+					
+					vertices[i].positionU[3] = data[0];
+					vertices[i].normalV[3] = data[1];
+					break;
+				default:
+					break;
+			}
+			
+			offset += attribute.stride;
+		}
+	}
+	
+	vertexBuffer.fill(vertices);
 
 	auto indexBuffer = core.createBuffer<uint8_t>(
 			vkcv::BufferType::INDEX,
@@ -123,24 +166,11 @@ int main(int argc, const char** argv) {
 		{ vkcv::ShaderStage::VERTEX, "resources/shaders/shader.vert" },
 		{ vkcv::ShaderStage::FRAGMENT, "resources/shaders/shader.frag" }
 	}, nullptr);
- 
-	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 	
-	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-	});
+	const vkcv::DescriptorBindings &descriptorBindings = firstMeshProgram.getReflectedDescriptors().at(0);
 
-    const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
-	std::vector<vkcv::VertexBinding> bindings;
-	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
-	}
-	
-	const vkcv::VertexLayout firstMeshLayout { bindings };
-	const std::unordered_map<uint32_t, vkcv::DescriptorBinding> &descriptorBindings = firstMeshProgram.getReflectedDescriptors().at(0);
-
-    std::unordered_map<uint32_t, vkcv::DescriptorBinding> adjustedBindings = descriptorBindings;
-    adjustedBindings[1].descriptorCount = 6;
+    vkcv::DescriptorBindings adjustedBindings = descriptorBindings;
+    adjustedBindings[2].descriptorCount = 6;
 
     vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(adjustedBindings);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
@@ -150,7 +180,6 @@ int main(int argc, const char** argv) {
         UINT32_MAX,
         UINT32_MAX,
         firstMeshPass,
-        {firstMeshLayout},
 		{ descriptorSetLayout },
 		true
 	};
@@ -188,18 +217,13 @@ int main(int argc, const char** argv) {
 		vkcv::SamplerAddressMode::REPEAT
 	);
 
-	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
-
 	vkcv::DescriptorWrites setWrites;
+	setWrites.writeStorageBuffer(0, vertexBuffer.getHandle());
 	
 	for(uint32_t i = 0; i < 6; i++)
 	{
-		
 		setWrites.writeSampledImage(
-				1,
+				2,
 				texturesArray[i].getHandle(),
 				0,
 				false,
@@ -207,7 +231,7 @@ int main(int argc, const char** argv) {
 		);
 	}
 
-	setWrites.writeSampler(0, sampler);
+	setWrites.writeSampler(1, sampler);
 
 	core.writeDescriptorSet(descriptorSet, setWrites);
 
@@ -215,7 +239,7 @@ int main(int argc, const char** argv) {
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-	const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
+	const vkcv::Mesh renderMesh(indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
 
 	vkcv::DescriptorSetUsage    descriptorUsage(0, descriptorSet);
 	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage },1);
