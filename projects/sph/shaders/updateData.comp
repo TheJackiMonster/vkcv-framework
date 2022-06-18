@@ -53,14 +53,6 @@ void main() {
     vec3 out_force = inParticle[id].force;
     float out_density = inParticle[id].density;
     float out_pressure = inParticle[id].pressure;
-    
-    if (length(vel_new) > 100.f)
-    {
-        vel_new = normalize(vel_new)*50;
-        out_density = 0.01f;
-        out_pressure = 0.01f;
-        out_force = gravity * vec3(-gravityDir.x,gravityDir.y,gravityDir.z);
-    }
 
     vec3 pos_new = inParticle[id].position + (dt * vel_new);
 
