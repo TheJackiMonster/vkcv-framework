@@ -37,11 +37,6 @@ namespace vkcv::scene {
 		BufferHandle m_vertices;
 
         /**
-         * The list of the used vertex buffer bindings.
-         */
-		std::vector<VertexBufferBinding> m_vertexBindings;
-
-        /**
          * The buffer handle of its index buffer.
          */
 		BufferHandle m_indices;
@@ -50,6 +45,11 @@ namespace vkcv::scene {
          * The amount of indices in its index buffer.
          */
 		size_t m_indexCount;
+		
+		/**
+		 * The descriptor set handle of its vertex data.
+		 */
+		DescriptorSetHandle m_descriptorSet;
 
         /**
          * Axis aligned bounding box of the mesh part.

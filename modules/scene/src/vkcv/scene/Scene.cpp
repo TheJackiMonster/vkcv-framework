@@ -8,10 +8,28 @@
 
 namespace vkcv::scene {
 	
+	static DescriptorBindings getDescriptorBindings() {
+		DescriptorBindings bindings = {};
+		
+		auto binding_0 = DescriptorBinding {
+				0,
+				DescriptorType::STORAGE_BUFFER,
+				1,
+				ShaderStage::VERTEX,
+				false,
+				false
+		};
+		
+		bindings.insert(std::make_pair(0, binding_0));
+		
+		return bindings;
+	}
+	
 	Scene::Scene(Core* core) :
 	m_core(core),
 	m_materials(),
-	m_nodes() {}
+	m_nodes(),
+	m_descriptorSetLayout(core->createDescriptorSetLayout(getDescriptorBindings())) {}
 	
 	Scene::~Scene() {
 		m_nodes.clear();
@@ -21,7 +39,8 @@ namespace vkcv::scene {
 	Scene::Scene(const Scene &other) :
 	m_core(other.m_core),
 	m_materials(other.m_materials),
-	m_nodes() {
+	m_nodes(),
+	m_descriptorSetLayout(other.m_descriptorSetLayout) {
 		m_nodes.resize(other.m_nodes.size(), Node(*this));
 		
 		for (size_t i = 0; i < m_nodes.size(); i++) {
@@ -32,7 +51,8 @@ namespace vkcv::scene {
 	Scene::Scene(Scene &&other) noexcept :
 	m_core(other.m_core),
 	m_materials(other.m_materials),
-	m_nodes() {
+	m_nodes(),
+	m_descriptorSetLayout(other.m_descriptorSetLayout) {
 		m_nodes.resize(other.m_nodes.size(), Node(*this));
 		
 		for (size_t i = 0; i < m_nodes.size(); i++) {
@@ -54,6 +74,8 @@ namespace vkcv::scene {
 			m_nodes[i] = other.m_nodes[i];
 		}
 		
+		m_descriptorSetLayout = other.m_descriptorSetLayout;
+		
 		return *this;
 	}
 	
@@ -66,6 +88,8 @@ namespace vkcv::scene {
 		for (size_t i = 0; i < m_nodes.size(); i++) {
 			m_nodes[i] = std::move(other.m_nodes[i]);
 		}
+		
+		m_descriptorSetLayout = other.m_descriptorSetLayout;
 		
 		return *this;
 	}
@@ -109,6 +133,10 @@ namespace vkcv::scene {
 		}
 		
 		return m_materials[index].m_data;
+	}
+	
+	const DescriptorSetLayoutHandle &Scene::getDescriptorSetLayout() const {
+		return m_descriptorSetLayout;
 	}
 	
 	void Scene::recordDrawcalls(CommandStreamHandle       		 &cmdStream,

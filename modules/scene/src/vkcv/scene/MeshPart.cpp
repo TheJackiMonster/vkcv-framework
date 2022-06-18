@@ -4,12 +4,17 @@
 
 namespace vkcv::scene {
 	
+	struct vertex_t {
+		float positionU [4];
+		float normalV [4];
+	};
+	
 	MeshPart::MeshPart(Scene& scene) :
 	m_scene(scene),
 	m_vertices(),
-	m_vertexBindings(),
 	m_indices(),
 	m_indexCount(0),
+	m_descriptorSet(),
 	m_bounds(),
 	m_materialIndex(std::numeric_limits<size_t>::max()) {}
 	
@@ -18,22 +23,50 @@ namespace vkcv::scene {
 						std::vector<DrawcallInfo>& drawcalls) {
 		Core& core = *(m_scene.m_core);
 		
-		auto vertexBuffer = core.createBuffer<uint8_t>(
-				BufferType::VERTEX, vertexGroup.vertexBuffer.data.size()
+		auto vertexBuffer = core.createBuffer<vertex_t>(
+				BufferType::STORAGE, vertexGroup.numVertices
 		);
 		
-		vertexBuffer.fill(vertexGroup.vertexBuffer.data);
-		m_vertices = vertexBuffer.getHandle();
+		std::vector<vertex_t> vertices;
+		vertices.reserve(vertexBuffer.getCount());
 		
-		auto attributes = vertexGroup.vertexBuffer.attributes;
-		
-		std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-			return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-		});
-		
-		for (const auto& attribute : attributes) {
-			m_vertexBindings.emplace_back(attribute.offset, vertexBuffer.getVulkanHandle());
+		for (const auto& attribute : vertexGroup.vertexBuffer.attributes) {
+			if (attribute.componentType != vkcv::asset::ComponentType::FLOAT32) {
+				continue;
+			}
+			
+			size_t offset = attribute.offset;
+			
+			for (size_t i = 0; i < vertexBuffer.getCount(); i++) {
+				const auto *data = reinterpret_cast<const float*>(
+						vertexGroup.vertexBuffer.data.data() + offset
+				);
+				
+				switch (attribute.type) {
+					case vkcv::asset::PrimitiveType::POSITION:
+						memcpy(vertices[i].positionU, data, sizeof(float) * attribute.componentCount);
+						break;
+					case vkcv::asset::PrimitiveType::NORMAL:
+						memcpy(vertices[i].normalV, data, sizeof(float) * attribute.componentCount);
+						break;
+					case vkcv::asset::PrimitiveType::TEXCOORD_0:
+						if (attribute.componentCount != 2) {
+							break;
+						}
+						
+						vertices[i].positionU[3] = data[0];
+						vertices[i].normalV[3] = data[1];
+						break;
+					default:
+						break;
+				}
+				
+				offset += attribute.stride;
+			}
 		}
+		
+		vertexBuffer.fill(vertices);
+		m_vertices = vertexBuffer.getHandle();
 		
 		auto indexBuffer = core.createBuffer<uint8_t>(
 				BufferType::INDEX, vertexGroup.indexBuffer.data.size()
@@ -42,6 +75,12 @@ namespace vkcv::scene {
 		indexBuffer.fill(vertexGroup.indexBuffer.data);
 		m_indices = indexBuffer.getHandle();
 		m_indexCount = vertexGroup.numIndices;
+		
+		m_descriptorSet = core.createDescriptorSet(m_scene.getDescriptorSetLayout());
+		
+		DescriptorWrites writes;
+		writes.writeStorageBuffer(0, m_vertices);
+		core.writeDescriptorSet(m_descriptorSet, writes);
 		
 		m_bounds.setMin(glm::vec3(
 				vertexGroup.min.x,
@@ -74,6 +113,9 @@ namespace vkcv::scene {
 			IndexBitCount indexBitCount;
 			
 			switch (vertexGroup.indexBuffer.type) {
+				case asset::IndexType::UINT8:
+					indexBitCount = IndexBitCount::Bit8;
+					break;
 				case asset::IndexType::UINT16:
 					indexBitCount = IndexBitCount::Bit16;
 					break;
@@ -87,8 +129,11 @@ namespace vkcv::scene {
 			}
 			
 			drawcalls.push_back(DrawcallInfo(
-					vkcv::Mesh(m_vertexBindings, indexBuffer.getVulkanHandle(), m_indexCount, indexBitCount),
-					{ DescriptorSetUsage(0, material.getDescriptorSet()) }
+					vkcv::Mesh(indexBuffer.getVulkanHandle(), m_indexCount, indexBitCount),
+					{
+						DescriptorSetUsage(0, m_descriptorSet),
+						DescriptorSetUsage(1, material.getDescriptorSet())
+					}
 			));
 		}
 	}
@@ -100,9 +145,9 @@ namespace vkcv::scene {
 	MeshPart::MeshPart(const MeshPart &other) :
 			m_scene(other.m_scene),
 			m_vertices(other.m_vertices),
-			m_vertexBindings(other.m_vertexBindings),
 			m_indices(other.m_indices),
 			m_indexCount(other.m_indexCount),
+			m_descriptorSet(other.m_descriptorSet),
 			m_bounds(other.m_bounds),
 			m_materialIndex(other.m_materialIndex) {
 		m_scene.increaseMaterialUsage(m_materialIndex);
@@ -111,9 +156,9 @@ namespace vkcv::scene {
 	MeshPart::MeshPart(MeshPart &&other) noexcept :
 			m_scene(other.m_scene),
 			m_vertices(other.m_vertices),
-			m_vertexBindings(other.m_vertexBindings),
 			m_indices(other.m_indices),
 			m_indexCount(other.m_indexCount),
+			m_descriptorSet(other.m_descriptorSet),
 			m_bounds(other.m_bounds),
 			m_materialIndex(other.m_materialIndex) {
 		m_scene.increaseMaterialUsage(m_materialIndex);
@@ -125,9 +170,9 @@ namespace vkcv::scene {
 		}
 		
 		m_vertices = other.m_vertices;
-		m_vertexBindings = other.m_vertexBindings;
 		m_indices = other.m_indices;
 		m_indexCount = other.m_indexCount;
+		m_descriptorSet = other.m_descriptorSet;
 		m_bounds = other.m_bounds;
 		m_materialIndex = other.m_materialIndex;
 		
@@ -136,9 +181,9 @@ namespace vkcv::scene {
 	
 	MeshPart &MeshPart::operator=(MeshPart &&other) noexcept {
 		m_vertices = other.m_vertices;
-		m_vertexBindings = other.m_vertexBindings;
 		m_indices = other.m_indices;
 		m_indexCount = other.m_indexCount;
+		m_descriptorSet = other.m_descriptorSet;
 		m_bounds = other.m_bounds;
 		m_materialIndex = other.m_materialIndex;
 		

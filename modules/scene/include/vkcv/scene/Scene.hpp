@@ -54,6 +54,11 @@ namespace vkcv::scene {
          * A list of nodes in the first level of the scene graph.
          */
 		std::vector<Node> m_nodes;
+		
+		/**
+		 * A handle to the descriptor set layout used by meshes in this scene.
+		 */
+		DescriptorSetLayoutHandle m_descriptorSetLayout;
 
         /**
          * Constructor of a scene instance with a given Core instance.
@@ -152,6 +157,13 @@ namespace vkcv::scene {
          */
 		[[nodiscard]]
 		const material::Material& getMaterial(size_t index) const;
+		
+		/**
+         * Returns the descriptor set layout handle used by the meshes in the scene.
+         * @return Descriptor set layout handle
+         */
+		[[nodiscard]]
+		const DescriptorSetLayoutHandle& getDescriptorSetLayout() const;
 
         /**
          * Record drawcalls of all meshes of this scene with CPU-side frustum culling.
