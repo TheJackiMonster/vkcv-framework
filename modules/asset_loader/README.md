@@ -14,4 +14,4 @@ A VkCV module to load basic assets like models, materials and images
 
 ## Docs
 
-Here is a [link](https://vkcv.de/develop/group__vkcv__asset.html) to this module.
+Here is a [link](https://userpages.uni-koblenz.de/~vkcv/doc/group__vkcv__asset.html) to this module.

@@ -11,8 +11,6 @@ More information about Git LFS [here](https://git-lfs.github.com/).
 
 ## Build
 
- [![pipeline status](https://gitlab.uni-koblenz.de/vulkan2021/vkcv-framework/badges/develop/pipeline.svg)](https://gitlab.uni-koblenz.de/vulkan2021/vkcv-framework/-/commits/develop)
-
 Git submodules are used for libraries. 
 To download the submodules either clone using `git clone --recurse-submodules` or after `git clone` use `git submodule init` and `git submodule update`.
 
@@ -48,10 +46,7 @@ The following modules will be provided in this repository and they will automati
 
 ## Documentation
 
-The documentation for the develop-branch can be found here:  
-https://vkcv.de/develop/  
+A pre-built documentation can be found here:  
+https://userpages.uni-koblenz.de/~vkcv/doc/
 
-The documentation concerning the respective merge request is listed here:  
-https://vkcv.de/branch/  
-
-It is automatically generated and uploaded using the CI pipeline.
+But it is recommended to build the documentation with Doxygen locally to get the most recent changes. There is also an optional CMake target to build the documentation via Doxygen.

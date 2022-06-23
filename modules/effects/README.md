@@ -12,4 +12,4 @@ A VkCV module to add post-processing effects to images in realtime after renderi
 
 ## Docs
 
-Here is a [link](https://vkcv.de/develop/group__vkcv__effects.html) to this module.
+Here is a [link](https://userpages.uni-koblenz.de/~vkcv/doc/group__vkcv__effects.html) to this module.
