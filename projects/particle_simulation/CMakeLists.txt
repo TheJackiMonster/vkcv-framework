@@ -5,18 +5,13 @@ project(particle_simulation)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# this should fix the execution path to load local files from the project
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-
 # adding source files to the project
-add_executable(particle_simulation 
+add_project(particle_simulation
 		src/main.cpp
 		src/ParticleSystem.hpp 
 		src/ParticleSystem.cpp
 		src/Particle.hpp 
 		src/Particle.cpp)
-
-fix_project(particle_simulation)
 
 # including headers of dependencies and the VkCV framework
 target_include_directories(particle_simulation SYSTEM BEFORE PRIVATE

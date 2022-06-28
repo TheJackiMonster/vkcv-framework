@@ -5,19 +5,14 @@ project(voxelization)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# this should fix the execution path to load local files from the project
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-
 # adding source files to the project
-add_executable(voxelization src/main.cpp)
+add_project(voxelization src/main.cpp)
 
 target_sources(voxelization PRIVATE
     src/Voxelization.hpp
     src/Voxelization.cpp
     src/ShadowMapping.hpp
     src/ShadowMapping.cpp)
-
-fix_project(voxelization)
 
 # including headers of dependencies and the VkCV framework
 target_include_directories(voxelization SYSTEM BEFORE PRIVATE

@@ -1,5 +1,5 @@
 
-include(${vkcv_config_ext}/ProjectFix.cmake)
+include(${vkcv_config_ext}/Project.cmake)
 
 # Add new projects/examples here:
 add_subdirectory(first_triangle)

@@ -5,12 +5,8 @@ project(head_demo)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# this should fix the execution path to load local files from the project
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-
 # adding source files to the project
-add_executable(head_demo src/main.cpp)
-fix_project(head_demo)
+add_project(head_demo src/main.cpp)
 
 # including headers of dependencies and the VkCV framework
 target_include_directories(head_demo SYSTEM BEFORE PRIVATE
