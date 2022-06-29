@@ -23,3 +23,6 @@ imgui.ini
 *.hxx
 *.cxx
 
+# Cache for different tasks like source code indexing
+.cache/
+
