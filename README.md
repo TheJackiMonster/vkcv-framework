@@ -26,6 +26,8 @@ Most dependencies will be used via submodules but for example Vulkan needs to be
 | Name of dependency | Used as submodule |
 |-----------------------------------|---|
 | [Vulkan](https://www.vulkan.org/) | ❌ |
+| [Vulkan-Headers](https://github.com/KhronosGroup/Vulkan-Headers) | ✅ |
+| [Vulkan-Hpp](https://github.com/KhronosGroup/Vulkan-Hpp) | ✅ |
 | [GLFW](https://www.glfw.org/) | ✅ |
 | [SPIRV-CROSS](https://github.com/KhronosGroup/SPIRV-Cross) | ✅ |
 | [VulkanMemoryAllocator-Hpp](https://github.com/malte-v/VulkanMemoryAllocator-Hpp) | ✅ |
