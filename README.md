@@ -44,6 +44,11 @@ The following modules will be provided in this repository and they will automati
  - [Shader-Compiler](modules/shader_compiler/README.md)
  - [Upscaling](modules/upscaling/README.md)
 
+## Development
+
+See this guide to setup your IDE for most forward development.
+ - [How to setup your IDE](doc/SETUP_IDE.md)
+
 ## Documentation
 
 A pre-built documentation can be found here:  
