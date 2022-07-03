@@ -27,3 +27,9 @@ Get-Content resources\extensions.txt | ForEach-Object {code --install-extension 
 1. Download and install [CLion](https://www.jetbrains.com/clion/download/)
 2. Run CLion and open your local repository as project
 
+## Visual Studio
+
+1. Download and install [Visual Studio](https://visualstudio.microsoft.com/downloads/)
+2. Make sure you have installed the requirements for [CMake projects](https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-170).
+3. Run Visual Studio and open your local repository as project
+
