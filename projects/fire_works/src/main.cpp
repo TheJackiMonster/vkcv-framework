@@ -174,7 +174,7 @@ int main(int argc, const char **argv) {
 		
 		1.0f,
 		1.0f,
-		0.1f,
+		0.5f,
 		0.0f
 	);
 	
@@ -191,7 +191,7 @@ int main(int argc, const char **argv) {
 		
 		10.0f,
 		1.0f,
-		0.05f,
+		0.0f,
 		0.0f
 	);
 	

@@ -16,6 +16,7 @@ layout( push_constant ) uniform constants{
 };
 
 const float g = 9.81;
+const float friction = 0.001f;
 
 void main() {
     uint id = gl_GlobalInvocationID.x;
@@ -34,8 +35,10 @@ void main() {
         lifetime = 0.0f;
     }
 
+    const float fading = 1.0f / (1.0f + friction);
+
     position = position + velocity * dt;
-    velocity = velocity + vec3(0.0f, -g, 0.0f) * dt;
+    velocity = velocity * fading + vec3(0.0f, -g, 0.0f) * dt;
 
     particles[id].position = position;
     particles[id].lifetime = lifetime;

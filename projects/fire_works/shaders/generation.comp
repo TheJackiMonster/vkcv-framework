@@ -73,6 +73,7 @@ void main() {
     }
 
     vec3 velocity = normalize(direction) * events[event_id].velocity;
+    float size = events[event_id].size;
 
     if (events[event_id].parent < events.length()) {
         const uint spawnId = events[events[event_id].parent].pad0;
@@ -80,12 +81,15 @@ void main() {
         if (spawnId < particles.length()) {
             particles[id].position = particles[spawnId].position;
             velocity += particles[spawnId].velocity;
+            size = particles[spawnId].size;
         }
     }
 
+    const float split = pow(1.0f / events[event_id].count, 1.0f / 3.0f);
+
     particles[id].lifetime = events[event_id].lifetime;
     particles[id].velocity = velocity;
-    particles[id].size = events[event_id].size;
+    particles[id].size = size * split;
     particles[id].color = events[event_id].color;
     particles[id].mass = events[event_id].mass / events[event_id].count;
 
