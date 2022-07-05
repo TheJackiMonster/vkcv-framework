@@ -1,0 +1,41 @@
+#version 450 core
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(local_size_x = 256) in;
+
+#include "particle.inc"
+
+layout(set=0, binding=0, std430) coherent buffer particleBuffer {
+    particle_t particles [];
+};
+
+layout( push_constant ) uniform constants{
+    float dt;
+};
+
+const float g = 9.81;
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+
+    if (id >= particles.length()) {
+        return;
+    }
+
+    vec3 position = particles[id].position;
+    float lifetime = particles[id].lifetime;
+    vec3 velocity = particles[id].velocity;
+
+    if (lifetime > dt) {
+        lifetime -= dt;
+    } else {
+        lifetime = 0.0f;
+    }
+
+    position = position + velocity * dt;
+    velocity = velocity + vec3(0.0f, -g, 0.0f) * dt;
+
+    particles[id].position = position;
+    particles[id].velocity = velocity;
+}

@@ -130,7 +130,7 @@ namespace vkcv::camera {
     }
 
     Camera& CameraManager::getCamera(uint32_t cameraIndex) {
-        if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
+        if (cameraIndex < 0 || cameraIndex >= m_cameras.size()) {
         	vkcv_log(LogLevel::ERROR, "Invalid camera index: The index must range from 0 to %lu", m_cameras.size());
         	return getActiveCamera();
         }
@@ -143,7 +143,7 @@ namespace vkcv::camera {
     }
 
     void CameraManager::setActiveCamera(uint32_t cameraIndex) {
-        if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
+        if (cameraIndex < 0 || cameraIndex >= m_cameras.size()) {
 			vkcv_log(LogLevel::ERROR, "Invalid camera index: The index must range from 0 to %lu", m_cameras.size());
 			return;
         }
@@ -156,7 +156,7 @@ namespace vkcv::camera {
     }
 
     void CameraManager::setControllerType(uint32_t cameraIndex, ControllerType controllerType) {
-        if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
+        if (cameraIndex < 0 || cameraIndex >= m_cameras.size()) {
 			vkcv_log(LogLevel::ERROR, "Invalid camera index: The index must range from 0 to %lu", m_cameras.size());
 			return;
         }
@@ -165,7 +165,7 @@ namespace vkcv::camera {
     }
 
     ControllerType CameraManager::getControllerType(uint32_t cameraIndex) {
-        if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
+        if (cameraIndex < 0 || cameraIndex >= m_cameras.size()) {
 			vkcv_log(LogLevel::ERROR, "Invalid camera index: The index must range from 0 to %lu", m_cameras.size());
 			return ControllerType::NONE;
         }
