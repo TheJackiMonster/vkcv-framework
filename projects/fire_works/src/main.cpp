@@ -47,10 +47,15 @@ int main(int argc, const char **argv) {
 	
 	uint32_t trackballIdx = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	cameraManager.getCamera(trackballIdx).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));   // set camera to look at the center of the particle volume
-	cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	uint pilotIdx = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	cameraManager.getCamera(trackballIdx).setNearFar(0.1f, 50.0f);
 	cameraManager.getCamera(trackballIdx).setPosition(glm::vec3(0, 0, -25));
+	
+	cameraManager.getCamera(pilotIdx).setNearFar(0.1f, 50.0f);
+	cameraManager.getCamera(pilotIdx).setPosition(glm::vec3(0, 0, 25));
+	
+	cameraManager.setActiveCamera(pilotIdx);
 	
 	vkcv::gui::GUI gui (core, windowHandle);
 	vkcv::shader::GLSLCompiler compiler;
@@ -160,7 +165,7 @@ int main(int argc, const char **argv) {
 		glm::vec3(0, 1, 0),
 		0.0f,
 		glm::vec3(0.0f, 1.0f, 0.0f),
-		10.0f,
+		12.5f,
 		
 		1,
 		0,
@@ -415,6 +420,19 @@ int main(int argc, const char **argv) {
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
+		
+		gui.beginGUI();
+		ImGui::Begin("Settings");
+		
+		if (ImGui::Button("Reset")) {
+			start = std::chrono::system_clock::now();
+			
+			particleBuffer.fill(particles);
+			eventBuffer.fill(events);
+		}
+		
+		ImGui::End();
+		gui.endGUI();
 		
 		core.endFrame(windowHandle);
 	}
