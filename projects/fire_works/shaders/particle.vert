@@ -11,6 +11,7 @@ layout(location = 0) in vec2 vertexPos;
 
 layout(location = 0) out vec2 passPos;
 layout(location = 1) out vec3 passColor;
+layout(location = 2) out float passLifetime;
 
 layout( push_constant ) uniform constants{
     mat4 mvp;
@@ -18,11 +19,13 @@ layout( push_constant ) uniform constants{
 
 void main()	{
     vec3 position = particles[gl_InstanceIndex].position;
+    float lifetime = particles[gl_InstanceIndex].lifetime;
     float size = particles[gl_InstanceIndex].size;
     vec3 color = particles[gl_InstanceIndex].color;
 
     passPos = vertexPos;
     passColor = color;
+    passLifetime = lifetime;
 
     // align particle to face camera
     gl_Position = mvp * vec4(position, 1);      // transform position into projected view space

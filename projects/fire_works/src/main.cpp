@@ -16,6 +16,23 @@ struct particle_t {
 	float pad2;
 };
 
+struct event_t {
+	glm::vec3 direction;
+	float startTime;
+	glm::vec3 color;
+	float velocity;
+	
+	uint count;
+	uint index;
+	uint parent;
+	uint pad0;
+	
+	float lifetime;
+	float mass;
+	float size;
+	float pad1;
+};
+
 int main(int argc, const char **argv) {
 	vkcv::Core core = vkcv::Core::create(
 		"Firework",
@@ -36,6 +53,34 @@ int main(int argc, const char **argv) {
 	cameraManager.getCamera(trackballIdx).setPosition(glm::vec3(0, 0, -25));
 	
 	vkcv::gui::GUI gui (core, windowHandle);
+	vkcv::shader::GLSLCompiler compiler;
+	
+	vkcv::DescriptorBindings descriptorBindings;
+	vkcv::DescriptorBinding binding {
+		0,
+		vkcv::DescriptorType::STORAGE_BUFFER,
+		1,
+		vkcv::ShaderStage::VERTEX | vkcv::ShaderStage::COMPUTE,
+		false,
+		false
+	};
+	
+	descriptorBindings.insert(std::make_pair(0, binding));
+	
+	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
+	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
+	
+	vkcv::ShaderProgram generationShader;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/generation.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		generationShader.addShader(shaderStage, path);
+	});
+	
+	vkcv::DescriptorSetLayoutHandle generationDescriptorLayout = core.createDescriptorSetLayout(generationShader.getReflectedDescriptors().at(1));
+	vkcv::DescriptorSetHandle generationDescriptorSet = core.createDescriptorSet(generationDescriptorLayout);
+	vkcv::ComputePipelineHandle generationPipeline = core.createComputePipeline({
+		generationShader,
+		{ descriptorSetLayout, generationDescriptorLayout }
+	});
 	
 	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 	
@@ -56,30 +101,13 @@ int main(int argc, const char **argv) {
 		1, false, true, true
 	).getHandle();
 	
-	vkcv::shader::GLSLCompiler compiler;
 	vkcv::ShaderProgram particleShaderProgram;
-	
 	compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/particle.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		particleShaderProgram.addShader(shaderStage, path);
 	});
 	compiler.compile(vkcv::ShaderStage::FRAGMENT, "shaders/particle.frag", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		particleShaderProgram.addShader(shaderStage, path);
 	});
-	
-	vkcv::DescriptorBindings descriptorBindings;
-	vkcv::DescriptorBinding binding {
-		0,
-		vkcv::DescriptorType::STORAGE_BUFFER,
-		1,
-		vkcv::ShaderStage::VERTEX | vkcv::ShaderStage::COMPUTE,
-		false,
-		false
-	};
-	
-	descriptorBindings.insert(std::make_pair(0, binding));
-	
-	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
-	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 	
 	std::vector<particle_t> particles;
 	
@@ -106,10 +134,75 @@ int main(int argc, const char **argv) {
 	
 	particleBuffer.fill(particles);
 	
-	vkcv::DescriptorWrites writes;
-	writes.writeStorageBuffer(0, particleBuffer.getHandle());
+	{
+		vkcv::DescriptorWrites writes;
+		writes.writeStorageBuffer(0, particleBuffer.getHandle());
+		core.writeDescriptorSet(descriptorSet, writes);
+	}
 	
-	core.writeDescriptorSet(descriptorSet, writes);
+	std::vector<float> randomData;
+	for (size_t i = 0; i < 1024; i++) {
+		randomData.push_back(
+			2.0f * static_cast<float>(std::rand() % RAND_MAX) / static_cast<float>(RAND_MAX) - 1.0f
+		);
+	}
+	
+	vkcv::Buffer<float> randomBuffer = core.createBuffer<float>(
+		vkcv::BufferType::STORAGE,
+		randomData.size()
+	);
+	
+	randomBuffer.fill(randomData);
+	
+	std::vector<event_t> events;
+	
+	events.emplace_back(
+		glm::vec3(0, 1, 0),
+		0.0f,
+		glm::vec3(0.0f, 1.0f, 0.0f),
+		10.0f,
+		
+		1,
+		0,
+		UINT_MAX,
+		0,
+		
+		1.0f,
+		1.0f,
+		0.1f,
+		0.0f
+	);
+	
+	events.emplace_back(
+		glm::vec3(0.0f),
+		1.0f,
+		glm::vec3(0.0f, 1.0f, 1.0f),
+		10.0f,
+		
+		100,
+		0,
+		events.size() - 1,
+		0,
+		
+		10.0f,
+		1.0f,
+		0.05f,
+		0.0f
+	);
+	
+	vkcv::Buffer<event_t> eventBuffer = core.createBuffer<event_t>(
+		vkcv::BufferType::STORAGE,
+		events.size()
+	);
+	
+	eventBuffer.fill(events);
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.writeStorageBuffer(0, randomBuffer.getHandle());
+		writes.writeStorageBuffer(1, eventBuffer.getHandle());
+		core.writeDescriptorSet(generationDescriptorSet, writes);
+	}
 	
 	vkcv::Buffer<glm::vec2> trianglePositions = core.createBuffer<glm::vec2>(vkcv::BufferType::VERTEX, 3);
 	trianglePositions.fill({
@@ -243,28 +336,40 @@ int main(int argc, const char **argv) {
 		
 		current = next;
 		
-		// auto t = static_cast<float>(0.000001 * static_cast<double>(time.count()));
-		auto dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
+		float time_values [2];
+		time_values[0] = static_cast<float>(0.000001 * static_cast<double>(time.count()));
+		time_values[1] = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
-		uint32_t motionDispatchCount[3];
-		motionDispatchCount[0] = std::ceil(particleBuffer.getCount() / 256.f);
-		motionDispatchCount[1] = 1;
-		motionDispatchCount[2] = 1;
+		uint32_t particleDispatchCount[3];
+		particleDispatchCount[0] = std::ceil(particleBuffer.getCount() / 256.f);
+		particleDispatchCount[1] = 1;
+		particleDispatchCount[2] = 1;
 		
-		vkcv::PushConstants pushConstantsTime (sizeof(float));
-		pushConstantsTime.appendDrawcall(dt);
+		vkcv::PushConstants pushConstantsTime (2 * sizeof(float));
+		pushConstantsTime.appendDrawcall(time_values);
+		
+		core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			generationPipeline,
+			particleDispatchCount,
+			{
+				vkcv::DescriptorSetUsage(0, descriptorSet),
+				vkcv::DescriptorSetUsage(1, generationDescriptorSet)
+			},
+			pushConstantsTime
+		);
 		
 		core.recordComputeDispatchToCmdStream(
 			cmdStream,
 			motionPipeline,
-			motionDispatchCount,
-			{vkcv::DescriptorSetUsage(0, descriptorSet) },
+			particleDispatchCount,
+			{ vkcv::DescriptorSetUsage(0, descriptorSet) },
 			pushConstantsTime
 		);
 		
-		cameraManager.update(dt);
+		cameraManager.update(time_values[1]);
 		
 		const auto& camera = cameraManager.getActiveCamera();
 		

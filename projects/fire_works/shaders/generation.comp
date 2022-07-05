@@ -1,0 +1,93 @@
+#version 450 core
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(local_size_x = 256) in;
+
+#include "particle.inc"
+
+layout(set=0, binding=0, std430) buffer particleBuffer {
+    particle_t particles [];
+};
+
+layout(set=1, binding=0, std430) readonly buffer randomBuffer {
+    float randomData [];
+};
+
+#include "event.inc"
+
+layout(set=1, binding=1, std430) buffer eventBuffer {
+    event_t events [];
+};
+
+layout( push_constant ) uniform constants{
+    float t;
+    float dt;
+};
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+
+    if (id >= particles.length()) {
+        return;
+    }
+
+    const float lifetime = particles[id].lifetime;
+
+    if (lifetime > 0.0f) {
+        return;
+    }
+
+    uint event_id = events.length();
+
+    for (uint i = 0; i < events.length(); i++) {
+        const float start = events[i].startTime;
+
+        if (((t - dt * 2) >= start) || (t < start)) {
+            continue;
+        }
+
+        const uint index = atomicAdd(events[i].index, 1);
+
+        if (events[i].count > index) {
+            event_id = i;
+            break;
+        } else {
+            atomicAdd(events[i].index, -1);
+        }
+    }
+
+    if (event_id >= events.length()) {
+        return;
+    }
+
+    vec3 direction;
+    if (dot(events[event_id].direction, events[event_id].direction) <= 0.0f) {
+        direction = vec3(
+            randomData[(id * 3 + 0) % randomData.length()],
+            randomData[(id * 3 + 1) % randomData.length()],
+            randomData[(id * 3 + 2) % randomData.length()]
+        );
+    } else {
+        direction = events[event_id].direction;
+    }
+
+    vec3 velocity = normalize(direction) * events[event_id].velocity;
+
+    if (events[event_id].parent < events.length()) {
+        const uint spawnId = events[events[event_id].parent].pad0;
+
+        if (spawnId < particles.length()) {
+            particles[id].position = particles[spawnId].position;
+            velocity += particles[spawnId].velocity;
+        }
+    }
+
+    particles[id].lifetime = events[event_id].lifetime;
+    particles[id].velocity = velocity;
+    particles[id].size = events[event_id].size;
+    particles[id].color = events[event_id].color;
+    particles[id].mass = events[event_id].mass / events[event_id].count;
+
+    events[event_id].pad0 = id;
+}
