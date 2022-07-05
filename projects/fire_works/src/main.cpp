@@ -33,6 +33,12 @@ struct event_t {
 	float pad1;
 };
 
+struct draw_particles_t {
+	glm::mat4 mvp;
+	uint width;
+	uint height;
+};
+
 int main(int argc, const char **argv) {
 	vkcv::Core core = vkcv::Core::create(
 		"Firework",
@@ -378,15 +384,21 @@ int main(int argc, const char **argv) {
 		
 		const auto& camera = cameraManager.getActiveCamera();
 		
-		vkcv::PushConstants pushConstantsDraw (sizeof(glm::mat4));
-		pushConstantsDraw.appendDrawcall(camera.getMVP());
+		draw_particles_t draw_particles {
+			camera.getMVP(),
+			swapchainWidth,
+			swapchainHeight
+		};
+		
+		vkcv::PushConstants pushConstantsDraw (sizeof(draw_particles_t));
+		pushConstantsDraw.appendDrawcall(draw_particles);
 		
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			particlePass,
 			particlePipeline,
 			pushConstantsDraw,
-			{drawcallsParticles},
+			{ drawcallsParticles },
 			{ colorBuffer, depthBuffer },
 			windowHandle
 		);

@@ -15,6 +15,8 @@ layout(location = 2) out float passLifetime;
 
 layout( push_constant ) uniform constants{
     mat4 mvp;
+    uint width;
+    uint height;
 };
 
 void main()	{
@@ -23,7 +25,12 @@ void main()	{
     float size = particles[gl_InstanceIndex].size;
     vec3 color = particles[gl_InstanceIndex].color;
 
-    passPos = vertexPos;
+    if (width > height) {
+        passPos = vertexPos * vec2(1.0f * width / height, 1.0f);
+    } else {
+        passPos = vertexPos * vec2(1.0f, 1.0f * height / width);
+    }
+
     passColor = color;
     passLifetime = lifetime;
 
