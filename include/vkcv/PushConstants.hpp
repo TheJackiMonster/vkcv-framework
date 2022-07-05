@@ -9,24 +9,21 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Logger.hpp"
+#include "TypeGuard.hpp"
 
 namespace vkcv {
 
     /**
      * @brief Class to handle push constants data per drawcall.
      */
-	class PushConstants {
+	class PushConstants final {
 	private:
+		TypeGuard m_typeGuard;
 		std::vector<uint8_t> m_data;
-		size_t m_sizePerDrawcall;
 		
 	public:
-		template<typename T>
-		PushConstants() : PushConstants(sizeof(T)) {}
-		
-		explicit PushConstants(size_t sizePerDrawcall) :
-		m_data(),
-		m_sizePerDrawcall(sizePerDrawcall) {}
+		explicit PushConstants(size_t sizePerDrawcall);
+		explicit PushConstants(const TypeGuard &guard);
 		
 		PushConstants(const PushConstants& other) = default;
 		PushConstants(PushConstants&& other) = default;
@@ -43,9 +40,7 @@ namespace vkcv {
 		 * @return Size of data per drawcall
 		 */
 		[[nodiscard]]
-		size_t getSizePerDrawcall() const {
-			return m_sizePerDrawcall;
-		}
+		size_t getSizePerDrawcall() const;
 		
 		/**
 		 * @brief Returns the size of total data stored for
@@ -54,9 +49,7 @@ namespace vkcv {
 		 * @return Total size of data
 		 */
 		[[nodiscard]]
-		size_t getFullSize() const {
-			return m_data.size();
-		}
+		size_t getFullSize() const;
 		
 		/**
 		 * @brief Returns the number of drawcalls that data
@@ -65,17 +58,13 @@ namespace vkcv {
 		 * @return Number of drawcalls
 		 */
 		[[nodiscard]]
-		size_t getDrawcallCount() const {
-			return (m_data.size() / m_sizePerDrawcall);
-		}
+		size_t getDrawcallCount() const;
 		
 		/**
 		 * @brief Clears the data for all drawcalls currently.
 		 * stored.
 		*/
-		void clear() {
-			m_data.clear();
-		}
+		void clear();
 		
 		/**
 		 * @brief Appends data for a single drawcall to the
@@ -87,9 +76,7 @@ namespace vkcv {
 		 */
 		template<typename T = uint8_t>
 		bool appendDrawcall(const T& value) {
-			if (sizeof(T) != m_sizePerDrawcall) {
-				vkcv_log(LogLevel::WARNING, "Size (%lu) of value does not match the specified size per drawcall (%lu)",
-						 sizeof(value), m_sizePerDrawcall);
+			if (!m_typeGuard.template check<T>()) {
 				return false;
 			}
 			
@@ -109,7 +96,7 @@ namespace vkcv {
 		 */
 		template<typename T = uint8_t>
 		T& getDrawcall(size_t index) {
-			const size_t offset = (index * m_sizePerDrawcall);
+			const size_t offset = (index * getSizePerDrawcall());
 			return *reinterpret_cast<T*>(m_data.data() + offset);
 		}
 		
@@ -123,7 +110,7 @@ namespace vkcv {
 		 */
 		template<typename T = uint8_t>
 		const T& getDrawcall(size_t index) const {
-			const size_t offset = (index * m_sizePerDrawcall);
+			const size_t offset = (index * getSizePerDrawcall());
 			return *reinterpret_cast<const T*>(m_data.data() + offset);
 		}
 		
@@ -135,10 +122,7 @@ namespace vkcv {
 		 * @return Drawcall data
 		 */
 		[[nodiscard]]
-		const void* getDrawcallData(size_t index) const {
-			const size_t offset = (index * m_sizePerDrawcall);
-			return reinterpret_cast<const void*>(m_data.data() + offset);
-		}
+		const void* getDrawcallData(size_t index) const;
 		
 		/**
 		 * @brief Returns the pointer to the entire drawcall data which
@@ -147,14 +131,13 @@ namespace vkcv {
 		 * @return Pointer to the data
 		 */
 		[[nodiscard]]
-		const void* getData() const {
-			if (m_data.empty()) {
-				return nullptr;
-			} else {
-				return m_data.data();
-			}
-		}
+		const void* getData() const;
 		
 	};
+	
+	template<typename T>
+	PushConstants pushConstants() {
+		return PushConstants(typeGuard<T>());
+	}
 	
 }

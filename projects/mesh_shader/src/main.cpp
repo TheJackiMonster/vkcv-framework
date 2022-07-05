@@ -356,7 +356,7 @@ int main(int argc, const char** argv) {
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-		vkcv::PushConstants pushConstantData(sizeof(pushConstants));
+		vkcv::PushConstants pushConstantData = vkcv::pushConstants<PushConstants>();
 		pushConstantData.appendDrawcall(pushConstants);
 
 		if (useMeshShader) {

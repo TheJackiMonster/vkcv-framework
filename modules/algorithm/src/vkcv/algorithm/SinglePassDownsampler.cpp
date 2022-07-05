@@ -310,7 +310,10 @@ namespace vkcv::algorithm {
 		dispatch[1] = dispatchThreadGroupCountXY[1];
 		dispatch[2] = m_core.getImageArrayLayers(image);
 		
-		vkcv::PushConstants pushConstants (m_sampler? sizeof(SPDConstantsSampler) : sizeof(SPDConstants));
+		vkcv::PushConstants pushConstants = (m_sampler?
+				vkcv::pushConstants<SPDConstantsSampler>() :
+				vkcv::pushConstants<SPDConstants>()
+		);
 		
 		if (m_sampler) {
 			SPDConstantsSampler data;

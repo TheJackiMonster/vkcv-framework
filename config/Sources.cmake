@@ -30,6 +30,7 @@ set(vkcv_sources
 		${vkcv_include}/vkcv/Buffer.hpp
 		
 		${vkcv_include}/vkcv/PushConstants.hpp
+		${vkcv_source}/vkcv/PushConstants.cpp
 		
 		${vkcv_include}/vkcv/BufferManager.hpp
 		${vkcv_source}/vkcv/BufferManager.cpp
@@ -75,6 +76,9 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/VertexLayout.cpp
 
 		${vkcv_include}/vkcv/Event.hpp
+		
+		${vkcv_include}/vkcv/TypeGuard.hpp
+		${vkcv_source}/vkcv/TypeGuard.cpp
 
 		${vkcv_source}/vkcv/DescriptorManager.hpp
 		${vkcv_source}/vkcv/DescriptorManager.cpp

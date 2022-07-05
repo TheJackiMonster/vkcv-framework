@@ -130,7 +130,7 @@ int main(int argc, const char** argv) {
 		raytracingPushData.camera_up = glm::vec4(cameraManager.getActiveCamera().getUp(),0);
 		raytracingPushData.camera_forward = glm::vec4(cameraManager.getActiveCamera().getFront(),0);
 
-		vkcv::PushConstants pushConstantsRTX(sizeof(RaytracingPushConstantData));
+		vkcv::PushConstants pushConstantsRTX = vkcv::pushConstants<RaytracingPushConstantData>();
 		pushConstantsRTX.appendDrawcall(raytracingPushData);
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);

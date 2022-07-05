@@ -456,7 +456,7 @@ namespace vkcv::effects {
 		dispatch[1] = calcDispatchSize(sampleHeight, threadGroupWorkRegionDim);
 		dispatch[2] = 1;
 		
-		PushConstants pushConstants (sizeof(m_cameraDirection));
+		PushConstants pushConstants = vkcv::pushConstants<glm::vec3>();
 		pushConstants.appendDrawcall(m_cameraDirection);
 		
 		// bloom composite dispatch

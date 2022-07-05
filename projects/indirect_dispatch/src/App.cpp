@@ -274,7 +274,7 @@ void App::run() {
 			m_windowHandle);
 
 		// sky
-		vkcv::PushConstants skyPushConstants(sizeof(glm::mat4));
+		vkcv::PushConstants skyPushConstants = vkcv::pushConstants<glm::mat4>();
 		skyPushConstants.appendDrawcall(viewProjection);
 
 		m_core.recordDrawcallsToCmdStream(

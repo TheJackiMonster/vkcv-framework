@@ -277,7 +277,7 @@ int main(int argc, const char **argv) {
         float random = rdm(rdmEngine);
         glm::vec2 pushData = glm::vec2(deltatime, random);
 
-        vkcv::PushConstants pushConstantsCompute (sizeof(glm::vec2));
+        vkcv::PushConstants pushConstantsCompute = vkcv::pushConstants<glm::vec2>();
         pushConstantsCompute.appendDrawcall(pushData);
         
         uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(particleSystem.getParticles().size()/256.f)),1,1};

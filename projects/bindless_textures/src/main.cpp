@@ -256,7 +256,7 @@ int main(int argc, const char** argv) {
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 
-		vkcv::PushConstants pushConstants (sizeof(glm::mat4));
+		vkcv::PushConstants pushConstants = vkcv::pushConstants<glm::mat4>();
 		pushConstants.appendDrawcall(mvp);
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };

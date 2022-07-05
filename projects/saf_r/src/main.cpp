@@ -273,7 +273,7 @@ int main(int argc, const char** argv) {
         raytracingPushData.sphereCount  = spheres.size();
         raytracingPushData.viewToWorld  = glm::inverse(cameraManager.getActiveCamera().getView());
 
-        vkcv::PushConstants pushConstantsCompute(sizeof(RaytracingPushConstantData));
+        vkcv::PushConstants pushConstantsCompute = vkcv::pushConstants<RaytracingPushConstantData>();
         pushConstantsCompute.appendDrawcall(raytracingPushData);
 
 		//dispatch compute shader

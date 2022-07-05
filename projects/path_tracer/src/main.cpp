@@ -362,7 +362,7 @@ int main(int argc, const char** argv) {
 		raytracingPushData.planeCount   = planes.size();
 		raytracingPushData.frameIndex   = frameIndex;
 
-		vkcv::PushConstants pushConstantsCompute(sizeof(RaytracingPushConstantData));
+		vkcv::PushConstants pushConstantsCompute = vkcv::pushConstants<RaytracingPushConstantData>();
 		pushConstantsCompute.appendDrawcall(raytracingPushData);
 
 		uint32_t traceDispatchCount[3] = { 

@@ -684,13 +684,13 @@ int main(int argc, const char **argv) {
 		physics.dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
 		physics.speedfactor = speed_factor;
 		
-		vkcv::PushConstants physicsPushConstants(sizeof(physics));
+		vkcv::PushConstants physicsPushConstants = vkcv::pushConstants<Physics>();
 		physicsPushConstants.appendDrawcall(physics);
 		
 		cameraManager.update(physics.dt);
 		
 		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
-		vkcv::PushConstants cameraPushConstants(sizeof(glm::mat4));
+		vkcv::PushConstants cameraPushConstants = vkcv::pushConstants<glm::mat4>();
 		cameraPushConstants.appendDrawcall(mvp);
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);

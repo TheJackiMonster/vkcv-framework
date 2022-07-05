@@ -259,7 +259,6 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::Image> sceneImages;
 	
 	vkcv::algorithm::SinglePassDownsampler spdDownsampler (core, colorSampler);
-	vkcv::Downsampler &downsampler = core.getDownsampler();
 	
 	auto mipStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
@@ -800,7 +799,7 @@ int main(int argc, const char** argv) {
 		// depth prepass
 		const glm::mat4 viewProjectionCamera = cameraManager.getActiveCamera().getMVP();
 		
-		vkcv::PushConstants prepassPushConstants (sizeof(glm::mat4));
+		vkcv::PushConstants prepassPushConstants = vkcv::pushConstants<glm::mat4>();
 		
 		std::vector<glm::mat4> prepassMatrices;
 		for (const auto& m : modelMatrices) {
@@ -853,7 +852,7 @@ int main(int argc, const char** argv) {
 			voxelization.renderVoxelVisualisation(cmdStream, viewProjectionCamera, renderTargets, voxelVisualisationMip, windowHandle);
 		}
 		
-		vkcv::PushConstants skySettingsPushConstants (sizeof(skySettings));
+		vkcv::PushConstants skySettingsPushConstants = vkcv::pushConstants<SkySettings>();
 		skySettingsPushConstants.appendDrawcall(skySettings);
 
 		// sky
@@ -943,7 +942,7 @@ int main(int argc, const char** argv) {
 		auto timeSinceStart = std::chrono::duration_cast<std::chrono::microseconds>(end - appStartTime);
 		float timeF         = static_cast<float>(timeSinceStart.count()) * 0.01f;
 		
-		vkcv::PushConstants timePushConstants (sizeof(timeF));
+		vkcv::PushConstants timePushConstants = vkcv::pushConstants<float>();
 		timePushConstants.appendDrawcall(timeF);
 		
 		fulsscreenDispatchCount[0] = static_cast<uint32_t>(

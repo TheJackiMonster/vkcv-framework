@@ -255,7 +255,7 @@ void ShadowMapping::recordShadowMapRendering(
 		voxelVolumeExtent);
 	m_lightInfoBuffer.fill({ lightInfo });
 	
-	vkcv::PushConstants shadowPushConstants (sizeof(glm::mat4));
+	vkcv::PushConstants shadowPushConstants = vkcv::pushConstants<glm::mat4>();
 	
 	for (const auto& m : modelMatrices) {
 		shadowPushConstants.appendDrawcall(lightInfo.lightMatrix * m);
@@ -286,7 +286,7 @@ void ShadowMapping::recordShadowMapRendering(
 
 	const uint32_t msaaSampleCount = msaaToSampleCount(msaa);
 	
-	vkcv::PushConstants msaaPushConstants (sizeof(msaaSampleCount));
+	vkcv::PushConstants msaaPushConstants = vkcv::pushConstants<uint32_t>();
 	msaaPushConstants.appendDrawcall(msaaSampleCount);
 
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Depth to moments", { 1, 1, 1, 1 });

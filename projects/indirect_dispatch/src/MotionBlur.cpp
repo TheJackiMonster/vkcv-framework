@@ -163,7 +163,7 @@ vkcv::ImageHandle MotionBlur::render(
 	classificationConstants.height              = m_core->getImageHeight(m_renderTargets.outputColor);
 	classificationConstants.fastPathThreshold   = fastPathThreshold;
 
-	vkcv::PushConstants classificationPushConstants(sizeof(ClassificationConstants));
+	vkcv::PushConstants classificationPushConstants = vkcv::pushConstants<ClassificationConstants>();
     classificationPushConstants.appendDrawcall(classificationConstants);
 
 	m_core->prepareImageForSampling(cmdStream, m_renderTargets.motionMaxNeighbourhood);
@@ -235,7 +235,7 @@ vkcv::ImageHandle MotionBlur::render(
 	motionBlurConstantData.cameraFarPlane           = cameraFar;
 	motionBlurConstantData.motionTileOffsetLength   = motionTileOffsetLength;
 
-	vkcv::PushConstants motionBlurPushConstants(sizeof(motionBlurConstantData));
+	vkcv::PushConstants motionBlurPushConstants = vkcv::pushConstants<MotionBlurConstantData>();
 	motionBlurPushConstants.appendDrawcall(motionBlurConstantData);
 
 	struct FastPathConstants {
@@ -244,7 +244,7 @@ vkcv::ImageHandle MotionBlur::render(
 	FastPathConstants fastPathConstants;
 	fastPathConstants.motionFactor = motionBlurConstantData.motionFactor;
 
-	vkcv::PushConstants fastPathPushConstants(sizeof(FastPathConstants));
+	vkcv::PushConstants fastPathPushConstants = vkcv::pushConstants<FastPathConstants>();
 	fastPathPushConstants.appendDrawcall(fastPathConstants);
 
 	m_core->prepareImageForStorage(cmdStream, m_renderTargets.outputColor);
@@ -361,7 +361,7 @@ vkcv::ImageHandle MotionBlur::renderMotionVectorVisualisation(
 	m_core->prepareImageForSampling(cmdStream, visualisationInput);
 	m_core->prepareImageForStorage(cmdStream, m_renderTargets.outputColor);
 
-	vkcv::PushConstants motionVectorVisualisationPushConstants(sizeof(float));
+	vkcv::PushConstants motionVectorVisualisationPushConstants = vkcv::pushConstants<float>();
 	motionVectorVisualisationPushConstants.appendDrawcall(velocityRange);
 
 	const auto dispatchSizes = computeFullscreenDispatchSize(

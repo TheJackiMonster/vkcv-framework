@@ -259,7 +259,7 @@ void Voxelization::voxelizeMeshes(
 	resetVoxelDispatchCount[1] = 1;
 	resetVoxelDispatchCount[2] = 1;
 	
-	vkcv::PushConstants voxelCountPushConstants (sizeof(voxelCount));
+	vkcv::PushConstants voxelCountPushConstants = vkcv::pushConstants<uint32_t>();
 	voxelCountPushConstants.appendDrawcall(voxelCount);
 
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel reset", { 1, 1, 1, 1 });
@@ -343,7 +343,7 @@ void Voxelization::renderVoxelVisualisation(
 	uint32_t                                mipLevel,
 	const vkcv::WindowHandle&               windowHandle) {
 
-	vkcv::PushConstants voxelVisualisationPushConstants (sizeof(glm::mat4));
+	vkcv::PushConstants voxelVisualisationPushConstants = vkcv::pushConstants<glm::mat4>();
 	voxelVisualisationPushConstants.appendDrawcall(viewProjectin);
 
 	mipLevel = std::clamp(mipLevel, (uint32_t)0, m_voxelImage.getMipCount()-1);
