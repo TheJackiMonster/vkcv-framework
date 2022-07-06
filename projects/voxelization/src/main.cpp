@@ -259,7 +259,6 @@ int main(int argc, const char** argv) {
 	std::vector<vkcv::Image> sceneImages;
 	
 	vkcv::algorithm::SinglePassDownsampler spdDownsampler (core, colorSampler);
-	vkcv::Downsampler &downsampler = core.getDownsampler();
 	
 	auto mipStream = core.createCommandStream(vkcv::QueueType::Graphics);
 

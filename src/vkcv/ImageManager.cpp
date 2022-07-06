@@ -512,7 +512,11 @@ namespace vkcv {
 		const size_t max_size = std::min(size, image_size);
 		
 		BufferHandle bufferHandle = m_bufferManager.createBuffer(
-				BufferType::STAGING, max_size, BufferMemoryType::DEVICE_LOCAL, false
+				BufferType::STAGING,
+				max_size,
+				BufferMemoryType::DEVICE_LOCAL,
+				false,
+				false
 		);
 		
 		m_bufferManager.fillBuffer(bufferHandle, data, max_size, 0);

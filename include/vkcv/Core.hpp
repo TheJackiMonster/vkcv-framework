@@ -206,8 +206,19 @@ namespace vkcv
             * return Buffer-Object
             */
         template<typename T>
-        Buffer<T> createBuffer(vkcv::BufferType type, size_t count, BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL, bool supportIndirect = false) {
-        	return Buffer<T>::create(m_BufferManager.get(), type, count, memoryType, supportIndirect);
+        Buffer<T> createBuffer(vkcv::BufferType type,
+							   size_t count,
+							   BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL,
+							   bool supportIndirect = false,
+							   bool readable = false) {
+        	return Buffer<T>::create(
+					m_BufferManager.get(),
+					type,
+					count,
+					memoryType,
+					supportIndirect,
+					readable
+			);
         }
         
         /**

@@ -1,0 +1,6 @@
+GitLab.gitlab-workflow
+llvm-vs-code-extensions.vscode-clangd
+ms-vscode.cmake-tools
+slevesque.vscode-3dviewer
+twxs.cmake
+webfreak.debug

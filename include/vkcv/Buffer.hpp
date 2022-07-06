@@ -95,7 +95,31 @@ namespace vkcv {
 		 */
 		void fill(const std::vector<T>& vector,
 				  size_t offset = 0) {
-			fill( static_cast<const T*>(vector.data()), static_cast<size_t>(vector.size()), offset);
+			fill(static_cast<const T*>(vector.data()), static_cast<size_t>(vector.size()), offset);
+		}
+		
+		/**
+		 * @brief Reads the #Buffer directly into a data pointer of type T.
+		 *
+		 * @param[in] data Pointer to the array of object type T
+		 * @param[in] count The number of objects to copy from the buffer
+		 * @param[in] offset The offset into the #Buffer where the data is copied from
+		 */
+		void read(T* data,
+				  size_t count = 0,
+				  size_t offset = 0) {
+			m_manager->readBuffer(m_handle, data, count * sizeof(T), offset * sizeof(T));
+		}
+		
+		/**
+		 * @brief Reads the #Buffer directly to a vector of type T.
+		 *
+		 * @param vector Vector of type T to be copied into from the #Buffer
+		 * @param offset The offset into the #Buffer where the data is copied from
+		 */
+		void read(std::vector<T>& vector,
+				  size_t offset = 0) {
+			read(static_cast<T*>(vector.data()), static_cast<size_t>(vector.size()), offset);
 		}
 		
 		/**
@@ -163,14 +187,16 @@ namespace vkcv {
 								BufferType type,
 								size_t count,
 								BufferMemoryType memoryType,
-								bool supportIndirect) {
+								bool supportIndirect,
+								bool readable) {
 			return Buffer<T>(
 				manager,
 				manager->createBuffer(
 					type,
 					count * sizeof(T),
 					memoryType,
-					supportIndirect
+					supportIndirect,
+					readable
 				),
 				type,
 				count,

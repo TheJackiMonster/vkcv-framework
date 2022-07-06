@@ -26,6 +26,8 @@ Most dependencies will be used via submodules but for example Vulkan needs to be
 | Name of dependency | Used as submodule |
 |-----------------------------------|---|
 | [Vulkan](https://www.vulkan.org/) | ❌ |
+| [Vulkan-Headers](https://github.com/KhronosGroup/Vulkan-Headers) | ✅ |
+| [Vulkan-Hpp](https://github.com/KhronosGroup/Vulkan-Hpp) | ✅ |
 | [GLFW](https://www.glfw.org/) | ✅ |
 | [SPIRV-CROSS](https://github.com/KhronosGroup/SPIRV-Cross) | ✅ |
 | [VulkanMemoryAllocator-Hpp](https://github.com/malte-v/VulkanMemoryAllocator-Hpp) | ✅ |
@@ -43,6 +45,11 @@ The following modules will be provided in this repository and they will automati
  - [Scene](modules/scene/README.md)
  - [Shader-Compiler](modules/shader_compiler/README.md)
  - [Upscaling](modules/upscaling/README.md)
+
+## Development
+
+See this guide to setup your IDE for most forward development.
+ - [How to setup your IDE](doc/SETUP_IDE.md)
 
 ## Documentation
 
