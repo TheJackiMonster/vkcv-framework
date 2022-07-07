@@ -141,7 +141,7 @@ namespace vkcv
 			const GraphicsPipelineConfig &config) {
 		
 		if (existsVertexShader) {
-			const VertexLayout& layout = config.m_VertexLayout;
+			const VertexLayout& layout = config.getVertexLayout();
 			
 			// iterate over the layout's specified, mutually exclusive buffer bindings that make up a vertex buffer
 			for (const auto& vertexBinding : layout.vertexBindings)
@@ -190,7 +190,7 @@ namespace vkcv
 	vk::PipelineInputAssemblyStateCreateInfo createPipelineInputAssemblyStateCreateInfo(const GraphicsPipelineConfig &config) {
 		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
 				{},
-				primitiveTopologyToVulkanPrimitiveTopology(config.m_PrimitiveTopology),
+				primitiveTopologyToVulkanPrimitiveTopology(config.getPrimitiveTopology()),
 				false
 		);
 		
@@ -200,7 +200,7 @@ namespace vkcv
 	vk::PipelineTessellationStateCreateInfo createPipelineTessellationStateCreateInfo(const GraphicsPipelineConfig &config) {
 		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo(
 				{},
-				config.m_tessellationControlPoints
+				config.getTesselationControlPoints()
 		);
 		
 		return pipelineTessellationStateCreateInfo;
@@ -217,14 +217,14 @@ namespace vkcv
 		
 		viewport = vk::Viewport(
 				0.f, 0.f,
-				static_cast<float>(config.m_Width),
-				static_cast<float>(config.m_Height),
+				static_cast<float>(config.getWidth()),
+				static_cast<float>(config.getHeight()),
 				0.f, 1.f
 		);
 		
 		scissor = vk::Rect2D(
 				{ 0,0 },
-				{ config.m_Width, config.m_Height }
+				{ config.getWidth(), config.getHeight() }
 		);
 		
 		vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo(
@@ -253,7 +253,7 @@ namespace vkcv
 		const GraphicsPipelineConfig &config,
 		const vk::PhysicalDeviceConservativeRasterizationPropertiesEXT& conservativeRasterProperties) {
 		vk::CullModeFlags cullMode;
-		switch (config.m_culling) {
+		switch (config.getCulling()) {
 			case CullMode::None:
 				cullMode = vk::CullModeFlagBits::eNone;
 				break;
@@ -273,7 +273,7 @@ namespace vkcv
 		
 		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo (
 				{},
-				config.m_EnableDepthClamping,
+				config.isDepthClampingEnabled(),
 				false,
 				vk::PolygonMode::eFill,
 				cullMode,
@@ -287,7 +287,7 @@ namespace vkcv
 
 		static vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterization;
 		
-		if (config.m_UseConservativeRasterization) {
+		if (config.isUsingConservativeRasterization()) {
             const float overestimationSize = 1.0f - conservativeRasterProperties.primitiveOverestimationSize;
             const float maxOverestimationSize = conservativeRasterProperties.maxExtraPrimitiveOverestimationSize;
 
@@ -311,11 +311,11 @@ namespace vkcv
 	vk::PipelineMultisampleStateCreateInfo createPipelineMultisampleStateCreateInfo(const GraphicsPipelineConfig &config) {
 		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
 				{},
-				msaaToVkSampleCountFlag(config.m_multisampling),
+				msaaToVkSampleCountFlag(config.getMultisampling()),
 				false,
 				0.f,
 				nullptr,
-				config.m_alphaToCoverage,
+				config.isWritingAlphaToCoverage(),
 				false
 		);
 		
@@ -332,7 +332,7 @@ namespace vkcv
 		// currently set to additive, if not disabled
 		// BlendFactors must be set as soon as additional BlendModes are added
 		static vk::PipelineColorBlendAttachmentState colorBlendAttachmentState (
-				config.m_blendMode != BlendMode::None,
+				config.getBlendMode() != BlendMode::None,
 				vk::BlendFactor::eOne,
 				vk::BlendFactor::eOne,
 				vk::BlendOp::eAdd,
@@ -368,7 +368,7 @@ namespace vkcv
 																const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) {
 		static vk::PushConstantRange pushConstantRange;
 		
-		const size_t pushConstantsSize = config.m_ShaderProgram.getPushConstantsSize();
+		const size_t pushConstantsSize = config.getShaderProgram().getPushConstantsSize();
 		pushConstantRange = vk::PushConstantRange(
 				vk::ShaderStageFlagBits::eAll, 0, pushConstantsSize
 		);
@@ -394,9 +394,9 @@ namespace vkcv
 	vk::PipelineDepthStencilStateCreateInfo createPipelineDepthStencilStateCreateInfo(const GraphicsPipelineConfig &config) {
 		const vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilCreateInfo(
 				vk::PipelineDepthStencilStateCreateFlags(),
-				config.m_depthTest != DepthTest::None,
-				config.m_depthWrite,
-				depthTestToVkCompareOp(config.m_depthTest),
+				config.getDepthTest() != DepthTest::None,
+				config.isWritingDepth(),
+				depthTestToVkCompareOp(config.getDepthTest()),
 				false,
 				false,
 				{},
@@ -417,7 +417,7 @@ namespace vkcv
 		static std::vector<vk::DynamicState> dynamicStates;
 		dynamicStates.clear();
 		
-		if(config.m_UseDynamicViewport) {
+		if(config.isViewportDynamic()) {
 			dynamicStates.push_back(vk::DynamicState::eViewport);
 			dynamicStates.push_back(vk::DynamicState::eScissor);
 		}
@@ -434,15 +434,17 @@ namespace vkcv
     GraphicsPipelineHandle GraphicsPipelineManager::createPipeline(const GraphicsPipelineConfig &config,
 																   const PassManager& passManager,
 																   const DescriptorManager& descriptorManager) {
-        const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
+        const vk::RenderPass &pass = passManager.getVkPass(config.getPass());
 
-        const bool existsTaskShader     = config.m_ShaderProgram.existsShader(ShaderStage::TASK);
-        const bool existsMeshShader     = config.m_ShaderProgram.existsShader(ShaderStage::MESH);
-        const bool existsVertexShader   = config.m_ShaderProgram.existsShader(ShaderStage::VERTEX);
-        const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
-        const bool existsGeometryShader = config.m_ShaderProgram.existsShader(ShaderStage::GEOMETRY);
-		const bool existsTessellationControlShader = config.m_ShaderProgram.existsShader(ShaderStage::TESS_CONTROL);
-		const bool existsTessellationEvaluationShader = config.m_ShaderProgram.existsShader(ShaderStage::TESS_EVAL);
+		const auto& program = config.getShaderProgram();
+		
+        const bool existsTaskShader     = program.existsShader(ShaderStage::TASK);
+        const bool existsMeshShader     = program.existsShader(ShaderStage::MESH);
+        const bool existsVertexShader   = program.existsShader(ShaderStage::VERTEX);
+        const bool existsFragmentShader = program.existsShader(ShaderStage::FRAGMENT);
+        const bool existsGeometryShader = program.existsShader(ShaderStage::GEOMETRY);
+		const bool existsTessellationControlShader = program.existsShader(ShaderStage::TESS_CONTROL);
+		const bool existsTessellationEvaluationShader = program.existsShader(ShaderStage::TESS_EVAL);
 		
         const bool validGeometryStages  = (
 				(existsVertexShader && (existsTessellationControlShader == existsTessellationEvaluationShader)) ||
@@ -471,7 +473,7 @@ namespace vkcv
         if (existsVertexShader) {
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
-                    config.m_ShaderProgram,
+					program,
                     ShaderStage::VERTEX,
                     m_Device,
                     &createInfo);
@@ -488,7 +490,7 @@ namespace vkcv
         if (existsTaskShader) {
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
-                    config.m_ShaderProgram,
+					program,
                     ShaderStage::TASK,
                     m_Device,
                     &createInfo);
@@ -505,7 +507,7 @@ namespace vkcv
         if (existsMeshShader) {
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
-                    config.m_ShaderProgram,
+					program,
                     ShaderStage::MESH,
                     m_Device,
                     &createInfo);
@@ -522,7 +524,7 @@ namespace vkcv
         {
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
-                    config.m_ShaderProgram,
+					program,
                     ShaderStage::FRAGMENT,
                     m_Device,
                     &createInfo);
@@ -539,7 +541,7 @@ namespace vkcv
         if (existsGeometryShader) {
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
-                    config.m_ShaderProgram,
+					program,
                     ShaderStage::GEOMETRY,
                     m_Device,
                     &createInfo);
@@ -556,7 +558,7 @@ namespace vkcv
 		if (existsTessellationControlShader) {
 			vk::PipelineShaderStageCreateInfo createInfo;
 			const bool success = createPipelineShaderStageCreateInfo(
-					config.m_ShaderProgram,
+					program,
 					ShaderStage::TESS_CONTROL,
 					m_Device,
 					&createInfo);
@@ -573,7 +575,7 @@ namespace vkcv
 		if (existsTessellationEvaluationShader) {
 			vk::PipelineShaderStageCreateInfo createInfo;
 			const bool success = createPipelineShaderStageCreateInfo(
-					config.m_ShaderProgram,
+					program,
 					ShaderStage::TESS_EVAL,
 					m_Device,
 					&createInfo);
@@ -632,8 +634,8 @@ namespace vkcv
                 createPipelineDynamicStateCreateInfo(config);
 
 		std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
-		descriptorSetLayouts.reserve(config.m_DescriptorLayouts.size());
-		for (const auto& handle : config.m_DescriptorLayouts) {
+		descriptorSetLayouts.reserve(config.getDescriptorSetLayouts().size());
+		for (const auto& handle : config.getDescriptorSetLayouts()) {
 			descriptorSetLayouts.push_back(descriptorManager.getDescriptorSetLayout(handle).vulkanHandle);
 		}
 		
@@ -652,7 +654,7 @@ namespace vkcv
                 createPipelineDepthStencilStateCreateInfo(config);
 
         const vk::PipelineDepthStencilStateCreateInfo* p_depthStencilCreateInfo = nullptr;
-        const PassConfig& passConfig = passManager.getPassConfig(config.m_PassHandle);
+        const PassConfig& passConfig = passManager.getPassConfig(config.getPass());
 
         for (const auto& attachment : passConfig.attachments) {
             if (isDepthFormat(attachment.format)) {

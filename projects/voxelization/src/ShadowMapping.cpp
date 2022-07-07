@@ -166,19 +166,18 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	m_shadowMapPass = corePtr->createPass(shadowPassConfig);
 
 	// pipeline
-	vkcv::GraphicsPipelineConfig shadowPipeConfig{
+	vkcv::GraphicsPipelineConfig shadowPipeConfig (
 		shadowShader,
-		shadowMapResolution,
-		shadowMapResolution,
 		m_shadowMapPass,
 		vertexLayout,
-		{},
-		false
-	};
-	shadowPipeConfig.m_multisampling        = msaa;
-	shadowPipeConfig.m_EnableDepthClamping  = true;
-	shadowPipeConfig.m_culling              = vkcv::CullMode::Front;
-	m_shadowMapPipe                         = corePtr->createGraphicsPipeline(shadowPipeConfig);
+		{}
+	);
+	
+	shadowPipeConfig.setResolution(shadowMapResolution, shadowMapResolution);
+	shadowPipeConfig.setMultisampling(msaa);
+	shadowPipeConfig.setDepthClampingEnabled(true);
+	shadowPipeConfig.setCulling(vkcv::CullMode::Front);
+	m_shadowMapPipe = corePtr->createGraphicsPipeline(shadowPipeConfig);
 
 	m_shadowSampler = corePtr->createSampler(
 		vkcv::SamplerFilterType::LINEAR,

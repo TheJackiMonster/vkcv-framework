@@ -527,41 +527,36 @@ int main(int argc, const char **argv) {
 		vkcv::createVertexBinding(0, gfxProgramGrid.getVertexAttachments())
 	});
 	
-	vkcv::GraphicsPipelineConfig gfxPipelineConfigGrid;
-	gfxPipelineConfigGrid.m_ShaderProgram = gfxProgramGrid;
-	gfxPipelineConfigGrid.m_Width = windowWidth;
-	gfxPipelineConfigGrid.m_Height = windowHeight;
-	gfxPipelineConfigGrid.m_PassHandle = gfxPassGrid;
-	gfxPipelineConfigGrid.m_VertexLayout = vertexLayoutGrid;
-	gfxPipelineConfigGrid.m_DescriptorLayouts = { gfxSetLayoutGrid };
-	gfxPipelineConfigGrid.m_UseDynamicViewport = true;
+	vkcv::GraphicsPipelineConfig gfxPipelineConfigGrid (
+			gfxProgramGrid,
+			gfxPassGrid,
+			vertexLayoutGrid,
+			{ gfxSetLayoutGrid }
+	);
 	
 	vkcv::VertexLayout vertexLayoutParticles ({
 		vkcv::createVertexBinding(0, gfxProgramParticles.getVertexAttachments())
 	});
 	
-	vkcv::GraphicsPipelineConfig gfxPipelineConfigParticles;
-	gfxPipelineConfigParticles.m_ShaderProgram = gfxProgramParticles;
-	gfxPipelineConfigParticles.m_Width = windowWidth;
-	gfxPipelineConfigParticles.m_Height = windowHeight;
-	gfxPipelineConfigParticles.m_PassHandle = gfxPassParticles;
-	gfxPipelineConfigParticles.m_VertexLayout = vertexLayoutParticles;
-	gfxPipelineConfigParticles.m_DescriptorLayouts = { gfxSetLayoutParticles };
-	gfxPipelineConfigParticles.m_UseDynamicViewport = true;
+	vkcv::GraphicsPipelineConfig gfxPipelineConfigParticles (
+			gfxProgramParticles,
+			gfxPassParticles,
+			vertexLayoutParticles,
+			{ gfxSetLayoutParticles }
+	);
 	
 	vkcv::VertexLayout vertexLayoutLines ({
 		vkcv::createVertexBinding(0, gfxProgramLines.getVertexAttachments())
 	});
 	
-	vkcv::GraphicsPipelineConfig gfxPipelineConfigLines;
-	gfxPipelineConfigLines.m_ShaderProgram = gfxProgramLines;
-	gfxPipelineConfigLines.m_Width = windowWidth;
-	gfxPipelineConfigLines.m_Height = windowHeight;
-	gfxPipelineConfigLines.m_PassHandle = gfxPassLines;
-	gfxPipelineConfigLines.m_VertexLayout = vertexLayoutLines;
-	gfxPipelineConfigLines.m_DescriptorLayouts = {};
-	gfxPipelineConfigLines.m_UseDynamicViewport = true;
-	gfxPipelineConfigLines.m_PrimitiveTopology = vkcv::PrimitiveTopology::LineList;
+	vkcv::GraphicsPipelineConfig gfxPipelineConfigLines (
+			gfxProgramLines,
+			gfxPassLines,
+			vertexLayoutLines,
+			{}
+	);
+	
+	gfxPipelineConfigLines.setPrimitiveTopology(vkcv::PrimitiveTopology::LineList);
 	
 	vkcv::GraphicsPipelineHandle gfxPipelineGrid = core.createGraphicsPipeline(gfxPipelineConfigGrid);
 	vkcv::GraphicsPipelineHandle gfxPipelineParticles = core.createGraphicsPipeline(gfxPipelineConfigParticles);

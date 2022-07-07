@@ -42,6 +42,9 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/ImageManager.hpp
 		${vkcv_source}/vkcv/ImageManager.cpp
 		
+		${vkcv_include}/vkcv/PipelineConfig.hpp
+		${vkcv_source}/vkcv/PipelineConfig.cpp
+		
 		${vkcv_include}/vkcv/Logger.hpp
 		
 		${vkcv_include}/vkcv/Surface.hpp
@@ -56,6 +59,8 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/ShaderProgram.cpp
 
 		${vkcv_include}/vkcv/GraphicsPipelineConfig.hpp
+		${vkcv_source}/vkcv/GraphicsPipelineConfig.cpp
+		
 		${vkcv_include}/vkcv/ComputePipelineConfig.hpp
 
 		${vkcv_source}/vkcv/ComputePipelineManager.hpp

@@ -13,6 +13,7 @@
 #include "SPDIntegration.glsl.hxx"
 #include "SPDIntegrationLinearSampler.glsl.hxx"
 
+#include <vkcv/ComputePipelineConfig.hpp>
 #include <vkcv/File.hpp>
 #include <vkcv/Logger.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -231,10 +232,10 @@ namespace vkcv::algorithm {
 			);
 		}
 		
-		m_pipeline = m_core.createComputePipeline({
+		m_pipeline = m_core.createComputePipeline(ComputePipelineConfig(
 			program,
 			{ m_descriptorSetLayout }
-		});
+		));
 		
 		uint32_t zeroes [m_globalCounter.getCount()];
 		memset(zeroes, 0, m_globalCounter.getSize());

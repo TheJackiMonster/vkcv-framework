@@ -176,24 +176,21 @@ int main(int argc, const char** argv) {
 	}
 
 	//create the render pipeline + compute pipeline
-	const vkcv::GraphicsPipelineConfig safrPipelineDefinition{
-			safrShaderProgram,
-			UINT32_MAX,
-			UINT32_MAX,
-			safrPass,
-			{},
-			{ descriptorSetLayout },
-			true
-	};
+	vkcv::GraphicsPipelineHandle safrPipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					safrShaderProgram,
+					safrPass,
+					{},
+					{ descriptorSetLayout }
+			)
+	);
 
-	vkcv::GraphicsPipelineHandle safrPipeline = core.createGraphicsPipeline(safrPipelineDefinition);
-
-	const vkcv::ComputePipelineConfig computePipelineConfig{
-			computeShaderProgram,
-			{computeDescriptorSetLayout}
-	};
-
-	vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline(computePipelineConfig);
+	vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline(
+			vkcv::ComputePipelineConfig(
+					computeShaderProgram,
+					{ computeDescriptorSetLayout }
+			)
+	);
 
 	if (!safrPipeline || !computePipeline)
 	{

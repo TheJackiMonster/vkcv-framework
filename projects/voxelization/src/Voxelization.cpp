@@ -107,16 +107,16 @@ Voxelization::Voxelization(
 	vkcv::DescriptorSetLayoutHandle dummyPerMeshDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(voxelizationShader.getReflectedDescriptors().at(1));
 	vkcv::DescriptorSetHandle dummyPerMeshDescriptorSet = m_corePtr->createDescriptorSet(dummyPerMeshDescriptorSetLayout);
 
-	const vkcv::GraphicsPipelineConfig voxelizationPipeConfig{
+	vkcv::GraphicsPipelineConfig voxelizationPipeConfig (
 		voxelizationShader,
-		voxelResolution,
-		voxelResolution,
 		m_voxelizationPass,
 		dependencies.vertexLayout,
-		{ m_voxelizationDescriptorSetLayout, dummyPerMeshDescriptorSetLayout },
-		false,
-		true
-	};
+		{ m_voxelizationDescriptorSetLayout, dummyPerMeshDescriptorSetLayout }
+	);
+	
+	voxelizationPipeConfig.setResolution(voxelResolution, voxelResolution);
+	voxelizationPipeConfig.setUsingConservativeRasterization(true);
+	
 	m_voxelizationPipe = m_corePtr->createGraphicsPipeline(voxelizationPipeConfig);
 
 	vkcv::DescriptorWrites voxelizationDescriptorWrites;
@@ -156,18 +156,15 @@ Voxelization::Voxelization(
 	
 	m_visualisationPass = m_corePtr->createPass(voxelVisualisationPassDefinition);
 
-	vkcv::GraphicsPipelineConfig voxelVisualisationPipeConfig{
+	vkcv::GraphicsPipelineConfig voxelVisualisationPipeConfig (
 		voxelVisualisationShader,
-		0,
-		0,
 		m_visualisationPass,
 		{},
-		{ m_visualisationDescriptorSetLayout },
-		true,
-		false,
-		vkcv::PrimitiveTopology::PointList
-	};	// points are extended to cubes in the geometry shader
-	voxelVisualisationPipeConfig.m_multisampling = msaa;
+		{ m_visualisationDescriptorSetLayout }
+	);	// points are extended to cubes in the geometry shader
+	
+	voxelVisualisationPipeConfig.setPrimitiveTopology(vkcv::PrimitiveTopology::PointList);
+	voxelVisualisationPipeConfig.setMultisampling(msaa);
 	m_visualisationPipe = m_corePtr->createGraphicsPipeline(voxelVisualisationPipeConfig);
 
 	std::vector<uint16_t> voxelIndexData;

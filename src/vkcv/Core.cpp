@@ -86,13 +86,13 @@ namespace vkcv
 
     ComputePipelineHandle Core::createComputePipeline(const ComputePipelineConfig &config) {
 		std::vector<vk::DescriptorSetLayout> layouts;
-		layouts.resize(config.m_DescriptorSetLayouts.size());
+		layouts.resize(config.getDescriptorSetLayouts().size());
 	
 		for (size_t i = 0; i < layouts.size(); i++) {
-			layouts[i] = getDescriptorSetLayout(config.m_DescriptorSetLayouts[i]).vulkanHandle;
+			layouts[i] = getDescriptorSetLayout(config.getDescriptorSetLayouts()[i]).vulkanHandle;
 		}
 		
-        return m_ComputePipelineManager->createComputePipeline(config.m_ShaderProgram, layouts);
+        return m_ComputePipelineManager->createComputePipeline(config.getShaderProgram(), layouts);
     }
 
     PassHandle Core::createPass(const PassConfig &config) {
@@ -430,7 +430,7 @@ namespace vkcv
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
 			const GraphicsPipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
-			if (pipeConfig.m_UseDynamicViewport) {
+			if (pipeConfig.isViewportDynamic()) {
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
 
@@ -503,7 +503,7 @@ namespace vkcv
             cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
             const GraphicsPipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
-            if (pipeConfig.m_UseDynamicViewport) {
+            if (pipeConfig.isViewportDynamic()) {
                 recordDynamicViewport(cmdBuffer, width, height);
             }
 
@@ -635,7 +635,7 @@ namespace vkcv
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
 			const GraphicsPipelineConfig& pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
-			if (pipeConfig.m_UseDynamicViewport) {
+			if (pipeConfig.isViewportDynamic()) {
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
 

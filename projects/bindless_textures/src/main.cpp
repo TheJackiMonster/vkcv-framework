@@ -148,16 +148,14 @@ int main(int argc, const char** argv) {
     vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(adjustedBindings);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
-	const vkcv::GraphicsPipelineConfig firstMeshPipelineConfig {
-        firstMeshProgram,
-        UINT32_MAX,
-        UINT32_MAX,
-        firstMeshPass,
-        {firstMeshLayout},
-		{ descriptorSetLayout },
-		true
-	};
-	vkcv::GraphicsPipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
+	vkcv::GraphicsPipelineHandle firstMeshPipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					firstMeshProgram,
+					firstMeshPass,
+					{ firstMeshLayout },
+					{ descriptorSetLayout }
+			)
+	);
 	
 	if (!firstMeshPipeline) {
 		std::cerr << "Error. Could not create graphics pipeline. Exiting." << std::endl;

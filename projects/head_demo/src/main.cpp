@@ -152,28 +152,23 @@ int main(int argc, const char** argv) {
 	const vkcv::VertexLayout sceneLayout { bindings };
 	const auto& material0 = scene.getMaterial(0);
 	
-	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
-			sceneShaderProgram,
-			UINT32_MAX,
-			UINT32_MAX,
-			scenePass,
-			{sceneLayout},
-			{ material0.getDescriptorSetLayout(), clipDescriptorSetLayout },
-			true
-	};
+	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+				sceneShaderProgram,
+				scenePass,
+				{ sceneLayout },
+				{ material0.getDescriptorSetLayout(), clipDescriptorSetLayout }
+			)
+	);
 	
-	const vkcv::GraphicsPipelineConfig linePipelineDefinition{
-			lineShaderProgram,
-			UINT32_MAX,
-			UINT32_MAX,
-			linePass,
-			{sceneLayout},
-			{ material0.getDescriptorSetLayout(), clipDescriptorSetLayout },
-			true
-	};
-	
-	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
-	vkcv::GraphicsPipelineHandle linePipeline = core.createGraphicsPipeline(linePipelineDefinition);
+	vkcv::GraphicsPipelineHandle linePipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					lineShaderProgram,
+					linePass,
+					{ sceneLayout },
+					{ material0.getDescriptorSetLayout(), clipDescriptorSetLayout }
+			)
+	);
 	
 	if ((!scenePipeline) || (!linePipeline)) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;

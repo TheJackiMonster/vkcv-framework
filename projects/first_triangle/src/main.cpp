@@ -53,17 +53,14 @@ int main(int argc, const char** argv) {
 		{ vkcv::ShaderStage::FRAGMENT, "shaders/shader.frag" }
 	}, nullptr);
 
-	const vkcv::GraphicsPipelineConfig trianglePipelineDefinition {
-		triangleShaderProgram,
-		UINT32_MAX,
-		UINT32_MAX,
-		trianglePass,
-		{},
-		{},
-		true
-	};
-
-	vkcv::GraphicsPipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
+	vkcv::GraphicsPipelineHandle trianglePipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					triangleShaderProgram,
+					trianglePass,
+					{},
+					{}
+			)
+	);
 
 	if (!trianglePipeline)
 	{

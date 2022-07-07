@@ -335,36 +335,32 @@ int main(int argc, const char** argv) {
 
 	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 	
-	vkcv::GraphicsPipelineConfig prepassPipelineConfig{
+	vkcv::GraphicsPipelineConfig prepassPipelineConfig (
 		depthPrepassShader,
-		swapchainExtent.width,
-		swapchainExtent.height,
 		prepassPass,
 		vertexLayout,
-		{ prepassDescriptorSetLayout, perMeshDescriptorSetLayouts[0] },
-		true
-	};
-	prepassPipelineConfig.m_culling         = vkcv::CullMode::Back;
-	prepassPipelineConfig.m_multisampling   = msaa;
-	prepassPipelineConfig.m_depthTest       = vkcv::DepthTest::LessEqual;
-	prepassPipelineConfig.m_alphaToCoverage = true;
+		{ prepassDescriptorSetLayout, perMeshDescriptorSetLayouts[0] }
+	);
+	
+	prepassPipelineConfig.setCulling(vkcv::CullMode::Back);
+	prepassPipelineConfig.setMultisampling(msaa);
+	prepassPipelineConfig.setDepthTest(vkcv::DepthTest::LessEqual);
+	prepassPipelineConfig.setWritingAlphaToCoverage(true);
 
 	vkcv::GraphicsPipelineHandle prepassPipeline = core.createGraphicsPipeline(prepassPipelineConfig);
 
 	// forward pipeline
-	vkcv::GraphicsPipelineConfig forwardPipelineConfig {
+	vkcv::GraphicsPipelineConfig forwardPipelineConfig (
 		forwardProgram,
-		swapchainExtent.width,
-		swapchainExtent.height,
 		forwardPass,
 		vertexLayout,
-		{ forwardShadingDescriptorSetLayout, perMeshDescriptorSetLayouts[0] },
-		true
-	};
-    forwardPipelineConfig.m_culling         = vkcv::CullMode::Back;
-	forwardPipelineConfig.m_multisampling   = msaa;
-	forwardPipelineConfig.m_depthTest       = vkcv::DepthTest::Equal;
-	forwardPipelineConfig.m_depthWrite      = false;
+		{ forwardShadingDescriptorSetLayout, perMeshDescriptorSetLayouts[0] }
+	);
+	
+	forwardPipelineConfig.setCulling(vkcv::CullMode::Back);
+	forwardPipelineConfig.setMultisampling(msaa);
+	forwardPipelineConfig.setDepthTest(vkcv::DepthTest::Equal);
+	forwardPipelineConfig.setWritingDepth(false);
 	
 	vkcv::GraphicsPipelineHandle forwardPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
 	
@@ -405,16 +401,15 @@ int main(int argc, const char** argv) {
 		skyShader.addShader(shaderStage, path);
 	});
 
-	vkcv::GraphicsPipelineConfig skyPipeConfig;
-	skyPipeConfig.m_ShaderProgram       = skyShader;
-	skyPipeConfig.m_Width               = swapchainExtent.width;
-	skyPipeConfig.m_Height              = swapchainExtent.height;
-	skyPipeConfig.m_PassHandle          = skyPass;
-	skyPipeConfig.m_VertexLayout        = vkcv::VertexLayout();
-	skyPipeConfig.m_DescriptorLayouts   = {};
-	skyPipeConfig.m_UseDynamicViewport  = true;
-	skyPipeConfig.m_multisampling       = msaa;
-	skyPipeConfig.m_depthWrite          = false;
+	vkcv::GraphicsPipelineConfig skyPipeConfig (
+			skyShader,
+			skyPass,
+			{},
+			{}
+	);
+	
+	skyPipeConfig.setMultisampling(msaa);
+	skyPipeConfig.setWritingDepth(false);
 
 	vkcv::GraphicsPipelineHandle skyPipe = core.createGraphicsPipeline(skyPipeConfig);
 
@@ -1023,7 +1018,8 @@ int main(int argc, const char** argv) {
 					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 					newForwardProgram.addShader(shaderStage, path);
 				});
-				forwardPipelineConfig.m_ShaderProgram = newForwardProgram;
+				
+				forwardPipelineConfig.setShaderProgram(newForwardProgram);
 				vkcv::GraphicsPipelineHandle newPipeline = core.createGraphicsPipeline(forwardPipelineConfig);
 
 				if (newPipeline) {

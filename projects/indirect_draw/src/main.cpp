@@ -467,16 +467,15 @@ int main(int argc, const char** argv) {
 	setWrites.writeStorageBuffer(1, modelBuffer.getHandle());
     core.writeDescriptorSet(descriptorSet, setWrites);
 
-	const vkcv::GraphicsPipelineConfig sponzaPipelineConfig {
-        sponzaProgram,
-        UINT32_MAX,
-        UINT32_MAX,
-        passHandle,
-        {sponzaVertexLayout},
-		{ descriptorSetLayout },
-		true
-	};
-	vkcv::GraphicsPipelineHandle sponzaPipelineHandle = core.createGraphicsPipeline(sponzaPipelineConfig);
+	vkcv::GraphicsPipelineHandle sponzaPipelineHandle = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					sponzaProgram,
+					passHandle,
+					{ sponzaVertexLayout },
+					{ descriptorSetLayout }
+			)
+	);
+	
 	if (!sponzaPipelineHandle) {
 		std::cerr << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;

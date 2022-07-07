@@ -136,19 +136,16 @@ bool loadGraphicPass(
 	    outPassHandles->descriptorSet = core.createDescriptorSet(outPassHandles->descriptorSetLayout);
 	    descriptorSetLayouts.push_back(outPassHandles->descriptorSetLayout);
 	}
-
-
-	vkcv::GraphicsPipelineConfig pipelineConfig{
+	
+	vkcv::GraphicsPipelineConfig pipelineConfig(
 		shaderProgram,
-		UINT32_MAX,
-		UINT32_MAX,
 		outPassHandles->renderPass,
 		{ vertexLayout },
-		descriptorSetLayouts,
-		true
-	};
-	pipelineConfig.m_depthTest  = depthTest;
-	outPassHandles->pipeline    = core.createGraphicsPipeline(pipelineConfig);
+		descriptorSetLayouts
+	);
+	
+	pipelineConfig.setDepthTest(depthTest);
+	outPassHandles->pipeline = core.createGraphicsPipeline(pipelineConfig);
 
 	if (!outPassHandles->pipeline) {
 		vkcv_log(vkcv::LogLevel::ERROR, "Error: Could not create graphics pipeline");

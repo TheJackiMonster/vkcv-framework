@@ -116,16 +116,14 @@ int main(int argc, const char **argv) {
     const vkcv::VertexLayout particleLayout { bindings };
 
     // initializing graphics pipeline
-    vkcv::GraphicsPipelineConfig particlePipelineDefinition{
+    vkcv::GraphicsPipelineConfig particlePipelineDefinition (
             particleShaderProgram,
-            UINT32_MAX,
-            UINT32_MAX,
             particlePass,
             {particleLayout},
-            {descriptorSetLayout},
-            true
-	};
-    particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
+            {descriptorSetLayout}
+	);
+	
+    particlePipelineDefinition.setBlendMode(vkcv::BlendMode::Additive);
 
     const std::vector<glm::vec3> vertices = {glm::vec3(-0.012, 0.012, 0),
                                              glm::vec3(0.012, 0.012, 0),

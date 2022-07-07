@@ -209,16 +209,6 @@ int main(int argc, const char** argv) {
 
     vkcv::DescriptorSetLayoutHandle vertexShaderDescriptorSetLayout = core.createDescriptorSetLayout(bunnyShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(vertexShaderDescriptorSetLayout);
-	
-	const vkcv::GraphicsPipelineConfig bunnyPipelineDefinition {
-			bunnyShaderProgram,
-			UINT32_MAX,
-			UINT32_MAX,
-			renderPass,
-			{ bunnyLayout },
-			{ vertexShaderDescriptorSetLayout },
-			true
-	};
 
 	struct ObjectMatrices {
 		glm::mat4 model;
@@ -231,7 +221,14 @@ int main(int argc, const char** argv) {
 	vertexShaderDescriptorWrites.writeStorageBuffer(0, matrixBuffer.getHandle());
 	core.writeDescriptorSet(vertexShaderDescriptorSet, vertexShaderDescriptorWrites);
 
-	vkcv::GraphicsPipelineHandle bunnyPipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
+	vkcv::GraphicsPipelineHandle bunnyPipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					bunnyShaderProgram,
+					renderPass,
+					{ bunnyLayout },
+					{ vertexShaderDescriptorSetLayout }
+			)
+	);
 
 	if (!bunnyPipeline)
 	{
@@ -260,17 +257,14 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet(meshShaderDescriptorSetLayout);
 	const vkcv::VertexLayout meshShaderLayout(bindings);
 
-	const vkcv::GraphicsPipelineConfig meshShaderPipelineDefinition{
-		meshShaderProgram,
-		UINT32_MAX,
-		UINT32_MAX,
-		renderPass,
-		{meshShaderLayout},
-		{meshShaderDescriptorSetLayout},
-		true
-	};
-
-	vkcv::GraphicsPipelineHandle meshShaderPipeline = core.createGraphicsPipeline(meshShaderPipelineDefinition);
+	vkcv::GraphicsPipelineHandle meshShaderPipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					meshShaderProgram,
+					renderPass,
+					{ meshShaderLayout },
+					{ meshShaderDescriptorSetLayout }
+			)
+	);
 
 	if (!meshShaderPipeline)
 	{

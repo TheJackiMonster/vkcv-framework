@@ -89,17 +89,15 @@ int main(int argc, const char** argv) {
 
 	const vkcv::VertexLayout sceneLayout { bindings };
 	const auto& material0 = scene.getMaterial(0);
-
-	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
-		sceneShaderProgram,
-		UINT32_MAX,
-		UINT32_MAX,
-		scenePass,
-		{sceneLayout},
-		{ material0.getDescriptorSetLayout() },
-		true
-	};
-	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
+	
+	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					sceneShaderProgram,
+					scenePass,
+					{ sceneLayout },
+					{ material0.getDescriptorSetLayout() }
+			)
+	);
 	
 	if (!scenePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
