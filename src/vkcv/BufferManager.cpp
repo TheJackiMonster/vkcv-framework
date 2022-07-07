@@ -9,14 +9,9 @@
 
 namespace vkcv {
 	
-	BufferManager::BufferManager() noexcept :
-		m_core(nullptr), m_buffers(), m_stagingBuffer(BufferHandle())
-	{
-	}
-	
-	void BufferManager::init() {
-		if (!m_core) {
-			return;
+	bool BufferManager::init(Core& core) {
+		if (!HandleManager<BufferEntry, BufferHandle>::init(core)) {
+			return false;
 		}
 		
 		m_stagingBuffer = createBuffer(
@@ -26,12 +21,38 @@ namespace vkcv {
 				1024 * 1024,
 				false
 		);
+		
+		return true;
 	}
 	
-	BufferManager::~BufferManager() noexcept {
-		for (uint64_t id = 0; id < m_buffers.size(); id++) {
-			destroyBufferById(id);
+	uint64_t BufferManager::getIdFrom(const BufferHandle &handle) const {
+		return handle.getId();
+	}
+	
+	BufferHandle BufferManager::createById(uint64_t id, const HandleDestroyFunction &destroy) {
+		return BufferHandle(id, destroy);
+	}
+	
+	void BufferManager::destroyById(uint64_t id) {
+		auto& buffer = getById(id);
+		
+		const vma::Allocator& allocator = getCore().getContext().getAllocator();
+		
+		if (buffer.m_handle) {
+			allocator.destroyBuffer(buffer.m_handle, buffer.m_allocation);
+			
+			buffer.m_handle = nullptr;
+			buffer.m_allocation = nullptr;
 		}
+	}
+	
+	BufferManager::BufferManager() noexcept :
+			HandleManager<BufferEntry, BufferHandle>(),
+			m_stagingBuffer(BufferHandle())
+	{}
+	
+	BufferManager::~BufferManager() noexcept {
+		clear();
 	}
 	
 	BufferHandle BufferManager::createBuffer(const TypeGuard &typeGuard,
@@ -76,7 +97,7 @@ namespace vkcv {
 			usageFlags |= vk::BufferUsageFlagBits::eTransferSrc;
 		}
 		
-		const vma::Allocator& allocator = m_core->getContext().getAllocator();
+		const vma::Allocator& allocator = getCore().getContext().getAllocator();
 		
 		vk::MemoryPropertyFlags memoryTypeFlags;
 		vma::MemoryUsage memoryUsage;
@@ -120,8 +141,7 @@ namespace vkcv {
 		vk::Buffer buffer = bufferAllocation.first;
 		vma::Allocation allocation = bufferAllocation.second;
 		
-		const uint64_t id = m_buffers.size();
-		m_buffers.push_back({
+		return add({
 			typeGuard,
 			type,
 			memoryType,
@@ -130,8 +150,6 @@ namespace vkcv {
 			allocation,
 			mappable
 		});
-		
-		return BufferHandle(id, [&](uint64_t id) { destroyBufferById(id); });
 	}
 	
 	/**
@@ -160,11 +178,11 @@ namespace vkcv {
 	 * @param core Core instance
 	 * @param info Staging-info structure
 	 */
-	static void fillFromStagingBuffer(Core* core, StagingWriteInfo& info) {
+	static void fillFromStagingBuffer(Core& core, StagingWriteInfo& info) {
 		const size_t remaining = info.size - info.stagingPosition;
 		const size_t mapped_size = std::min(remaining, info.stagingLimit);
 		
-		const vma::Allocator& allocator = core->getContext().getAllocator();
+		const vma::Allocator& allocator = core.getContext().getAllocator();
 		
 		void* mapped = allocator.mapMemory(info.stagingAllocation);
 		memcpy(mapped, reinterpret_cast<const char*>(info.data) + info.stagingPosition, mapped_size);
@@ -173,7 +191,7 @@ namespace vkcv {
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Transfer;
 		
-		core->recordAndSubmitCommandsImmediate(
+		core.recordAndSubmitCommandsImmediate(
 				submitInfo,
 				[&info, &mapped_size](const vk::CommandBuffer& commandBuffer) {
 					const vk::BufferCopy region (
@@ -223,14 +241,14 @@ namespace vkcv {
 	 * @param core Core instance
 	 * @param info Staging-info structure
 	 */
-	static void readToStagingBuffer(Core* core, StagingReadInfo& info) {
+	static void readToStagingBuffer(Core& core, StagingReadInfo& info) {
 		const size_t remaining = info.size - info.stagingPosition;
 		const size_t mapped_size = std::min(remaining, info.stagingLimit);
 		
 		SubmitInfo submitInfo;
 		submitInfo.queueType = QueueType::Transfer;
 		
-		core->recordAndSubmitCommandsImmediate(
+		core.recordAndSubmitCommandsImmediate(
 				submitInfo,
 				[&info, &mapped_size](const vk::CommandBuffer& commandBuffer) {
 					const vk::BufferCopy region (
@@ -242,7 +260,7 @@ namespace vkcv {
 					commandBuffer.copyBuffer(info.buffer, info.stagingBuffer, 1, &region);
 				},
 				[&core, &info, &mapped_size, &remaining]() {
-					const vma::Allocator& allocator = core->getContext().getAllocator();
+					const vma::Allocator& allocator = core.getContext().getAllocator();
 					
 					const void* mapped = allocator.mapMemory(info.stagingAllocation);
 					memcpy(reinterpret_cast<char*>(info.data) + info.stagingPosition, mapped, mapped_size);
@@ -261,75 +279,39 @@ namespace vkcv {
 	}
 	
 	vk::Buffer BufferManager::getBuffer(const BufferHandle& handle) const {
-		const uint64_t id = handle.getId();
-		
-		if (id >= m_buffers.size()) {
-			return nullptr;
-		}
-		
-		auto& buffer = m_buffers[id];
+		auto& buffer = (*this)[handle];
 		
 		return buffer.m_handle;
 	}
 	
 	TypeGuard BufferManager::getTypeGuard(const BufferHandle &handle) const {
-		const uint64_t id = handle.getId();
-		
-		if (id >= m_buffers.size()) {
-			return TypeGuard(0);
-		}
-		
-		auto& buffer = m_buffers[id];
+		auto& buffer = (*this)[handle];
 		
 		return buffer.m_typeGuard;
 	}
 	
 	BufferType BufferManager::getBufferType(const BufferHandle &handle) const {
-		const uint64_t id = handle.getId();
-		
-		if (id >= m_buffers.size()) {
-			return BufferType::UNKNOWN;
-		}
-		
-		auto& buffer = m_buffers[id];
+		auto& buffer = (*this)[handle];
 		
 		return buffer.m_type;
 	}
 	
 	BufferMemoryType BufferManager::getBufferMemoryType(const BufferHandle &handle) const {
-		const uint64_t id = handle.getId();
-		
-		if (id >= m_buffers.size()) {
-			return BufferMemoryType::UNKNOWN;
-		}
-		
-		auto& buffer = m_buffers[id];
+		auto& buffer = (*this)[handle];
 		
 		return buffer.m_memoryType;
 	}
 	
 	size_t BufferManager::getBufferSize(const BufferHandle &handle) const {
-		const uint64_t id = handle.getId();
-		
-		if (id >= m_buffers.size()) {
-			return 0;
-		}
-		
-		auto& buffer = m_buffers[id];
+		auto& buffer = (*this)[handle];
 		
 		return buffer.m_size;
 	}
 	
 	vk::DeviceMemory BufferManager::getDeviceMemory(const BufferHandle& handle) const {
-		const uint64_t id = handle.getId();
+		auto& buffer = (*this)[handle];
 		
-		if (id >= m_buffers.size()) {
-			return nullptr;
-		}
-		
-		auto& buffer = m_buffers[id];
-		
-		const vma::Allocator& allocator = m_core->getContext().getAllocator();
+		const vma::Allocator& allocator = getCore().getContext().getAllocator();
 		
 		auto info = allocator.getAllocationInfo(
 				buffer.m_allocation
@@ -342,19 +324,13 @@ namespace vkcv {
 								   const void *data,
 								   size_t size,
 								   size_t offset) {
-		const uint64_t id = handle.getId();
+		auto& buffer = (*this)[handle];
 		
 		if (size == 0) {
 			size = SIZE_MAX;
 		}
 		
-		if (id >= m_buffers.size()) {
-			return;
-		}
-		
-		auto& buffer = m_buffers[id];
-		
-		const vma::Allocator& allocator = m_core->getContext().getAllocator();
+		const vma::Allocator& allocator = getCore().getContext().getAllocator();
 		
 		if (offset > buffer.m_size) {
 			return;
@@ -367,7 +343,7 @@ namespace vkcv {
 			memcpy(reinterpret_cast<char*>(mapped) + offset, data, max_size);
 			allocator.unmapMemory(buffer.m_allocation);
 		} else {
-			auto& stagingBuffer = m_buffers[ m_stagingBuffer.getId() ];
+			auto& stagingBuffer = (*this)[ m_stagingBuffer ];
 			
 			StagingWriteInfo info;
 			info.data = data;
@@ -381,7 +357,7 @@ namespace vkcv {
 			info.stagingLimit = stagingBuffer.m_size;
 			info.stagingPosition = 0;
 			
-			fillFromStagingBuffer(m_core, info);
+			fillFromStagingBuffer(getCore(), info);
 		}
 	}
 	
@@ -389,19 +365,13 @@ namespace vkcv {
 								   void *data,
 								   size_t size,
 								   size_t offset) {
-		const uint64_t id = handle.getId();
+		auto& buffer = (*this)[handle];
 		
 		if (size == 0) {
 			size = SIZE_MAX;
 		}
 		
-		if (id >= m_buffers.size()) {
-			return;
-		}
-		
-		auto& buffer = m_buffers[id];
-		
-		const vma::Allocator& allocator = m_core->getContext().getAllocator();
+		const vma::Allocator& allocator = getCore().getContext().getAllocator();
 		
 		if (offset > buffer.m_size) {
 			return;
@@ -414,7 +384,7 @@ namespace vkcv {
 			memcpy(data, reinterpret_cast<const char*>(mapped) + offset, max_size);
 			allocator.unmapMemory(buffer.m_allocation);
 		} else {
-			auto& stagingBuffer = m_buffers[ m_stagingBuffer.getId() ];
+			auto& stagingBuffer = (*this)[ m_stagingBuffer ];
 			
 			StagingReadInfo info;
 			info.data = data;
@@ -428,24 +398,18 @@ namespace vkcv {
 			info.stagingLimit = stagingBuffer.m_size;
 			info.stagingPosition = 0;
 			
-			readToStagingBuffer(m_core, info);
+			readToStagingBuffer(getCore(), info);
 		}
 	}
 	
 	void* BufferManager::mapBuffer(const BufferHandle& handle, size_t offset, size_t size) {
-		const uint64_t id = handle.getId();
+		auto& buffer = (*this)[handle];
 		
 		if (size == 0) {
 			size = SIZE_MAX;
 		}
 		
-		if (id >= m_buffers.size()) {
-			return nullptr;
-		}
-		
-		auto& buffer = m_buffers[id];
-		
-		const vma::Allocator& allocator = m_core->getContext().getAllocator();
+		const vma::Allocator& allocator = getCore().getContext().getAllocator();
 		
 		if (offset > buffer.m_size) {
 			return nullptr;
@@ -455,46 +419,15 @@ namespace vkcv {
 	}
 	
 	void BufferManager::unmapBuffer(const BufferHandle& handle) {
-		const uint64_t id = handle.getId();
+		auto& buffer = (*this)[handle];
 		
-		if (id >= m_buffers.size()) {
-			return;
-		}
-		
-		auto& buffer = m_buffers[id];
-		
-		const vma::Allocator& allocator = m_core->getContext().getAllocator();
+		const vma::Allocator& allocator = getCore().getContext().getAllocator();
 		
 		allocator.unmapMemory(buffer.m_allocation);
 	}
-	
-	void BufferManager::destroyBufferById(uint64_t id) {
-		if (id >= m_buffers.size()) {
-			return;
-		}
-		
-		auto& buffer = m_buffers[id];
-		
-		const vma::Allocator& allocator = m_core->getContext().getAllocator();
-		
-		if (buffer.m_handle) {
-			allocator.destroyBuffer(buffer.m_handle, buffer.m_allocation);
-			
-			buffer.m_handle = nullptr;
-			buffer.m_allocation = nullptr;
-		}
-	}
 
 	void BufferManager ::recordBufferMemoryBarrier(const BufferHandle& handle, vk::CommandBuffer cmdBuffer) {
-
-		const uint64_t id = handle.getId();
-
-		if (id >= m_buffers.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid buffer handle");
-			return;
-		}
-
-		auto& buffer = m_buffers[id];
+		auto& buffer = (*this)[handle];
 		
 		vk::BufferMemoryBarrier memoryBarrier(
 			vk::AccessFlagBits::eMemoryWrite, 

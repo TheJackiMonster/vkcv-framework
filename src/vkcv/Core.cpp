@@ -1,5 +1,5 @@
 /**
- * @authors Artur Wasmut
+ * @authors Artur Wasmut, Alexander Gauggel, Tobias Frisch
  * @file src/vkcv/Core.cpp
  * @brief Handling of global states regarding dependencies
  */
@@ -13,7 +13,8 @@
 #include "BufferManager.hpp"
 #include "SamplerManager.hpp"
 #include "ImageManager.hpp"
-#include "DescriptorManager.hpp"
+#include "DescriptorSetLayoutManager.hpp"
+#include "DescriptorSetManager.hpp"
 #include "WindowManager.hpp"
 #include "CommandStreamManager.hpp"
 #include <cmath>
@@ -44,32 +45,36 @@ namespace vkcv
         return Core(std::move(context) , commandResources, defaultSyncResources);
     }
 
-    const Context &Core::getContext() const
-    {
+    const Context &Core::getContext() const {
         return m_Context;
     }
 
     Core::Core(Context &&context, const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
-            m_Context(std::move(context)),
-            m_PassManager{std::make_unique<PassManager>(m_Context.m_Device)},
-            m_PipelineManager{std::make_unique<GraphicsPipelineManager>(m_Context.m_Device, m_Context.m_PhysicalDevice)},
-            m_ComputePipelineManager{std::make_unique<ComputePipelineManager>(m_Context.m_Device)},
-            m_DescriptorManager(std::make_unique<DescriptorManager>(m_Context.m_Device)),
-            m_BufferManager{std::unique_ptr<BufferManager>(new BufferManager())},
-            m_SamplerManager(std::unique_ptr<SamplerManager>(new SamplerManager(m_Context.m_Device))),
-            m_ImageManager{std::unique_ptr<ImageManager>(new ImageManager(*m_BufferManager))},
-            m_CommandStreamManager{std::unique_ptr<CommandStreamManager>(new CommandStreamManager)},
+			m_Context(std::move(context)),
+			m_PassManager(std::make_unique<PassManager>()),
+			m_GraphicsPipelineManager(std::make_unique<GraphicsPipelineManager>()),
+			m_ComputePipelineManager(std::make_unique<ComputePipelineManager>()),
+			m_DescriptorSetLayoutManager(std::make_unique<DescriptorSetLayoutManager>()),
+			m_DescriptorSetManager(std::make_unique<DescriptorSetManager>()),
+			m_BufferManager(std::make_unique<BufferManager>()),
+			m_SamplerManager(std::unique_ptr<SamplerManager>(new SamplerManager(m_Context.m_Device))),
+			m_ImageManager(std::make_unique<ImageManager>()),
+			m_CommandStreamManager{std::unique_ptr<CommandStreamManager>(new CommandStreamManager)},
 			m_WindowManager(std::make_unique<WindowManager>()),
 			m_SwapchainManager(std::make_unique<SwapchainManager>()),
-            m_CommandResources(commandResources),
-            m_SyncResources(syncResources),
+			m_CommandResources(commandResources),
+			m_SyncResources(syncResources),
 			m_downsampler(nullptr)
 	{
-		m_BufferManager->m_core = this;
-		m_BufferManager->init();
+		m_PassManager->init(*this);
+		m_GraphicsPipelineManager->init(*this);
+		m_ComputePipelineManager->init(*this);
+		m_DescriptorSetLayoutManager->init(*this);
+		m_DescriptorSetManager->init(*this, *m_DescriptorSetLayoutManager);
+		m_BufferManager->init(*this);
 		m_CommandStreamManager->init(this);
 		m_SwapchainManager->m_context = &m_Context;
-		m_ImageManager->m_core = this;
+		m_ImageManager->init(*this, *m_BufferManager);
 		m_downsampler = std::unique_ptr<Downsampler>(new BlitDownsampler(*this, *m_ImageManager));
 	}
 
@@ -81,7 +86,7 @@ namespace vkcv
 	}
 	
 	GraphicsPipelineHandle Core::createGraphicsPipeline(const GraphicsPipelineConfig &config) {
-        return m_PipelineManager->createPipeline(config, *m_PassManager, *m_DescriptorManager);
+        return m_GraphicsPipelineManager->createPipeline(config, *m_PassManager, *m_DescriptorSetLayoutManager);
     }
 
     ComputePipelineHandle Core::createComputePipeline(const ComputePipelineConfig &config) {
@@ -89,7 +94,9 @@ namespace vkcv
 		layouts.resize(config.getDescriptorSetLayouts().size());
 	
 		for (size_t i = 0; i < layouts.size(); i++) {
-			layouts[i] = getDescriptorSetLayout(config.getDescriptorSetLayouts()[i]).vulkanHandle;
+			layouts[i] = m_DescriptorSetLayoutManager->getDescriptorSetLayout(
+					config.getDescriptorSetLayouts()[i]
+			).vulkanHandle;
 		}
 		
         return m_ComputePipelineManager->createComputePipeline(config.getShaderProgram(), layouts);
@@ -341,13 +348,13 @@ namespace vkcv
 		}
 	}
 	
-	void recordDrawcall(
-			const Core				&core,
-			const DrawcallInfo      &drawcall,
-			vk::CommandBuffer       cmdBuffer,
-			vk::PipelineLayout      pipelineLayout,
-			const PushConstants     &pushConstants,
-			const size_t            drawcallIndex) {
+	static void recordDrawcall(
+			const DescriptorSetManager 	&descriptorSetManager,
+			const DrawcallInfo      	&drawcall,
+			vk::CommandBuffer       	cmdBuffer,
+			vk::PipelineLayout      	pipelineLayout,
+			const PushConstants     	&pushConstants,
+			const size_t            	drawcallIndex) {
 		
 		for (uint32_t i = 0; i < drawcall.mesh.vertexBufferBindings.size(); i++) {
 			const auto& vertexBinding = drawcall.mesh.vertexBufferBindings[i];
@@ -359,7 +366,7 @@ namespace vkcv
 					vk::PipelineBindPoint::eGraphics,
 					pipelineLayout,
 					descriptorUsage.setLocation,
-					core.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
+					descriptorSetManager.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
 					nullptr);
 		}
 		
@@ -375,8 +382,7 @@ namespace vkcv
 		if (drawcall.mesh.indexBuffer) {
 			cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, getIndexType(drawcall.mesh.indexBitCount));
 			cmdBuffer.drawIndexed(drawcall.mesh.indexCount, drawcall.instanceCount, 0, 0, {});
-		}
-		else {
+		} else {
 			cmdBuffer.draw(drawcall.mesh.indexCount, drawcall.instanceCount, 0, 0, {});
 		}
 	}
@@ -403,8 +409,8 @@ namespace vkcv
 		const vk::RenderPass        renderpass      = m_PassManager->getVkPass(renderpassHandle);
 		const PassConfig            passConfig      = m_PassManager->getPassConfig(renderpassHandle);
 
-		const vk::Pipeline          pipeline        = m_PipelineManager->getVkPipeline(pipelineHandle);
-		const vk::PipelineLayout    pipelineLayout  = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
+		const vk::Pipeline          pipeline        = m_GraphicsPipelineManager->getVkPipeline(pipelineHandle);
+		const vk::PipelineLayout    pipelineLayout  = m_GraphicsPipelineManager->getVkPipelineLayout(pipelineHandle);
 		const vk::Rect2D            renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
 
 		vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
@@ -429,13 +435,13 @@ namespace vkcv
 
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
-			const GraphicsPipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+			const GraphicsPipelineConfig &pipeConfig = m_GraphicsPipelineManager->getPipelineConfig(pipelineHandle);
 			if (pipeConfig.isViewportDynamic()) {
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
 
 			for (size_t i = 0; i < drawcalls.size(); i++) {
-				recordDrawcall(*this, drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
+				recordDrawcall(*m_DescriptorSetManager, drawcalls[i], cmdBuffer, pipelineLayout, pushConstantData, i);
 			}
 
 			cmdBuffer.endRenderPass();
@@ -473,8 +479,8 @@ namespace vkcv
         const vk::RenderPass        renderpass      = m_PassManager->getVkPass(renderpassHandle);
         const PassConfig            passConfig      = m_PassManager->getPassConfig(renderpassHandle);
 
-        const vk::Pipeline          pipeline        = m_PipelineManager->getVkPipeline(pipelineHandle);
-        const vk::PipelineLayout    pipelineLayout  = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
+        const vk::Pipeline          pipeline        = m_GraphicsPipelineManager->getVkPipeline(pipelineHandle);
+        const vk::PipelineLayout    pipelineLayout  = m_GraphicsPipelineManager->getVkPipelineLayout(pipelineHandle);
         const vk::Rect2D            renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
 
         vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
@@ -502,7 +508,7 @@ namespace vkcv
 
             cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
-            const GraphicsPipelineConfig &pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+            const GraphicsPipelineConfig &pipeConfig = m_GraphicsPipelineManager->getPipelineConfig(pipelineHandle);
             if (pipeConfig.isViewportDynamic()) {
                 recordDynamicViewport(cmdBuffer, width, height);
             }
@@ -517,7 +523,7 @@ namespace vkcv
 					pushConstantData.getDrawcallData(0));
 			}
 
-            vkcv::DescriptorSet descSet = m_DescriptorManager->getDescriptorSet(compiledDescriptorSet);
+            const auto& descSet = m_DescriptorSetManager->getDescriptorSet(compiledDescriptorSet);
 
             cmdBuffer.bindDescriptorSets(
                     vk::PipelineBindPoint::eGraphics,
@@ -547,6 +553,7 @@ namespace vkcv
     }
 	
 	static void recordMeshShaderDrawcall(const Core& core,
+										 const DescriptorSetManager &descriptorSetManager,
 										 vk::CommandBuffer cmdBuffer,
 										 vk::PipelineLayout pipelineLayout,
 										 const PushConstants& pushConstantData,
@@ -567,7 +574,7 @@ namespace vkcv
 					vk::PipelineBindPoint::eGraphics,
 					pipelineLayout,
 					descriptorUsage.setLocation,
-					core.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
+					descriptorSetManager.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
 					nullptr);
 		}
 		
@@ -608,8 +615,8 @@ namespace vkcv
 		const vk::RenderPass        renderpass = m_PassManager->getVkPass(renderpassHandle);
 		const PassConfig            passConfig = m_PassManager->getPassConfig(renderpassHandle);
 
-		const vk::Pipeline          pipeline = m_PipelineManager->getVkPipeline(pipelineHandle);
-		const vk::PipelineLayout    pipelineLayout = m_PipelineManager->getVkPipelineLayout(pipelineHandle);
+		const vk::Pipeline          pipeline = m_GraphicsPipelineManager->getVkPipeline(pipelineHandle);
+		const vk::PipelineLayout    pipelineLayout = m_GraphicsPipelineManager->getVkPipelineLayout(pipelineHandle);
 		const vk::Rect2D            renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
 
 		vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
@@ -634,7 +641,7 @@ namespace vkcv
 
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline, {});
 
-			const GraphicsPipelineConfig& pipeConfig = m_PipelineManager->getPipelineConfig(pipelineHandle);
+			const GraphicsPipelineConfig& pipeConfig = m_GraphicsPipelineManager->getPipelineConfig(pipelineHandle);
 			if (pipeConfig.isViewportDynamic()) {
 				recordDynamicViewport(cmdBuffer, width, height);
 			}
@@ -643,6 +650,7 @@ namespace vkcv
                 const uint32_t pushConstantOffset = i * pushConstantData.getSizePerDrawcall();
                 recordMeshShaderDrawcall(
 					*this,
+					*m_DescriptorSetManager,
                     cmdBuffer,
                     pipelineLayout,
                     pushConstantData,
@@ -682,7 +690,7 @@ namespace vkcv
 					vk::PipelineBindPoint::eRayTracingKHR,
 					rtxPipelineLayout,
 					usage.setLocation,
-					{ getDescriptorSet(usage.descriptorSet).vulkanHandle },
+					{ m_DescriptorSetManager->getDescriptorSet(usage.descriptorSet).vulkanHandle },
 					usage.dynamicOffsets
 				);
 			}
@@ -723,7 +731,7 @@ namespace vkcv
 					vk::PipelineBindPoint::eCompute,
 					pipelineLayout,
 					usage.setLocation,
-					{ getDescriptorSet(usage.descriptorSet).vulkanHandle },
+					{ m_DescriptorSetManager->getDescriptorSet(usage.descriptorSet).vulkanHandle },
 					usage.dynamicOffsets
 				);
 			}
@@ -802,7 +810,7 @@ namespace vkcv
 					vk::PipelineBindPoint::eCompute,
 					pipelineLayout,
 					usage.setLocation,
-					{ getDescriptorSet(usage.descriptorSet).vulkanHandle },
+					{ m_DescriptorSetManager->getDescriptorSet(usage.descriptorSet).vulkanHandle },
 					usage.dynamicOffsets
 				);
 			}
@@ -1021,32 +1029,21 @@ namespace vkcv
 		return getSwapchain(swapchainHandle);
 	}
 
-	DescriptorSetLayoutHandle Core::createDescriptorSetLayout(const DescriptorBindings &bindings)
-	{
-	    return m_DescriptorManager->createDescriptorSetLayout(bindings);
+	DescriptorSetLayoutHandle Core::createDescriptorSetLayout(const DescriptorBindings &bindings) {
+	    return m_DescriptorSetLayoutManager->createDescriptorSetLayout(bindings);
 	}
 
-	DescriptorSetLayout Core::getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const
-	{
-	    return m_DescriptorManager->getDescriptorSetLayout(handle);
-	}
-
-	DescriptorSetHandle Core::createDescriptorSet(const DescriptorSetLayoutHandle &layout)
-    {
-        return m_DescriptorManager->createDescriptorSet(layout);
+	DescriptorSetHandle Core::createDescriptorSet(const DescriptorSetLayoutHandle &layout) {
+        return m_DescriptorSetManager->createDescriptorSet(layout);
     }
 
 	void Core::writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites &writes) {
-		m_DescriptorManager->writeDescriptorSet(
+		m_DescriptorSetManager->writeDescriptorSet(
 			handle,
 			writes, 
 			*m_ImageManager, 
 			*m_BufferManager, 
 			*m_SamplerManager);
-	}
-
-	DescriptorSet Core::getDescriptorSet(const DescriptorSetHandle handle) const {
-		return m_DescriptorManager->getDescriptorSet(handle);
 	}
 
 	void Core::prepareSwapchainImageForPresent(const CommandStreamHandle& cmdStream) {
@@ -1280,7 +1277,7 @@ namespace vkcv
 				m_Context.getDevice(),
 				vk::ObjectType::ePipeline,
 				uint64_t(static_cast<VkPipeline>(
-						m_PipelineManager->getVkPipeline(handle)
+						m_GraphicsPipelineManager->getVkPipeline(handle)
 				)),
 				label
 		);
@@ -1312,7 +1309,7 @@ namespace vkcv
 				m_Context.getDevice(),
 				vk::ObjectType::eDescriptorSet,
 				uint64_t(static_cast<VkDescriptorSet>(
-						m_DescriptorManager->getDescriptorSet(handle).vulkanHandle
+						m_DescriptorSetManager->getDescriptorSet(handle).vulkanHandle
 				)),
 				label
 		);

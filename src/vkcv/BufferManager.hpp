@@ -10,42 +10,41 @@
 #include <vk_mem_alloc.hpp>
 
 #include "vkcv/BufferTypes.hpp"
-#include "vkcv/Handles.hpp"
 #include "vkcv/TypeGuard.hpp"
+
+#include "HandleManager.hpp"
 
 namespace vkcv {
 	
-	class Core;
+	struct BufferEntry {
+		TypeGuard m_typeGuard;
+		
+		BufferType m_type;
+		BufferMemoryType m_memoryType;
+		size_t m_size;
+		
+		vk::Buffer m_handle;
+		vma::Allocation m_allocation;
+		
+		bool m_mappable;
+	};
 	
 	/**
 	 * @brief Class to manage the creation, destruction, allocation
 	 * and filling of buffers.
 	 */
-	class BufferManager
-	{
+	class BufferManager : public HandleManager<BufferEntry, BufferHandle> {
 		friend class Core;
 	private:
-		
-		struct Buffer {
-			TypeGuard m_typeGuard;
-			
-			BufferType m_type;
-			BufferMemoryType m_memoryType;
-			size_t m_size;
-			
-			vk::Buffer m_handle;
-			vma::Allocation m_allocation;
-			
-			bool m_mappable;
-		};
-		
-		Core* m_core;
-		std::vector<Buffer> m_buffers;
 		BufferHandle m_stagingBuffer;
 		
-		BufferManager() noexcept;
+		bool init(Core& core) override;
 		
-		void init();
+		[[nodiscard]]
+		uint64_t getIdFrom(const BufferHandle& handle) const override;
+		
+		[[nodiscard]]
+		BufferHandle createById(uint64_t id, const HandleDestroyFunction& destroy) override;
 		
 		/**
 		 * Destroys and deallocates buffer represented by a given
@@ -53,16 +52,12 @@ namespace vkcv {
 		 *
 		 * @param id Buffer handle id
 		 */
-		void destroyBufferById(uint64_t id);
+		void destroyById(uint64_t id) override;
 		
 	public:
-		~BufferManager() noexcept;
+		BufferManager() noexcept;
 		
-		BufferManager(BufferManager&& other) = delete;
-		BufferManager(const BufferManager& other) = delete;
-		
-		BufferManager& operator=(BufferManager&& other) = delete;
-		BufferManager& operator=(const BufferManager& other) = delete;
+		~BufferManager() noexcept override;
 		
 		/**
 		 * @brief Creates and allocates a new buffer and returns its
@@ -76,6 +71,7 @@ namespace vkcv {
 		 * @param[in] readable Support read functionality
 		 * @return New buffer handle
 		 */
+		[[nodiscard]]
 		BufferHandle createBuffer(const TypeGuard &typeGuard,
 								  BufferType type,
 								  BufferMemoryType memoryType,

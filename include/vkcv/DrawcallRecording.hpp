@@ -5,10 +5,10 @@
  * @brief Structures and functions to record drawcalls.
  */
 
+#include <vector>
 #include <vulkan/vulkan.hpp>
 
 #include "Handles.hpp"
-#include "DescriptorConfig.hpp"
 #include "PushConstants.hpp"
 
 namespace vkcv {

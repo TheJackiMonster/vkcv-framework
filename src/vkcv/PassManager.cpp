@@ -1,5 +1,6 @@
 #include "PassManager.hpp"
 #include "vkcv/Image.hpp"
+#include "vkcv/Core.hpp"
 
 namespace vkcv
 {
@@ -27,21 +28,31 @@ namespace vkcv
                 return vk::AttachmentLoadOp::eDontCare;
         }
     }
-
-    PassManager::PassManager(vk::Device device) noexcept :
-    m_Device{device},
-    m_Passes{}
-    {}
-
-    PassManager::~PassManager() noexcept
-    {
-    	for (uint64_t id = 0; id < m_Passes.size(); id++) {
-			destroyPassById(id);
-    	}
+	
+	uint64_t PassManager::getIdFrom(const PassHandle &handle) const {
+		return handle.getId();
+	}
+	
+	PassHandle PassManager::createById(uint64_t id, const HandleDestroyFunction &destroy) {
+		return PassHandle(id, destroy);
+	}
+	
+	void PassManager::destroyById(uint64_t id) {
+		auto& pass = getById(id);
+		
+		if (pass.m_Handle) {
+			getCore().getContext().getDevice().destroy(pass.m_Handle);
+			pass.m_Handle = nullptr;
+		}
+	}
+	
+	PassManager::PassManager() noexcept : HandleManager<PassEntry, PassHandle>() {}
+	
+	PassManager::~PassManager() noexcept {
+    	clear();
     }
 
-    PassHandle PassManager::createPass(const PassConfig &config)
-    {
+    PassHandle PassManager::createPass(const PassConfig &config) {
         // description of all {color, input, depth/stencil} attachments of the render pass
         std::vector<vk::AttachmentDescription> attachmentDescriptions{};
 
@@ -106,50 +117,19 @@ namespace vkcv
             0,
             {});
 
-        vk::RenderPass renderPass = m_Device.createRenderPass(passInfo);
+        vk::RenderPass renderPass = getCore().getContext().getDevice().createRenderPass(passInfo);
 
-        const uint64_t id = m_Passes.size();
-        m_Passes.push_back({ renderPass, config });
-        return PassHandle(id, [&](uint64_t id) { destroyPassById(id); });
+        return add({ renderPass, config });
     }
 
-    vk::RenderPass PassManager::getVkPass(const PassHandle &handle) const
-    {
-    	const uint64_t id = handle.getId();
-    	
-    	if (id >= m_Passes.size()) {
-    		return nullptr;
-    	}
-    	
-    	auto& pass = m_Passes[id];
-    	
+    vk::RenderPass PassManager::getVkPass(const PassHandle &handle) const {
+    	auto& pass = (*this)[handle];
         return pass.m_Handle;
     }
     
     const PassConfig& PassManager::getPassConfig(const PassHandle &handle) const {
-		const uint64_t id = handle.getId();
-	
-		if (id >= m_Passes.size()) {
-			static PassConfig emptyConfig = PassConfig({});
-			return emptyConfig;
-		}
-	
-		auto& pass = m_Passes[id];
-	
+		auto& pass = (*this)[handle];
 		return pass.m_Config;
-    }
-    
-    void PassManager::destroyPassById(uint64_t id) {
-    	if (id >= m_Passes.size()) {
-    		return;
-    	}
-    	
-    	auto& pass = m_Passes[id];
-	
-		if (pass.m_Handle) {
-			m_Device.destroy(pass.m_Handle);
-			pass.m_Handle = nullptr;
-		}
     }
     
 }

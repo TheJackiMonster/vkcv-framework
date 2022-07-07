@@ -1,21 +1,38 @@
 #include "GraphicsPipelineManager.hpp"
+
+#include "vkcv/Core.hpp"
 #include "vkcv/Image.hpp"
 #include "vkcv/Logger.hpp"
 
-namespace vkcv
-{
+namespace vkcv {
 	
-	GraphicsPipelineManager::GraphicsPipelineManager(vk::Device device, vk::PhysicalDevice physicalDevice) noexcept :
-            m_Device(device),
-            m_physicalDevice(physicalDevice),
-            m_Pipelines{}
-    {}
+	uint64_t GraphicsPipelineManager::getIdFrom(const GraphicsPipelineHandle &handle) const {
+		return handle.getId();
+	}
 	
-	GraphicsPipelineManager::~GraphicsPipelineManager() noexcept
-    {
-        for (uint64_t id = 0; id < m_Pipelines.size(); id++) {
-            destroyPipelineById(id);
-        }
+	GraphicsPipelineHandle GraphicsPipelineManager::createById(uint64_t id, const HandleDestroyFunction &destroy) {
+		return GraphicsPipelineHandle(id, destroy);
+	}
+	
+	void GraphicsPipelineManager::destroyById(uint64_t id) {
+		auto& pipeline = getById(id);
+		
+		if (pipeline.m_handle) {
+			getCore().getContext().getDevice().destroy(pipeline.m_handle);
+			pipeline.m_handle = nullptr;
+		}
+		
+		if (pipeline.m_layout) {
+			getCore().getContext().getDevice().destroy(pipeline.m_layout);
+			pipeline.m_layout = nullptr;
+		}
+	}
+	
+	GraphicsPipelineManager::GraphicsPipelineManager() noexcept :
+		HandleManager<GraphicsPipelineEntry, GraphicsPipelineHandle>() {}
+	
+	GraphicsPipelineManager::~GraphicsPipelineManager() noexcept {
+		clear();
     }
 
     // currently assuming default 32 bit formats, no lower precision or normalized variants supported
@@ -433,7 +450,7 @@ namespace vkcv
 
     GraphicsPipelineHandle GraphicsPipelineManager::createPipeline(const GraphicsPipelineConfig &config,
 																   const PassManager& passManager,
-																   const DescriptorManager& descriptorManager) {
+																   const DescriptorSetLayoutManager& descriptorManager) {
         const vk::RenderPass &pass = passManager.getVkPass(config.getPass());
 
 		const auto& program = config.getShaderProgram();
@@ -451,21 +468,20 @@ namespace vkcv
 				(existsTaskShader && existsMeshShader)
 		);
 
-        if (!validGeometryStages)
-        {
+        if (!validGeometryStages) {
             vkcv_log(LogLevel::ERROR, "Requires vertex or task and mesh shader");
-            return GraphicsPipelineHandle();
+            return {};
         }
 
         if (!existsFragmentShader) {
             vkcv_log(LogLevel::ERROR, "Requires fragment shader code");
-            return GraphicsPipelineHandle();
+            return {};
         }
 
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
         auto destroyShaderModules = [&shaderStages, this] {
             for (auto stage : shaderStages) {
-                m_Device.destroyShaderModule(stage.module);
+				getCore().getContext().getDevice().destroyShaderModule(stage.module);
             }
             shaderStages.clear();
         };
@@ -475,15 +491,14 @@ namespace vkcv
             const bool success = createPipelineShaderStageCreateInfo(
 					program,
                     ShaderStage::VERTEX,
-                    m_Device,
+					getCore().getContext().getDevice(),
                     &createInfo);
 
             if (success) {
                 shaderStages.push_back(createInfo);
-            }
-            else {
+            } else {
                 destroyShaderModules();
-                return GraphicsPipelineHandle();
+                return {};
             }
         }
 
@@ -492,15 +507,14 @@ namespace vkcv
             const bool success = createPipelineShaderStageCreateInfo(
 					program,
                     ShaderStage::TASK,
-                    m_Device,
+					getCore().getContext().getDevice(),
                     &createInfo);
 
             if (success) {
                 shaderStages.push_back(createInfo);
-            }
-            else {
+            } else {
                 destroyShaderModules();
-                return GraphicsPipelineHandle();
+                return {};
             }
         }
 
@@ -509,15 +523,14 @@ namespace vkcv
             const bool success = createPipelineShaderStageCreateInfo(
 					program,
                     ShaderStage::MESH,
-                    m_Device,
+					getCore().getContext().getDevice(),
                     &createInfo);
 
             if (success) {
                 shaderStages.push_back(createInfo);
-            }
-            else {
+            } else {
                 destroyShaderModules();
-                return GraphicsPipelineHandle();
+                return {};
             }
         }
 
@@ -526,15 +539,14 @@ namespace vkcv
             const bool success = createPipelineShaderStageCreateInfo(
 					program,
                     ShaderStage::FRAGMENT,
-                    m_Device,
+					getCore().getContext().getDevice(),
                     &createInfo);
 
             if (success) {
                 shaderStages.push_back(createInfo);
-            }
-            else {
+            } else {
                 destroyShaderModules();
-                return GraphicsPipelineHandle();
+                return {};
             }
         }
 
@@ -543,15 +555,14 @@ namespace vkcv
             const bool success = createPipelineShaderStageCreateInfo(
 					program,
                     ShaderStage::GEOMETRY,
-                    m_Device,
+					getCore().getContext().getDevice(),
                     &createInfo);
 
             if (success) {
                 shaderStages.push_back(createInfo);
-            }
-            else {
+            } else {
                 destroyShaderModules();
-                return GraphicsPipelineHandle();
+                return {};
             }
         }
 	
@@ -560,15 +571,14 @@ namespace vkcv
 			const bool success = createPipelineShaderStageCreateInfo(
 					program,
 					ShaderStage::TESS_CONTROL,
-					m_Device,
+					getCore().getContext().getDevice(),
 					&createInfo);
 		
 			if (success) {
 				shaderStages.push_back(createInfo);
-			}
-			else {
+			} else {
 				destroyShaderModules();
-				return GraphicsPipelineHandle();
+				return {};
 			}
 		}
 	
@@ -577,15 +587,14 @@ namespace vkcv
 			const bool success = createPipelineShaderStageCreateInfo(
 					program,
 					ShaderStage::TESS_EVAL,
-					m_Device,
+					getCore().getContext().getDevice(),
 					&createInfo);
 		
 			if (success) {
 				shaderStages.push_back(createInfo);
-			}
-			else {
+			} else {
 				destroyShaderModules();
-				return GraphicsPipelineHandle();
+				return {};
 			}
 		}
 
@@ -617,7 +626,7 @@ namespace vkcv
         vk::PhysicalDeviceProperties                                deviceProperties;
         vk::PhysicalDeviceProperties2                               deviceProperties2(deviceProperties);
         deviceProperties2.pNext = &conservativeRasterProperties;
-        m_physicalDevice.getProperties2(&deviceProperties2);
+		getCore().getContext().getPhysicalDevice().getProperties2(&deviceProperties2);
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo =
                 createPipelineRasterizationStateCreateInfo(config, conservativeRasterProperties);
 
@@ -644,9 +653,11 @@ namespace vkcv
                 createPipelineLayoutCreateInfo(config, descriptorSetLayouts);
 
         vk::PipelineLayout vkPipelineLayout{};
-        if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess) {
+        if (getCore().getContext().getDevice().createPipelineLayout(&pipelineLayoutCreateInfo,
+																	nullptr,
+																	&vkPipelineLayout) != vk::Result::eSuccess) {
             destroyShaderModules();
-            return GraphicsPipelineHandle();
+            return {};
         }
 
         // Depth Stencil
@@ -685,77 +696,38 @@ namespace vkcv
         );
 
         vk::Pipeline vkPipeline{};
-        if (m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess)
+        if (getCore().getContext().getDevice().createGraphicsPipelines(nullptr,
+																	   1,
+																	   &graphicsPipelineCreateInfo,
+																	   nullptr,
+																	   &vkPipeline) != vk::Result::eSuccess)
         {
             // Catch runtime error if the creation of the pipeline fails.
             // Destroy everything to keep the memory clean.
             destroyShaderModules();
-            return GraphicsPipelineHandle();
+            return {};
         }
 
         // Clean Up
         destroyShaderModules();
 
         // Hand over Handler to main Application
-        const uint64_t id = m_Pipelines.size();
-        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout, config });
-        return GraphicsPipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
+        return add({ vkPipeline, vkPipelineLayout, config });
     }
 
-    vk::Pipeline GraphicsPipelineManager::getVkPipeline(const GraphicsPipelineHandle &handle) const
-    {
-        const uint64_t id = handle.getId();
-
-        if (id >= m_Pipelines.size()) {
-            return nullptr;
-        }
-
-        auto& pipeline = m_Pipelines[id];
-
+    vk::Pipeline GraphicsPipelineManager::getVkPipeline(const GraphicsPipelineHandle &handle) const {
+        auto& pipeline = (*this)[handle];
         return pipeline.m_handle;
     }
 
-    vk::PipelineLayout GraphicsPipelineManager::getVkPipelineLayout(const GraphicsPipelineHandle &handle) const
-    {
-        const uint64_t id = handle.getId();
-
-        if (id >= m_Pipelines.size()) {
-            return nullptr;
-        }
-
-        auto& pipeline = m_Pipelines[id];
-
+    vk::PipelineLayout GraphicsPipelineManager::getVkPipelineLayout(const GraphicsPipelineHandle &handle) const {
+		auto& pipeline = (*this)[handle];
         return pipeline.m_layout;
     }
 
-    void GraphicsPipelineManager::destroyPipelineById(uint64_t id) {
-        if (id >= m_Pipelines.size()) {
-            return;
-        }
-
-        auto& pipeline = m_Pipelines[id];
-
-        if (pipeline.m_handle) {
-            m_Device.destroy(pipeline.m_handle);
-            pipeline.m_handle = nullptr;
-        }
-
-        if (pipeline.m_layout) {
-            m_Device.destroy(pipeline.m_layout);
-            pipeline.m_layout = nullptr;
-        }
+    const GraphicsPipelineConfig& GraphicsPipelineManager::getPipelineConfig(const GraphicsPipelineHandle &handle) const {
+		auto& pipeline = (*this)[handle];
+        return pipeline.m_config;
     }
-
-    const GraphicsPipelineConfig& GraphicsPipelineManager::getPipelineConfig(const GraphicsPipelineHandle &handle) const
-    {
-        const uint64_t id = handle.getId();
-
-        if (id >= m_Pipelines.size()) {
-            static GraphicsPipelineConfig dummyConfig;
-            vkcv_log(LogLevel::ERROR, "Invalid handle");
-            return dummyConfig;
-        }
-
-        return m_Pipelines[id].m_config;
-    }
+	
 }

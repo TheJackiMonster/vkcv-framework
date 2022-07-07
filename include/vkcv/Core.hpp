@@ -22,7 +22,6 @@
 #include "CommandResources.hpp"
 #include "SyncResources.hpp"
 #include "Result.hpp"
-#include "vkcv/DescriptorConfig.hpp"
 #include "Sampler.hpp"
 #include "DescriptorWrites.hpp"
 #include "Event.hpp"
@@ -39,7 +38,8 @@ namespace vkcv
     class PassManager;
     class GraphicsPipelineManager;
     class ComputePipelineManager;
-    class DescriptorManager;
+    class DescriptorSetLayoutManager;
+	class DescriptorSetManager;
     class BufferManager;
     class SamplerManager;
     class ImageManager;
@@ -79,16 +79,17 @@ namespace vkcv
 
         Context m_Context;
 
-        std::unique_ptr<PassManager>             m_PassManager;
-        std::unique_ptr<GraphicsPipelineManager> m_PipelineManager;
-        std::unique_ptr<ComputePipelineManager>  m_ComputePipelineManager;
-        std::unique_ptr<DescriptorManager>       m_DescriptorManager;
-        std::unique_ptr<BufferManager>           m_BufferManager;
-        std::unique_ptr<SamplerManager>          m_SamplerManager;
-        std::unique_ptr<ImageManager>            m_ImageManager;
-        std::unique_ptr<CommandStreamManager>    m_CommandStreamManager;
-        std::unique_ptr<WindowManager>           m_WindowManager;
-        std::unique_ptr<SwapchainManager>        m_SwapchainManager;
+        std::unique_ptr<PassManager>             	m_PassManager;
+        std::unique_ptr<GraphicsPipelineManager> 	m_GraphicsPipelineManager;
+        std::unique_ptr<ComputePipelineManager>  	m_ComputePipelineManager;
+        std::unique_ptr<DescriptorSetLayoutManager> m_DescriptorSetLayoutManager;
+		std::unique_ptr<DescriptorSetManager>       m_DescriptorSetManager;
+        std::unique_ptr<BufferManager>           	m_BufferManager;
+        std::unique_ptr<SamplerManager>          	m_SamplerManager;
+        std::unique_ptr<ImageManager>            	m_ImageManager;
+        std::unique_ptr<CommandStreamManager>    	m_CommandStreamManager;
+        std::unique_ptr<WindowManager>           	m_WindowManager;
+        std::unique_ptr<SwapchainManager>        	m_SwapchainManager;
 
 		CommandResources    m_CommandResources;
 		SyncResources       m_SyncResources;
@@ -475,14 +476,6 @@ namespace vkcv
 		 */
 		[[nodiscard]]
 		DescriptorSetLayoutHandle createDescriptorSetLayout(const DescriptorBindings &bindings);
-		
-		/**
-		 * @brief Returns the descriptor set layout of a descriptor set layout handle.
-		 *
-		 * @param[in] handle Descriptor set layout handle
-		 * @return Descriptor set layout
-		 */
-		DescriptorSetLayout getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const;
 
 		/**
 		 * @brief Creates a new descriptor set
@@ -501,14 +494,6 @@ namespace vkcv
 		 * must be compatible with the descriptor set's layout
 		*/
 		void writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites& writes);
-
-		/**
-		 * @brief Returns information about a descriptor set
-		 * 
-		 * @param handle Handle of the descriptor set
-		 * @return Struct containing the descriptor set's vulkan handle, layout handle and descriptor pool index
-		*/
-		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
 
 
 		/**

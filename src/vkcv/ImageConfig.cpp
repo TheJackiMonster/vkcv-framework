@@ -2,6 +2,7 @@
 #include <vkcv/Logger.hpp>
 
 namespace vkcv {
+	
 	vk::SampleCountFlagBits msaaToVkSampleCountFlag(Multisampling msaa) {
 		switch (msaa) {
 		case Multisampling::None:   return vk::SampleCountFlagBits::e1;
@@ -21,4 +22,5 @@ namespace vkcv {
 		default: vkcv_log(vkcv::LogLevel::ERROR, "Unknown Multisampling enum setting"); return 1;
 		}
 	}
+	
 }

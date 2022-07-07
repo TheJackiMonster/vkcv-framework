@@ -123,7 +123,7 @@ namespace vkcv::rtx {
         vertexInfo.setRange(blas.vertexBuffer.deviceSize); //maybe check if size is correct
 
         vk::WriteDescriptorSet vertexWrite;
-        vertexWrite.setDstSet(m_core->getDescriptorSet(descriptorSetHandles[0]).vulkanHandle);
+        vertexWrite.setDstSet(m_core->getDescriptorSet().vulkanHandle);
         vertexWrite.setDstBinding(3);
         vertexWrite.setDescriptorCount(1);
         vertexWrite.setDescriptorType(vk::DescriptorType::eStorageBuffer);

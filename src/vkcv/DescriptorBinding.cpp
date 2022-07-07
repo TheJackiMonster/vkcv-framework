@@ -1,7 +1,7 @@
-#include "vkcv/DescriptorConfig.hpp"
+#include "vkcv/DescriptorBinding.hpp"
 
-namespace vkcv
-{
+namespace vkcv {
+	
     bool DescriptorBinding::operator==(const DescriptorBinding &other) const
     {
 	    return (this->bindingID == other.bindingID) &&
@@ -10,4 +10,5 @@ namespace vkcv
 	           (this->shaderStages == other.shaderStages) &&
 	           (this->variableCount == other.variableCount);
     }
+	
 }

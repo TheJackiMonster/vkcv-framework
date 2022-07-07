@@ -23,6 +23,8 @@ set(vkcv_sources
 
 		${vkcv_include}/vkcv/Handles.hpp
 		${vkcv_source}/vkcv/Handles.cpp
+		
+		${vkcv_source}/vkcv/HandleManager.hpp
 
 		${vkcv_include}/vkcv/Window.hpp
 		${vkcv_source}/vkcv/Window.cpp
@@ -85,15 +87,20 @@ set(vkcv_sources
 		
 		${vkcv_include}/vkcv/TypeGuard.hpp
 		${vkcv_source}/vkcv/TypeGuard.cpp
+		
+		${vkcv_include}/vkcv/DescriptorTypes.hpp
 
-		${vkcv_source}/vkcv/DescriptorManager.hpp
-		${vkcv_source}/vkcv/DescriptorManager.cpp
-
-		${vkcv_include}/vkcv/DescriptorConfig.hpp
-		${vkcv_source}/vkcv/DescriptorConfig.cpp
+		${vkcv_include}/vkcv/DescriptorBinding.hpp
+		${vkcv_source}/vkcv/DescriptorBinding.cpp
 		
 		${vkcv_include}/vkcv/DescriptorWrites.hpp
 		${vkcv_source}/vkcv/DescriptorWrites.cpp
+		
+		${vkcv_source}/vkcv/DescriptorSetLayoutManager.hpp
+		${vkcv_source}/vkcv/DescriptorSetLayoutManager.cpp
+		
+		${vkcv_source}/vkcv/DescriptorSetManager.hpp
+		${vkcv_source}/vkcv/DescriptorSetManager.cpp
 		
 		${vkcv_source}/vkcv/SamplerManager.hpp
 		${vkcv_source}/vkcv/SamplerManager.cpp
