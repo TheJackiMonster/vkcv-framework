@@ -4,14 +4,27 @@
 
 namespace vkcv {
 	
-	SamplerManager::SamplerManager(const vk::Device& device) noexcept :
-		m_device(device), m_samplers()
-	{}
+	uint64_t SamplerManager::getIdFrom(const SamplerHandle &handle) const {
+		return handle.getId();
+	}
 	
-	SamplerManager::~SamplerManager() {
-		for (uint64_t id = 0; id < m_samplers.size(); id++) {
-			destroySamplerById(id);
+	SamplerHandle SamplerManager::createById(uint64_t id, const HandleDestroyFunction &destroy) {
+		return SamplerHandle(id, destroy);
+	}
+	
+	void SamplerManager::destroyById(uint64_t id) {
+		auto& sampler = getById(id);
+		
+		if (sampler) {
+			getCore().getContext().getDevice().destroySampler(sampler);
+			sampler = nullptr;
 		}
+	}
+	
+	SamplerManager::SamplerManager() noexcept : HandleManager<vk::Sampler, SamplerHandle>() {}
+	
+	SamplerManager::~SamplerManager() noexcept {
+		clear();
 	}
 	
 	SamplerHandle SamplerManager::createSampler(SamplerFilterType magFilter,
@@ -121,34 +134,15 @@ namespace vkcv {
 				false
 		);
 		
-		const vk::Sampler sampler = m_device.createSampler(samplerCreateInfo);
+		const vk::Sampler sampler = getCore().getContext().getDevice().createSampler(
+				samplerCreateInfo
+		);
 		
-		const uint64_t id = m_samplers.size();
-		m_samplers.push_back(sampler);
-		return SamplerHandle(id, [&](uint64_t id) { destroySamplerById(id); });
+		return add(sampler);
 	}
 	
 	vk::Sampler SamplerManager::getVulkanSampler(const SamplerHandle &handle) const {
-		const uint64_t id = handle.getId();
-		
-		if (id >= m_samplers.size()) {
-			return nullptr;
-		}
-		
-		return m_samplers[id];
-	}
-	
-	void SamplerManager::destroySamplerById(uint64_t id) {
-		if (id >= m_samplers.size()) {
-			return;
-		}
-		
-		auto& sampler = m_samplers[id];
-		
-		if (sampler) {
-			m_device.destroySampler(sampler);
-			sampler = nullptr;
-		}
+		return (*this)[handle];
 	}
 
 }

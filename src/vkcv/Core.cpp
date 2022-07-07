@@ -57,9 +57,9 @@ namespace vkcv
 			m_DescriptorSetLayoutManager(std::make_unique<DescriptorSetLayoutManager>()),
 			m_DescriptorSetManager(std::make_unique<DescriptorSetManager>()),
 			m_BufferManager(std::make_unique<BufferManager>()),
-			m_SamplerManager(std::unique_ptr<SamplerManager>(new SamplerManager(m_Context.m_Device))),
+			m_SamplerManager(std::make_unique<SamplerManager>()),
 			m_ImageManager(std::make_unique<ImageManager>()),
-			m_CommandStreamManager{std::unique_ptr<CommandStreamManager>(new CommandStreamManager)},
+			m_CommandStreamManager{std::make_unique<CommandStreamManager>()},
 			m_WindowManager(std::make_unique<WindowManager>()),
 			m_SwapchainManager(std::make_unique<SwapchainManager>()),
 			m_CommandResources(commandResources),
@@ -72,7 +72,8 @@ namespace vkcv
 		m_DescriptorSetLayoutManager->init(*this);
 		m_DescriptorSetManager->init(*this, *m_DescriptorSetLayoutManager);
 		m_BufferManager->init(*this);
-		m_CommandStreamManager->init(this);
+		m_SamplerManager->init(*this);
+		m_CommandStreamManager->init(*this);
 		m_SwapchainManager->m_context = &m_Context;
 		m_ImageManager->init(*this, *m_BufferManager);
 		m_downsampler = std::unique_ptr<Downsampler>(new BlitDownsampler(*this, *m_ImageManager));
