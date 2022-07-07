@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
+#include <vkcv/Buffer.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/asset/asset_loader.hpp>
@@ -132,13 +133,15 @@ int main(int argc, const char** argv) {
 
 	
 	//create Buffer for compute shader
-	vkcv::Buffer<safrScene::Light> lightsBuffer = core.createBuffer<safrScene::Light>(
+	vkcv::Buffer<safrScene::Light> lightsBuffer = vkcv::buffer<safrScene::Light>(
+		core,
 		vkcv::BufferType::STORAGE,
 		lights.size()
 	);
 	lightsBuffer.fill(lights);
 
-	vkcv::Buffer<safrScene::Sphere> sphereBuffer = core.createBuffer<safrScene::Sphere>(
+	vkcv::Buffer<safrScene::Sphere> sphereBuffer = vkcv::buffer<safrScene::Sphere>(
+		core,
 		vkcv::BufferType::STORAGE,
 		spheres.size()
 	);
@@ -153,7 +156,7 @@ int main(int argc, const char** argv) {
 	
     core.writeDescriptorSet(computeDescriptorSet, computeWrites);
 
-	auto safrIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
+	auto safrIndexBuffer = vkcv::buffer<uint16_t>(core, vkcv::BufferType::INDEX, 3);
 	uint16_t indices[3] = { 0, 1, 2 };
 	safrIndexBuffer.fill(&indices[0], sizeof(indices));
 

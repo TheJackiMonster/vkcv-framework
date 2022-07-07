@@ -1,4 +1,5 @@
 
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/gui/GUI.hpp>
@@ -238,7 +239,8 @@ vkcv::ComputePipelineHandle createComputePipeline(vkcv::Core& core, vkcv::shader
 
 vkcv::BufferHandle resetParticles(vkcv::Core& core, size_t count, const glm::vec3& velocity,
 					float density, float size, int form, int mode) {
-	vkcv::Buffer<Particle> particles = core.createBuffer<Particle>(
+	vkcv::Buffer<Particle> particles = vkcv::buffer<Particle>(
+			core,
 			vkcv::BufferType::STORAGE,
 			count
 	);
@@ -327,8 +329,8 @@ int main(int argc, const char **argv) {
 			vkcv::SamplerBorderColor::FLOAT_ZERO_TRANSPARENT
 	);
 	
-	vkcv::Buffer<Simulation> simulation = core.createBuffer<Simulation>(
-			vkcv::BufferType::UNIFORM, 1, vkcv::BufferMemoryType::HOST_VISIBLE
+	vkcv::Buffer<Simulation> simulation = vkcv::buffer<Simulation>(
+			core, vkcv::BufferType::UNIFORM, 1, vkcv::BufferMemoryType::HOST_VISIBLE
 	);
 	
 	Simulation* sim = simulation.map();
@@ -565,14 +567,14 @@ int main(int argc, const char **argv) {
 	vkcv::GraphicsPipelineHandle gfxPipelineParticles = core.createGraphicsPipeline(gfxPipelineConfigParticles);
 	vkcv::GraphicsPipelineHandle gfxPipelineLines = core.createGraphicsPipeline(gfxPipelineConfigLines);
 	
-	vkcv::Buffer<glm::vec2> trianglePositions = core.createBuffer<glm::vec2>(vkcv::BufferType::VERTEX, 3);
+	vkcv::Buffer<glm::vec2> trianglePositions = vkcv::buffer<glm::vec2>(core, vkcv::BufferType::VERTEX, 3);
 	trianglePositions.fill({
 		glm::vec2(-1.0f, -1.0f),
 		glm::vec2(+0.0f, +1.5f),
 		glm::vec2(+1.0f, -1.0f)
 	});
 	
-	vkcv::Buffer<uint16_t> triangleIndices = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3);
+	vkcv::Buffer<uint16_t> triangleIndices = vkcv::buffer<uint16_t>(core, vkcv::BufferType::INDEX, 3);
 	triangleIndices.fill({
 		0, 1, 2
 	});
@@ -583,7 +585,7 @@ int main(int argc, const char **argv) {
 			triangleIndices.getCount()
 	);
 	
-	vkcv::Buffer<glm::vec3> linesPositions = core.createBuffer<glm::vec3>(vkcv::BufferType::VERTEX, 8);
+	vkcv::Buffer<glm::vec3> linesPositions = vkcv::buffer<glm::vec3>(core, vkcv::BufferType::VERTEX, 8);
 	linesPositions.fill({
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(1.0f, 0.0f, 0.0f),
@@ -595,7 +597,7 @@ int main(int argc, const char **argv) {
 		glm::vec3(1.0f, 1.0f, 1.0f)
 	});
 	
-	vkcv::Buffer<uint16_t> linesIndices = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 24);
+	vkcv::Buffer<uint16_t> linesIndices = vkcv::buffer<uint16_t>(core, vkcv::BufferType::INDEX, 24);
 	linesIndices.fill({
 		0, 1,
 		1, 3,

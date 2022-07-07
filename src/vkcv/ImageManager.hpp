@@ -8,7 +8,7 @@
 #include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.hpp>
 
-#include "vkcv/BufferManager.hpp"
+#include "BufferManager.hpp"
 #include "vkcv/Handles.hpp"
 #include "vkcv/ImageConfig.hpp"
 

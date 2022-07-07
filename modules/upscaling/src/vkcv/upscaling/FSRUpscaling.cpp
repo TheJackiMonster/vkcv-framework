@@ -164,12 +164,16 @@ namespace vkcv::upscaling {
 	m_rcasDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings())),
 	m_rcasDescriptorSet(m_core.createDescriptorSet(m_rcasDescriptorSetLayout)),
 
-	m_easuConstants(m_core.createBuffer<FSRConstants>(
-			BufferType::UNIFORM,1,
+	m_easuConstants(buffer<FSRConstants>(
+			m_core,
+			BufferType::UNIFORM,
+			1,
 			BufferMemoryType::HOST_VISIBLE
 	)),
-	m_rcasConstants(m_core.createBuffer<FSRConstants>(
-			BufferType::UNIFORM,1,
+	m_rcasConstants(buffer<FSRConstants>(
+			m_core,
+			BufferType::UNIFORM,
+			1,
 			BufferMemoryType::HOST_VISIBLE
 	)),
 	m_intermediateImage(),

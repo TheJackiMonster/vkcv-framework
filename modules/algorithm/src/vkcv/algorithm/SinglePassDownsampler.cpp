@@ -149,7 +149,8 @@ namespace vkcv::algorithm {
 		 m_descriptorSetLayout(),
 		 m_descriptorSets(),
 		
-		 m_globalCounter(m_core.createBuffer<uint32_t>(
+		 m_globalCounter(buffer<uint32_t>(
+				 m_core,
 				 vkcv::BufferType::STORAGE,
 				 6
 		 )),

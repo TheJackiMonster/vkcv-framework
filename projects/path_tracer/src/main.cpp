@@ -1,3 +1,4 @@
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/asset/asset_loader.hpp>
@@ -174,17 +175,20 @@ int main(int argc, const char** argv) {
 	planes.emplace_back(Plane(glm::vec3( 0,  0,     2), glm::vec3( 0,  0, -1), glm::vec2(2), whiteMaterialIndex));
 	planes.emplace_back(Plane(glm::vec3( 0,  1.9,   0), glm::vec3( 0, -1,  0), glm::vec2(1), lightMaterialIndex));
 
-	vkcv::Buffer<Sphere> sphereBuffer = core.createBuffer<Sphere>(
+	vkcv::Buffer<Sphere> sphereBuffer = vkcv::buffer<Sphere>(
+		core,
 		vkcv::BufferType::STORAGE,
 		spheres.size());
 	sphereBuffer.fill(spheres);
 
-	vkcv::Buffer<Plane> planeBuffer = core.createBuffer<Plane>(
+	vkcv::Buffer<Plane> planeBuffer = vkcv::buffer<Plane>(
+		core,
 		vkcv::BufferType::STORAGE,
 		planes.size());
 	planeBuffer.fill(planes);
 
-	vkcv::Buffer<Material> materialBuffer = core.createBuffer<Material>(
+	vkcv::Buffer<Material> materialBuffer = vkcv::buffer<Material>(
+		core,
 		vkcv::BufferType::STORAGE,
 		materialSettings.size());
 

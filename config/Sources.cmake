@@ -26,13 +26,14 @@ set(vkcv_sources
 
 		${vkcv_include}/vkcv/Window.hpp
 		${vkcv_source}/vkcv/Window.cpp
-
+		
+		${vkcv_include}/vkcv/BufferTypes.hpp
 		${vkcv_include}/vkcv/Buffer.hpp
 		
 		${vkcv_include}/vkcv/PushConstants.hpp
 		${vkcv_source}/vkcv/PushConstants.cpp
 		
-		${vkcv_include}/vkcv/BufferManager.hpp
+		${vkcv_source}/vkcv/BufferManager.hpp
 		${vkcv_source}/vkcv/BufferManager.cpp
 
 		${vkcv_include}/vkcv/Image.hpp
@@ -101,7 +102,6 @@ set(vkcv_sources
         ${vkcv_include}/vkcv/DescriptorWrites.hpp
         
         ${vkcv_include}/vkcv/DrawcallRecording.hpp
-        ${vkcv_source}/vkcv/DrawcallRecording.cpp
         
         ${vkcv_source}/vkcv/CommandStreamManager.hpp
         ${vkcv_source}/vkcv/CommandStreamManager.cpp

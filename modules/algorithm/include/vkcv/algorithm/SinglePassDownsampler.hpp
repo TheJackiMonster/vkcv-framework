@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <vkcv/Downsampler.hpp>
 #include <vkcv/ShaderProgram.hpp>

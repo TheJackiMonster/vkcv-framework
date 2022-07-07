@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
@@ -393,26 +394,29 @@ int main(int argc, const char** argv) {
         compiledInterleavedVertexBuffer.insert(compiledInterleavedVertexBuffer.end(),vertexGroup.begin(),vertexGroup.end());
 	}
 
-	auto vkCompiledVertexBuffer = core.createBuffer<Vertex>(
+	auto vkCompiledVertexBuffer = vkcv::buffer<Vertex>(
+			core,
 			vkcv::BufferType::VERTEX,
             compiledInterleavedVertexBuffer.size(),
-			vkcv::BufferMemoryType::DEVICE_LOCAL
-			);
+			vkcv::BufferMemoryType::DEVICE_LOCAL);
     vkCompiledVertexBuffer.fill(compiledInterleavedVertexBuffer.data());
 
-    auto vkCompiledIndexBuffer = core.createBuffer<uint8_t>(
+    auto vkCompiledIndexBuffer = vkcv::buffer<uint8_t>(
+			core,
             vkcv::BufferType::INDEX,
             compiledIndexBuffer.size(),
             vkcv::BufferMemoryType::DEVICE_LOCAL);
     vkCompiledIndexBuffer.fill(compiledIndexBuffer.data());
 
-    vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(
+    vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = vkcv::buffer<vk::DrawIndexedIndirectCommand>(
+			core,
             vkcv::BufferType::INDIRECT,
             indexedIndirectCommands.size(),
             vkcv::BufferMemoryType::DEVICE_LOCAL);
     indirectBuffer.fill(indexedIndirectCommands);
 
-    auto boundingBoxBuffer = core.createBuffer<glm::vec4>(
+    auto boundingBoxBuffer = vkcv::buffer<glm::vec4>(
+			core,
             vkcv::BufferType::STORAGE,
             compiledBoundingBoxBuffer.size());
     boundingBoxBuffer.fill(compiledBoundingBoxBuffer);
@@ -422,7 +426,8 @@ int main(int argc, const char** argv) {
 	{
 		modelMatrix.push_back(glm::make_mat4(mesh.modelMatrix.data()));
 	}
-	vkcv::Buffer<glm::mat4> modelBuffer = core.createBuffer<glm::mat4>(
+	vkcv::Buffer<glm::mat4> modelBuffer = vkcv::buffer<glm::mat4>(
+			core,
 			vkcv::BufferType::STORAGE,
 			modelMatrix.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL
@@ -481,7 +486,8 @@ int main(int argc, const char** argv) {
     vkcv::DescriptorSetLayoutHandle cullingSetLayout = core.createDescriptorSetLayout(cullingBindings);
     vkcv::DescriptorSetHandle cullingDescSet = core.createDescriptorSet(cullingSetLayout);
 
-    vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = core.createBuffer<CameraPlanes>(
+    vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = vkcv::buffer<CameraPlanes>(
+			core,
             vkcv::BufferType::UNIFORM,
             1);
 
@@ -575,7 +581,7 @@ int main(int argc, const char** argv) {
             descriptorSet,
             compiledMesh,
 			renderTargets,
-			indirectBuffer,
+			indirectBuffer.getHandle(),
             indexedIndirectCommands.size(),
 			windowHandle);
 

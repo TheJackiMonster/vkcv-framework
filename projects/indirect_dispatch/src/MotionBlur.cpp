@@ -2,6 +2,7 @@
 #include "MotionBlurConfig.hpp"
 #include "MotionBlurSetup.hpp"
 #include <array>
+#include <vkcv/Buffer.hpp>
 
 std::array<uint32_t, 3> computeFullscreenDispatchSize(
 	const uint32_t imageWidth,
@@ -56,23 +57,23 @@ bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, con
 		((MotionBlurConfig::maxWidth + MotionBlurConfig::maxMotionTileSize - 1) / MotionBlurConfig::maxMotionTileSize) *
 		((MotionBlurConfig::maxHeight + MotionBlurConfig::maxMotionTileSize - 1) / MotionBlurConfig::maxMotionTileSize));
 
-	m_copyPathWorkTileBuffer = m_core->createBuffer<uint32_t>(
-		vkcv::BufferType::STORAGE, 
+	m_copyPathWorkTileBuffer = vkcv::buffer<uint32_t>(
+		*m_core,
+		vkcv::BufferType::INDIRECT,
 		workTileBufferSize, 
-		vkcv::BufferMemoryType::DEVICE_LOCAL, 
-		true).getHandle();
+		vkcv::BufferMemoryType::DEVICE_LOCAL).getHandle();
 
-	m_fullPathWorkTileBuffer = m_core->createBuffer<uint32_t>(
-		vkcv::BufferType::STORAGE, 
+	m_fullPathWorkTileBuffer = vkcv::buffer<uint32_t>(
+		*m_core,
+		vkcv::BufferType::INDIRECT,
 		workTileBufferSize, 
-		vkcv::BufferMemoryType::DEVICE_LOCAL, 
-		true).getHandle();
+		vkcv::BufferMemoryType::DEVICE_LOCAL).getHandle();
 
-	m_fastPathWorkTileBuffer = m_core->createBuffer<uint32_t>(
-		vkcv::BufferType::STORAGE,
+	m_fastPathWorkTileBuffer = vkcv::buffer<uint32_t>(
+		*m_core,
+		vkcv::BufferType::INDIRECT,
 		workTileBufferSize,
-		vkcv::BufferMemoryType::DEVICE_LOCAL,
-		true).getHandle();
+		vkcv::BufferMemoryType::DEVICE_LOCAL).getHandle();
 
 	vkcv::DescriptorWrites tileResetDescriptorWrites;
 	tileResetDescriptorWrites.writeStorageBuffer(

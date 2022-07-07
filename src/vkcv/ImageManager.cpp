@@ -6,6 +6,7 @@
 #include "ImageManager.hpp"
 #include "vkcv/Core.hpp"
 #include "vkcv/Logger.hpp"
+#include "vkcv/TypeGuard.hpp"
 
 #include <algorithm>
 
@@ -512,10 +513,10 @@ namespace vkcv {
 		const size_t max_size = std::min(size, image_size);
 		
 		BufferHandle bufferHandle = m_bufferManager.createBuffer(
+				TypeGuard(1),
 				BufferType::STAGING,
-				max_size,
 				BufferMemoryType::DEVICE_LOCAL,
-				false,
+				max_size,
 				false
 		);
 		

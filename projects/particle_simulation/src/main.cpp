@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
@@ -26,8 +27,8 @@ int main(int argc, const char **argv) {
     vkcv::Window& window = core.getWindow(windowHandle);
 	vkcv::camera::CameraManager cameraManager(window);
 
-    auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3,
-                                                           vkcv::BufferMemoryType::DEVICE_LOCAL);
+    auto particleIndexBuffer = vkcv::buffer<uint16_t>(core, vkcv::BufferType::INDEX, 3,
+													  vkcv::BufferMemoryType::DEVICE_LOCAL);
     uint16_t indices[3] = {0, 1, 2};
     particleIndexBuffer.fill(&indices[0], sizeof(indices));
 
@@ -99,7 +100,8 @@ int main(int argc, const char **argv) {
             particleShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
-    vkcv::Buffer<glm::vec3> vertexBuffer = core.createBuffer<glm::vec3>(
+    vkcv::Buffer<glm::vec3> vertexBuffer = vkcv::buffer<glm::vec3>(
+			core,
             vkcv::BufferType::VERTEX,
             3
     );
@@ -138,12 +140,14 @@ int main(int argc, const char **argv) {
 		computeShaderProgram, {computeDescriptorSetLayout}
 	});
 
-    vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
+    vkcv::Buffer<glm::vec4> color = vkcv::buffer<glm::vec4>(
+			core,
             vkcv::BufferType::UNIFORM,
             1
     );
 
-    vkcv::Buffer<glm::vec2> position = core.createBuffer<glm::vec2>(
+    vkcv::Buffer<glm::vec2> position = vkcv::buffer<glm::vec2>(
+			core,
             vkcv::BufferType::UNIFORM,
             1
     );
@@ -153,7 +157,8 @@ int main(int argc, const char **argv) {
     glm::vec2 lifeTime = glm::vec2(-1.f,8.f);
     ParticleSystem particleSystem = ParticleSystem( 100000 , minVelocity, maxVelocity, lifeTime);
 
-    vkcv::Buffer<Particle> particleBuffer = core.createBuffer<Particle>(
+    vkcv::Buffer<Particle> particleBuffer = vkcv::buffer<Particle>(
+			core,
             vkcv::BufferType::STORAGE,
             particleSystem.getParticles().size()
     );

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
+#include <vkcv/Buffer.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <random>
@@ -25,8 +26,7 @@ int main(int argc, const char **argv) {
 
     vkcv::camera::CameraManager cameraManager(window);
 
-    auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3,
-                                                           vkcv::BufferMemoryType::DEVICE_LOCAL);
+    auto particleIndexBuffer = vkcv::buffer<uint16_t>(core, vkcv::BufferType::INDEX, 3);
     uint16_t indices[3] = {0, 1, 2};
     particleIndexBuffer.fill(&indices[0], sizeof(indices));
 
@@ -98,7 +98,8 @@ int main(int argc, const char **argv) {
             particleShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
-    vkcv::Buffer<glm::vec3> vertexBuffer = core.createBuffer<glm::vec3>(
+    vkcv::Buffer<glm::vec3> vertexBuffer = vkcv::buffer<glm::vec3>(
+			core,
             vkcv::BufferType::VERTEX,
             3
     );
@@ -134,12 +135,14 @@ int main(int argc, const char **argv) {
 
     vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
-    vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
+    vkcv::Buffer<glm::vec4> color = vkcv::buffer<glm::vec4>(
+			core,
             vkcv::BufferType::UNIFORM,
             1
     );
 
-    vkcv::Buffer<glm::vec2> position = core.createBuffer<glm::vec2>(
+    vkcv::Buffer<glm::vec2> position = vkcv::buffer<glm::vec2>(
+			core,
             vkcv::BufferType::UNIFORM,
             1
     );
@@ -165,15 +168,16 @@ int main(int argc, const char **argv) {
     }
 
     // creating and filling particle buffer
-    vkcv::Buffer<Particle> particleBuffer1 = core.createBuffer<Particle>(
+    vkcv::Buffer<Particle> particleBuffer1 = vkcv::buffer<Particle>(
+			core,
             vkcv::BufferType::STORAGE,
-            numberParticles * sizeof(glm::vec4) * 3
-
+            numberParticles
     );
 
-    vkcv::Buffer<Particle> particleBuffer2 = core.createBuffer<Particle>(
-        vkcv::BufferType::STORAGE,
-        numberParticles * sizeof(glm::vec4) * 3
+    vkcv::Buffer<Particle> particleBuffer2 = vkcv::buffer<Particle>(
+			core,
+			vkcv::BufferType::STORAGE,
+			numberParticles
     );
 
     particleBuffer1.fill(particles);

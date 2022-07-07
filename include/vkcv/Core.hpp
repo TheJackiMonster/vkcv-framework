@@ -9,12 +9,12 @@
 #include <memory>
 #include <vulkan/vulkan.hpp>
 
+#include "BufferTypes.hpp"
 #include "Context.hpp"
 #include "Swapchain.hpp"
 #include "Window.hpp"
 #include "PassConfig.hpp"
 #include "Handles.hpp"
-#include "Buffer.hpp"
 #include "Image.hpp"
 #include "BlitDownsampler.hpp"
 #include "GraphicsPipelineConfig.hpp"
@@ -192,43 +192,137 @@ namespace vkcv
          * Creates a basic vulkan render pass using @p config from the render pass config class and returns it.
          * Fixed Functions for pipeline are set with standard values.
          *
-         * @param config a render pass config object from the render pass config class
+         * @param[in] config a render pass config object from the render pass config class
          * @return A handle to represent the created pass
          */
         [[nodiscard]]
         PassHandle createPass(const PassConfig &config);
-
-        /**
-            * Creates a #Buffer with data-type T and @p bufferType
-            * @param type Type of Buffer created
-            * @param count Count of elements of type T
-            * @param memoryType Type of Buffers memory
-            * return Buffer-Object
-            */
-        template<typename T>
-        Buffer<T> createBuffer(vkcv::BufferType type,
-							   size_t count,
-							   BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL,
-							   bool supportIndirect = false,
-							   bool readable = false) {
-        	return Buffer<T>::create(
-					m_BufferManager.get(),
-					type,
-					count,
-					memoryType,
-					supportIndirect,
-					readable
-			);
-        }
+	
+		/**
+		 * @brief Creates a buffer with given parameters and returns its handle.
+		 *
+		 * @param[in] type Type of buffer created
+		 * @param[in] typeGuard Type guard for the buffer
+		 * @param[in] count Count of elements of its guarded type
+		 * @param[in] memoryType Type of buffers memory
+		 * @param[in] readable Flag whether the buffer supports reading from it
+		 * @return A handle to represent the created buffer
+		 */
+		BufferHandle createBuffer(BufferType type,
+								  const TypeGuard& typeGuard,
+								  size_t count,
+								  BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL,
+								  bool readable = false);
+	
+		/**
+		 * @brief Creates a buffer with given parameters and returns its handle.
+		 *
+		 * @param[in] type Type of buffer created
+		 * @param[in] size Size of the buffer
+		 * @param[in] memoryType Type of buffers memory
+		 * @param[in] readable Flag whether the buffer supports reading from it
+		 * @return A handle to represent the created buffer
+		 */
+		BufferHandle createBuffer(BufferType type,
+								  size_t size,
+								  BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL,
+								  bool readable = false);
+	
+		/**
+		 * @brief Returns the vulkan buffer of a given buffer handle.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @return Vulkan buffer
+		 */
+		vk::Buffer getBuffer(const BufferHandle& buffer) const;
+	
+		/**
+		 * @brief Returns the buffer type of a buffer represented
+		 * by a given buffer handle.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @return Buffer type
+		 */
+		[[nodiscard]]
+		BufferType getBufferType(const BufferHandle& buffer) const;
+	
+		/**
+		 * @brief Returns the buffer memory type of a buffer
+		 * represented by a given buffer handle.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @return Buffer memory type
+		 */
+		[[nodiscard]]
+		BufferMemoryType getBufferMemoryType(const BufferHandle& buffer) const;
+	
+		/**
+		 * @brief Returns the size of a buffer represented
+		 * by a given buffer handle.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @return Size of the buffer
+		 */
+		[[nodiscard]]
+		size_t getBufferSize(const BufferHandle& buffer) const;
+	
+		/**
+		 * @brief Fills a buffer represented by a given buffer
+		 * handle with custom data.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @param[in] data Pointer to data
+		 * @param[in] size Size of data in bytes
+		 * @param[in] offset Offset to fill in data in bytes
+		 */
+		void fillBuffer(const BufferHandle& buffer,
+						const void* data,
+						size_t size,
+						size_t offset);
+	
+		/**
+		 * @brief Reads from a buffer represented by a given
+		 * buffer handle to some data pointer.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @param[in] data Pointer to data
+		 * @param[in] size Size of data to read in bytes
+		 * @param[in] offset Offset to read from buffer in bytes
+		 */
+		void readBuffer(const BufferHandle& buffer,
+						void* data,
+						size_t size,
+						size_t offset);
+	
+		/**
+		 * @brief Maps memory to a buffer represented by a given
+		 * buffer handle and returns it.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @param[in] offset Offset of mapping in bytes
+		 * @param[in] size Size of mapping in bytes
+		 * @return Pointer to mapped memory
+		 */
+		void* mapBuffer(const BufferHandle& buffer,
+						size_t offset,
+						size_t size);
+	
+		/**
+		 * @brief Unmaps memory from a buffer represented by a given
+		 * buffer handle.
+		 *
+		 * @param[in] buffer Buffer handle
+		 */
+		void unmapBuffer(const BufferHandle& buffer);
         
         /**
          * Creates a Sampler with given attributes.
          *
-         * @param magFilter Magnifying filter
-         * @param minFilter Minimizing filter
-         * @param mipmapMode Mipmapping filter
-         * @param addressMode Address mode
-         * @param mipLodBias Mip level of detail bias
+         * @param[in] magFilter Magnifying filter
+         * @param[in] minFilter Minimizing filter
+         * @param[in] mipmapMode Mipmapping filter
+         * @param[in] addressMode Address mode
+         * @param[in] mipLodBias Mip level of detail bias
          * @return Sampler handle
          */
         [[nodiscard]]
@@ -465,7 +559,7 @@ namespace vkcv
                 const vkcv::DescriptorSetHandle                     &compiledDescriptorSet,
 				const vkcv::Mesh                                    &compiledMesh,
 				const std::vector<ImageHandle>                      &renderTargets,
-				const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
+				const BufferHandle  								&indirectBuffer,
 				const uint32_t                                      drawCount,
 				const WindowHandle                                  &windowHandle);
 		

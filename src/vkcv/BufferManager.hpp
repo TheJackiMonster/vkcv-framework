@@ -9,30 +9,11 @@
 #include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.hpp>
 
-#include "Handles.hpp"
+#include "vkcv/BufferTypes.hpp"
+#include "vkcv/Handles.hpp"
+#include "vkcv/TypeGuard.hpp"
 
-namespace vkcv
-{
-	
-	/**
-	 * @brief Enum class to specify types of buffers.
-	 */
-	enum class BufferType {
-		INDEX,
-		VERTEX,
-		UNIFORM,
-		STORAGE,
-		STAGING,
-		INDIRECT
-	};
-	
-	/**
-	 * @brief Enum class to specify types of buffer memory.
-	 */
-	enum class BufferMemoryType {
-		DEVICE_LOCAL,
-		HOST_VISIBLE
-	};
+namespace vkcv {
 	
 	class Core;
 	
@@ -45,12 +26,17 @@ namespace vkcv
 		friend class Core;
 	private:
 		
-		struct Buffer
-		{
+		struct Buffer {
+			TypeGuard m_typeGuard;
+			
+			BufferType m_type;
+			BufferMemoryType m_memoryType;
+			size_t m_size;
+			
 			vk::Buffer m_handle;
 			vma::Allocation m_allocation;
-			size_t m_size = 0;
-			bool m_mappable = false;
+			
+			bool m_mappable;
 		};
 		
 		Core* m_core;
@@ -82,17 +68,18 @@ namespace vkcv
 		 * @brief Creates and allocates a new buffer and returns its
 		 * unique buffer handle.
 		 *
+		 * @param[in] typeGuard Type guard
 		 * @param[in] type Type of buffer
-		 * @param[in] size Size of buffer in bytes
 		 * @param[in] memoryType Type of buffers memory
+		 * @param[in] size Size of buffer in bytes
 		 * @param[in] supportIndirect Support of indirect usage
 		 * @param[in] readable Support read functionality
 		 * @return New buffer handle
 		 */
-		BufferHandle createBuffer(BufferType type,
-								  size_t size,
+		BufferHandle createBuffer(const TypeGuard &typeGuard,
+								  BufferType type,
 								  BufferMemoryType memoryType,
-								  bool supportIndirect,
+								  size_t size,
 								  bool readable);
 		
 		/**
@@ -104,6 +91,36 @@ namespace vkcv
 		 */
 		[[nodiscard]]
 		vk::Buffer getBuffer(const BufferHandle& handle) const;
+		
+		/**
+		 * @brief Returns the type guard of a buffer represented
+		 * by a given buffer handle.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @return Type guard
+		 */
+		[[nodiscard]]
+		TypeGuard getTypeGuard(const BufferHandle& handle) const;
+		
+		/**
+		 * @brief Returns the buffer type of a buffer represented
+		 * by a given buffer handle.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @return Buffer type
+		 */
+		[[nodiscard]]
+		BufferType getBufferType(const BufferHandle& handle) const;
+		
+		/**
+		 * @brief Returns the buffer memory type of a buffer
+		 * represented by a given buffer handle.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @return Buffer memory type
+		 */
+		[[nodiscard]]
+		BufferMemoryType getBufferMemoryType(const BufferHandle& handle) const;
 		
 		/**
 		 * @brief Returns the size of a buffer represented

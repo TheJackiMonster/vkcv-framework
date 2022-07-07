@@ -3,7 +3,7 @@
  * @file vkcv/BufferManager.cpp
  */
 
-#include "vkcv/BufferManager.hpp"
+#include "BufferManager.hpp"
 #include "vkcv/Core.hpp"
 #include <vkcv/Logger.hpp>
 
@@ -20,10 +20,10 @@ namespace vkcv {
 		}
 		
 		m_stagingBuffer = createBuffer(
+				TypeGuard(1),
 				BufferType::STAGING,
-				1024 * 1024,
 				BufferMemoryType::HOST_VISIBLE,
-				false,
+				1024 * 1024,
 				false
 		);
 	}
@@ -34,10 +34,10 @@ namespace vkcv {
 		}
 	}
 	
-	BufferHandle BufferManager::createBuffer(BufferType type,
-											 size_t size,
+	BufferHandle BufferManager::createBuffer(const TypeGuard &typeGuard,
+											 BufferType type,
 											 BufferMemoryType memoryType,
-											 bool supportIndirect,
+											 size_t size,
 											 bool readable) {
 		vk::BufferCreateFlags createFlags;
 		vk::BufferUsageFlags usageFlags;
@@ -60,7 +60,8 @@ namespace vkcv {
 				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
 				break;
             case BufferType::INDIRECT:
-                usageFlags = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndirectBuffer ;
+                usageFlags = vk::BufferUsageFlagBits::eStorageBuffer |
+							 vk::BufferUsageFlagBits::eIndirectBuffer ;
                 break;
 			default:
 				vkcv_log(LogLevel::WARNING, "Unknown buffer type");
@@ -69,10 +70,6 @@ namespace vkcv {
 		
 		if (memoryType == BufferMemoryType::DEVICE_LOCAL) {
 			usageFlags |= vk::BufferUsageFlagBits::eTransferDst;
-		}
-		
-		if (supportIndirect) {
-			usageFlags |= vk::BufferUsageFlagBits::eIndirectBuffer;
 		}
 		
 		if (readable) {
@@ -124,7 +121,16 @@ namespace vkcv {
 		vma::Allocation allocation = bufferAllocation.second;
 		
 		const uint64_t id = m_buffers.size();
-		m_buffers.push_back({ buffer, allocation, size, mappable });
+		m_buffers.push_back({
+			typeGuard,
+			type,
+			memoryType,
+			size,
+			buffer,
+			allocation,
+			mappable
+		});
+		
 		return BufferHandle(id, [&](uint64_t id) { destroyBufferById(id); });
 	}
 	
@@ -264,6 +270,42 @@ namespace vkcv {
 		auto& buffer = m_buffers[id];
 		
 		return buffer.m_handle;
+	}
+	
+	TypeGuard BufferManager::getTypeGuard(const BufferHandle &handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_buffers.size()) {
+			return TypeGuard(0);
+		}
+		
+		auto& buffer = m_buffers[id];
+		
+		return buffer.m_typeGuard;
+	}
+	
+	BufferType BufferManager::getBufferType(const BufferHandle &handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_buffers.size()) {
+			return BufferType::UNKNOWN;
+		}
+		
+		auto& buffer = m_buffers[id];
+		
+		return buffer.m_type;
+	}
+	
+	BufferMemoryType BufferManager::getBufferMemoryType(const BufferHandle &handle) const {
+		const uint64_t id = handle.getId();
+		
+		if (id >= m_buffers.size()) {
+			return BufferMemoryType::UNKNOWN;
+		}
+		
+		auto& buffer = m_buffers[id];
+		
+		return buffer.m_memoryType;
 	}
 	
 	size_t BufferManager::getBufferSize(const BufferHandle &handle) const {

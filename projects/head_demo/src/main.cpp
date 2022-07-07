@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
@@ -118,7 +119,7 @@ int main(int argc, const char** argv) {
 	float clipY = 0.0f;
 	float clipZ = 0.0f;
 	
-	auto clipBuffer = core.createBuffer<float>(vkcv::BufferType::UNIFORM, 4);
+	auto clipBuffer = vkcv::buffer<float>(core, vkcv::BufferType::UNIFORM, 4);
 	clipBuffer.fill({ clipLimit, -clipX, -clipY, -clipZ });
 	
 	vkcv::DescriptorWrites clipWrites;

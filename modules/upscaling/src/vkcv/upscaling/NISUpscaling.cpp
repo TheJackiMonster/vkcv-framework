@@ -137,8 +137,10 @@ namespace vkcv::upscaling {
 	m_scalerDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings())),
 	m_scalerDescriptorSet(m_core.createDescriptorSet(m_scalerDescriptorSetLayout)),
 	
-	m_scalerConstants(m_core.createBuffer<uint8_t>(
-			BufferType::UNIFORM, sizeof(NISConfig),
+	m_scalerConstants(buffer<uint8_t>(
+			m_core,
+			BufferType::UNIFORM,
+			sizeof(NISConfig),
 			BufferMemoryType::HOST_VISIBLE
 	)),
 	m_sampler(m_core.createSampler(

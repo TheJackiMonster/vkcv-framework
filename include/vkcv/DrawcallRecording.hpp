@@ -11,8 +11,6 @@
 #include "DescriptorConfig.hpp"
 #include "PushConstants.hpp"
 
-#include "Buffer.hpp"
-
 namespace vkcv {
 	
 	/**
@@ -92,13 +90,5 @@ namespace vkcv {
         std::vector<DescriptorSetUsage> descriptorSets;
         uint32_t taskCount;
     };
-
-    void recordMeshShaderDrawcall(const Core& core,
-								  vk::CommandBuffer cmdBuffer,
-								  vk::PipelineLayout pipelineLayout,
-								  const PushConstants& pushConstantData,
-								  uint32_t pushConstantOffset,
-								  const MeshShaderDrawcall& drawcall,
-								  uint32_t firstTask);
 	
 }

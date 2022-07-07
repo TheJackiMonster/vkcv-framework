@@ -10,7 +10,7 @@
 #include "PassManager.hpp"
 #include "GraphicsPipelineManager.hpp"
 #include "ComputePipelineManager.hpp"
-#include "vkcv/BufferManager.hpp"
+#include "BufferManager.hpp"
 #include "SamplerManager.hpp"
 #include "ImageManager.hpp"
 #include "DescriptorManager.hpp"
@@ -80,13 +80,11 @@ namespace vkcv
 		destroySyncResources(m_Context.getDevice(), m_SyncResources);
 	}
 	
-	GraphicsPipelineHandle Core::createGraphicsPipeline(const GraphicsPipelineConfig &config)
-    {
+	GraphicsPipelineHandle Core::createGraphicsPipeline(const GraphicsPipelineConfig &config) {
         return m_PipelineManager->createPipeline(config, *m_PassManager, *m_DescriptorManager);
     }
 
-    ComputePipelineHandle Core::createComputePipeline(const ComputePipelineConfig &config)
-    {
+    ComputePipelineHandle Core::createComputePipeline(const ComputePipelineConfig &config) {
 		std::vector<vk::DescriptorSetLayout> layouts;
 		layouts.resize(config.m_DescriptorSetLayouts.size());
 	
@@ -97,11 +95,69 @@ namespace vkcv
         return m_ComputePipelineManager->createComputePipeline(config.m_ShaderProgram, layouts);
     }
 
-    PassHandle Core::createPass(const PassConfig &config)
-    {
+    PassHandle Core::createPass(const PassConfig &config) {
         return m_PassManager->createPass(config);
     }
-
+	
+	BufferHandle Core::createBuffer(BufferType type,
+									const TypeGuard &typeGuard,
+									size_t count,
+									BufferMemoryType memoryType,
+									bool readable) {
+		return m_BufferManager->createBuffer(
+				typeGuard,
+				type,
+				memoryType,
+				count * typeGuard.typeSize(),
+				readable
+		);
+	}
+	
+	BufferHandle Core::createBuffer(BufferType type,
+									size_t size,
+									BufferMemoryType memoryType,
+									bool readable) {
+		return m_BufferManager->createBuffer(
+				TypeGuard(1),
+				type,
+				memoryType,
+				size,
+				readable
+		);
+	}
+	
+	vk::Buffer Core::getBuffer(const BufferHandle &buffer) const {
+		return m_BufferManager->getBuffer(buffer);
+	}
+	
+	BufferType Core::getBufferType(const BufferHandle &handle) const {
+		return m_BufferManager->getBufferType(handle);
+	}
+	
+	BufferMemoryType Core::getBufferMemoryType(const BufferHandle &handle) const {
+		return m_BufferManager->getBufferMemoryType(handle);
+	}
+	
+	size_t Core::getBufferSize(const BufferHandle &handle) const {
+		return m_BufferManager->getBufferSize(handle);
+	}
+	
+	void Core::fillBuffer(const BufferHandle &handle, const void *data, size_t size, size_t offset) {
+		m_BufferManager->fillBuffer(handle, data, size, offset);
+	}
+	
+	void Core::readBuffer(const BufferHandle &handle, void *data, size_t size, size_t offset) {
+		m_BufferManager->readBuffer(handle, data, size, offset);
+	}
+	
+	void* Core::mapBuffer(const BufferHandle &handle, size_t offset, size_t size) {
+		return m_BufferManager->mapBuffer(handle, offset, size);
+	}
+	
+	void Core::unmapBuffer(const BufferHandle &handle) {
+		m_BufferManager->unmapBuffer(handle);
+	}
+	
 	Result Core::acquireSwapchainImage(const SwapchainHandle &swapchainHandle) {
     	uint32_t imageIndex;
     	vk::Result result;
@@ -401,7 +457,7 @@ namespace vkcv
             const vkcv::DescriptorSetHandle                     &compiledDescriptorSet,
             const vkcv::Mesh                                    &compiledMesh,
             const std::vector<ImageHandle>                      &renderTargets,
-            const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
+            const BufferHandle  								&indirectBuffer,
             const uint32_t                                      drawCount,
 			const WindowHandle                                  &windowHandle) {
 
@@ -475,7 +531,7 @@ namespace vkcv
             cmdBuffer.bindIndexBuffer(compiledMesh.indexBuffer, 0, getIndexType(compiledMesh.indexBitCount));
 
             cmdBuffer.drawIndexedIndirect(
-                    indirectBuffer.getVulkanHandle(),
+                    m_BufferManager->getBuffer(indirectBuffer),
                     0,
                     drawCount,
                     sizeof(vk::DrawIndexedIndirectCommand));
@@ -489,6 +545,46 @@ namespace vkcv
 
         recordCommandsToStream(cmdStreamHandle, submitFunction, finishFunction);
     }
+	
+	static void recordMeshShaderDrawcall(const Core& core,
+										 vk::CommandBuffer cmdBuffer,
+										 vk::PipelineLayout pipelineLayout,
+										 const PushConstants& pushConstantData,
+										 uint32_t pushConstantOffset,
+										 const MeshShaderDrawcall& drawcall,
+										 uint32_t firstTask) {
+		static PFN_vkCmdDrawMeshTasksNV cmdDrawMeshTasks = reinterpret_cast<PFN_vkCmdDrawMeshTasksNV>(
+				core.getContext().getDevice().getProcAddr("vkCmdDrawMeshTasksNV")
+		);
+		
+		if (!cmdDrawMeshTasks) {
+			vkcv_log(LogLevel::ERROR, "Mesh shader drawcalls are not supported");
+			return;
+		}
+		
+		for (const auto& descriptorUsage : drawcall.descriptorSets) {
+			cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eGraphics,
+					pipelineLayout,
+					descriptorUsage.setLocation,
+					core.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
+					nullptr);
+		}
+		
+		// char* cast because void* does not support pointer arithmetic
+		const void* drawcallPushConstantData = pushConstantOffset + (char*)pushConstantData.getData();
+		
+		if (pushConstantData.getData()) {
+			cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eAll,
+					0,
+					pushConstantData.getSizePerDrawcall(),
+					drawcallPushConstantData);
+		}
+		
+		cmdDrawMeshTasks(VkCommandBuffer(cmdBuffer), drawcall.taskCount, firstTask);
+	}
 
 	void Core::recordMeshShaderDrawcalls(
 		const CommandStreamHandle&                          cmdStreamHandle,

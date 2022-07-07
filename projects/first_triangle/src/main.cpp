@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
@@ -21,7 +22,7 @@ int main(int argc, const char** argv) {
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
 	vkcv::Window& window = core.getWindow(windowHandle);
 
-	auto triangleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
+	auto triangleIndexBuffer = vkcv::buffer<uint16_t>(core, vkcv::BufferType::INDEX, 3);
 	uint16_t indices[3] = { 0, 1, 2 };
 	triangleIndexBuffer.fill(&indices[0], sizeof(indices));
 

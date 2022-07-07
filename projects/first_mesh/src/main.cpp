@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
@@ -30,7 +31,8 @@ int main(int argc, const char** argv) {
 	}
 
 	assert(!mesh.vertexGroups.empty());
-	auto vertexBuffer = core.createBuffer<uint8_t>(
+	auto vertexBuffer = vkcv::buffer<uint8_t>(
+			core,
 			vkcv::BufferType::VERTEX,
 			mesh.vertexGroups[0].vertexBuffer.data.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL
@@ -38,7 +40,8 @@ int main(int argc, const char** argv) {
 	
 	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
 
-	auto indexBuffer = core.createBuffer<uint8_t>(
+	auto indexBuffer = vkcv::buffer<uint8_t>(
+			core,
 			vkcv::BufferType::INDEX,
 			mesh.vertexGroups[0].indexBuffer.data.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL

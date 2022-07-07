@@ -12,7 +12,7 @@
 #include "vkcv/DescriptorWrites.hpp"
 
 #include "ImageManager.hpp"
-#include "vkcv/BufferManager.hpp"
+#include "BufferManager.hpp"
 #include "SamplerManager.hpp"
 
 namespace vkcv

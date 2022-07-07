@@ -2,6 +2,8 @@
 #include "vkcv/scene/MeshPart.hpp"
 #include "vkcv/scene/Scene.hpp"
 
+#include <vkcv/Buffer.hpp>
+
 namespace vkcv::scene {
 	
 	MeshPart::MeshPart(Scene& scene) :
@@ -18,8 +20,8 @@ namespace vkcv::scene {
 						std::vector<DrawcallInfo>& drawcalls) {
 		Core& core = *(m_scene.m_core);
 		
-		auto vertexBuffer = core.createBuffer<uint8_t>(
-				BufferType::VERTEX, vertexGroup.vertexBuffer.data.size()
+		auto vertexBuffer = buffer<uint8_t>(
+				core, BufferType::VERTEX, vertexGroup.vertexBuffer.data.size()
 		);
 		
 		vertexBuffer.fill(vertexGroup.vertexBuffer.data);
@@ -35,8 +37,8 @@ namespace vkcv::scene {
 			m_vertexBindings.emplace_back(attribute.offset, vertexBuffer.getVulkanHandle());
 		}
 		
-		auto indexBuffer = core.createBuffer<uint8_t>(
-				BufferType::INDEX, vertexGroup.indexBuffer.data.size()
+		auto indexBuffer = buffer<uint8_t>(
+				core, BufferType::INDEX, vertexGroup.indexBuffer.data.size()
 		);
 		
 		indexBuffer.fill(vertexGroup.indexBuffer.data);

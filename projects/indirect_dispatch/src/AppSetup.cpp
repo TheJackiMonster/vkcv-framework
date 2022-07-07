@@ -1,5 +1,6 @@
 #include "AppSetup.hpp"
 #include "AppConfig.hpp"
+#include <vkcv/Buffer.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
@@ -23,12 +24,14 @@ bool loadMesh(vkcv::Core& core, const std::filesystem::path& path, MeshResources
 	auto& vertexData = scene.vertexGroups[0].vertexBuffer;
 	auto& indexData  = scene.vertexGroups[0].indexBuffer;
 
-	vkcv::Buffer vertexBuffer = core.createBuffer<uint8_t>(
+	vkcv::Buffer<uint8_t> vertexBuffer = vkcv::buffer<uint8_t>(
+		core,
 		vkcv::BufferType::VERTEX,
 		vertexData.data.size(),
 		vkcv::BufferMemoryType::DEVICE_LOCAL);
 
-	vkcv::Buffer indexBuffer = core.createBuffer<uint8_t>(
+	vkcv::Buffer<uint8_t> indexBuffer = vkcv::buffer<uint8_t>(
+		core,
 		vkcv::BufferType::INDEX,
 		indexData.data.size(),
 		vkcv::BufferMemoryType::DEVICE_LOCAL);

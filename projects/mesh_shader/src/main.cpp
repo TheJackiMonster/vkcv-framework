@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
@@ -103,14 +104,16 @@ int main(int argc, const char** argv) {
 
     assert(!mesh.vertexGroups.empty());
 
-    auto vertexBuffer = core.createBuffer<uint8_t>(
+    auto vertexBuffer = vkcv::buffer<uint8_t>(
+			core,
             vkcv::BufferType::VERTEX,
             mesh.vertexGroups[0].vertexBuffer.data.size(),
             vkcv::BufferMemoryType::DEVICE_LOCAL
     );
     vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
 
-    auto indexBuffer = core.createBuffer<uint8_t>(
+    auto indexBuffer = vkcv::buffer<uint8_t>(
+			core,
             vkcv::BufferType::INDEX,
             mesh.vertexGroups[0].indexBuffer.data.size(),
             vkcv::BufferMemoryType::DEVICE_LOCAL
@@ -139,17 +142,20 @@ int main(int argc, const char** argv) {
 
     const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, forsythResult.indexBuffer, forsythResult.skippedIndices);
 
-	auto meshShaderVertexBuffer = core.createBuffer<vkcv::meshlet::Vertex>(
+	auto meshShaderVertexBuffer = vkcv::buffer<vkcv::meshlet::Vertex>(
+		core,
 		vkcv::BufferType::STORAGE,
 		meshShaderModelData.vertices.size());
 	meshShaderVertexBuffer.fill(meshShaderModelData.vertices);
 
-	auto meshShaderIndexBuffer = core.createBuffer<uint32_t>(
+	auto meshShaderIndexBuffer = vkcv::buffer<uint32_t>(
+		core,
 		vkcv::BufferType::STORAGE,
 		meshShaderModelData.localIndices.size());
 	meshShaderIndexBuffer.fill(meshShaderModelData.localIndices);
 
-	auto meshletBuffer = core.createBuffer<vkcv::meshlet::Meshlet>(
+	auto meshletBuffer = vkcv::buffer<vkcv::meshlet::Meshlet>(
+		core,
 		vkcv::BufferType::STORAGE,
 		meshShaderModelData.meshlets.size(),
 		vkcv::BufferMemoryType::DEVICE_LOCAL
@@ -219,7 +225,7 @@ int main(int argc, const char** argv) {
 		glm::mat4 mvp;
 	};
 	const size_t objectCount = 1;
-	vkcv::Buffer<ObjectMatrices> matrixBuffer = core.createBuffer<ObjectMatrices>(vkcv::BufferType::STORAGE, objectCount);
+	vkcv::Buffer<ObjectMatrices> matrixBuffer = vkcv::buffer<ObjectMatrices>(core, vkcv::BufferType::STORAGE, objectCount);
 
 	vkcv::DescriptorWrites vertexShaderDescriptorWrites;
 	vertexShaderDescriptorWrites.writeStorageBuffer(0, matrixBuffer.getHandle());
@@ -272,7 +278,7 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = core.createBuffer<CameraPlanes>(vkcv::BufferType::UNIFORM, 1);
+	vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = vkcv::buffer<CameraPlanes>(core, vkcv::BufferType::UNIFORM, 1);
 
 	vkcv::DescriptorWrites meshShaderWrites;
 	meshShaderWrites.writeStorageBuffer(

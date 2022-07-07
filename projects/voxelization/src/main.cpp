@@ -153,7 +153,8 @@ int main(int argc, const char** argv) {
 
 	std::vector<vkcv::Buffer<uint8_t>> vertexBuffers;
 	for (const vkcv::asset::VertexGroup& group : scene.vertexGroups) {
-		vertexBuffers.push_back(core.createBuffer<uint8_t>(
+		vertexBuffers.push_back(buffer<uint8_t>(
+			core,
 			vkcv::BufferType::VERTEX,
 			group.vertexBuffer.data.size()));
 		vertexBuffers.back().fill(group.vertexBuffer.data);
@@ -161,7 +162,8 @@ int main(int argc, const char** argv) {
 
 	std::vector<vkcv::Buffer<uint8_t>> indexBuffers;
 	for (const auto& dataBuffer : iBuffers) {
-		indexBuffers.push_back(core.createBuffer<uint8_t>(
+		indexBuffers.push_back(buffer<uint8_t>(
+			core,
 			vkcv::BufferType::INDEX,
 			dataBuffer.size()));
 		indexBuffers.back().fill(dataBuffer);
@@ -579,7 +581,7 @@ int main(int argc, const char** argv) {
 		msaa);
 
 	vkcv::effects::BloomAndFlaresEffect bloomFlares (core, true);
-	vkcv::Buffer<glm::vec3> cameraPosBuffer = core.createBuffer<glm::vec3>(vkcv::BufferType::UNIFORM, 1);
+	vkcv::Buffer<glm::vec3> cameraPosBuffer = buffer<glm::vec3>(core, vkcv::BufferType::UNIFORM, 1);
 
 	struct VolumetricSettings {
 		glm::vec3   scatteringCoefficient;
@@ -587,7 +589,7 @@ int main(int argc, const char** argv) {
 		glm::vec3   absorptionCoefficient;
 	};
 	vkcv::Buffer<VolumetricSettings> volumetricSettingsBuffer
-		= core.createBuffer<VolumetricSettings>(vkcv::BufferType::UNIFORM ,1);
+		= buffer<VolumetricSettings>(core, vkcv::BufferType::UNIFORM ,1);
 
 	// write forward pass descriptor set
 	vkcv::DescriptorWrites forwardDescriptorWrites;

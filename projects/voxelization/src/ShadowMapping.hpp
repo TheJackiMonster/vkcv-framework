@@ -1,4 +1,6 @@
 #pragma once
+
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/Camera.hpp>
 #include <vkcv/Downsampler.hpp>

@@ -8,6 +8,7 @@
 #include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.hpp>
 
+#include "Handles.hpp"
 #include "QueueManager.hpp"
 #include "DrawcallRecording.hpp"
 #include "Features.hpp"
