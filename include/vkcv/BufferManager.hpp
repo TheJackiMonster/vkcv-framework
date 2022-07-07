@@ -86,12 +86,14 @@ namespace vkcv
 		 * @param[in] size Size of buffer in bytes
 		 * @param[in] memoryType Type of buffers memory
 		 * @param[in] supportIndirect Support of indirect usage
+		 * @param[in] readable Support read functionality
 		 * @return New buffer handle
 		 */
 		BufferHandle createBuffer(BufferType type,
 								  size_t size,
 								  BufferMemoryType memoryType,
-								  bool supportIndirect);
+								  bool supportIndirect,
+								  bool readable);
 		
 		/**
 		 * @brief Returns the Vulkan buffer handle of a buffer
@@ -134,6 +136,20 @@ namespace vkcv
 		 */
 		void fillBuffer(const BufferHandle& handle,
 						const void* data,
+						size_t size,
+						size_t offset);
+		
+		/**
+		 * @brief Reads from a buffer represented by a given
+		 * buffer handle to some data pointer.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @param[in] data Pointer to data
+		 * @param[in] size Size of data to read in bytes
+		 * @param[in] offset Offset to read from buffer in bytes
+		 */
+		void readBuffer(const BufferHandle& handle,
+						void* data,
 						size_t size,
 						size_t offset);
 		
