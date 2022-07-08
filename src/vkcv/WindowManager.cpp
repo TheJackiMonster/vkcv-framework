@@ -2,26 +2,40 @@
 
 namespace vkcv {
 	
-	WindowManager::WindowManager() noexcept {
+	uint64_t WindowManager::getIdFrom(const WindowHandle &handle) const {
+		return handle.getId();
 	}
+	
+	WindowHandle WindowManager::createById(uint64_t id, const HandleDestroyFunction &destroy) {
+		return WindowHandle(id, destroy);
+	}
+	
+	void WindowManager::destroyById(uint64_t id) {
+		auto& window = getById(id);
+
+		if (window) {
+			delete window;
+			window = nullptr;
+		}
+	}
+	
+	WindowManager::WindowManager() noexcept : HandleManager<Window *, WindowHandle>() {}
 
 	WindowManager::~WindowManager() noexcept {
-		for (uint64_t id = 0; id < m_windows.size(); id++) {
-			destroyWindowById(id);
-		}
-		
-		m_windows.clear();
+		clear();
 	}
 
-	WindowHandle WindowManager::createWindow(
-			SwapchainManager &swapchainManager,
-			const char *applicationName,
-			uint32_t windowWidth,
-			uint32_t windowHeight,
-			bool resizeable) {
-		const uint64_t id = m_windows.size();
-
-		auto window = new Window(applicationName, windowWidth, windowHeight, resizeable);
+	WindowHandle WindowManager::createWindow(SwapchainManager &swapchainManager,
+											 const char *applicationName,
+											 uint32_t windowWidth,
+											 uint32_t windowHeight,
+											 bool resizeable) {
+		auto window = new Window(
+				applicationName,
+				static_cast<int>(windowWidth),
+				static_cast<int>(windowHeight),
+				resizeable
+		);
 
 		SwapchainHandle swapchainHandle = swapchainManager.createSwapchain(*window);
 
@@ -30,27 +44,15 @@ namespace vkcv {
 				// copy handle because it would run out of scope and be invalid
 				swapchainManager.signalRecreation(handle);
 			});
+			
 			window->m_resizeHandle = resizeHandle;
 		}
 
-		m_windows.push_back(window);
-		return WindowHandle(id, [&](uint64_t id) { destroyWindowById(id); });
+		return add(window);
 	}
 
-	Window &WindowManager::getWindow(const WindowHandle handle) const {
-		return *m_windows[handle.getId()];
+	Window &WindowManager::getWindow(const WindowHandle& handle) const {
+		return *(*this)[handle];
 	}
 
-	void WindowManager::destroyWindowById(uint64_t id) {
-
-		if (id >= m_windows.size()) {
-			vkcv_log(LogLevel::ERROR, "Invalid id");
-			return;
-		}
-
-		if (m_windows[id] != nullptr) {
-			delete m_windows[id];
-			m_windows[id] = nullptr;
-		}
-	}
 }

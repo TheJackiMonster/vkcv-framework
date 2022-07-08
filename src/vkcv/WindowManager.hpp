@@ -5,32 +5,31 @@
 #include <GLFW/glfw3.h>
 
 #include "vkcv/Window.hpp"
-#include "vkcv/Handles.hpp"
+
+#include "HandleManager.hpp"
 #include "SwapchainManager.hpp"
 
 namespace vkcv {
-	
-	class Context;
-
-	class SwapchainManager;
 
 	/**
 	 * @brief Class to manage the windows of applications.
 	 */
-	class WindowManager {
+	class WindowManager : public HandleManager<Window*, WindowHandle> {
 		friend class Core;
 
 	private:
+		[[nodiscard]]
+		uint64_t getIdFrom(const WindowHandle& handle) const override;
+		
+		[[nodiscard]]
+		WindowHandle createById(uint64_t id, const HandleDestroyFunction& destroy) override;
+		
 		/**
-		 * vector of all managed windows
+		 * Destroys a specific window by a given id.
+		 *
+		 * @param[in] id ID of the window to be destroyed
 		 */
-		std::vector<Window*> m_windows;
-
-		/**
-		 * destroys a specific window by a given id
-		 * @param id of the window to be destroyed
-		 */
-		void destroyWindowById(uint64_t id);
+		void destroyById(uint64_t id) override;
 
 	public:
 		WindowManager() noexcept;
@@ -38,15 +37,7 @@ namespace vkcv {
 		/**
 		 * destroys every window
 		 */
-		~WindowManager() noexcept;
-
-		WindowManager(WindowManager &&other) = delete;
-
-		WindowManager(const WindowManager &other) = delete;
-
-		WindowManager &operator=(WindowManager &&other) = delete;
-
-		WindowManager &operator=(const WindowManager &other) = delete;
+		~WindowManager() noexcept override;
 
 		/**
 		 * creates a window and returns it's  handle
@@ -57,7 +48,9 @@ namespace vkcv {
 		 * @param resizeable if the window is resizable
 		 * @return window handle
 		 */
-		WindowHandle createWindow(SwapchainManager &swapchainManager, const char *applicationName, uint32_t windowWidth,
+		WindowHandle createWindow(SwapchainManager &swapchainManager,
+								  const char *applicationName,
+								  uint32_t windowWidth,
 								  uint32_t windowHeight,
 								  bool resizeable);
 
@@ -66,7 +59,7 @@ namespace vkcv {
 		 * @return the reference of the window
 		 */
 		[[nodiscard]]
-		Window &getWindow(const WindowHandle handle) const;
+		Window &getWindow(const WindowHandle& handle) const;
 
 	};
 	
