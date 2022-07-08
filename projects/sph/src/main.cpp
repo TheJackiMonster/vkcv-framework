@@ -41,9 +41,6 @@ int main(int argc, const char **argv) {
     vkcv::PassConfig particlePassDefinition({present_color_attachment}, vkcv::Multisampling::None);
     vkcv::PassHandle particlePass = core.createPass(particlePassDefinition);
 
-    vkcv::PassConfig computePassDefinition({});
-    vkcv::PassHandle computePass = core.createPass(computePassDefinition);
-
     //rotation
     float rotationx = 0;
     float rotationy = 0;
@@ -58,7 +55,7 @@ int main(int argc, const char **argv) {
     float param_ABSORBTION = 0.5;
     float param_dt = 0.0005;
 
-    if (!particlePass || !computePass)
+    if (!particlePass)
     {
         std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
         return EXIT_FAILURE;
@@ -231,7 +228,7 @@ int main(int argc, const char **argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.5f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
-	const auto swapchainExtent = core.getSwapchain(window.getSwapchainHandle()).getExtent();
+	const auto swapchainExtent = core.getSwapchainExtent(window.getSwapchain());
 	
     vkcv::ImageHandle colorBuffer = core.createImage(
 			colorFormat,

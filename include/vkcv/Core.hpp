@@ -11,7 +11,6 @@
 
 #include "BufferTypes.hpp"
 #include "Context.hpp"
-#include "Swapchain.hpp"
 #include "Window.hpp"
 #include "PassConfig.hpp"
 #include "Handles.hpp"
@@ -380,30 +379,36 @@ namespace vkcv
 		 * @return the window
 		 */
 		[[nodiscard]]
-		Window& getWindow(const WindowHandle& handle );
-
+		Window& getWindow(const WindowHandle& handle);
+	
 		/**
-		 * Gets the swapchain of the current focused window
-		 * @return swapchain
-		 */
+         * @brief Returns the image format for the current surface
+         * of the swapchain.
+         *
+         * @param[in] handle Swapchain handle
+         * @return Swapchain image format
+         */
 		[[nodiscard]]
-		Swapchain& getSwapchainOfCurrentWindow();
-
+		vk::Format getSwapchainFormat(const SwapchainHandle& swapchain) const;
+	
 		/**
-		 * Returns the swapchain reference
-		 * @param handle of the swapchain
-		 * @return swapchain
-		 */
+		 * @brief Returns the amount of images for the swapchain.
+		 *
+		 * @param[in] handle Swapchain handle
+		 * @return Number of images
+		*/
 		[[nodiscard]]
-		Swapchain& getSwapchain(const SwapchainHandle &handle);
-
+		uint32_t getSwapchainImageCount(const SwapchainHandle& swapchain) const;
+	
 		/**
-		 * Gets the swapchain handle from the window
-		 * @param handle of the window
-		 * @return the swapchain from getSwapchain( SwapchainHandle )
-		 */
+         * @brief Returns the extent from the current surface of
+         * the swapchain.
+         *
+         * @param[in] handle Swapchain handle
+         * @return Extent of the swapchains surface
+         */
 		[[nodiscard]]
-		Swapchain& getSwapchain(const WindowHandle &handle);
+		vk::Extent2D getSwapchainExtent(const SwapchainHandle& swapchain) const;
 
 		/**
 		 * @brief Returns the image width.

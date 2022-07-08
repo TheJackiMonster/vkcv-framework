@@ -333,7 +333,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetLayoutHandle prepassDescriptorSetLayout = core.createDescriptorSetLayout({});
 	vkcv::DescriptorSetHandle prepassDescriptorSet = core.createDescriptorSet(prepassDescriptorSetLayout);
 
-	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
+	auto swapchainExtent = core.getSwapchainExtent(window.getSwapchain());
 	
 	vkcv::GraphicsPipelineConfig prepassPipelineConfig (
 		depthPrepassShader,

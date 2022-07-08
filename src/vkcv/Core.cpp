@@ -73,9 +73,9 @@ namespace vkcv
 		m_DescriptorSetManager->init(*this, *m_DescriptorSetLayoutManager);
 		m_BufferManager->init(*this);
 		m_SamplerManager->init(*this);
-		m_CommandStreamManager->init(*this);
-		m_SwapchainManager->m_context = &m_Context;
 		m_ImageManager->init(*this, *m_BufferManager);
+		m_CommandStreamManager->init(*this);
+		m_SwapchainManager->init(*this);
 		m_downsampler = std::unique_ptr<Downsampler>(new BlitDownsampler(*this, *m_ImageManager));
 	}
 
@@ -172,7 +172,7 @@ namespace vkcv
     	
 		try {
 			result = m_Context.getDevice().acquireNextImageKHR(
-					m_SwapchainManager->getSwapchain(swapchainHandle).getSwapchain(),
+					m_SwapchainManager->getSwapchain(swapchainHandle).m_Swapchain,
 					std::numeric_limits<uint64_t>::max(),
 					m_SyncResources.swapchainImageAcquired,
 					nullptr,
@@ -191,7 +191,7 @@ namespace vkcv
 		} else
 		if (result == vk::Result::eSuboptimalKHR) {
 			vkcv_log(LogLevel::WARNING, "Acquired image is suboptimal");
-			m_SwapchainManager->getSwapchain(swapchainHandle).signalSwapchainRecreation();
+			m_SwapchainManager->signalRecreation(swapchainHandle);
 		}
 		
 		m_currentSwapchainImageIndex = imageIndex;
@@ -199,21 +199,22 @@ namespace vkcv
 	}
 
 	bool Core::beginFrame(uint32_t& width, uint32_t& height, const WindowHandle &windowHandle) {
-		const SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
+		const Window& window = m_WindowManager->getWindow(windowHandle);
+		const SwapchainHandle swapchainHandle = window.getSwapchain();
 
-		if (m_SwapchainManager->getSwapchain(swapchainHandle).shouldUpdateSwapchain()) {
+		if (m_SwapchainManager->shouldUpdateSwapchain(swapchainHandle)) {
 			m_Context.getDevice().waitIdle();
 
-			m_SwapchainManager->getSwapchain(swapchainHandle).updateSwapchain(m_Context, m_WindowManager->getWindow(windowHandle));
+			m_SwapchainManager->updateSwapchain(swapchainHandle, window);
 			
-			if (!m_SwapchainManager->getSwapchain(swapchainHandle).getSwapchain()) {
+			if (!m_SwapchainManager->getSwapchain(swapchainHandle).m_Swapchain) {
 				return false;
 			}
 
 			setSwapchainImages(swapchainHandle);
 		}
 		
-		const auto& extent = m_SwapchainManager->getSwapchain(swapchainHandle).getExtent();
+		const auto& extent = m_SwapchainManager->getExtent(swapchainHandle);
 		
 		width = extent.width;
 		height = extent.height;
@@ -235,21 +236,18 @@ namespace vkcv
 		return (m_currentSwapchainImageIndex != std::numeric_limits<uint32_t>::max());
 	}
 
-	std::array<uint32_t, 2> getWidthHeightFromRenderTargets(
-		const std::vector<ImageHandle>& renderTargets,
-		const Swapchain& swapchain,
-		const ImageManager& imageManager) {
+	static std::array<uint32_t, 2> getWidthHeightFromRenderTargets(const std::vector<ImageHandle>& renderTargets,
+																   const vk::Extent2D& swapchainExtent,
+																   const ImageManager& imageManager) {
 
 		std::array<uint32_t, 2> widthHeight;
 
 		if (renderTargets.size() > 0) {
 			const vkcv::ImageHandle firstImage = renderTargets[0];
 			if (firstImage.isSwapchainImage()) {
-				const auto& swapchainExtent = swapchain.getExtent();
 				widthHeight[0] = swapchainExtent.width;
 				widthHeight[1] = swapchainExtent.height;
-			}
-			else {
+			} else {
 				widthHeight[0] = imageManager.getImageWidth(firstImage);
 				widthHeight[1] = imageManager.getImageHeight(firstImage);
 			}
@@ -262,27 +260,24 @@ namespace vkcv
 		return widthHeight;
 	}
 
-	vk::Framebuffer createFramebuffer(
-		const std::vector<ImageHandle>& renderTargets,
-		const ImageManager&             imageManager,
-		const Swapchain&                swapchain,
-		vk::RenderPass                  renderpass,
-		vk::Device                      device) {
+	static vk::Framebuffer createFramebuffer(const std::vector<ImageHandle>& renderTargets,
+											 const ImageManager& imageManager,
+											 const vk::Extent2D& renderExtent,
+											 vk::RenderPass renderpass,
+											 vk::Device device) {
 
 		std::vector<vk::ImageView> attachmentsViews;
 		for (const ImageHandle& handle : renderTargets) {
 			attachmentsViews.push_back(imageManager.getVulkanImageView(handle));
 		}
 
-		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, swapchain, imageManager);
-
 		const vk::FramebufferCreateInfo createInfo(
 			{},
 			renderpass,
 			static_cast<uint32_t>(attachmentsViews.size()),
 			attachmentsViews.data(),
-			widthHeight[0],
-			widthHeight[1],
+			renderExtent.width,
+			renderExtent.height,
 			1);
 
 		return device.createFramebuffer(createInfo);
@@ -397,13 +392,18 @@ namespace vkcv
 		const std::vector<ImageHandle>  &renderTargets,
 		const WindowHandle              &windowHandle) {
 
-		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchain();
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
 		}
 
-		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_SwapchainManager->getSwapchain(swapchainHandle), *m_ImageManager);
+		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(
+				renderTargets,
+				m_SwapchainManager->getExtent(swapchainHandle),
+				*m_ImageManager
+		);
+		
 		const auto width  = widthHeight[0];
 		const auto height = widthHeight[1];
 
@@ -412,12 +412,18 @@ namespace vkcv
 
 		const vk::Pipeline          pipeline        = m_GraphicsPipelineManager->getVkPipeline(pipelineHandle);
 		const vk::PipelineLayout    pipelineLayout  = m_GraphicsPipelineManager->getVkPipelineLayout(pipelineHandle);
-		const vk::Rect2D            renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+		const vk::Rect2D            renderArea (vk::Offset2D(0, 0), vk::Extent2D(width, height));
 
 		vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
 		transitionRendertargetsToAttachmentLayout(renderTargets, *m_ImageManager, cmdBuffer);
 
-		const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_SwapchainManager->getSwapchain(swapchainHandle), renderpass, m_Context.m_Device);
+		const vk::Framebuffer framebuffer = createFramebuffer(
+				renderTargets,
+				*m_ImageManager,
+				renderArea.extent,
+				renderpass,
+				m_Context.m_Device
+		);
 
 		if (!framebuffer) {
 			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
@@ -471,9 +477,11 @@ namespace vkcv
         if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
             return;
         }
-		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
-        const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_SwapchainManager->getSwapchain(swapchainHandle),
-                                                                                    *m_ImageManager);
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchain();
+        const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(
+				renderTargets,
+				m_SwapchainManager->getExtent(swapchainHandle),
+				*m_ImageManager);
         const auto width = widthHeight[0];
         const auto height = widthHeight[1];
 
@@ -482,13 +490,18 @@ namespace vkcv
 
         const vk::Pipeline          pipeline        = m_GraphicsPipelineManager->getVkPipeline(pipelineHandle);
         const vk::PipelineLayout    pipelineLayout  = m_GraphicsPipelineManager->getVkPipelineLayout(pipelineHandle);
-        const vk::Rect2D            renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+        const vk::Rect2D            renderArea (vk::Offset2D(0, 0), vk::Extent2D(width, height));
 
         vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
         transitionRendertargetsToAttachmentLayout(renderTargets, *m_ImageManager, cmdBuffer);
 
-        const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_SwapchainManager->getSwapchain(swapchainHandle), renderpass,
-                                                              m_Context.m_Device);
+        const vk::Framebuffer framebuffer = createFramebuffer(
+				renderTargets,
+				*m_ImageManager,
+				renderArea.extent,
+				renderpass,
+				m_Context.m_Device
+		);
 
         if (!framebuffer) {
             vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
@@ -603,13 +616,16 @@ namespace vkcv
 		const std::vector<ImageHandle>&                     renderTargets,
 		const WindowHandle&                                 windowHandle) {
 
-		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchain();
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
 		}
 
-		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(renderTargets, m_SwapchainManager->getSwapchain(swapchainHandle), *m_ImageManager);
+		const std::array<uint32_t, 2> widthHeight = getWidthHeightFromRenderTargets(
+				renderTargets,
+				m_SwapchainManager->getExtent(swapchainHandle),
+				*m_ImageManager);
 		const auto width  = widthHeight[0];
 		const auto height = widthHeight[1];
 
@@ -618,12 +634,18 @@ namespace vkcv
 
 		const vk::Pipeline          pipeline = m_GraphicsPipelineManager->getVkPipeline(pipelineHandle);
 		const vk::PipelineLayout    pipelineLayout = m_GraphicsPipelineManager->getVkPipelineLayout(pipelineHandle);
-		const vk::Rect2D            renderArea(vk::Offset2D(0, 0), vk::Extent2D(width, height));
+		const vk::Rect2D            renderArea (vk::Offset2D(0, 0), vk::Extent2D(width, height));
 
 		vk::CommandBuffer cmdBuffer = m_CommandStreamManager->getStreamCommandBuffer(cmdStreamHandle);
 		transitionRendertargetsToAttachmentLayout(renderTargets, *m_ImageManager, cmdBuffer);
 
-		const vk::Framebuffer framebuffer = createFramebuffer(renderTargets, *m_ImageManager, m_SwapchainManager->getSwapchain(swapchainHandle), renderpass, m_Context.m_Device);
+		const vk::Framebuffer framebuffer = createFramebuffer(
+				renderTargets,
+				*m_ImageManager,
+				renderArea.extent,
+				renderpass,
+				m_Context.m_Device
+		);
 
 		if (!framebuffer) {
 			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
@@ -830,8 +852,7 @@ namespace vkcv
 	}
 
 	void Core::endFrame(const WindowHandle& windowHandle) {
-
-		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchain();
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
@@ -842,7 +863,7 @@ namespace vkcv
 			m_SyncResources.swapchainImageAcquired
 		};
 
-		const vk::SwapchainKHR& swapchain = m_SwapchainManager->getSwapchain(swapchainHandle).getSwapchain();
+		const vk::SwapchainKHR& swapchain = m_SwapchainManager->getSwapchain(swapchainHandle).m_Swapchain;
 		const vk::PresentInfoKHR presentInfo(
 			waitSemaphores,
 			swapchain,
@@ -852,7 +873,7 @@ namespace vkcv
 		vk::Result result;
 		
 		try {
-			result = m_Context.getDevice().getQueue(m_SwapchainManager->getSwapchain(swapchainHandle).getPresentQueueIndex(),0).presentKHR(presentInfo);
+			result = m_Context.getDevice().getQueue(m_SwapchainManager->getPresentQueueIndex(swapchainHandle),0).presentKHR(presentInfo);
 		} catch (const vk::OutOfDateKHRError& e) {
 			result = vk::Result::eErrorOutOfDateKHR;
 		} catch (const vk::DeviceLostError& e) {
@@ -970,14 +991,13 @@ namespace vkcv
 		return *m_downsampler;
 	}
 
-	WindowHandle Core::createWindow(
-			const char *applicationName,
-			uint32_t windowWidth,
-			uint32_t windowHeight,
-			bool resizeable) {
+	WindowHandle Core::createWindow(const char *applicationName,
+									uint32_t windowWidth,
+									uint32_t windowHeight,
+									bool resizeable) {
 
 		WindowHandle windowHandle = m_WindowManager->createWindow(*m_SwapchainManager ,applicationName, windowWidth, windowHeight, resizeable);
-		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchainHandle();
+		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchain();
 		setSwapchainImages( swapchainHandle );
 		return windowHandle;
 	}
@@ -985,7 +1005,19 @@ namespace vkcv
 	Window& Core::getWindow(const WindowHandle& handle) {
 		return m_WindowManager->getWindow(handle);
 	}
-
+	
+	vk::Format Core::getSwapchainFormat(const SwapchainHandle &swapchain) const {
+		return m_SwapchainManager->getFormat(swapchain);
+	}
+	
+	uint32_t Core::getSwapchainImageCount(const SwapchainHandle &swapchain) const {
+		return m_SwapchainManager->getImageCount(swapchain);
+	}
+	
+	vk::Extent2D Core::getSwapchainExtent(const SwapchainHandle& swapchain) const {
+		return m_SwapchainManager->getExtent(swapchain);
+	}
+	
 	uint32_t Core::getImageWidth(const ImageHandle& image)
 	{
 		return m_ImageManager->getImageWidth(image);
@@ -1015,19 +1047,6 @@ namespace vkcv
 	
 	uint32_t Core::getImageArrayLayers(const ImageHandle &image) {
 		return m_ImageManager->getImageArrayLayers(image);
-	}
-
-	Swapchain& Core::getSwapchainOfCurrentWindow() {
-		return m_SwapchainManager->getSwapchain(Window::getFocusedWindow().getSwapchainHandle());
-	}
-
-	Swapchain& Core::getSwapchain(const SwapchainHandle& handle) {
-		return m_SwapchainManager->getSwapchain(handle);
-	}
-
-	Swapchain& Core::getSwapchain(const WindowHandle& handle) {
-		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(handle).getSwapchainHandle();
-		return getSwapchain(swapchainHandle);
 	}
 
 	DescriptorSetLayoutHandle Core::createDescriptorSetLayout(const DescriptorBindings &bindings) {
@@ -1202,16 +1221,16 @@ namespace vkcv
 	}
 
 	void Core::setSwapchainImages( SwapchainHandle handle ) {
-		Swapchain swapchain = m_SwapchainManager->getSwapchain(handle);
+		const auto& swapchain = m_SwapchainManager->getSwapchain(handle);
 		const auto swapchainImages = m_SwapchainManager->getSwapchainImages(handle);
 		const auto swapchainImageViews = m_SwapchainManager->createSwapchainImageViews(handle);
 
 		m_ImageManager->setSwapchainImages(
 				swapchainImages,
 				swapchainImageViews,
-				swapchain.getExtent().width,
-				swapchain.getExtent().height,
-				swapchain.getFormat()
+				swapchain.m_Extent.width,
+				swapchain.m_Extent.height,
+				swapchain.m_Format
 		);
 	}
 	

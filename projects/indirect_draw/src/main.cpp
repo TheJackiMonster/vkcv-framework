@@ -307,6 +307,7 @@ int main(int argc, const char** argv) {
 	);
 
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName,800,600,true);
+	vkcv::Window& window = core.getWindow(windowHandle);
 
     vkcv::gui::GUI gui (core, windowHandle);
 
@@ -330,7 +331,7 @@ int main(int argc, const char** argv) {
     const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain(windowHandle).getFormat()
+		core.getSwapchainFormat(window.getSwapchain())
 	);
 	const vkcv::AttachmentDescription depth_attachment(
 			vkcv::AttachmentOperation::STORE,
@@ -507,7 +508,7 @@ int main(int argc, const char** argv) {
         return EXIT_FAILURE;
     }
 
-    vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
+    vkcv::camera::CameraManager cameraManager (window);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
@@ -532,7 +533,7 @@ int main(int argc, const char** argv) {
     while (vkcv::Window::hasOpenWindow()) {
         vkcv::Window::pollEvents();
 		
-		if(core.getWindow(windowHandle).getHeight() == 0 || core.getWindow(windowHandle).getWidth() == 0)
+		if (window.getHeight() == 0 || window.getWidth() == 0)
 			continue;
 		
 		uint32_t swapchainWidth, swapchainHeight;

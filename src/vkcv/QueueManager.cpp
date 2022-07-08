@@ -5,7 +5,6 @@
 
 #include "vkcv/QueueManager.hpp"
 #include "vkcv/Logger.hpp"
-#include "vkcv/Swapchain.hpp"
 
 namespace vkcv {
 

@@ -169,7 +169,8 @@ namespace vkcv {
          *
          * @return Swapchain handle
          */
-        SwapchainHandle getSwapchainHandle() const;
+        SwapchainHandle getSwapchain() const;
+		
     };
 
 }

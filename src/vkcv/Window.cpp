@@ -284,7 +284,7 @@ namespace vkcv {
 		return window;
 	}
 
-	SwapchainHandle Window::getSwapchainHandle() const {
+	SwapchainHandle Window::getSwapchain() const {
 		return m_swapchainHandle;
 	}
 }

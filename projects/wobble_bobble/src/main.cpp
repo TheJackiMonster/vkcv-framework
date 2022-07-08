@@ -303,7 +303,7 @@ int main(int argc, const char **argv) {
 	cameraManager.getCamera(trackballIdx).setCenter(glm::vec3(0.5f, 0.5f, 0.5f));   // set camera to look at the center of the particle volume
 	cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
-	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
+	auto swapchainExtent = core.getSwapchainExtent(window.getSwapchain());
 	
 	vkcv::ImageHandle depthBuffer = core.createImage(
 			vk::Format::eD32Sfloat,
@@ -458,7 +458,7 @@ int main(int argc, const char **argv) {
 		vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,
 				vkcv::AttachmentOperation::CLEAR,
-				core.getSwapchain(windowHandle).getFormat()
+				core.getSwapchainFormat(window.getSwapchain())
 		),
 		vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,
@@ -471,7 +471,7 @@ int main(int argc, const char **argv) {
 		vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,
 				vkcv::AttachmentOperation::CLEAR,
-				core.getSwapchain(windowHandle).getFormat()
+				core.getSwapchainFormat(window.getSwapchain())
 		),
 		vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,
@@ -484,7 +484,7 @@ int main(int argc, const char **argv) {
 		vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,
 				vkcv::AttachmentOperation::LOAD,
-				core.getSwapchain(windowHandle).getFormat()
+				core.getSwapchainFormat(window.getSwapchain())
 		),
 		vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,

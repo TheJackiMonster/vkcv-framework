@@ -49,12 +49,6 @@ set(vkcv_sources
 		
 		${vkcv_include}/vkcv/Logger.hpp
 		
-		${vkcv_include}/vkcv/Surface.hpp
-		${vkcv_source}/vkcv/Surface.cpp
-
-		${vkcv_include}/vkcv/Swapchain.hpp
-		${vkcv_source}/vkcv/Swapchain.cpp
-		
 		${vkcv_include}/vkcv/ShaderStage.hpp
 		
 		${vkcv_include}/vkcv/ShaderProgram.hpp

@@ -40,6 +40,7 @@ int main(int argc, const char** argv) {
 	);
 
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
+	vkcv::Window& window = core.getWindow(windowHandle);
 
 	//configuring the compute Shader
 	vkcv::PassConfig computePassDefinition({});
@@ -164,7 +165,7 @@ int main(int argc, const char** argv) {
 	const vkcv::AttachmentDescription present_color_attachment(
 		vkcv::AttachmentOperation::STORE,
 		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain(windowHandle).getFormat());
+		core.getSwapchainFormat(window.getSwapchain()));
 
 	vkcv::PassConfig safrPassDefinition({ present_color_attachment }, vkcv::Multisampling::None);
 	vkcv::PassHandle safrPass = core.createPass(safrPassDefinition);
@@ -205,7 +206,7 @@ int main(int argc, const char** argv) {
 	vkcv::DrawcallInfo drawcall(renderMesh, { descriptorUsage }, 1);
 
 	//create the camera
-	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
+	vkcv::camera::CameraManager cameraManager(window);
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 
