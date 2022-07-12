@@ -3,6 +3,7 @@
 #include "vkcv/Core.hpp"
 #include "vkcv/Image.hpp"
 #include "vkcv/Logger.hpp"
+#include "vkcv/Multisampling.hpp"
 
 namespace vkcv {
 	
@@ -328,7 +329,7 @@ namespace vkcv {
 	vk::PipelineMultisampleStateCreateInfo createPipelineMultisampleStateCreateInfo(const GraphicsPipelineConfig &config) {
 		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
 				{},
-				msaaToVkSampleCountFlag(config.getMultisampling()),
+				msaaToSampleCountFlagBits(config.getMultisampling()),
 				false,
 				0.f,
 				nullptr,

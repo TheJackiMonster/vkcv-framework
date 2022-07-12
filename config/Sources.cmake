@@ -114,8 +114,8 @@ set(vkcv_sources
         
         ${vkcv_include}/vkcv/CommandRecordingFunctionTypes.hpp
         
-        ${vkcv_include}/vkcv/ImageConfig.hpp
-        ${vkcv_source}/vkcv/ImageConfig.cpp
+        ${vkcv_include}/vkcv/Multisampling.hpp
+        ${vkcv_source}/vkcv/Multisampling.cpp
 		
 		${vkcv_include}/vkcv/Downsampler.hpp
 		${vkcv_source}/vkcv/Downsampler.cpp

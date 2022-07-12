@@ -10,7 +10,7 @@
 
 #include "PipelineConfig.hpp"
 #include "VertexLayout.hpp"
-#include "ImageConfig.hpp"
+#include "Multisampling.hpp"
 
 namespace vkcv {
 

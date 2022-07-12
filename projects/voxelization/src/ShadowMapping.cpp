@@ -283,7 +283,7 @@ void ShadowMapping::recordShadowMapRendering(
 	dispatchCount[1] = static_cast<uint32_t>(std::ceil(shadowMapResolution / 8.f));
 	dispatchCount[2] = 1;
 
-	const uint32_t msaaSampleCount = msaaToSampleCount(msaa);
+	const uint32_t msaaSampleCount = vkcv::msaaToSampleCount(msaa);
 	
 	vkcv::PushConstants msaaPushConstants = vkcv::pushConstants<uint32_t>();
 	msaaPushConstants.appendDrawcall(msaaSampleCount);

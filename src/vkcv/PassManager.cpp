@@ -85,7 +85,7 @@ namespace vkcv
             vk::AttachmentDescription attachmentDesc(
                 {},
                 format,
-                msaaToVkSampleCountFlag(config.msaa),
+				msaaToSampleCountFlagBits(config.msaa),
                 getVKLoadOpFromAttachOp(config.attachments[i].load_operation),
                 getVkStoreOpFromAttachOp(config.attachments[i].store_operation),
                 vk::AttachmentLoadOp::eDontCare,

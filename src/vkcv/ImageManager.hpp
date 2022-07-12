@@ -10,7 +10,7 @@
 
 #include "BufferManager.hpp"
 #include "HandleManager.hpp"
-#include "vkcv/ImageConfig.hpp"
+#include "vkcv/Multisampling.hpp"
 
 namespace vkcv {
 	

@@ -8,7 +8,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Handles.hpp"
-#include "ImageConfig.hpp"
+#include "Multisampling.hpp"
 
 namespace vkcv {
 	

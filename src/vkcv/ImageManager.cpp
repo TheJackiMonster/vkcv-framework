@@ -6,6 +6,7 @@
 #include "ImageManager.hpp"
 #include "vkcv/Core.hpp"
 #include "vkcv/Logger.hpp"
+#include "vkcv/Multisampling.hpp"
 #include "vkcv/TypeGuard.hpp"
 
 #include <algorithm>
@@ -241,8 +242,6 @@ namespace vkcv {
 		
 		const uint32_t arrayLayers = std::min<uint32_t>(1, imageFormatProperties.maxArrayLayers);
 
-		vk::SampleCountFlagBits sampleCountFlag = msaaToVkSampleCountFlag(msaa);
-
 		const vk::ImageCreateInfo imageCreateInfo (
 			createFlags,
 			imageType,
@@ -250,7 +249,7 @@ namespace vkcv {
 			vk::Extent3D(width, height, depth),
 			mipCount,
 			arrayLayers,
-			sampleCountFlag,
+			msaaToSampleCountFlagBits(msaa),
 			imageTiling,
 			imageUsageFlags,
 			vk::SharingMode::eExclusive,
