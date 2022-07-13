@@ -421,7 +421,7 @@ namespace vkcv {
 			
 			if (!checkSupport(features, required)) {
 				if (required) {
-					throw std::runtime_error("Required feature is not supported!");
+					vkcv_log_throw_error("Required feature is not supported!");
 				}
 				
 				return false;

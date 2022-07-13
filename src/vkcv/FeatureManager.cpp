@@ -557,7 +557,7 @@ m_physicalDevice.getFeatures2(&query)
 			
 			delete[] clone;
 			if (required) {
-				throw std::runtime_error("Required extension is not supported!");
+				vkcv_log_throw_error("Required extension is not supported!");
 			}
 			
 			return false;
