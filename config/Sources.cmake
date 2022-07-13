@@ -64,12 +64,6 @@ set(vkcv_sources
 
 		${vkcv_source}/vkcv/GraphicsPipelineManager.hpp
 		${vkcv_source}/vkcv/GraphicsPipelineManager.cpp
-
-        ${vkcv_include}/vkcv/CommandResources.hpp
-        ${vkcv_source}/vkcv/CommandResources.cpp
-        
-        ${vkcv_include}/vkcv/SyncResources.hpp
-        ${vkcv_source}/vkcv/SyncResources.cpp
         
         ${vkcv_include}/vkcv/QueueManager.hpp
         ${vkcv_source}/vkcv/QueueManager.cpp

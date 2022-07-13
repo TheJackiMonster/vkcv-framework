@@ -32,8 +32,13 @@ namespace vkcv {
 
 	CommandStreamHandle CommandStreamManager::createCommandStream(const vk::Queue &queue,
 																  vk::CommandPool cmdPool) {
-		const vk::CommandBuffer cmdBuffer = allocateCommandBuffer(getCore().getContext().getDevice(), cmdPool);
-		beginCommandBuffer(cmdBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+		const vk::CommandBufferAllocateInfo info (cmdPool, vk::CommandBufferLevel::ePrimary, 1);
+		auto& device = getCore().getContext().getDevice();
+		
+		const vk::CommandBuffer cmdBuffer = device.allocateCommandBuffers(info).front();
+		
+		const vk::CommandBufferBeginInfo beginInfo (vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+		cmdBuffer.begin(beginInfo);
 		
 		for (uint64_t id = 0; id < getCount(); id++) {
 			auto& stream = getById(id);
@@ -69,10 +74,22 @@ namespace vkcv {
 		stream.cmdBuffer.end();
 
 		const auto device = getCore().getContext().getDevice();
+		const vk::Fence waitFence = device.createFence({});
 		
-		const vk::Fence waitFence = createFence(device);
-		submitCommandBufferToQueue(stream.queue, stream.cmdBuffer, waitFence, waitSemaphores, signalSemaphores);
-		waitForFence(device, waitFence);
+		const std::vector<vk::PipelineStageFlags> waitDstStageMasks (
+				waitSemaphores.size(),
+				vk::PipelineStageFlagBits::eAllCommands
+		);
+		
+		const vk::SubmitInfo queueSubmitInfo(
+				waitSemaphores,
+				waitDstStageMasks,
+				stream.cmdBuffer,
+				signalSemaphores
+		);
+		
+		stream.queue.submit(queueSubmitInfo, waitFence);
+		assert(device.waitForFences(waitFence, true, UINT64_MAX) == vk::Result::eSuccess);
 		
 		device.destroyFence(waitFence);
 		stream.queue = nullptr;

@@ -23,6 +23,55 @@
 
 namespace vkcv
 {
+	
+	/**
+	 * @brief Generates a set of the family indices for all different kinds of
+	 * queues a given queue manager provides.
+	 *
+	 * @param[in] queueManager Queue manager
+	 * @return Set of queue family indices
+	 */
+	static std::unordered_set<int> generateQueueFamilyIndexSet(const QueueManager &queueManager) {
+		std::unordered_set<int> indexSet;
+		
+		for (const auto& queue : queueManager.getGraphicsQueues()) {
+			indexSet.insert(queue.familyIndex);
+		}
+		
+		for (const auto& queue : queueManager.getComputeQueues()) {
+			indexSet.insert(queue.familyIndex);
+		}
+		
+		for (const auto& queue : queueManager.getTransferQueues()) {
+			indexSet.insert(queue.familyIndex);
+		}
+		
+		indexSet.insert(queueManager.getPresentQueue().familyIndex);
+		return indexSet;
+	}
+	
+	/**
+	 * @brief Creates and returns a vector of newly allocated command pools
+	 * for each different queue family index in a given set.
+	 *
+	 * @param[in,out] device Vulkan device
+	 * @param[in] familyIndexSet Set of queue family indices
+	 * @return New command pools
+	 */
+	static std::vector<vk::CommandPool> createCommandPools(const vk::Device& device,
+														   const std::unordered_set<int>& familyIndexSet) {
+		std::vector<vk::CommandPool> commandPoolsPerQueueFamily;
+		commandPoolsPerQueueFamily.resize(familyIndexSet.size());
+		
+		const vk::CommandPoolCreateFlags poolFlags = vk::CommandPoolCreateFlagBits::eTransient;
+		for (const int familyIndex : familyIndexSet) {
+			const vk::CommandPoolCreateInfo poolCreateInfo(poolFlags, familyIndex);
+			commandPoolsPerQueueFamily[familyIndex] = device.createCommandPool(poolCreateInfo, nullptr, {});
+		}
+		
+		return commandPoolsPerQueueFamily;
+	}
+	
     Core Core::create(const char *applicationName,
                       uint32_t applicationVersion,
                       const std::vector<vk::QueueFlagBits>& queueFlags,
@@ -36,20 +85,14 @@ namespace vkcv
         		instanceExtensions
 		);
 
-        const auto& queueManager = context.getQueueManager();
-        
-		const std::unordered_set<int>	queueFamilySet			= generateQueueFamilyIndexSet(queueManager);
-		const auto						commandResources		= createCommandResources(context.getDevice(), queueFamilySet);
-		const auto						defaultSyncResources	= createSyncResources(context.getDevice());
-
-        return Core(std::move(context) , commandResources, defaultSyncResources);
+        return Core(std::move(context));
     }
 
     const Context &Core::getContext() const {
         return m_Context;
     }
 
-    Core::Core(Context &&context, const CommandResources& commandResources, const SyncResources& syncResources) noexcept :
+    Core::Core(Context &&context) noexcept :
 			m_Context(std::move(context)),
 			m_PassManager(std::make_unique<PassManager>()),
 			m_GraphicsPipelineManager(std::make_unique<GraphicsPipelineManager>()),
@@ -62,10 +105,19 @@ namespace vkcv
 			m_CommandStreamManager{std::make_unique<CommandStreamManager>()},
 			m_WindowManager(std::make_unique<WindowManager>()),
 			m_SwapchainManager(std::make_unique<SwapchainManager>()),
-			m_CommandResources(commandResources),
-			m_SyncResources(syncResources),
+			m_CommandPools(),
+			m_RenderFinished(),
+			m_SwapchainImageAcquired(),
 			m_downsampler(nullptr)
 	{
+		m_CommandPools = createCommandPools(
+				m_Context.getDevice(),
+				generateQueueFamilyIndexSet(m_Context.getQueueManager())
+		);
+		
+		m_RenderFinished = m_Context.getDevice().createSemaphore({});
+		m_SwapchainImageAcquired = m_Context.getDevice().createSemaphore({});
+		
 		m_PassManager->init(*this);
 		m_GraphicsPipelineManager->init(*this);
 		m_ComputePipelineManager->init(*this);
@@ -81,9 +133,13 @@ namespace vkcv
 
 	Core::~Core() noexcept {
 		m_Context.getDevice().waitIdle();
-
-		destroyCommandResources(m_Context.getDevice(), m_CommandResources);
-		destroySyncResources(m_Context.getDevice(), m_SyncResources);
+		
+		for (const vk::CommandPool &pool : m_CommandPools) {
+			m_Context.getDevice().destroyCommandPool(pool);
+		}
+		
+		m_Context.getDevice().destroySemaphore(m_RenderFinished);
+		m_Context.getDevice().destroySemaphore(m_SwapchainImageAcquired);
 	}
 	
 	GraphicsPipelineHandle Core::createGraphicsPipeline(const GraphicsPipelineConfig &config) {
@@ -174,7 +230,7 @@ namespace vkcv
 			result = m_Context.getDevice().acquireNextImageKHR(
 					m_SwapchainManager->getSwapchain(swapchainHandle).m_Swapchain,
 					std::numeric_limits<uint64_t>::max(),
-					m_SyncResources.swapchainImageAcquired,
+					m_SwapchainImageAcquired,
 					nullptr,
 					&imageIndex, {}
 			);
@@ -430,10 +486,6 @@ namespace vkcv
 			return;
 		}
 
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Graphics;
-		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
-
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
 			const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
 
@@ -507,10 +559,6 @@ namespace vkcv
             vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
             return;
         }
-
-        SubmitInfo submitInfo;
-        submitInfo.queueType = QueueType::Graphics;
-        submitInfo.signalSemaphores = {m_SyncResources.renderFinished};
 
         auto submitFunction = [&](const vk::CommandBuffer &cmdBuffer) {
 
@@ -651,10 +699,6 @@ namespace vkcv
 			vkcv_log(LogLevel::ERROR, "Failed to create temporary framebuffer");
 			return;
 		}
-
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Graphics;
-		submitInfo.signalSemaphores = { m_SyncResources.renderFinished };
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
 			const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
@@ -858,9 +902,9 @@ namespace vkcv
 			return;
 		}
 		
-		std::array<vk::Semaphore, 2> waitSemaphores{
-			m_SyncResources.renderFinished,
-			m_SyncResources.swapchainImageAcquired
+		const std::array<vk::Semaphore, 2> waitSemaphores {
+			m_RenderFinished,
+			m_SwapchainImageAcquired
 		};
 
 		const vk::SwapchainKHR& swapchain = m_SwapchainManager->getSwapchain(swapchainHandle).m_Swapchain;
@@ -889,10 +933,34 @@ namespace vkcv
 			m_SwapchainManager->signalRecreation(swapchainHandle);
 		}
 	}
-
+	
+	/**
+	 * @brief Returns a queue of a given type from a queue manager.
+	 *
+	 * @param[in] type Type of queue
+	 * @param[in] queueManager Queue manager
+	 * @return Queue of a given type
+	 */
+	static Queue getQueueForSubmit(QueueType type, const QueueManager& queueManager) {
+		switch (type) {
+			case QueueType::Graphics:
+				return queueManager.getGraphicsQueues().front();
+			case QueueType::Compute:
+				return queueManager.getComputeQueues().front();
+			case QueueType::Transfer:
+				return queueManager.getTransferQueues().front();
+			case QueueType::Present:
+				return queueManager.getPresentQueue();
+			default: {
+				vkcv_log(LogLevel::ERROR, "Unknown queue type");
+				return queueManager.getGraphicsQueues().front(); // graphics is the most general queue
+			}
+		}
+	}
+	
 	CommandStreamHandle Core::createCommandStream(QueueType queueType) {
-		const vkcv::Queue       queue   = getQueueForSubmit(queueType, m_Context.getQueueManager());
-		const vk::CommandPool   cmdPool = chooseCmdPool(queue, m_CommandResources);
+		const vkcv::Queue     queue   = getQueueForSubmit(queueType, m_Context.getQueueManager());
+		const vk::CommandPool cmdPool = m_CommandPools[queue.familyIndex];
 
 		return m_CommandStreamManager->createCommandStream(queue.handle, cmdPool);
 	}
@@ -916,7 +984,7 @@ namespace vkcv
 		// FIXME: add proper user controllable sync
 		std::vector<vk::Semaphore> signalSemaphores;
 		if (signalRendering) {
-			signalSemaphores.push_back(m_SyncResources.renderFinished);
+			signalSemaphores.push_back(m_RenderFinished);
 		}
 		
 		m_CommandStreamManager->submitCommandStreamSynchronous(stream, waitSemaphores, signalSemaphores);

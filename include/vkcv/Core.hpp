@@ -18,8 +18,6 @@
 #include "BlitDownsampler.hpp"
 #include "GraphicsPipelineConfig.hpp"
 #include "ComputePipelineConfig.hpp"
-#include "CommandResources.hpp"
-#include "SyncResources.hpp"
 #include "Result.hpp"
 #include "Sampler.hpp"
 #include "DescriptorWrites.hpp"
@@ -47,15 +45,6 @@ namespace vkcv
 	class SwapchainManager;
 
 	/**
-	 * @brief Structure to store details about a queue submission.
-	 */
-	struct SubmitInfo {
-		QueueType queueType;
-		std::vector<vk::Semaphore> waitSemaphores;
-		std::vector<vk::Semaphore> signalSemaphores;
-	};
-
-	/**
 	 * @brief Class to handle the core functionality of the framework.
 	 *
 	 * The class handles the core functionality of the framework with most
@@ -70,7 +59,8 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
+        explicit Core(Context &&context) noexcept;
+		
         // explicit destruction of default constructor
         Core() = delete;
 
@@ -89,10 +79,11 @@ namespace vkcv
         std::unique_ptr<CommandStreamManager>    	m_CommandStreamManager;
         std::unique_ptr<WindowManager>           	m_WindowManager;
         std::unique_ptr<SwapchainManager>        	m_SwapchainManager;
-
-		CommandResources    m_CommandResources;
-		SyncResources       m_SyncResources;
-		uint32_t            m_currentSwapchainImageIndex;
+	
+		std::vector<vk::CommandPool> m_CommandPools;
+		vk::Semaphore m_RenderFinished;
+		vk::Semaphore m_SwapchainImageAcquired;
+		uint32_t m_currentSwapchainImageIndex;
 		
 		std::unique_ptr<Downsampler> m_downsampler;
 
