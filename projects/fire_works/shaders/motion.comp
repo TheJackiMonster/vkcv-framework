@@ -4,6 +4,7 @@
 
 layout(local_size_x = 256) in;
 
+#include "physics.inc"
 #include "particle.inc"
 
 layout(set=0, binding=0, std430) coherent buffer particleBuffer {
@@ -14,9 +15,6 @@ layout( push_constant ) uniform constants{
     float t;
     float dt;
 };
-
-const float g = 9.81;
-const float friction = 0.001f;
 
 void main() {
     uint id = gl_GlobalInvocationID.x;

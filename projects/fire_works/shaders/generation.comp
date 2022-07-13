@@ -20,6 +20,16 @@ layout(set=1, binding=1, std430) buffer eventBuffer {
     event_t events [];
 };
 
+#include "smoke.inc"
+
+layout(set=2, binding=0, std430) writeonly buffer smokeBuffer {
+    smoke_t smokes [];
+};
+
+layout(set=2, binding=1, std430) buffer smokeIndexBuffer {
+    uint smokeIndex;
+};
+
 layout( push_constant ) uniform constants{
     float t;
     float dt;
@@ -72,7 +82,9 @@ void main() {
         direction = events[event_id].direction;
     }
 
-    vec3 velocity = normalize(direction) * events[event_id].velocity;
+    const float v = events[event_id].velocity;
+
+    vec3 velocity = normalize(direction) * v;
     float size = events[event_id].size;
 
     if (events[event_id].parent < events.length()) {
@@ -85,13 +97,23 @@ void main() {
         }
     }
 
+    vec3 color = events[event_id].color;
     const float split = pow(1.0f / events[event_id].count, 1.0f / 3.0f);
 
     particles[id].lifetime = events[event_id].lifetime;
     particles[id].velocity = velocity;
     particles[id].size = size * split;
-    particles[id].color = events[event_id].color;
+    particles[id].color = color;
     particles[id].mass = events[event_id].mass / events[event_id].count;
 
     events[event_id].pad0 = id;
+
+    {
+        const uint index = atomicAdd(smokeIndex, 1) % smokes.length();
+
+        smokes[index].position = particles[id].position;
+        smokes[index].size = size;
+        smokes[index].color = color;
+        smokes[index].velocity = v;
+    }
 }

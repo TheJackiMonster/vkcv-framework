@@ -33,6 +33,13 @@ struct event_t {
 	float pad1;
 };
 
+struct smoke_t {
+	glm::vec3 position;
+	float size;
+	glm::vec3 color;
+	float velocity;
+};
+
 struct draw_particles_t {
 	glm::mat4 mvp;
 	uint width;
@@ -66,8 +73,8 @@ int main(int argc, const char **argv) {
 	vkcv::gui::GUI gui (core, windowHandle);
 	vkcv::shader::GLSLCompiler compiler;
 	
-	vkcv::DescriptorBindings descriptorBindings;
-	vkcv::DescriptorBinding binding {
+	vkcv::DescriptorBindings descriptorBindings0;
+	vkcv::DescriptorBinding binding0 {
 		0,
 		vkcv::DescriptorType::STORAGE_BUFFER,
 		1,
@@ -76,9 +83,9 @@ int main(int argc, const char **argv) {
 		false
 	};
 	
-	descriptorBindings.insert(std::make_pair(0, binding));
+	descriptorBindings0.insert(std::make_pair(0, binding0));
 	
-	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
+	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings0);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 	
 	vkcv::ShaderProgram generationShader;
@@ -88,9 +95,36 @@ int main(int argc, const char **argv) {
 	
 	vkcv::DescriptorSetLayoutHandle generationDescriptorLayout = core.createDescriptorSetLayout(generationShader.getReflectedDescriptors().at(1));
 	vkcv::DescriptorSetHandle generationDescriptorSet = core.createDescriptorSet(generationDescriptorLayout);
+	
+	vkcv::DescriptorBindings descriptorBindings1;
+	vkcv::DescriptorBinding binding1 {
+		1,
+		vkcv::DescriptorType::STORAGE_BUFFER,
+		1,
+		vkcv::ShaderStage::COMPUTE,
+		false,
+		false
+	};
+	
+	descriptorBindings1.insert(std::make_pair(0, binding0));
+	descriptorBindings1.insert(std::make_pair(1, binding1));
+	
+	vkcv::DescriptorSetLayoutHandle smokeDescriptorLayout = core.createDescriptorSetLayout(descriptorBindings1);
+	vkcv::DescriptorSetHandle smokeDescriptorSet = core.createDescriptorSet(smokeDescriptorLayout);
+	
 	vkcv::ComputePipelineHandle generationPipeline = core.createComputePipeline({
 		generationShader,
-		{ descriptorSetLayout, generationDescriptorLayout }
+		{ descriptorSetLayout, generationDescriptorLayout, smokeDescriptorLayout }
+	});
+	
+	vkcv::ShaderProgram scaleShader;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/scale.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		scaleShader.addShader(shaderStage, path);
+	});
+	
+	vkcv::ComputePipelineHandle scalePipeline = core.createComputePipeline({
+		scaleShader,
+		{ smokeDescriptorLayout }
 	});
 	
 	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
@@ -121,6 +155,7 @@ int main(int argc, const char **argv) {
 	});
 	
 	std::vector<particle_t> particles;
+	particles.reserve(1024);
 	
 	for (size_t i = 0; i < 1024; i++) {
 		particle_t particle;
@@ -215,6 +250,42 @@ int main(int argc, const char **argv) {
 		core.writeDescriptorSet(generationDescriptorSet, writes);
 	}
 	
+	std::vector<smoke_t> smokes;
+	smokes.reserve(1024);
+	
+	for (size_t i = 0; i < 1024; i++) {
+		smoke_t smoke;
+		smoke.position = glm::vec3(0.0f);
+		smoke.size = 0.0f;
+		
+		smoke.color = glm::vec3(0.0f);
+		smoke.velocity = 0.0f;
+		
+		smokes.push_back(smoke);
+	}
+	
+	vkcv::Buffer<smoke_t> smokeBuffer = core.createBuffer<smoke_t>(
+		vkcv::BufferType::STORAGE,
+		smokes.size()
+	);
+	
+	smokeBuffer.fill(smokes);
+	
+	vkcv::Buffer<uint> smokeIndexBuffer = core.createBuffer<uint>(
+		vkcv::BufferType::STORAGE, 1, vkcv::BufferMemoryType::HOST_VISIBLE
+	);
+	
+	uint* smokeIndex = smokeIndexBuffer.map();
+	*smokeIndex = 0;
+	smokeIndexBuffer.unmap();
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.writeStorageBuffer(0, smokeBuffer.getHandle());
+		writes.writeStorageBuffer(1, smokeIndexBuffer.getHandle());
+		core.writeDescriptorSet(smokeDescriptorSet, writes);
+	}
+	
 	vkcv::Buffer<glm::vec2> trianglePositions = core.createBuffer<glm::vec2>(vkcv::BufferType::VERTEX, 3);
 	trianglePositions.fill({
 		glm::vec2(-1.0f, -1.0f),
@@ -271,7 +342,7 @@ int main(int argc, const char **argv) {
 		true
 	};
 	
-	// particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
+	particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 	
 	vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 	
@@ -367,7 +438,23 @@ int main(int argc, const char **argv) {
 			particleDispatchCount,
 			{
 				vkcv::DescriptorSetUsage(0, descriptorSet),
-				vkcv::DescriptorSetUsage(1, generationDescriptorSet)
+				vkcv::DescriptorSetUsage(1, generationDescriptorSet),
+				vkcv::DescriptorSetUsage(2, smokeDescriptorSet)
+			},
+			pushConstantsTime
+		);
+		
+		uint32_t smokeDispatchCount[3];
+		smokeDispatchCount[0] = std::ceil(smokeBuffer.getCount() / 256.f);
+		smokeDispatchCount[1] = 1;
+		smokeDispatchCount[2] = 1;
+		
+		core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			scalePipeline,
+			smokeDispatchCount,
+			{
+				vkcv::DescriptorSetUsage(0, smokeDescriptorSet)
 			},
 			pushConstantsTime
 		);
@@ -441,6 +528,7 @@ int main(int argc, const char **argv) {
 			
 			particleBuffer.fill(particles);
 			eventBuffer.fill(events);
+			smokeBuffer.fill(smokes);
 		}
 		
 		ImGui::End();

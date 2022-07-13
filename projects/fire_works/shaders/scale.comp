@@ -1,0 +1,41 @@
+#version 450 core
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(local_size_x = 256) in;
+
+#include "physics.inc"
+#include "smoke.inc"
+
+layout(set=0, binding=0, std430) buffer smokeBuffer {
+    smoke_t smokes [];
+};
+
+layout(set=0, binding=1, std430) buffer smokeIndexBuffer {
+    uint smokeIndex;
+};
+
+layout( push_constant ) uniform constants{
+    float t;
+    float dt;
+};
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+
+    if (id >= smokes.length()) {
+        return;
+    }
+
+    vec3 position = smokes[id].position;
+    float size = smokes[id].size;
+
+    const float velocity = smokes[id].velocity;
+    const float fading = 1.0f / (1.0f + friction);
+
+    position = position + vec3(0.0f, -g * fading, 0.0f) * dt * dt;
+    size = size / fading + velocity * dt;
+
+    smokes[id].position = position;
+    smokes[id].size = size;
+}
