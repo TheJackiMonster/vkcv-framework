@@ -100,9 +100,6 @@ int main(int argc, const char** argv) {
 		
 		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
-
-		vkcv::PushConstants pushConstants = vkcv::pushConstants<glm::mat4>();
-		pushConstants.appendDrawcall(mvp);
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		core.setDebugLabel(cmdStream, "Render Commands");
@@ -111,7 +108,7 @@ int main(int argc, const char** argv) {
 			cmdStream,
 			trianglePass,
 			trianglePipeline,
-			pushConstants,
+			vkcv::pushConstants<glm::mat4>(mvp),
 			{ drawcall },
 			{ swapchainInput },
 			windowHandle);

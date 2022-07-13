@@ -140,4 +140,24 @@ namespace vkcv {
 		return PushConstants(typeGuard<T>());
 	}
 	
+	template<typename T>
+	PushConstants pushConstants(const T& value) {
+		auto pc = pushConstants<T>();
+		pc.template appendDrawcall(value);
+		return pc;
+	}
+	
+	template<typename T>
+	PushConstants pushConstants(const std::vector<T>& values) {
+		auto pc = pushConstants<T>();
+		
+		for (const T& value : values) {
+			if (!(pc.template appendDrawcall(value))) {
+				break;
+			}
+		}
+		
+		return pc;
+	}
+	
 }
