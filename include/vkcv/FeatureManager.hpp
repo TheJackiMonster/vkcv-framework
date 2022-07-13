@@ -305,6 +305,16 @@ namespace vkcv {
 		bool checkSupport(const vk::PhysicalDeviceRayTracingPipelineFeaturesKHR& features, bool required) const;
 		
 		/**
+         * @brief Checks support of the @p vk::PhysicalDeviceVulkan13Features.
+         *
+         * @param[in] features The features
+         * @param[in] required True, if the @p features are required, else false
+         * @return @p True, if the @p features are supported, else @p false
+         */
+		[[nodiscard]]
+		bool checkSupport(const vk::PhysicalDeviceVulkan13Features& features, bool required) const;
+		
+		/**
 		 * @brief Searches for a base structure of a given structure type.
 		 *
 		 * @param[in] type Structure type
