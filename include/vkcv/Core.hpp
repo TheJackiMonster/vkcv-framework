@@ -658,20 +658,6 @@ namespace vkcv
 		void endFrame( const WindowHandle& windowHandle );
 
 		/**
-		 * Submit a command buffer to any queue of selected type. The recording can be customized by a
-		 * custom record-command-function. If the command submission has finished, an optional finish-function
-		 * will be called.
-		 *
-		 * @param submitInfo Submit information
-		 * @param record Record-command-function
-		 * @param finish Finish-command-function or nullptr
-		 */
-		void recordAndSubmitCommandsImmediate(
-			const SubmitInfo            &submitInfo, 
-			const RecordCommandFunction &record, 
-			const FinishCommandFunction &finish);
-
-		/**
 		 * @brief Create a new command stream
 		 * 
 		 * @param queueType The type of queue to which the command stream will be submitted to
@@ -687,7 +673,7 @@ namespace vkcv
 		 * @param finish Finish function, called after execution of commands is finished
 		 */
 		void recordCommandsToStream(
-			const CommandStreamHandle   cmdStreamHandle,
+			const CommandStreamHandle   &stream,
 			const RecordCommandFunction &record,
 			const FinishCommandFunction &finish);
 
@@ -697,7 +683,7 @@ namespace vkcv
 		 * @param[in] handle Command stream to submit
 		 * @param[in] signalRendering Flag to specify if the command stream finishes rendering
 		 */
-		void submitCommandStream(const CommandStreamHandle& handle,
+		void submitCommandStream(const CommandStreamHandle& stream,
 								 bool signalRendering = true);
 
 		/**

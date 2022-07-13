@@ -188,11 +188,10 @@ namespace vkcv {
 		memcpy(mapped, reinterpret_cast<const char*>(info.data) + info.stagingPosition, mapped_size);
 		allocator.unmapMemory(info.stagingAllocation);
 		
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Transfer;
+		auto stream = core.createCommandStream(QueueType::Transfer);
 		
-		core.recordAndSubmitCommandsImmediate(
-				submitInfo,
+		core.recordCommandsToStream(
+				stream,
 				[&info, &mapped_size](const vk::CommandBuffer& commandBuffer) {
 					const vk::BufferCopy region (
 							0,
@@ -213,6 +212,8 @@ namespace vkcv {
 					}
 				}
 		);
+		
+		core.submitCommandStream(stream, false);
 	}
 	
 	/**
@@ -245,11 +246,10 @@ namespace vkcv {
 		const size_t remaining = info.size - info.stagingPosition;
 		const size_t mapped_size = std::min(remaining, info.stagingLimit);
 		
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Transfer;
+		auto stream = core.createCommandStream(QueueType::Transfer);
 		
-		core.recordAndSubmitCommandsImmediate(
-				submitInfo,
+		core.recordCommandsToStream(
+				stream,
 				[&info, &mapped_size](const vk::CommandBuffer& commandBuffer) {
 					const vk::BufferCopy region (
 							info.offset + info.stagingPosition,
@@ -276,6 +276,8 @@ namespace vkcv {
 					}
 				}
 		);
+		
+		core.submitCommandStream(stream, false);
 	}
 	
 	vk::Buffer BufferManager::getBuffer(const BufferHandle& handle) const {

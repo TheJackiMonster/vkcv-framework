@@ -439,11 +439,11 @@ namespace vkcv {
 		auto& image = (*this)[handle];
 		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, 0, 0, newLayout);
 		
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Graphics;
+		auto& core = getCore();
+		auto stream = core.createCommandStream(QueueType::Graphics);
 		
-		getCore().recordAndSubmitCommandsImmediate(
-			submitInfo,
+		core.recordCommandsToStream(
+			stream,
 			[transitionBarrier](const vk::CommandBuffer& commandBuffer) {
 			// TODO: precise PipelineStageFlagBits, will require a lot of context
 			commandBuffer.pipelineBarrier(
@@ -458,6 +458,7 @@ namespace vkcv {
 			nullptr
 		);
 		
+		core.submitCommandStream(stream, false);
 		image.m_layout = newLayout;
 	}
 
@@ -549,11 +550,11 @@ namespace vkcv {
 		
 		vk::Buffer stagingBuffer = getBufferManager().getBuffer(bufferHandle);
 		
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Transfer;
+		auto& core = getCore();
+		auto stream = core.createCommandStream(QueueType::Transfer);
 		
-		getCore().recordAndSubmitCommandsImmediate(
-				submitInfo,
+		core.recordCommandsToStream(
+				stream,
 				[&image, &stagingBuffer](const vk::CommandBuffer& commandBuffer) {
 					vk::ImageAspectFlags aspectFlags;
 					
@@ -592,6 +593,8 @@ namespace vkcv {
 					);
 				}
 		);
+		
+		core.submitCommandStream(stream, false);
 	}
 
 	void ImageManager::recordImageMipChainGenerationToCmdStream(const vkcv::CommandStreamHandle& cmdStream,

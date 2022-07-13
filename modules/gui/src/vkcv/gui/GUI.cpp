@@ -145,14 +145,15 @@ namespace vkcv::gui {
 		
 		ImGui_ImplVulkan_Init(&init_info, static_cast<VkRenderPass>(m_render_pass));
 		
-		const SubmitInfo submitInfo { QueueType::Graphics, {}, {} };
+		auto stream = m_core.createCommandStream(QueueType::Graphics);
 		
-		m_core.recordAndSubmitCommandsImmediate(submitInfo, [](const vk::CommandBuffer& commandBuffer) {
+		m_core.recordCommandsToStream(stream, [](const vk::CommandBuffer& commandBuffer) {
 			ImGui_ImplVulkan_CreateFontsTexture(static_cast<VkCommandBuffer>(commandBuffer));
 		}, []() {
 			ImGui_ImplVulkan_DestroyFontUploadObjects();
 		});
 		
+		m_core.submitCommandStream(stream, false);
 		m_context.getDevice().waitIdle();
 	}
 	
@@ -217,11 +218,9 @@ namespace vkcv::gui {
 		);
 		
 		const vk::Framebuffer framebuffer = m_context.getDevice().createFramebuffer(framebufferCreateInfo);
+		auto stream = m_core.createCommandStream(QueueType::Graphics);
 		
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Graphics;
-		
-		m_core.recordAndSubmitCommandsImmediate(submitInfo, [&](const vk::CommandBuffer& commandBuffer) {
+		m_core.recordCommandsToStream(stream, [&](const vk::CommandBuffer& commandBuffer) {
 
 			assert(initialImageLayout == vk::ImageLayout::eColorAttachmentOptimal);
 			m_core.prepareImageForAttachmentManually(commandBuffer, vkcv::ImageHandle::createSwapchainImageHandle());
@@ -252,6 +251,8 @@ namespace vkcv::gui {
 		}, [&]() {
 			m_context.getDevice().destroyFramebuffer(framebuffer);
 		});
+		
+		m_core.submitCommandStream(stream, false);
 	}
 	
 }

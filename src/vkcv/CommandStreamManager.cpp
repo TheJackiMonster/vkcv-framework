@@ -69,9 +69,11 @@ namespace vkcv {
 		stream.cmdBuffer.end();
 
 		const auto device = getCore().getContext().getDevice();
+		
 		const vk::Fence waitFence = createFence(device);
 		submitCommandBufferToQueue(stream.queue, stream.cmdBuffer, waitFence, waitSemaphores, signalSemaphores);
 		waitForFence(device, waitFence);
+		
 		device.destroyFence(waitFence);
 		stream.queue = nullptr;
 

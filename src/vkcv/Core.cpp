@@ -889,35 +889,6 @@ namespace vkcv
 			m_SwapchainManager->signalRecreation(swapchainHandle);
 		}
 	}
-	
-	void Core::recordAndSubmitCommandsImmediate(
-		const SubmitInfo &submitInfo, 
-		const RecordCommandFunction &record, 
-		const FinishCommandFunction &finish)
-	{
-		const vk::Device& device = m_Context.getDevice();
-
-		const vkcv::Queue		queue		= getQueueForSubmit(submitInfo.queueType, m_Context.getQueueManager());
-		const vk::CommandPool	cmdPool		= chooseCmdPool(queue, m_CommandResources);
-		const vk::CommandBuffer	cmdBuffer	= allocateCommandBuffer(device, cmdPool);
-
-		beginCommandBuffer(cmdBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-		record(cmdBuffer);
-		cmdBuffer.end();
-		
-		vk::Fence waitFence = createFence(device);
-
-		submitCommandBufferToQueue(queue.handle, cmdBuffer, waitFence, submitInfo.waitSemaphores, submitInfo.signalSemaphores);
-		waitForFence(device, waitFence);
-		
-		device.destroyFence(waitFence);
-		
-		device.freeCommandBuffers(cmdPool, cmdBuffer);
-		
-		if (finish) {
-			finish();
-		}
-	}
 
 	CommandStreamHandle Core::createCommandStream(QueueType queueType) {
 		const vkcv::Queue       queue   = getQueueForSubmit(queueType, m_Context.getQueueManager());
@@ -926,21 +897,19 @@ namespace vkcv
 		return m_CommandStreamManager->createCommandStream(queue.handle, cmdPool);
 	}
 
-    void Core::recordCommandsToStream(
-		const CommandStreamHandle   cmdStreamHandle,
-		const RecordCommandFunction &record, 
-		const FinishCommandFunction &finish) {
-
+    void Core::recordCommandsToStream(const CommandStreamHandle &stream,
+									  const RecordCommandFunction &record,
+									  const FinishCommandFunction &finish) {
 		if (record) {
-			m_CommandStreamManager->recordCommandsToStream(cmdStreamHandle, record);
+			m_CommandStreamManager->recordCommandsToStream(stream, record);
 		}
 		
 		if (finish) {
-			m_CommandStreamManager->addFinishCallbackToStream(cmdStreamHandle, finish);
+			m_CommandStreamManager->addFinishCallbackToStream(stream, finish);
 		}
 	}
 
-	void Core::submitCommandStream(const CommandStreamHandle& handle,
+	void Core::submitCommandStream(const CommandStreamHandle& stream,
 								   bool signalRendering) {
 		std::vector<vk::Semaphore> waitSemaphores;
 		
@@ -950,7 +919,7 @@ namespace vkcv
 			signalSemaphores.push_back(m_SyncResources.renderFinished);
 		}
 		
-		m_CommandStreamManager->submitCommandStreamSynchronous(handle, waitSemaphores, signalSemaphores);
+		m_CommandStreamManager->submitCommandStreamSynchronous(stream, waitSemaphores, signalSemaphores);
 	}
 
 	SamplerHandle Core::createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
@@ -959,17 +928,14 @@ namespace vkcv
 		return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode, mipLodBias, borderColor);
 	}
 
-	Image Core::createImage(
-		vk::Format      format,
-		uint32_t        width,
-		uint32_t        height,
-		uint32_t        depth,
-		bool            createMipChain,
-		bool            supportStorage,
-		bool            supportColorAttachment,
-		Multisampling   multisampling)
-	{
-
+	Image Core::createImage(vk::Format      format,
+							uint32_t        width,
+							uint32_t        height,
+							uint32_t        depth,
+							bool            createMipChain,
+							bool            supportStorage,
+							bool            supportColorAttachment,
+							Multisampling   multisampling) {
 		uint32_t mipCount = 1;
 		if (createMipChain) {
 			mipCount = 1 + (uint32_t)std::floor(std::log2(std::max(width, std::max(height, depth))));
@@ -995,7 +961,6 @@ namespace vkcv
 									uint32_t windowWidth,
 									uint32_t windowHeight,
 									bool resizeable) {
-
 		WindowHandle windowHandle = m_WindowManager->createWindow(*m_SwapchainManager ,applicationName, windowWidth, windowHeight, resizeable);
 		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchain();
 		setSwapchainImages( swapchainHandle );
