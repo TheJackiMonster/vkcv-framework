@@ -1,0 +1,88 @@
+#version 450 core
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_ARB_separate_shader_objects : enable
+#extension GL_EXT_nonuniform_qualifier : enable
+
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+
+#include "physics.inc"
+
+layout(set=0, binding=0) uniform sampler smokeSampler;
+layout(set=0, binding=1) uniform texture3D smokeTextures [];
+
+layout(set=1, binding=0, rgba16) uniform image3D fluidImage;
+
+layout( push_constant ) uniform constants{
+    uint smokeTextureIndex;
+    float dt;
+};
+
+vec4 getDataFrom(vec3 position, vec3 offset) {
+    return texture(
+        sampler3D(
+            smokeTextures[nonuniformEXT(smokeTextureIndex)],
+            smokeSampler
+        ),
+        position + offset
+    );
+}
+
+shared vec4 cachedData [4][4][4];
+
+void storeCachedData(vec3 position) {
+    uvec3 localId = gl_LocalInvocationID;
+    cachedData[localId.x][localId.y][localId.z] = getDataFrom(position, vec3(0));
+}
+
+vec4 getCachedData() {
+    uvec3 localId = gl_LocalInvocationID;
+    return cachedData[localId.x][localId.y][localId.z];
+}
+
+vec4 loadCachedData(vec3 position, ivec3 offset, ivec3 size) {
+    uvec3 localId = gl_LocalInvocationID;
+    ivec3 index = ivec3(localId) + offset;
+
+    if ((any(lessThan(index, ivec3(0)))) || (any(greaterThan(index, ivec3(gl_WorkGroupSize))))) {
+        return getDataFrom(position, vec3(offset) / vec3(size));
+    } else {
+        return cachedData[index.x][index.y][index.z];
+    }
+}
+
+void main() {
+    uvec3 id = gl_GlobalInvocationID;
+    ivec3 size = imageSize(fluidImage);
+
+    if (any(greaterThanEqual(id, size))) {
+        return;
+    }
+
+    vec3 position = (vec3(id) + vec3(0.5f)) / vec3(size);
+
+    storeCachedData(position);
+    memoryBarrierShared();
+    barrier();
+
+    const float flowSpeed = 1.0f;
+    const float flowChange = flowSpeed * dt;
+
+    vec4 extData [6];
+
+    extData[0] = loadCachedData(position, ivec3(+1, 0, 0), size);
+    extData[1] = loadCachedData(position, ivec3(-1, 0, 0), size);
+    extData[2] = loadCachedData(position, ivec3(0, +1, 0), size);
+    extData[3] = loadCachedData(position, ivec3(0, -1, 0), size);
+    extData[4] = loadCachedData(position, ivec3(0, 0, +1), size);
+    extData[5] = loadCachedData(position, ivec3(0, 0, -1), size);
+
+    vec4 data = vec4(0);
+
+    for (uint i = 0; i < 6; i++) {
+        data += extData[i];
+    }
+
+    data = mix(getCachedData(), (data / 6), flowChange);
+
+    imageStore(fluidImage, ivec3(id), data);
+}

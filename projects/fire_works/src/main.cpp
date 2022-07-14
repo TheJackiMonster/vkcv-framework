@@ -49,7 +49,7 @@ struct draw_particles_t {
 };
 
 #define PARTICLE_COUNT 1024
-#define SMOKE_COUNT 1024
+#define SMOKE_COUNT 256
 #define SMOKE_RESOLUTION 4
 #define RANDOM_DATA_LENGTH 1024
 
@@ -130,7 +130,10 @@ int main(int argc, const char **argv) {
 		generationShader.addShader(shaderStage, path);
 	});
 	
-	vkcv::DescriptorSetLayoutHandle generationDescriptorLayout = core.createDescriptorSetLayout(generationShader.getReflectedDescriptors().at(1));
+	vkcv::DescriptorSetLayoutHandle generationDescriptorLayout = core.createDescriptorSetLayout(
+		generationShader.getReflectedDescriptors().at(1)
+	);
+	
 	vkcv::DescriptorSetHandle generationDescriptorSet = core.createDescriptorSet(generationDescriptorLayout);
 	
 	vkcv::DescriptorBindings descriptorBindings1;
@@ -202,8 +205,28 @@ int main(int argc, const char **argv) {
 	auto smokeImagesBindings = smokeShaderProgram.getReflectedDescriptors().at(1);
 	smokeImagesBindings[1].descriptorCount = SMOKE_COUNT;
 	
+	smokeImagesBindings[0].shaderStages |= vkcv::ShaderStage::COMPUTE;
+	smokeImagesBindings[1].shaderStages |= vkcv::ShaderStage::COMPUTE;
+	
 	vkcv::DescriptorSetLayoutHandle smokeImagesDescriptorLayout = core.createDescriptorSetLayout(smokeImagesBindings);
 	vkcv::DescriptorSetHandle smokeImagesDescriptorSet = core.createDescriptorSet(smokeImagesDescriptorLayout);
+	
+	vkcv::ShaderProgram fluidShader;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/fluid.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		fluidShader.addShader(shaderStage, path);
+	});
+	
+	vkcv::DescriptorSetLayoutHandle fluidImageDescriptorSetLayout = core.createDescriptorSetLayout(
+		fluidShader.getReflectedDescriptors().at(1)
+	);
+	
+	vkcv::ComputePipelineHandle fluidPipeline = core.createComputePipeline({
+		fluidShader,
+		{
+			smokeImagesDescriptorLayout,
+			fluidImageDescriptorSetLayout
+		}
+	});
 	
 	std::vector<particle_t> particles;
 	particles.reserve(PARTICLE_COUNT);
@@ -342,7 +365,7 @@ int main(int argc, const char **argv) {
 	}
 	
 	std::vector<vkcv::ImageHandle> smokeImages;
-	smokes.reserve(smokes.size());
+	smokeImages.reserve(smokes.size());
 	
 	std::vector<uint64_t> imageData;
 	imageData.resize(SMOKE_RESOLUTION * SMOKE_RESOLUTION * SMOKE_RESOLUTION, 0);
@@ -362,6 +385,22 @@ int main(int argc, const char **argv) {
 		smokeImages.push_back(image.getHandle());
 	}
 	
+	std::vector<vkcv::ImageHandle> fluidImages;
+	fluidImages.reserve(smokeImages.size());
+	
+	for (size_t i = 0; i < smokeImages.size(); i++) {
+		vkcv::Image image = core.createImage(
+			vk::Format::eR16G16B16A16Sfloat,
+			SMOKE_RESOLUTION,
+			SMOKE_RESOLUTION,
+			SMOKE_RESOLUTION,
+			false,
+			true
+		);
+		
+		fluidImages.push_back(image.getHandle());
+	}
+	
 	vkcv::SamplerHandle smokeSampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerFilterType::LINEAR,
@@ -372,12 +411,16 @@ int main(int argc, const char **argv) {
 	{
 		vkcv::DescriptorWrites writes;
 		writes.writeSampler(0, smokeSampler);
-		
-		for (size_t i = 0; i < smokeImages.size(); i++) {
-			writes.writeSampledImage(1, smokeImages[i], 0, false, i);
-		}
-		
 		core.writeDescriptorSet(smokeImagesDescriptorSet, writes);
+	}
+	
+	std::vector<vkcv::DescriptorSetHandle> fluidImagesDescriptorSets;
+	fluidImagesDescriptorSets.reserve(smokeImages.size());
+	
+	for (size_t i = 0; i < smokeImages.size(); i++) {
+		fluidImagesDescriptorSets.push_back(core.createDescriptorSet(
+			fluidImageDescriptorSetLayout
+		));
 	}
 	
 	vkcv::Buffer<glm::vec3> cubePositions = core.createBuffer<glm::vec3>(vkcv::BufferType::VERTEX, 8);
@@ -595,6 +638,22 @@ int main(int argc, const char **argv) {
 		
 		current = next;
 		
+		{
+			vkcv::DescriptorWrites writes;
+		
+			for (size_t i = 0; i < smokeImages.size(); i++) {
+				writes.writeSampledImage(1, smokeImages[i], 0, false, i);
+			}
+		
+			core.writeDescriptorSet(smokeImagesDescriptorSet, writes);
+		}
+		
+		for (size_t i = 0; i < smokeImages.size(); i++) {
+			vkcv::DescriptorWrites writes;
+			writes.writeStorageImage(0, fluidImages[i]);
+			core.writeDescriptorSet(fluidImagesDescriptorSets[i], writes);
+		}
+		
 		float time_values [2];
 		time_values[0] = static_cast<float>(0.000001 * static_cast<double>(time.count()));
 		time_values[1] = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
@@ -646,6 +705,36 @@ int main(int argc, const char **argv) {
 			{ vkcv::DescriptorSetUsage(0, descriptorSet) },
 			pushConstantsTime
 		);
+		core.recordEndDebugLabel(cmdStream);
+		
+		uint32_t fluidDispatchCount[3];
+		fluidDispatchCount[0] = std::ceil(SMOKE_RESOLUTION / 4.f);
+		fluidDispatchCount[1] = std::ceil(SMOKE_RESOLUTION / 4.f);
+		fluidDispatchCount[2] = std::ceil(SMOKE_RESOLUTION / 4.f);
+		
+		core.recordBeginDebugLabel(cmdStream, "Flow simulation", { 0.1f, 0.5f, 1.0f, 1.0f });
+		for (size_t i = 0; i < smokeImages.size(); i++) {
+			float fluid_values [2];
+			reinterpret_cast<uint*>(fluid_values)[0] = static_cast<uint>(i);
+			fluid_values[1] = time_values[1];
+			
+			vkcv::PushConstants pushConstantsFluid (2 * sizeof(float));
+			pushConstantsFluid.appendDrawcall(fluid_values);
+			
+			core.prepareImageForSampling(cmdStream, smokeImages[i]);
+			core.prepareImageForStorage(cmdStream, fluidImages[i]);
+			
+			core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				fluidPipeline,
+				fluidDispatchCount,
+				{
+					vkcv::DescriptorSetUsage(0, smokeImagesDescriptorSet),
+					vkcv::DescriptorSetUsage(1, fluidImagesDescriptorSets[i])
+				},
+				pushConstantsFluid
+			);
+		}
 		core.recordEndDebugLabel(cmdStream);
 		
 		cameraManager.update(time_values[1]);
@@ -736,6 +825,10 @@ int main(int argc, const char **argv) {
 		gui.endGUI();
 		
 		core.endFrame(windowHandle);
+		
+		for (size_t i = 0; i < smokeImages.size(); i++) {
+			std::swap(smokeImages[i], fluidImages[i]);
+		}
 	}
 	
 	return 0;
