@@ -50,7 +50,7 @@ struct draw_particles_t {
 
 #define PARTICLE_COUNT 1024
 #define SMOKE_COUNT 256
-#define SMOKE_RESOLUTION 4
+#define SMOKE_RESOLUTION 16
 #define RANDOM_DATA_LENGTH 1024
 
 int main(int argc, const char **argv) {

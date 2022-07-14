@@ -12,18 +12,35 @@ layout(location = 0) out vec4 outColor;
 layout(set=1, binding=0) uniform sampler smokeSampler;
 layout(set=1, binding=1) uniform texture3D smokeTextures [];
 
+#define NUM_SMOKE_SAMPLES 8
+
 void main()	{
     if (passSize <= 0.0f) {
         discard;
     }
 
-    vec4 data = texture(
-        sampler3D(
-            smokeTextures[nonuniformEXT(passTextureIndex)],
-            smokeSampler
-        ),
-        vec3(0.0f)
-    );
+    vec3 start = (vec3(1.0f) + passPos) * 0.5f;
+    vec3 end = (vec3(1.0f) - passPos) * 0.5f;
 
-    outColor = vec4(passColor + data.rgb, 0.1f + data.a);
+    vec4 result = vec4(0);
+
+    for (uint i = 0; i < NUM_SMOKE_SAMPLES; i++) {
+#if NUM_SMOKE_SAMPLES > 1
+        vec3 position = mix(end, start, vec3(i) / (NUM_SMOKE_SAMPLES - 1));
+#else
+        vec3 position = end;
+#endif
+
+        vec4 data = texture(
+            sampler3D(
+                smokeTextures[nonuniformEXT(passTextureIndex)],
+                smokeSampler
+            ),
+            position
+        );
+
+        result = vec4(mix(result.rgb, data.rgb, data.a), min(result.a + data.a, 1.0f));
+    }
+
+    outColor = vec4(passColor * result.rgb, 0.1f * result.a);
 }
