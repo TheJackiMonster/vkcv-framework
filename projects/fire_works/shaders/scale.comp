@@ -29,13 +29,16 @@ void main() {
 
     vec3 position = smokes[id].position;
     float size = smokes[id].size;
+    vec3 velocity = smokes[id].velocity;
 
-    const float velocity = smokes[id].velocity;
+    const float scaling = smokes[id].scaling;
     const float fading = 1.0f / (1.0f + friction);
 
-    position = position + vec3(0.0f, -g * fading, 0.0f) * dt * dt;
-    size = size / fading + velocity * dt;
+    position = position + velocity * dt;
+    velocity = velocity * fading + vec3(0.0f, -g, 0.0f) * dt;
+    size = size + scaling * dt;
 
     smokes[id].position = position;
     smokes[id].size = size;
+    smokes[id].velocity = velocity;
 }

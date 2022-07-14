@@ -36,8 +36,10 @@ struct event_t {
 struct smoke_t {
 	glm::vec3 position;
 	float size;
+	glm::vec3 velocity;
+	float scaling;
 	glm::vec3 color;
-	float velocity;
+	float pad;
 };
 
 struct draw_particles_t {
@@ -154,6 +156,14 @@ int main(int argc, const char **argv) {
 		particleShaderProgram.addShader(shaderStage, path);
 	});
 	
+	vkcv::ShaderProgram smokeShaderProgram;
+	compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/smoke.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		smokeShaderProgram.addShader(shaderStage, path);
+	});
+	compiler.compile(vkcv::ShaderStage::FRAGMENT, "shaders/smoke.frag", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		smokeShaderProgram.addShader(shaderStage, path);
+	});
+	
 	std::vector<particle_t> particles;
 	particles.reserve(1024);
 	
@@ -258,8 +268,10 @@ int main(int argc, const char **argv) {
 		smoke.position = glm::vec3(0.0f);
 		smoke.size = 0.0f;
 		
+		smoke.velocity = glm::vec3(0.0f);
+		smoke.scaling = 0.0f;
+		
 		smoke.color = glm::vec3(0.0f);
-		smoke.velocity = 0.0f;
 		
 		smokes.push_back(smoke);
 	}
@@ -286,6 +298,89 @@ int main(int argc, const char **argv) {
 		core.writeDescriptorSet(smokeDescriptorSet, writes);
 	}
 	
+	vkcv::Buffer<glm::vec3> cubePositions = core.createBuffer<glm::vec3>(vkcv::BufferType::VERTEX, 8);
+	cubePositions.fill({
+		glm::vec3(-1.0f, -1.0f, -1.0f),
+		glm::vec3(+1.0f, -1.0f, -1.0f),
+		glm::vec3(-1.0f, +1.0f, -1.0f),
+		glm::vec3(+1.0f, +1.0f, -1.0f),
+		glm::vec3(-1.0f, -1.0f, +1.0f),
+		glm::vec3(+1.0f, -1.0f, +1.0f),
+		glm::vec3(-1.0f, +1.0f, +1.0f),
+		glm::vec3(+1.0f, +1.0f, +1.0f)
+	});
+	
+	vkcv::Buffer<uint16_t> cubeIndices = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 36);
+	cubeIndices.fill({
+		0, 2, 3,
+		0, 3, 1,
+		1, 3, 7,
+		1, 7, 5,
+		
+		5, 7, 6,
+		5, 6, 4,
+		4, 6, 2,
+		4, 2, 0,
+		
+		2, 6, 7,
+		2, 7, 3,
+		1, 5, 4,
+		1, 4, 0
+	});
+	
+	vkcv::Mesh cubeMesh (
+		{ vkcv::VertexBufferBinding(0, cubePositions.getVulkanHandle()) },
+		cubeIndices.getVulkanHandle(),
+		cubeIndices.getCount()
+	);
+	
+	const std::vector<vkcv::VertexAttachment> vaSmoke = smokeShaderProgram.getVertexAttachments();
+	
+	std::vector<vkcv::VertexBinding> vbSmoke;
+	for (size_t i = 0; i < vaSmoke.size(); i++) {
+		vbSmoke.push_back(vkcv::createVertexBinding(i, { vaSmoke[i] }));
+	}
+	
+	const vkcv::VertexLayout smokeLayout { vbSmoke };
+	
+	vkcv::PassHandle smokePass = core.createPass(vkcv::PassConfig(
+		{
+			vkcv::AttachmentDescription(
+				vkcv::AttachmentOperation::STORE,
+				vkcv::AttachmentOperation::LOAD,
+				colorFormat
+			),
+			vkcv::AttachmentDescription(
+				vkcv::AttachmentOperation::DONT_CARE,
+				vkcv::AttachmentOperation::LOAD,
+				depthFormat
+			)
+		},
+		vkcv::Multisampling::None
+	));
+	
+	vkcv::GraphicsPipelineConfig smokePipelineDefinition{
+		smokeShaderProgram,
+		UINT32_MAX,
+		UINT32_MAX,
+		smokePass,
+		{smokeLayout},
+		{smokeDescriptorLayout},
+		true
+	};
+	
+	smokePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
+	
+	vkcv::GraphicsPipelineHandle smokePipeline = core.createGraphicsPipeline(smokePipelineDefinition);
+	
+	std::vector<vkcv::DrawcallInfo> drawcallsSmokes;
+	
+	drawcallsSmokes.push_back(vkcv::DrawcallInfo(
+		cubeMesh,
+		{ vkcv::DescriptorSetUsage(0, smokeDescriptorSet) },
+		smokeBuffer.getCount()
+	));
+	
 	vkcv::Buffer<glm::vec2> trianglePositions = core.createBuffer<glm::vec2>(vkcv::BufferType::VERTEX, 3);
 	trianglePositions.fill({
 		glm::vec2(-1.0f, -1.0f),
@@ -304,33 +399,30 @@ int main(int argc, const char **argv) {
 		triangleIndices.getCount()
 	);
 	
-	const std::vector<vkcv::VertexAttachment> vertexAttachments = particleShaderProgram.getVertexAttachments();
+	const std::vector<vkcv::VertexAttachment> vaParticles = particleShaderProgram.getVertexAttachments();
 	
-	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::VertexBufferBinding(0, trianglePositions.getVulkanHandle())
-	};
-	
-	std::vector<vkcv::VertexBinding> bindings;
-	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::createVertexBinding(i, {vertexAttachments[i]}));
+	std::vector<vkcv::VertexBinding> vbParticles;
+	for (size_t i = 0; i < vaParticles.size(); i++) {
+		vbParticles.push_back(vkcv::createVertexBinding(i, { vaParticles[i] }));
 	}
 
-	const vkcv::VertexLayout particleLayout { bindings };
+	const vkcv::VertexLayout particleLayout { vbParticles };
 	
-	const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		colorFormat
-	);
-	
-	const vkcv::AttachmentDescription depth_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		depthFormat
-	);
-	
-	vkcv::PassConfig particlePassDefinition({present_color_attachment, depth_attachment}, vkcv::Multisampling::None);
-	vkcv::PassHandle particlePass = core.createPass(particlePassDefinition);
+	vkcv::PassHandle particlePass = core.createPass(vkcv::PassConfig(
+		{
+			vkcv::AttachmentDescription(
+				vkcv::AttachmentOperation::STORE,
+				vkcv::AttachmentOperation::CLEAR,
+				colorFormat
+			),
+			vkcv::AttachmentDescription(
+				vkcv::AttachmentOperation::STORE,
+				vkcv::AttachmentOperation::CLEAR,
+				depthFormat
+			)
+		},
+		vkcv::Multisampling::None
+	));
 
 	vkcv::GraphicsPipelineConfig particlePipelineDefinition{
 		particleShaderProgram,
@@ -432,6 +524,7 @@ int main(int argc, const char **argv) {
 		vkcv::PushConstants pushConstantsTime (2 * sizeof(float));
 		pushConstantsTime.appendDrawcall(time_values);
 		
+		core.recordBeginDebugLabel(cmdStream, "Generation", { 0.0f, 0.0f, 1.0f, 1.0f });
 		core.recordComputeDispatchToCmdStream(
 			cmdStream,
 			generationPipeline,
@@ -443,22 +536,24 @@ int main(int argc, const char **argv) {
 			},
 			pushConstantsTime
 		);
+		core.recordEndDebugLabel(cmdStream);
 		
 		uint32_t smokeDispatchCount[3];
 		smokeDispatchCount[0] = std::ceil(smokeBuffer.getCount() / 256.f);
 		smokeDispatchCount[1] = 1;
 		smokeDispatchCount[2] = 1;
 		
+		core.recordBeginDebugLabel(cmdStream, "Smoke scaling", { 0.0f, 0.0f, 1.0f, 1.0f });
 		core.recordComputeDispatchToCmdStream(
 			cmdStream,
 			scalePipeline,
 			smokeDispatchCount,
-			{
-				vkcv::DescriptorSetUsage(0, smokeDescriptorSet)
-			},
+			{ vkcv::DescriptorSetUsage(0, smokeDescriptorSet) },
 			pushConstantsTime
 		);
+		core.recordEndDebugLabel(cmdStream);
 		
+		core.recordBeginDebugLabel(cmdStream, "Particle motion", { 0.0f, 0.0f, 1.0f, 1.0f });
 		core.recordComputeDispatchToCmdStream(
 			cmdStream,
 			motionPipeline,
@@ -466,6 +561,7 @@ int main(int argc, const char **argv) {
 			{ vkcv::DescriptorSetUsage(0, descriptorSet) },
 			pushConstantsTime
 		);
+		core.recordEndDebugLabel(cmdStream);
 		
 		cameraManager.update(time_values[1]);
 		
@@ -477,21 +573,39 @@ int main(int argc, const char **argv) {
 			swapchainHeight
 		};
 		
-		vkcv::PushConstants pushConstantsDraw (sizeof(draw_particles_t));
-		pushConstantsDraw.appendDrawcall(draw_particles);
+		vkcv::PushConstants pushConstantsDraw0 (sizeof(draw_particles_t));
+		pushConstantsDraw0.appendDrawcall(draw_particles);
 		
+		core.recordBeginDebugLabel(cmdStream, "Draw particles", { 1.0f, 0.0f, 1.0f, 1.0f });
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			particlePass,
 			particlePipeline,
-			pushConstantsDraw,
+			pushConstantsDraw0,
 			{ drawcallsParticles },
 			{ colorBuffer, depthBuffer },
 			windowHandle
 		);
+		core.recordEndDebugLabel(cmdStream);
+		
+		core.recordBeginDebugLabel(cmdStream, "Draw smoke", { 1.0f, 0.5f, 1.0f, 1.0f });
+		vkcv::PushConstants pushConstantsDraw1 (sizeof(glm::mat4));
+		pushConstantsDraw1.appendDrawcall(camera.getMVP());
+		
+		core.recordDrawcallsToCmdStream(
+			cmdStream,
+			smokePass,
+			smokePipeline,
+			pushConstantsDraw1,
+			{ drawcallsSmokes },
+			{ colorBuffer, depthBuffer },
+			windowHandle
+		);
+		core.recordEndDebugLabel(cmdStream);
 		
 		bloomAndFlares.recordEffect(cmdStream, colorBuffer, colorBuffer);
 		
+		core.recordBeginDebugLabel(cmdStream, "Tonemapping", { 0.0f, 1.0f, 0.0f, 1.0f });
 		core.prepareImageForStorage(cmdStream, colorBuffer);
 		core.prepareImageForStorage(cmdStream, swapchainImage);
 		
@@ -508,7 +622,7 @@ int main(int argc, const char **argv) {
 		tonemappingDispatchCount[0] = std::ceil(swapchainWidth / 8.f);
 		tonemappingDispatchCount[1] = std::ceil(swapchainHeight / 8.f);
 		tonemappingDispatchCount[2] = 1;
-
+		
 		core.recordComputeDispatchToCmdStream(
 			cmdStream,
 			tonemappingPipe,
@@ -516,6 +630,8 @@ int main(int argc, const char **argv) {
 			{vkcv::DescriptorSetUsage(0, tonemappingDescriptor) },
 			vkcv::PushConstants(0)
 		);
+		
+		core.recordEndDebugLabel(cmdStream);
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

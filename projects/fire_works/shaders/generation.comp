@@ -112,8 +112,9 @@ void main() {
         const uint index = atomicAdd(smokeIndex, 1) % smokes.length();
 
         smokes[index].position = particles[id].position;
-        smokes[index].size = size;
-        smokes[index].color = color;
-        smokes[index].velocity = v;
+        smokes[index].size = size * 0.25f;
+        smokes[index].velocity = velocity;
+        smokes[index].scaling = v * 0.25f;
+        smokes[index].color = mix(color, vec3(1.0f), 0.75f);
     }
 }

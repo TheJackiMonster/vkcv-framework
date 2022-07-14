@@ -4,8 +4,10 @@
 struct smoke_t {
 	vec3 position;
 	float size;
+	vec3 velocity;
+	float scaling;
 	vec3 color;
-	float velocity;
+	float pad;
 };
 
 #endif // SMOKE_INC
