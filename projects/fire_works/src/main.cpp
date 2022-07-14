@@ -712,6 +712,10 @@ int main(int argc, const char **argv) {
 		fluidDispatchCount[1] = std::ceil(SMOKE_RESOLUTION / 4.f);
 		fluidDispatchCount[2] = std::ceil(SMOKE_RESOLUTION / 4.f);
 		
+		// TODO: write initial event smoke!
+		
+		// TODO: write smoke interaction from particles!
+		
 		core.recordBeginDebugLabel(cmdStream, "Flow simulation", { 0.1f, 0.5f, 1.0f, 1.0f });
 		for (size_t i = 0; i < smokeImages.size(); i++) {
 			float fluid_values [2];
