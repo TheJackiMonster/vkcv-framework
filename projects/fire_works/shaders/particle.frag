@@ -1,8 +1,8 @@
 #version 450
 
 layout(location = 0) in vec2 passPos;
-layout(location = 1) in vec3 passColor;
-layout(location = 2) in float passLifetime;
+layout(location = 1) in flat vec3 passColor;
+layout(location = 2) in flat float passLifetime;
 
 layout(location = 0) out vec3 outColor;
 

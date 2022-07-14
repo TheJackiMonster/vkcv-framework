@@ -10,8 +10,8 @@ layout(set=0, binding=0, std430) readonly buffer particleBuffer {
 layout(location = 0) in vec2 vertexPos;
 
 layout(location = 0) out vec2 passPos;
-layout(location = 1) out vec3 passColor;
-layout(location = 2) out float passLifetime;
+layout(location = 1) out flat vec3 passColor;
+layout(location = 2) out flat float passLifetime;
 
 layout( push_constant ) uniform constants{
     mat4 mvp;

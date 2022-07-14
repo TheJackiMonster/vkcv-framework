@@ -48,12 +48,47 @@ struct draw_particles_t {
 	uint height;
 };
 
+#define PARTICLE_COUNT 1024
+#define SMOKE_COUNT 1024
+#define SMOKE_RESOLUTION 4
+#define RANDOM_DATA_LENGTH 1024
+
 int main(int argc, const char **argv) {
+	vkcv::Features features;
+	
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
+		VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, [](vk::PhysicalDeviceDescriptorIndexingFeatures &features) {
+			features.setShaderInputAttachmentArrayDynamicIndexing(true);
+			features.setShaderUniformTexelBufferArrayDynamicIndexing(true);
+			features.setShaderStorageTexelBufferArrayDynamicIndexing(true);
+			features.setShaderUniformBufferArrayNonUniformIndexing(true);
+			features.setShaderSampledImageArrayNonUniformIndexing(true);
+			features.setShaderStorageBufferArrayNonUniformIndexing(true);
+			features.setShaderStorageImageArrayNonUniformIndexing(true);
+			features.setShaderInputAttachmentArrayNonUniformIndexing(true);
+			features.setShaderUniformTexelBufferArrayNonUniformIndexing(true);
+			features.setShaderStorageTexelBufferArrayNonUniformIndexing(true);
+			
+			features.setDescriptorBindingUniformBufferUpdateAfterBind(true);
+			features.setDescriptorBindingSampledImageUpdateAfterBind(true);
+			features.setDescriptorBindingStorageImageUpdateAfterBind(true);
+			features.setDescriptorBindingStorageBufferUpdateAfterBind(true);
+			features.setDescriptorBindingUniformTexelBufferUpdateAfterBind(true);
+			features.setDescriptorBindingStorageTexelBufferUpdateAfterBind(true);
+
+			features.setDescriptorBindingUpdateUnusedWhilePending(true);
+			features.setDescriptorBindingPartiallyBound(true);
+			features.setDescriptorBindingVariableDescriptorCount(true);
+			features.setRuntimeDescriptorArray(true);
+		}
+	);
+	
 	vkcv::Core core = vkcv::Core::create(
 		"Firework",
 		VK_MAKE_VERSION(0, 0, 1),
 		{vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
-		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
+		features
 	);
 	
 	vkcv::WindowHandle windowHandle = core.createWindow("Firework", 800, 600, true);
@@ -164,10 +199,16 @@ int main(int argc, const char **argv) {
 		smokeShaderProgram.addShader(shaderStage, path);
 	});
 	
-	std::vector<particle_t> particles;
-	particles.reserve(1024);
+	auto smokeImagesBindings = smokeShaderProgram.getReflectedDescriptors().at(1);
+	smokeImagesBindings[1].descriptorCount = SMOKE_COUNT;
 	
-	for (size_t i = 0; i < 1024; i++) {
+	vkcv::DescriptorSetLayoutHandle smokeImagesDescriptorLayout = core.createDescriptorSetLayout(smokeImagesBindings);
+	vkcv::DescriptorSetHandle smokeImagesDescriptorSet = core.createDescriptorSet(smokeImagesDescriptorLayout);
+	
+	std::vector<particle_t> particles;
+	particles.reserve(PARTICLE_COUNT);
+	
+	for (size_t i = 0; i < PARTICLE_COUNT; i++) {
 		particle_t particle;
 		particle.position = glm::vec3(
 			2.0f * (std::rand() % RAND_MAX) / RAND_MAX - 1.0f,
@@ -197,7 +238,9 @@ int main(int argc, const char **argv) {
 	}
 	
 	std::vector<float> randomData;
-	for (size_t i = 0; i < 1024; i++) {
+	randomData.reserve(RANDOM_DATA_LENGTH);
+	
+	for (size_t i = 0; i < RANDOM_DATA_LENGTH; i++) {
 		randomData.push_back(
 			2.0f * static_cast<float>(std::rand() % RAND_MAX) / static_cast<float>(RAND_MAX) - 1.0f
 		);
@@ -261,9 +304,9 @@ int main(int argc, const char **argv) {
 	}
 	
 	std::vector<smoke_t> smokes;
-	smokes.reserve(1024);
+	smokes.reserve(SMOKE_COUNT);
 	
-	for (size_t i = 0; i < 1024; i++) {
+	for (size_t i = 0; i < SMOKE_COUNT; i++) {
 		smoke_t smoke;
 		smoke.position = glm::vec3(0.0f);
 		smoke.size = 0.0f;
@@ -296,6 +339,45 @@ int main(int argc, const char **argv) {
 		writes.writeStorageBuffer(0, smokeBuffer.getHandle());
 		writes.writeStorageBuffer(1, smokeIndexBuffer.getHandle());
 		core.writeDescriptorSet(smokeDescriptorSet, writes);
+	}
+	
+	std::vector<vkcv::ImageHandle> smokeImages;
+	smokes.reserve(smokes.size());
+	
+	std::vector<uint64_t> imageData;
+	imageData.resize(SMOKE_RESOLUTION * SMOKE_RESOLUTION * SMOKE_RESOLUTION, 0);
+	
+	for (size_t i = 0; i < smokes.size(); i++) {
+		vkcv::Image image = core.createImage(
+			vk::Format::eR16G16B16A16Sfloat,
+			SMOKE_RESOLUTION,
+			SMOKE_RESOLUTION,
+			SMOKE_RESOLUTION,
+			false,
+			true
+		);
+		
+		image.fill(imageData.data());
+		
+		smokeImages.push_back(image.getHandle());
+	}
+	
+	vkcv::SamplerHandle smokeSampler = core.createSampler(
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerFilterType::LINEAR,
+		vkcv::SamplerMipmapMode::LINEAR,
+		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
+	);
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.writeSampler(0, smokeSampler);
+		
+		for (size_t i = 0; i < smokeImages.size(); i++) {
+			writes.writeSampledImage(1, smokeImages[i], 0, false, i);
+		}
+		
+		core.writeDescriptorSet(smokeImagesDescriptorSet, writes);
 	}
 	
 	vkcv::Buffer<glm::vec3> cubePositions = core.createBuffer<glm::vec3>(vkcv::BufferType::VERTEX, 8);
@@ -365,7 +447,7 @@ int main(int argc, const char **argv) {
 		UINT32_MAX,
 		smokePass,
 		{smokeLayout},
-		{smokeDescriptorLayout},
+		{smokeDescriptorLayout, smokeImagesDescriptorLayout},
 		true
 	};
 	
@@ -377,7 +459,10 @@ int main(int argc, const char **argv) {
 	
 	drawcallsSmokes.push_back(vkcv::DrawcallInfo(
 		cubeMesh,
-		{ vkcv::DescriptorSetUsage(0, smokeDescriptorSet) },
+		{
+			vkcv::DescriptorSetUsage(0, smokeDescriptorSet),
+			vkcv::DescriptorSetUsage(1, smokeImagesDescriptorSet)
+		},
 		smokeBuffer.getCount()
 	));
 	
