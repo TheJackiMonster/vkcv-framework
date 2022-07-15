@@ -64,7 +64,6 @@ void main() {
     memoryBarrierShared();
     barrier();
 
-    const float flowSpeed = 1.0f;
     const float flowChange = flowSpeed * dt;
 
     vec4 extData [6];

@@ -12,6 +12,10 @@ layout(location = 0) out vec4 outColor;
 layout(set=1, binding=0) uniform sampler smokeSampler;
 layout(set=1, binding=1) uniform texture3D smokeTextures [];
 
+layout(set=2, binding=0, std430) readonly buffer randomBuffer {
+    float randomData [];
+};
+
 #define NUM_SMOKE_SAMPLES 8
 
 void main()	{
@@ -39,8 +43,15 @@ void main()	{
             position
         );
 
-        result = vec4(mix(result.rgb, data.rgb, data.a), min(result.a + data.a, 1.0f));
+        const uint randomIndex = (passTextureIndex * NUM_SMOKE_SAMPLES + i) % randomData.length();
+        const float alpha = max(data.a * (randomData[randomIndex] + 1.0f) * 0.5f, 0.0f);
+
+        result = vec4(mix(result.rgb, data.rgb, alpha), min(result.a + alpha, 1.0f));
     }
 
-    outColor = vec4(passColor * result.rgb, 0.1f * result.a);
+    if (result.a <= 0.0f) {
+        discard;
+    }
+
+    outColor = vec4(passColor * result.rgb, result.a);
 }

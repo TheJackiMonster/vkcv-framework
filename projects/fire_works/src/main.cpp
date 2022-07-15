@@ -130,8 +130,11 @@ int main(int argc, const char **argv) {
 		generationShader.addShader(shaderStage, path);
 	});
 	
+	auto generationBindings = generationShader.getReflectedDescriptors().at(1);
+	generationBindings[0].shaderStages |= vkcv::ShaderStage::FRAGMENT;
+	
 	vkcv::DescriptorSetLayoutHandle generationDescriptorLayout = core.createDescriptorSetLayout(
-		generationShader.getReflectedDescriptors().at(1)
+		generationBindings
 	);
 	
 	vkcv::DescriptorSetHandle generationDescriptorSet = core.createDescriptorSet(generationDescriptorLayout);
@@ -225,6 +228,20 @@ int main(int argc, const char **argv) {
 		{
 			smokeImagesDescriptorLayout,
 			fluidImageDescriptorSetLayout
+		}
+	});
+	
+	vkcv::ShaderProgram gatherShader;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/gather.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		gatherShader.addShader(shaderStage, path);
+	});
+	
+	vkcv::ComputePipelineHandle gatherPipeline = core.createComputePipeline({
+		gatherShader,
+		{
+          descriptorSetLayout,
+          smokeDescriptorLayout,
+          fluidImageDescriptorSetLayout
 		}
 	});
 	
@@ -490,11 +507,12 @@ int main(int argc, const char **argv) {
 		UINT32_MAX,
 		smokePass,
 		{smokeLayout},
-		{smokeDescriptorLayout, smokeImagesDescriptorLayout},
+		{smokeDescriptorLayout, smokeImagesDescriptorLayout, generationDescriptorLayout},
 		true
 	};
 	
-	smokePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
+	smokePipelineDefinition.m_culling = vkcv::CullMode::Back;
+	smokePipelineDefinition.m_alphaToCoverage = true;
 	
 	vkcv::GraphicsPipelineHandle smokePipeline = core.createGraphicsPipeline(smokePipelineDefinition);
 	
@@ -504,7 +522,8 @@ int main(int argc, const char **argv) {
 		cubeMesh,
 		{
 			vkcv::DescriptorSetUsage(0, smokeDescriptorSet),
-			vkcv::DescriptorSetUsage(1, smokeImagesDescriptorSet)
+			vkcv::DescriptorSetUsage(1, smokeImagesDescriptorSet),
+			vkcv::DescriptorSetUsage(2, generationDescriptorSet)
 		},
 		smokeBuffer.getCount()
 	));
@@ -714,8 +733,6 @@ int main(int argc, const char **argv) {
 		
 		// TODO: write initial event smoke!
 		
-		// TODO: write smoke interaction from particles!
-		
 		core.recordBeginDebugLabel(cmdStream, "Flow simulation", { 0.1f, 0.5f, 1.0f, 1.0f });
 		for (size_t i = 0; i < smokeImages.size(); i++) {
 			float fluid_values [2];
@@ -737,6 +754,31 @@ int main(int argc, const char **argv) {
 					vkcv::DescriptorSetUsage(1, fluidImagesDescriptorSets[i])
 				},
 				pushConstantsFluid
+			);
+		}
+		core.recordEndDebugLabel(cmdStream);
+		
+		core.recordBeginDebugLabel(cmdStream, "Gather particles", { 0.5f, 0.5f, 1.0f, 1.0f });
+		for (size_t i = 0; i < smokeImages.size(); i++) {
+			float gather_values [2];
+			reinterpret_cast<uint*>(gather_values)[0] = static_cast<uint>(i);
+			gather_values[1] = time_values[1];
+			
+			vkcv::PushConstants pushConstantsGather (2 * sizeof(float));
+			pushConstantsGather.appendDrawcall(gather_values);
+			
+			core.prepareImageForStorage(cmdStream, fluidImages[i]);
+			
+			core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				gatherPipeline,
+				fluidDispatchCount,
+				{
+					vkcv::DescriptorSetUsage(0, descriptorSet),
+					vkcv::DescriptorSetUsage(1, smokeDescriptorSet),
+					vkcv::DescriptorSetUsage(2, fluidImagesDescriptorSets[i])
+				},
+				pushConstantsGather
 			);
 		}
 		core.recordEndDebugLabel(cmdStream);

@@ -7,10 +7,6 @@ layout(set=0, binding=0, std430) readonly buffer smokeBuffer {
     smoke_t smokes [];
 };
 
-layout(set=0, binding=1, std430) buffer smokeIndexBuffer {
-    uint smokeIndex;
-};
-
 layout(location = 0) in vec3 vertexPos;
 
 layout(location = 0) out vec3 passPos;

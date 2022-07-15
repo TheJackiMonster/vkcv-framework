@@ -1,0 +1,75 @@
+#version 450 core
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+
+#include "physics.inc"
+#include "particle.inc"
+
+layout(set=0, binding=0, std430) readonly buffer particleBuffer {
+    particle_t particles [];
+};
+
+#include "smoke.inc"
+
+layout(set=1, binding=0, std430) readonly buffer smokeBuffer {
+    smoke_t smokes [];
+};
+
+layout(set=2, binding=0, rgba16) uniform image3D fluidImage;
+
+layout( push_constant ) uniform constants{
+    uint smokeIndex;
+    float dt;
+};
+
+void main() {
+    uvec3 id = gl_GlobalInvocationID;
+    ivec3 size = imageSize(fluidImage);
+
+    if (any(greaterThanEqual(id, size))) {
+        return;
+    }
+
+    const float smokeSize = smokes[smokeIndex].size;
+
+    if (smokeSize <= 0.0f) {
+        return;
+    }
+
+    vec3 position = smokes[smokeIndex].position + (
+        (vec3(id) + vec3(0.5f)) / vec3(size) - vec3(0.5f)
+    ) * smokeSize;
+
+    vec4 data = imageLoad(fluidImage, ivec3(id));
+
+    const float oldSize = (smokeSize - smokes[smokeIndex].scaling * dt);
+    const float scaleFactor = oldSize / smokeSize;
+
+    data.a *= (scaleFactor * scaleFactor * scaleFactor);
+
+    const float smokeVolume = 0.75f * pi * (smokeSize * smokeSize * smokeSize);
+
+    memoryBarrierImage();
+    barrier();
+
+    const float flowChange = flowSpeed * dt;
+
+    for (uint i = 0; i < particles.length(); i++) {
+        vec3 offset = particles[i].position - position;
+        float pSize = particles[i].size;
+
+        if (length(offset) < pSize) {
+            const float pDensity = particles[i].mass / smokeVolume;
+
+            data = mix(data, vec4(particles[i].color, pDensity), flowChange);
+        }
+    }
+
+    imageStore(
+        fluidImage,
+        ivec3(id),
+        data
+    );
+}
