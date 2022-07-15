@@ -1,17 +1,18 @@
 
 #include "vkcv/DispatchSize.hpp"
+#include "vkcv/Logger.hpp"
 
 #include <cmath>
 
 namespace vkcv {
 	
 	DispatchSize::DispatchSize(uint32_t count)
-	: DispatchSize(count, 1, 1)
-	{}
+	: DispatchSize(count, 1, 1) {}
 	
 	DispatchSize::DispatchSize(uint32_t dimensionX, uint32_t dimentionY, uint32_t dimensionZ)
-	: m_Dispatch({ dimensionX, dimentionY, dimensionZ })
-	{}
+	: m_Dispatch({ dimensionX, dimentionY, dimensionZ }) {
+		check();
+	}
 	
 	const uint32_t *DispatchSize::data() const {
 		return m_Dispatch.data();
@@ -31,6 +32,26 @@ namespace vkcv {
 	
 	uint32_t DispatchSize::z() const {
 		return m_Dispatch[2];
+	}
+	
+	bool DispatchSize::check() const {
+		const uint32_t dimensionX = x();
+		const uint32_t dimensionY = y();
+		const uint32_t dimensionZ = z();
+		
+		if ((dimensionX <= 0) || (dimensionY <= 0) || (dimensionZ <= 0)) {
+			vkcv_log(
+					LogLevel::WARNING,
+					"Dispatch size invalid: x = %u, y = %u, z = %u",
+					dimensionX,
+					dimensionY,
+					dimensionZ
+			);
+			
+			return false;
+		} else {
+			return true;
+		}
 	}
 	
 	DispatchSize dispatchInvocations(DispatchSize globalInvocations, DispatchSize groupSize) {

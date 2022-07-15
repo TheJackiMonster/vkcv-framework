@@ -42,6 +42,8 @@ namespace vkcv {
 		[[nodiscard]]
 		uint32_t z() const;
 		
+		bool check() const;
+		
 	};
 	
 	[[nodiscard]]
