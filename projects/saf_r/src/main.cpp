@@ -278,14 +278,17 @@ int main(int argc, const char** argv) {
         pushConstantsCompute.appendDrawcall(raytracingPushData);
 
 		//dispatch compute shader
-		uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(swapchainWidth/16.f)),
-                                            static_cast<uint32_t> (std::ceil(swapchainHeight/16.f)),
-                                            1 }; // Anzahl workgroups
+		const auto computeDispatchCount = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(swapchainWidth, swapchainHeight),
+				vkcv::DispatchSize(16, 16)
+		);
+		
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			computePipeline,
 			computeDispatchCount,
 			{ vkcv::DescriptorSetUsage(0, computeDescriptorSet) },
-			pushConstantsCompute);
+			pushConstantsCompute
+		);
 
 		core.recordBufferMemoryBarrier(cmdStream, lightsBuffer.getHandle());
 

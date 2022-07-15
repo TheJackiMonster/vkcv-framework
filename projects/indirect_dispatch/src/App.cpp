@@ -223,7 +223,6 @@ void App::run() {
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
-			m_prePass.renderPass,
 			m_prePass.pipeline,
 			prepassPushConstants,
 			prepassSceneDrawcalls,
@@ -239,7 +238,6 @@ void App::run() {
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
-			m_skyPrePass.renderPass,
 			m_skyPrePass.pipeline,
 			skyPrepassPushConstants,
 			{ skyDrawcall },
@@ -266,7 +264,6 @@ void App::run() {
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
-			m_meshPass.renderPass,
 			m_meshPass.pipeline,
 			meshPushConstants,
 			forwardSceneDrawcalls,
@@ -279,7 +276,6 @@ void App::run() {
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
-			m_skyPass.renderPass,
 			m_skyPass.pipeline,
 			skyPushConstants,
 			{ skyDrawcall },
@@ -326,10 +322,10 @@ void App::run() {
 		m_core.prepareImageForSampling(cmdStream, motionBlurOutput);
 		m_core.prepareImageForStorage (cmdStream, swapchainInput);
 
-		const uint32_t fullScreenImageDispatch[3] = {
-			static_cast<uint32_t>((m_windowWidth  + 7) / 8),
-			static_cast<uint32_t>((m_windowHeight + 7) / 8),
-			static_cast<uint32_t>(1) };
+		const auto fullScreenImageDispatch = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(m_windowWidth, m_windowHeight),
+				vkcv::DispatchSize(8, 8)
+		);
 
 		m_core.recordComputeDispatchToCmdStream(
 			cmdStream,

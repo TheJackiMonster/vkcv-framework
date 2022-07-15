@@ -692,8 +692,12 @@ int main(int argc, const char **argv) {
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
-		const uint32_t dispatchSizeGrid[3] = {grid.getWidth() / 4, grid.getHeight() / 4, grid.getDepth() / 4};
-		const uint32_t dispatchSizeParticles[3] = {static_cast<uint32_t>(sim->count + 63) / 64, 1, 1};
+		const auto dispatchSizeGrid = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(grid.getWidth(), grid.getHeight(), grid.getDepth()),
+				vkcv::DispatchSize(4, 4, 4)
+		);
+		
+		const auto dispatchSizeParticles = vkcv::dispatchInvocations(sim->count, 64);
 		
 		for (int step = 0; step < 1; step++) {
 			core.recordBeginDebugLabel(cmdStream, "INIT PARTICLE WEIGHTS", {0.78f, 0.89f, 0.94f, 1.0f});
@@ -782,7 +786,6 @@ int main(int argc, const char **argv) {
 			
 			core.recordDrawcallsToCmdStream(
 					cmdStream,
-					gfxPassGrid,
 					gfxPipelineGrid,
 					cameraPushConstants,
 					drawcallsGrid,
@@ -797,7 +800,6 @@ int main(int argc, const char **argv) {
 			
 			core.recordDrawcallsToCmdStream(
 					cmdStream,
-					gfxPassParticles,
 					gfxPipelineParticles,
 					cameraPushConstants,
 					drawcallsParticles,
@@ -812,7 +814,6 @@ int main(int argc, const char **argv) {
 		
 		core.recordDrawcallsToCmdStream(
 				cmdStream,
-				gfxPassLines,
 				gfxPipelineLines,
 				cameraPushConstants,
 				drawcallsLines,

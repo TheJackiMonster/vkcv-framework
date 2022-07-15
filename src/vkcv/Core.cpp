@@ -441,7 +441,6 @@ namespace vkcv
 
 	void Core::recordDrawcallsToCmdStream(
 		const CommandStreamHandle&      cmdStreamHandle,
-		const PassHandle&               renderpassHandle,
 		const GraphicsPipelineHandle    &pipelineHandle,
         const PushConstants             &pushConstantData,
         const std::vector<DrawcallInfo> &drawcalls,
@@ -462,6 +461,10 @@ namespace vkcv
 		
 		const auto width  = widthHeight[0];
 		const auto height = widthHeight[1];
+		
+		const PassHandle &renderpassHandle = m_GraphicsPipelineManager->getPipelineConfig(
+				pipelineHandle
+		).getPass();
 
 		const vk::RenderPass        renderpass      = m_PassManager->getVkPass(renderpassHandle);
 		const PassConfig            passConfig      = m_PassManager->getPassConfig(renderpassHandle);
@@ -516,7 +519,6 @@ namespace vkcv
 
     void Core::recordIndexedIndirectDrawcallsToCmdStream(
             const CommandStreamHandle                           cmdStreamHandle,
-            const PassHandle                                    renderpassHandle,
             const GraphicsPipelineHandle                        &pipelineHandle,
             const PushConstants                                 &pushConstantData,
             const vkcv::DescriptorSetHandle                     &compiledDescriptorSet,
@@ -536,6 +538,10 @@ namespace vkcv
 				*m_ImageManager);
         const auto width = widthHeight[0];
         const auto height = widthHeight[1];
+	
+		const PassHandle &renderpassHandle = m_GraphicsPipelineManager->getPipelineConfig(
+				pipelineHandle
+		).getPass();
 
         const vk::RenderPass        renderpass      = m_PassManager->getVkPass(renderpassHandle);
         const PassConfig            passConfig      = m_PassManager->getPassConfig(renderpassHandle);
@@ -657,7 +663,6 @@ namespace vkcv
 
 	void Core::recordMeshShaderDrawcalls(
 		const CommandStreamHandle&                          cmdStreamHandle,
-		const PassHandle&                                   renderpassHandle,
 		const GraphicsPipelineHandle                        &pipelineHandle,
 		const PushConstants&                                pushConstantData,
 		const std::vector<MeshShaderDrawcall>&              drawcalls,
@@ -676,6 +681,10 @@ namespace vkcv
 				*m_ImageManager);
 		const auto width  = widthHeight[0];
 		const auto height = widthHeight[1];
+		
+		const PassHandle &renderpassHandle = m_GraphicsPipelineManager->getPipelineConfig(
+				pipelineHandle
+		).getPass();
 
 		const vk::RenderPass        renderpass = m_PassManager->getVkPass(renderpassHandle);
 		const PassConfig            passConfig = m_PassManager->getPassConfig(renderpassHandle);
@@ -781,15 +790,12 @@ namespace vkcv
 		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);
     }
 
-	void Core::recordComputeDispatchToCmdStream(
-		CommandStreamHandle cmdStreamHandle,
-		ComputePipelineHandle computePipeline,
-		const uint32_t dispatchCount[3],
-		const std::vector<DescriptorSetUsage>& descriptorSetUsages,
-		const PushConstants& pushConstants) {
-
+	void Core::recordComputeDispatchToCmdStream(const CommandStreamHandle& cmdStreamHandle,
+												const ComputePipelineHandle& computePipeline,
+												const DispatchSize& dispatchSize,
+												const std::vector<DescriptorSetUsage>& descriptorSetUsages,
+												const PushConstants& pushConstants) {
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
-
 			const auto pipelineLayout = m_ComputePipelineManager->getVkPipelineLayout(computePipeline);
 
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, m_ComputePipelineManager->getVkPipeline(computePipeline));
@@ -810,7 +816,8 @@ namespace vkcv
 					pushConstants.getSizePerDrawcall(),
 					pushConstants.getData());
 			}
-			cmdBuffer.dispatch(dispatchCount[0], dispatchCount[1], dispatchCount[2]);
+			
+			cmdBuffer.dispatch(dispatchSize.x(), dispatchSize.y(), dispatchSize.z());
 		};
 
 		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);

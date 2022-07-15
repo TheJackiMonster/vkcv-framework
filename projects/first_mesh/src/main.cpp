@@ -206,12 +206,13 @@ int main(int argc, const char** argv) {
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			firstMeshPass,
 			firstMeshPipeline,
 			pushConstants,
 			{ drawcall },
 			renderTargets,
-			windowHandle);
+			windowHandle
+		);
+		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
 		core.endFrame(windowHandle);

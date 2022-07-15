@@ -802,19 +802,18 @@ int main(int argc, const char** argv) {
 		for (const auto& m : modelMatrices) {
 			prepassPushConstants.appendDrawcall(viewProjectionCamera * m);
 		}
-
 		
 		const std::vector<vkcv::ImageHandle>    prepassRenderTargets = { depthBuffer };
 
 		core.recordBeginDebugLabel(cmdStream, "Depth prepass", { 1, 1, 1, 1 });
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			prepassPass,
 			prepassPipeline,
 			prepassPushConstants,
 			prepassDrawcalls,
 			prepassRenderTargets,
-			windowHandle);
+			windowHandle
+		);
 
 		core.recordImageMemoryBarrier(cmdStream, depthBuffer);
 		core.recordEndDebugLabel(cmdStream);
@@ -837,12 +836,12 @@ int main(int argc, const char** argv) {
 		core.recordBeginDebugLabel(cmdStream, "Forward rendering", { 1, 1, 1, 1 });
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			forwardPass,
 			forwardPipeline,
 			pushConstants,
 			drawcalls,
 			renderTargets,
-			windowHandle);
+			windowHandle
+		);
 		core.recordEndDebugLabel(cmdStream);
 
 		if (renderVoxelVis) {
@@ -856,27 +855,19 @@ int main(int argc, const char** argv) {
 		core.recordBeginDebugLabel(cmdStream, "Sky", { 1, 1, 1, 1 });
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			skyPass,
 			skyPipe,
 			skySettingsPushConstants,
 			{ vkcv::DrawcallInfo(vkcv::Mesh({}, nullptr, 3), {}) },
 			renderTargets,
-			windowHandle);
+			windowHandle
+		);
 		core.recordEndDebugLabel(cmdStream);
-
+		
 		const uint32_t fullscreenLocalGroupSize = 8;
-		
-		uint32_t fulsscreenDispatchCount [3];
-		
-		fulsscreenDispatchCount[0] = static_cast<uint32_t>(
-				glm::ceil(fsrWidth  / static_cast<float>(fullscreenLocalGroupSize))
+		auto fullscreenDispatchCount = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(fsrWidth, fsrHeight),
+				vkcv::DispatchSize(fullscreenLocalGroupSize, fullscreenLocalGroupSize)
 		);
-		
-		fulsscreenDispatchCount[1] = static_cast<uint32_t>(
-				glm::ceil(fsrHeight / static_cast<float>(fullscreenLocalGroupSize))
-		);
-		
-		fulsscreenDispatchCount[2] = 1;
 
 		if (usingMsaa) {
 			core.recordBeginDebugLabel(cmdStream, "MSAA resolve", { 1, 1, 1, 1 });
@@ -886,11 +877,12 @@ int main(int argc, const char** argv) {
 
 				assert(msaa == vkcv::Multisampling::MSAA4X);	// shaders is written for msaa 4x
 				core.recordComputeDispatchToCmdStream(
-					cmdStream,
-					resolvePipeline,
-					fulsscreenDispatchCount,
-					{ vkcv::DescriptorSetUsage(0, resolveDescriptorSet) },
-					vkcv::PushConstants(0));
+						cmdStream,
+						resolvePipeline,
+						fullscreenDispatchCount,
+						{ vkcv::DescriptorSetUsage(0, resolveDescriptorSet) },
+						vkcv::PushConstants(0)
+				);
 
 				core.recordImageMemoryBarrier(cmdStream, resolvedColorBuffer);
 			}
@@ -908,11 +900,11 @@ int main(int argc, const char** argv) {
 		
 		core.recordBeginDebugLabel(cmdStream, "Tonemapping", { 1, 1, 1, 1 });
 		core.recordComputeDispatchToCmdStream(
-			cmdStream, 
-			tonemappingPipeline, 
-			fulsscreenDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, tonemappingDescriptorSet) },
-			vkcv::PushConstants(0)
+				cmdStream,
+				tonemappingPipeline,
+				fullscreenDispatchCount,
+				{ vkcv::DescriptorSetUsage(0, tonemappingDescriptorSet) },
+				vkcv::PushConstants(0)
 		);
 		
 		core.prepareImageForStorage(cmdStream, swapBuffer2);
@@ -942,19 +934,16 @@ int main(int argc, const char** argv) {
 		vkcv::PushConstants timePushConstants = vkcv::pushConstants<float>();
 		timePushConstants.appendDrawcall(timeF);
 		
-		fulsscreenDispatchCount[0] = static_cast<uint32_t>(
-				glm::ceil(swapchainWidth  / static_cast<float>(fullscreenLocalGroupSize))
-		);
-		
-		fulsscreenDispatchCount[1] = static_cast<uint32_t>(
-				glm::ceil(swapchainHeight / static_cast<float>(fullscreenLocalGroupSize))
+		fullscreenDispatchCount = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(swapchainWidth, swapchainHeight),
+				vkcv::DispatchSize(fullscreenLocalGroupSize, fullscreenLocalGroupSize)
 		);
 		
 		core.recordBeginDebugLabel(cmdStream, "Post Processing", { 1, 1, 1, 1 });
 		core.recordComputeDispatchToCmdStream(
 				cmdStream,
 				postEffectsPipeline,
-				fulsscreenDispatchCount,
+				fullscreenDispatchCount,
 				{ vkcv::DescriptorSetUsage(0, postEffectsDescriptorSet) },
 				timePushConstants
 		);

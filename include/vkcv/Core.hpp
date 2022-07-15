@@ -24,6 +24,7 @@
 #include "Event.hpp"
 #include "DrawcallRecording.hpp"
 #include "CommandRecordingFunctionTypes.hpp"
+#include "DispatchSize.hpp"
 
 #define VKCV_FRAMEWORK_NAME "VkCV"
 #define VKCV_FRAMEWORK_VERSION (VK_MAKE_VERSION(0, 1, 0))
@@ -501,7 +502,6 @@ namespace vkcv
 		 * @brief Records drawcalls to a command stream
 		 * 
 		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
-		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
 		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
 		 * @param pushConstants Push constants that are used for the drawcalls, ignored if constant size is set to 0
 		 * @param drawcalls Information about each drawcall, consisting of mesh handle, descriptor set bindings and instance count
@@ -510,7 +510,6 @@ namespace vkcv
 		*/
 		void recordDrawcallsToCmdStream(
 			const CommandStreamHandle&      cmdStreamHandle,
-			const PassHandle&               renderpassHandle,
 			const GraphicsPipelineHandle    &pipelineHandle,
 			const PushConstants             &pushConstants,
 			const std::vector<DrawcallInfo> &drawcalls,
@@ -521,7 +520,6 @@ namespace vkcv
 		 * @brief Records indirect drawcalls to a command stream
 		 *
 		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
-		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
 		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
 		 * @param pushConstantData Push constants that are used for the drawcalls, ignored if constant size is set to 0
 		 * @param compiledDescriptorSet TODO
@@ -534,7 +532,6 @@ namespace vkcv
 		*/
 		void recordIndexedIndirectDrawcallsToCmdStream(
 				const CommandStreamHandle                           cmdStreamHandle,
-				const PassHandle                                    renderpassHandle,
 				const GraphicsPipelineHandle                        &pipelineHandle,
 				const PushConstants                                 &pushConstantData,
                 const vkcv::DescriptorSetHandle                     &compiledDescriptorSet,
@@ -548,7 +545,6 @@ namespace vkcv
 		 * @brief Records mesh shader drawcalls to a command stream
 		 *
 		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
-		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
 		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
 		 * @param pushConstantData Push constants that are used for the drawcalls, ignored if constant size is set to 0
 		 * @param drawcalls Information about each drawcall, consisting of descriptor set bindings and task shader dispatch count
@@ -557,7 +553,6 @@ namespace vkcv
 		*/
 		void recordMeshShaderDrawcalls(
 			const CommandStreamHandle&              cmdStreamHandle,
-			const PassHandle&                       renderpassHandle,
 			const GraphicsPipelineHandle            &pipelineHandle,
 			const PushConstants&                    pushConstantData,
             const std::vector<MeshShaderDrawcall>&  drawcalls,
@@ -596,16 +591,15 @@ namespace vkcv
 		 * 
 		 * @param cmdStream Handle of the command stream that the dispatch is recorded into
 		 * @param computePipeline Handle of the pipeline that is used for the dispatch
-		 * @param dispatchCount How many work groups are dispatched
+		 * @param dispatchSize How many work groups are dispatched
 		 * @param descriptorSetUsages Descriptor set bindings of the dispatch
 		 * @param pushConstants Push constant data for the dispatch
 		 */
-		void recordComputeDispatchToCmdStream(
-			CommandStreamHandle cmdStream,
-            ComputePipelineHandle computePipeline,
-			const uint32_t dispatchCount[3],
-			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
-			const PushConstants& pushConstants);
+		void recordComputeDispatchToCmdStream(const CommandStreamHandle& cmdStream,
+											  const ComputePipelineHandle& computePipeline,
+											  const DispatchSize& dispatchSize,
+											  const std::vector<DescriptorSetUsage> &descriptorSetUsages,
+											  const PushConstants& pushConstants);
 		
 		/**
 		 * @brief Record the start of a debug label into a command stream. 

@@ -306,10 +306,10 @@ int main(int argc, const char** argv) {
 
 		const vkcv::CommandStreamHandle cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-		uint32_t fullscreenDispatchCount[3] = {
-			static_cast<uint32_t> (std::ceil(swapchainWidth  / 8.f)),
-			static_cast<uint32_t> (std::ceil(swapchainHeight / 8.f)),
-			1 };
+		const auto fullscreenDispatchCount = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(swapchainWidth, swapchainHeight),
+				vkcv::DispatchSize(8, 8)
+		);
 
 		if (updateMaterials) {
 			std::vector<Material> materials;
@@ -368,11 +368,11 @@ int main(int argc, const char** argv) {
 
 		vkcv::PushConstants pushConstantsCompute = vkcv::pushConstants<RaytracingPushConstantData>();
 		pushConstantsCompute.appendDrawcall(raytracingPushData);
-
-		uint32_t traceDispatchCount[3] = { 
-			static_cast<uint32_t> (std::ceil(swapchainWidth  / 16.f)),
-			static_cast<uint32_t> (std::ceil(swapchainHeight / 16.f)),
-			1 };
+		
+		const auto traceDispatchCount = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(swapchainWidth, swapchainHeight),
+				vkcv::DispatchSize(16, 16)
+		);
 
 		core.prepareImageForStorage(cmdStream, outputImage);
 

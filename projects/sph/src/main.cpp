@@ -341,44 +341,52 @@ int main(int argc, const char **argv) {
         vkcv::PushConstants pushConstantsCompute (sizeof(pushData));
         pushConstantsCompute.appendDrawcall(pushData);
 
-        uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(numberParticles/256.f)),1,1};
+        const auto computeDispatchCount = vkcv::dispatchInvocations(numberParticles, 256);
 
         // computing pressure pipeline
-        core.recordComputeDispatchToCmdStream(cmdStream,
-                                              pressurePipeline,
-                                              computeDispatchCount,
-                                              {vkcv::DescriptorSetUsage(0, pressureDescriptorSet)},
-											  pushConstantsCompute);
+        core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				pressurePipeline,
+				computeDispatchCount,
+				{vkcv::DescriptorSetUsage(0, pressureDescriptorSet)},
+				pushConstantsCompute
+		);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
         // computing force pipeline
-		core.recordComputeDispatchToCmdStream(cmdStream,
-											  forcePipeline,
-											  computeDispatchCount,
-											  {vkcv::DescriptorSetUsage(0, forceDescriptorSet)},
-											  pushConstantsCompute);
+		core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				forcePipeline,
+				computeDispatchCount,
+				{vkcv::DescriptorSetUsage(0, forceDescriptorSet)},
+				pushConstantsCompute
+		);
 
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
         // computing update data pipeline
-        core.recordComputeDispatchToCmdStream(cmdStream,
-                                              updateDataPipeline,
-                                              computeDispatchCount,
-                                              { vkcv::DescriptorSetUsage(0, updateDataDescriptorSet) },
-                                              pushConstantsCompute);
+        core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				updateDataPipeline,
+				computeDispatchCount,
+				{ vkcv::DescriptorSetUsage(0, updateDataDescriptorSet) },
+				pushConstantsCompute
+		);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
         // computing flip pipeline
-        core.recordComputeDispatchToCmdStream(cmdStream,
-                                              flipPipeline,
-                                              computeDispatchCount,
-                                              { vkcv::DescriptorSetUsage(0, flipDescriptorSet) },
-                                              pushConstantsCompute);
+        core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				flipPipeline,
+				computeDispatchCount,
+				{ vkcv::DescriptorSetUsage(0, flipDescriptorSet) },
+				pushConstantsCompute
+		);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
@@ -390,7 +398,6 @@ int main(int argc, const char **argv) {
         
         core.recordDrawcallsToCmdStream(
                 cmdStream,
-                particlePass,
                 particlePipeline,
 				pushConstantsDraw,
                 {drawcalls},
@@ -412,17 +419,18 @@ int main(int argc, const char **argv) {
 		
         core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
 
-        uint32_t tonemappingDispatchCount[3];
-        tonemappingDispatchCount[0] = std::ceil(swapchainWidth / 8.f);
-        tonemappingDispatchCount[1] = std::ceil(swapchainHeight / 8.f);
-        tonemappingDispatchCount[2] = 1;
+        const auto tonemappingDispatchCount = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(swapchainWidth, swapchainHeight),
+				vkcv::DispatchSize(8, 8)
+		);
 
         core.recordComputeDispatchToCmdStream(
             cmdStream, 
             tonemappingPipe, 
             tonemappingDispatchCount, 
             {vkcv::DescriptorSetUsage(0, tonemappingDescriptor) },
-            vkcv::PushConstants(0));
+            vkcv::PushConstants(0)
+		);
 
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);

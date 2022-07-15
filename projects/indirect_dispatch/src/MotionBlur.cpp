@@ -4,18 +4,6 @@
 #include <array>
 #include <vkcv/Buffer.hpp>
 
-std::array<uint32_t, 3> computeFullscreenDispatchSize(
-	const uint32_t imageWidth,
-	const uint32_t imageHeight,
-	const uint32_t localGroupSize) {
-
-	// optimized divide and ceil
-	return std::array<uint32_t, 3>{
-		static_cast<uint32_t>(imageWidth  + (localGroupSize - 1)) / localGroupSize,
-		static_cast<uint32_t>(imageHeight + (localGroupSize - 1)) / localGroupSize,
-		static_cast<uint32_t>(1) };
-}
-
 bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, const uint32_t targetHeight) {
 
 	if (!corePtr) {
@@ -116,15 +104,13 @@ vkcv::ImageHandle MotionBlur::render(
 
 	computeMotionTiles(cmdStream, motionBufferFullRes);
 
-	// work tile reset
-	const uint32_t dispatchSizeOne[3] = { 1, 1, 1 };
-
 	m_core->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_tileResetPass.pipeline,
-		dispatchSizeOne,
+		1,
 		{ vkcv::DescriptorSetUsage(0, m_tileResetPass.descriptorSet) },
-		vkcv::PushConstants(0));
+		vkcv::PushConstants(0)
+	);
 
 	m_core->recordBufferMemoryBarrier(cmdStream, m_fullPathWorkTileBuffer);
 	m_core->recordBufferMemoryBarrier(cmdStream, m_copyPathWorkTileBuffer);
@@ -149,10 +135,13 @@ vkcv::ImageHandle MotionBlur::render(
 
 	m_core->writeDescriptorSet(m_tileClassificationPass.descriptorSet, tileClassificationDescriptorWrites);
 
-	const auto tileClassificationDispatch = computeFullscreenDispatchSize(
-		m_core->getImageWidth(m_renderTargets.motionMaxNeighbourhood), 
-		m_core->getImageHeight(m_renderTargets.motionMaxNeighbourhood),
-		8);
+	const auto tileClassificationDispatch = vkcv::dispatchInvocations(
+			vkcv::DispatchSize(
+					m_core->getImageWidth(m_renderTargets.motionMaxNeighbourhood),
+					m_core->getImageHeight(m_renderTargets.motionMaxNeighbourhood)
+			),
+			vkcv::DispatchSize(8, 8)
+	);
 
 	struct ClassificationConstants {
 		uint32_t    width;
@@ -173,7 +162,7 @@ vkcv::ImageHandle MotionBlur::render(
 	m_core->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_tileClassificationPass.pipeline,
-		tileClassificationDispatch.data(),
+		tileClassificationDispatch,
 		{ vkcv::DescriptorSetUsage(0, m_tileClassificationPass.descriptorSet) },
 		classificationPushConstants);
 
@@ -302,15 +291,10 @@ vkcv::ImageHandle MotionBlur::render(
 			(m_core->getImageWidth(m_renderTargets.outputColor)  + MotionBlurConfig::maxMotionTileSize - 1) / MotionBlurConfig::maxMotionTileSize * 
 			(m_core->getImageHeight(m_renderTargets.outputColor) + MotionBlurConfig::maxMotionTileSize - 1) / MotionBlurConfig::maxMotionTileSize;
 
-		const uint32_t dispatchCounts[3] = {
-			tileCount,
-			1,
-			1 };
-
 		m_core->recordComputeDispatchToCmdStream(
 			cmdStream,
 			m_tileVisualisationPass.pipeline,
-			dispatchCounts,
+			tileCount,
 			{ vkcv::DescriptorSetUsage(0, m_tileVisualisationPass.descriptorSet) },
 			vkcv::PushConstants(0));
 	}
@@ -365,15 +349,18 @@ vkcv::ImageHandle MotionBlur::renderMotionVectorVisualisation(
 	vkcv::PushConstants motionVectorVisualisationPushConstants = vkcv::pushConstants<float>();
 	motionVectorVisualisationPushConstants.appendDrawcall(velocityRange);
 
-	const auto dispatchSizes = computeFullscreenDispatchSize(
-		m_core->getImageWidth(m_renderTargets.outputColor), 
-		m_core->getImageHeight(m_renderTargets.outputColor), 
-		8);
+	const auto dispatchSizes = vkcv::dispatchInvocations(
+			vkcv::DispatchSize(
+					m_core->getImageWidth(m_renderTargets.outputColor),
+					m_core->getImageHeight(m_renderTargets.outputColor)
+			),
+			vkcv::DispatchSize(8, 8)
+	);
 
 	m_core->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_motionVectorVisualisationPass.pipeline,
-		dispatchSizes.data(),
+		dispatchSizes,
 		{ vkcv::DescriptorSetUsage(0, m_motionVectorVisualisationPass.descriptorSet) },
 		motionVectorVisualisationPushConstants);
 
@@ -400,15 +387,18 @@ void MotionBlur::computeMotionTiles(
 	m_core->prepareImageForStorage(cmdStream, m_renderTargets.motionMax);
 	m_core->prepareImageForStorage(cmdStream, m_renderTargets.motionMin);
 
-	const std::array<uint32_t, 3> motionTileDispatchCounts = computeFullscreenDispatchSize(
-		m_core->getImageWidth( m_renderTargets.motionMax),
-		m_core->getImageHeight(m_renderTargets.motionMax),
-		8);
+	const auto motionTileDispatchCounts = vkcv::dispatchInvocations(
+			vkcv::DispatchSize(
+					m_core->getImageWidth( m_renderTargets.motionMax),
+					m_core->getImageHeight(m_renderTargets.motionMax)
+			),
+			vkcv::DispatchSize(8, 8)
+	);
 
 	m_core->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_motionVectorMinMaxPass.pipeline,
-		motionTileDispatchCounts.data(),
+		motionTileDispatchCounts,
 		{ vkcv::DescriptorSetUsage(0, m_motionVectorMinMaxPass.descriptorSet) },
 		vkcv::PushConstants(0));
 
@@ -438,7 +428,7 @@ void MotionBlur::computeMotionTiles(
 	m_core->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_motionVectorMinMaxNeighbourhoodPass.pipeline,
-		motionTileDispatchCounts.data(),
+		motionTileDispatchCounts,
 		{ vkcv::DescriptorSetUsage(0, m_motionVectorMinMaxNeighbourhoodPass.descriptorSet) },
 		vkcv::PushConstants(0));
 }

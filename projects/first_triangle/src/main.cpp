@@ -106,12 +106,12 @@ int main(int argc, const char** argv) {
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			trianglePass,
 			trianglePipeline,
 			vkcv::pushConstants<glm::mat4>(mvp),
 			{ drawcall },
 			{ swapchainInput },
-			windowHandle);
+			windowHandle
+		);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

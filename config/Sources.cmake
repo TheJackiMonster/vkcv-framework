@@ -70,6 +70,9 @@ set(vkcv_sources
 
 		${vkcv_include}/vkcv/VertexLayout.hpp
 		${vkcv_source}/vkcv/VertexLayout.cpp
+		
+		${vkcv_include}/vkcv/DispatchSize.hpp
+		${vkcv_source}/vkcv/DispatchSize.cpp
 
 		${vkcv_include}/vkcv/Event.hpp
 		

@@ -366,12 +366,12 @@ int main(int argc, const char** argv) {
 
 			core.recordMeshShaderDrawcalls(
 				cmdStream,
-				renderPass,
 				meshShaderPipeline,
 				pushConstantData,
 				{ vkcv::MeshShaderDrawcall({descriptorUsage}, taskCount)},
 				{ renderTargets },
-				windowHandle);
+				windowHandle
+			);
 		}
 		else {
 
@@ -379,12 +379,12 @@ int main(int argc, const char** argv) {
 
 			core.recordDrawcallsToCmdStream(
 				cmdStream,
-				renderPass,
 				bunnyPipeline,
 				pushConstantData,
 				{ vkcv::DrawcallInfo(renderMesh, { descriptorUsage }) },
 				{ renderTargets },
-				windowHandle);
+				windowHandle
+			);
 		}
 
 		core.prepareSwapchainImageForPresent(cmdStream);
@@ -397,7 +397,6 @@ int main(int argc, const char** argv) {
 		ImGui::Checkbox("Update frustum culling", &updateFrustumPlanes);
 
 		ImGui::End();
-		
 		gui.endGUI();
 
 		core.endFrame(windowHandle);

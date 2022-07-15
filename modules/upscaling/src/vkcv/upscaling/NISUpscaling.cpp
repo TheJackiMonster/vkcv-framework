@@ -235,10 +235,10 @@ namespace vkcv::upscaling {
 				sizeof(config)
 		);
 		
-		uint32_t dispatch[3];
-		dispatch[0] = (outputWidth + (m_blockWidth - 1)) / m_blockWidth;
-		dispatch[1] = (outputHeight + (m_blockHeight - 1)) / m_blockHeight;
-		dispatch[2] = 1;
+		DispatchSize dispatch = dispatchInvocations(
+				DispatchSize(outputWidth, outputHeight),
+				DispatchSize(m_blockWidth, m_blockHeight)
+		);
 		
 		m_core.recordBufferMemoryBarrier(cmdStream, m_scalerConstants.getHandle());
 		

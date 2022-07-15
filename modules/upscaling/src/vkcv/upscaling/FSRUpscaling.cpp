@@ -306,10 +306,10 @@ namespace vkcv::upscaling {
 		
 		static const uint32_t threadGroupWorkRegionDim = 16;
 		
-		uint32_t dispatch[3];
-		dispatch[0] = (outputWidth + (threadGroupWorkRegionDim - 1)) / threadGroupWorkRegionDim;
-		dispatch[1] = (outputHeight + (threadGroupWorkRegionDim - 1)) / threadGroupWorkRegionDim;
-		dispatch[2] = 1;
+		DispatchSize dispatch = dispatchInvocations(
+				DispatchSize(outputWidth, outputHeight),
+				DispatchSize(threadGroupWorkRegionDim, threadGroupWorkRegionDim)
+		);
 		
 		m_core.recordBufferMemoryBarrier(cmdStream, m_easuConstants.getHandle());
 		

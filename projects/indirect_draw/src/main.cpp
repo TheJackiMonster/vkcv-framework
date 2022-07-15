@@ -522,8 +522,7 @@ int main(int argc, const char** argv) {
 
     float ceiledDispatchCount = static_cast<float>(indexedIndirectCommands.size()) / 64.0f;
     ceiledDispatchCount = std::ceil(ceiledDispatchCount);
-    const uint32_t dispatchCount[3] = {static_cast<uint32_t>(ceiledDispatchCount), 1, 1};
-
+    const vkcv::DispatchSize dispatchCount = static_cast<uint32_t>(ceiledDispatchCount);
 
     vkcv::DescriptorSetUsage cullingUsage(0, cullingDescSet, {});
     vkcv::PushConstants emptyPushConstant(0);
@@ -556,8 +555,7 @@ int main(int argc, const char** argv) {
 		vkcv::PushConstants pushConstants = vkcv::pushConstants<glm::mat4>();
 		pushConstants.appendDrawcall(cam.getProjection() * cam.getView());
 
-        if(updateFrustumPlanes)
-        {
+        if (updateFrustumPlanes) {
             const CameraPlanes cameraPlanes = computeCameraPlanes(cam);
             cameraPlaneBuffer.fill({ cameraPlanes });
         }
@@ -565,17 +563,18 @@ int main(int argc, const char** argv) {
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-        core.recordComputeDispatchToCmdStream(cmdStream,
-                                              cullingPipelineHandle,
-                                              dispatchCount,
-                                              {cullingUsage},
-                                              emptyPushConstant);
+        core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				cullingPipelineHandle,
+				dispatchCount,
+				{cullingUsage},
+				emptyPushConstant
+		);
 
         core.recordBufferMemoryBarrier(cmdStream, indirectBuffer.getHandle());
 
 		core.recordIndexedIndirectDrawcallsToCmdStream(
 			cmdStream,
-			passHandle,
             sponzaPipelineHandle,
             pushConstants,
             descriptorSet,
@@ -583,7 +582,8 @@ int main(int argc, const char** argv) {
 			renderTargets,
 			indirectBuffer.getHandle(),
             indexedIndirectCommands.size(),
-			windowHandle);
+			windowHandle
+		);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

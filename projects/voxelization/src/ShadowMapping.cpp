@@ -268,20 +268,20 @@ void ShadowMapping::recordShadowMapRendering(
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Shadow map depth", {1, 1, 1, 1});
 	m_corePtr->recordDrawcallsToCmdStream(
 		cmdStream,
-		m_shadowMapPass,
 		m_shadowMapPipe,
 		shadowPushConstants,
 		drawcalls,
 		{ m_shadowMapDepth.getHandle() },
-		windowHandle);
+		windowHandle
+	);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMapDepth.getHandle());
 	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// depth to moments
-	uint32_t dispatchCount[3];
-	dispatchCount[0] = static_cast<uint32_t>(std::ceil(shadowMapResolution / 8.f));
-	dispatchCount[1] = static_cast<uint32_t>(std::ceil(shadowMapResolution / 8.f));
-	dispatchCount[2] = 1;
+	const auto dispatchCount = vkcv::dispatchInvocations(
+			vkcv::DispatchSize(shadowMapResolution, shadowMapResolution),
+			vkcv::DispatchSize(8, 8)
+	);
 
 	const uint32_t msaaSampleCount = vkcv::msaaToSampleCount(msaa);
 	
@@ -296,7 +296,8 @@ void ShadowMapping::recordShadowMapRendering(
 		m_depthToMomentsPipe,
 		dispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_depthToMomentsDescriptorSet) },
-		msaaPushConstants);
+		msaaPushConstants
+	);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMap.getHandle());
 	m_corePtr->recordEndDebugLabel(cmdStream);
 
@@ -309,7 +310,8 @@ void ShadowMapping::recordShadowMapRendering(
 		m_shadowBlurXPipe,
 		dispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_shadowBlurXDescriptorSet) },
-		vkcv::PushConstants(0));
+		vkcv::PushConstants(0)
+	);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMapIntermediate.getHandle());
 
 	// blur Y
@@ -319,7 +321,8 @@ void ShadowMapping::recordShadowMapRendering(
 		m_shadowBlurYPipe,
 		dispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_shadowBlurYDescriptorSet) },
-		vkcv::PushConstants(0));
+		vkcv::PushConstants(0)
+	);
 	m_shadowMap.recordMipChainGeneration(cmdStream, downsampler);
 
 	m_corePtr->recordEndDebugLabel(cmdStream);

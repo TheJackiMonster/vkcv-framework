@@ -293,10 +293,10 @@ namespace vkcv::effects {
 			
 			static const uint32_t threadGroupWorkRegionDim = 8;
 			
-			uint32_t dispatch[3];
-			dispatch[0] = calcDispatchSize(downsampleSizeX, threadGroupWorkRegionDim);
-			dispatch[1] = calcDispatchSize(downsampleSizeY, threadGroupWorkRegionDim);
-			dispatch[2] = 1;
+			DispatchSize dispatch (
+					calcDispatchSize(downsampleSizeX, threadGroupWorkRegionDim),
+					calcDispatchSize(downsampleSizeY, threadGroupWorkRegionDim)
+			);
 			
 			// mip blur dispatch
 			m_core.recordComputeDispatchToCmdStream(
@@ -342,10 +342,10 @@ namespace vkcv::effects {
 			
 			static const uint32_t threadGroupWorkRegionDim = 8;
 			
-			uint32_t dispatch[3];
-			dispatch[0] = calcDispatchSize(upsampleSizeX, threadGroupWorkRegionDim);
-			dispatch[1] = calcDispatchSize(upsampleSizeY, threadGroupWorkRegionDim);
-			dispatch[2] = 1;
+			DispatchSize dispatch (
+					calcDispatchSize(upsampleSizeX, threadGroupWorkRegionDim),
+					calcDispatchSize(upsampleSizeY, threadGroupWorkRegionDim)
+			);
 			
 			m_core.recordComputeDispatchToCmdStream(
 					cmdStream,
@@ -385,13 +385,13 @@ namespace vkcv::effects {
 			mipDivisor *= 2.0f;
 		}
 		
-		static const uint32_t threadGroupWorkRegionDim = 8.0f;
+		static const uint32_t threadGroupWorkRegionDim = 8;
 		
 		// lens feature generation dispatch
-		uint32_t dispatch[3];
-		dispatch[0] = calcDispatchSize(sampleSizeX / mipDivisor, threadGroupWorkRegionDim);
-		dispatch[1] = calcDispatchSize(sampleSizeY / mipDivisor, threadGroupWorkRegionDim);
-		dispatch[2] = 1;
+		DispatchSize dispatch (
+				calcDispatchSize(sampleSizeX / mipDivisor, threadGroupWorkRegionDim),
+				calcDispatchSize(sampleSizeY / mipDivisor, threadGroupWorkRegionDim)
+		);
 		
 		m_core.recordComputeDispatchToCmdStream(
 				cmdStream,
@@ -451,10 +451,10 @@ namespace vkcv::effects {
 		
 		static const uint32_t threadGroupWorkRegionDim = 8;
 		
-		uint32_t dispatch[3];
-		dispatch[0] = calcDispatchSize(sampleWidth, threadGroupWorkRegionDim);
-		dispatch[1] = calcDispatchSize(sampleHeight, threadGroupWorkRegionDim);
-		dispatch[2] = 1;
+		DispatchSize dispatch (
+				calcDispatchSize(sampleWidth, threadGroupWorkRegionDim),
+				calcDispatchSize(sampleHeight, threadGroupWorkRegionDim)
+		);
 		
 		PushConstants pushConstants = vkcv::pushConstants<glm::vec3>();
 		pushConstants.appendDrawcall(m_cameraDirection);

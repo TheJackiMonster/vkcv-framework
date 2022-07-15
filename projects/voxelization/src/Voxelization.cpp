@@ -251,10 +251,6 @@ void Voxelization::voxelizeMeshes(
 
 	// reset voxels
 	const uint32_t resetVoxelGroupSize = 64;
-	uint32_t resetVoxelDispatchCount[3];
-	resetVoxelDispatchCount[0] = glm::ceil(voxelCount / float(resetVoxelGroupSize));
-	resetVoxelDispatchCount[1] = 1;
-	resetVoxelDispatchCount[2] = 1;
 	
 	vkcv::PushConstants voxelCountPushConstants = vkcv::pushConstants<uint32_t>();
 	voxelCountPushConstants.appendDrawcall(voxelCount);
@@ -263,9 +259,10 @@ void Voxelization::voxelizeMeshes(
 	m_corePtr->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_voxelResetPipe,
-		resetVoxelDispatchCount,
+		vkcv::dispatchInvocations(voxelCount, resetVoxelGroupSize),
 		{ vkcv::DescriptorSetUsage(0, m_voxelResetDescriptorSet) },
-		voxelCountPushConstants);
+		voxelCountPushConstants
+	);
 	m_corePtr->recordBufferMemoryBarrier(cmdStream, m_voxelBuffer.getHandle());
 	m_corePtr->recordEndDebugLabel(cmdStream);
 
@@ -284,28 +281,28 @@ void Voxelization::voxelizeMeshes(
 	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImageIntermediate.getHandle());
 	m_corePtr->recordDrawcallsToCmdStream(
 		cmdStream,
-		m_voxelizationPass,
 		m_voxelizationPipe,
 		voxelizationPushConstants,
 		drawcalls,
 		{ m_dummyRenderTarget.getHandle() },
-		windowHandle);
+		windowHandle
+	);
 	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// buffer to image
-	const uint32_t bufferToImageGroupSize[3] = { 4, 4, 4 };
-	uint32_t bufferToImageDispatchCount[3];
-	for (int i = 0; i < 3; i++) {
-		bufferToImageDispatchCount[i] = glm::ceil(voxelResolution / float(bufferToImageGroupSize[i]));
-	}
-
+	const auto bufferToImageDispatchCount = vkcv::dispatchInvocations(
+			vkcv::DispatchSize(voxelResolution, voxelResolution, voxelResolution),
+			vkcv::DispatchSize(4, 4, 4)
+	);
+	
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel buffer to image", { 1, 1, 1, 1 });
 	m_corePtr->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_bufferToImagePipe,
 		bufferToImageDispatchCount,
 		{ vkcv::DescriptorSetUsage(0, m_bufferToImageDescriptorSet) },
-		vkcv::PushConstants(0));
+		vkcv::PushConstants(0)
+	);
 
 	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImageIntermediate.getHandle());
 	m_corePtr->recordEndDebugLabel(cmdStream);
@@ -361,12 +358,12 @@ void Voxelization::renderVoxelVisualisation(
 	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImage.getHandle());
 	m_corePtr->recordDrawcallsToCmdStream(
 		cmdStream,
-		m_visualisationPass,
 		m_visualisationPipe,
 		voxelVisualisationPushConstants,
 		{ drawcall },
 		renderTargets,
-		windowHandle);
+		windowHandle
+	);
 	m_corePtr->recordEndDebugLabel(cmdStream);
 }
 

@@ -280,12 +280,13 @@ int main(int argc, const char **argv) {
         vkcv::PushConstants pushConstantsCompute = vkcv::pushConstants<glm::vec2>();
         pushConstantsCompute.appendDrawcall(pushData);
         
-        uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(particleSystem.getParticles().size()/256.f)),1,1};
-        core.recordComputeDispatchToCmdStream(cmdStream,
-                                              computePipeline,
-                                              computeDispatchCount,
-                                              {vkcv::DescriptorSetUsage(0, computeDescriptorSet)},
-											  pushConstantsCompute);
+        core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				computePipeline,
+				vkcv::dispatchInvocations(particleSystem.getParticles().size(), 256),
+				{vkcv::DescriptorSetUsage(0, computeDescriptorSet)},
+				pushConstantsCompute
+		);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer.getHandle());
 
@@ -294,12 +295,12 @@ int main(int argc, const char **argv) {
         
         core.recordDrawcallsToCmdStream(
                 cmdStream,
-                particlePass,
                 particlePipeline,
 				pushConstantsDraw,
                 {drawcalls},
                 { colorBuffer },
-                windowHandle);
+                windowHandle
+		);
 	
 		bloomAndFlares.recordEffect(cmdStream, colorBuffer, colorBuffer);
 
@@ -315,10 +316,10 @@ int main(int argc, const char **argv) {
 		
         core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
 
-        uint32_t tonemappingDispatchCount[3];
-        tonemappingDispatchCount[0] = std::ceil(swapchainWidth / 8.f);
-        tonemappingDispatchCount[1] = std::ceil(swapchainHeight / 8.f);
-        tonemappingDispatchCount[2] = 1;
+        const auto tonemappingDispatchCount = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(swapchainWidth, swapchainHeight),
+				vkcv::DispatchSize(8, 8)
+		);
 
         core.recordComputeDispatchToCmdStream(
             cmdStream, 

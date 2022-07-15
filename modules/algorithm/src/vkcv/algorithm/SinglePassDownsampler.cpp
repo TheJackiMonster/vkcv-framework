@@ -307,10 +307,11 @@ namespace vkcv::algorithm {
 			m_core.prepareImageForStorage(cmdStream, image);
 		}
 		
-		uint32_t dispatch [3];
-		dispatch[0] = dispatchThreadGroupCountXY[0];
-		dispatch[1] = dispatchThreadGroupCountXY[1];
-		dispatch[2] = m_core.getImageArrayLayers(image);
+		vkcv::DispatchSize dispatch (
+				dispatchThreadGroupCountXY[0],
+				dispatchThreadGroupCountXY[1],
+				m_core.getImageArrayLayers(image)
+		);
 		
 		vkcv::PushConstants pushConstants = (m_sampler?
 				vkcv::pushConstants<SPDConstantsSampler>() :
