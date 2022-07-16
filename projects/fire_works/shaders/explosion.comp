@@ -1,0 +1,49 @@
+#version 450 core
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+
+#include "physics.inc"
+#include "event.inc"
+
+layout(set=0, binding=1, std430) buffer eventBuffer {
+    event_t events [];
+};
+
+#include "smoke.inc"
+
+layout(set=1, binding=0, std430) writeonly buffer smokeBuffer {
+    smoke_t smokes [];
+};
+
+layout(set=2, binding=0, rgba16) uniform image3D fluidImage;
+
+layout( push_constant ) uniform constants{
+    float t;
+    float dt;
+    uint smokeIndex;
+};
+
+void main() {
+    uvec3 id = gl_GlobalInvocationID;
+    ivec3 size = imageSize(fluidImage);
+
+    if (any(greaterThanEqual(id, size))) {
+        return;
+    }
+
+    uint eventID = smokes[smokeIndex].eventID;
+
+    if (eventID >= events.length()) {
+        return;
+    }
+
+    const float start = events[eventID].startTime;
+
+    if (((t - dt * 2) >= start) || (t < start)) {
+        return;
+    }
+
+    vec3 position = (vec3(id) + vec3(0.5f)) / vec3(size);
+}

@@ -7,7 +7,7 @@ struct smoke_t {
 	vec3 velocity;
 	float scaling;
 	vec3 color;
-	float pad;
+	uint eventID;
 };
 
 #endif // SMOKE_INC

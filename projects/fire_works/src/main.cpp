@@ -512,7 +512,7 @@ int main(int argc, const char **argv) {
 	};
 	
 	smokePipelineDefinition.m_culling = vkcv::CullMode::Back;
-	smokePipelineDefinition.m_alphaToCoverage = true;
+	smokePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 	
 	vkcv::GraphicsPipelineHandle smokePipeline = core.createGraphicsPipeline(smokePipelineDefinition);
 	

@@ -47,7 +47,7 @@ void main() {
     const float oldSize = (smokeSize - smokes[smokeIndex].scaling * dt);
     const float scaleFactor = oldSize / smokeSize;
 
-    data.a *= (scaleFactor * scaleFactor * scaleFactor);
+    data.a *= scaleFactor;
 
     const float smokeVolume = 0.75f * pi * (smokeSize * smokeSize * smokeSize);
 

@@ -50,6 +50,7 @@ void main() {
     }
 
     uint event_id = events.length();
+    uint index = 0;
 
     for (uint i = 0; i < events.length(); i++) {
         const float start = events[i].startTime;
@@ -58,7 +59,7 @@ void main() {
             continue;
         }
 
-        const uint index = atomicAdd(events[i].index, 1);
+        index = atomicAdd(events[i].index, 1);
 
         if (events[i].count > index) {
             event_id = i;
@@ -85,7 +86,7 @@ void main() {
 
     const float v = events[event_id].velocity;
 
-    vec3 velocity = normalize(direction) * v;
+    vec3 velocity = vec3(0.0f);
     float size = events[event_id].size;
 
     if (events[event_id].parent < events.length()) {
@@ -99,6 +100,20 @@ void main() {
     }
 
     vec3 color = events[event_id].color;
+
+    if (0 == index) {
+        const uint sid = atomicAdd(smokeIndex, 1) % smokes.length();
+
+        smokes[sid].position = particles[id].position;
+        smokes[sid].size = size;
+        smokes[sid].velocity = velocity;
+        smokes[sid].scaling = v;
+        smokes[sid].color = mix(color, vec3(1.0f), 0.75f);
+        smokes[sid].eventID = event_id;
+    }
+
+    velocity += normalize(direction) * v;
+
     const float split = pow(1.0f / events[event_id].count, 1.0f / 3.0f);
 
     particles[id].lifetime = events[event_id].lifetime;
@@ -108,14 +123,4 @@ void main() {
     particles[id].mass = events[event_id].mass / events[event_id].count;
 
     events[event_id].pad0 = id;
-
-    {
-        const uint index = atomicAdd(smokeIndex, 1) % smokes.length();
-
-        smokes[index].position = particles[id].position;
-        smokes[index].size = size * 0.25f;
-        smokes[index].velocity = velocity;
-        smokes[index].scaling = v * 0.25f;
-        smokes[index].color = mix(color, vec3(1.0f), 0.75f);
-    }
 }
