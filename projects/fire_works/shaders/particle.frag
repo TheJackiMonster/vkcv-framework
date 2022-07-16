@@ -14,7 +14,7 @@ void main()	{
     const float value = length(passPos);
 
     if (value < 0.5f) {
-        outColor = passColor;
+        outColor = passColor * max(0.0f, 0.5f - value) * 2.0f;
     } else {
         discard;
     }

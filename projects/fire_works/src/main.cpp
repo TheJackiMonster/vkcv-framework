@@ -172,14 +172,6 @@ int main(int argc, const char **argv) {
 	
 	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
 	
-	const vk::Format depthFormat = vk::Format::eD32Sfloat;
-	
-	vkcv::ImageHandle depthBuffer = core.createImage(
-		depthFormat,
-		swapchainExtent.width,
-		swapchainExtent.height
-	).getHandle();
-	
 	const vk::Format colorFormat = vk::Format::eR16G16B16A16Sfloat;
 	
 	vkcv::ImageHandle colorBuffer = core.createImage(
@@ -203,46 +195,6 @@ int main(int argc, const char **argv) {
 	});
 	compiler.compile(vkcv::ShaderStage::FRAGMENT, "shaders/smoke.frag", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		smokeShaderProgram.addShader(shaderStage, path);
-	});
-	
-	auto smokeImagesBindings = smokeShaderProgram.getReflectedDescriptors().at(1);
-	smokeImagesBindings[1].descriptorCount = SMOKE_COUNT;
-	
-	smokeImagesBindings[0].shaderStages |= vkcv::ShaderStage::COMPUTE;
-	smokeImagesBindings[1].shaderStages |= vkcv::ShaderStage::COMPUTE;
-	
-	vkcv::DescriptorSetLayoutHandle smokeImagesDescriptorLayout = core.createDescriptorSetLayout(smokeImagesBindings);
-	vkcv::DescriptorSetHandle smokeImagesDescriptorSet = core.createDescriptorSet(smokeImagesDescriptorLayout);
-	
-	vkcv::ShaderProgram fluidShader;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/fluid.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		fluidShader.addShader(shaderStage, path);
-	});
-	
-	vkcv::DescriptorSetLayoutHandle fluidImageDescriptorSetLayout = core.createDescriptorSetLayout(
-		fluidShader.getReflectedDescriptors().at(1)
-	);
-	
-	vkcv::ComputePipelineHandle fluidPipeline = core.createComputePipeline({
-		fluidShader,
-		{
-			smokeImagesDescriptorLayout,
-			fluidImageDescriptorSetLayout
-		}
-	});
-	
-	vkcv::ShaderProgram gatherShader;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/gather.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		gatherShader.addShader(shaderStage, path);
-	});
-	
-	vkcv::ComputePipelineHandle gatherPipeline = core.createComputePipeline({
-		gatherShader,
-		{
-          descriptorSetLayout,
-          smokeDescriptorLayout,
-          fluidImageDescriptorSetLayout
-		}
 	});
 	
 	std::vector<particle_t> particles;
@@ -381,65 +333,6 @@ int main(int argc, const char **argv) {
 		core.writeDescriptorSet(smokeDescriptorSet, writes);
 	}
 	
-	std::vector<vkcv::ImageHandle> smokeImages;
-	smokeImages.reserve(smokes.size());
-	
-	std::vector<uint64_t> imageData;
-	imageData.resize(SMOKE_RESOLUTION * SMOKE_RESOLUTION * SMOKE_RESOLUTION, 0);
-	
-	for (size_t i = 0; i < smokes.size(); i++) {
-		vkcv::Image image = core.createImage(
-			vk::Format::eR16G16B16A16Sfloat,
-			SMOKE_RESOLUTION,
-			SMOKE_RESOLUTION,
-			SMOKE_RESOLUTION,
-			false,
-			true
-		);
-		
-		image.fill(imageData.data());
-		
-		smokeImages.push_back(image.getHandle());
-	}
-	
-	std::vector<vkcv::ImageHandle> fluidImages;
-	fluidImages.reserve(smokeImages.size());
-	
-	for (size_t i = 0; i < smokeImages.size(); i++) {
-		vkcv::Image image = core.createImage(
-			vk::Format::eR16G16B16A16Sfloat,
-			SMOKE_RESOLUTION,
-			SMOKE_RESOLUTION,
-			SMOKE_RESOLUTION,
-			false,
-			true
-		);
-		
-		fluidImages.push_back(image.getHandle());
-	}
-	
-	vkcv::SamplerHandle smokeSampler = core.createSampler(
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
-	);
-	
-	{
-		vkcv::DescriptorWrites writes;
-		writes.writeSampler(0, smokeSampler);
-		core.writeDescriptorSet(smokeImagesDescriptorSet, writes);
-	}
-	
-	std::vector<vkcv::DescriptorSetHandle> fluidImagesDescriptorSets;
-	fluidImagesDescriptorSets.reserve(smokeImages.size());
-	
-	for (size_t i = 0; i < smokeImages.size(); i++) {
-		fluidImagesDescriptorSets.push_back(core.createDescriptorSet(
-			fluidImageDescriptorSetLayout
-		));
-	}
-	
 	vkcv::Buffer<glm::vec3> cubePositions = core.createBuffer<glm::vec3>(vkcv::BufferType::VERTEX, 8);
 	cubePositions.fill({
 		glm::vec3(-1.0f, -1.0f, -1.0f),
@@ -491,11 +384,6 @@ int main(int argc, const char **argv) {
 				vkcv::AttachmentOperation::STORE,
 				vkcv::AttachmentOperation::LOAD,
 				colorFormat
-			),
-			vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::DONT_CARE,
-				vkcv::AttachmentOperation::LOAD,
-				depthFormat
 			)
 		},
 		vkcv::Multisampling::None
@@ -507,11 +395,10 @@ int main(int argc, const char **argv) {
 		UINT32_MAX,
 		smokePass,
 		{smokeLayout},
-		{smokeDescriptorLayout, smokeImagesDescriptorLayout, generationDescriptorLayout},
+		{smokeDescriptorLayout, generationDescriptorLayout},
 		true
 	};
 	
-	smokePipelineDefinition.m_culling = vkcv::CullMode::Back;
 	smokePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 	
 	vkcv::GraphicsPipelineHandle smokePipeline = core.createGraphicsPipeline(smokePipelineDefinition);
@@ -522,8 +409,7 @@ int main(int argc, const char **argv) {
 		cubeMesh,
 		{
 			vkcv::DescriptorSetUsage(0, smokeDescriptorSet),
-			vkcv::DescriptorSetUsage(1, smokeImagesDescriptorSet),
-			vkcv::DescriptorSetUsage(2, generationDescriptorSet)
+			vkcv::DescriptorSetUsage(1, generationDescriptorSet),
 		},
 		smokeBuffer.getCount()
 	));
@@ -561,11 +447,6 @@ int main(int argc, const char **argv) {
 				vkcv::AttachmentOperation::STORE,
 				vkcv::AttachmentOperation::CLEAR,
 				colorFormat
-			),
-			vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
-				vkcv::AttachmentOperation::CLEAR,
-				depthFormat
 			)
 		},
 		vkcv::Multisampling::None
@@ -641,37 +522,12 @@ int main(int argc, const char **argv) {
 		  	).getHandle();
 		}
 		
-		if ((core.getImageWidth(depthBuffer) != swapchainWidth) ||
-			(core.getImageHeight(depthBuffer) != swapchainHeight)) {
-			depthBuffer = core.createImage(
-				  depthFormat,
-				  swapchainWidth,
-				  swapchainHeight
-			).getHandle();
-		}
-		
 		auto next = std::chrono::system_clock::now();
 		
 		auto time = std::chrono::duration_cast<std::chrono::microseconds>(next - start);
 		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(next - current);
 		
 		current = next;
-		
-		{
-			vkcv::DescriptorWrites writes;
-		
-			for (size_t i = 0; i < smokeImages.size(); i++) {
-				writes.writeSampledImage(1, smokeImages[i], 0, false, i);
-			}
-		
-			core.writeDescriptorSet(smokeImagesDescriptorSet, writes);
-		}
-		
-		for (size_t i = 0; i < smokeImages.size(); i++) {
-			vkcv::DescriptorWrites writes;
-			writes.writeStorageImage(0, fluidImages[i]);
-			core.writeDescriptorSet(fluidImagesDescriptorSets[i], writes);
-		}
 		
 		float time_values [2];
 		time_values[0] = static_cast<float>(0.000001 * static_cast<double>(time.count()));
@@ -726,63 +582,6 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
-		uint32_t fluidDispatchCount[3];
-		fluidDispatchCount[0] = std::ceil(SMOKE_RESOLUTION / 4.f);
-		fluidDispatchCount[1] = std::ceil(SMOKE_RESOLUTION / 4.f);
-		fluidDispatchCount[2] = std::ceil(SMOKE_RESOLUTION / 4.f);
-		
-		// TODO: write initial event smoke!
-		
-		core.recordBeginDebugLabel(cmdStream, "Flow simulation", { 0.1f, 0.5f, 1.0f, 1.0f });
-		for (size_t i = 0; i < smokeImages.size(); i++) {
-			float fluid_values [2];
-			reinterpret_cast<uint*>(fluid_values)[0] = static_cast<uint>(i);
-			fluid_values[1] = time_values[1];
-			
-			vkcv::PushConstants pushConstantsFluid (2 * sizeof(float));
-			pushConstantsFluid.appendDrawcall(fluid_values);
-			
-			core.prepareImageForSampling(cmdStream, smokeImages[i]);
-			core.prepareImageForStorage(cmdStream, fluidImages[i]);
-			
-			core.recordComputeDispatchToCmdStream(
-				cmdStream,
-				fluidPipeline,
-				fluidDispatchCount,
-				{
-					vkcv::DescriptorSetUsage(0, smokeImagesDescriptorSet),
-					vkcv::DescriptorSetUsage(1, fluidImagesDescriptorSets[i])
-				},
-				pushConstantsFluid
-			);
-		}
-		core.recordEndDebugLabel(cmdStream);
-		
-		core.recordBeginDebugLabel(cmdStream, "Gather particles", { 0.5f, 0.5f, 1.0f, 1.0f });
-		for (size_t i = 0; i < smokeImages.size(); i++) {
-			float gather_values [2];
-			reinterpret_cast<uint*>(gather_values)[0] = static_cast<uint>(i);
-			gather_values[1] = time_values[1];
-			
-			vkcv::PushConstants pushConstantsGather (2 * sizeof(float));
-			pushConstantsGather.appendDrawcall(gather_values);
-			
-			core.prepareImageForStorage(cmdStream, fluidImages[i]);
-			
-			core.recordComputeDispatchToCmdStream(
-				cmdStream,
-				gatherPipeline,
-				fluidDispatchCount,
-				{
-					vkcv::DescriptorSetUsage(0, descriptorSet),
-					vkcv::DescriptorSetUsage(1, smokeDescriptorSet),
-					vkcv::DescriptorSetUsage(2, fluidImagesDescriptorSets[i])
-				},
-				pushConstantsGather
-			);
-		}
-		core.recordEndDebugLabel(cmdStream);
-		
 		cameraManager.update(time_values[1]);
 		
 		const auto& camera = cameraManager.getActiveCamera();
@@ -803,14 +602,18 @@ int main(int argc, const char **argv) {
 			particlePipeline,
 			pushConstantsDraw0,
 			{ drawcallsParticles },
-			{ colorBuffer, depthBuffer },
+			{ colorBuffer },
 			windowHandle
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
+		glm::mat4 smokeMatrices [2];
+		smokeMatrices[0] = camera.getView();
+		smokeMatrices[1] = camera.getProjection();
+		
 		core.recordBeginDebugLabel(cmdStream, "Draw smoke", { 1.0f, 0.5f, 1.0f, 1.0f });
-		vkcv::PushConstants pushConstantsDraw1 (sizeof(glm::mat4));
-		pushConstantsDraw1.appendDrawcall(camera.getMVP());
+		vkcv::PushConstants pushConstantsDraw1 (sizeof(glm::mat4) * 2);
+		pushConstantsDraw1.appendDrawcall(smokeMatrices);
 		
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
@@ -818,7 +621,7 @@ int main(int argc, const char **argv) {
 			smokePipeline,
 			pushConstantsDraw1,
 			{ drawcallsSmokes },
-			{ colorBuffer, depthBuffer },
+			{ colorBuffer },
 			windowHandle
 		);
 		core.recordEndDebugLabel(cmdStream);
@@ -871,10 +674,6 @@ int main(int argc, const char **argv) {
 		gui.endGUI();
 		
 		core.endFrame(windowHandle);
-		
-		for (size_t i = 0; i < smokeImages.size(); i++) {
-			std::swap(smokeImages[i], fluidImages[i]);
-		}
 	}
 	
 	return 0;

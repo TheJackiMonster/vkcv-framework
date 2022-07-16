@@ -8,4 +8,6 @@ const float friction = 0.001f;
 
 const float flowSpeed = 1.0f;
 
+const float mediumDensity = 0.0001f;
+
 #endif // PHYSICS_INC

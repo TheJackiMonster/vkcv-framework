@@ -105,10 +105,10 @@ void main() {
         const uint sid = atomicAdd(smokeIndex, 1) % smokes.length();
 
         smokes[sid].position = particles[id].position;
-        smokes[sid].size = size;
+        smokes[sid].size = size * (1.0f + friction);
         smokes[sid].velocity = velocity;
         smokes[sid].scaling = v;
-        smokes[sid].color = mix(color, vec3(1.0f), 0.75f);
+        smokes[sid].color = mix(color, vec3(1.0f), 0.5f);
         smokes[sid].eventID = event_id;
     }
 
