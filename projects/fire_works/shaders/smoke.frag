@@ -6,8 +6,8 @@
 
 layout(location = 0) in vec3 passPos;
 layout(location = 1) in vec3 passView;
-layout(location = 2) in flat vec3 passColor;
-layout(location = 3) in flat float passSize;
+layout(location = 2) in vec3 passColor;
+layout(location = 3) in float passSize;
 layout(location = 4) in flat int passSmokeIndex;
 
 layout(location = 0) out vec3 outColor;

@@ -29,6 +29,20 @@ layout(set=2, binding=0, std430) writeonly buffer smokeBuffer {
 
 layout(set=2, binding=1, std430) buffer smokeIndexBuffer {
     uint smokeIndex;
+    uint trailIndex;
+    uint pointIndex;
+};
+
+#include "trail.inc"
+
+layout(set=3, binding=0, std430) writeonly buffer trailBuffer {
+    trail_t trails [];
+};
+
+#include "point.inc"
+
+layout(set=3, binding=1, std430) readonly buffer pointBuffer {
+    point_t points [];
 };
 
 layout( push_constant ) uniform constants{
@@ -43,7 +57,7 @@ void main() {
         return;
     }
 
-    const float lifetime = particles[id].lifetime;
+    float lifetime = particles[id].lifetime;
 
     if (lifetime > 0.0f) {
         return;
@@ -73,6 +87,8 @@ void main() {
         return;
     }
 
+    lifetime = events[event_id].lifetime;
+
     vec3 direction;
     if (dot(events[event_id].direction, events[event_id].direction) <= 0.0f) {
         direction = vec3(
@@ -84,6 +100,7 @@ void main() {
         direction = events[event_id].direction;
     }
 
+    vec3 color = events[event_id].color;
     const float v = events[event_id].velocity;
 
     vec3 velocity = vec3(0.0f);
@@ -98,8 +115,6 @@ void main() {
             size = particles[spawnId].size;
         }
     }
-
-    vec3 color = events[event_id].color;
 
     if (0 == index) {
         const uint sid = atomicAdd(smokeIndex, 1) % smokes.length();
@@ -116,11 +131,25 @@ void main() {
 
     const float split = pow(1.0f / events[event_id].count, 1.0f / 3.0f);
 
-    particles[id].lifetime = events[event_id].lifetime;
+    particles[id].lifetime = lifetime;
     particles[id].velocity = velocity;
     particles[id].size = size * split;
     particles[id].color = color;
     particles[id].mass = events[event_id].mass / events[event_id].count;
+
+    {
+        const uint tid = atomicAdd(trailIndex, 1) % trails.length();
+        const uint trailLen = 16;
+
+        const uint startIndex = atomicAdd(pointIndex, trailLen) % points.length();
+
+        trails[tid].particleIndex = id;
+        trails[tid].startIndex = startIndex;
+        trails[tid].endIndex = (startIndex + trailLen - 1) % points.length();
+        trails[tid].useCount = 0;
+        trails[tid].color = mix(color, vec3(1.0f), 0.75f);
+        trails[tid].lifetime = lifetime;
+    }
 
     events[event_id].pad0 = id;
 }

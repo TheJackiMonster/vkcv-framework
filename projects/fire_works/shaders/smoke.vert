@@ -11,8 +11,8 @@ layout(location = 0) in vec3 vertexPos;
 
 layout(location = 0) out vec3 passPos;
 layout(location = 1) out vec3 passView;
-layout(location = 2) out flat vec3 passColor;
-layout(location = 3) out flat float passSize;
+layout(location = 2) out vec3 passColor;
+layout(location = 3) out float passSize;
 layout(location = 4) out flat int passSmokeIndex;
 
 layout( push_constant ) uniform constants{

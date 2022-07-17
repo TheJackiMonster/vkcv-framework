@@ -42,6 +42,22 @@ struct smoke_t {
 	float pad;
 };
 
+struct trail_t {
+	uint particleIndex;
+	uint startIndex;
+	uint endIndex;
+	uint useCount;
+	glm::vec3 color;
+	float lifetime;
+};
+
+struct point_t {
+	glm::vec3 position;
+	float size;
+	glm::vec3 velocity;
+	float scaling;
+};
+
 struct draw_particles_t {
 	glm::mat4 mvp;
 	uint width;
@@ -50,8 +66,9 @@ struct draw_particles_t {
 
 #define PARTICLE_COUNT 1024
 #define SMOKE_COUNT 256
-#define SMOKE_RESOLUTION 16
+#define TRAIL_COUNT 1024
 #define RANDOM_DATA_LENGTH 1024
+#define POINT_COUNT 4096
 
 int main(int argc, const char **argv) {
 	vkcv::Features features;
@@ -155,9 +172,43 @@ int main(int argc, const char **argv) {
 	vkcv::DescriptorSetLayoutHandle smokeDescriptorLayout = core.createDescriptorSetLayout(descriptorBindings1);
 	vkcv::DescriptorSetHandle smokeDescriptorSet = core.createDescriptorSet(smokeDescriptorLayout);
 	
+	vkcv::DescriptorBindings descriptorBindings2;
+	vkcv::DescriptorBinding binding2 {
+		1,
+		vkcv::DescriptorType::STORAGE_BUFFER,
+		1,
+		vkcv::ShaderStage::GEOMETRY | vkcv::ShaderStage::COMPUTE,
+		false,
+		false
+	};
+	
+	descriptorBindings2.insert(std::make_pair(0, binding0));
+	descriptorBindings2.insert(std::make_pair(1, binding2));
+	
+	vkcv::DescriptorSetLayoutHandle trailDescriptorLayout = core.createDescriptorSetLayout(
+		descriptorBindings2
+	);
+	
+	vkcv::DescriptorSetHandle trailDescriptorSet = core.createDescriptorSet(trailDescriptorLayout);
+	
 	vkcv::ComputePipelineHandle generationPipeline = core.createComputePipeline({
 		generationShader,
-		{ descriptorSetLayout, generationDescriptorLayout, smokeDescriptorLayout }
+		{
+          descriptorSetLayout,
+          generationDescriptorLayout,
+          smokeDescriptorLayout,
+          trailDescriptorLayout
+		}
+	});
+	
+	vkcv::ShaderProgram trailShader;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/trail.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		trailShader.addShader(shaderStage, path);
+	});
+	
+	vkcv::ComputePipelineHandle trailComputePipeline = core.createComputePipeline({
+		trailShader,
+		{ descriptorSetLayout, trailDescriptorLayout }
 	});
 	
 	vkcv::ShaderProgram scaleShader;
@@ -189,12 +240,21 @@ int main(int argc, const char **argv) {
 		particleShaderProgram.addShader(shaderStage, path);
 	});
 	
+	vkcv::ShaderProgram trailShaderProgram;
+	compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/trail.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		trailShaderProgram.addShader(shaderStage, path);
+	});
+	compiler.compile(vkcv::ShaderStage::GEOMETRY, "shaders/trail.geom", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		trailShaderProgram.addShader(shaderStage, path);
+	});
+	
 	vkcv::ShaderProgram smokeShaderProgram;
 	compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/smoke.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		smokeShaderProgram.addShader(shaderStage, path);
 	});
 	compiler.compile(vkcv::ShaderStage::FRAGMENT, "shaders/smoke.frag", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		smokeShaderProgram.addShader(shaderStage, path);
+		trailShaderProgram.addShader(shaderStage, path);
 	});
 	
 	std::vector<particle_t> particles;
@@ -319,11 +379,11 @@ int main(int argc, const char **argv) {
 	smokeBuffer.fill(smokes);
 	
 	vkcv::Buffer<uint> smokeIndexBuffer = core.createBuffer<uint>(
-		vkcv::BufferType::STORAGE, 1, vkcv::BufferMemoryType::HOST_VISIBLE
+		vkcv::BufferType::STORAGE, 3, vkcv::BufferMemoryType::HOST_VISIBLE
 	);
 	
-	uint* smokeIndex = smokeIndexBuffer.map();
-	*smokeIndex = 0;
+	uint* smokeIndices = smokeIndexBuffer.map();
+	memset(smokeIndices, 0, smokeIndexBuffer.getSize());
 	smokeIndexBuffer.unmap();
 	
 	{
@@ -331,6 +391,57 @@ int main(int argc, const char **argv) {
 		writes.writeStorageBuffer(0, smokeBuffer.getHandle());
 		writes.writeStorageBuffer(1, smokeIndexBuffer.getHandle());
 		core.writeDescriptorSet(smokeDescriptorSet, writes);
+	}
+	
+	std::vector<trail_t> trails;
+	trails.reserve(TRAIL_COUNT);
+	
+	for (size_t i = 0; i < TRAIL_COUNT; i++) {
+		trail_t trail;
+		
+		trail.particleIndex = 0;
+		trail.startIndex = 0;
+		trail.endIndex = 0;
+		trail.useCount = 0;
+		trail.color = glm::vec3(0.0f);
+		trail.lifetime = 0.0f;
+		
+		trails.push_back(trail);
+	}
+	
+	vkcv::Buffer<trail_t> trailBuffer = core.createBuffer<trail_t>(
+		vkcv::BufferType::STORAGE,
+		trails.size()
+	);
+	
+	trailBuffer.fill(trails);
+	
+	std::vector<point_t> points;
+	points.reserve(POINT_COUNT);
+	
+	for (size_t i = 0; i < POINT_COUNT; i++) {
+		point_t point;
+		
+		point.position = glm::vec3(0.0f);
+		point.size = 0.0f;
+		point.velocity = glm::vec3(0.0f);
+		point.scaling = 0.0f;
+		
+		points.push_back(point);
+	}
+	
+	vkcv::Buffer<point_t> pointBuffer = core.createBuffer<point_t>(
+		vkcv::BufferType::STORAGE,
+		points.size()
+	);
+	
+	pointBuffer.fill(points);
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.writeStorageBuffer(0, trailBuffer.getHandle());
+		writes.writeStorageBuffer(1, pointBuffer.getHandle());
+		core.writeDescriptorSet(trailDescriptorSet, writes);
 	}
 	
 	vkcv::Buffer<glm::vec3> cubePositions = core.createBuffer<glm::vec3>(vkcv::BufferType::VERTEX, 8);
@@ -403,6 +514,30 @@ int main(int argc, const char **argv) {
 	
 	vkcv::GraphicsPipelineHandle smokePipeline = core.createGraphicsPipeline(smokePipelineDefinition);
 	
+	const std::vector<vkcv::VertexAttachment> vaTrail = trailShaderProgram.getVertexAttachments();
+	
+	std::vector<vkcv::VertexBinding> vbTrail;
+	for (size_t i = 0; i < vaTrail.size(); i++) {
+		vbTrail.push_back(vkcv::createVertexBinding(i, { vaTrail[i] }));
+	}
+	
+	const vkcv::VertexLayout trailLayout { vbTrail };
+	
+	vkcv::GraphicsPipelineConfig trailPipelineDefinition{
+		trailShaderProgram,
+		UINT32_MAX,
+		UINT32_MAX,
+		smokePass,
+		{trailLayout},
+		{trailDescriptorLayout, generationDescriptorLayout},
+		true
+	};
+	
+	trailPipelineDefinition.m_PrimitiveTopology = vkcv::PrimitiveTopology::PointList;
+	trailPipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
+	
+	vkcv::GraphicsPipelineHandle trailPipeline = core.createGraphicsPipeline(trailPipelineDefinition);
+	
 	std::vector<vkcv::DrawcallInfo> drawcallsSmokes;
 	
 	drawcallsSmokes.push_back(vkcv::DrawcallInfo(
@@ -431,6 +566,23 @@ int main(int argc, const char **argv) {
 		triangleIndices.getVulkanHandle(),
 		triangleIndices.getCount()
 	);
+	
+	vkcv::Mesh trailMesh (
+		{},
+		triangleIndices.getVulkanHandle(),
+		1
+	);
+	
+	std::vector<vkcv::DrawcallInfo> drawcallsTrails;
+	
+	drawcallsTrails.push_back(vkcv::DrawcallInfo(
+		trailMesh,
+		{
+			vkcv::DescriptorSetUsage(0, trailDescriptorSet),
+			vkcv::DescriptorSetUsage(1, generationDescriptorSet),
+		},
+		trailBuffer.getCount()
+	));
 	
 	const std::vector<vkcv::VertexAttachment> vaParticles = particleShaderProgram.getVertexAttachments();
 	
@@ -551,7 +703,8 @@ int main(int argc, const char **argv) {
 			{
 				vkcv::DescriptorSetUsage(0, descriptorSet),
 				vkcv::DescriptorSetUsage(1, generationDescriptorSet),
-				vkcv::DescriptorSetUsage(2, smokeDescriptorSet)
+				vkcv::DescriptorSetUsage(2, smokeDescriptorSet),
+				vkcv::DescriptorSetUsage(3, trailDescriptorSet)
 			},
 			pushConstantsTime
 		);
@@ -578,6 +731,24 @@ int main(int argc, const char **argv) {
 			motionPipeline,
 			particleDispatchCount,
 			{ vkcv::DescriptorSetUsage(0, descriptorSet) },
+			pushConstantsTime
+		);
+		core.recordEndDebugLabel(cmdStream);
+		
+		uint32_t trailDispatchCount[3];
+		trailDispatchCount[0] = std::ceil(trailBuffer.getCount() / 256.f);
+		trailDispatchCount[1] = 1;
+		trailDispatchCount[2] = 1;
+		
+		core.recordBeginDebugLabel(cmdStream, "Trail update", { 0.0f, 0.0f, 1.0f, 1.0f });
+		core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			trailComputePipeline,
+			trailDispatchCount,
+			{
+				vkcv::DescriptorSetUsage(0, descriptorSet),
+				vkcv::DescriptorSetUsage(1, trailDescriptorSet)
+			},
 			pushConstantsTime
 		);
 		core.recordEndDebugLabel(cmdStream);
@@ -621,6 +792,18 @@ int main(int argc, const char **argv) {
 			smokePipeline,
 			pushConstantsDraw1,
 			{ drawcallsSmokes },
+			{ colorBuffer },
+			windowHandle
+		);
+		core.recordEndDebugLabel(cmdStream);
+		
+		core.recordBeginDebugLabel(cmdStream, "Draw trails", { 0.75f, 0.5f, 1.0f, 1.0f });
+		core.recordDrawcallsToCmdStream(
+			cmdStream,
+			smokePass,
+			trailPipeline,
+			pushConstantsDraw1,
+			{ drawcallsTrails },
 			{ colorBuffer },
 			windowHandle
 		);
