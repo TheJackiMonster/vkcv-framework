@@ -3,8 +3,9 @@
 #extension GL_GOOGLE_include_directive : enable
 
 layout(points) in;
-layout (triangle_strip, max_vertices = 4) out;
+layout (triangle_strip, max_vertices = 32) out;
 
+#include "physics.inc"
 #include "point.inc"
 
 layout(set=0, binding=1, std430) readonly buffer pointBuffer {
@@ -49,8 +50,14 @@ void main() {
         viewPositions[i] = view * vec4(position, 1);
     }
 
-    vec2 pos = viewPositions[0].xy;
-    vec2 dir = normalize(viewPositions[1].xy - pos);
+    const mat4 viewInv = inverse(view);
+
+    vec3 camDir = -normalize((viewInv * vec4(viewPositions[0].xyz, 0)).xyz);
+
+    vec3 pos = viewPositions[0].xyz;
+    vec3 dir = normalize(cross(viewPositions[1].xyz - pos, camDir));
+
+    const float trailFactor = mediumDensity / friction;
 
     for (uint i = 0; i < useCount; i++) {
         const float u = float(i + 1) / float(useCount);
@@ -60,58 +67,34 @@ void main() {
 
         vec4 viewPos = view * vec4(position, 1);
 
+        camDir = -normalize((viewInv * vec4(viewPos.xyz, 0)).xyz);
+
         if (i > 0) {
-            dir = normalize(viewPos.xy - pos);
-            pos = viewPos.xy;
+            dir = normalize(cross(viewPos.xyz - pos, camDir));
+            pos = viewPos.xyz;
         }
 
-        vec2 offset = vec2(-dir.y, dir.x) * size;
-        float density = 1.0f;// (1.0f - u * u);
+        vec3 offset = dir * size;
+        float density = trailFactor * (1.0f - u * u) / size;
 
         passPos = vec3(u, -1.0f, -1.0f);
-        passView = viewPos.xyz - vec3(offset, 0);
+        passView = viewPos.xyz - offset;
         passColor = mix(color, trailColor, u);
         passDensity = density;
         passSmokeIndex = int(id);
 
-        gl_Position = projection * viewPos - vec4(offset, 0, 0);
+        gl_Position = projection * viewPos - vec4(offset, 0);
         EmitVertex();
 
         passPos = vec3(u, +1.0f, -1.0f);
-        passView = viewPos.xyz + vec3(offset, 0);
+        passView = viewPos.xyz + offset;
         passColor = mix(color, trailColor, u);
         passDensity = density;
         passSmokeIndex = int(id);
 
-        gl_Position = projection * viewPos + vec4(offset, 0, 0);
-        EmitVertex();
-
-        if (i > 0) {
-            EndPrimitive();
-        } else {
-            continue;
-        }
-
-        if (i + 1 >= useCount) {
-            break;
-        }
-
-        passPos = vec3(u, -1.0f, -1.0f);
-        passView = viewPos.xyz - vec3(offset, 0);
-        passColor = mix(color, trailColor, u);
-        passDensity = density;
-        passSmokeIndex = int(id);
-
-        gl_Position = projection * viewPos - vec4(offset, 0, 0);
-        EmitVertex();
-
-        passPos = vec3(u, +1.0f, -1.0f);
-        passView = viewPos.xyz + vec3(offset, 0);
-        passColor = mix(color, trailColor, u);
-        passDensity = density;
-        passSmokeIndex = int(id);
-
-        gl_Position = projection * viewPos + vec4(offset, 0, 0);
+        gl_Position = projection * viewPos + vec4(offset, 0);
         EmitVertex();
     }
+
+    EndPrimitive();
 }

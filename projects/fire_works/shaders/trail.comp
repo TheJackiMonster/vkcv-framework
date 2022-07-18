@@ -50,7 +50,7 @@ void main() {
 
     const uint available = (endIndex - startIndex) % points.length();
 
-    float trailLife = dt * useCount;
+    float trailLife = dt * available;
     float fading = 1.0f / (1.0f + friction);
 
     if (lifetime <= trailLife) {
@@ -74,9 +74,9 @@ void main() {
 
         const float scaling = points[y].scaling;
 
-        position = position + velocity * dt;
-        velocity = velocity * fading + vec3(0.0f, -g, 0.0f) * dt;
-        size = size + scaling * dt;
+        position = position - velocity * dt;
+        velocity = velocity * fading + vec3(0.0f, g, 0.0f) * dt;
+        size = size * fading + scaling * dt;
 
         points[x].position = position;
         points[x].size = size;
@@ -88,10 +88,12 @@ void main() {
     float size = particles[particleIndex].size;
     vec3 velocity = particles[particleIndex].velocity;
 
-    points[startIndex].position = position;
-    points[startIndex].size = size * fading;
+    const float trailFactor = mediumDensity / friction;
+
+    points[startIndex].position = position * fading;
+    points[startIndex].size = 0.5f * size * fading;
     points[startIndex].velocity = velocity * fading;
-    points[startIndex].scaling = length(velocity) * fading;
+    points[startIndex].scaling = trailFactor * length(velocity) * fading;
 
     trails[id].useCount = useCount;
     trails[id].lifetime = lifetime;
