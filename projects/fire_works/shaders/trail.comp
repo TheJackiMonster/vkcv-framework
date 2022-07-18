@@ -48,16 +48,21 @@ void main() {
         lifetime = 0.0f;
     }
 
-    if (lifetime <= 0.0f) {
+    const uint available = (endIndex - startIndex) % points.length();
+
+    float trailLife = dt * useCount;
+    float fading = 1.0f / (1.0f + friction);
+
+    if (lifetime <= trailLife) {
+        fading *= (lifetime / trailLife);
+
         if (useCount > 0) {
             useCount--;
         }
     } else
-    if (endIndex + 1 > startIndex + useCount) {
+    if (available > useCount) {
         useCount++;
     }
-
-    const float fading = 1.0f / (1.0f + friction);
 
     for (uint i = useCount; i > 1; i--) {
         const uint x = (startIndex + (i - 1)) % points.length();
@@ -69,8 +74,8 @@ void main() {
 
         const float scaling = points[y].scaling;
 
-        //position = position + velocity * dt;
-        //velocity = velocity * fading + vec3(0.0f, -g, 0.0f) * dt;
+        position = position + velocity * dt;
+        velocity = velocity * fading + vec3(0.0f, -g, 0.0f) * dt;
         size = size + scaling * dt;
 
         points[x].position = position;
@@ -86,7 +91,7 @@ void main() {
     points[startIndex].position = position;
     points[startIndex].size = size * fading;
     points[startIndex].velocity = velocity * fading;
-    points[startIndex].scaling = 0.1f * length(velocity) * fading;
+    points[startIndex].scaling = length(velocity) * fading;
 
     trails[id].useCount = useCount;
     trails[id].lifetime = lifetime;

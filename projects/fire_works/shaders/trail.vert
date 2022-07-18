@@ -21,12 +21,20 @@ layout(location = 4) out uint geomUseCount;
 
 void main()	{
     const uint particleIndex = trails[gl_InstanceIndex].particleIndex;
+    const float lifetime = trails[gl_InstanceIndex].lifetime;
 
     geomColor = particles[particleIndex].color;
     geomTrailIndex = gl_InstanceIndex;
     geomTrailColor = trails[gl_InstanceIndex].color;
     geomStartIndex = trails[gl_InstanceIndex].startIndex;
-    geomUseCount = trails[gl_InstanceIndex].useCount;
 
-    gl_Position = vec4(0.0f);
+    const uint useCount = trails[gl_InstanceIndex].useCount;
+
+    if (lifetime > 0.0f) {
+        geomUseCount = useCount;
+    } else {
+        geomUseCount = 0;
+    }
+
+    gl_Position = vec4(gl_InstanceIndex, lifetime, useCount, 0.0f);
 }

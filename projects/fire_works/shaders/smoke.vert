@@ -12,7 +12,7 @@ layout(location = 0) in vec3 vertexPos;
 layout(location = 0) out vec3 passPos;
 layout(location = 1) out vec3 passView;
 layout(location = 2) out vec3 passColor;
-layout(location = 3) out float passSize;
+layout(location = 3) out float passDensity;
 layout(location = 4) out flat int passSmokeIndex;
 
 layout( push_constant ) uniform constants{
@@ -30,7 +30,13 @@ void main()	{
     passPos = vertexPos;
     passView = viewPos.xyz;
     passColor = color;
-    passSize = size;
+
+    if (size > 0.0f) {
+        passDensity = 0.025f / size;
+    } else {
+        passDensity = 0.0f;
+    }
+
     passSmokeIndex = gl_InstanceIndex;
 
     // transform position into projected view space

@@ -3,7 +3,7 @@
 #extension GL_GOOGLE_include_directive : enable
 
 layout(points) in;
-layout (triangle_strip, max_vertices = 32) out;
+layout (triangle_strip, max_vertices = 4) out;
 
 #include "point.inc"
 
@@ -20,7 +20,7 @@ layout(location = 4) in uint geomUseCount [1];
 layout(location = 0) out vec3 passPos;
 layout(location = 1) out vec3 passView;
 layout(location = 2) out vec3 passColor;
-layout(location = 3) out float passSize;
+layout(location = 3) out float passDensity;
 layout(location = 4) out flat int passSmokeIndex;
 
 layout( push_constant ) uniform constants{
@@ -35,31 +35,30 @@ void main() {
     const vec3 trailColor = geomTrailColor[0];
 
     const uint startIndex = geomStartIndex[0];
-    const uint useCount = min(geomUseCount[0], 16);
+    const uint useCount = geomUseCount[0];
 
     if (useCount <= 1) {
         return;
     }
 
-    vec4 viewPositions [16];
-    float sizes [16];
+    vec4 viewPositions [2];
 
-    for (uint i = 0; i < useCount; i++) {
+    for (uint i = 0; i < 2; i++) {
         const vec3 position = points[startIndex + i].position;
-        const float size = points[startIndex + i].size;
 
         viewPositions[i] = view * vec4(position, 1);
-        sizes[i] = size;
     }
 
     vec2 pos = viewPositions[0].xy;
     vec2 dir = normalize(viewPositions[1].xy - pos);
 
     for (uint i = 0; i < useCount; i++) {
-        const float u = float(i + 1) / float(16);
+        const float u = float(i + 1) / float(useCount);
 
-        vec4 viewPos = viewPositions[i];
-        float size = sizes[i];
+        const vec3 position = points[startIndex + i].position;
+        const float size = points[startIndex + i].size;
+
+        vec4 viewPos = view * vec4(position, 1);
 
         if (i > 0) {
             dir = normalize(viewPos.xy - pos);
@@ -67,11 +66,12 @@ void main() {
         }
 
         vec2 offset = vec2(-dir.y, dir.x) * size;
+        float density = 1.0f;// (1.0f - u * u);
 
         passPos = vec3(u, -1.0f, -1.0f);
         passView = viewPos.xyz - vec3(offset, 0);
         passColor = mix(color, trailColor, u);
-        passSize = size;
+        passDensity = density;
         passSmokeIndex = int(id);
 
         gl_Position = projection * viewPos - vec4(offset, 0, 0);
@@ -80,12 +80,38 @@ void main() {
         passPos = vec3(u, +1.0f, -1.0f);
         passView = viewPos.xyz + vec3(offset, 0);
         passColor = mix(color, trailColor, u);
-        passSize = size;
+        passDensity = density;
+        passSmokeIndex = int(id);
+
+        gl_Position = projection * viewPos + vec4(offset, 0, 0);
+        EmitVertex();
+
+        if (i > 0) {
+            EndPrimitive();
+        } else {
+            continue;
+        }
+
+        if (i + 1 >= useCount) {
+            break;
+        }
+
+        passPos = vec3(u, -1.0f, -1.0f);
+        passView = viewPos.xyz - vec3(offset, 0);
+        passColor = mix(color, trailColor, u);
+        passDensity = density;
+        passSmokeIndex = int(id);
+
+        gl_Position = projection * viewPos - vec4(offset, 0, 0);
+        EmitVertex();
+
+        passPos = vec3(u, +1.0f, -1.0f);
+        passView = viewPos.xyz + vec3(offset, 0);
+        passColor = mix(color, trailColor, u);
+        passDensity = density;
         passSmokeIndex = int(id);
 
         gl_Position = projection * viewPos + vec4(offset, 0, 0);
         EmitVertex();
     }
-
-    EndPrimitive();
 }

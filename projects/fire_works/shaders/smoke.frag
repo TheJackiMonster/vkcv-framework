@@ -7,7 +7,7 @@
 layout(location = 0) in vec3 passPos;
 layout(location = 1) in vec3 passView;
 layout(location = 2) in vec3 passColor;
-layout(location = 3) in float passSize;
+layout(location = 3) in float passDensity;
 layout(location = 4) in flat int passSmokeIndex;
 
 layout(location = 0) out vec3 outColor;
@@ -24,13 +24,7 @@ layout( push_constant ) uniform constants{
 #define NUM_SMOKE_SAMPLES 16
 
 void main()	{
-    if (passSize <= 0.0f) {
-        discard;
-    }
-
-    const float density = 0.025f / passSize;
-
-    if (density <= mediumDensity) {
+    if (passDensity <= mediumDensity) {
         discard;
     }
 
@@ -46,7 +40,7 @@ void main()	{
             end + (start - end) * i / (NUM_SMOKE_SAMPLES - 1)
         );
 
-        vec4 data = vec4(passColor, density);
+        vec4 data = vec4(passColor, passDensity);
 
         float fallOff = max(1.0f - length(position), 0.0f);
 

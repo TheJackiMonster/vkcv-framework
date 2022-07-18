@@ -139,7 +139,7 @@ void main() {
 
     {
         const uint tid = atomicAdd(trailIndex, 1) % trails.length();
-        const uint trailLen = 16;
+        const uint trailLen = 64 + int(randomData[(tid + id) % randomData.length()] * 32);
 
         const uint startIndex = atomicAdd(pointIndex, trailLen) % points.length();
 
@@ -148,7 +148,7 @@ void main() {
         trails[tid].endIndex = (startIndex + trailLen - 1) % points.length();
         trails[tid].useCount = 0;
         trails[tid].color = mix(color, vec3(1.0f), 0.75f);
-        trails[tid].lifetime = lifetime;
+        trails[tid].lifetime = lifetime + (dt * trailLen) * 0.5f;
     }
 
     events[event_id].pad0 = id;

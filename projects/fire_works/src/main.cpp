@@ -64,11 +64,11 @@ struct draw_particles_t {
 	uint height;
 };
 
-#define PARTICLE_COUNT 1024
-#define SMOKE_COUNT 256
-#define TRAIL_COUNT 1024
-#define RANDOM_DATA_LENGTH 1024
-#define POINT_COUNT 4096
+#define PARTICLE_COUNT (1024)
+#define SMOKE_COUNT (512)
+#define TRAIL_COUNT (2048)
+#define RANDOM_DATA_LENGTH (1024)
+#define POINT_COUNT (2048 * 256)
 
 int main(int argc, const char **argv) {
 	vkcv::Features features;
