@@ -384,7 +384,6 @@ int main(int argc, const char **argv) {
 	
 	uint* smokeIndices = smokeIndexBuffer.map();
 	memset(smokeIndices, 0, smokeIndexBuffer.getSize());
-	smokeIndexBuffer.unmap();
 	
 	{
 		vkcv::DescriptorWrites writes;
@@ -529,7 +528,7 @@ int main(int argc, const char **argv) {
 		UINT32_MAX,
 		smokePass,
 		{trailLayout},
-		{trailDescriptorLayout, generationDescriptorLayout},
+		{trailDescriptorLayout, generationDescriptorLayout, descriptorSetLayout},
 		true
 	};
 	
@@ -580,6 +579,7 @@ int main(int argc, const char **argv) {
 		{
 			vkcv::DescriptorSetUsage(0, trailDescriptorSet),
 			vkcv::DescriptorSetUsage(1, generationDescriptorSet),
+			vkcv::DescriptorSetUsage(2, descriptorSet)
 		},
 		trailBuffer.getCount()
 	));
@@ -851,6 +851,10 @@ int main(int argc, const char **argv) {
 			particleBuffer.fill(particles);
 			eventBuffer.fill(events);
 			smokeBuffer.fill(smokes);
+			trailBuffer.fill(trails);
+			pointBuffer.fill(points);
+			
+			memset(smokeIndices, 0, smokeIndexBuffer.getSize());
 		}
 		
 		ImGui::End();
@@ -859,5 +863,6 @@ int main(int argc, const char **argv) {
 		core.endFrame(windowHandle);
 	}
 	
+	smokeIndexBuffer.unmap();
 	return 0;
 }

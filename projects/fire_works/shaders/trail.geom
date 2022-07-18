@@ -37,10 +37,14 @@ void main() {
     const uint startIndex = geomStartIndex[0];
     const uint useCount = min(geomUseCount[0], 16);
 
+    if (useCount <= 1) {
+        return;
+    }
+
     vec4 viewPositions [16];
     float sizes [16];
 
-    for (uint i = 0; i < 16; i++) {
+    for (uint i = 0; i < useCount; i++) {
         const vec3 position = points[startIndex + i].position;
         const float size = points[startIndex + i].size;
 
@@ -48,28 +52,38 @@ void main() {
         sizes[i] = size;
     }
 
-    for (uint i = 0; i < 16; i++) {
+    vec2 pos = viewPositions[0].xy;
+    vec2 dir = normalize(viewPositions[1].xy - pos);
+
+    for (uint i = 0; i < useCount; i++) {
         const float u = float(i + 1) / float(16);
 
         vec4 viewPos = viewPositions[i];
         float size = sizes[i];
 
+        if (i > 0) {
+            dir = normalize(viewPos.xy - pos);
+            pos = viewPos.xy;
+        }
+
+        vec2 offset = vec2(-dir.y, dir.x) * size;
+
         passPos = vec3(u, -1.0f, -1.0f);
-        passView = viewPos.xyz - vec3(0, size, 0);
+        passView = viewPos.xyz - vec3(offset, 0);
         passColor = mix(color, trailColor, u);
         passSize = size;
         passSmokeIndex = int(id);
 
-        gl_Position = projection * viewPos - vec4(0, size, 0, 0);
+        gl_Position = projection * viewPos - vec4(offset, 0, 0);
         EmitVertex();
 
         passPos = vec3(u, +1.0f, -1.0f);
-        passView = viewPos.xyz + vec3(0, size, 0);
+        passView = viewPos.xyz + vec3(offset, 0);
         passColor = mix(color, trailColor, u);
         passSize = size;
         passSmokeIndex = int(id);
 
-        gl_Position = projection * viewPos + vec4(0, size, 0, 0);
+        gl_Position = projection * viewPos + vec4(offset, 0, 0);
         EmitVertex();
     }
 

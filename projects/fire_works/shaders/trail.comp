@@ -86,7 +86,7 @@ void main() {
     points[startIndex].position = position;
     points[startIndex].size = size * fading;
     points[startIndex].velocity = velocity * fading;
-    points[startIndex].scaling = length(velocity) * fading;
+    points[startIndex].scaling = 0.1f * length(velocity) * fading;
 
     trails[id].useCount = useCount;
     trails[id].lifetime = lifetime;
