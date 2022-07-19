@@ -832,7 +832,14 @@ int main(int argc, const char **argv) {
 		gui.beginGUI();
 		ImGui::Begin("Settings");
 		
-		if (ImGui::Button("Reset")) {
+		bool resetTime = ImGui::Button("Reset");
+		
+		ImGui::End();
+		gui.endGUI();
+		
+		core.endFrame(windowHandle);
+		
+		if (resetTime) {
 			start = std::chrono::system_clock::now();
 			
 			particleBuffer.fill(particles);
@@ -843,11 +850,6 @@ int main(int argc, const char **argv) {
 			
 			memset(smokeIndices, 0, smokeIndexBuffer.getSize());
 		}
-		
-		ImGui::End();
-		gui.endGUI();
-		
-		core.endFrame(windowHandle);
 	}
 	
 	smokeIndexBuffer.unmap();
