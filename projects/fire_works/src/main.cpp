@@ -771,6 +771,7 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
+		core.recordImageMemoryBarrier(cmdStream, colorBuffer);
 		core.recordBufferMemoryBarrier(cmdStream, smokeBuffer.getHandle());
 		
 		glm::mat4 smokeMatrices [2];
@@ -792,6 +793,7 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
+		core.recordImageMemoryBarrier(cmdStream, colorBuffer);
 		core.recordBufferMemoryBarrier(cmdStream, trailBuffer.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, pointBuffer.getHandle());
 		
