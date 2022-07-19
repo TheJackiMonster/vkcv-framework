@@ -762,8 +762,6 @@ int main(int argc, const char **argv) {
 		vkcv::PushConstants pushConstantsDraw0 (sizeof(draw_particles_t));
 		pushConstantsDraw0.appendDrawcall(draw_particles);
 		
-		core.recordImageMemoryBarrier(cmdStream, colorBuffers[0]);
-		
 		core.recordBeginDebugLabel(cmdStream, "Draw particles", { 1.0f, 0.0f, 1.0f, 1.0f });
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
@@ -786,8 +784,6 @@ int main(int argc, const char **argv) {
 		vkcv::PushConstants pushConstantsDraw1 (sizeof(glm::mat4) * 2);
 		pushConstantsDraw1.appendDrawcall(smokeMatrices);
 		
-		core.recordImageMemoryBarrier(cmdStream, colorBuffers[1]);
-		
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
 			renderPass,
@@ -801,8 +797,6 @@ int main(int argc, const char **argv) {
 		
 		core.recordBufferMemoryBarrier(cmdStream, trailBuffer.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, pointBuffer.getHandle());
-		
-		core.recordImageMemoryBarrier(cmdStream, colorBuffers[2]);
 		
 		core.recordBeginDebugLabel(cmdStream, "Draw trails", { 0.75f, 0.5f, 1.0f, 1.0f });
 		core.recordDrawcallsToCmdStream(

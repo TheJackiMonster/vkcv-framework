@@ -10,7 +10,7 @@ layout(location = 2) in vec3 passColor;
 layout(location = 3) in float passDensity;
 layout(location = 4) in flat int passSmokeIndex;
 
-layout(location = 0) out vec3 outColor;
+layout(location = 0) out vec4 outColor;
 
 layout(set=1, binding=0, std430) readonly buffer randomBuffer {
     float randomData [];
@@ -53,16 +53,12 @@ void main()	{
         );
     }
 
-    result.a += (1.0f + randomData[passSmokeIndex % randomData.length()] * 0.1f) * result.a;
+    // Inverse alpha value
+    result.a = 1.0f - result.a;
 
-    if (result.a <= 0.0f) {
+    if (result.a < 1.0f) {
+        outColor = result;
+    } else {
         discard;
     }
-
-    result.r = clamp(result.r, 0.0f, 1.0f);
-    result.g = clamp(result.g, 0.0f, 1.0f);
-    result.b = clamp(result.b, 0.0f, 1.0f);
-    result.a = clamp(result.a, 0.0f, 1.0f);
-
-    outColor += vec3(result.rgb * result.a);
 }
