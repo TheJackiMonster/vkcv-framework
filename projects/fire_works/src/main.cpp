@@ -656,8 +656,10 @@ int main(int argc, const char **argv) {
 		current = next;
 		
 		float time_values [2];
-		time_values[0] = static_cast<float>(0.000001 * static_cast<double>(time.count()));
-		time_values[1] = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
+		time_values[0] = 0.000001f * static_cast<float>(time.count());
+		time_values[1] = 0.000001f * static_cast<float>(deltatime.count());
+		
+		std::cout << time_values[0] << " " << time_values[1] << std::endl;
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
