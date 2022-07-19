@@ -74,32 +74,6 @@ int main(int argc, const char **argv) {
 	vkcv::Features features;
 	
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
-		VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, [](vk::PhysicalDeviceDescriptorIndexingFeatures &features) {
-			features.setShaderInputAttachmentArrayDynamicIndexing(true);
-			features.setShaderUniformTexelBufferArrayDynamicIndexing(true);
-			features.setShaderStorageTexelBufferArrayDynamicIndexing(true);
-			features.setShaderUniformBufferArrayNonUniformIndexing(true);
-			features.setShaderSampledImageArrayNonUniformIndexing(true);
-			features.setShaderStorageBufferArrayNonUniformIndexing(true);
-			features.setShaderStorageImageArrayNonUniformIndexing(true);
-			features.setShaderInputAttachmentArrayNonUniformIndexing(true);
-			features.setShaderUniformTexelBufferArrayNonUniformIndexing(true);
-			features.setShaderStorageTexelBufferArrayNonUniformIndexing(true);
-			
-			features.setDescriptorBindingUniformBufferUpdateAfterBind(true);
-			features.setDescriptorBindingSampledImageUpdateAfterBind(true);
-			features.setDescriptorBindingStorageImageUpdateAfterBind(true);
-			features.setDescriptorBindingStorageBufferUpdateAfterBind(true);
-			features.setDescriptorBindingUniformTexelBufferUpdateAfterBind(true);
-			features.setDescriptorBindingStorageTexelBufferUpdateAfterBind(true);
-
-			features.setDescriptorBindingUpdateUnusedWhilePending(true);
-			features.setDescriptorBindingPartiallyBound(true);
-			features.setDescriptorBindingVariableDescriptorCount(true);
-			features.setRuntimeDescriptorArray(true);
-		}
-	);
 	
 	vkcv::Core core = vkcv::Core::create(
 		"Firework",
