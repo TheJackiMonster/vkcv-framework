@@ -1,0 +1,22 @@
+#version 440
+
+layout(set=0, binding=0, rgba16f) readonly uniform image2D inParticles;
+layout(set=0, binding=1, rgba16f) readonly uniform image2D inSmoke;
+layout(set=0, binding=2, rgba16f) readonly uniform image2D inTrails;
+layout(set=0, binding=3, rgba16f) writeonly uniform image2D outImage;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void main() {
+    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, imageSize(outImage)))){
+        return;
+    }
+
+    ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
+
+    vec4 outParticles = imageLoad(inParticles, uv);
+    vec4 outSmoke = imageLoad(inSmoke, uv);
+    vec4 outTrails = imageLoad(inTrails, uv);
+
+    imageStore(outImage, uv, outParticles + outSmoke + outTrails);
+}

@@ -1,4 +1,6 @@
 
+#include <array>
+
 #include <vkcv/Core.hpp>
 #include <vkcv/DrawcallRecording.hpp>
 
@@ -199,12 +201,15 @@ int main(int argc, const char **argv) {
 	
 	const vk::Format colorFormat = vk::Format::eR16G16B16A16Sfloat;
 	
-	vkcv::ImageHandle colorBuffer = core.createImage(
-		colorFormat,
-		swapchainExtent.width,
-		swapchainExtent.height,
-		1, false, true, true
-	).getHandle();
+	std::array<vkcv::ImageHandle, 4> colorBuffers;
+	for (size_t i = 0; i < colorBuffers.size(); i++) {
+		colorBuffers[i] = core.createImage(
+				colorFormat,
+				swapchainExtent.width,
+				swapchainExtent.height,
+				1, false, true, true
+		).getHandle();
+	}
 	
 	vkcv::ShaderProgram particleShaderProgram;
 	compiler.compile(vkcv::ShaderStage::VERTEX, "shaders/particle.vert", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
@@ -462,13 +467,13 @@ int main(int argc, const char **argv) {
 	
 	const vkcv::VertexLayout smokeLayout { vbSmoke };
 	
-	vkcv::PassHandle smokePass = core.createPass(vkcv::PassConfig(
+	vkcv::PassHandle renderPass = core.createPass(vkcv::PassConfig(
 		{
 			vkcv::AttachmentDescription(
 				vkcv::AttachmentOperation::STORE,
-				vkcv::AttachmentOperation::LOAD,
+				vkcv::AttachmentOperation::CLEAR,
 				colorFormat
-			)
+				)
 		},
 		vkcv::Multisampling::None
 	));
@@ -477,13 +482,11 @@ int main(int argc, const char **argv) {
 		smokeShaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
-		smokePass,
+		renderPass,
 		{smokeLayout},
 		{smokeDescriptorLayout, generationDescriptorLayout},
 		true
 	};
-	
-	smokePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 	
 	vkcv::GraphicsPipelineHandle smokePipeline = core.createGraphicsPipeline(smokePipelineDefinition);
 	
@@ -500,14 +503,13 @@ int main(int argc, const char **argv) {
 		trailShaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
-		smokePass,
+		renderPass,
 		{trailLayout},
 		{trailDescriptorLayout, generationDescriptorLayout, descriptorSetLayout},
 		true
 	};
 	
 	trailPipelineDefinition.m_PrimitiveTopology = vkcv::PrimitiveTopology::PointList;
-	trailPipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 	
 	vkcv::GraphicsPipelineHandle trailPipeline = core.createGraphicsPipeline(trailPipelineDefinition);
 	
@@ -566,29 +568,16 @@ int main(int argc, const char **argv) {
 	}
 
 	const vkcv::VertexLayout particleLayout { vbParticles };
-	
-	vkcv::PassHandle particlePass = core.createPass(vkcv::PassConfig(
-		{
-			vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
-				vkcv::AttachmentOperation::CLEAR,
-				colorFormat
-			)
-		},
-		vkcv::Multisampling::None
-	));
 
 	vkcv::GraphicsPipelineConfig particlePipelineDefinition{
 		particleShaderProgram,
 		UINT32_MAX,
 		UINT32_MAX,
-		particlePass,
+		renderPass,
 		{particleLayout},
 		{descriptorSetLayout},
 		true
 	};
-	
-	particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 	
 	vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 	
@@ -612,6 +601,18 @@ int main(int argc, const char **argv) {
 	
 	vkcv::effects::BloomAndFlaresEffect bloomAndFlares (core);
 	bloomAndFlares.setUpsamplingLimit(3);
+	
+	vkcv::ShaderProgram addShader;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/add.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		addShader.addShader(shaderStage, path);
+	});
+	
+	vkcv::DescriptorSetLayoutHandle addDescriptorLayout = core.createDescriptorSetLayout(addShader.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle addDescriptor = core.createDescriptorSet(addDescriptorLayout);
+	vkcv::ComputePipelineHandle addPipe = core.createComputePipeline({
+		addShader,
+		{ addDescriptorLayout }
+	});
 	
 	vkcv::ShaderProgram tonemappingShader;
 	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/tonemapping.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
@@ -638,14 +639,16 @@ int main(int argc, const char **argv) {
 			continue;
 		}
 	
-		if ((core.getImageWidth(colorBuffer) != swapchainWidth) ||
-			(core.getImageHeight(colorBuffer) != swapchainHeight)) {
-			colorBuffer = core.createImage(
-				  colorFormat,
-				  swapchainWidth,
-				  swapchainHeight,
-				  1, false, true, true
-		  	).getHandle();
+		for (size_t i = 0; i < colorBuffers.size(); i++) {
+			if ((core.getImageWidth(colorBuffers[i]) != swapchainWidth) ||
+				(core.getImageHeight(colorBuffers[i]) != swapchainHeight)) {
+				colorBuffers[i] = core.createImage(
+										   colorFormat,
+										   swapchainWidth,
+										   swapchainHeight,
+										   1, false, true, true
+										   ).getHandle();
+			}
 		}
 		
 		auto next = std::chrono::system_clock::now();
@@ -759,19 +762,20 @@ int main(int argc, const char **argv) {
 		vkcv::PushConstants pushConstantsDraw0 (sizeof(draw_particles_t));
 		pushConstantsDraw0.appendDrawcall(draw_particles);
 		
+		core.recordImageMemoryBarrier(cmdStream, colorBuffers[0]);
+		
 		core.recordBeginDebugLabel(cmdStream, "Draw particles", { 1.0f, 0.0f, 1.0f, 1.0f });
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			particlePass,
+			renderPass,
 			particlePipeline,
 			pushConstantsDraw0,
 			{ drawcallsParticles },
-			{ colorBuffer },
+			{ colorBuffers[0] },
 			windowHandle
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
-		core.recordImageMemoryBarrier(cmdStream, colorBuffer);
 		core.recordBufferMemoryBarrier(cmdStream, smokeBuffer.getHandle());
 		
 		glm::mat4 smokeMatrices [2];
@@ -782,57 +786,80 @@ int main(int argc, const char **argv) {
 		vkcv::PushConstants pushConstantsDraw1 (sizeof(glm::mat4) * 2);
 		pushConstantsDraw1.appendDrawcall(smokeMatrices);
 		
+		core.recordImageMemoryBarrier(cmdStream, colorBuffers[1]);
+		
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			smokePass,
+			renderPass,
 			smokePipeline,
 			pushConstantsDraw1,
 			{ drawcallsSmokes },
-			{ colorBuffer },
+			{ colorBuffers[1] },
 			windowHandle
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
-		core.recordImageMemoryBarrier(cmdStream, colorBuffer);
 		core.recordBufferMemoryBarrier(cmdStream, trailBuffer.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, pointBuffer.getHandle());
+		
+		core.recordImageMemoryBarrier(cmdStream, colorBuffers[2]);
 		
 		core.recordBeginDebugLabel(cmdStream, "Draw trails", { 0.75f, 0.5f, 1.0f, 1.0f });
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			smokePass,
+			renderPass,
 			trailPipeline,
 			pushConstantsDraw1,
 			{ drawcallsTrails },
-			{ colorBuffer },
+			{ colorBuffers[2] },
 			windowHandle
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
-		bloomAndFlares.recordEffect(cmdStream, colorBuffer, colorBuffer);
+		core.recordBeginDebugLabel(cmdStream, "Add rendered images", { 0.5f, 0.5f, 1.0f, 1.0f });
+		
+		vkcv::DescriptorWrites addDescriptorWrites;
+		for (size_t i = 0; i < colorBuffers.size(); i++) {
+			addDescriptorWrites.writeStorageImage(i, colorBuffers[i]);
+			core.prepareImageForStorage(cmdStream, colorBuffers[i]);
+		}
+		
+		core.writeDescriptorSet(addDescriptor, addDescriptorWrites);
+		
+		uint32_t colorDispatchCount[3];
+		colorDispatchCount[0] = std::ceil(swapchainWidth / 8.f);
+		colorDispatchCount[1] = std::ceil(swapchainHeight / 8.f);
+		colorDispatchCount[2] = 1;
+		
+		core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			addPipe,
+			colorDispatchCount,
+			{vkcv::DescriptorSetUsage(0, addDescriptor) },
+			vkcv::PushConstants(0)
+		);
+		
+		core.recordEndDebugLabel(cmdStream);
+		
+		bloomAndFlares.recordEffect(cmdStream, colorBuffers.back(), colorBuffers.back());
 		
 		core.recordBeginDebugLabel(cmdStream, "Tonemapping", { 0.0f, 1.0f, 0.0f, 1.0f });
-		core.prepareImageForStorage(cmdStream, colorBuffer);
+		core.prepareImageForStorage(cmdStream, colorBuffers.back());
 		core.prepareImageForStorage(cmdStream, swapchainImage);
 		
 		vkcv::DescriptorWrites tonemappingDescriptorWrites;
 		tonemappingDescriptorWrites.writeStorageImage(
-			0, colorBuffer
+			0, colorBuffers.back()
 		).writeStorageImage(
 			1, swapchainImage
 		);
 		
 		core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
-
-		uint32_t tonemappingDispatchCount[3];
-		tonemappingDispatchCount[0] = std::ceil(swapchainWidth / 8.f);
-		tonemappingDispatchCount[1] = std::ceil(swapchainHeight / 8.f);
-		tonemappingDispatchCount[2] = 1;
 		
 		core.recordComputeDispatchToCmdStream(
 			cmdStream,
 			tonemappingPipe,
-			tonemappingDispatchCount,
+			colorDispatchCount,
 			{vkcv::DescriptorSetUsage(0, tonemappingDescriptor) },
 			vkcv::PushConstants(0)
 		);
