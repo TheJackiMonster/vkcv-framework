@@ -684,6 +684,10 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
+		core.recordBufferMemoryBarrier(cmdStream, eventBuffer.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, smokeBuffer.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, smokeIndexBuffer.getHandle());
+		
 		uint32_t smokeDispatchCount[3];
 		smokeDispatchCount[0] = std::ceil(smokeBuffer.getCount() / 256.f);
 		smokeDispatchCount[1] = 1;
@@ -699,6 +703,8 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
+		core.recordBufferMemoryBarrier(cmdStream, particleBuffer.getHandle());
+		
 		core.recordBeginDebugLabel(cmdStream, "Particle motion", { 0.0f, 0.0f, 1.0f, 1.0f });
 		core.recordComputeDispatchToCmdStream(
 			cmdStream,
@@ -708,6 +714,8 @@ int main(int argc, const char **argv) {
 			pushConstantsTime
 		);
 		core.recordEndDebugLabel(cmdStream);
+		
+		core.recordBufferMemoryBarrier(cmdStream, trailBuffer.getHandle());
 		
 		uint32_t trailDispatchCount[3];
 		trailDispatchCount[0] = std::ceil(trailBuffer.getCount() / 256.f);
@@ -726,6 +734,9 @@ int main(int argc, const char **argv) {
 			pushConstantsTime
 		);
 		core.recordEndDebugLabel(cmdStream);
+		
+		core.recordBufferMemoryBarrier(cmdStream, pointBuffer.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, trailBuffer.getHandle());
 		
 		cameraManager.update(time_values[1]);
 		
