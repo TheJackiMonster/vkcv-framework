@@ -11,8 +11,6 @@ option(BUILD_VMA_VULKAN_VERSION "Enforce a specific Vulkan version for VMA" OFF)
 
 if ((WIN32) AND (NOT BUILD_VMA_VULKAN_VERSION))
 	set(BUILD_VMA_VULKAN_VERSION "1.3.0")
-	
-	message(STATUS "HALLO!")
 endif()
 
 if (BUILD_PROJECTS)
