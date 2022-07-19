@@ -22,10 +22,10 @@ struct event_t {
 	glm::vec3 color;
 	float velocity;
 	
-	uint count;
-	uint index;
-	uint parent;
-	uint pad0;
+	uint32_t count;
+	uint32_t index;
+	uint32_t parent;
+	uint32_t pad0;
 	
 	float lifetime;
 	float mass;
@@ -43,10 +43,10 @@ struct smoke_t {
 };
 
 struct trail_t {
-	uint particleIndex;
-	uint startIndex;
-	uint endIndex;
-	uint useCount;
+	uint32_t particleIndex;
+	uint32_t startIndex;
+	uint32_t endIndex;
+	uint32_t useCount;
 	glm::vec3 color;
 	float lifetime;
 };
@@ -60,8 +60,8 @@ struct point_t {
 
 struct draw_particles_t {
 	glm::mat4 mvp;
-	uint width;
-	uint height;
+	uint32_t width;
+	uint32_t height;
 };
 
 #define PARTICLE_COUNT (1024)
@@ -88,7 +88,7 @@ int main(int argc, const char **argv) {
 	
 	uint32_t trackballIdx = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	cameraManager.getCamera(trackballIdx).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));   // set camera to look at the center of the particle volume
-	uint pilotIdx = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	uint32_t pilotIdx = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	cameraManager.getCamera(trackballIdx).setNearFar(0.1f, 50.0f);
 	cameraManager.getCamera(trackballIdx).setPosition(glm::vec3(0, 0, -25));
@@ -352,11 +352,11 @@ int main(int argc, const char **argv) {
 	
 	smokeBuffer.fill(smokes);
 	
-	vkcv::Buffer<uint> smokeIndexBuffer = core.createBuffer<uint>(
+	vkcv::Buffer<uint32_t> smokeIndexBuffer = core.createBuffer<uint32_t>(
 		vkcv::BufferType::STORAGE, 3, vkcv::BufferMemoryType::HOST_VISIBLE
 	);
 	
-	uint* smokeIndices = smokeIndexBuffer.map();
+	uint32_t* smokeIndices = smokeIndexBuffer.map();
 	memset(smokeIndices, 0, smokeIndexBuffer.getSize());
 	
 	{
