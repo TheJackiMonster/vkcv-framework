@@ -663,6 +663,13 @@ int main(int argc, const char **argv) {
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
+		core.recordBufferMemoryBarrier(cmdStream, eventBuffer.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, smokeBuffer.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, smokeIndexBuffer.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, particleBuffer.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, trailBuffer.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, pointBuffer.getHandle());
+		
 		uint32_t particleDispatchCount[3];
 		particleDispatchCount[0] = std::ceil(particleBuffer.getCount() / 256.f);
 		particleDispatchCount[1] = 1;
@@ -686,9 +693,7 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
-		core.recordBufferMemoryBarrier(cmdStream, eventBuffer.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, smokeBuffer.getHandle());
-		core.recordBufferMemoryBarrier(cmdStream, smokeIndexBuffer.getHandle());
 		
 		uint32_t smokeDispatchCount[3];
 		smokeDispatchCount[0] = std::ceil(smokeBuffer.getCount() / 256.f);
@@ -717,7 +722,9 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
+		core.recordBufferMemoryBarrier(cmdStream, particleBuffer.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, trailBuffer.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, pointBuffer.getHandle());
 		
 		uint32_t trailDispatchCount[3];
 		trailDispatchCount[0] = std::ceil(trailBuffer.getCount() / 256.f);
@@ -737,12 +744,11 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
-		core.recordBufferMemoryBarrier(cmdStream, pointBuffer.getHandle());
-		core.recordBufferMemoryBarrier(cmdStream, trailBuffer.getHandle());
-		
 		cameraManager.update(time_values[1]);
 		
 		const auto& camera = cameraManager.getActiveCamera();
+		
+		core.recordBufferMemoryBarrier(cmdStream, particleBuffer.getHandle());
 		
 		draw_particles_t draw_particles {
 			camera.getMVP(),
@@ -765,6 +771,8 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
+		core.recordBufferMemoryBarrier(cmdStream, smokeBuffer.getHandle());
+		
 		glm::mat4 smokeMatrices [2];
 		smokeMatrices[0] = camera.getView();
 		smokeMatrices[1] = camera.getProjection();
@@ -783,6 +791,9 @@ int main(int argc, const char **argv) {
 			windowHandle
 		);
 		core.recordEndDebugLabel(cmdStream);
+		
+		core.recordBufferMemoryBarrier(cmdStream, trailBuffer.getHandle());
+		core.recordBufferMemoryBarrier(cmdStream, pointBuffer.getHandle());
 		
 		core.recordBeginDebugLabel(cmdStream, "Draw trails", { 0.75f, 0.5f, 1.0f, 1.0f });
 		core.recordDrawcallsToCmdStream(
