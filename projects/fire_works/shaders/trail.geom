@@ -6,7 +6,7 @@
 
 layout(points) in;
 layout (triangle_strip, max_vertices = (INSTANCE_LEN * 2)) out;
-layout(invocations = 32) in;
+layout(invocations = 8) in;
 
 #include "physics.inc"
 #include "point.inc"
@@ -44,9 +44,9 @@ void main() {
     const uint indexOffset = (gl_InvocationID * (INSTANCE_LEN - 1));
     const uint instanceIndex = startIndex + indexOffset;
 
-    uint count = INSTANCE_LEN;
+    uint count = min(INSTANCE_LEN, useCount);
 
-    if (indexOffset + INSTANCE_LEN > useCount) {
+    if ((indexOffset >= useCount) && (indexOffset + INSTANCE_LEN > useCount)) {
         count = indexOffset - useCount;
     }
 
