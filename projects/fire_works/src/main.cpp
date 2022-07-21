@@ -260,7 +260,6 @@ int main(int argc, const char **argv) {
 	particles.resize(PARTICLE_COUNT);
 	initializeParticles(particles);
 	
-	
 	vkcv::Buffer<particle_t> particleBuffer = core.createBuffer<particle_t>(
 		vkcv::BufferType::STORAGE,
 		particles.size(),
@@ -275,8 +274,7 @@ int main(int argc, const char **argv) {
 		core.createBuffer<particle_t>(vkcv::BufferType::STORAGE, particles.size());
 
 	particleBufferCopy.fill(particles);
-
-
+	
 	{
 		vkcv::DescriptorWrites writes;
 		writes.writeStorageBuffer(0, particleBuffer.getHandle());
@@ -392,7 +390,6 @@ int main(int argc, const char **argv) {
 		writes.writeStorageBuffer(2, startIndexBuffer.getHandle());
 		core.writeDescriptorSet(generationDescriptorSet, writes);
 	}
-
 
 	std::vector<smoke_t> smokes;
 	smokes.reserve(SMOKE_COUNT);
@@ -548,6 +545,8 @@ int main(int argc, const char **argv) {
 		true
 	};
 	
+	smokePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
+	
 	vkcv::GraphicsPipelineHandle smokePipeline = core.createGraphicsPipeline(smokePipelineDefinition);
 	
 	const std::vector<vkcv::VertexAttachment> vaTrail = trailShaderProgram.getVertexAttachments();
@@ -570,6 +569,7 @@ int main(int argc, const char **argv) {
 	};
 	
 	trailPipelineDefinition.m_PrimitiveTopology = vkcv::PrimitiveTopology::PointList;
+	trailPipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 	
 	vkcv::GraphicsPipelineHandle trailPipeline = core.createGraphicsPipeline(trailPipelineDefinition);
 	
@@ -638,6 +638,8 @@ int main(int argc, const char **argv) {
 		{descriptorSetLayout},
 		true
 	};
+	
+	particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
 	
 	vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 	

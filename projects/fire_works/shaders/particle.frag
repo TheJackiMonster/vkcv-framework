@@ -14,7 +14,7 @@ void main()	{
     const float value = length(passPos);
 
     if (value < 0.5f) {
-        outColor = vec4(passColor, max(value * 2.0f, 0.0f)); // Use inverse alpha value
+        outColor = vec4(passColor, 1.0f - max(value * 2.0f, 0.0f));
     } else {
         discard;
     }

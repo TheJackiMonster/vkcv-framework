@@ -18,12 +18,6 @@ void main() {
     vec4 outSmoke = imageLoad(inSmoke, uv);
     vec4 outTrails = imageLoad(inTrails, uv);
 
-    // Reverse alpha values:
-    // -> Because clear value is always vec4(0, 0, 0, 1) which is now vec4(0, 0, 0, 0)!
-    outParticles.a = 1.0f - clamp(outParticles.a, 0, 1);
-    outSmoke.a = 1.0f - clamp(outSmoke.a, 0, 1);
-    outTrails.a = 1.0f - clamp(outTrails.a, 0, 1);
-
     // TODO: add noise to the smoke here!
 
     vec4 result = vec4(
