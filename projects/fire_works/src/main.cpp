@@ -290,7 +290,7 @@ int main(int argc, const char **argv) {
 	
 	events.emplace_back(
 		glm::vec3(0, 1, 0),
-		0.0f,
+		0.5f,
 		glm::vec3(0.0f, 1.0f, 0.0f),
 		12.5f,
 		
@@ -307,13 +307,13 @@ int main(int argc, const char **argv) {
 	
 	events.emplace_back(
 		glm::vec3(0.0f),
-		1.0f,
+		1.5f,
 		glm::vec3(0.0f, 1.0f, 1.0f),
 		10.0f,
 		
 		100,
 		0,
-		events.size() - 3,
+		events.size() - 1,
 		0,
 		
 		10.0f,
@@ -324,7 +324,7 @@ int main(int argc, const char **argv) {
 
 	events.emplace_back(
 		glm::vec3(0.5, 1, 0), 
-		0.1f, 
+		0.25f, 
 		glm::vec3(0.0f, 1.5f, 0.0f), 
 		15.0f,
 
@@ -341,7 +341,7 @@ int main(int argc, const char **argv) {
 
 	events.emplace_back(
 		glm::vec3(0.0f), 
-		1.0f, 
+		0.75f, 
 		glm::vec3(0.0f, 1.5f, 1.0f), 
 		8.0f,
 
@@ -908,6 +908,12 @@ int main(int argc, const char **argv) {
 		gui.endGUI();
 		
 		core.endFrame(windowHandle);
+
+		particleBuffer.read(particles);
+		sort(particles.begin(), particles.end(),
+			 [](const particle_t p1, const particle_t p2) {
+				 return p1.eventId < p2.eventId;
+			 });
 		
 		if (resetTime) {
 			start = std::chrono::system_clock::now();
