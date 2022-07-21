@@ -74,8 +74,8 @@ void main() {
 
         const float scaling = points[y].scaling;
 
-        position = position - velocity * dt;
-        velocity = velocity * fading + vec3(0.0f, g, 0.0f) * dt;
+        // position = position - velocity * dt;
+        // velocity = velocity * fading + vec3(0.0f, g, 0.0f) * dt;
         size = size * fading + scaling * dt;
 
         points[x].position = position;
