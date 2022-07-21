@@ -43,11 +43,16 @@ void main() {
 
     const uint indexOffset = (gl_InvocationID * (INSTANCE_LEN - 1));
     const uint instanceIndex = startIndex + indexOffset;
-
-    uint count = INSTANCE_LEN;
+        
+    uint count = min(INSTANCE_LEN, useCount);
 
     if (indexOffset + INSTANCE_LEN > useCount) {
-        count = indexOffset - useCount;
+        if(indexOffset >= useCount){
+            count = indexOffset - useCount;
+        }else{
+            count = 0;
+            return;
+        }
     }
 
     if (count <= 1) {
