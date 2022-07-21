@@ -11,6 +11,10 @@ layout(set=0, binding=0, std430) buffer particleBuffer {
     particle_t particles [];
 };
 
+layout(set=0, binding=1, std430) readonly buffer particleBufferCopy {
+    particle_t particlesCopy [];
+};
+
 layout(set=1, binding=0, std430) readonly buffer randomBuffer {
     float randomData [];
 };
@@ -113,10 +117,10 @@ void main() {
     if (events[event_id].parent < events.length()) {
         const uint spawnId = startIndex[events[event_id].parent];
 
-        if (spawnId < particles.length()) {
-            particles[id].position = particles[spawnId].position;
-            velocity += particles[spawnId].velocity;
-            size = particles[spawnId].size;
+        if (spawnId < particlesCopy.length()) {
+            particles[id].position = particlesCopy[spawnId].position;
+            velocity += particlesCopy[spawnId].velocity;
+            size = particlesCopy[spawnId].size;
         }
     }
 
@@ -155,6 +159,4 @@ void main() {
         trails[tid].color = mix(color, vec3(1.0f), 0.75f);
         trails[tid].lifetime = lifetime + (dt * trailLen) * 0.5f;
     }
-
-    events[event_id].pad0 = id;
 }

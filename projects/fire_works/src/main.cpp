@@ -130,8 +130,18 @@ int main(int argc, const char **argv) {
 		false,
 		false
 	};
+	vkcv::DescriptorBinding binding1 { 
+		1,     
+		vkcv::DescriptorType::STORAGE_BUFFER,
+									   
+		1,     
+		vkcv::ShaderStage::COMPUTE,
+		false, 
+		false 
+	};
 	
 	descriptorBindings0.insert(std::make_pair(0, binding0));
+	descriptorBindings0.insert(std::make_pair(1, binding1));
 	
 	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings0);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
@@ -151,14 +161,6 @@ int main(int argc, const char **argv) {
 	vkcv::DescriptorSetHandle generationDescriptorSet = core.createDescriptorSet(generationDescriptorLayout);
 	
 	vkcv::DescriptorBindings descriptorBindings1;
-	vkcv::DescriptorBinding binding1 {
-		1,
-		vkcv::DescriptorType::STORAGE_BUFFER,
-		1,
-		vkcv::ShaderStage::COMPUTE,
-		false,
-		false
-	};
 	
 	descriptorBindings1.insert(std::make_pair(0, binding0));
 	descriptorBindings1.insert(std::make_pair(1, binding1));
@@ -269,9 +271,16 @@ int main(int argc, const char **argv) {
 	
 	particleBuffer.fill(particles);
 	
+	vkcv::Buffer<particle_t> particleBufferCopy =
+		core.createBuffer<particle_t>(vkcv::BufferType::STORAGE, particles.size());
+
+	particleBufferCopy.fill(particles);
+
+
 	{
 		vkcv::DescriptorWrites writes;
 		writes.writeStorageBuffer(0, particleBuffer.getHandle());
+		writes.writeStorageBuffer(1, particleBufferCopy.getHandle());
 		core.writeDescriptorSet(descriptorSet, writes);
 	}
 	
@@ -948,6 +957,7 @@ int main(int argc, const char **argv) {
 		if (resetTime) {
 			start = std::chrono::system_clock::now();	
 			initializeParticles(particles);
+			particleBuffer.fill(particles);
 			eventBuffer.fill(events);
 			smokeBuffer.fill(smokes);
 			trailBuffer.fill(trails);
@@ -956,7 +966,7 @@ int main(int argc, const char **argv) {
 			memset(smokeIndices, 0, smokeIndexBuffer.getSize());
 		}
 
-		particleBuffer.fill(particles);
+		particleBufferCopy.fill(particles);
 	}
 	
 	smokeIndexBuffer.unmap();
