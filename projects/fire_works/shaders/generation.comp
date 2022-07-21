@@ -21,6 +21,10 @@ layout(set=1, binding=1, std430) buffer eventBuffer {
     event_t events [];
 };
 
+layout(set=1, binding=2, std430) buffer startIndexBuffer {
+    uint startIndex [];
+};
+
 #include "smoke.inc"
 
 layout(set=2, binding=0, std430) writeonly buffer smokeBuffer {
@@ -107,7 +111,7 @@ void main() {
     float size = events[event_id].size;
 
     if (events[event_id].parent < events.length()) {
-        const uint spawnId = events[events[event_id].parent].pad0;
+        const uint spawnId = startIndex[events[event_id].parent];
 
         if (spawnId < particles.length()) {
             particles[id].position = particles[spawnId].position;

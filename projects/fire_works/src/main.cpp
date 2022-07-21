@@ -74,6 +74,22 @@ struct draw_particles_t {
 #define RANDOM_DATA_LENGTH (1024)
 #define POINT_COUNT (2048 * 256)
 
+void initializeParticles(std::vector<particle_t> &particles) {
+	for (size_t i = 0; i < particles.size(); i++) {
+		particle_t particle;
+		particle.position = glm::vec3(2.0f * (std::rand() % RAND_MAX) / RAND_MAX - 1.0f,
+									  2.0f * (std::rand() % RAND_MAX) / RAND_MAX - 1.0f,
+									  2.0f * (std::rand() % RAND_MAX) / RAND_MAX - 1.0f);
+
+		particle.lifetime = 0.0f;
+		particle.velocity = glm::vec3(0.0f);
+		particle.size = 0.01f;
+		particle.color = glm::vec3(1.0f, 0.0f, 0.0f);
+
+		particles [i] = particle;
+	}
+}
+
 int main(int argc, const char **argv) {
 	vkcv::Features features;
 	
@@ -239,27 +255,16 @@ int main(int argc, const char **argv) {
 	});
 	
 	std::vector<particle_t> particles;
-	particles.reserve(PARTICLE_COUNT);
+	particles.resize(PARTICLE_COUNT);
+	initializeParticles(particles);
 	
-	for (size_t i = 0; i < PARTICLE_COUNT; i++) {
-		particle_t particle;
-		particle.position = glm::vec3(
-			2.0f * (std::rand() % RAND_MAX) / RAND_MAX - 1.0f,
-			2.0f * (std::rand() % RAND_MAX) / RAND_MAX - 1.0f,
-			2.0f * (std::rand() % RAND_MAX) / RAND_MAX - 1.0f
-		);
-		
-		particle.lifetime = 0.0f;
-		particle.velocity = glm::vec3(0.0f);
-		particle.size = 0.01f;
-		particle.color = glm::vec3(1.0f, 0.0f, 0.0f);
-		
-		particles.push_back(particle);
-	}
 	
 	vkcv::Buffer<particle_t> particleBuffer = core.createBuffer<particle_t>(
 		vkcv::BufferType::STORAGE,
-		particles.size()
+		particles.size(),
+		vkcv::BufferMemoryType::DEVICE_LOCAL,
+		false,
+		true
 	);
 	
 	particleBuffer.fill(particles);
@@ -369,7 +374,17 @@ int main(int argc, const char **argv) {
 		writes.writeStorageBuffer(1, eventBuffer.getHandle());
 		core.writeDescriptorSet(generationDescriptorSet, writes);
 	}
-	
+
+	vkcv::Buffer<uint32_t> startIndexBuffer =
+		core.createBuffer<uint32_t>(vkcv::BufferType::STORAGE, eventBuffer.getCount());
+
+	{
+		vkcv::DescriptorWrites writes;
+		writes.writeStorageBuffer(2, startIndexBuffer.getHandle());
+		core.writeDescriptorSet(generationDescriptorSet, writes);
+	}
+
+
 	std::vector<smoke_t> smokes;
 	smokes.reserve(SMOKE_COUNT);
 	
@@ -914,11 +929,25 @@ int main(int argc, const char **argv) {
 			 [](const particle_t p1, const particle_t p2) {
 				 return p1.eventId < p2.eventId;
 			 });
+
+		std::vector<uint32_t> startingIndex;
+		startingIndex.resize(events.size());
+		uint32_t eventIdCheck = std::numeric_limits<uint32_t>::max();
+
+		for (size_t i = 0; i < particles.size(); i++) {
+			if (particles[i].eventId != eventIdCheck) {
+				eventIdCheck = particles [i].eventId;
+				if (eventIdCheck < startingIndex.size()) {
+					startingIndex [eventIdCheck] = i;
+				}
+			}
+		}
+
+		startIndexBuffer.fill(startingIndex);
 		
 		if (resetTime) {
-			start = std::chrono::system_clock::now();
-			
-			particleBuffer.fill(particles);
+			start = std::chrono::system_clock::now();	
+			initializeParticles(particles);
 			eventBuffer.fill(events);
 			smokeBuffer.fill(smokes);
 			trailBuffer.fill(trails);
@@ -926,6 +955,8 @@ int main(int argc, const char **argv) {
 			
 			memset(smokeIndices, 0, smokeIndexBuffer.getSize());
 		}
+
+		particleBuffer.fill(particles);
 	}
 	
 	smokeIndexBuffer.unmap();
