@@ -16,6 +16,8 @@ struct particle_t {
 	float size;
 	glm::vec3 color;
 	float pad2;
+	glm::vec3 pad0;
+	uint32_t eventId;
 };
 
 struct event_t {
@@ -311,12 +313,46 @@ int main(int argc, const char **argv) {
 		
 		100,
 		0,
-		events.size() - 1,
+		events.size() - 3,
 		0,
 		
 		10.0f,
 		1.0f,
 		0.0f,
+		0.0f
+	);
+
+	events.emplace_back(
+		glm::vec3(0.5, 1, 0), 
+		0.1f, 
+		glm::vec3(0.0f, 1.5f, 0.0f), 
+		15.0f,
+
+		1, 
+		0, 
+		UINT_MAX, 
+		0,
+
+		0.5f, 
+		1.0f, 
+		0.5f, 
+		0.0f
+	);
+
+	events.emplace_back(
+		glm::vec3(0.0f), 
+		1.0f, 
+		glm::vec3(0.0f, 1.5f, 1.0f), 
+		8.0f,
+
+		150, 
+		0, 
+		events.size() - 1, 
+		0,
+
+		10.0f, 
+		1.0f, 
+		0.0f, 
 		0.0f
 	);
 	

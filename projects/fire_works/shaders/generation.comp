@@ -136,6 +136,7 @@ void main() {
     particles[id].size = size * split;
     particles[id].color = color;
     particles[id].mass = events[event_id].mass / events[event_id].count;
+    particles[id].eventId = event_id;
 
     {
         const uint tid = atomicAdd(trailIndex, 1) % trails.length();

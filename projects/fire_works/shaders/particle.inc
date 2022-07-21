@@ -8,6 +8,8 @@ struct particle_t {
 	float size;
 	vec3 color;
 	float mass;
+	vec3 pad0;
+	uint eventId;
 };
 
 #endif // PARTICLE_INC
