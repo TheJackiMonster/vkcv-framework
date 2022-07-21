@@ -53,8 +53,12 @@ void main()	{
         );
     }
 
+    result.r = clamp(result.r, 0, 1);
+    result.g = clamp(result.g, 0, 1);
+    result.b = clamp(result.b, 0, 1);
+
     // Inverse alpha value
-    result.a = 1.0f - result.a;
+    result.a = 1.0f - clamp(result.a, 0, 1);;
 
     if (result.a < 1.0f) {
         outColor = result;
