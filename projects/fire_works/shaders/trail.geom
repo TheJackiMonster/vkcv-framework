@@ -2,8 +2,11 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
+#define INSTANCE_LEN (16)
+
 layout(points) in;
-layout (triangle_strip, max_vertices = 32) out;
+layout (triangle_strip, max_vertices = (INSTANCE_LEN * 2)) out;
+layout(invocations = 32) in;
 
 #include "physics.inc"
 #include "point.inc"
@@ -38,14 +41,24 @@ void main() {
     const uint startIndex = geomStartIndex[0];
     const uint useCount = geomUseCount[0];
 
-    if (useCount <= 1) {
+    const uint indexOffset = (gl_InvocationID * (INSTANCE_LEN - 1));
+    const uint instanceIndex = startIndex + indexOffset;
+
+    uint count = INSTANCE_LEN;
+
+    if (indexOffset + INSTANCE_LEN > useCount) {
+        count = indexOffset - useCount;
+    }
+
+    if (count <= 1) {
         return;
     }
 
     vec4 viewPositions [2];
 
     for (uint i = 0; i < 2; i++) {
-        const vec3 position = points[startIndex + i].position;
+        const uint index = (instanceIndex + i) % points.length();
+        const vec3 position = points[index].position;
 
         viewPositions[i] = view * vec4(position, 1);
     }
@@ -55,11 +68,13 @@ void main() {
 
     const float trailFactor = mediumDensity / friction;
 
-    for (uint i = 0; i < useCount; i++) {
-        const float u = float(i + 1) / float(useCount);
+    for (uint i = 0; i < count; i++) {
+        const float u = float(indexOffset + i + 1) / float(useCount);
 
-        const vec3 position = points[startIndex + i].position;
-        const float size = points[startIndex + i].size;
+        const uint index = (instanceIndex + i) % points.length();
+
+        const vec3 position = points[index].position;
+        const float size = points[index].size;
 
         vec4 viewPos = view * vec4(position, 1);
 

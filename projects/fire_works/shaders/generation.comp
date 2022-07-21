@@ -148,7 +148,7 @@ void main() {
 
     {
         const uint tid = atomicAdd(trailIndex, 1) % trails.length();
-        const uint trailLen = 16; // 64 + int(randomData[(tid + id) % randomData.length()] * 32);
+        const uint trailLen = 64 + int(randomData[(tid + id) % randomData.length()] * 32);
 
         const uint startIndex = atomicAdd(pointIndex, trailLen) % points.length();
 
