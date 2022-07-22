@@ -22,14 +22,14 @@ layout(location = 3) in uint geomStartIndex [1];
 layout(location = 4) in uint geomUseCount [1];
 
 layout(location = 0) out vec3 passPos;
-layout(location = 1) out vec3 passView;
+layout(location = 1) out vec3 passDir;
 layout(location = 2) out vec3 passColor;
 layout(location = 3) out float passDensity;
 layout(location = 4) out flat int passSmokeIndex;
 
 layout( push_constant ) uniform constants{
-    mat4 view;
-    mat4 projection;
+    mat4 mvp;
+    vec3 camera;
 };
 
 void main() {
@@ -54,7 +54,7 @@ void main() {
         return;
     }
 
-    vec4 viewPositions [2];
+    vec3 positions [2];
     uint viewIndex = instanceIndex;
 
     if (viewIndex > startIndex) {
@@ -63,13 +63,12 @@ void main() {
 
     for (uint i = 0; i < 2; i++) {
         const uint index = (viewIndex + i) % points.length();
-        const vec3 position = points[index].position;
 
-        viewPositions[i] = view * vec4(position, 1);
+        positions[i] = points[index].position;
     }
 
-    vec3 pos = viewPositions[0].xyz;
-    vec3 dir = normalize(cross(viewPositions[1].xyz - pos, viewPositions[0].xyz));
+    vec3 pos = positions[0];
+    vec3 dir = normalize(cross(positions[1] - pos, pos - camera));
 
     const float trailFactor = mediumDensity / friction;
 
@@ -81,35 +80,33 @@ void main() {
         const vec3 position = points[index].position;
         const float size = points[index].size;
 
-        vec4 viewPos = view * vec4(position, 1);
-
         if (i > 0) {
-            dir = normalize(cross(viewPos.xyz - pos, viewPos.xyz));
-            pos = viewPos.xyz;
+            dir = normalize(cross(position - pos, pos - camera));
+            pos = position;
         }
 
         vec3 offset = dir * size;
         float density = trailFactor * (1.0f - u * u) / size;
 
-        vec4 v0 = viewPos - vec4(offset, 0);
-        vec4 v1 = viewPos + vec4(offset, 0);
+        const vec3 p0 = position - offset;
+        const vec3 p1 = position + offset;
 
         passPos = vec3(u, -1.0f, -1.0f);
-        passView = v0.xyz;
+        passDir = vec3(0, 0, 1);
         passColor = mix(color, trailColor, u);
         passDensity = density;
         passSmokeIndex = int(id);
 
-        gl_Position = projection * v0;
+        gl_Position = mvp * vec4(p0, 1);
         EmitVertex();
 
         passPos = vec3(u, +1.0f, -1.0f);
-        passView = v1.xyz;
+        passDir = vec3(0, 0, 1);
         passColor = mix(color, trailColor, u);
         passDensity = density;
         passSmokeIndex = int(id);
 
-        gl_Position = projection * v1;
+        gl_Position = mvp * vec4(p1, 1);
         EmitVertex();
     }
 
