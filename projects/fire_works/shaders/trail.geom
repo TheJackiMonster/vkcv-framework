@@ -92,7 +92,7 @@ void main() {
         const vec3 p1 = position + offset;
 
         passPos = vec3(u, -1.0f, -1.0f);
-        passDir = vec3(0, 0, 1);
+        passDir = vec3(-0.1f * u, +0.2f, 2.0f);
         passColor = mix(color, trailColor, u);
         passDensity = density;
         passSmokeIndex = int(id);
@@ -101,7 +101,7 @@ void main() {
         EmitVertex();
 
         passPos = vec3(u, +1.0f, -1.0f);
-        passDir = vec3(0, 0, 1);
+        passDir = vec3(-0.1f * u, -0.2f, 2.0f);
         passColor = mix(color, trailColor, u);
         passDensity = density;
         passSmokeIndex = int(id);
