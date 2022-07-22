@@ -55,9 +55,14 @@ void main() {
     }
 
     vec4 viewPositions [2];
+    uint viewIndex = instanceIndex;
+
+    if (viewIndex > startIndex) {
+        viewIndex--;
+    }
 
     for (uint i = 0; i < 2; i++) {
-        const uint index = (instanceIndex + i) % points.length();
+        const uint index = (viewIndex + i) % points.length();
         const vec3 position = points[index].position;
 
         viewPositions[i] = view * vec4(position, 1);
