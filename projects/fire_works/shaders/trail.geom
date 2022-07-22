@@ -54,22 +54,6 @@ void main() {
         return;
     }
 
-    vec3 positions [2];
-    uint viewIndex = instanceIndex;
-
-    if (viewIndex > startIndex) {
-        viewIndex--;
-    }
-
-    for (uint i = 0; i < 2; i++) {
-        const uint index = (viewIndex + i) % points.length();
-
-        positions[i] = points[index].position;
-    }
-
-    vec3 pos = positions[0];
-    vec3 dir = normalize(cross(positions[1] - pos, pos - camera));
-
     const float trailFactor = mediumDensity / friction;
 
     for (uint i = 0; i < count; i++) {
@@ -79,11 +63,9 @@ void main() {
 
         const vec3 position = points[index].position;
         const float size = points[index].size;
+        const vec3 velocity = points[index].velocity;
 
-        if (i > 0) {
-            dir = normalize(cross(position - pos, pos - camera));
-            pos = position;
-        }
+        const vec3 dir = normalize(cross(abs(velocity), position - camera));
 
         vec3 offset = dir * size;
         float density = trailFactor * (1.0f - u * u) / size;
