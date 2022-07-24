@@ -29,12 +29,12 @@ struct event_t {
 	uint32_t count;
 	uint32_t index;
 	uint32_t parent;
-	uint32_t pad0;
+	uint32_t continous;
 	
 	float lifetime;
 	float mass;
 	float size;
-	float pad1;
+	uint32_t contCount;
 };
 
 struct smoke_t {
@@ -79,7 +79,7 @@ struct draw_smoke_t {
 #define RANDOM_DATA_LENGTH (1024)
 #define POINT_COUNT (2048 * 256)
 
-void initializeParticles(std::vector<particle_t> &particles) {
+void InitializeParticles(std::vector<particle_t> &particles) {
 	for (size_t i = 0; i < particles.size(); i++) {
 		particle_t particle;
 		particle.position = glm::vec3(2.0f * (std::rand() % RAND_MAX) / RAND_MAX - 1.0f,
@@ -93,6 +93,96 @@ void initializeParticles(std::vector<particle_t> &particles) {
 
 		particles [i] = particle;
 	}
+}
+
+void InitializeFireworkEvents(std::vector<event_t>& events) {
+	events.emplace_back(glm::vec3(0, 1, 0), 0.5f, glm::vec3(0.0f, 1.0f, 0.0f), 12.5f,
+
+						1, 0, UINT_MAX, 0,
+
+						1.0f, 1.0f, 0.5f, 0);
+
+	events.emplace_back(glm::vec3(0.0f), 1.5f, glm::vec3(0.0f, 1.0f, 1.0f), 10.0f,
+
+						100, 0, events.size() - 1, 0,
+
+						10.0f, 1.0f, 0.0f, 0);
+
+	events.emplace_back(glm::vec3(0.5, 1, 0), 0.25f, glm::vec3(0.0f, 1.5f, 0.0f), 15.0f,
+
+						1, 0, UINT_MAX, 0,
+
+						0.5f, 1.0f, 0.5f, 0);
+
+	events.emplace_back(glm::vec3(0.0f), 0.75f, glm::vec3(0.0f, 1.5f, 1.0f), 8.0f,
+
+						150, 0, events.size() - 1, 0,
+
+						10.0f, 1.0f, 0.0f, 0);
+
+	events.emplace_back(glm::vec3(-2.5, 3, 0.5), 1.0f, glm::vec3(246.0f, 189.0f, 255.0f), 12.5f,
+
+						1, 0, UINT_MAX, 0,
+
+						1.0f, 1.0f, 0.5f, 0);
+
+	events.emplace_back(glm::vec3(0.0f), 2.0f, glm::vec3(235.0f, 137.0f, 250.0f), 8.0f,
+
+						75, 0, events.size() - 1, 0,
+
+						10.0f, 1.0f, 0.0f, 0);
+}
+
+void InitializeSparklerEvents(std::vector<event_t> &events) {
+	events.emplace_back(glm::vec3(0, 1, 0), 0.0f, glm::vec3(251.0f, 255.0f, 145.0f), 1.0f,
+
+						1, 0, UINT_MAX, 0,
+
+						8.0f, 0.0f, 0.5f, 0);
+
+	events.emplace_back(glm::vec3(0.0f), 0.0f, glm::vec3(251.0f, 255.0f, 145.0f), 10.0f,
+
+						1000, 1, events.size() - 1, 10,
+
+						0.5f, -1.0f, 0.0f, 100);
+}
+
+void InitializeNestedFireworkEvents(std::vector<event_t>& events) {
+	events.emplace_back(glm::vec3(0, 2, 0), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f), 12.5f,
+
+						1, 0, UINT_MAX, 0,
+
+						1.0f, 1.0f, 0.5f, 0);
+
+	events.emplace_back(glm::vec3(0.0f), 1.0f, glm::vec3(0.0f, 1.0f, 1.0f), 7.0f,
+
+						100, 0, events.size() - 1, 0,
+
+						10.0f, 1.0f, 0.0f, 0);
+
+	events.emplace_back(glm::vec3(0.0f), 2.0f, glm::vec3(0.0f, 0.0f, 0.0f), 10.0f,
+
+						100, 0, events.size() - 1, 0,
+
+						10.0f, 1.0f, 0.0f, 0);
+
+	events.emplace_back(glm::vec3(0.0f), 1.0f, glm::vec3(42.0f,0.0f, 1.0f), 12.5f,
+
+						100, 0, events.size() - 2, 0,
+
+						1.0f, 1.0f, 0.5f, 0);
+
+	events.emplace_back(glm::vec3(0.0f), 1.5f, glm::vec3(42.0f, 0.0f, 1.0f), 10.0f,
+
+						100, 0, events.size() - 1, 0,
+
+						10.0f, 1.0f, 0.0f, 0);
+
+	events.emplace_back(glm::vec3(0.0f), 2.0f, glm::vec3(42.0f, 0.0f, 1.0f), 10.0f,
+
+						100, 0, events.size() - 1, 0,
+
+						10.0f, 1.0f, 0.0f, 0);
 }
 
 int main(int argc, const char **argv) {
@@ -263,7 +353,7 @@ int main(int argc, const char **argv) {
 	
 	std::vector<particle_t> particles;
 	particles.resize(PARTICLE_COUNT);
-	initializeParticles(particles);
+	InitializeParticles(particles);
 	
 	vkcv::Buffer<particle_t> particleBuffer = core.createBuffer<particle_t>(
 		vkcv::BufferType::STORAGE,
@@ -304,74 +394,7 @@ int main(int argc, const char **argv) {
 	randomBuffer.fill(randomData);
 	
 	std::vector<event_t> events;
-	
-	events.emplace_back(
-		glm::vec3(0, 1, 0),
-		0.5f,
-		glm::vec3(0.0f, 1.0f, 0.0f),
-		12.5f,
-		
-		1,
-		0,
-		UINT_MAX,
-		0,
-		
-		1.0f,
-		1.0f,
-		0.5f,
-		0.0f
-	);
-	
-	events.emplace_back(
-		glm::vec3(0.0f),
-		1.5f,
-		glm::vec3(0.0f, 1.0f, 1.0f),
-		10.0f,
-		
-		100,
-		0,
-		events.size() - 1,
-		0,
-		
-		10.0f,
-		1.0f,
-		0.0f,
-		0.0f
-	);
-
-	events.emplace_back(
-		glm::vec3(0.5, 1, 0), 
-		0.25f, 
-		glm::vec3(0.0f, 1.5f, 0.0f), 
-		15.0f,
-
-		1, 
-		0, 
-		UINT_MAX, 
-		0,
-
-		0.5f, 
-		1.0f, 
-		0.5f, 
-		0.0f
-	);
-
-	events.emplace_back(
-		glm::vec3(0.0f), 
-		0.75f, 
-		glm::vec3(0.0f, 1.5f, 1.0f), 
-		8.0f,
-
-		150, 
-		0, 
-		events.size() - 1, 
-		0,
-
-		10.0f, 
-		1.0f, 
-		0.0f, 
-		0.0f
-	);
+	InitializeFireworkEvents(events);
 	
 	vkcv::Buffer<event_t> eventBuffer = core.createBuffer<event_t>(
 		vkcv::BufferType::STORAGE,
@@ -934,6 +957,11 @@ int main(int argc, const char **argv) {
 		gui.beginGUI();
 		ImGui::Begin("Settings");
 		
+		bool listbox = ImGui::BeginListBox(" ");
+		bool firework = ImGui::Selectable("Firework");
+		bool sparkler = ImGui::Selectable("Sparkler");
+		bool nested = ImGui::Selectable("Nested Firework");
+		ImGui::EndListBox();
 		bool resetTime = ImGui::Button("Reset");
 		
 		ImGui::End();
@@ -961,10 +989,24 @@ int main(int argc, const char **argv) {
 		}
 
 		startIndexBuffer.fill(startingIndex);
+
+		if (firework) {
+			events.clear();
+			InitializeFireworkEvents(events);
+			resetTime = true;
+		} else if (sparkler) {
+			events.clear();
+			InitializeSparklerEvents(events);
+			resetTime = true;
+		} else if (nested) {
+			events.clear();
+			InitializeNestedFireworkEvents(events);
+			resetTime = true;
+		}
 		
 		if (resetTime) {
 			start = std::chrono::system_clock::now();	
-			initializeParticles(particles);
+			InitializeParticles(particles);
 			particleBuffer.fill(particles);
 			eventBuffer.fill(events);
 			smokeBuffer.fill(smokes);

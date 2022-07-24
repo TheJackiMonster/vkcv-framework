@@ -36,7 +36,12 @@ void main() {
     const float fading = 1.0f / (1.0f + friction);
 
     position = position + velocity * dt;
-    velocity = velocity * fading + vec3(0.0f, -g, 0.0f) * dt;
+    if(particles[id].mass > 0){
+        velocity = velocity * fading + vec3(0.0f, -g, 0.0f) * dt;
+    }
+    else{
+        velocity = velocity * fading;
+    }
 
     particles[id].position = position;
     particles[id].lifetime = lifetime;

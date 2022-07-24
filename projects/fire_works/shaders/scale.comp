@@ -31,7 +31,7 @@ void main() {
     const float fading = 1.0f / (1.0f + friction);
 
     position = position + velocity * dt;
-    velocity = velocity * fading + vec3(0.0f, -g, 0.0f) * dt;
+    velocity = velocity * fading + vec3(0.0f, 0.2f, 0.0f) * dt; //smoke is lighter than air right? + vec3(0.0f, -g, 0.0f) * dt;
     size = size + scaling * dt;
 
     smokes[id].position = position;

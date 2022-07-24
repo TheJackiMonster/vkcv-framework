@@ -10,12 +10,12 @@ struct event_t {
 	uint count;
 	uint index;
 	uint parent;
-	uint pad0;
+	uint continuous;
 	
 	float lifetime;
 	float mass;
 	float size;
-	float pad1;
+	uint contCount;
 };
 
 #endif // EVENT_INC
