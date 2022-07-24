@@ -2,8 +2,11 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
+#define INSTANCE_LEN (16)
+
 layout(points) in;
-layout (triangle_strip, max_vertices = 32) out;
+layout (triangle_strip, max_vertices = (INSTANCE_LEN * 2)) out;
+layout(invocations = 8) in;
 
 #include "physics.inc"
 #include "point.inc"
