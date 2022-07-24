@@ -68,6 +68,11 @@ struct draw_particles_t {
 	uint32_t height;
 };
 
+struct draw_smoke_t {
+	glm::mat4 mvp;
+	glm::vec3 camera;
+};
+
 #define PARTICLE_COUNT (1024)
 #define SMOKE_COUNT (512)
 #define TRAIL_COUNT (2048)
@@ -838,13 +843,14 @@ int main(int argc, const char **argv) {
 		
 		core.recordBufferMemoryBarrier(cmdStream, smokeBuffer.getHandle());
 		
-		glm::mat4 smokeMatrices [2];
-		smokeMatrices[0] = camera.getView();
-		smokeMatrices[1] = camera.getProjection();
+		draw_smoke_t draw_smoke {
+			camera.getMVP(),
+			camera.getPosition()
+		};
 		
 		core.recordBeginDebugLabel(cmdStream, "Draw smoke", { 1.0f, 0.5f, 1.0f, 1.0f });
-		vkcv::PushConstants pushConstantsDraw1 (sizeof(glm::mat4) * 2);
-		pushConstantsDraw1.appendDrawcall(smokeMatrices);
+		vkcv::PushConstants pushConstantsDraw1 (sizeof(draw_smoke_t));
+		pushConstantsDraw1.appendDrawcall(draw_smoke);
 		
 		core.recordDrawcallsToCmdStream(
 			cmdStream,

@@ -5,7 +5,7 @@
 #include "physics.inc"
 
 layout(location = 0) in vec3 passPos;
-layout(location = 1) in vec3 passView;
+layout(location = 1) in vec3 passDir;
 layout(location = 2) in vec3 passColor;
 layout(location = 3) in float passDensity;
 layout(location = 4) in flat int passSmokeIndex;
@@ -16,11 +16,6 @@ layout(set=1, binding=0, std430) readonly buffer randomBuffer {
     float randomData [];
 };
 
-layout( push_constant ) uniform constants{
-    mat4 view;
-    mat4 projection;
-};
-
 #define NUM_SMOKE_SAMPLES 16
 
 void main()	{
@@ -28,10 +23,8 @@ void main()	{
         discard;
     }
 
-    vec3 dir = -normalize((inverse(view) * vec4(passView, 0)).xyz);
-
     vec3 start = passPos;
-    vec3 end = start + dir * 3.5f;
+    vec3 end = start + normalize(passDir) * 3.5f;
 
     vec4 result = vec4(0);
 

@@ -22,14 +22,14 @@ layout(location = 3) in uint geomStartIndex [1];
 layout(location = 4) in uint geomUseCount [1];
 
 layout(location = 0) out vec3 passPos;
-layout(location = 1) out vec3 passView;
+layout(location = 1) out vec3 passDir;
 layout(location = 2) out vec3 passColor;
 layout(location = 3) out float passDensity;
 layout(location = 4) out flat int passSmokeIndex;
 
 layout( push_constant ) uniform constants{
-    mat4 view;
-    mat4 projection;
+    mat4 mvp;
+    vec3 camera;
 };
 
 void main() {
@@ -41,58 +41,54 @@ void main() {
     const uint startIndex = geomStartIndex[0];
     const uint useCount = geomUseCount[0];
 
-    if (useCount <= 1) {
+    const uint indexOffset = (gl_InvocationID * (INSTANCE_LEN - 1));
+    const uint instanceIndex = startIndex + indexOffset;
+
+    uint count = min(INSTANCE_LEN, useCount);
+
+    if ((indexOffset >= useCount) && (indexOffset + INSTANCE_LEN > useCount)) {
+        count = indexOffset - useCount;
+    }
+
+    if (count <= 1) {
         return;
     }
 
-    vec4 viewPositions [2];
-
-    for (uint i = 0; i < 2; i++) {
-        const vec3 position = points[startIndex + i].position;
-
-        viewPositions[i] = view * vec4(position, 1);
-    }
-
-    vec3 pos = viewPositions[0].xyz;
-    vec3 dir = normalize(cross(viewPositions[1].xyz - pos, viewPositions[0].xyz));
-
     const float trailFactor = mediumDensity / friction;
 
-    for (uint i = 0; i < useCount; i++) {
-        const float u = float(i + 1) / float(useCount);
+    for (uint i = 0; i < count; i++) {
+        const float u = float(indexOffset + i + 1) / float(useCount);
 
-        const vec3 position = points[startIndex + i].position;
-        const float size = points[startIndex + i].size;
+        const uint index = (instanceIndex + i) % points.length();
 
-        vec4 viewPos = view * vec4(position, 1);
+        const vec3 position = points[index].position;
+        const float size = points[index].size;
+        const vec3 velocity = points[index].velocity;
 
-        if (i > 0) {
-            dir = normalize(cross(viewPos.xyz - pos, viewPos.xyz));
-            pos = viewPos.xyz;
-        }
+        const vec3 dir = normalize(cross(abs(velocity), position - camera));
 
         vec3 offset = dir * size;
         float density = trailFactor * (1.0f - u * u) / size;
 
-        vec4 v0 = viewPos - vec4(offset, 0);
-        vec4 v1 = viewPos + vec4(offset, 0);
+        const vec3 p0 = position - offset;
+        const vec3 p1 = position + offset;
 
         passPos = vec3(u, -1.0f, -1.0f);
-        passView = v0.xyz;
+        passDir = vec3(-0.1f * u, +0.2f, 2.0f);
         passColor = mix(color, trailColor, u);
         passDensity = density;
         passSmokeIndex = int(id);
 
-        gl_Position = projection * v0;
+        gl_Position = mvp * vec4(p0, 1);
         EmitVertex();
 
         passPos = vec3(u, +1.0f, -1.0f);
-        passView = v1.xyz;
+        passDir = vec3(-0.1f * u, -0.2f, 2.0f);
         passColor = mix(color, trailColor, u);
         passDensity = density;
         passSmokeIndex = int(id);
 
-        gl_Position = projection * v1;
+        gl_Position = mvp * vec4(p1, 1);
         EmitVertex();
     }
 

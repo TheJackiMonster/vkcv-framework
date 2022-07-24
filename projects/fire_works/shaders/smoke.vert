@@ -10,14 +10,14 @@ layout(set=0, binding=0, std430) readonly buffer smokeBuffer {
 layout(location = 0) in vec3 vertexPos;
 
 layout(location = 0) out vec3 passPos;
-layout(location = 1) out vec3 passView;
+layout(location = 1) out vec3 passDir;
 layout(location = 2) out vec3 passColor;
 layout(location = 3) out float passDensity;
 layout(location = 4) out flat int passSmokeIndex;
 
 layout( push_constant ) uniform constants{
-    mat4 view;
-    mat4 projection;
+    mat4 mvp;
+    vec3 camera;
 };
 
 void main()	{
@@ -25,10 +25,10 @@ void main()	{
     float size = smokes[gl_InstanceIndex].size;
     vec3 color = smokes[gl_InstanceIndex].color;
 
-    vec4 viewPos = view * vec4(position + vertexPos * size, 1);
+    vec3 pos = position + vertexPos * size;
 
     passPos = vertexPos;
-    passView = viewPos.xyz;
+    passDir = pos - camera;
     passColor = color;
 
     if (size > 0.0f) {
@@ -40,5 +40,5 @@ void main()	{
     passSmokeIndex = gl_InstanceIndex;
 
     // transform position into projected view space
-    gl_Position = projection * viewPos;
+    gl_Position = mvp * vec4(pos, 1);
 }
