@@ -185,6 +185,12 @@ void InitializeNestedFireworkEvents(std::vector<event_t>& events) {
 						10.0f, 1.0f, 0.0f, 0);
 }
 
+void ChangeColor(std::vector<event_t>& events, glm::vec3 color) {
+	for (int i = 0; i < events.size(); i++) {
+		events [i].color = color;
+	}
+}
+
 int main(int argc, const char **argv) {
 	vkcv::Features features;
 	
@@ -963,6 +969,8 @@ int main(int argc, const char **argv) {
 		bool nested = ImGui::Selectable("Nested Firework");
 		ImGui::EndListBox();
 		bool resetTime = ImGui::Button("Reset");
+		glm::vec3 color = glm::vec3(0.0f);
+		bool colorChanged = ImGui::ColorPicker3("Color", (float*) & color);
 		
 		ImGui::End();
 		gui.endGUI();
@@ -1001,6 +1009,11 @@ int main(int argc, const char **argv) {
 		} else if (nested) {
 			events.clear();
 			InitializeNestedFireworkEvents(events);
+			resetTime = true;
+		}
+
+		if (colorChanged) {
+			ChangeColor(events, color);
 			resetTime = true;
 		}
 		
