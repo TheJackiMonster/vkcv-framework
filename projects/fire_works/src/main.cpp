@@ -15,7 +15,7 @@ struct particle_t {
 	glm::vec3 velocity;
 	float size;
 	glm::vec3 color;
-	float pad2;
+	float mass;
 	glm::vec3 pad0;
 	uint32_t eventId;
 };
@@ -29,7 +29,7 @@ struct event_t {
 	uint32_t count;
 	uint32_t index;
 	uint32_t parent;
-	uint32_t continous;
+	uint32_t continuous;
 	
 	float lifetime;
 	float mass;
@@ -43,7 +43,7 @@ struct smoke_t {
 	glm::vec3 velocity;
 	float scaling;
 	glm::vec3 color;
-	float pad;
+	float eventID;
 };
 
 struct trail_t {
@@ -154,11 +154,11 @@ void InitializeNestedFireworkEvents(std::vector<event_t>& events) {
 
 						1.0f, 1.0f, 0.5f, 0);
 
-	events.emplace_back(glm::vec3(0.0f), 1.0f, glm::vec3(0.0f, 1.0f, 1.0f), 7.0f,
+	events.emplace_back(glm::vec3(0.0f), 0.9f, glm::vec3(0.0f, 1.0f, 1.0f), 7.0f,
 
 						100, 0, events.size() - 1, 0,
 
-						10.0f, 1.0f, 0.0f, 0);
+						10.1f, 1.0f, 0.0f, 0);
 
 	events.emplace_back(glm::vec3(0.0f), 2.0f, glm::vec3(0.0f, 0.0f, 0.0f), 10.0f,
 
@@ -991,7 +991,7 @@ int main(int argc, const char **argv) {
 		std::vector<uint32_t> startingIndex;
 		startingIndex.resize(events.size());
 		uint32_t eventIdCheck = std::numeric_limits<uint32_t>::max();
-
+		
 		for (size_t i = 0; i < particles.size(); i++) {
 			if (particles[i].eventId != eventIdCheck) {
 				eventIdCheck = particles [i].eventId;

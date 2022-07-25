@@ -141,7 +141,7 @@ void main() {
         }
     }
 
-    if (0 == index && events[event_id].continuous < 1) {
+    if ((0 == index) && (events[event_id].continuous < 1)) {
         const uint sid = atomicAdd(smokeIndex, 1) % smokes.length();
 
         smokes[sid].position = particles[id].position;
