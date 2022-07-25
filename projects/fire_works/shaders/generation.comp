@@ -83,29 +83,26 @@ void main() {
 
         index = atomicAdd(events[i].index, 1);
 
-        if(events[i].continuous < 1){
+        if (events[i].continuous < 1) {
             if (events[i].count > index) {
                 event_id = i;
                 break;
-            }else{
+            } else {
                 atomicAdd(events[i].index, -1);
-            } 
-        }else{
-            if(events[i].continuous > index){
+            }
+        } else {
+            if (events[i].continuous > index){
                 event_id = i;
                 break;
-            }else{
-                if(events[i].contCount > 0){
+            } else {
+                if (events[i].contCount > 0) {
                     atomicAdd(events[i].contCount, -1);
                     events[i].index = 0;
-                    }
+                }
+
                 atomicAdd(events[i].index, -1);
             }
         }
-        
-        
-
-        
     }
 
     if (event_id >= events.length()) {
@@ -131,9 +128,12 @@ void main() {
     vec3 velocity = vec3(0.0f);
     float size = events[event_id].size;
 
-    if (events[event_id].parent < events.length()) {
-        const uint spawnId = startIndex[events[event_id].parent];// + int(int(events[events[event_id].parent].count * randomData[events[event_id].index % randomData.length()]) % events[events[event_id].parent].count);
-        
+    const uint pid = events[event_id].parent;
+
+    if (pid < events.length()) {
+        const uint spawnCount = events[pid].count;
+        const uint spawnId = startIndex[pid] + (id % spawnCount);
+
         if (spawnId < particlesCopy.length()) {
             particles[id].position = particlesCopy[spawnId].position;
             velocity += particlesCopy[spawnId].velocity;
