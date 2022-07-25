@@ -30,13 +30,7 @@ void main()	{
     passPos = vertexPos;
     passDir = pos - camera;
     passColor = color;
-
-    if (size > 0.0f) {
-        passDensity = 0.025f / size;
-    } else {
-        passDensity = 0.0f;
-    }
-
+    passDensity = smokeDensity(size);
     passSmokeIndex = gl_InstanceIndex;
 
     // transform position into projected view space

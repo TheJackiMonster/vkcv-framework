@@ -10,4 +10,12 @@ struct smoke_t {
 	uint eventID;
 };
 
+float smokeDensity(float size) {
+	if (size > 0.0f) {
+		return 0.025f / size;
+	} else {
+		return 0.0f;
+	}
+}
+
 #endif // SMOKE_INC
