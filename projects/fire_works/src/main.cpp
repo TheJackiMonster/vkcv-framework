@@ -969,7 +969,12 @@ int main(int argc, const char **argv) {
 		bool nested = ImGui::Selectable("Nested Firework");
 		ImGui::EndListBox();
 		bool resetTime = ImGui::Button("Reset");
-		glm::vec3 color = glm::vec3(0.0f);
+		auto color = glm::vec3(0.0f);
+		
+		if (!events.empty()) {
+			color = events[0].color;
+		}
+		
 		bool colorChanged = ImGui::ColorPicker3("Color", (float*) & color);
 		
 		ImGui::End();
