@@ -3,6 +3,7 @@
 #extension GL_GOOGLE_include_directive : enable
 
 #include "physics.inc"
+#include "smoke.inc"
 
 layout(location = 0) in vec3 passPos;
 layout(location = 1) in vec3 passDir;
@@ -40,10 +41,7 @@ void main()	{
         const uint randomIndex = (passSmokeIndex * NUM_SMOKE_SAMPLES + i) % randomData.length();
         const float alpha = (1.0f + randomData[randomIndex] * 0.1f) * data.a * fallOff;
 
-        result = vec4(
-            (result.rgb + data.rgb * alpha) * (1.0f - result.a),
-            result.a + (alpha) * (1.0f - result.a)
-        );
+        result = smokeBlend(result, vec4(data.rgb, alpha));
     }
 
     result.r = clamp(result.r, 0, 1);

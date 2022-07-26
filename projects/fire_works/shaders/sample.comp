@@ -2,6 +2,7 @@
 #extension GL_GOOGLE_include_directive : enable
 
 #include "voxel.inc"
+#include "smoke.inc"
 
 layout(set=0, binding=0, rgba16) restrict readonly uniform image3D voxelImage;
 layout(set=1, binding=0, rgba16f) restrict writeonly uniform image2D outImage;
@@ -26,10 +27,7 @@ void main() {
 
         vec4 data = imageLoad(voxelImage, voxelPos);
 
-        voxel = vec4(
-            (voxel.rgb + data.rgb * data.a) * (1.0f - voxel.a),
-            voxel.a + (data.a) * (1.0f - voxel.a)
-        );
+        voxel = smokeBlend(voxel, data);
     }
 
     voxel.r = clamp(voxel.r, 0, 1);

@@ -16,6 +16,7 @@ layout(set=1, binding=0, std430) readonly buffer randomBuffer {
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 #include "physics.inc"
+#include "smoke.inc"
 
 #define NUM_VOXEL_SAMPLES 32
 
@@ -45,21 +46,22 @@ void main() {
             randomData[(globalID * NUM_VOXEL_SAMPLES * 2 + i * 2 + 1) % randomData.length()]
         );
 
+        float noiseF = max(0.0f, 1.0f - length(noise));
+
         outSamples += texture(
             sampler2D(voxelTexture, voxelSampler),
             pos + noise * (NUM_VOXEL_SAMPLES - 1.0f) / size
-        ) * max(0.0f, 1.0f - length(noise));
+        ) * (noiseF * noiseF);
     }
 
     outSamples /= NUM_VOXEL_SAMPLES;
 
-    // TODO: add noise to the smoke here!
-
     vec4 result = vec4(0.0f);
-    result += vec4(outParticles.rgb * outParticles.a, outParticles.a);
-    result += vec4(outSmoke.rgb * outSmoke.a, outSmoke.a);
-    result += vec4(outTrails.rgb * outTrails.a, outTrails.a);
-    result += vec4(outSamples.rgb * outSamples.a, outSamples.a);
+
+    result = smokeBlend(result, outParticles);
+    result = smokeBlend(result, outTrails);
+    result = smokeBlend(result, outSmoke);
+    result = smokeBlend(result, outSamples);
 
     result.r = clamp(result.r, 0, 1);
     result.g = clamp(result.g, 0, 1);
