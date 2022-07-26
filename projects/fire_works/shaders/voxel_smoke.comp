@@ -13,9 +13,10 @@ layout(set=0, binding=0, std430) readonly buffer smokeBuffer {
 
 #include "voxel.inc"
 
-layout(set=1, binding=0, std430) buffer voxelBuffer {
-    voxel_t voxel [];
-};
+layout(set=1, binding=0, r32ui) uniform uimage3D voxelRed;
+layout(set=1, binding=1, r32ui) uniform uimage3D voxelGreen;
+layout(set=1, binding=2, r32ui) uniform uimage3D voxelBlue;
+layout(set=1, binding=3, r32ui) uniform uimage3D voxelDensity;
 
 layout( push_constant ) uniform constants{
     mat4 mvp;
@@ -46,9 +47,14 @@ void main() {
     vec3 ndc_pos = cs_pos.xyz / cs_pos.w;
     vec3 pos = (ndc_pos + vec3(1, 1, 0)) * vec3(0.5f, 0.5f, 1.0f);
 
-    // clipping!
+    if ((any(greaterThanEqual(pos, vec3(1.5f)))) || (any(lessThanEqual(pos, vec3(-0.5f))))) {
+        return;
+    }
 
     vec3 color = smokes[id].color;
 
-    // write (color, density) into voxel at `pos * (resolution-1)` atomically!
+    voxel_add(voxelRed, pos, color.r);
+    voxel_add(voxelGreen, pos, color.g);
+    voxel_add(voxelBlue, pos, color.b);
+    voxel_add(voxelDensity, pos, density);
 }

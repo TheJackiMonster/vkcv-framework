@@ -695,6 +695,93 @@ int main(int argc, const char **argv) {
 		{ descriptorSetLayout }
 	});
 	
+	const uint32_t voxelWidth = 160;
+	const uint32_t voxelHeight = 90;
+	const uint32_t voxelDepth = 64;
+	
+	std::vector<uint32_t> zeroVoxel;
+	zeroVoxel.resize(voxelWidth * voxelHeight * voxelDepth, 0);
+	
+	vkcv::Image voxelRed = core.createImage(
+		vk::Format::eR32Uint,
+		voxelWidth,
+		voxelHeight,
+		voxelDepth,
+		false,
+		true
+	);
+	
+	vkcv::Image voxelGreen = core.createImage(
+		vk::Format::eR32Uint,
+		voxelWidth,
+		voxelHeight,
+		voxelDepth,
+		false,
+		true
+	);
+	
+	vkcv::Image voxelBlue = core.createImage(
+		vk::Format::eR32Uint,
+		voxelWidth,
+		voxelHeight,
+		voxelDepth,
+		false,
+		true
+	);
+	
+	vkcv::Image voxelDensity = core.createImage(
+		vk::Format::eR32Uint,
+		voxelWidth,
+		voxelHeight,
+		voxelDepth,
+		false,
+		true
+	);
+	
+	vkcv::ShaderProgram voxelParticleShader;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/voxel_particle.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		voxelParticleShader.addShader(shaderStage, path);
+	});
+	
+	const auto& voxelBindings = voxelParticleShader.getReflectedDescriptors().at(1);
+	auto voxelDescriptorSetLayout = core.createDescriptorSetLayout(voxelBindings);
+	
+	vkcv::ComputePipelineHandle voxelParticlePipeline = core.createComputePipeline({
+		voxelParticleShader,
+		{ descriptorSetLayout, voxelDescriptorSetLayout }
+	});
+	
+	vkcv::ShaderProgram voxelSmokeShader;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/voxel_smoke.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		voxelSmokeShader.addShader(shaderStage, path);
+	});
+	
+	vkcv::ComputePipelineHandle voxelSmokePipeline = core.createComputePipeline({
+		voxelSmokeShader,
+		{ smokeDescriptorLayout, voxelDescriptorSetLayout }
+	});
+	
+	vkcv::ShaderProgram voxelTrailShader;
+	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/voxel_trail.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+		voxelTrailShader.addShader(shaderStage, path);
+	});
+	
+	vkcv::ComputePipelineHandle voxelTrailPipeline = core.createComputePipeline({
+		voxelTrailShader,
+		{ trailDescriptorLayout, voxelDescriptorSetLayout }
+	});
+	
+	auto voxelDescriptorSet = core.createDescriptorSet(voxelDescriptorSetLayout);
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.writeStorageImage(0, voxelRed.getHandle());
+		writes.writeStorageImage(1, voxelGreen.getHandle());
+		writes.writeStorageImage(2, voxelBlue.getHandle());
+		writes.writeStorageImage(3, voxelDensity.getHandle());
+		core.writeDescriptorSet(voxelDescriptorSet, writes);
+	}
+	
 	vkcv::effects::BloomAndFlaresEffect bloomAndFlares (core);
 	bloomAndFlares.setUpsamplingLimit(3);
 	
@@ -707,7 +794,7 @@ int main(int argc, const char **argv) {
 	vkcv::DescriptorSetHandle addDescriptor = core.createDescriptorSet(addDescriptorLayout);
 	vkcv::ComputePipelineHandle addPipe = core.createComputePipeline({
 		addShader,
-		{ addDescriptorLayout }
+		{ addDescriptorLayout, voxelDescriptorSetLayout }
 	});
 	
 	vkcv::ShaderProgram tonemappingShader;
@@ -759,6 +846,11 @@ int main(int argc, const char **argv) {
 		time_values[1] = 0.000001f * static_cast<float>(deltatime.count());
 		
 		std::cout << time_values[0] << " " << time_values[1] << std::endl;
+		
+		voxelRed.fill(zeroVoxel.data());
+		voxelGreen.fill(zeroVoxel.data());
+		voxelBlue.fill(zeroVoxel.data());
+		voxelDensity.fill(zeroVoxel.data());
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
@@ -870,6 +962,27 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
+		vkcv::PushConstants pushConstantsVoxel (sizeof(glm::mat4));
+		pushConstantsVoxel.appendDrawcall(camera.getMVP());
+		
+		core.recordBeginDebugLabel(cmdStream, "Particle voxel update", { 1.0f, 0.5f, 0.8f, 1.0f });
+		core.prepareImageForStorage(cmdStream, voxelRed.getHandle());
+		core.prepareImageForStorage(cmdStream, voxelGreen.getHandle());
+		core.prepareImageForStorage(cmdStream, voxelBlue.getHandle());
+		core.prepareImageForStorage(cmdStream, voxelDensity.getHandle());
+		
+		core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			voxelParticlePipeline,
+			particleDispatchCount,
+			{
+				vkcv::DescriptorSetUsage(0, descriptorSet),
+				vkcv::DescriptorSetUsage(1, voxelDescriptorSet)
+			},
+			pushConstantsVoxel
+		);
+		core.recordEndDebugLabel(cmdStream);
+		
 		core.recordBufferMemoryBarrier(cmdStream, smokeBuffer.getHandle());
 		
 		draw_smoke_t draw_smoke {
@@ -892,6 +1005,24 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
+		core.recordBeginDebugLabel(cmdStream, "Smoke voxel update", { 1.0f, 0.7f, 0.8f, 1.0f });
+		core.prepareImageForStorage(cmdStream, voxelRed.getHandle());
+		core.prepareImageForStorage(cmdStream, voxelGreen.getHandle());
+		core.prepareImageForStorage(cmdStream, voxelBlue.getHandle());
+		core.prepareImageForStorage(cmdStream, voxelDensity.getHandle());
+		
+		core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			voxelSmokePipeline,
+			smokeDispatchCount,
+			{
+				vkcv::DescriptorSetUsage(0, smokeDescriptorSet),
+				vkcv::DescriptorSetUsage(1, voxelDescriptorSet)
+			},
+			pushConstantsVoxel
+		);
+		core.recordEndDebugLabel(cmdStream);
+		
 		core.recordBufferMemoryBarrier(cmdStream, trailBuffer.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, pointBuffer.getHandle());
 		
@@ -907,6 +1038,24 @@ int main(int argc, const char **argv) {
 		);
 		core.recordEndDebugLabel(cmdStream);
 		
+		core.recordBeginDebugLabel(cmdStream, "Trail voxel update", { 1.0f, 0.9f, 0.8f, 1.0f });
+		core.prepareImageForStorage(cmdStream, voxelRed.getHandle());
+		core.prepareImageForStorage(cmdStream, voxelGreen.getHandle());
+		core.prepareImageForStorage(cmdStream, voxelBlue.getHandle());
+		core.prepareImageForStorage(cmdStream, voxelDensity.getHandle());
+		
+		core.recordComputeDispatchToCmdStream(
+			cmdStream,
+			voxelTrailPipeline,
+			trailDispatchCount,
+			{
+				vkcv::DescriptorSetUsage(0, trailDescriptorSet),
+				vkcv::DescriptorSetUsage(1, voxelDescriptorSet)
+			},
+			pushConstantsVoxel
+		);
+		core.recordEndDebugLabel(cmdStream);
+		
 		core.recordBeginDebugLabel(cmdStream, "Add rendered images", { 0.5f, 0.5f, 1.0f, 1.0f });
 		
 		vkcv::DescriptorWrites addDescriptorWrites;
@@ -917,6 +1066,11 @@ int main(int argc, const char **argv) {
 		
 		core.writeDescriptorSet(addDescriptor, addDescriptorWrites);
 		
+		core.prepareImageForStorage(cmdStream, voxelRed.getHandle());
+		core.prepareImageForStorage(cmdStream, voxelGreen.getHandle());
+		core.prepareImageForStorage(cmdStream, voxelBlue.getHandle());
+		core.prepareImageForStorage(cmdStream, voxelDensity.getHandle());
+		
 		uint32_t colorDispatchCount[3];
 		colorDispatchCount[0] = std::ceil(swapchainWidth / 8.f);
 		colorDispatchCount[1] = std::ceil(swapchainHeight / 8.f);
@@ -926,7 +1080,10 @@ int main(int argc, const char **argv) {
 			cmdStream,
 			addPipe,
 			colorDispatchCount,
-			{vkcv::DescriptorSetUsage(0, addDescriptor) },
+			{
+				vkcv::DescriptorSetUsage(0, addDescriptor),
+				vkcv::DescriptorSetUsage(1, voxelDescriptorSet)
+			},
 			vkcv::PushConstants(0)
 		);
 		
