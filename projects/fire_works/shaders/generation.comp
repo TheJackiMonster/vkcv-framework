@@ -77,7 +77,7 @@ void main() {
     for (uint i = 0; i < events.length(); i++) {
         const float start = events[i].startTime;
 
-        if (events[i].continuous < 1 && (((t - dt * 2) >= start) || (t < start))) {
+        if ((events[i].continuous < 1) && (t < start)) {
             continue;
         }
 
