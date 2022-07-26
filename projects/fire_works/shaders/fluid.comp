@@ -37,11 +37,12 @@ vec4 loadCachedData(vec3 position, ivec3 offset, ivec3 size) {
     uvec3 localId = gl_LocalInvocationID;
     ivec3 index = ivec3(localId) + offset;
 
-    if ((any(lessThan(index, ivec3(0)))) || (any(greaterThan(index, ivec3(gl_WorkGroupSize))))) {
-        return getDataFrom(position, vec3(offset) / vec3(size));
-    } else {
-        return cachedData[index.x][index.y][index.z];
-    }
+    // TOO SPECIAL FOR GPU TO WORK..!
+    //if ((any(lessThan(index, ivec3(0)))) || (any(greaterThan(index, ivec3(gl_WorkGroupSize))))) {
+    return getDataFrom(position, vec3(offset) / vec3(size));
+    //} else {
+    //    return cachedData[index.x][index.y][index.z];
+    //}
 }
 
 void main() {

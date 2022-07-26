@@ -20,7 +20,18 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 #define NUM_VOXEL_SAMPLES 32
 
+shared vec2 sc_data [NUM_VOXEL_SAMPLES];
+
 void main() {
+    const float localRadian = 0.25f * pi * randomData[gl_LocalInvocationIndex % randomData.length()];
+
+    sc_data[gl_LocalInvocationIndex % NUM_VOXEL_SAMPLES] = vec2(
+        sin(localRadian), cos(localRadian)
+    );
+
+    memoryBarrierShared();
+    barrier();
+
     const ivec2 res = imageSize(outImage);
 
     if(any(greaterThanEqual(gl_GlobalInvocationID.xy, res))){
@@ -34,34 +45,15 @@ void main() {
     vec4 outTrails = imageLoad(inTrails, uv);
 
     vec2 pos = (vec2(uv) + vec2(0.5f)) / vec2(res);
-    vec2 size = vec2(textureSize(sampler2D(voxelTexture, voxelSampler), 0));
 
-    vec4 outSamples = vec4(0.0f);
-
-    const uint globalID = uv.y + uv.x * res.y;
-
-    for (uint i = 0; i < NUM_VOXEL_SAMPLES; i++) {
-        vec2 noise = vec2(
-            randomData[(globalID * NUM_VOXEL_SAMPLES * 2 + i * 2 + 0) % randomData.length()],
-            randomData[(globalID * NUM_VOXEL_SAMPLES * 2 + i * 2 + 1) % randomData.length()]
-        );
-
-        float noiseF = max(0.0f, 1.0f - length(noise));
-
-        outSamples += texture(
-            sampler2D(voxelTexture, voxelSampler),
-            pos + noise * (NUM_VOXEL_SAMPLES - 1.0f) / size
-        ) * (noiseF * noiseF);
-    }
-
-    outSamples /= NUM_VOXEL_SAMPLES;
+    vec4 outSamples = texture(sampler2D(voxelTexture, voxelSampler), pos);
 
     vec4 result = vec4(0.0f);
 
     result = smokeBlend(result, outParticles);
     result = smokeBlend(result, outTrails);
     result = smokeBlend(result, outSmoke);
-    result = smokeBlend(result, outSamples);
+    result = smokeBlend(result, outSamples * 0.1f);
 
     result.r = clamp(result.r, 0, 1);
     result.g = clamp(result.g, 0, 1);
