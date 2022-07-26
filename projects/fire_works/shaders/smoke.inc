@@ -19,9 +19,12 @@ float smokeDensity(float size) {
 }
 
 vec4 smokeBlend(vec4 dst, vec4 src) {
+	const float f = max(1.0f - dst.a, 0.0f);
+	const float a = clamp(0.0f, 1.0f, src.a);
+
 	return vec4(
-		dst.rgb + src.rgb * src.a * (1.0f - dst.a),
-		dst.a + src.a * (1.0f - dst.a)
+		dst.rgb + src.rgb * a * f,
+		dst.a + a * f
 	);
 }
 

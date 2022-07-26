@@ -122,7 +122,7 @@ void main() {
         direction = events[event_id].direction;
     }
 
-    vec3 color = events[event_id].color;
+    vec3 color = normalize(events[event_id].color);
     const float v = events[event_id].velocity;
 
     vec3 velocity = vec3(0.0f);
