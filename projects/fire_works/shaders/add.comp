@@ -9,7 +9,15 @@ layout(set=0, binding=3, rgba16f) restrict readonly uniform image2D inSmoke;
 layout(set=0, binding=4, rgba16f) restrict readonly uniform image2D inTrails;
 layout(set=0, binding=5, rgba16f) restrict writeonly uniform image2D outImage;
 
+layout(set=1, binding=0, std430) readonly buffer randomBuffer {
+    float randomData [];
+};
+
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+#include "physics.inc"
+
+#define NUM_VOXEL_SAMPLES 32
 
 void main() {
     const ivec2 res = imageSize(outImage);
@@ -25,20 +33,33 @@ void main() {
     vec4 outTrails = imageLoad(inTrails, uv);
 
     vec2 pos = (vec2(uv) + vec2(0.5f)) / vec2(res);
+    vec2 size = vec2(textureSize(sampler2D(voxelTexture, voxelSampler), 0));
 
-    vec4 outSamples = texture(sampler2D(voxelTexture, voxelSampler), pos);
+    vec4 outSamples = vec4(0.0f);
+
+    const uint globalID = uv.y + uv.x * res.y;
+
+    for (uint i = 0; i < NUM_VOXEL_SAMPLES; i++) {
+        vec2 noise = vec2(
+            randomData[(globalID * NUM_VOXEL_SAMPLES * 2 + i * 2 + 0) % randomData.length()],
+            randomData[(globalID * NUM_VOXEL_SAMPLES * 2 + i * 2 + 1) % randomData.length()]
+        );
+
+        outSamples += texture(
+            sampler2D(voxelTexture, voxelSampler),
+            pos + noise * (NUM_VOXEL_SAMPLES - 1.0f) / size
+        ) * max(0.0f, 1.0f - length(noise));
+    }
+
+    outSamples /= NUM_VOXEL_SAMPLES;
 
     // TODO: add noise to the smoke here!
 
-    vec4 result = vec4(
-        outParticles.rgb * outParticles.a +
-        outSmoke.rgb * outSmoke.a +
-        outTrails.rgb * outTrails.a,
-
-        outParticles.a + outSmoke.a + outTrails.a
-    );
-
-    result = outSamples;
+    vec4 result = vec4(0.0f);
+    result += vec4(outParticles.rgb * outParticles.a, outParticles.a);
+    result += vec4(outSmoke.rgb * outSmoke.a, outSmoke.a);
+    result += vec4(outTrails.rgb * outTrails.a, outTrails.a);
+    result += vec4(outSamples.rgb * outSamples.a, outSamples.a);
 
     result.r = clamp(result.r, 0, 1);
     result.g = clamp(result.g, 0, 1);

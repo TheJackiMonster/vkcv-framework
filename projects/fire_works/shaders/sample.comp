@@ -3,11 +3,7 @@
 
 #include "voxel.inc"
 
-layout(set=0, binding=0, r32ui) readonly uniform uimage3D voxelRed;
-layout(set=0, binding=1, r32ui) readonly uniform uimage3D voxelGreen;
-layout(set=0, binding=2, r32ui) readonly uniform uimage3D voxelBlue;
-layout(set=0, binding=3, r32ui) readonly uniform uimage3D voxelDensity;
-
+layout(set=0, binding=0, rgba16) restrict readonly uniform image3D voxelImage;
 layout(set=1, binding=0, rgba16f) restrict writeonly uniform image2D outImage;
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
@@ -21,21 +17,18 @@ void main() {
 
     ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
 
-    const ivec3 voxelRes = imageSize(voxelDensity);
+    const ivec3 voxelRes = imageSize(voxelImage);
 
     vec4 voxel = vec4(0.0f);
 
     for (int i = 0; i < voxelRes.z; i++) {
         const ivec3 voxelPos = ivec3(uv, i);
 
-        const float red = voxel_read(voxelRed, voxelPos);
-        const float green = voxel_read(voxelGreen, voxelPos);
-        const float blue = voxel_read(voxelBlue, voxelPos);
-        const float density = voxel_read(voxelDensity, voxelPos);
+        vec4 data = imageLoad(voxelImage, voxelPos);
 
         voxel = vec4(
-            (voxel.rgb + vec3(red, green, blue) * density) * (1.0f - voxel.a),
-            voxel.a + (density) * (1.0f - voxel.a)
+            (voxel.rgb + data.rgb * data.a) * (1.0f - voxel.a),
+            voxel.a + (data.a) * (1.0f - voxel.a)
         );
     }
 
