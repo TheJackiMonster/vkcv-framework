@@ -109,7 +109,7 @@ void main() {
         return;
     }
 
-    lifetime = events[event_id].lifetime;
+    lifetime = events[event_id].lifetime * (1.0f + 0.1f * randomData[(id + 1) % randomData.length()]);
 
     vec3 direction;
     if (dot(events[event_id].direction, events[event_id].direction) <= 0.0f) {
@@ -152,7 +152,7 @@ void main() {
         smokes[sid].eventID = event_id;
     }
 
-    velocity += normalize(direction) * v;
+    velocity += normalize(direction) * v * (1.0f + 0.1f * randomData[(id + 2) % randomData.length()]);;
 
     const float split = pow(1.0f / events[event_id].count, 1.0f / 3.0f);
 
