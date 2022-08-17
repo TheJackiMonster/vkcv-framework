@@ -364,9 +364,9 @@ namespace vkcv
 
 				clearValues.emplace_back(std::array<float, 4>{
 					clear,
-						clear,
-						clear,
-						1.f
+					clear,
+					clear,
+					0.f
 				});
 			}
 		}

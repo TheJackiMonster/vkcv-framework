@@ -506,8 +506,10 @@ namespace vkcv {
 		switch (format) {
 			case vk::Format::eR8Unorm:
 				return 1;
+			case vk::Format::eR16Unorm:
+				return 2;
+			case vk::Format::eR32Uint:
 			case vk::Format::eR8G8B8A8Srgb:
-				return 4;
 			case vk::Format::eR8G8B8A8Unorm:
 				return 4;
 			case vk::Format::eR16G16B16A16Sfloat:

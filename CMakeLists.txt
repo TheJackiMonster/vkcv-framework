@@ -9,6 +9,10 @@ option(BUILD_DOXYGEN_DOCS "Enables building the VkCV doxygen documentation" OFF)
 option(BUILD_SHARED "Enables building VkCV as shared libraries" OFF)
 option(BUILD_VMA_VULKAN_VERSION "Enforce a specific Vulkan version for VMA" OFF)
 
+if ((WIN32) AND (NOT BUILD_VMA_VULKAN_VERSION))
+	set(BUILD_VMA_VULKAN_VERSION "1.3.0")
+endif()
+
 if (BUILD_PROJECTS)
 	set(BUILD_MODULES ${BUILD_PROJECTS})
 endif()
