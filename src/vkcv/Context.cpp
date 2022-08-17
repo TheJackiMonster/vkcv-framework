@@ -467,15 +467,14 @@ namespace vkcv
 				nullptr,
 				extensions.size(),
 				extensions.data(),
-				nullptr
+				nullptr,
+				&(featureManager.getFeatures())
 		);
 
 #ifndef NDEBUG
 		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
-
-		deviceCreateInfo.setPNext(&(featureManager.getFeatures()));
 		
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
 		
