@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cmath>
+#include <vector>
 
 #define A_CPU 1
 #include <ffx_a.h>
@@ -235,8 +236,9 @@ namespace vkcv::algorithm {
 			{ m_descriptorSetLayout }
 		});
 		
-		uint32_t zeroes [m_globalCounter.getCount()];
-		memset(zeroes, 0, m_globalCounter.getSize());
+		std::vector<uint32_t> zeroes;
+		zeroes.resize(m_globalCounter.getCount());
+		memset(zeroes.data(), 0, m_globalCounter.getSize());
 		m_globalCounter.fill(zeroes);
 	}
 	

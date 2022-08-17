@@ -1,0 +1,98 @@
+#version 450 core
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(local_size_x = 256) in;
+
+#include "physics.inc"
+#include "particle.inc"
+
+layout(set=0, binding=0, std430) readonly buffer particleBuffer {
+    particle_t particles [];
+};
+
+#include "trail.inc"
+
+layout(set=1, binding=0, std430) coherent buffer trailBuffer {
+    trail_t trails [];
+};
+
+#include "point.inc"
+
+layout(set=1, binding=1, std430) buffer pointBuffer {
+    point_t points [];
+};
+
+layout( push_constant ) uniform constants{
+    float t;
+    float dt;
+};
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+
+    if (id >= trails.length()) {
+        return;
+    }
+
+    const uint particleIndex = trails[id].particleIndex;
+    const uint startIndex = trails[id].startIndex;
+    const uint endIndex = trails[id].endIndex;
+
+    uint useCount = trails[id].useCount;
+    float lifetime = trails[id].lifetime;
+
+    if (lifetime > dt) {
+        lifetime -= dt;
+    } else {
+        lifetime = 0.0f;
+    }
+
+    const uint available = (endIndex - startIndex) % points.length();
+
+    float trailLife = dt * available;
+    float fading = 1.0f / (1.0f + friction);
+
+    if (lifetime <= trailLife) {
+        fading *= (lifetime / trailLife);
+
+        if (useCount > 0) {
+            useCount--;
+        }
+    } else
+    if (available > useCount) {
+        useCount++;
+    }
+
+    for (uint i = useCount; i > 1; i--) {
+        const uint x = (startIndex + (i - 1)) % points.length();
+        const uint y = (startIndex + (i - 2)) % points.length();
+
+        vec3 position = points[y].position;
+        float size = points[y].size;
+        vec3 velocity = points[y].velocity;
+
+        const float scaling = points[y].scaling;
+
+        size = size * fading + scaling * dt;
+
+        points[x].position = position;
+        points[x].size = size;
+        points[x].velocity = velocity;
+        points[x].scaling = scaling;
+    }
+
+    vec3 position = particles[particleIndex].position;
+    float size = particles[particleIndex].size;
+    vec3 velocity = particles[particleIndex].velocity;
+
+    const float trailFactor = mediumDensity / friction;
+
+    points[startIndex].position = position * fading;
+    points[startIndex].size = trailWidth * size * fading;
+    points[startIndex].velocity = velocity * fading;
+    points[startIndex].scaling = trailFactor * length(velocity) * fading;
+
+    trails[id].useCount = useCount;
+    trails[id].lifetime = lifetime;
+}
