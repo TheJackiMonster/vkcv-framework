@@ -49,15 +49,15 @@ int main(int argc, const char** argv) {
 	));
 
 	const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchainFormat(window.getSwapchain())
+			core.getSwapchainFormat(window.getSwapchain()),
+			vkcv::AttachmentOperation::CLEAR,
+			vkcv::AttachmentOperation::STORE
 	);
 
 	const vkcv::AttachmentDescription depth_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		vk::Format::eD32Sfloat
+			vk::Format::eD32Sfloat,
+			vkcv::AttachmentOperation::CLEAR,
+			vkcv::AttachmentOperation::STORE
 	);
 
 	vkcv::PassConfig scenePassDefinition(

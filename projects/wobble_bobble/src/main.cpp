@@ -456,40 +456,40 @@ int main(int argc, const char **argv) {
 	
 	vkcv::PassConfig passConfigGrid {{
 		vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
+				core.getSwapchainFormat(window.getSwapchain()),
 				vkcv::AttachmentOperation::CLEAR,
-				core.getSwapchainFormat(window.getSwapchain())
+				vkcv::AttachmentOperation::STORE
 		),
 		vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
+				vk::Format::eD32Sfloat,
 				vkcv::AttachmentOperation::CLEAR,
-				vk::Format::eD32Sfloat
+				vkcv::AttachmentOperation::STORE
 		)
 	}, vkcv::Multisampling::None };
 	
 	vkcv::PassConfig passConfigParticles {{
 		vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
+				core.getSwapchainFormat(window.getSwapchain()),
 				vkcv::AttachmentOperation::CLEAR,
-				core.getSwapchainFormat(window.getSwapchain())
+				vkcv::AttachmentOperation::STORE
 		),
 		vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
+				vk::Format::eD32Sfloat,
 				vkcv::AttachmentOperation::CLEAR,
-				vk::Format::eD32Sfloat
+				vkcv::AttachmentOperation::STORE
 		)
 	}, vkcv::Multisampling::None };
 	
 	vkcv::PassConfig passConfigLines {{
 		vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
+				core.getSwapchainFormat(window.getSwapchain()),
 				vkcv::AttachmentOperation::LOAD,
-				core.getSwapchainFormat(window.getSwapchain())
+				vkcv::AttachmentOperation::STORE
 		),
 		vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
+				vk::Format::eD32Sfloat,
 				vkcv::AttachmentOperation::LOAD,
-				vk::Format::eD32Sfloat
+				vkcv::AttachmentOperation::STORE
 		)
 	}, vkcv::Multisampling::None };
 	

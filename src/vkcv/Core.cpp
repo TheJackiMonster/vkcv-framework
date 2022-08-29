@@ -355,19 +355,8 @@ namespace vkcv
 	std::vector<vk::ClearValue> createAttachmentClearValues(const std::vector<AttachmentDescription>& attachments) {
 		std::vector<vk::ClearValue> clearValues;
 		for (const auto& attachment : attachments) {
-			if (attachment.load_operation == AttachmentOperation::CLEAR) {
-				float clear = 0.0f;
-
-				if (isDepthFormat(attachment.format)) {
-					clear = 1.0f;
-				}
-
-				clearValues.emplace_back(std::array<float, 4>{
-					clear,
-					clear,
-					clear,
-					0.f
-				});
+			if (attachment.getLoadOperation() == AttachmentOperation::CLEAR) {
+				clearValues.push_back(attachment.getClearValue());
 			}
 		}
 		return clearValues;

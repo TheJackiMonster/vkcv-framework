@@ -160,7 +160,11 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 
 	// pass
 	const std::vector<vkcv::AttachmentDescription> shadowAttachments = {
-		vkcv::AttachmentDescription(vkcv::AttachmentOperation::STORE, vkcv::AttachmentOperation::CLEAR, shadowMapDepthFormat)
+		vkcv::AttachmentDescription(
+				shadowMapDepthFormat,
+				vkcv::AttachmentOperation::CLEAR,
+				vkcv::AttachmentOperation::STORE
+		)
 	};
 	vkcv::PassConfig shadowPassConfig(shadowAttachments, msaa);
 	m_shadowMapPass = corePtr->createPass(shadowPassConfig);
@@ -174,7 +178,6 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	);
 	
 	shadowPipeConfig.setResolution(shadowMapResolution, shadowMapResolution);
-	shadowPipeConfig.setMultisampling(msaa);
 	shadowPipeConfig.setDepthClampingEnabled(true);
 	shadowPipeConfig.setCulling(vkcv::CullMode::Front);
 	m_shadowMapPipe = corePtr->createGraphicsPipeline(shadowPipeConfig);

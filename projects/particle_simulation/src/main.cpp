@@ -35,9 +35,10 @@ int main(int argc, const char **argv) {
     vk::Format colorFormat = vk::Format::eR16G16B16A16Sfloat;
     // an example attachment for passes that output to the window
     const vkcv::AttachmentDescription present_color_attachment(
-            vkcv::AttachmentOperation::STORE,
-            vkcv::AttachmentOperation::CLEAR,
-            colorFormat);
+			colorFormat,
+			vkcv::AttachmentOperation::CLEAR,
+            vkcv::AttachmentOperation::STORE
+	);
 
 
     vkcv::PassConfig particlePassDefinition({present_color_attachment}, vkcv::Multisampling::None);

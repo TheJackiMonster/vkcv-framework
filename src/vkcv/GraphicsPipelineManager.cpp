@@ -326,10 +326,11 @@ namespace vkcv {
 	 * @param config set MSAA Sample Count Flag
 	 * @return Pipeline Multisample State Create Info Struct
 	 */
-	vk::PipelineMultisampleStateCreateInfo createPipelineMultisampleStateCreateInfo(const GraphicsPipelineConfig &config) {
+	vk::PipelineMultisampleStateCreateInfo createPipelineMultisampleStateCreateInfo(const GraphicsPipelineConfig &config,
+																					const PassConfig &passConfig) {
 		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
 				{},
-				msaaToSampleCountFlagBits(config.getMultisampling()),
+				msaaToSampleCountFlagBits(passConfig.msaa),
 				false,
 				0.f,
 				nullptr,
@@ -598,6 +599,8 @@ namespace vkcv {
 				return {};
 			}
 		}
+	
+		const PassConfig& passConfig = passManager.getPassConfig(config.getPass());
 
         // vertex input state
         // Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
@@ -633,7 +636,7 @@ namespace vkcv {
 
         // multisample state
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo =
-                createPipelineMultisampleStateCreateInfo(config);
+                createPipelineMultisampleStateCreateInfo(config, passConfig);
 
         // color blend state
         vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo =
@@ -666,10 +669,10 @@ namespace vkcv {
                 createPipelineDepthStencilStateCreateInfo(config);
 
         const vk::PipelineDepthStencilStateCreateInfo* p_depthStencilCreateInfo = nullptr;
-        const PassConfig& passConfig = passManager.getPassConfig(config.getPass());
 
         for (const auto& attachment : passConfig.attachments) {
-            if (isDepthFormat(attachment.format)) {
+            if ((isDepthFormat(attachment.getFormat())) ||
+				(isStencilFormat(attachment.getFormat()))) {
                 p_depthStencilCreateInfo = &depthStencilCreateInfo;
                 break;
             }

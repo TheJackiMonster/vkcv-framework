@@ -328,15 +328,16 @@ int main(int argc, const char** argv) {
         return EXIT_FAILURE;
     }
 
-    const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchainFormat(window.getSwapchain())
-	);
-	const vkcv::AttachmentDescription depth_attachment(
-			vkcv::AttachmentOperation::STORE,
+    const vkcv::AttachmentDescription present_color_attachment (
+			core.getSwapchainFormat(window.getSwapchain()),
 			vkcv::AttachmentOperation::CLEAR,
-			vk::Format::eD32Sfloat
+			vkcv::AttachmentOperation::STORE
+	);
+	
+	const vkcv::AttachmentDescription depth_attachment (
+			vk::Format::eD32Sfloat,
+			vkcv::AttachmentOperation::CLEAR,
+			vkcv::AttachmentOperation::STORE
 	);
 
 	vkcv::PassConfig passDefinition({ present_color_attachment, depth_attachment }, vkcv::Multisampling::None);

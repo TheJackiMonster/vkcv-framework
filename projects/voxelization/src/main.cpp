@@ -181,17 +181,17 @@ int main(int argc, const char** argv) {
 	}
 
 	const vk::Format colorBufferFormat = vk::Format::eB10G11R11UfloatPack32;
-	const vkcv::AttachmentDescription color_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		colorBufferFormat
+	const vkcv::AttachmentDescription color_attachment (
+			colorBufferFormat,
+			vkcv::AttachmentOperation::CLEAR,
+			vkcv::AttachmentOperation::STORE
 	);
 	
 	const vk::Format depthBufferFormat = vk::Format::eD32Sfloat;
-	const vkcv::AttachmentDescription depth_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		depthBufferFormat
+	const vkcv::AttachmentDescription depth_attachment (
+			depthBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
 	);
 	
 	// forward shading config
@@ -241,9 +241,10 @@ int main(int argc, const char** argv) {
 	const vkcv::VertexLayout prepassVertexLayout { prepassVertexBindings };
 
 	const vkcv::AttachmentDescription prepassAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		depthBufferFormat);
+			depthBufferFormat,
+			vkcv::AttachmentOperation::CLEAR,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	vkcv::PassConfig prepassPassDefinition({ prepassAttachment }, msaa);
 	vkcv::PassHandle prepassPass = core.createPass(prepassPassDefinition);
@@ -343,7 +344,6 @@ int main(int argc, const char** argv) {
 	);
 	
 	prepassPipelineConfig.setCulling(vkcv::CullMode::Back);
-	prepassPipelineConfig.setMultisampling(msaa);
 	prepassPipelineConfig.setDepthTest(vkcv::DepthTest::LessEqual);
 	prepassPipelineConfig.setWritingAlphaToCoverage(true);
 
@@ -358,7 +358,6 @@ int main(int argc, const char** argv) {
 	);
 	
 	forwardPipelineConfig.setCulling(vkcv::CullMode::Back);
-	forwardPipelineConfig.setMultisampling(msaa);
 	forwardPipelineConfig.setDepthTest(vkcv::DepthTest::Equal);
 	forwardPipelineConfig.setWritingDepth(false);
 	
@@ -378,15 +377,17 @@ int main(int argc, const char** argv) {
 	skySettings.color       = glm::vec3(0.15, 0.65, 1);
 	skySettings.strength    = 5;
 
-	const vkcv::AttachmentDescription skyColorAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		colorBufferFormat);
+	const vkcv::AttachmentDescription skyColorAttachment (
+			colorBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
+	);
 
-	const vkcv::AttachmentDescription skyDepthAttachments(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		depthBufferFormat);
+	const vkcv::AttachmentDescription skyDepthAttachments (
+			depthBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	vkcv::PassConfig skyPassConfig({ skyColorAttachment, skyDepthAttachments }, msaa);
 	vkcv::PassHandle skyPass = core.createPass(skyPassConfig);
@@ -408,7 +409,6 @@ int main(int argc, const char** argv) {
 			{}
 	);
 	
-	skyPipeConfig.setMultisampling(msaa);
 	skyPipeConfig.setWritingDepth(false);
 
 	vkcv::GraphicsPipelineHandle skyPipe = core.createGraphicsPipeline(skyPipeConfig);

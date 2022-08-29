@@ -71,7 +71,6 @@ namespace vkcv {
         PrimitiveTopology 	m_PrimitiveTopology 			= PrimitiveTopology::TriangleList;
 		BlendMode 			m_blendMode 					= BlendMode::None;
         bool 				m_EnableDepthClamping 			= false;
-        Multisampling 		m_Multisampling 				= Multisampling::None;
         CullMode 			m_Culling                       = CullMode::None;
         DepthTest 			m_DepthTest                     = DepthTest::LessEqual;
         bool 				m_DepthWrite 					= true;
@@ -130,11 +129,6 @@ namespace vkcv {
 		bool isDepthClampingEnabled() const;
 		
 		void setDepthClampingEnabled(bool depthClamping);
-	
-		[[nodiscard]]
-		Multisampling getMultisampling() const;
-		
-		void setMultisampling(Multisampling multisampling);
 	
 		[[nodiscard]]
 		CullMode getCulling() const;

@@ -93,11 +93,11 @@ Voxelization::Voxelization(
 	const vkcv::ShaderProgram voxelizationShader = loadVoxelizationShader();
 
 	const vkcv::PassConfig voxelizationPassConfig {{
-		  {
+		  vkcv::AttachmentDescription(
+				  voxelizationDummyFormat,
 				  vkcv::AttachmentOperation::DONT_CARE,
-				  vkcv::AttachmentOperation::DONT_CARE,
-				  voxelizationDummyFormat
-		  }
+				  vkcv::AttachmentOperation::DONT_CARE
+		  )
 	}, vkcv::Multisampling::None };
 	m_voxelizationPass = m_corePtr->createPass(voxelizationPassConfig);
 
@@ -137,16 +137,16 @@ Voxelization::Voxelization(
 	m_visualisationDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(voxelVisualisationShader.getReflectedDescriptors().at(0));
 	m_visualisationDescriptorSet = m_corePtr->createDescriptorSet(m_visualisationDescriptorSetLayout);
 
-	const vkcv::AttachmentDescription voxelVisualisationColorAttachments(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		dependencies.colorBufferFormat
+	const vkcv::AttachmentDescription voxelVisualisationColorAttachments (
+			dependencies.colorBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
 	);
 
-	const vkcv::AttachmentDescription voxelVisualisationDepthAttachments(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		dependencies.depthBufferFormat
+	const vkcv::AttachmentDescription voxelVisualisationDepthAttachments (
+			dependencies.depthBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
 	);
 
 	vkcv::PassConfig voxelVisualisationPassDefinition{
@@ -164,7 +164,6 @@ Voxelization::Voxelization(
 	);	// points are extended to cubes in the geometry shader
 	
 	voxelVisualisationPipeConfig.setPrimitiveTopology(vkcv::PrimitiveTopology::PointList);
-	voxelVisualisationPipeConfig.setMultisampling(msaa);
 	m_visualisationPipe = m_corePtr->createGraphicsPipeline(voxelVisualisationPipeConfig);
 
 	std::vector<uint16_t> voxelIndexData;

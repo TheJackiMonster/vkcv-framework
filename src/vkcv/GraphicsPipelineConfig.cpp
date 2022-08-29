@@ -78,14 +78,6 @@ namespace vkcv {
 		m_EnableDepthClamping = depthClamping;
 	}
 	
-	Multisampling GraphicsPipelineConfig::getMultisampling() const {
-		return m_Multisampling;
-	}
-	
-	void GraphicsPipelineConfig::setMultisampling(Multisampling multisampling) {
-		m_Multisampling = multisampling;
-	}
-	
 	CullMode GraphicsPipelineConfig::getCulling() const {
 		return m_Culling;
 	}

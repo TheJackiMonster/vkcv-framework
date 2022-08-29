@@ -590,10 +590,10 @@ int main(int argc, const char **argv) {
 	vkcv::PassHandle renderPass = core.createPass(vkcv::PassConfig(
 		{
 			vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
+				colorFormat,
 				vkcv::AttachmentOperation::CLEAR,
-				colorFormat
-				)
+				vkcv::AttachmentOperation::STORE
+			)
 		},
 		vkcv::Multisampling::None
 	));

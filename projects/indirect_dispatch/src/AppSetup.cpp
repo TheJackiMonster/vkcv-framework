@@ -160,14 +160,16 @@ bool loadMeshPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 	assert(outHandles);
 
 	vkcv::AttachmentDescription colorAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::DONT_CARE,
-		AppConfig::colorBufferFormat);
+			AppConfig::colorBufferFormat,
+			vkcv::AttachmentOperation::DONT_CARE,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	vkcv::AttachmentDescription depthAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		AppConfig::depthBufferFormat);
+			AppConfig::depthBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	return loadGraphicPass(
 		core,
@@ -186,14 +188,16 @@ bool loadSkyPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 	assert(outHandles);
 
 	vkcv::AttachmentDescription colorAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		AppConfig::colorBufferFormat);
+			AppConfig::colorBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	vkcv::AttachmentDescription depthAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		AppConfig::depthBufferFormat);
+			AppConfig::depthBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	return loadGraphicPass(
 		core,
@@ -211,14 +215,16 @@ bool loadPrePass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 	assert(outHandles);
 
 	vkcv::AttachmentDescription motionAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		AppConfig::motionBufferFormat);
+			AppConfig::motionBufferFormat,
+			vkcv::AttachmentOperation::CLEAR,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	vkcv::AttachmentDescription depthAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		AppConfig::depthBufferFormat);
+			AppConfig::depthBufferFormat,
+			vkcv::AttachmentOperation::CLEAR,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	return loadGraphicPass(
 		core,
@@ -236,14 +242,16 @@ bool loadSkyPrePass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 	assert(outHandles);
 
 	vkcv::AttachmentDescription motionAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		AppConfig::motionBufferFormat);
+			AppConfig::motionBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	vkcv::AttachmentDescription depthAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		AppConfig::depthBufferFormat);
+			AppConfig::depthBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	return loadGraphicPass(
 		core,

@@ -44,27 +44,27 @@ int main(int argc, const char** argv) {
 	vk::Format colorFormat = vk::Format::eR16G16B16A16Sfloat;
 	
 	const vkcv::AttachmentDescription color_attachment0(
-			vkcv::AttachmentOperation::STORE,
+			colorFormat,
 			vkcv::AttachmentOperation::CLEAR,
-			colorFormat
+			vkcv::AttachmentOperation::STORE
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment0(
-			vkcv::AttachmentOperation::STORE,
+			vk::Format::eD32Sfloat,
 			vkcv::AttachmentOperation::CLEAR,
-			vk::Format::eD32Sfloat
+			vkcv::AttachmentOperation::STORE
 	);
 	
 	const vkcv::AttachmentDescription color_attachment1(
-			vkcv::AttachmentOperation::STORE,
+			colorFormat,
 			vkcv::AttachmentOperation::LOAD,
-			colorFormat
+			vkcv::AttachmentOperation::STORE
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment1(
-			vkcv::AttachmentOperation::STORE,
+			vk::Format::eD32Sfloat,
 			vkcv::AttachmentOperation::LOAD,
-			vk::Format::eD32Sfloat
+			vkcv::AttachmentOperation::STORE
 	);
 	
 	vkcv::PassConfig linePassDefinition(

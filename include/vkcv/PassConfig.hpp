@@ -12,25 +12,6 @@
 
 namespace vkcv
 {
-	
-	/**
-	 * @brief Enum class to specify kinds of attachment layouts.
-	 */
-    enum class AttachmentLayout {
-        UNDEFINED,
-        GENERAL,
-
-        COLOR_ATTACHMENT,
-        SHADER_READ_ONLY,
-
-        DEPTH_STENCIL_ATTACHMENT,
-        DEPTH_STENCIL_READ_ONLY,
-
-        TRANSFER_SRC,
-        TRANSFER_DST,
-
-        PRESENTATION
-    };
 
 	/**
 	 * @brief Enum class to specify types of attachment operations.
@@ -45,10 +26,42 @@ namespace vkcv
 	/**
 	 * @brief Structure to store details about an attachment of a pass.
 	 */
-    struct AttachmentDescription {
-        AttachmentOperation store_operation;
-        AttachmentOperation load_operation;
-        vk::Format format;
+    class AttachmentDescription {
+	private:
+		vk::Format m_format;
+	
+		AttachmentOperation m_load_op;
+        AttachmentOperation m_store_op;
+		
+		vk::ClearValue m_clear_value;
+	public:
+		AttachmentDescription(vk::Format format,
+							  AttachmentOperation load,
+							  AttachmentOperation store);
+		
+		AttachmentDescription(vk::Format format,
+							  AttachmentOperation load,
+							  AttachmentOperation store,
+							  const vk::ClearValue &clear);
+	
+		AttachmentDescription(const AttachmentDescription &other) = default;
+		AttachmentDescription(AttachmentDescription &&other) = default;
+		
+		~AttachmentDescription() = default;
+	
+		AttachmentDescription& operator=(const AttachmentDescription &other) = default;
+		AttachmentDescription& operator=(AttachmentDescription &&other) = default;
+		
+		vk::Format getFormat() const;
+	
+		AttachmentOperation getLoadOperation() const;
+	
+		AttachmentOperation getStoreOperation() const;
+		
+		void setClearValue(const vk::ClearValue &clear);
+	
+		const vk::ClearValue& getClearValue() const;
+		
     };
 
 	/**

@@ -59,63 +59,91 @@ namespace vkcv
         // individual references to color attachments (of a subpass)
         std::vector<vk::AttachmentReference> colorAttachmentReferences{};
         // individual reference to depth attachment (of a subpass)
-        vk::AttachmentReference depthAttachmentReference{};
-        vk::AttachmentReference *pDepthAttachment = nullptr;	//stays nullptr if no depth attachment used
+        vk::AttachmentReference depthStencilAttachmentRef;
+		
+		// stays nullptr if no depth attachment used
+        vk::AttachmentReference *pDepthStencil = nullptr;
+		
+		const auto &featureManager = getCore().getContext().getFeatureManager();
+	
+		const bool separateDepthStencil = (
+			featureManager.checkFeatures<vk::PhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR>(
+				vk::StructureType::ePhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR,
+				[](const vk::PhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR& features) {
+					return features.separateDepthStencilLayouts;
+				}
+			)
+		);
 
-        for (uint32_t i = 0; i < config.attachments.size(); i++)
-        {
-            // TODO: Renderpass struct should hold proper format information
-            vk::Format      format = config.attachments[i].format;
+        for (uint32_t i = 0; i < config.attachments.size(); i++) {
+            vk::Format format = config.attachments[i].getFormat();
             vk::ImageLayout layout;
-
-            if (isDepthFormat(config.attachments[i].format))
-            {
-                layout                              = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-                depthAttachmentReference.attachment = i;
-                depthAttachmentReference.layout     = layout;
-                pDepthAttachment                    = &depthAttachmentReference;
-            }
-            else
-            {
-                layout = vk::ImageLayout::eColorAttachmentOptimal;
-                vk::AttachmentReference attachmentRef(i, layout);
+			
+			bool depthFormat = isDepthFormat(config.attachments[i].getFormat());
+			bool stencilFormat = isStencilFormat(config.attachments[i].getFormat());
+			
+            if ((separateDepthStencil) && (depthFormat) && (!stencilFormat)) {
+				layout = vk::ImageLayout::eDepthAttachmentOptimal;
+			} else
+			if ((separateDepthStencil) && (!depthFormat) && (stencilFormat)) {
+				layout = vk::ImageLayout::eStencilAttachmentOptimal;
+			} else
+			if ((depthFormat) || (stencilFormat)) {
+				layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+			} else {
+				layout = vk::ImageLayout::eColorAttachmentOptimal;
+			}
+			
+			if ((depthFormat) || (stencilFormat)) {
+				depthStencilAttachmentRef = vk::AttachmentReference(i, layout);
+				pDepthStencil = &depthStencilAttachmentRef;
+            } else {
+                vk::AttachmentReference attachmentRef (i, layout);
                 colorAttachmentReferences.push_back(attachmentRef);
             }
 
-            vk::AttachmentDescription attachmentDesc(
-                {},
-                format,
-				msaaToSampleCountFlagBits(config.msaa),
-                getVKLoadOpFromAttachOp(config.attachments[i].load_operation),
-                getVkStoreOpFromAttachOp(config.attachments[i].store_operation),
-                vk::AttachmentLoadOp::eDontCare,
-                vk::AttachmentStoreOp::eDontCare,
-                layout,
-                layout);
+            vk::AttachmentDescription attachmentDesc (
+					{},
+					format,
+					msaaToSampleCountFlagBits(config.msaa),
+					getVKLoadOpFromAttachOp(config.attachments[i].getLoadOperation()),
+					getVkStoreOpFromAttachOp(config.attachments[i].getStoreOperation()),
+					vk::AttachmentLoadOp::eDontCare,
+					vk::AttachmentStoreOp::eDontCare,
+					layout,
+					layout
+			);
+	
+			if (stencilFormat) {
+				attachmentDesc.setStencilLoadOp(attachmentDesc.loadOp);
+				attachmentDesc.setStencilStoreOp(attachmentDesc.storeOp);
+			}
 
             attachmentDescriptions.push_back(attachmentDesc);
         }
         
-        const vk::SubpassDescription subpassDescription(
-            {},
-            vk::PipelineBindPoint::eGraphics,
-            0,
-            {},
-            static_cast<uint32_t>(colorAttachmentReferences.size()),
-            colorAttachmentReferences.data(),
-            {},
-            pDepthAttachment,
-            0,
-            {});
+        const vk::SubpassDescription subpassDescription (
+				{},
+				vk::PipelineBindPoint::eGraphics,
+				0,
+				{},
+				static_cast<uint32_t>(colorAttachmentReferences.size()),
+				colorAttachmentReferences.data(),
+				{},
+				pDepthStencil,
+				0,
+				{}
+		);
 
-        const vk::RenderPassCreateInfo passInfo(
-            {},
-            static_cast<uint32_t>(attachmentDescriptions.size()),
-            attachmentDescriptions.data(),
-            1,
-            &subpassDescription,
-            0,
-            {});
+        const vk::RenderPassCreateInfo passInfo (
+				{},
+				static_cast<uint32_t>(attachmentDescriptions.size()),
+				attachmentDescriptions.data(),
+				1,
+				&subpassDescription,
+				0,
+				{}
+		);
 
         vk::RenderPass renderPass = getCore().getContext().getDevice().createRenderPass(passInfo);
 

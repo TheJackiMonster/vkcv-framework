@@ -101,15 +101,15 @@ int main(int argc, const char** argv) {
 
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchainFormat(window.getSwapchain())
+			core.getSwapchainFormat(window.getSwapchain()),
+			vkcv::AttachmentOperation::CLEAR,
+			vkcv::AttachmentOperation::STORE
 	);
 	
 	const vkcv::AttachmentDescription depth_attachment(
-			vkcv::AttachmentOperation::STORE,
+			vk::Format::eD32Sfloat,
 			vkcv::AttachmentOperation::CLEAR,
-			vk::Format::eD32Sfloat
+			vkcv::AttachmentOperation::STORE
 	);
 
 	vkcv::PassConfig firstMeshPassDefinition({ present_color_attachment, depth_attachment }, vkcv::Multisampling::None);

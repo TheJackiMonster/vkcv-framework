@@ -163,9 +163,10 @@ int main(int argc, const char** argv) {
 
 	// an example attachment for passes that output to the window
 	const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchainFormat(window.getSwapchain()));
+			core.getSwapchainFormat(window.getSwapchain()),
+			vkcv::AttachmentOperation::CLEAR,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	vkcv::PassConfig safrPassDefinition({ present_color_attachment }, vkcv::Multisampling::None);
 	vkcv::PassHandle safrPass = core.createPass(safrPassDefinition);
