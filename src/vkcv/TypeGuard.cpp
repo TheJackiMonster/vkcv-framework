@@ -69,22 +69,6 @@ namespace vkcv {
 #endif
 	m_typeSize(size)
 	{}
-	
-	TypeGuard::TypeGuard(TypeGuard &&other) noexcept :
-#ifndef NDEBUG
-	m_typeName(other.m_typeName), m_typeHash(other.m_typeHash),
-#endif
-	m_typeSize(other.m_typeSize)
-	{}
-	
-	TypeGuard& TypeGuard::operator=(TypeGuard &&other) noexcept {
-#ifndef NDEBUG
-		m_typeName = other.m_typeName;
-		m_typeHash = other.m_typeHash;
-#endif
-		m_typeSize = other.m_typeSize;
-		return *this;
-	}
 
 	bool TypeGuard::operator==(const TypeGuard &other) const {
 #ifndef NDEBUG
