@@ -23,6 +23,15 @@ namespace vkcv {
 	 * otherwise false.
 	 */
 	bool isDepthFormat(const vk::Format format);
+	
+	/**
+	 * @brief Returns whether an image format is usable as stencil buffer.
+	 *
+	 * @param format Vulkan image format
+	 * @return True, if the format is valid to use as stencil buffer,
+	 * otherwise false.
+	 */
+	bool isStencilFormat(const vk::Format format);
 
     /**
      * @brief Class for image handling and filling data.

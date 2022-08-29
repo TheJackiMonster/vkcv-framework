@@ -12,12 +12,26 @@ namespace vkcv{
 	
 	bool isDepthFormat(const vk::Format format) {
 		switch (format) {
-			case(vk::Format::eD16Unorm):        return true;
-			case(vk::Format::eD16UnormS8Uint):  return true;
-			case(vk::Format::eD24UnormS8Uint):  return true;
-			case(vk::Format::eD32Sfloat):       return true;
-			case(vk::Format::eD32SfloatS8Uint): return true;
-			default:                            return false;
+			case(vk::Format::eD16Unorm):
+			case(vk::Format::eD16UnormS8Uint):
+			case(vk::Format::eD24UnormS8Uint):
+			case(vk::Format::eD32Sfloat):
+			case(vk::Format::eD32SfloatS8Uint):
+				return true;
+			default:
+				return false;
+		}
+	}
+	
+	bool isStencilFormat(const vk::Format format) {
+		switch (format) {
+			case(vk::Format::eS8Uint):
+			case(vk::Format::eD16UnormS8Uint):
+			case(vk::Format::eD24UnormS8Uint):
+			case(vk::Format::eD32SfloatS8Uint):
+				return true;
+			default:
+				return false;
 		}
 	}
 
