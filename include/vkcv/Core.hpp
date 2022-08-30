@@ -356,22 +356,22 @@ namespace vkcv
 								Multisampling multisampling=Multisampling::None);
 		
 		/**
-		 * Fills the image with given data of a specified size
+		 * @brief Fills the image with given data of a specified size
 		 * in bytes.
 		 *
-		 * @param image Image handle
-		 * @param data Image data pointer
-		 * @param size Size of data
+		 * @param[in] image Image handle
+		 * @param[in] data Image data pointer
+		 * @param[in] size Size of data
 		 */
 		void fillImage(const ImageHandle& image,
 					   const void *data,
 					   size_t size);
 		
 		/**
-		 * Switches the images layout synchronously if possible.
+		 * @brief Switches the images layout synchronously if possible.
 		 *
-		 * @param image Image handle
-		 * @param layout New image layout
+		 * @param[in] image Image handle
+		 * @param[in] layout New image layout
 		 */
 		void switchImageLayout(const ImageHandle &image,
 							   vk::ImageLayout layout);
@@ -386,10 +386,10 @@ namespace vkcv
 
         /**
          * Creates a new window and returns it's handle
-         * @param applicationName window name
-         * @param windowWidth
-         * @param windowHeight
-         * @param resizeable resizeability bool
+         * @param[in] applicationName Window title
+         * @param[in] windowWidth Window width
+         * @param[in] windowHeight Window height
+         * @param[in] resizeable resizeability bool
          * @return windowHandle
          */
 		[[nodiscard]]
@@ -401,7 +401,7 @@ namespace vkcv
 
 		/**
 		 * Getter for window reference
-		 * @param handle of the window
+		 * @param[in] handle of the window
 		 * @return the window
 		 */
 		[[nodiscard]]
@@ -439,7 +439,7 @@ namespace vkcv
 		/**
 		 * @brief Returns the image width.
 		 *
-		 * @param image Image handle
+		 * @param[in] image Image handle
 		 * @return imageWidth
 		 */
         [[nodiscard]]

@@ -12,6 +12,7 @@ namespace vkcv
 	struct PassEntry {
 		vk::RenderPass m_Handle;
 		PassConfig m_Config;
+		std::vector<vk::ImageLayout> m_Layouts;
 	};
 	
 	/**
@@ -47,6 +48,9 @@ namespace vkcv
         
         [[nodiscard]]
         const PassConfig& getPassConfig(const PassHandle &handle) const;
+	
+		[[nodiscard]]
+		const std::vector<vk::ImageLayout>& getLayouts(const PassHandle &handle) const;
         
     };
 	

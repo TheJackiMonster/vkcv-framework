@@ -76,6 +76,9 @@ namespace vkcv
 		);
 		
 		const auto& attachments = config.getAttachments();
+		
+		std::vector<vk::ImageLayout> layouts;
+		layouts.reserve(attachments.size());
 
         for (uint32_t i = 0; i < attachments.size(); i++) {
             vk::Format format = attachments[i].getFormat();
@@ -122,6 +125,7 @@ namespace vkcv
 			}
 
             attachmentDescriptions.push_back(attachmentDesc);
+			layouts.push_back(layout);
         }
         
         const vk::SubpassDescription subpassDescription (
@@ -149,7 +153,7 @@ namespace vkcv
 
         vk::RenderPass renderPass = getCore().getContext().getDevice().createRenderPass(passInfo);
 
-        return add({ renderPass, config });
+        return add({ renderPass, config, layouts });
     }
 
     vk::RenderPass PassManager::getVkPass(const PassHandle &handle) const {
@@ -161,5 +165,10 @@ namespace vkcv
 		auto& pass = (*this)[handle];
 		return pass.m_Config;
     }
+	
+	const std::vector<vk::ImageLayout>& PassManager::getLayouts(const PassHandle &handle) const {
+		auto& pass = (*this)[handle];
+		return pass.m_Layouts;
+	}
     
 }
