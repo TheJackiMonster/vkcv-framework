@@ -5,7 +5,6 @@
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
-#include <chrono>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Triangle";
@@ -35,8 +34,7 @@ int main(int argc, const char** argv) {
 			{ vk::Format::eUndefined }
 	);
 
-	if (!trianglePass)
-	{
+	if (!trianglePass) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -60,8 +58,7 @@ int main(int argc, const char** argv) {
 			)
 	);
 
-	if (!trianglePipeline)
-	{
+	if (!trianglePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -74,12 +71,9 @@ int main(int argc, const char** argv) {
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
     vkcv::camera::CameraManager cameraManager(window);
-    uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-    uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+    uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
-	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
-    cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-    cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
+	cameraManager.getCamera(camIndex).setPosition(glm::vec3(0, 0, -2));
 
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
 			uint32_t swapchainWidth, uint32_t swapchainHeight) {
