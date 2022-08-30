@@ -2,7 +2,7 @@
 /**
  * @authors Alexander Gauggel, Tobias Frisch
  * @file vkcv/CommandRecordingFunctionTypes.hpp
- * @brief Abstract function types to handle command recording.
+ * @brief Abstract function types to handle command recording for example.
  */
 
 #include <vulkan/vulkan.hpp>

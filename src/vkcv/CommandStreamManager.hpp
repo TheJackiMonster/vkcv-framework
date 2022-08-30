@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "vkcv/Event.hpp"
-#include "vkcv/CommandRecordingFunctionTypes.hpp"
+#include "vkcv/EventFunctionTypes.hpp"
 
 #include "HandleManager.hpp"
 

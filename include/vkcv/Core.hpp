@@ -23,7 +23,7 @@
 #include "DescriptorWrites.hpp"
 #include "Event.hpp"
 #include "DrawcallRecording.hpp"
-#include "CommandRecordingFunctionTypes.hpp"
+#include "EventFunctionTypes.hpp"
 #include "DispatchSize.hpp"
 
 #define VKCV_FRAMEWORK_NAME "VkCV"
