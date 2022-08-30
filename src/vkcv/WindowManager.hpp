@@ -60,6 +60,15 @@ namespace vkcv {
 		 */
 		[[nodiscard]]
 		Window &getWindow(const WindowHandle& handle) const;
+		
+		/**
+		 * Returns a list of window handles for current active
+		 * and open windows.
+		 *
+		 * @return List of window handles
+		 */
+		[[nodiscard]]
+		std::vector<WindowHandle> getWindowHandles() const;
 
 	};
 	

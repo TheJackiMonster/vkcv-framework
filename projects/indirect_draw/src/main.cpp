@@ -512,8 +512,6 @@ int main(int argc, const char** argv) {
 	
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    auto start = std::chrono::system_clock::now();
-
     float ceiledDispatchCount = static_cast<float>(indexedIndirectCommands.size()) / 64.0f;
     ceiledDispatchCount = std::ceil(ceiledDispatchCount);
     const vkcv::DispatchSize dispatchCount = static_cast<uint32_t>(ceiledDispatchCount);
@@ -522,29 +520,17 @@ int main(int argc, const char** argv) {
     vkcv::PushConstants emptyPushConstant(0);
 
     bool updateFrustumPlanes    = true;
-
-    while (vkcv::Window::hasOpenWindow()) {
-        vkcv::Window::pollEvents();
-		
-		if (window.getHeight() == 0 || window.getWidth() == 0)
-			continue;
-		
-		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-			continue;
-		}
-		
+	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((!depthBuffer) ||
 			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
 			(swapchainHeight != core.getImageHeight(depthBuffer))) {
 			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
 		}
   
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		cameraManager.update(dt);
 		
-		start = end;
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         vkcv::camera::Camera cam = cameraManager.getActiveCamera();
 		vkcv::PushConstants pushConstants = vkcv::pushConstants<glm::mat4>();
 		pushConstants.appendDrawcall(cam.getProjection() * cam.getView());
@@ -581,21 +567,17 @@ int main(int argc, const char** argv) {
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-
-		auto stop = std::chrono::system_clock::now();
-		auto kektime = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+		
         gui.beginGUI();
 
         ImGui::Begin("Settings");
         ImGui::Checkbox("Update frustum culling", &updateFrustumPlanes);
-		ImGui::Text("Deltatime %fms, %f", 0.001 * static_cast<double>(kektime.count()), 1/(0.000001 * static_cast<double>(kektime.count())));
+		ImGui::Text("Deltatime %fms, %f", dt * 1000, 1/dt);
 
         ImGui::End();
 
         gui.endGUI();
-
-		core.endFrame(windowHandle);
-	}
+	});
 	
 	return 0;
 }

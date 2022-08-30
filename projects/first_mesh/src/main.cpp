@@ -154,20 +154,9 @@ int main(int argc, const char** argv) {
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
-
-    auto start = std::chrono::system_clock::now();
-    
-	while (vkcv::Window::hasOpenWindow()) {
-        vkcv::Window::pollEvents();
-		
-		if (window.getHeight() == 0 || window.getWidth() == 0)
-			continue;
-		
-		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-			continue;
-		}
-		
+	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((!depthBuffer) ||
 			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
 			(swapchainHeight != core.getImageHeight(depthBuffer))) {
@@ -177,12 +166,8 @@ int main(int argc, const char** argv) {
 					swapchainHeight
 			).getHandle();
 		}
-  
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		
-		start = end;
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		cameraManager.update(dt);
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 
 		vkcv::PushConstants pushConstants = vkcv::pushConstants<glm::mat4>();
@@ -202,8 +187,7 @@ int main(int argc, const char** argv) {
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-		core.endFrame(windowHandle);
-	}
+	});
 	
 	return 0;
 }

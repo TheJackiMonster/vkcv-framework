@@ -113,15 +113,13 @@ int main(int argc, const char** argv) {
 	lights.push_back(safrScene::Light(glm::vec3(30,  20,  30), 1.7));
     */
     createQuadraticLightCluster(lights, 10, 2.5f, 20, 1.5f);
-
-
+	
 	vkcv::SamplerHandle sampler = core.createSampler(
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerFilterType::LINEAR,
 		vkcv::SamplerMipmapMode::LINEAR,
 		vkcv::SamplerAddressMode::REPEAT
 	);
-
 	
 	//create Buffer for compute shader
 	vkcv::Buffer<safrScene::Light> lightsBuffer = vkcv::buffer<safrScene::Light>(
@@ -185,8 +183,6 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	auto start = std::chrono::system_clock::now();
-
 	const vkcv::Mesh renderMesh({}, safrIndexBuffer.getVulkanHandle(), 3);
 	vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
 	vkcv::DrawcallInfo drawcall(renderMesh, { descriptorUsage }, 1);
@@ -199,25 +195,9 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, 2));
 	cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 	cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
-
-	float time = 0;
 	
-	while (vkcv::Window::hasOpenWindow())
-	{
-		vkcv::Window::pollEvents();
-
-		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
-		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-			continue;
-		}
-
-		//configure timer
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-		start = end;
-		
-		time += 0.000001f * static_cast<float>(deltatime.count());
-		
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		//adjust light position
 		/*
 		639a53157e7d3936caf7c3e40379159cbcf4c89e
@@ -227,13 +207,13 @@ int main(int argc, const char** argv) {
 		lightsBuffer.fill(lights);
 		*/
 
-		spheres[0].center.y += std::cos(time * 0.5f * 3.141f) * 0.25f;
-		spheres[1].center.x += std::cos(time * 2.f) * 0.25f;
-		spheres[1].center.z += std::cos(time * 2.f + 0.5f * 3.141f) * 0.25f;
+		spheres[0].center.y += std::cos(t * 0.5f * 3.141f) * 0.25f;
+		spheres[1].center.x += std::cos(t * 2.f) * 0.25f;
+		spheres[1].center.z += std::cos(t * 2.f + 0.5f * 3.141f) * 0.25f;
         sphereBuffer.fill(spheres);
 
 		//update camera
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		cameraManager.update(dt);
 		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 		glm::mat4 proj = cameraManager.getActiveCamera().getProjection();
 
@@ -280,8 +260,7 @@ int main(int argc, const char** argv) {
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-
-		core.endFrame(windowHandle);
-	}
+	});
+	
 	return 0;
 }

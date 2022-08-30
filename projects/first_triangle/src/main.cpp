@@ -67,8 +67,6 @@ int main(int argc, const char** argv) {
 	}
 	
 	core.setDebugLabel(trianglePipeline, "Triangle Pipeline");
-	
-	auto start = std::chrono::system_clock::now();
 
 	const vkcv::Mesh renderMesh({}, triangleIndexBuffer.getVulkanHandle(), 3);
 	vkcv::DrawcallInfo drawcall(renderMesh, {},1);
@@ -83,38 +81,27 @@ int main(int argc, const char** argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
 
-	while (vkcv::Window::hasOpenWindow())
-	{
-        vkcv::Window::pollEvents();
-
-		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
-		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-			continue;
-		}
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+			uint32_t swapchainWidth, uint32_t swapchainHeight) {
+		cameraManager.update(dt);
 		
-        auto end = std::chrono::system_clock::now();
-        auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        start = end;
-		
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
-        glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
+		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		core.setDebugLabel(cmdStream, "Render Commands");
-
+		
 		core.recordDrawcallsToCmdStream(
-			cmdStream,
-			trianglePipeline,
-			vkcv::pushConstants<glm::mat4>(mvp),
-			{ drawcall },
-			{ swapchainInput },
-			windowHandle
+				cmdStream,
+				trianglePipeline,
+				vkcv::pushConstants<glm::mat4>(mvp),
+				{ drawcall },
+				{ swapchainInput },
+				windowHandle
 		);
-
+		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-	    
-	    core.endFrame(windowHandle);
-	}
+	});
+	
 	return 0;
 }

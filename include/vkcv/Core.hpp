@@ -854,5 +854,14 @@ namespace vkcv
 		 */
 		void setDebugLabel(const CommandStreamHandle &handle, const std::string &label);
 		
+		/**
+		 * @brief Runs the application in the current until all windows get closed.
+		 *
+		 * The frame callback will be called for each window every single frame.
+		 *
+		 * @param[in] frame Frame callback
+		 */
+		void run(const WindowFrameFunction &frame);
+		
     };
 }

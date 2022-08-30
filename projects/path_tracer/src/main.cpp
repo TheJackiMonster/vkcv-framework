@@ -220,9 +220,7 @@ int main(int argc, const char** argv) {
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
-
-	auto    startTime       = std::chrono::system_clock::now();
-	float   time            = 0;
+	
 	int     frameIndex      = 0;
 	bool    clearMeanImage  = true;
 	bool    updateMaterials = true;
@@ -245,16 +243,9 @@ int main(int argc, const char** argv) {
 
 	glm::vec3   skyColor            = glm::vec3(0.2, 0.7, 0.8);
 	float       skyColorMultiplier  = 1;
-
-	while (vkcv::Window::hasOpenWindow())
-	{
-		vkcv::Window::pollEvents();
-
-		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
-		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-			continue;
-		}
-
+	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if (swapchainWidth != widthPrevious || swapchainHeight != heightPrevious) {
 
 			// resize images
@@ -297,13 +288,7 @@ int main(int argc, const char** argv) {
 			clearMeanImage = true;
 		}
 
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - startTime);
-		startTime = end;
-
-		time += 0.000001f * static_cast<float>(deltatime.count());
-
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		cameraManager.update(dt);
 
 		const vkcv::CommandStreamHandle cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
@@ -454,9 +439,8 @@ int main(int argc, const char** argv) {
 			gui.endGUI();
 		}
 
-		core.endFrame(windowHandle);
-
 		frameIndex++;
-	}
+	});
+
 	return 0;
 }

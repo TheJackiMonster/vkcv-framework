@@ -621,20 +621,8 @@ int main(int argc, const char **argv) {
 	
 	float speed_factor = 1.0f;
 	
-	auto start = std::chrono::system_clock::now();
-	auto current = start;
-	
-	while (vkcv::Window::hasOpenWindow()) {
-		vkcv::Window::pollEvents();
-		
-		if (window.getHeight() == 0 || window.getWidth() == 0)
-			continue;
-		
-		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-			continue;
-		}
-		
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
 			depthBuffer = core.createImage(
 					vk::Format::eD32Sfloat,
@@ -646,16 +634,9 @@ int main(int argc, const char **argv) {
 			swapchainExtent.height = swapchainHeight;
 		}
 		
-		auto next = std::chrono::system_clock::now();
-		
-		auto time = std::chrono::duration_cast<std::chrono::microseconds>(next - start);
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(next - current);
-		
-		current = next;
-		
 		Physics physics;
-		physics.t = static_cast<float>(0.000001 * static_cast<double>(time.count()));
-		physics.dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
+		physics.t = static_cast<float>(t);
+		physics.dt = static_cast<float>(dt);
 		physics.speedfactor = speed_factor;
 		
 		vkcv::PushConstants physicsPushConstants = vkcv::pushConstants<Physics>();
@@ -871,9 +852,7 @@ int main(int argc, const char **argv) {
 		
 		ImGui::End();
 		gui.endGUI();
-		
-		core.endFrame(windowHandle);
-	}
+	});
 	
 	simulation.unmap();
 	return 0;

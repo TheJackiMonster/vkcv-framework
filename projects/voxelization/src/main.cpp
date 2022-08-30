@@ -643,17 +643,9 @@ int main(int argc, const char** argv) {
 	glm::vec3   absorptionColor     = glm::vec3(1);
 	float       absorptionDensity   = 0.005;
 	float       volumetricAmbient   = 0.2;
-
-	auto start = std::chrono::system_clock::now();
-	const auto appStartTime = start;
-	while (vkcv::Window::hasOpenWindow()) {
-		vkcv::Window::pollEvents();
-
-		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-			continue;
-		}
-		
+	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		uint32_t width, height;
 		vkcv::upscaling::getFSRResolution(
 				fsrMode,
@@ -717,9 +709,6 @@ int main(int argc, const char** argv) {
 			).getHandle();
 		}
 
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-
 		// update descriptor sets which use swapchain image
 		vkcv::DescriptorWrites tonemappingDescriptorWrites;
 		tonemappingDescriptorWrites.writeSampledImage(0, resolvedColorBuffer);
@@ -743,8 +732,7 @@ int main(int argc, const char** argv) {
 		resolveDescriptorWrites.writeStorageImage(2, resolvedColorBuffer);
 		core.writeDescriptorSet(resolveDescriptorSet, resolveDescriptorWrites);
 
-		start = end;
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		cameraManager.update(dt);
 		cameraPosBuffer.fill({ cameraManager.getActiveCamera().getPosition() });
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
@@ -914,11 +902,8 @@ int main(int argc, const char** argv) {
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 		core.prepareImageForSampling(cmdStream, swapBuffer2);
 		
-		auto timeSinceStart = std::chrono::duration_cast<std::chrono::microseconds>(end - appStartTime);
-		float timeF         = static_cast<float>(timeSinceStart.count()) * 0.01f;
-		
 		vkcv::PushConstants timePushConstants = vkcv::pushConstants<float>();
-		timePushConstants.appendDrawcall(timeF);
+		timePushConstants.appendDrawcall(static_cast<float>(t * 100000.0));
 		
 		fullscreenDispatchCount = vkcv::dispatchInvocations(
 				vkcv::DispatchSize(swapchainWidth, swapchainHeight),
@@ -1022,9 +1007,7 @@ int main(int argc, const char** argv) {
 		}
 
 		gui.endGUI();
-
-		core.endFrame(windowHandle);
-	}
+	});
 	
 	return 0;
 }

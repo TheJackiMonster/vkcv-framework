@@ -188,9 +188,7 @@ int main(int argc, const char **argv) {
     std::vector<glm::mat4> modelMatrices;
     std::vector<vkcv::DrawcallInfo> drawcalls;
     drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}, particleSystem.getParticles().size()));
-
-    auto start = std::chrono::system_clock::now();
-
+	
     glm::vec4 colorData = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
     uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
@@ -230,14 +228,9 @@ int main(int argc, const char **argv) {
 
     std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
     std::default_random_engine rdmEngine;
-    while (vkcv::Window::hasOpenWindow()) {
-        vkcv::Window::pollEvents();
-
-        uint32_t swapchainWidth, swapchainHeight;
-        if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-            continue;
-        }
 	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((core.getImageWidth(colorBuffer) != swapchainWidth) ||
 			(core.getImageHeight(colorBuffer) != swapchainHeight)) {
 			colorBuffer = core.createImage(
@@ -251,11 +244,7 @@ int main(int argc, const char **argv) {
         color.fill(&colorData);
         position.fill(&pos);
 
-        auto end = std::chrono::system_clock::now();
-        float deltatime = 0.000001 * static_cast<float>( std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() );
-        start = end;
-
-        cameraManager.update(deltatime);
+        cameraManager.update(dt);
 
         // split view and projection to allow for easy billboarding in shader
         struct {
@@ -268,7 +257,7 @@ int main(int argc, const char **argv) {
 
         auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
         float random = rdm(rdmEngine);
-        glm::vec2 pushData = glm::vec2(deltatime, random);
+        glm::vec2 pushData = glm::vec2(dt, random);
 
         vkcv::PushConstants pushConstantsCompute = vkcv::pushConstants<glm::vec2>();
         pushConstantsCompute.appendDrawcall(pushData);
@@ -323,8 +312,7 @@ int main(int argc, const char **argv) {
 
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);
-        core.endFrame(windowHandle);
-    }
+    });
 
     return 0;
 }

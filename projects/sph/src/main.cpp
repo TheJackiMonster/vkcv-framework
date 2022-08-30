@@ -205,9 +205,7 @@ int main(int argc, const char **argv) {
 
     std::vector<vkcv::DrawcallInfo> drawcalls;
     drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}, numberParticles));
-
-    auto start = std::chrono::system_clock::now();
-
+	
     glm::vec4 colorData = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
     uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
@@ -241,15 +239,9 @@ int main(int argc, const char **argv) {
 			"shaders/tonemapping.comp",
 			tonemappingPipe
 	);
-
-    while (vkcv::Window::hasOpenWindow()) {
-        vkcv::Window::pollEvents();
-
-        uint32_t swapchainWidth, swapchainHeight;
-        if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-            continue;
-        }
-		
+	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((core.getImageWidth(colorBuffer) != swapchainWidth) ||
 			(core.getImageHeight(colorBuffer) != swapchainHeight)) {
 			colorBuffer = core.createImage(
@@ -263,11 +255,7 @@ int main(int argc, const char **argv) {
         color.fill(&colorData);
         position.fill(&pos);
 
-        auto end = std::chrono::system_clock::now();
-        float deltatime = 0.000001 * static_cast<float>( std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() );
-        start = end;
-
-        cameraManager.update(deltatime);
+        cameraManager.update(dt);
 
         // split view and projection to allow for easy billboarding in shader
         struct {
@@ -285,35 +273,35 @@ int main(int argc, const char **argv) {
 
         // keybindings rotation
         if (glfwGetKey(window.getWindow(), GLFW_KEY_LEFT) == GLFW_PRESS)
-            rotationx += deltatime * 50;
+            rotationx += dt * 50;
         if (glfwGetKey(window.getWindow(), GLFW_KEY_RIGHT) == GLFW_PRESS)
-            rotationx -= deltatime * 50;
+            rotationx -= dt * 50;
         
         if (glfwGetKey(window.getWindow(), GLFW_KEY_UP) == GLFW_PRESS)
-            rotationy += deltatime * 50;
+            rotationy += dt * 50;
         if (glfwGetKey(window.getWindow(), GLFW_KEY_DOWN) == GLFW_PRESS)
-            rotationy -= deltatime * 50;
+            rotationy -= dt * 50;
 
         // keybindings params
         if (glfwGetKey(window.getWindow(), GLFW_KEY_T) == GLFW_PRESS)
-            param_h += deltatime * 0.2;
+            param_h += dt * 0.2;
         if (glfwGetKey(window.getWindow(), GLFW_KEY_G) == GLFW_PRESS)
-            param_h -= deltatime * 0.2;
+            param_h -= dt * 0.2;
 
         if (glfwGetKey(window.getWindow(), GLFW_KEY_Y) == GLFW_PRESS)
-            param_mass += deltatime * 0.2;
+            param_mass += dt * 0.2;
         if (glfwGetKey(window.getWindow(), GLFW_KEY_H) == GLFW_PRESS)
-            param_mass -= deltatime * 0.2;
+            param_mass -= dt * 0.2;
 
         if (glfwGetKey(window.getWindow(), GLFW_KEY_U) == GLFW_PRESS)
-            param_gasConstant += deltatime * 1500.0;
+            param_gasConstant += dt * 1500.0;
         if (glfwGetKey(window.getWindow(), GLFW_KEY_J) == GLFW_PRESS)
-            param_gasConstant -= deltatime * 1500.0;
+            param_gasConstant -= dt * 1500.0;
 
         if (glfwGetKey(window.getWindow(), GLFW_KEY_I) == GLFW_PRESS)
-            param_offset += deltatime * 400.0;
+            param_offset += dt * 400.0;
         if (glfwGetKey(window.getWindow(), GLFW_KEY_K) == GLFW_PRESS)
-            param_offset -= deltatime * 400.0;
+            param_offset -= dt * 400.0;
 
         if (glfwGetKey(window.getWindow(), GLFW_KEY_O) == GLFW_PRESS)
             param_viscosity = 50;
@@ -427,8 +415,7 @@ int main(int argc, const char **argv) {
 
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);
-        core.endFrame(windowHandle);
-    }
+    });
 
     return 0;
 }

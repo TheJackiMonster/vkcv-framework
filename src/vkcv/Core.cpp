@@ -1425,4 +1425,35 @@ namespace vkcv
 				label
 		);
 	}
+	
+	void Core::run(const vkcv::WindowFrameFunction &frame) {
+		auto start = std::chrono::system_clock::now();
+		double t = 0.0;
+		
+		if (!frame)
+			return;
+		
+		while (Window::hasOpenWindow()) {
+			vkcv::Window::pollEvents();
+			
+			auto end = std::chrono::system_clock::now();
+			auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+			start = end;
+			
+			double dt = 0.000001 * static_cast<double>(deltatime.count());
+			
+			for (const auto &window : m_WindowManager->getWindowHandles()) {
+				uint32_t swapchainWidth, swapchainHeight;
+				if (!beginFrame(swapchainWidth, swapchainHeight, window)) {
+					continue;
+				}
+				
+				frame(window, t, dt, swapchainWidth, swapchainHeight);
+				endFrame(window);
+			}
+			
+			t += dt;
+		}
+	}
+	
 }

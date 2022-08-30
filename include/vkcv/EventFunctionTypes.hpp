@@ -8,6 +8,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Event.hpp"
+#include "Handles.hpp"
 
 namespace vkcv {
 	
@@ -20,5 +21,11 @@ namespace vkcv {
 	 * @brief Function to be called after finishing a given process.
 	 */
 	typedef typename event_function<>::type FinishCommandFunction;
+	
+	/**
+	 * @brief Function to be called each frame for every open window.
+	 */
+	typedef typename event_function<const WindowHandle&, double, double, uint32_t, uint32_t>::type 
+	        WindowFrameFunction;
 	
 }

@@ -280,9 +280,6 @@ int main(int argc, const char** argv) {
     core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
 
     vkcv::ImageHandle depthBuffer;
-
-    auto start = std::chrono::system_clock::now();
-
 	vkcv::ImageHandle swapchainImageHandle = vkcv::ImageHandle::createSwapchainImageHandle();
 
     const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices, vkcv::IndexBitCount::Bit32);
@@ -296,16 +293,9 @@ int main(int argc, const char** argv) {
 
 	bool useMeshShader          = true;
 	bool updateFrustumPlanes    = true;
-
-	while (vkcv::Window::hasOpenWindow())
-	{
-		vkcv::Window::pollEvents();
-
-		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
-		if (!core.beginFrame(swapchainWidth, swapchainHeight,windowHandle)) {
-			continue;
-		}
-		
+	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((!depthBuffer) ||
 			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
 			(swapchainHeight != core.getImageHeight(depthBuffer))) {
@@ -316,11 +306,7 @@ int main(int argc, const char** argv) {
 			).getHandle();
 		}
 		
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-		start = end;
-		
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		cameraManager.update(dt);
 
 		const vkcv::camera::Camera& camera = cameraManager.getActiveCamera();
 
@@ -360,9 +346,7 @@ int main(int argc, const char** argv) {
 				{ renderTargets },
 				windowHandle
 			);
-		}
-		else {
-
+		} else {
 			vkcv::DescriptorSetUsage descriptorUsage(0, vertexShaderDescriptorSet);
 
 			core.recordDrawcallsToCmdStream(
@@ -386,8 +370,7 @@ int main(int argc, const char** argv) {
 
 		ImGui::End();
 		gui.endGUI();
-
-		core.endFrame(windowHandle);
-	}
+	});
+	
 	return 0;
 }
