@@ -71,7 +71,8 @@ int main(int argc, const char** argv) {
 		initialHeight,
 		1,
 		false,
-		true).getHandle();
+		true
+	);
 
 	vkcv::ImageHandle meanImage = core.createImage(
 		vk::Format::eR32G32B32A32Sfloat,
@@ -79,7 +80,8 @@ int main(int argc, const char** argv) {
 		initialHeight,
 		1,
 		false,
-		true).getHandle();
+		true
+	);
 
 	vkcv::shader::GLSLCompiler compiler;
 
@@ -255,7 +257,8 @@ int main(int argc, const char** argv) {
 				swapchainHeight,
 				1,
 				false,
-				true).getHandle();
+				true
+			);
 
 			meanImage = core.createImage(
 				vk::Format::eR32G32B32A32Sfloat,
@@ -263,7 +266,8 @@ int main(int argc, const char** argv) {
 				swapchainHeight,
 				1,
 				false,
-				true).getHandle();
+				true
+			);
 
 			// update descriptor sets
 			traceDescriptorWrites.writeStorageImage(3, outputImage);

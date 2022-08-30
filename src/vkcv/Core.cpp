@@ -5,6 +5,7 @@
  */
 
 #include <GLFW/glfw3.h>
+#include <cmath>
 
 #include "vkcv/Core.hpp"
 #include "PassManager.hpp"
@@ -17,7 +18,7 @@
 #include "DescriptorSetManager.hpp"
 #include "WindowManager.hpp"
 #include "CommandStreamManager.hpp"
-#include <cmath>
+#include "vkcv/Image.hpp"
 #include "vkcv/Logger.hpp"
 #include "vkcv/BlitDownsampler.hpp"
 
@@ -1002,29 +1003,40 @@ namespace vkcv
 		return m_SamplerManager->createSampler(magFilter, minFilter, mipmapMode, addressMode, mipLodBias, borderColor);
 	}
 
-	Image Core::createImage(vk::Format      format,
-							uint32_t        width,
-							uint32_t        height,
-							uint32_t        depth,
-							bool            createMipChain,
-							bool            supportStorage,
-							bool            supportColorAttachment,
-							Multisampling   multisampling) {
+	ImageHandle Core::createImage(vk::Format format,
+								  uint32_t width,
+								  uint32_t height,
+								  uint32_t depth,
+								  bool createMipChain,
+								  bool supportStorage,
+								  bool supportColorAttachment,
+								  Multisampling multisampling) {
 		uint32_t mipCount = 1;
 		if (createMipChain) {
 			mipCount = 1 + (uint32_t)std::floor(std::log2(std::max(width, std::max(height, depth))));
 		}
-
-		return Image::create(
-			m_ImageManager.get(), 
-			format,
-			width,
-			height,
-			depth,
-			mipCount,
-			supportStorage,
-			supportColorAttachment,
-			multisampling);
+		
+		return m_ImageManager->createImage(
+				width,
+				height,
+				depth,
+				format,
+				mipCount,
+				supportStorage,
+				supportColorAttachment,
+				multisampling
+		);
+	}
+	
+	void Core::fillImage(const ImageHandle &image,
+						 const void *data,
+						 size_t size) {
+		m_ImageManager->fillImage(image, data, size);
+	}
+	
+	void Core::switchImageLayout(const ImageHandle &image,
+								 vk::ImageLayout layout) {
+		m_ImageManager->switchImageLayoutImmediate(image, layout);
 	}
 	
 	Downsampler &Core::getDownsampler() {

@@ -2,6 +2,7 @@
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <vkcv/Pass.hpp>
+#include <vkcv/Image.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <vkcv/gui/GUI.hpp>
@@ -171,7 +172,7 @@ void compileMeshForIndirectDraw(vkcv::Core &core,
                                 CompiledMaterial &compiledMat,
                                 std::vector<vk::DrawIndexedIndirectCommand> &indexedIndirectCommands)
 {
-    vkcv::Image pseudoImg = core.createImage(vk::Format::eR8G8B8A8Srgb, 2, 2);
+    vkcv::Image pseudoImg = vkcv::image(core, vk::Format::eR8G8B8A8Srgb, 2, 2);
     std::vector<uint8_t> pseudoData = {0, 0, 0, 0};
     pseudoImg.fill(pseudoData.data());
 	
@@ -196,7 +197,7 @@ void compileMeshForIndirectDraw(vkcv::Core &core,
             {
                 auto &baseColor     = scene.textures[material.baseColor];
 
-                vkcv::Image baseColorImg = core.createImage(vk::Format::eR8G8B8A8Srgb, baseColor.w, baseColor.h);
+                vkcv::Image baseColorImg = vkcv::image(core, vk::Format::eR8G8B8A8Srgb, baseColor.w, baseColor.h);
                 baseColorImg.fill(baseColor.data.data());
 				baseColorImg.recordMipChainGeneration(mipStream, core.getDownsampler());
 
@@ -526,7 +527,7 @@ int main(int argc, const char** argv) {
 		if ((!depthBuffer) ||
 			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
 			(swapchainHeight != core.getImageHeight(depthBuffer))) {
-			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
+			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight);
 		}
   
 		cameraManager.update(dt);

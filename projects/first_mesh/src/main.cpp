@@ -1,9 +1,9 @@
 #include <iostream>
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Image.hpp>
 #include <vkcv/Pass.hpp>
 #include <vkcv/camera/CameraManager.hpp>
-#include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
@@ -114,7 +114,7 @@ int main(int argc, const char** argv) {
 	}
 	
 	vkcv::asset::Texture &tex = mesh.textures[0];
-	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
+	vkcv::Image texture = vkcv::image(core, vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
 	texture.fill(tex.data.data());
 	
 	{
@@ -164,7 +164,7 @@ int main(int argc, const char** argv) {
 					vk::Format::eD32Sfloat,
 					swapchainWidth,
 					swapchainHeight
-			).getHandle();
+			);
 		}
 		
 		cameraManager.update(dt);

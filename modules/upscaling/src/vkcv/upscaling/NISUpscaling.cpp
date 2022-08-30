@@ -7,6 +7,7 @@
 #include "NIS_Scaler.h.hxx"
 
 #include <vkcv/File.hpp>
+#include <vkcv/Image.hpp>
 #include <vkcv/Logger.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
@@ -77,14 +78,14 @@ namespace vkcv::upscaling {
 		const size_t rowPitch = kFilterSize * 2;
 		const size_t imageSize = rowPitch * kPhaseCount;
 		
-		Image image = core.createImage(
+		Image image = vkcv::image(
+				core,
 				vk::Format::eR16G16B16A16Sfloat,
 				kFilterSize / 4,
 				kPhaseCount
 		);
 		
 		image.fill(data, imageSize);
-		
 		return image.getHandle();
 	}
 	

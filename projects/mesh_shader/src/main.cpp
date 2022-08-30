@@ -303,7 +303,7 @@ int main(int argc, const char** argv) {
 					vk::Format::eD32Sfloat,
 					swapchainWidth,
 					swapchainHeight
-			).getHandle();
+			);
 		}
 		
 		cameraManager.update(dt);

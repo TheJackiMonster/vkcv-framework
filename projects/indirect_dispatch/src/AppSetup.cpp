@@ -1,6 +1,8 @@
 #include "AppSetup.hpp"
 #include "AppConfig.hpp"
+
 #include <vkcv/Buffer.hpp>
+#include <vkcv/Image.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
@@ -70,12 +72,14 @@ bool loadImage(vkcv::Core& core, const std::filesystem::path& path, vkcv::ImageH
 		return false;
 	}
 
-	vkcv::Image image = core.createImage(
-		vk::Format::eR8G8B8A8Srgb, 
-		textureData.width, 
-		textureData.height, 
-		1, 
-		true);
+	vkcv::Image image = vkcv::image(
+			core,
+			vk::Format::eR8G8B8A8Srgb,
+			textureData.width,
+			textureData.height,
+			1,
+			true
+	);
 
 	image.fill(textureData.data.data(), textureData.data.size());
 	
@@ -296,7 +300,6 @@ bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, Comput
 }
 
 AppRenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const uint32_t height) {
-
 	AppRenderTargets targets;
 
 	targets.depthBuffer = core.createImage(
@@ -304,7 +307,8 @@ AppRenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, con
 		width,
 		height,
 		1,
-		false).getHandle();
+		false
+	);
 
 	targets.colorBuffer = core.createImage(
 		AppConfig::colorBufferFormat,
@@ -313,7 +317,8 @@ AppRenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, con
 		1,
 		false,
 		false,
-		true).getHandle();
+		true
+	);
 
 	targets.motionBuffer = core.createImage(
 		AppConfig::motionBufferFormat,
@@ -322,7 +327,8 @@ AppRenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, con
 		1,
 		false,
 		false,
-		true).getHandle();
+		true
+	);
 
 	return targets;
 }

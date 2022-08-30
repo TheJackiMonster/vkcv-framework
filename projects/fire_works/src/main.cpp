@@ -3,6 +3,7 @@
 
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Image.hpp>
 #include <vkcv/Pass.hpp>
 #include <vkcv/DrawcallRecording.hpp>
 
@@ -335,7 +336,7 @@ int main(int argc, const char **argv) {
 				swapchainExtent.width,
 				swapchainExtent.height,
 				1, false, true, true
-		).getHandle();
+		);
 	}
 	
 	vkcv::ShaderProgram particleShaderProgram;
@@ -724,36 +725,40 @@ int main(int argc, const char **argv) {
 	std::vector<uint32_t> zeroVoxel;
 	zeroVoxel.resize(voxelWidth * voxelHeight * voxelDepth, 0);
 	
-	vkcv::Image voxelRed = core.createImage(
-		vk::Format::eR32Uint,
-		voxelWidth,
-		voxelHeight,
-		voxelDepth,
-		false, true
+	vkcv::Image voxelRed = vkcv::image(
+			core,
+			vk::Format::eR32Uint,
+			voxelWidth,
+			voxelHeight,
+			voxelDepth,
+			false, true
 	);
 	
-	vkcv::Image voxelGreen = core.createImage(
-		vk::Format::eR32Uint,
-		voxelWidth,
-		voxelHeight,
-		voxelDepth,
-		false, true
+	vkcv::Image voxelGreen = vkcv::image(
+			core,
+			vk::Format::eR32Uint,
+			voxelWidth,
+			voxelHeight,
+			voxelDepth,
+			false, true
 	);
 	
-	vkcv::Image voxelBlue = core.createImage(
-		vk::Format::eR32Uint,
-		voxelWidth,
-		voxelHeight,
-		voxelDepth,
-		false, true
+	vkcv::Image voxelBlue = vkcv::image(
+			core,
+			vk::Format::eR32Uint,
+			voxelWidth,
+			voxelHeight,
+			voxelDepth,
+			false, true
 	);
 	
-	vkcv::Image voxelDensity = core.createImage(
-		vk::Format::eR32Uint,
-		voxelWidth,
-		voxelHeight,
-		voxelDepth,
-		false, true
+	vkcv::Image voxelDensity = vkcv::image(
+			core,
+			vk::Format::eR32Uint,
+			voxelWidth,
+			voxelHeight,
+			voxelDepth,
+			false, true
 	);
 	
 	std::array<vkcv::ImageHandle, 2> voxelData {
@@ -763,21 +768,22 @@ int main(int argc, const char **argv) {
 			voxelHeight,
 			voxelDepth,
 			false, true
-		).getHandle(),
+		),
 		core.createImage(
 			vk::Format::eR16G16B16A16Sfloat,
 			voxelWidth,
 			voxelHeight,
 			voxelDepth,
 			false, true
-		).getHandle()
+		)
 	};
 	
-	vkcv::Image voxelSamples = core.createImage(
-		colorFormat,
-		voxelWidth,
-		voxelHeight,
-		1, false, true
+	vkcv::Image voxelSamples = vkcv::image(
+			core,
+			colorFormat,
+			voxelWidth,
+			voxelHeight,
+			1, false, true
    	);
 	
 	vkcv::SamplerHandle voxelSampler = core.createSampler(
@@ -966,7 +972,7 @@ int main(int argc, const char **argv) {
 					swapchainWidth,
 					swapchainHeight,
 					1, false, true, true
-				).getHandle();
+				);
 			}
 		}
 		

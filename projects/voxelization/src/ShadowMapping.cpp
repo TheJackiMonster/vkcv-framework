@@ -153,9 +153,9 @@ glm::mat4 computeShadowViewProjectionMatrix(
 
 ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vertexLayout) : 
 	m_corePtr(corePtr),
-	m_shadowMap(corePtr->createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1, true, true)),
-	m_shadowMapIntermediate(corePtr->createImage(shadowMapFormat, shadowMapResolution, shadowMapResolution, 1, false, true)),
-	m_shadowMapDepth(corePtr->createImage(shadowMapDepthFormat, shadowMapResolution, shadowMapResolution, 1, false, false, false, msaa)),
+	m_shadowMap(vkcv::image(*corePtr, shadowMapFormat, shadowMapResolution, shadowMapResolution, 1, true, true)),
+	m_shadowMapIntermediate(vkcv::image(*corePtr, shadowMapFormat, shadowMapResolution, shadowMapResolution, 1, false, true)),
+	m_shadowMapDepth(vkcv::image(*corePtr, shadowMapDepthFormat, shadowMapResolution, shadowMapResolution, 1, false, false, false, msaa)),
 	m_lightInfoBuffer(buffer<LightInfo>(*corePtr, vkcv::BufferType::UNIFORM, 1)){
 
 	vkcv::ShaderProgram shadowShader = loadShadowShader();

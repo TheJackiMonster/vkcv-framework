@@ -34,54 +34,37 @@ namespace vkcv{
 				return false;
 		}
 	}
-
-	Image Image::create(
-		ImageManager*   manager,
-		vk::Format      format,
-		uint32_t        width,
-		uint32_t        height,
-		uint32_t        depth,
-		uint32_t        mipCount,
-		bool            supportStorage,
-		bool            supportColorAttachment,
-		Multisampling   msaa)
-	{
-		return Image(
-			manager, 
-			manager->createImage(width, height, depth, format, mipCount, supportStorage, supportColorAttachment, msaa));
-	}
 	
 	vk::Format Image::getFormat() const {
-		return m_manager->getImageFormat(m_handle);
+		return m_core->getImageFormat(m_handle);
 	}
 	
 	uint32_t Image::getWidth() const {
-		return m_manager->getImageWidth(m_handle);
+		return m_core->getImageWidth(m_handle);
 	}
 	
 	uint32_t Image::getHeight() const {
-		return m_manager->getImageHeight(m_handle);
+		return m_core->getImageHeight(m_handle);
 	}
 	
 	uint32_t Image::getDepth() const {
-		return m_manager->getImageDepth(m_handle);
+		return m_core->getImageDepth(m_handle);
 	}
 
-	void Image::switchLayout(vk::ImageLayout newLayout)
-	{
-		m_manager->switchImageLayoutImmediate(m_handle, newLayout);
+	void Image::switchLayout(vk::ImageLayout newLayout) {
+		m_core->switchImageLayout(m_handle, newLayout);
 	}
 
 	const vkcv::ImageHandle& Image::getHandle() const {
 		return m_handle;
 	}
 
-	uint32_t Image::getMipCount() const {
-		return m_manager->getImageMipCount(m_handle);
+	uint32_t Image::getMipLevels() const {
+		return m_core->getImageMipLevels(m_handle);
 	}
 
 	void Image::fill(const void *data, size_t size) {
-		m_manager->fillImage(m_handle, data, size);
+		m_core->fillImage(m_handle, data, size);
 	}
 
 	void Image::recordMipChainGeneration(const vkcv::CommandStreamHandle& cmdStream,
@@ -89,9 +72,25 @@ namespace vkcv{
 		downsampler.recordDownsampling(cmdStream, m_handle);
 	}
 	
-	Image::Image(ImageManager* manager, const ImageHandle& handle) :
-		m_manager(manager),
-		m_handle(handle)
-	{}
+	Image image(Core &core,
+				vk::Format format,
+				uint32_t width,
+				uint32_t height,
+				uint32_t depth,
+				bool createMipChain,
+				bool supportStorage,
+				bool supportColorAttachment,
+				Multisampling multisampling) {
+		return Image(&core, core.createImage(
+				format,
+				width,
+				height,
+				depth,
+				createMipChain,
+				supportStorage,
+				supportColorAttachment,
+				multisampling
+		));
+	}
 
 }

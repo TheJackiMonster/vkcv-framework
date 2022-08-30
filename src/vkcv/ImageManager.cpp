@@ -5,6 +5,7 @@
  */
 #include "ImageManager.hpp"
 #include "vkcv/Core.hpp"
+#include "vkcv/Image.hpp"
 #include "vkcv/Logger.hpp"
 #include "vkcv/Multisampling.hpp"
 #include "vkcv/TypeGuard.hpp"
@@ -529,9 +530,7 @@ namespace vkcv {
 		}
 		
 		auto& image = (*this)[handle];
-		switchImageLayoutImmediate(
-				handle,
-				vk::ImageLayout::eTransferDstOptimal);
+		switchImageLayoutImmediate(handle, vk::ImageLayout::eTransferDstOptimal);
 		
 		const size_t image_size = (
 				image.m_width * image.m_height * image.m_depth *
@@ -589,10 +588,7 @@ namespace vkcv {
 					);
 				},
 				[&]() {
-					switchImageLayoutImmediate(
-							handle,
-							vk::ImageLayout::eShaderReadOnlyOptimal
-					);
+					switchImageLayoutImmediate(handle,vk::ImageLayout::eShaderReadOnlyOptimal);
 				}
 		);
 		

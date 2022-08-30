@@ -2,6 +2,7 @@
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <vkcv/Pass.hpp>
+#include <vkcv/Image.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -310,9 +311,10 @@ int main(int argc, const char **argv) {
 			vk::Format::eD32Sfloat,
 			swapchainExtent.width,
 			swapchainExtent.height
-	).getHandle();
+	);
 	
-	vkcv::Image grid = core.createImage(
+	vkcv::Image grid = vkcv::image(
+			core,
 			vk::Format::eR16G16B16A16Sfloat,
 			32,
 			32,
@@ -628,7 +630,7 @@ int main(int argc, const char **argv) {
 					vk::Format::eD32Sfloat,
 					swapchainWidth,
 					swapchainHeight
-			).getHandle();
+			);
 			
 			swapchainExtent.width = swapchainWidth;
 			swapchainExtent.height = swapchainHeight;

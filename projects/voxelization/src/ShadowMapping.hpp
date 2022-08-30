@@ -4,6 +4,7 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/Camera.hpp>
 #include <vkcv/Downsampler.hpp>
+#include <vkcv/Image.hpp>
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL // use this before inclusion, else error!

@@ -147,14 +147,14 @@ int main(int argc, const char** argv) {
 			vk::Format::eD32Sfloat,
 			swapchainExtent.width,
 			swapchainExtent.height
-	).getHandle();
+	);
 	
 	vkcv::ImageHandle colorBuffer = core.createImage(
 			colorFormat,
 			swapchainExtent.width,
 			swapchainExtent.height,
 			1, false, true, true
-	).getHandle();
+	);
 	
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	
@@ -164,14 +164,14 @@ int main(int argc, const char** argv) {
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
 				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
-			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
+			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight);
 			
 			colorBuffer = core.createImage(
 					colorFormat,
 					swapchainExtent.width,
 					swapchainExtent.height,
 					1, false, true, true
-			).getHandle();
+			);
 			
 			swapchainExtent.width = swapchainWidth;
 			swapchainExtent.height = swapchainHeight;

@@ -285,19 +285,19 @@ int main(int argc, const char** argv) {
 		vkcv::asset::Texture& specularTexture   = scene.textures[specularIndex];
 
 		// albedo texture
-		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Srgb, albedoTexture.w, albedoTexture.h, 1, true));
+		sceneImages.push_back(vkcv::image(core, vk::Format::eR8G8B8A8Srgb, albedoTexture.w, albedoTexture.h, 1, true));
 		sceneImages.back().fill(albedoTexture.data.data());
 		sceneImages.back().recordMipChainGeneration(mipStream, spdDownsampler);
 		const vkcv::ImageHandle albedoHandle = sceneImages.back().getHandle();
 
 		// normal texture
-		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Unorm, normalTexture.w, normalTexture.h, 1, true, true));
+		sceneImages.push_back(vkcv::image(core, vk::Format::eR8G8B8A8Unorm, normalTexture.w, normalTexture.h, 1, true, true));
 		sceneImages.back().fill(normalTexture.data.data());
 		sceneImages.back().recordMipChainGeneration(mipStream, spdDownsampler);
 		const vkcv::ImageHandle normalHandle = sceneImages.back().getHandle();
 
 		// specular texture
-		sceneImages.push_back(core.createImage(vk::Format::eR8G8B8A8Unorm, specularTexture.w, specularTexture.h, 1, true, true));
+		sceneImages.push_back(vkcv::image(core, vk::Format::eR8G8B8A8Unorm, specularTexture.w, specularTexture.h, 1, true, true));
 		sceneImages.back().fill(specularTexture.data.data());
 		sceneImages.back().recordMipChainGeneration(mipStream, spdDownsampler);
 		const vkcv::ImageHandle specularHandle = sceneImages.back().getHandle();
@@ -400,20 +400,20 @@ int main(int argc, const char** argv) {
 	vkcv::GraphicsPipelineHandle skyPipe = core.createGraphicsPipeline(skyPipeConfig);
 
 	// render targets
-	vkcv::ImageHandle depthBuffer           = core.createImage(
+	vkcv::ImageHandle depthBuffer = core.createImage(
 			depthBufferFormat,
 			swapchainExtent.width,
 			swapchainExtent.height,
 			1, false, false, false, msaa
-	).getHandle();
+	);
 
-    const bool colorBufferRequiresStorage   = !usingMsaa;
-	vkcv::ImageHandle colorBuffer           = core.createImage(
+    const bool colorBufferRequiresStorage = !usingMsaa;
+	vkcv::ImageHandle colorBuffer = core.createImage(
 			colorBufferFormat,
 			swapchainExtent.width,
 			swapchainExtent.height,
 			1, false, colorBufferRequiresStorage, true, msaa
-	).getHandle();
+	);
 
 	vkcv::ImageHandle resolvedColorBuffer;
 	if (usingMsaa) {
@@ -422,7 +422,7 @@ int main(int argc, const char** argv) {
 				swapchainExtent.width,
 				swapchainExtent.height,
 				1, false, true, true
-		).getHandle();
+		);
 	}
 	else {
 		resolvedColorBuffer = colorBuffer;
@@ -433,14 +433,14 @@ int main(int argc, const char** argv) {
 			swapchainExtent.width,
 			swapchainExtent.height,
 			1, false, true
-	).getHandle();
+	);
 	
 	vkcv::ImageHandle swapBuffer2 = core.createImage(
 			colorBufferFormat,
 			swapchainExtent.width,
 			swapchainExtent.height,
 			1, false, true
-	).getHandle();
+	);
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -677,21 +677,21 @@ int main(int argc, const char** argv) {
 					fsrWidth, fsrHeight, 1,
 					false, false, false,
 					msaa
-			).getHandle();
+			);
 			
 			colorBuffer = core.createImage(
 					colorBufferFormat,
 					fsrWidth, fsrHeight, 1,
 					false, colorBufferRequiresStorage, true,
 					msaa
-			).getHandle();
+			);
 
 			if (usingMsaa) {
 				resolvedColorBuffer = core.createImage(
 						colorBufferFormat,
 						fsrWidth, fsrHeight, 1,
 						false, true, true
-				).getHandle();
+				);
 			} else {
 				resolvedColorBuffer = colorBuffer;
 			}
@@ -700,13 +700,13 @@ int main(int argc, const char** argv) {
 					colorBufferFormat,
 					fsrWidth, fsrHeight, 1,
 					false, true
-			).getHandle();
+			);
 			
 			swapBuffer2 = core.createImage(
 					colorBufferFormat,
 					swapchainWidth, swapchainHeight, 1,
 					false, true
-			).getHandle();
+			);
 		}
 
 		// update descriptor sets which use swapchain image

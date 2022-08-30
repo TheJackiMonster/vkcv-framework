@@ -279,7 +279,7 @@ namespace vkcv::upscaling {
 					outputWidth, outputHeight,1,
 					false,
 					true
-			).getHandle();
+			);
 			
 			m_core.prepareImageForStorage(cmdStream, m_intermediateImage);
 		}

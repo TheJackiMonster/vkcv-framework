@@ -1,6 +1,7 @@
 
 #include "vkcv/scene/Scene.hpp"
 
+#include <vkcv/Image.hpp>
 #include <vkcv/Logger.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 
@@ -162,7 +163,7 @@ namespace vkcv::scene {
 			asset_sampler = &(asset_scene.samplers[asset_texture.sampler]);
 		}
 		
-		Image img = core.createImage(format, asset_texture.w, asset_texture.h, 1, true);
+		Image img = vkcv::image(core, format, asset_texture.w, asset_texture.h, 1, true);
 		img.fill(asset_texture.data.data());
 		image = img.getHandle();
 		

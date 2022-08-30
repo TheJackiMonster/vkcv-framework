@@ -3,6 +3,7 @@
 
 #include <vkcv/DrawcallRecording.hpp>
 #include <vkcv/PushConstants.hpp>
+#include <vkcv/Image.hpp>
 
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/asset/asset_loader.hpp>
@@ -125,7 +126,8 @@ namespace vkcv::effects {
 								   const std::string &texturePath) {
 		const auto texture = vkcv::asset::loadTexture(texturePath);
 		
-		Image image = core.createImage(
+		auto image = vkcv::image(
+				core,
 				vk::Format::eR8G8B8A8Unorm,
 				texture.width,
 				texture.height
@@ -494,7 +496,7 @@ namespace vkcv::effects {
 					1,
 					true,
 					true
-			).getHandle();
+			);
 			
 			m_downsampleDescriptorSets.clear();
 			m_upsampleDescriptorSets.clear();
@@ -524,7 +526,7 @@ namespace vkcv::effects {
 					1,
 					true,
 					true
-			).getHandle();
+			);
 			
 			m_flaresDescriptorSets.clear();
 			

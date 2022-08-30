@@ -209,7 +209,7 @@ int main(int argc, const char **argv) {
 			swapchainExtent.width,
 			swapchainExtent.height,
 			1, false, true, true
-	).getHandle();
+	);
 	
 	vkcv::effects::BloomAndFlaresEffect bloomAndFlares (core);
 	bloomAndFlares.setUpsamplingLimit(3);
@@ -238,7 +238,7 @@ int main(int argc, const char **argv) {
 					swapchainWidth,
 					swapchainHeight,
 					1, false, true, true
-			).getHandle();
+			);
 		}
 
         color.fill(&colorData);

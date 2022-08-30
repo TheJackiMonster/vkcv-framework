@@ -21,7 +21,7 @@ namespace vkcv {
 	template<typename T>
 	class Buffer {
 	public:
-		Buffer() : m_core(nullptr), m_handle() {};
+		Buffer() : m_core(nullptr), m_handle() {}
 		
 		Buffer(Core* core, const BufferHandle& handle) : m_core(core), m_handle(handle) {}
 		

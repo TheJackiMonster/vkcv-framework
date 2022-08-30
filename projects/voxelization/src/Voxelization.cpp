@@ -86,10 +86,10 @@ Voxelization::Voxelization(
 	vkcv::Multisampling msaa)
 	:
 	m_corePtr(corePtr),
-	m_voxelImageIntermediate(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
-	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
+	m_voxelImageIntermediate(vkcv::image(*m_corePtr, vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
+	m_voxelImage(vkcv::image(*m_corePtr, vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
 	m_voxelBuffer(buffer<VoxelBufferContent>(*m_corePtr, vkcv::BufferType::STORAGE, voxelCount)),
-	m_dummyRenderTarget(m_corePtr->createImage(voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, false, true)),
+	m_dummyRenderTarget(vkcv::image(*m_corePtr, voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, false, true)),
 	m_voxelInfoBuffer(buffer<VoxelizationInfo>(*m_corePtr, vkcv::BufferType::UNIFORM, 1)) {
 
 	const vkcv::ShaderProgram voxelizationShader = loadVoxelizationShader();
@@ -329,7 +329,7 @@ void Voxelization::renderVoxelVisualisation(
 	vkcv::PushConstants voxelVisualisationPushConstants = vkcv::pushConstants<glm::mat4>();
 	voxelVisualisationPushConstants.appendDrawcall(viewProjectin);
 
-	mipLevel = std::clamp(mipLevel, (uint32_t)0, m_voxelImage.getMipCount()-1);
+	mipLevel = std::clamp(mipLevel, (uint32_t) 0, m_voxelImage.getMipLevels() - 1);
 
 	// write descriptor set
 	vkcv::DescriptorWrites voxelVisualisationDescriptorWrite;
