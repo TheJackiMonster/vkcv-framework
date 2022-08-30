@@ -74,13 +74,15 @@ namespace vkcv
 				}
 			)
 		);
+		
+		const auto& attachments = config.getAttachments();
 
-        for (uint32_t i = 0; i < config.attachments.size(); i++) {
-            vk::Format format = config.attachments[i].getFormat();
+        for (uint32_t i = 0; i < attachments.size(); i++) {
+            vk::Format format = attachments[i].getFormat();
             vk::ImageLayout layout;
 			
-			bool depthFormat = isDepthFormat(config.attachments[i].getFormat());
-			bool stencilFormat = isStencilFormat(config.attachments[i].getFormat());
+			bool depthFormat = isDepthFormat(attachments[i].getFormat());
+			bool stencilFormat = isStencilFormat(attachments[i].getFormat());
 			
             if ((separateDepthStencil) && (depthFormat) && (!stencilFormat)) {
 				layout = vk::ImageLayout::eDepthAttachmentOptimal;
@@ -105,9 +107,9 @@ namespace vkcv
             vk::AttachmentDescription attachmentDesc (
 					{},
 					format,
-					msaaToSampleCountFlagBits(config.msaa),
-					getVKLoadOpFromAttachOp(config.attachments[i].getLoadOperation()),
-					getVkStoreOpFromAttachOp(config.attachments[i].getStoreOperation()),
+					msaaToSampleCountFlagBits(config.getMultisampling()),
+					getVKLoadOpFromAttachOp(attachments[i].getLoadOperation()),
+					getVkStoreOpFromAttachOp(attachments[i].getStoreOperation()),
 					vk::AttachmentLoadOp::eDontCare,
 					vk::AttachmentStoreOp::eDontCare,
 					layout,

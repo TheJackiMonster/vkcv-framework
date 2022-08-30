@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/gui/GUI.hpp>
@@ -47,25 +48,12 @@ int main(int argc, const char** argv) {
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
 			argc > 1 ? argv[1] : "assets/Sponza/Sponza.gltf"
 	));
-
-	const vkcv::AttachmentDescription present_color_attachment(
-			core.getSwapchainFormat(window.getSwapchain()),
-			vkcv::AttachmentOperation::CLEAR,
-			vkcv::AttachmentOperation::STORE
-	);
-
-	const vkcv::AttachmentDescription depth_attachment(
-			vk::Format::eD32Sfloat,
-			vkcv::AttachmentOperation::CLEAR,
-			vkcv::AttachmentOperation::STORE
-	);
-
-	vkcv::PassConfig scenePassDefinition(
-			{ present_color_attachment, depth_attachment },
-			vkcv::Multisampling::None
-	);
 	
-	vkcv::PassHandle scenePass = core.createPass(scenePassDefinition);
+	vkcv::PassHandle scenePass = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined, vk::Format::eD32Sfloat }
+	);
 
 	if (!scenePass) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/gui/GUI.hpp>
@@ -43,43 +44,8 @@ int main(int argc, const char** argv) {
 	
 	vk::Format colorFormat = vk::Format::eR16G16B16A16Sfloat;
 	
-	const vkcv::AttachmentDescription color_attachment0(
-			colorFormat,
-			vkcv::AttachmentOperation::CLEAR,
-			vkcv::AttachmentOperation::STORE
-	);
-	
-	const vkcv::AttachmentDescription depth_attachment0(
-			vk::Format::eD32Sfloat,
-			vkcv::AttachmentOperation::CLEAR,
-			vkcv::AttachmentOperation::STORE
-	);
-	
-	const vkcv::AttachmentDescription color_attachment1(
-			colorFormat,
-			vkcv::AttachmentOperation::LOAD,
-			vkcv::AttachmentOperation::STORE
-	);
-	
-	const vkcv::AttachmentDescription depth_attachment1(
-			vk::Format::eD32Sfloat,
-			vkcv::AttachmentOperation::LOAD,
-			vkcv::AttachmentOperation::STORE
-	);
-	
-	vkcv::PassConfig linePassDefinition(
-			{ color_attachment0, depth_attachment0 },
-			vkcv::Multisampling::None
-	);
-	
-	vkcv::PassHandle linePass = core.createPass(linePassDefinition);
-	
-	vkcv::PassConfig scenePassDefinition(
-			{ color_attachment1, depth_attachment1 },
-			vkcv::Multisampling::None
-	);
-	
-	vkcv::PassHandle scenePass = core.createPass(scenePassDefinition);
+	vkcv::PassHandle linePass = vkcv::passFormats(core, { colorFormat, vk::Format::eD32Sfloat });
+	vkcv::PassHandle scenePass = vkcv::passFormats(core, { colorFormat, vk::Format::eD32Sfloat }, false);
 	
 	if ((!scenePass) || (!linePass)) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;

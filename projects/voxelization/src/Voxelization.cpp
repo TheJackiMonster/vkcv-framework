@@ -1,4 +1,6 @@
 #include "Voxelization.hpp"
+
+#include <vkcv/Pass.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
@@ -136,25 +138,13 @@ Voxelization::Voxelization(
 
 	m_visualisationDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(voxelVisualisationShader.getReflectedDescriptors().at(0));
 	m_visualisationDescriptorSet = m_corePtr->createDescriptorSet(m_visualisationDescriptorSetLayout);
-
-	const vkcv::AttachmentDescription voxelVisualisationColorAttachments (
-			dependencies.colorBufferFormat,
-			vkcv::AttachmentOperation::LOAD,
-			vkcv::AttachmentOperation::STORE
-	);
-
-	const vkcv::AttachmentDescription voxelVisualisationDepthAttachments (
-			dependencies.depthBufferFormat,
-			vkcv::AttachmentOperation::LOAD,
-			vkcv::AttachmentOperation::STORE
-	);
-
-	vkcv::PassConfig voxelVisualisationPassDefinition{
-		{ voxelVisualisationColorAttachments, voxelVisualisationDepthAttachments },
-		msaa
-	};
 	
-	m_visualisationPass = m_corePtr->createPass(voxelVisualisationPassDefinition);
+	m_visualisationPass = vkcv::passFormats(
+			*m_corePtr,
+			{ dependencies.colorBufferFormat, dependencies.depthBufferFormat },
+			false,
+			msaa
+	);
 
 	vkcv::GraphicsPipelineConfig voxelVisualisationPipeConfig (
 		voxelVisualisationShader,

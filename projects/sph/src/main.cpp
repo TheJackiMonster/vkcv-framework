@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
 #include <vkcv/Buffer.hpp>
+#include <vkcv/Pass.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <random>
@@ -31,15 +32,7 @@ int main(int argc, const char **argv) {
     particleIndexBuffer.fill(&indices[0], sizeof(indices));
 
     vk::Format colorFormat = vk::Format::eR16G16B16A16Sfloat;
-    // an example attachment for passes that output to the window
-    const vkcv::AttachmentDescription present_color_attachment(
-			colorFormat,
-			vkcv::AttachmentOperation::CLEAR,
-            vkcv::AttachmentOperation::STORE
-	);
-
-    vkcv::PassConfig particlePassDefinition({present_color_attachment}, vkcv::Multisampling::None);
-    vkcv::PassHandle particlePass = core.createPass(particlePassDefinition);
+    vkcv::PassHandle particlePass = vkcv::passFormat(core, colorFormat);
 
     //rotation
     float rotationx = 0;

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
 #include <vkcv/Buffer.hpp>
+#include <vkcv/Pass.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/asset/asset_loader.hpp>
@@ -10,7 +11,6 @@
 #include <vector>
 #include <cstring>
 #include "safrScene.hpp"
-
 
 void createQuadraticLightCluster(std::vector<safrScene::Light>& lights, int countPerDimension, float dimension, float height, float intensity) {
     float distance = dimension/countPerDimension;
@@ -41,16 +41,6 @@ int main(int argc, const char** argv) {
 
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
 	vkcv::Window& window = core.getWindow(windowHandle);
-
-	//configuring the compute Shader
-	vkcv::PassConfig computePassDefinition({});
-	vkcv::PassHandle computePass = core.createPass(computePassDefinition);
-
-	if (!computePass)
-	{
-		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
-		return EXIT_FAILURE;
-	}
 
 	std::string shaderPathCompute = "shaders/raytracing.comp";
 
@@ -160,19 +150,14 @@ int main(int argc, const char** argv) {
 	auto safrIndexBuffer = vkcv::buffer<uint16_t>(core, vkcv::BufferType::INDEX, 3);
 	uint16_t indices[3] = { 0, 1, 2 };
 	safrIndexBuffer.fill(&indices[0], sizeof(indices));
-
-	// an example attachment for passes that output to the window
-	const vkcv::AttachmentDescription present_color_attachment(
-			core.getSwapchainFormat(window.getSwapchain()),
-			vkcv::AttachmentOperation::CLEAR,
-			vkcv::AttachmentOperation::STORE
+	
+	vkcv::PassHandle safrPass = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined }
 	);
 
-	vkcv::PassConfig safrPassDefinition({ present_color_attachment }, vkcv::Multisampling::None);
-	vkcv::PassHandle safrPass = core.createPass(safrPassDefinition);
-
-	if (!safrPass)
-	{
+	if (!safrPass) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}

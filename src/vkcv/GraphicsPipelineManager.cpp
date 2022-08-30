@@ -330,7 +330,7 @@ namespace vkcv {
 																					const PassConfig &passConfig) {
 		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
 				{},
-				msaaToSampleCountFlagBits(passConfig.msaa),
+				msaaToSampleCountFlagBits(passConfig.getMultisampling()),
 				false,
 				0.f,
 				nullptr,
@@ -670,7 +670,7 @@ namespace vkcv {
 
         const vk::PipelineDepthStencilStateCreateInfo* p_depthStencilCreateInfo = nullptr;
 
-        for (const auto& attachment : passConfig.attachments) {
+        for (const auto& attachment : passConfig.getAttachments()) {
             if ((isDepthFormat(attachment.getFormat())) ||
 				(isStencilFormat(attachment.getFormat()))) {
                 p_depthStencilCreateInfo = &depthStencilCreateInfo;

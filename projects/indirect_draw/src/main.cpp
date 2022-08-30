@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <vkcv/gui/GUI.hpp>
@@ -328,20 +329,12 @@ int main(int argc, const char** argv) {
         return EXIT_FAILURE;
     }
 
-    const vkcv::AttachmentDescription present_color_attachment (
-			core.getSwapchainFormat(window.getSwapchain()),
-			vkcv::AttachmentOperation::CLEAR,
-			vkcv::AttachmentOperation::STORE
+    vkcv::PassHandle passHandle = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined, vk::Format::eD32Sfloat }
 	);
 	
-	const vkcv::AttachmentDescription depth_attachment (
-			vk::Format::eD32Sfloat,
-			vkcv::AttachmentOperation::CLEAR,
-			vkcv::AttachmentOperation::STORE
-	);
-
-	vkcv::PassConfig passDefinition({ present_color_attachment, depth_attachment }, vkcv::Multisampling::None);
-	vkcv::PassHandle passHandle = core.createPass(passDefinition);
 	if (!passHandle) {
 		std::cerr << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;

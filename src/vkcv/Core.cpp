@@ -163,6 +163,10 @@ namespace vkcv
         return m_PassManager->createPass(config);
     }
 	
+	const PassConfig &Core::getPassConfiguration(const vkcv::PassHandle &pass) {
+		return m_PassManager->getPassConfig(pass);
+	}
+	
 	BufferHandle Core::createBuffer(BufferType type,
 									const TypeGuard &typeGuard,
 									size_t count,
@@ -479,7 +483,9 @@ namespace vkcv
 		}
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
-			const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
+			const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(
+					passConfig.getAttachments()
+			);
 
 			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
 			cmdBuffer.beginRenderPass(beginInfo, {}, {});
@@ -557,7 +563,9 @@ namespace vkcv
 
         auto submitFunction = [&](const vk::CommandBuffer &cmdBuffer) {
 
-            const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
+            const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(
+					passConfig.getAttachments()
+			);
 
             const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(),
                                                     clearValues.data());
@@ -699,7 +707,9 @@ namespace vkcv
 		}
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
-			const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(passConfig.attachments);
+			const std::vector<vk::ClearValue> clearValues = createAttachmentClearValues(
+					passConfig.getAttachments()
+			);
 
 			const vk::RenderPassBeginInfo beginInfo(renderpass, framebuffer, renderArea, clearValues.size(), clearValues.data());
 			cmdBuffer.beginRenderPass(beginInfo, {}, {});

@@ -189,6 +189,16 @@ namespace vkcv
          */
         [[nodiscard]]
         PassHandle createPass(const PassConfig &config);
+		
+		/**
+		 * Returns the used configuration for a created render pass which is
+		 * represented by the given handle.
+		 *
+		 * @param[in] pass Pass handle
+		 * @return Pass configuration
+		 */
+		[[nodiscard]]
+		const PassConfig& getPassConfiguration(const PassHandle &pass);
 	
 		/**
 		 * @brief Creates a buffer with given parameters and returns its handle.

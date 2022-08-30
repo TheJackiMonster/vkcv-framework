@@ -1,5 +1,6 @@
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>

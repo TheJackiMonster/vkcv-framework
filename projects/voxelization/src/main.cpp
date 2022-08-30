@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
@@ -239,15 +240,8 @@ int main(int argc, const char** argv) {
 		prepassVertexBindings.push_back(vkcv::createVertexBinding(i, { prepassVertexAttachments[i] }));
 	}
 	const vkcv::VertexLayout prepassVertexLayout { prepassVertexBindings };
-
-	const vkcv::AttachmentDescription prepassAttachment(
-			depthBufferFormat,
-			vkcv::AttachmentOperation::CLEAR,
-			vkcv::AttachmentOperation::STORE
-	);
-
-	vkcv::PassConfig prepassPassDefinition({ prepassAttachment }, msaa);
-	vkcv::PassHandle prepassPass = core.createPass(prepassPassDefinition);
+	
+	vkcv::PassHandle prepassPass = vkcv::passFormat(core, depthBufferFormat, true, msaa);
 
 	// create descriptor sets
 	vkcv::SamplerHandle colorSampler = core.createSampler(
@@ -376,21 +370,13 @@ int main(int argc, const char** argv) {
 	SkySettings skySettings;
 	skySettings.color       = glm::vec3(0.15, 0.65, 1);
 	skySettings.strength    = 5;
-
-	const vkcv::AttachmentDescription skyColorAttachment (
-			colorBufferFormat,
-			vkcv::AttachmentOperation::LOAD,
-			vkcv::AttachmentOperation::STORE
+	
+	vkcv::PassHandle skyPass = vkcv::passFormats(
+			core,
+			{ colorBufferFormat, depthBufferFormat },
+			false,
+			msaa
 	);
-
-	const vkcv::AttachmentDescription skyDepthAttachments (
-			depthBufferFormat,
-			vkcv::AttachmentOperation::LOAD,
-			vkcv::AttachmentOperation::STORE
-	);
-
-	vkcv::PassConfig skyPassConfig({ skyColorAttachment, skyDepthAttachments }, msaa);
-	vkcv::PassHandle skyPass = core.createPass(skyPassConfig);
 
 	vkcv::ShaderProgram skyShader;
 	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/sky.vert"),

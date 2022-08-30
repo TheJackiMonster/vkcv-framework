@@ -15,6 +15,9 @@ set(vkcv_sources
 		
 		${vkcv_include}/vkcv/File.hpp
 		${vkcv_source}/vkcv/File.cpp
+		
+		${vkcv_include}/vkcv/Pass.hpp
+		${vkcv_source}/vkcv/Pass.cpp
 
 		${vkcv_include}/vkcv/PassConfig.hpp
 		${vkcv_source}/vkcv/PassConfig.cpp

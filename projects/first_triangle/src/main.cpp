@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -28,15 +29,11 @@ int main(int argc, const char** argv) {
 
 	core.setDebugLabel(triangleIndexBuffer.getHandle(), "Triangle Index Buffer");
 	
-	// an example attachment for passes that output to the window
-	const vkcv::AttachmentDescription present_color_attachment(
-			core.getSwapchainFormat(window.getSwapchain()),
-			vkcv::AttachmentOperation::CLEAR,
-			vkcv::AttachmentOperation::STORE
+	vkcv::PassHandle trianglePass = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined }
 	);
-
-	vkcv::PassConfig trianglePassDefinition({ present_color_attachment }, vkcv::Multisampling::None);
-	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
 
 	if (!trianglePass)
 	{

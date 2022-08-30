@@ -1,4 +1,6 @@
 #include "ShadowMapping.hpp"
+
+#include <vkcv/Pass.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
 const vk::Format            shadowMapFormat         = vk::Format::eR16G16B16A16Unorm;
@@ -159,15 +161,7 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 	vkcv::ShaderProgram shadowShader = loadShadowShader();
 
 	// pass
-	const std::vector<vkcv::AttachmentDescription> shadowAttachments = {
-		vkcv::AttachmentDescription(
-				shadowMapDepthFormat,
-				vkcv::AttachmentOperation::CLEAR,
-				vkcv::AttachmentOperation::STORE
-		)
-	};
-	vkcv::PassConfig shadowPassConfig(shadowAttachments, msaa);
-	m_shadowMapPass = corePtr->createPass(shadowPassConfig);
+	m_shadowMapPass = vkcv::passFormat(*corePtr, shadowMapDepthFormat, true, msaa);
 
 	// pipeline
 	vkcv::GraphicsPipelineConfig shadowPipeConfig (

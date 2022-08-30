@@ -24,7 +24,7 @@ namespace vkcv
     };
 
 	/**
-	 * @brief Structure to store details about an attachment of a pass.
+	 * @brief Class to store details about an attachment of a pass.
 	 */
     class AttachmentDescription {
 	private:
@@ -51,25 +51,55 @@ namespace vkcv
 	
 		AttachmentDescription& operator=(const AttachmentDescription &other) = default;
 		AttachmentDescription& operator=(AttachmentDescription &&other) = default;
-		
+	
+		[[nodiscard]]
 		vk::Format getFormat() const;
 	
+		[[nodiscard]]
 		AttachmentOperation getLoadOperation() const;
 	
+		[[nodiscard]]
 		AttachmentOperation getStoreOperation() const;
 		
 		void setClearValue(const vk::ClearValue &clear);
 	
+		[[nodiscard]]
 		const vk::ClearValue& getClearValue() const;
 		
     };
+	
+	using AttachmentDescriptions = std::vector<AttachmentDescription>;
 
 	/**
-	 * @brief Structure to configure a pass for usage.
+	 * @brief Class to configure a pass for usage.
 	 */
-    struct PassConfig {
-		std::vector<AttachmentDescription> attachments;
-        Multisampling msaa;
+    class PassConfig {
+	private:
+		AttachmentDescriptions m_attachments;
+        Multisampling m_multisampling;
+		
+	public:
+		PassConfig();
+		
+		explicit PassConfig(const AttachmentDescriptions &attachments,
+							Multisampling multisampling = Multisampling::None);
+		
+		PassConfig(const PassConfig &other) = default;
+		PassConfig(PassConfig &&other) = default;
+		
+		~PassConfig() = default;
+	
+		PassConfig& operator=(const PassConfig &other) = default;
+		PassConfig& operator=(PassConfig &&other) = default;
+		
+		[[nodiscard]]
+		const AttachmentDescriptions& getAttachments() const;
+		
+		void setMultisampling(Multisampling multisampling);
+	
+		[[nodiscard]]
+		Multisampling getMultisampling() const;
+		
     };
 	
 }

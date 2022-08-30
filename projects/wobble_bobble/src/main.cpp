@@ -1,6 +1,7 @@
 
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -454,45 +455,6 @@ int main(int argc, const char **argv) {
 			{ vkcv::ShaderStage::FRAGMENT, "shaders/lines.frag" }
 	}, nullptr);
 	
-	vkcv::PassConfig passConfigGrid {{
-		vkcv::AttachmentDescription(
-				core.getSwapchainFormat(window.getSwapchain()),
-				vkcv::AttachmentOperation::CLEAR,
-				vkcv::AttachmentOperation::STORE
-		),
-		vkcv::AttachmentDescription(
-				vk::Format::eD32Sfloat,
-				vkcv::AttachmentOperation::CLEAR,
-				vkcv::AttachmentOperation::STORE
-		)
-	}, vkcv::Multisampling::None };
-	
-	vkcv::PassConfig passConfigParticles {{
-		vkcv::AttachmentDescription(
-				core.getSwapchainFormat(window.getSwapchain()),
-				vkcv::AttachmentOperation::CLEAR,
-				vkcv::AttachmentOperation::STORE
-		),
-		vkcv::AttachmentDescription(
-				vk::Format::eD32Sfloat,
-				vkcv::AttachmentOperation::CLEAR,
-				vkcv::AttachmentOperation::STORE
-		)
-	}, vkcv::Multisampling::None };
-	
-	vkcv::PassConfig passConfigLines {{
-		vkcv::AttachmentDescription(
-				core.getSwapchainFormat(window.getSwapchain()),
-				vkcv::AttachmentOperation::LOAD,
-				vkcv::AttachmentOperation::STORE
-		),
-		vkcv::AttachmentDescription(
-				vk::Format::eD32Sfloat,
-				vkcv::AttachmentOperation::LOAD,
-				vkcv::AttachmentOperation::STORE
-		)
-	}, vkcv::Multisampling::None };
-	
 	vkcv::DescriptorSetLayoutHandle gfxSetLayoutGrid = core.createDescriptorSetLayout(
 			gfxProgramGrid.getReflectedDescriptors().at(0)
 	);
@@ -519,9 +481,24 @@ int main(int argc, const char **argv) {
 		core.writeDescriptorSet(gfxSetParticles, writes);
 	}
 	
-	vkcv::PassHandle gfxPassGrid = core.createPass(passConfigGrid);
-	vkcv::PassHandle gfxPassParticles = core.createPass(passConfigParticles);
-	vkcv::PassHandle gfxPassLines = core.createPass(passConfigLines);
+	vkcv::PassHandle gfxPassGrid = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined, vk::Format::eD32Sfloat }
+	);
+	
+	vkcv::PassHandle gfxPassParticles = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined, vk::Format::eD32Sfloat }
+	);
+	
+	vkcv::PassHandle gfxPassLines = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined, vk::Format::eD32Sfloat },
+			false
+	);
 	
 	vkcv::VertexLayout vertexLayoutGrid ({
 		vkcv::createVertexBinding(0, gfxProgramGrid.getVertexAttachments())

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
@@ -98,22 +99,12 @@ int main(int argc, const char** argv) {
 	);
 	
 	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
-
-	// an example attachment for passes that output to the window
-	const vkcv::AttachmentDescription present_color_attachment(
-			core.getSwapchainFormat(window.getSwapchain()),
-			vkcv::AttachmentOperation::CLEAR,
-			vkcv::AttachmentOperation::STORE
-	);
 	
-	const vkcv::AttachmentDescription depth_attachment(
-			vk::Format::eD32Sfloat,
-			vkcv::AttachmentOperation::CLEAR,
-			vkcv::AttachmentOperation::STORE
+	vkcv::PassHandle firstMeshPass = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined, vk::Format::eD32Sfloat }
 	);
-
-	vkcv::PassConfig firstMeshPassDefinition({ present_color_attachment, depth_attachment }, vkcv::Multisampling::None);
-	vkcv::PassHandle firstMeshPass = core.createPass(firstMeshPassDefinition);
 
 	if (!firstMeshPass) {
 		std::cerr << "Error. Could not create renderpass. Exiting." << std::endl;

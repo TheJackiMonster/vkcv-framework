@@ -56,4 +56,27 @@ namespace vkcv
 		return m_clear_value;
 	}
 	
+	PassConfig::PassConfig()
+	: m_attachments(),
+	  m_multisampling(Multisampling::None)
+	{}
+	
+	PassConfig::PassConfig(const AttachmentDescriptions &attachments,
+						   Multisampling multisampling)
+	: m_attachments(attachments),
+	  m_multisampling(multisampling)
+	{}
+	
+	const AttachmentDescriptions &PassConfig::getAttachments() const {
+		return m_attachments;
+	}
+	
+	void PassConfig::setMultisampling(Multisampling multisampling) {
+		m_multisampling = multisampling;
+	}
+	
+	Multisampling PassConfig::getMultisampling() const {
+		return m_multisampling;
+	}
+	
 }

@@ -3,6 +3,7 @@
 
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <vkcv/DrawcallRecording.hpp>
 
 #include <vkcv/camera/CameraManager.hpp>
@@ -587,16 +588,7 @@ int main(int argc, const char **argv) {
 	
 	const vkcv::VertexLayout smokeLayout { vbSmoke };
 	
-	vkcv::PassHandle renderPass = core.createPass(vkcv::PassConfig(
-		{
-			vkcv::AttachmentDescription(
-				colorFormat,
-				vkcv::AttachmentOperation::CLEAR,
-				vkcv::AttachmentOperation::STORE
-			)
-		},
-		vkcv::Multisampling::None
-	));
+	vkcv::PassHandle renderPass = vkcv::passFormat(core, colorFormat);
 	
 	vkcv::GraphicsPipelineConfig smokePipelineDefinition (
 		smokeShaderProgram,
