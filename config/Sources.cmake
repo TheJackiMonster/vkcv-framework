@@ -124,7 +124,10 @@ set(vkcv_sources
 		${vkcv_include}/vkcv/BlitDownsampler.hpp
 		${vkcv_source}/vkcv/BlitDownsampler.cpp
 		
+		${vkcv_include}/vkcv/SamplerTypes.hpp
+		
 		${vkcv_include}/vkcv/Sampler.hpp
+		${vkcv_source}/vkcv/Sampler.cpp
 		
 		${vkcv_include}/vkcv/Result.hpp
 )

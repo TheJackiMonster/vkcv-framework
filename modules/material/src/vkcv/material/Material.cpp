@@ -1,7 +1,8 @@
 
 #include "vkcv/material/Material.hpp"
 
-#include "vkcv/Image.hpp"
+#include <vkcv/Image.hpp>
+#include <vkcv/Sampler.hpp>
 
 namespace vkcv::material {
 	
@@ -149,48 +150,23 @@ namespace vkcv::material {
 		}
 		
 		if (!colorSmp) {
-			samplers[0] = core.createSampler(
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerMipmapMode::LINEAR,
-					vkcv::SamplerAddressMode::REPEAT
-			);
+			samplers[0] = samplerLinear(core);
 		}
 		
 		if (!normalSmp) {
-			samplers[1] = core.createSampler(
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerMipmapMode::LINEAR,
-					vkcv::SamplerAddressMode::REPEAT
-			);
+			samplers[1] = samplerLinear(core);
 		}
 		
 		if (!metRoughSmp) {
-			samplers[2] = core.createSampler(
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerMipmapMode::LINEAR,
-					vkcv::SamplerAddressMode::REPEAT
-			);
+			samplers[2] = samplerLinear(core);
 		}
 		
 		if (!occlusionSmp) {
-			samplers[3] = core.createSampler(
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerMipmapMode::LINEAR,
-					vkcv::SamplerAddressMode::REPEAT
-			);
+			samplers[3] = samplerLinear(core);
 		}
 		
 		if (!emissiveSmp) {
-			samplers[4] = core.createSampler(
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerMipmapMode::LINEAR,
-					vkcv::SamplerAddressMode::REPEAT
-			);
+			samplers[4] = samplerLinear(core);
 		}
 		
 		Material material;

@@ -5,6 +5,7 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/Image.hpp>
 #include <vkcv/Pass.hpp>
+#include <vkcv/Sampler.hpp>
 #include <vkcv/DrawcallRecording.hpp>
 
 #include <vkcv/camera/CameraManager.hpp>
@@ -786,12 +787,7 @@ int main(int argc, const char **argv) {
 			1, false, true
    	);
 	
-	vkcv::SamplerHandle voxelSampler = core.createSampler(
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
-	);
+	vkcv::SamplerHandle voxelSampler = vkcv::samplerLinear(core, true);
 	
 	vkcv::ShaderProgram voxelClearShader;
 	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/clear.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {

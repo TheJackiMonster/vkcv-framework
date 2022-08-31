@@ -2,9 +2,9 @@
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <vkcv/Pass.hpp>
+#include <vkcv/Sampler.hpp>
 #include <vkcv/Image.hpp>
 #include <vkcv/camera/CameraManager.hpp>
-#include <chrono>
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -444,12 +444,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
-    vkcv::SamplerHandle standardSampler = core.createSampler(
-            vkcv::SamplerFilterType::LINEAR,
-            vkcv::SamplerFilterType::LINEAR,
-            vkcv::SamplerMipmapMode::LINEAR,
-            vkcv::SamplerAddressMode::REPEAT
-    );
+    vkcv::SamplerHandle standardSampler = vkcv::samplerLinear(core);
 	
 	vkcv::DescriptorWrites setWrites;
 	

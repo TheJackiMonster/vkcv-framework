@@ -3,6 +3,7 @@
 
 #include <vkcv/Image.hpp>
 #include <vkcv/Logger.hpp>
+#include <vkcv/Sampler.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 
 #include <vkcv/algorithm/SinglePassDownsampler.hpp>
@@ -236,7 +237,6 @@ namespace vkcv::scene {
 				minFilter,
 				mipmapMode,
 				addressMode,
-				
 				mipLodBias
 		);
 	}
@@ -338,12 +338,7 @@ namespace vkcv::scene {
 			scene.getNode(root).loadMesh(asset_scene, mesh);
 		}
 		
-		vkcv::SamplerHandle sampler = core.createSampler(
-				vkcv::SamplerFilterType::LINEAR,
-				vkcv::SamplerFilterType::LINEAR,
-				vkcv::SamplerMipmapMode::LINEAR,
-				vkcv::SamplerAddressMode::REPEAT
-		);
+		vkcv::SamplerHandle sampler = samplerLinear(core);
 		
 		const vkcv::FeatureManager& featureManager = core.getContext().getFeatureManager();
 		

@@ -1,8 +1,11 @@
 #include "MotionBlur.hpp"
 #include "MotionBlurConfig.hpp"
 #include "MotionBlurSetup.hpp"
-#include <array>
+
 #include <vkcv/Buffer.hpp>
+#include <vkcv/Sampler.hpp>
+
+#include <array>
 
 bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, const uint32_t targetHeight) {
 
@@ -76,11 +79,7 @@ bool MotionBlur::initialize(vkcv::Core* corePtr, const uint32_t targetWidth, con
 
 	m_renderTargets = MotionBlurSetup::createRenderTargets(targetWidth, targetHeight, *m_core);
 
-	m_nearestSampler = m_core->createSampler(
-		vkcv::SamplerFilterType::NEAREST,
-		vkcv::SamplerFilterType::NEAREST,
-		vkcv::SamplerMipmapMode::NEAREST,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
+	m_nearestSampler = vkcv::samplerNearest(*m_core, true);
 	
 	return true;
 }

@@ -3,6 +3,7 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/Image.hpp>
 #include <vkcv/Pass.hpp>
+#include <vkcv/Sampler.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
@@ -180,17 +181,13 @@ int main(int argc, const char** argv) {
 	
 	core.submitCommandStream(downsampleStream, false);
 
-	vkcv::SamplerHandle sampler = core.createSampler(
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::REPEAT
-	);
+	vkcv::SamplerHandle sampler = vkcv::samplerLinear(core);
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
 		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
 		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
+		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle())
+	};
 
 	vkcv::DescriptorWrites setWrites;
 	

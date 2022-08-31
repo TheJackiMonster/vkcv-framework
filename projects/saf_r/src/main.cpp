@@ -2,14 +2,17 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Pass.hpp>
-#include <GLFW/glfw3.h>
+#include <vkcv/Sampler.hpp>
+
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
-#include <chrono>
+
 #include <cmath>
 #include <vector>
 #include <cstring>
+#include <GLFW/glfw3.h>
+
 #include "safrScene.hpp"
 
 void createQuadraticLightCluster(std::vector<safrScene::Light>& lights, int countPerDimension, float dimension, float height, float intensity) {
@@ -114,12 +117,7 @@ int main(int argc, const char** argv) {
     */
     createQuadraticLightCluster(lights, 10, 2.5f, 20, 1.5f);
 	
-	vkcv::SamplerHandle sampler = core.createSampler(
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::REPEAT
-	);
+	vkcv::SamplerHandle sampler = vkcv::samplerLinear(core);
 	
 	//create Buffer for compute shader
 	vkcv::Buffer<safrScene::Light> lightsBuffer = vkcv::buffer<safrScene::Light>(

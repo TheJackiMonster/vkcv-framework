@@ -15,7 +15,6 @@
 namespace vkcv {
 	
 	class Downsampler;
-	class ImageManager;
 
 	/**
 	 * @brief Returns whether an image format is usable as depth buffer.

@@ -4,6 +4,7 @@
 #include <vkcv/DrawcallRecording.hpp>
 #include <vkcv/PushConstants.hpp>
 #include <vkcv/Image.hpp>
+#include <vkcv/Sampler.hpp>
 
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/asset/asset_loader.hpp>
@@ -190,12 +191,7 @@ namespace vkcv::effects {
 	m_blurImage(),
 	m_flaresImage(),
 	
-	m_linearSampler(m_core.createSampler(
-			vkcv::SamplerFilterType::LINEAR,
-			vkcv::SamplerFilterType::LINEAR,
-			vkcv::SamplerMipmapMode::LINEAR,
-			vkcv::SamplerAddressMode::CLAMP_TO_EDGE
-	)),
+	m_linearSampler(samplerLinear(m_core, true)),
 	
 	m_radialLutSampler(),
 	
@@ -238,13 +234,7 @@ namespace vkcv::effects {
 		);
 		
 		if (m_advanced) {
-			m_radialLutSampler = m_core.createSampler(
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerMipmapMode::LINEAR,
-					vkcv::SamplerAddressMode::REPEAT
-			);
-			
+			m_radialLutSampler = samplerLinear(m_core);
 			m_radialLut = loadTexture(m_core, "assets/RadialLUT.png");
 			m_lensDirt = loadTexture(m_core, "assets/lensDirt.jpg");
 		}

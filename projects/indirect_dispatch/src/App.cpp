@@ -1,7 +1,10 @@
 #include "App.hpp"
 #include "AppConfig.hpp"
-#include <chrono>
+
+#include <vkcv/Sampler.hpp>
 #include <vkcv/gui/GUI.hpp>
+
+#include <chrono>
 #include <functional>
 
 const char* MotionVectorVisualisationModeLabels[6] = {
@@ -60,12 +63,7 @@ bool App::initialize() {
 	if (!m_motionBlur.initialize(&m_core, m_windowWidth, m_windowHeight))
 		return false;
 
-	m_linearSampler = m_core.createSampler(
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
-
+	m_linearSampler = vkcv::samplerLinear(m_core, true);
 	m_renderTargets = createRenderTargets(m_core, m_windowWidth, m_windowHeight);
 
 	const int cameraIndex = m_cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);

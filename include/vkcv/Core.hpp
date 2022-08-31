@@ -18,7 +18,7 @@
 #include "GraphicsPipelineConfig.hpp"
 #include "ComputePipelineConfig.hpp"
 #include "Result.hpp"
-#include "Sampler.hpp"
+#include "SamplerTypes.hpp"
 #include "DescriptorWrites.hpp"
 #include "Event.hpp"
 #include "DrawcallRecording.hpp"

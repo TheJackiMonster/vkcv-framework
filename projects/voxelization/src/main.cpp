@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
 #include <vkcv/Pass.hpp>
+#include <vkcv/Sampler.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
@@ -244,12 +245,7 @@ int main(int argc, const char** argv) {
 	vkcv::PassHandle prepassPass = vkcv::passFormat(core, depthBufferFormat, true, msaa);
 
 	// create descriptor sets
-	vkcv::SamplerHandle colorSampler = core.createSampler(
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::REPEAT
-	);
+	vkcv::SamplerHandle colorSampler = vkcv::samplerLinear(core);
 
 	std::vector<vkcv::DescriptorSetLayoutHandle> materialDescriptorSetLayouts;
 	std::vector<vkcv::DescriptorSetHandle> materialDescriptorSets;
@@ -503,12 +499,7 @@ int main(int argc, const char** argv) {
 		{ resolveDescriptorSetLayout }
 	});
 
-	vkcv::SamplerHandle resolveSampler = core.createSampler(
-		vkcv::SamplerFilterType::NEAREST,
-		vkcv::SamplerFilterType::NEAREST,
-		vkcv::SamplerMipmapMode::NEAREST,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
-	);
+	vkcv::SamplerHandle resolveSampler = vkcv::samplerNearest(core, true);
 
 	// model matrices per mesh
 	std::vector<glm::mat4> modelMatrices;
@@ -539,12 +530,7 @@ int main(int argc, const char** argv) {
 			vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i]) }));
 	}
 
-	vkcv::SamplerHandle voxelSampler = core.createSampler(
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE
-	);
+	vkcv::SamplerHandle voxelSampler = vkcv::samplerLinear(core, true);
 
 	ShadowMapping shadowMapping(&core, vertexLayout);
 
