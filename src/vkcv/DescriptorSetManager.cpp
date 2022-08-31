@@ -132,6 +132,7 @@ namespace vkcv {
 	struct WriteDescriptorSetInfo {
 		size_t imageInfoIndex;
 		size_t bufferInfoIndex;
+		size_t structureIndex;
 		uint32_t binding;
 		uint32_t arrayElementIndex;
 		uint32_t descriptorCount;
@@ -147,6 +148,8 @@ namespace vkcv {
 		
 		std::vector<vk::DescriptorImageInfo> imageInfos;
 		std::vector<vk::DescriptorBufferInfo> bufferInfos;
+		
+		std::vector<vk::WriteDescriptorSetAccelerationStructureKHR> writeStructures;
 		
 		std::vector<WriteDescriptorSetInfo> writeInfos;
 		
@@ -172,6 +175,7 @@ namespace vkcv {
 			
 			WriteDescriptorSetInfo vulkanWrite = {
 					imageInfos.size() + 1 - write.mipCount,
+					0,
 					0,
 					write.binding,
 					write.arrayIndex,
@@ -200,6 +204,7 @@ namespace vkcv {
 			WriteDescriptorSetInfo vulkanWrite = {
 					imageInfos.size() + 1 - write.mipCount,
 					0,
+					0,
 					write.binding,
 					0,
 					write.mipCount,
@@ -226,6 +231,7 @@ namespace vkcv {
 			WriteDescriptorSetInfo vulkanWrite = {
 					0,
 					bufferInfos.size(),
+					0,
 					write.binding,
 					0,
 					1,
@@ -254,6 +260,7 @@ namespace vkcv {
 			WriteDescriptorSetInfo vulkanWrite = {
 					0,
 					bufferInfos.size(),
+					0,
 					write.binding,
 					0,
 					1,
@@ -279,10 +286,32 @@ namespace vkcv {
 			WriteDescriptorSetInfo vulkanWrite = {
 					imageInfos.size(),
 					0,
+					0,
 					write.binding,
 					0,
 					1,
 					vk::DescriptorType::eSampler
+			};
+			
+			writeInfos.push_back(vulkanWrite);
+		}
+		
+		for (const auto& write : writes.getAccelerationWrites()) {
+			const vk::WriteDescriptorSetAccelerationStructureKHR structureWrite (
+					write.structures.size(),
+					write.structures.data()
+			);
+			
+			writeStructures.push_back(structureWrite);
+			
+			WriteDescriptorSetInfo vulkanWrite = {
+					0,
+					0,
+					writeStructures.size(),
+					write.binding,
+					0,
+					1,
+					vk::DescriptorType::eAccelerationStructureKHR
 			};
 			
 			writeInfos.push_back(vulkanWrite);
@@ -300,6 +329,10 @@ namespace vkcv {
 					(write.imageInfoIndex > 0? &(imageInfos[write.imageInfoIndex - 1]) : nullptr),
 					(write.bufferInfoIndex > 0? &(bufferInfos[write.bufferInfoIndex - 1]) : nullptr)
 			);
+			
+			if (write.structureIndex > 0) {
+				vulkanWrite.setPNext(&(writeStructures[write.structureIndex - 1]));
+			}
 			
 			vulkanWrites.push_back(vulkanWrite);
 		}

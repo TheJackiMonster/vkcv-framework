@@ -50,8 +50,7 @@ namespace vkcv
 	 * The class handles the core functionality of the framework with most
 	 * calls addressing resource management via more simplified abstraction.
 	 */
-    class Core final
-    {
+    class Core final {
     private:
 
         /**
@@ -817,64 +816,64 @@ namespace vkcv
 		/**
 		 * @brief Sets a debug label to a buffer handle.
 		 *
-		 * @param handle Buffer handle
-		 * @param label Debug label
+		 * @param[in,out] handle Buffer handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const BufferHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to a pass handle.
 		 *
-		 * @param handle Pass handle
-		 * @param label Debug label
+		 * @param[in,out] handle Pass handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const PassHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to a graphics pipeline handle.
 		 *
-		 * @param handle Graphics pipeline handle
-		 * @param label Debug label
+		 * @param[in,out] handle Graphics pipeline handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const GraphicsPipelineHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to a compute pipeline handle.
 		 *
-		 * @param handle Compute pipeline handle
-		 * @param label Debug label
+		 * @param[in,out] handle Compute pipeline handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const ComputePipelineHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to a descriptor set handle.
 		 *
-		 * @param handle Descriptor set handle
-		 * @param label Debug label
+		 * @param[in,out] handle Descriptor set handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const DescriptorSetHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to a sampler handle.
 		 *
-		 * @param handle Sampler handle
-		 * @param label Debug label
+		 * @param[in,out] handle Sampler handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const SamplerHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to an image handle.
 		 *
-		 * @param handle Image handle
-		 * @param label Debug label
+		 * @param[in,out] handle Image handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const ImageHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to a command stream handle.
 		 *
-		 * @param handle Command stream handle
-		 * @param label Debug label
+		 * @param[in,out] handle Command stream handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const CommandStreamHandle &handle, const std::string &label);
 		
@@ -886,6 +885,116 @@ namespace vkcv
 		 * @param[in] frame Frame callback
 		 */
 		void run(const WindowFrameFunction &frame);
+		
+		/**
+		 * @brief Return the underlying vulkan handle for a render pass
+		 * by its given pass handle.
+		 *
+		 * @param[in] handle Pass handle
+		 * @return Vulkan render pass
+		 */
+		[[nodiscard]]
+		vk::RenderPass getVulkanRenderPass(const PassHandle &handle) const;
+		
+		/**
+		 * @brief Return the underlying vulkan handle for a pipeline
+		 * by its given graphics pipeline handle.
+		 *
+		 * @param[in] handle Graphics pipeline handle
+		 * @return Vulkan pipeline
+		 */
+		[[nodiscard]]
+		vk::Pipeline getVulkanPipeline(const GraphicsPipelineHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a pipeline
+		 * by its given compute pipeline handle.
+		 *
+		 * @param[in] handle Compute pipeline handle
+		 * @return Vulkan pipeline
+		 */
+		[[nodiscard]]
+		vk::Pipeline getVulkanPipeline(const ComputePipelineHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a descriptor set layout
+		 * by its given descriptor set layout handle.
+		 *
+		 * @param[in] handle Descriptor set layout handle
+		 * @return Vulkan descriptor set layout
+		 */
+		[[nodiscard]]
+		vk::DescriptorSetLayout getVulkanDescriptorSetLayout(const DescriptorSetLayoutHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a descriptor set
+		 * by its given descriptor set handle.
+		 *
+		 * @param[in] handle Descriptor set handle
+		 * @return Vulkan descriptor set
+		 */
+		[[nodiscard]]
+		vk::DescriptorSet getVulkanDescriptorSet(const DescriptorSetHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a buffer
+		 * by its given buffer handle.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @return Vulkan buffer
+		 */
+		[[nodiscard]]
+		vk::Buffer getVulkanBuffer(const BufferHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a sampler
+		 * by its given sampler handle.
+		 *
+		 * @param[in] handle Sampler handle
+		 * @return Vulkan sampler
+		 */
+		[[nodiscard]]
+		vk::Sampler getVulkanSampler(const SamplerHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a image
+		 * by its given image handle.
+		 *
+		 * @param[in] handle Image handle
+		 * @return Vulkan image
+		 */
+		[[nodiscard]]
+		vk::Image getVulkanImage(const ImageHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a image view
+		 * by its given image handle.
+		 *
+		 * @param[in] handle Image handle
+		 * @return Vulkan image view
+		 */
+		[[nodiscard]]
+		vk::ImageView getVulkanImageView(const ImageHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a device memory
+		 * by its given buffer handle.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @return Vulkan device memory
+		 */
+		[[nodiscard]]
+		vk::DeviceMemory getVulkanDeviceMemory(const BufferHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a device memory
+		 * by its given image handle.
+		 *
+		 * @param[in] handle Image handle
+		 * @return Vulkan device memory
+		 */
+		[[nodiscard]]
+		vk::DeviceMemory getVulkanDeviceMemory(const ImageHandle &handle) const;
 		
     };
 }

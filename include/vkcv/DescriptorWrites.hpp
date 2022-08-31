@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include <vulkan/vulkan.hpp>
 
 #include "Handles.hpp"
 
@@ -60,6 +61,7 @@ namespace vkcv {
 	 */
 	struct AccelerationDescriptorWrite {
 	    uint32_t binding;
+		std::vector<vk::AccelerationStructureKHR> structures;
 	};
 
 	/**
@@ -162,9 +164,11 @@ namespace vkcv {
 		 * of a descriptor set.
 		 *
 		 * @param[in] binding Binding index
+		 * @param[in] structures Acceleration structures
 		 * @return Instance of descriptor writes
 		 */
-		DescriptorWrites& writeAcceleration(uint32_t binding);
+		DescriptorWrites& writeAcceleration(uint32_t binding,
+											const std::vector<vk::AccelerationStructureKHR> &structures);
 		
 		/**
 		 * @brief Returns the list of stored write entries for sampled images.

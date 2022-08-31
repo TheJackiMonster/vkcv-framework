@@ -1089,7 +1089,8 @@ namespace vkcv
 			writes, 
 			*m_ImageManager, 
 			*m_BufferManager, 
-			*m_SamplerManager);
+			*m_SamplerManager
+		);
 	}
 
 	void Core::prepareSwapchainImageForPresent(const CommandStreamHandle& cmdStream) {
@@ -1441,6 +1442,50 @@ namespace vkcv
 			
 			t += dt;
 		}
+	}
+	
+	vk::RenderPass Core::getVulkanRenderPass(const PassHandle &handle) const {
+		return m_PassManager->getVkPass(handle);
+	}
+	
+	vk::Pipeline Core::getVulkanPipeline(const GraphicsPipelineHandle &handle) const {
+		return m_GraphicsPipelineManager->getVkPipeline(handle);
+	}
+	
+	vk::Pipeline Core::getVulkanPipeline(const ComputePipelineHandle &handle) const {
+		return m_ComputePipelineManager->getVkPipeline(handle);
+	}
+	
+	vk::DescriptorSetLayout Core::getVulkanDescriptorSetLayout(const DescriptorSetLayoutHandle &handle) const {
+		return m_DescriptorSetLayoutManager->getDescriptorSetLayout(handle).vulkanHandle;
+	}
+	
+	vk::DescriptorSet Core::getVulkanDescriptorSet(const DescriptorSetHandle &handle) const {
+		return m_DescriptorSetManager->getDescriptorSet(handle).vulkanHandle;
+	}
+	
+	vk::Buffer Core::getVulkanBuffer(const BufferHandle &handle) const {
+		return m_BufferManager->getBuffer(handle);
+	}
+	
+	vk::Sampler Core::getVulkanSampler(const SamplerHandle &handle) const {
+		return m_SamplerManager->getVulkanSampler(handle);
+	}
+	
+	vk::Image Core::getVulkanImage(const ImageHandle &handle) const {
+		return m_ImageManager->getVulkanImage(handle);
+	}
+	
+	vk::ImageView Core::getVulkanImageView(const vkcv::ImageHandle &handle) const {
+		return m_ImageManager->getVulkanImageView(handle);
+	}
+	
+	vk::DeviceMemory Core::getVulkanDeviceMemory(const BufferHandle &handle) const {
+		return m_BufferManager->getDeviceMemory(handle);
+	}
+	
+	vk::DeviceMemory Core::getVulkanDeviceMemory(const ImageHandle &handle) const {
+		return m_ImageManager->getVulkanDeviceMemory(handle);
 	}
 	
 }
