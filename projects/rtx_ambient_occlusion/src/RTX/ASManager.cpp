@@ -67,8 +67,9 @@ namespace vkcv::rtx {
         if (result != vk::Result::eSuccess) {
             vkcv_log(LogLevel::ERROR, "ASManager: command buffer for Acceleration Strucutre Build could not be allocated! (%s)", vk::to_string(result).c_str());
         }
-
-        beginCommandBuffer(commandBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+		
+		const vk::CommandBufferBeginInfo beginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+		commandBuffer.begin(beginInfo);
         return commandBuffer;
     }
 
@@ -144,9 +145,6 @@ namespace vkcv::rtx {
     }
 
     void ASManager::copyFromCPUToGPU(RTXBuffer& cpuBuffer, RTXBuffer& gpuBuffer) {
-        SubmitInfo submitInfo;
-        submitInfo.queueType = QueueType::Graphics;
-
         vk::CommandPool commandPool= createCommandPool();
         vk::CommandBuffer commandBuffer= createAndBeginCommandBuffer(commandPool);
         vk::BufferCopy bufferCopy;

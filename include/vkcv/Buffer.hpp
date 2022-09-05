@@ -7,8 +7,9 @@
 
 #include <vector>
 
+#include "BufferTypes.hpp"
+#include "Core.hpp"
 #include "Handles.hpp"
-#include "BufferManager.hpp"
 
 namespace vkcv {
 
@@ -19,10 +20,18 @@ namespace vkcv {
 	 */
 	template<typename T>
 	class Buffer {
-		friend class Core;
 	public:
-		// explicit destruction of default constructor
-		Buffer() = delete;
+		Buffer() : m_core(nullptr), m_handle() {}
+		
+		Buffer(Core* core, const BufferHandle& handle) : m_core(core), m_handle(handle) {}
+		
+		Buffer(const Buffer& other) = default;
+		Buffer(Buffer&& other) noexcept = default;
+		
+		~Buffer() = default;
+		
+		Buffer& operator=(const Buffer& other) = default;
+		Buffer& operator=(Buffer&& other) noexcept = default;
 		
 		/**
 		 * @brief Returns the buffers handle.
@@ -41,8 +50,13 @@ namespace vkcv {
 		 */
 		[[nodiscard]]
 		BufferType getType() const {
-			return m_type;
+			return m_core->getBufferType(m_handle);
 		};
+		
+		[[nodiscard]]
+		BufferMemoryType getMemoryType() const {
+			return m_core->getBufferMemoryType(m_handle);
+		}
 		
 		/**
 		 * @brief Returns the count of elements in the buffer.
@@ -51,7 +65,7 @@ namespace vkcv {
 		 */
 		[[nodiscard]]
 		size_t getCount() const {
-			return m_count;
+			return m_core->getBufferSize(m_handle) / sizeof(T);
 		}
 		
 		/**
@@ -61,7 +75,7 @@ namespace vkcv {
 		 */
 		[[nodiscard]]
 		size_t getSize() const {
-			return m_count * sizeof(T);
+			return m_core->getBufferSize(m_handle);
 		}
 
 		/**
@@ -71,7 +85,7 @@ namespace vkcv {
 		 */
         [[nodiscard]]
 		vk::Buffer getVulkanHandle() const {
-            return m_manager->getBuffer(m_handle);
+            return m_core->getBuffer(m_handle);
         }
 
 		/**
@@ -84,7 +98,7 @@ namespace vkcv {
 		void fill(const T* data,
 				  size_t count = 0,
 				  size_t offset = 0) {
-			 m_manager->fillBuffer(m_handle, data, count * sizeof(T), offset * sizeof(T));
+			 m_core->fillBuffer(m_handle, data, count * sizeof(T), offset * sizeof(T));
 		}
 		
 		/**
@@ -108,7 +122,7 @@ namespace vkcv {
 		void read(T* data,
 				  size_t count = 0,
 				  size_t offset = 0) {
-			m_manager->readBuffer(m_handle, data, count * sizeof(T), offset * sizeof(T));
+			m_core->readBuffer(m_handle, data, count * sizeof(T), offset * sizeof(T));
 		}
 		
 		/**
@@ -132,77 +146,29 @@ namespace vkcv {
 		[[nodiscard]]
 		T* map(size_t offset = 0,
 			   size_t count = 0) {
-			return reinterpret_cast<T*>(m_manager->mapBuffer(m_handle, offset * sizeof(T), count * sizeof(T)));
+			return reinterpret_cast<T*>(m_core->mapBuffer(m_handle, offset * sizeof(T), count * sizeof(T)));
 		}
 
 		/**
 		 * @brief Unmaps the #Buffer, invalidates the pointer obtained by map().
 		 */
 		void unmap() {
-			m_manager->unmapBuffer(m_handle);
+			m_core->unmapBuffer(m_handle);
 		}
 
 	private:
-		BufferManager* const m_manager;
-		const BufferHandle m_handle;
-		const BufferType m_type;
-		const size_t m_count;
-		const BufferMemoryType m_memoryType;
-		
-		/**
-		 * @brief Constructor of the buffer object.
-		 *
-		 * @param[in,out] manager Buffer manager
-		 * @param[in] handle Buffer handle
-		 * @param[in] type Type of buffer
-		 * @param[in] count Count of elements
-		 * @param[in] memoryType Type of memory
-		 */
-		Buffer(BufferManager* manager,
-			   BufferHandle handle,
-			   BufferType type,
-			   size_t count,
-			   BufferMemoryType memoryType) :
-				m_manager(manager),
-				m_handle(handle),
-				m_type(type),
-				m_count(count),
-				m_memoryType(memoryType)
-		{}
-		
-		/**
-		 * @brief Creates a buffer object of type T with
-		 * a selected type, count of elements, memory type
-		 * and support of indirect usage.
-		 *
-		 * @param[in,out] manager Buffer manager
-		 * @param[in] type Buffer type
-		 * @param[in] count Count of elements
-		 * @param[in] memoryType Type of memory
-		 * @param[in] supportIndirect Support indirect usage
-		 * @return New buffer object
-		 */
-		[[nodiscard]]
-		static Buffer<T> create(BufferManager* manager,
-								BufferType type,
-								size_t count,
-								BufferMemoryType memoryType,
-								bool supportIndirect,
-								bool readable) {
-			return Buffer<T>(
-				manager,
-				manager->createBuffer(
-					type,
-					count * sizeof(T),
-					memoryType,
-					supportIndirect,
-					readable
-				),
-				type,
-				count,
-				memoryType
-			);
-		}
+		Core* m_core;
+		BufferHandle m_handle;
 		
 	};
+	
+	template<typename T>
+	Buffer<T> buffer(Core& core,
+					 BufferType type,
+					 size_t count,
+					 BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL,
+					 bool readable = false) {
+		return Buffer<T>(&core, core.createBuffer(type, typeGuard<T>(), count, memoryType, readable));
+	}
+	
 }

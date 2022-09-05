@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
+#include <vkcv/Buffer.hpp>
+#include <vkcv/Pass.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
 #include <random>
@@ -25,24 +27,12 @@ int main(int argc, const char **argv) {
 
     vkcv::camera::CameraManager cameraManager(window);
 
-    auto particleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3,
-                                                           vkcv::BufferMemoryType::DEVICE_LOCAL);
+    auto particleIndexBuffer = vkcv::buffer<uint16_t>(core, vkcv::BufferType::INDEX, 3);
     uint16_t indices[3] = {0, 1, 2};
     particleIndexBuffer.fill(&indices[0], sizeof(indices));
 
     vk::Format colorFormat = vk::Format::eR16G16B16A16Sfloat;
-    // an example attachment for passes that output to the window
-    const vkcv::AttachmentDescription present_color_attachment(
-            vkcv::AttachmentOperation::STORE,
-            vkcv::AttachmentOperation::CLEAR,
-            colorFormat);
-
-
-    vkcv::PassConfig particlePassDefinition({present_color_attachment}, vkcv::Multisampling::None);
-    vkcv::PassHandle particlePass = core.createPass(particlePassDefinition);
-
-    vkcv::PassConfig computePassDefinition({});
-    vkcv::PassHandle computePass = core.createPass(computePassDefinition);
+    vkcv::PassHandle particlePass = vkcv::passFormat(core, colorFormat);
 
     //rotation
     float rotationx = 0;
@@ -58,7 +48,7 @@ int main(int argc, const char **argv) {
     float param_ABSORBTION = 0.5;
     float param_dt = 0.0005;
 
-    if (!particlePass || !computePass)
+    if (!particlePass)
     {
         std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
         return EXIT_FAILURE;
@@ -98,14 +88,16 @@ int main(int argc, const char **argv) {
             particleShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
-    vkcv::Buffer<glm::vec3> vertexBuffer = core.createBuffer<glm::vec3>(
+    vkcv::Buffer<glm::vec3> vertexBuffer = vkcv::buffer<glm::vec3>(
+			core,
             vkcv::BufferType::VERTEX,
             3
     );
     const std::vector<vkcv::VertexAttachment> vertexAttachments = particleShaderProgram.getVertexAttachments();
 
     const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-            vkcv::VertexBufferBinding(0, vertexBuffer.getVulkanHandle())};
+            vkcv::vertexBufferBinding(vertexBuffer.getHandle())
+	};
 
     std::vector<vkcv::VertexBinding> bindings;
     for (size_t i = 0; i < vertexAttachments.size(); i++) {
@@ -115,16 +107,14 @@ int main(int argc, const char **argv) {
     const vkcv::VertexLayout particleLayout { bindings };
 
     // initializing graphics pipeline
-    vkcv::GraphicsPipelineConfig particlePipelineDefinition{
+    vkcv::GraphicsPipelineConfig particlePipelineDefinition (
             particleShaderProgram,
-            UINT32_MAX,
-            UINT32_MAX,
             particlePass,
             {particleLayout},
-            {descriptorSetLayout},
-            true
-	};
-    particlePipelineDefinition.m_blendMode = vkcv::BlendMode::Additive;
+            {descriptorSetLayout}
+	);
+	
+    particlePipelineDefinition.setBlendMode(vkcv::BlendMode::Additive);
 
     const std::vector<glm::vec3> vertices = {glm::vec3(-0.012, 0.012, 0),
                                              glm::vec3(0.012, 0.012, 0),
@@ -134,12 +124,14 @@ int main(int argc, const char **argv) {
 
     vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 
-    vkcv::Buffer<glm::vec4> color = core.createBuffer<glm::vec4>(
+    vkcv::Buffer<glm::vec4> color = vkcv::buffer<glm::vec4>(
+			core,
             vkcv::BufferType::UNIFORM,
             1
     );
 
-    vkcv::Buffer<glm::vec2> position = core.createBuffer<glm::vec2>(
+    vkcv::Buffer<glm::vec2> position = vkcv::buffer<glm::vec2>(
+			core,
             vkcv::BufferType::UNIFORM,
             1
     );
@@ -165,15 +157,16 @@ int main(int argc, const char **argv) {
     }
 
     // creating and filling particle buffer
-    vkcv::Buffer<Particle> particleBuffer1 = core.createBuffer<Particle>(
+    vkcv::Buffer<Particle> particleBuffer1 = vkcv::buffer<Particle>(
+			core,
             vkcv::BufferType::STORAGE,
-            numberParticles * sizeof(glm::vec4) * 3
-
+            numberParticles
     );
 
-    vkcv::Buffer<Particle> particleBuffer2 = core.createBuffer<Particle>(
-        vkcv::BufferType::STORAGE,
-        numberParticles * sizeof(glm::vec4) * 3
+    vkcv::Buffer<Particle> particleBuffer2 = vkcv::buffer<Particle>(
+			core,
+			vkcv::BufferType::STORAGE,
+			numberParticles
     );
 
     particleBuffer1.fill(particles);
@@ -205,17 +198,15 @@ int main(int argc, const char **argv) {
 
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(),
-                                particleIndexBuffer.getCount());
-    vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
+	vkcv::VertexData vertexData (vertexBufferBindings);
+	vertexData.setIndexBuffer(particleIndexBuffer.getHandle());
+	vertexData.setCount(particleIndexBuffer.getCount());
 
     auto pos = glm::vec2(0.f);
-
-    std::vector<vkcv::DrawcallInfo> drawcalls;
-    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}, numberParticles));
-
-    auto start = std::chrono::system_clock::now();
-
+	
+	vkcv::InstanceDrawcall drawcall (vertexData, numberParticles);
+	drawcall.useDescriptorSet(0, descriptorSet);
+	
     glm::vec4 colorData = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
     uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
@@ -229,14 +220,14 @@ int main(int argc, const char **argv) {
     cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, -2.5f));
     cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
-	const auto swapchainExtent = core.getSwapchain(window.getSwapchainHandle()).getExtent();
+	const auto swapchainExtent = core.getSwapchainExtent(window.getSwapchain());
 	
     vkcv::ImageHandle colorBuffer = core.createImage(
 			colorFormat,
 			swapchainExtent.width,
 			swapchainExtent.height,
 			1, false, true, true
-	).getHandle();
+	);
 	
 	vkcv::effects::BloomAndFlaresEffect bloomAndFlares (core);
 	bloomAndFlares.setUpsamplingLimit(3);
@@ -249,15 +240,9 @@ int main(int argc, const char **argv) {
 			"shaders/tonemapping.comp",
 			tonemappingPipe
 	);
-
-    while (vkcv::Window::hasOpenWindow()) {
-        vkcv::Window::pollEvents();
-
-        uint32_t swapchainWidth, swapchainHeight;
-        if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-            continue;
-        }
-		
+	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((core.getImageWidth(colorBuffer) != swapchainWidth) ||
 			(core.getImageHeight(colorBuffer) != swapchainHeight)) {
 			colorBuffer = core.createImage(
@@ -265,17 +250,13 @@ int main(int argc, const char **argv) {
 					swapchainWidth,
 					swapchainHeight,
 					1, false, true, true
-			).getHandle();
+			);
 		}
 
         color.fill(&colorData);
         position.fill(&pos);
 
-        auto end = std::chrono::system_clock::now();
-        float deltatime = 0.000001 * static_cast<float>( std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() );
-        start = end;
-
-        cameraManager.update(deltatime);
+        cameraManager.update(dt);
 
         // split view and projection to allow for easy billboarding in shader
         struct {
@@ -293,35 +274,35 @@ int main(int argc, const char **argv) {
 
         // keybindings rotation
         if (glfwGetKey(window.getWindow(), GLFW_KEY_LEFT) == GLFW_PRESS)
-            rotationx += deltatime * 50;
+            rotationx += dt * 50;
         if (glfwGetKey(window.getWindow(), GLFW_KEY_RIGHT) == GLFW_PRESS)
-            rotationx -= deltatime * 50;
+            rotationx -= dt * 50;
         
         if (glfwGetKey(window.getWindow(), GLFW_KEY_UP) == GLFW_PRESS)
-            rotationy += deltatime * 50;
+            rotationy += dt * 50;
         if (glfwGetKey(window.getWindow(), GLFW_KEY_DOWN) == GLFW_PRESS)
-            rotationy -= deltatime * 50;
+            rotationy -= dt * 50;
 
         // keybindings params
         if (glfwGetKey(window.getWindow(), GLFW_KEY_T) == GLFW_PRESS)
-            param_h += deltatime * 0.2;
+            param_h += dt * 0.2;
         if (glfwGetKey(window.getWindow(), GLFW_KEY_G) == GLFW_PRESS)
-            param_h -= deltatime * 0.2;
+            param_h -= dt * 0.2;
 
         if (glfwGetKey(window.getWindow(), GLFW_KEY_Y) == GLFW_PRESS)
-            param_mass += deltatime * 0.2;
+            param_mass += dt * 0.2;
         if (glfwGetKey(window.getWindow(), GLFW_KEY_H) == GLFW_PRESS)
-            param_mass -= deltatime * 0.2;
+            param_mass -= dt * 0.2;
 
         if (glfwGetKey(window.getWindow(), GLFW_KEY_U) == GLFW_PRESS)
-            param_gasConstant += deltatime * 1500.0;
+            param_gasConstant += dt * 1500.0;
         if (glfwGetKey(window.getWindow(), GLFW_KEY_J) == GLFW_PRESS)
-            param_gasConstant -= deltatime * 1500.0;
+            param_gasConstant -= dt * 1500.0;
 
         if (glfwGetKey(window.getWindow(), GLFW_KEY_I) == GLFW_PRESS)
-            param_offset += deltatime * 400.0;
+            param_offset += dt * 400.0;
         if (glfwGetKey(window.getWindow(), GLFW_KEY_K) == GLFW_PRESS)
-            param_offset -= deltatime * 400.0;
+            param_offset -= dt * 400.0;
 
         if (glfwGetKey(window.getWindow(), GLFW_KEY_O) == GLFW_PRESS)
             param_viscosity = 50;
@@ -342,44 +323,52 @@ int main(int argc, const char **argv) {
         vkcv::PushConstants pushConstantsCompute (sizeof(pushData));
         pushConstantsCompute.appendDrawcall(pushData);
 
-        uint32_t computeDispatchCount[3] = {static_cast<uint32_t> (std::ceil(numberParticles/256.f)),1,1};
+        const auto computeDispatchCount = vkcv::dispatchInvocations(numberParticles, 256);
 
         // computing pressure pipeline
-        core.recordComputeDispatchToCmdStream(cmdStream,
-                                              pressurePipeline,
-                                              computeDispatchCount,
-                                              {vkcv::DescriptorSetUsage(0, pressureDescriptorSet)},
-											  pushConstantsCompute);
+        core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				pressurePipeline,
+				computeDispatchCount,
+				{ vkcv::useDescriptorSet(0, pressureDescriptorSet) },
+				pushConstantsCompute
+		);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
         // computing force pipeline
-		core.recordComputeDispatchToCmdStream(cmdStream,
-											  forcePipeline,
-											  computeDispatchCount,
-											  {vkcv::DescriptorSetUsage(0, forceDescriptorSet)},
-											  pushConstantsCompute);
+		core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				forcePipeline,
+				computeDispatchCount,
+				{ vkcv::useDescriptorSet(0, forceDescriptorSet) },
+				pushConstantsCompute
+		);
 
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
 		core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
         // computing update data pipeline
-        core.recordComputeDispatchToCmdStream(cmdStream,
-                                              updateDataPipeline,
-                                              computeDispatchCount,
-                                              { vkcv::DescriptorSetUsage(0, updateDataDescriptorSet) },
-                                              pushConstantsCompute);
+        core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				updateDataPipeline,
+				computeDispatchCount,
+				{ vkcv::useDescriptorSet(0, updateDataDescriptorSet) },
+				pushConstantsCompute
+		);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
 
         // computing flip pipeline
-        core.recordComputeDispatchToCmdStream(cmdStream,
-                                              flipPipeline,
-                                              computeDispatchCount,
-                                              { vkcv::DescriptorSetUsage(0, flipDescriptorSet) },
-                                              pushConstantsCompute);
+        core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				flipPipeline,
+				computeDispatchCount,
+				{ vkcv::useDescriptorSet(0, flipDescriptorSet) },
+				pushConstantsCompute
+		);
 
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer1.getHandle());
         core.recordBufferMemoryBarrier(cmdStream, particleBuffer2.getHandle());
@@ -391,10 +380,9 @@ int main(int argc, const char **argv) {
         
         core.recordDrawcallsToCmdStream(
                 cmdStream,
-                particlePass,
                 particlePipeline,
 				pushConstantsDraw,
-                {drawcalls},
+                { drawcall },
                 { colorBuffer },
                 windowHandle
 		);
@@ -413,22 +401,22 @@ int main(int argc, const char **argv) {
 		
         core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
 
-        uint32_t tonemappingDispatchCount[3];
-        tonemappingDispatchCount[0] = std::ceil(swapchainWidth / 8.f);
-        tonemappingDispatchCount[1] = std::ceil(swapchainHeight / 8.f);
-        tonemappingDispatchCount[2] = 1;
+        const auto tonemappingDispatchCount = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(swapchainWidth, swapchainHeight),
+				vkcv::DispatchSize(8, 8)
+		);
 
         core.recordComputeDispatchToCmdStream(
             cmdStream, 
             tonemappingPipe, 
             tonemappingDispatchCount, 
-            {vkcv::DescriptorSetUsage(0, tonemappingDescriptor) },
-            vkcv::PushConstants(0));
+            { vkcv::useDescriptorSet(0, tonemappingDescriptor) },
+            vkcv::PushConstants(0)
+		);
 
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);
-        core.endFrame(windowHandle);
-    }
+    });
 
     return 0;
 }

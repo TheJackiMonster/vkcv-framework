@@ -14,6 +14,7 @@
 #include "SPDIntegration.glsl.hxx"
 #include "SPDIntegrationLinearSampler.glsl.hxx"
 
+#include <vkcv/ComputePipelineConfig.hpp>
 #include <vkcv/File.hpp>
 #include <vkcv/Logger.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -150,7 +151,8 @@ namespace vkcv::algorithm {
 		 m_descriptorSetLayout(),
 		 m_descriptorSets(),
 		
-		 m_globalCounter(m_core.createBuffer<uint32_t>(
+		 m_globalCounter(buffer<uint32_t>(
+				 m_core,
 				 vkcv::BufferType::STORAGE,
 				 6
 		 )),
@@ -231,10 +233,10 @@ namespace vkcv::algorithm {
 			);
 		}
 		
-		m_pipeline = m_core.createComputePipeline({
+		m_pipeline = m_core.createComputePipeline(ComputePipelineConfig(
 			program,
 			{ m_descriptorSetLayout }
-		});
+		));
 		
 		std::vector<uint32_t> zeroes;
 		zeroes.resize(m_globalCounter.getCount());
@@ -307,12 +309,16 @@ namespace vkcv::algorithm {
 			m_core.prepareImageForStorage(cmdStream, image);
 		}
 		
-		uint32_t dispatch [3];
-		dispatch[0] = dispatchThreadGroupCountXY[0];
-		dispatch[1] = dispatchThreadGroupCountXY[1];
-		dispatch[2] = m_core.getImageArrayLayers(image);
+		vkcv::DispatchSize dispatch (
+				dispatchThreadGroupCountXY[0],
+				dispatchThreadGroupCountXY[1],
+				m_core.getImageArrayLayers(image)
+		);
 		
-		vkcv::PushConstants pushConstants (m_sampler? sizeof(SPDConstantsSampler) : sizeof(SPDConstants));
+		vkcv::PushConstants pushConstants = (m_sampler?
+				vkcv::pushConstants<SPDConstantsSampler>() :
+				vkcv::pushConstants<SPDConstants>()
+		);
 		
 		if (m_sampler) {
 			SPDConstantsSampler data;

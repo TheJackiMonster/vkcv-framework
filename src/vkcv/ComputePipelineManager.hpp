@@ -9,28 +9,45 @@
 #include <vulkan/vulkan.hpp>
 #include <vector>
 
-#include "vkcv/Handles.hpp"
+#include "HandleManager.hpp"
+
 #include "vkcv/ShaderProgram.hpp"
 #include "vkcv/ComputePipelineConfig.hpp"
 
-namespace vkcv
-{
+namespace vkcv {
+	
+	struct ComputePipelineEntry {
+		vk::Pipeline m_handle;
+		vk::PipelineLayout m_layout;
+	};
 
 	/**
 	 * @brief Class to manage compute pipelines.
 	 */
-    class ComputePipelineManager
-    {
+    class ComputePipelineManager : public HandleManager<ComputePipelineEntry, ComputePipelineHandle> {
+	private:
+		[[nodiscard]]
+		uint64_t getIdFrom(const ComputePipelineHandle& handle) const override;
+	
+		[[nodiscard]]
+		ComputePipelineHandle createById(uint64_t id, const HandleDestroyFunction& destroy) override;
+	
+		/**
+		 * Destroys and deallocates compute pipeline represented by a given
+		 * compute pipeline handle id.
+		 *
+		 * @param id Compute pipeline handle id
+		 */
+		void destroyById(uint64_t id) override;
+	
+		vk::Result createShaderModule(vk::ShaderModule &module,
+									  const ShaderProgram &shaderProgram,
+									  ShaderStage stage);
+		
     public:
-        ComputePipelineManager() = delete; // no default ctor
-        explicit ComputePipelineManager(vk::Device device) noexcept; // ctor
-        ~ComputePipelineManager() noexcept; // dtor
-
-        ComputePipelineManager(const ComputePipelineManager &other) = delete; // copy-ctor
-        ComputePipelineManager(ComputePipelineManager &&other) = delete; // move-ctor;
-
-        ComputePipelineManager & operator=(const ComputePipelineManager &other) = delete; // copy-assign op
-        ComputePipelineManager & operator=(ComputePipelineManager &&other) = delete; // move-assign op
+		ComputePipelineManager() noexcept;
+		
+        ~ComputePipelineManager() noexcept override; // dtor
 
         /**
         * Returns a vk::Pipeline object by handle.
@@ -58,20 +75,7 @@ namespace vkcv
          */
         ComputePipelineHandle createComputePipeline(const ShaderProgram& shaderProgram,
 													const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
-
-    private:
-        struct ComputePipeline {
-            vk::Pipeline m_handle;
-            vk::PipelineLayout m_layout;
-        };
-
-        vk::Device m_Device;
-        std::vector<ComputePipeline> m_Pipelines;
-
-        void destroyPipelineById(uint64_t id);
-
-        vk::Result createShaderModule(vk::ShaderModule &module, const ShaderProgram &shaderProgram, ShaderStage stage);
-
+		
     };
 
 }

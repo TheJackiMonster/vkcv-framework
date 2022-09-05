@@ -352,7 +352,7 @@ namespace vkcv
 		};
 		
 		if (!checkSupport(supportedLayers, validationLayers)) {
-			throw std::runtime_error("Validation layers requested but not available!");
+			vkcv_log_throw_error("Validation layers requested but not available!");
 		}
 #endif
 		
@@ -377,7 +377,7 @@ namespace vkcv
 		requiredExtensions.insert(requiredExtensions.end(), instanceExtensions.begin(), instanceExtensions.end());
 		
 		if (!checkSupport(supportedExtensions, requiredExtensions)) {
-			throw std::runtime_error("The requested instance extensions are not supported!");
+			vkcv_log_throw_error("The requested instance extensions are not supported!");
 		}
 		
 		const vk::ApplicationInfo applicationInfo(
@@ -408,7 +408,7 @@ namespace vkcv
 		vk::PhysicalDevice physicalDevice;
 		
 		if (!pickPhysicalDevice(instance, physicalDevice)) {
-			throw std::runtime_error("Picking suitable GPU as physical device failed!");
+			vkcv_log_throw_error("Picking suitable GPU as physical device failed!");
 		}
 		
 		FeatureManager featureManager (physicalDevice);
@@ -467,15 +467,14 @@ namespace vkcv
 				nullptr,
 				extensions.size(),
 				extensions.data(),
-				nullptr
+				nullptr,
+				&(featureManager.getFeatures())
 		);
 
 #ifndef NDEBUG
 		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
-
-		deviceCreateInfo.setPNext(&(featureManager.getFeatures()));
 		
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
 		

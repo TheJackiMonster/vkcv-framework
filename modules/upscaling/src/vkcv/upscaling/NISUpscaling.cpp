@@ -7,6 +7,7 @@
 #include "NIS_Scaler.h.hxx"
 
 #include <vkcv/File.hpp>
+#include <vkcv/Image.hpp>
 #include <vkcv/Logger.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
@@ -77,14 +78,14 @@ namespace vkcv::upscaling {
 		const size_t rowPitch = kFilterSize * 2;
 		const size_t imageSize = rowPitch * kPhaseCount;
 		
-		Image image = core.createImage(
+		Image image = vkcv::image(
+				core,
 				vk::Format::eR16G16B16A16Sfloat,
 				kFilterSize / 4,
 				kPhaseCount
 		);
 		
 		image.fill(data, imageSize);
-		
 		return image.getHandle();
 	}
 	
@@ -137,8 +138,10 @@ namespace vkcv::upscaling {
 	m_scalerDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings())),
 	m_scalerDescriptorSet(m_core.createDescriptorSet(m_scalerDescriptorSetLayout)),
 	
-	m_scalerConstants(m_core.createBuffer<uint8_t>(
-			BufferType::UNIFORM, sizeof(NISConfig),
+	m_scalerConstants(buffer<uint8_t>(
+			m_core,
+			BufferType::UNIFORM,
+			sizeof(NISConfig),
 			BufferMemoryType::HOST_VISIBLE
 	)),
 	m_sampler(m_core.createSampler(
@@ -233,10 +236,10 @@ namespace vkcv::upscaling {
 				sizeof(config)
 		);
 		
-		uint32_t dispatch[3];
-		dispatch[0] = (outputWidth + (m_blockWidth - 1)) / m_blockWidth;
-		dispatch[1] = (outputHeight + (m_blockHeight - 1)) / m_blockHeight;
-		dispatch[2] = 1;
+		DispatchSize dispatch = dispatchInvocations(
+				DispatchSize(outputWidth, outputHeight),
+				DispatchSize(m_blockWidth, m_blockHeight)
+		);
 		
 		m_core.recordBufferMemoryBarrier(cmdStream, m_scalerConstants.getHandle());
 		

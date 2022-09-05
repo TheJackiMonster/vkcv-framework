@@ -10,23 +10,42 @@
 
 #include <vulkan/vulkan.hpp>
 #include <vector>
-#include "vkcv/Handles.hpp"
+#include "HandleManager.hpp"
 #include "vkcv/GraphicsPipelineConfig.hpp"
 #include "PassManager.hpp"
-#include "DescriptorManager.hpp"
+#include "DescriptorSetLayoutManager.hpp"
 
-namespace vkcv
-{
+namespace vkcv {
+	
+	struct GraphicsPipelineEntry {
+		vk::Pipeline m_handle;
+		vk::PipelineLayout m_layout;
+		GraphicsPipelineConfig m_config;
+	};
 	
 	/**
 	 * @brief Class to manage graphics pipelines.
 	 */
-    class GraphicsPipelineManager
-    {
+    class GraphicsPipelineManager : public HandleManager<GraphicsPipelineEntry, GraphicsPipelineHandle> {
+	private:
+		[[nodiscard]]
+		uint64_t getIdFrom(const GraphicsPipelineHandle& handle) const override;
+	
+		[[nodiscard]]
+		GraphicsPipelineHandle createById(uint64_t id, const HandleDestroyFunction& destroy) override;
+	
+		/**
+		 * Destroys and deallocates graphics pipeline represented by a given
+		 * graphics pipeline handle id.
+		 *
+		 * @param id Graphics pipeline handle id
+		 */
+		void destroyById(uint64_t id) override;
+		
     public:
-		GraphicsPipelineManager() = delete; // no default ctor
-        explicit GraphicsPipelineManager(vk::Device device, vk::PhysicalDevice physicalDevice) noexcept; // ctor
-        ~GraphicsPipelineManager() noexcept; // dtor
+        GraphicsPipelineManager() noexcept;
+		
+        ~GraphicsPipelineManager() noexcept override; // dtor
 	
 		GraphicsPipelineManager(const GraphicsPipelineManager &other) = delete; // copy-ctor
 		GraphicsPipelineManager(GraphicsPipelineManager &&other) = delete; // move-ctor;
@@ -46,7 +65,7 @@ namespace vkcv
          */
 		GraphicsPipelineHandle createPipeline(const GraphicsPipelineConfig &config,
 											  const PassManager& passManager,
-											  const DescriptorManager& descriptorManager);
+											  const DescriptorSetLayoutManager& descriptorManager);
 
         /**
          * Returns a vk::Pipeline object by handle.
@@ -71,20 +90,7 @@ namespace vkcv
          */
         [[nodiscard]]
         const GraphicsPipelineConfig &getPipelineConfig(const GraphicsPipelineHandle &handle) const;
-
-    private:
-        struct GraphicsPipeline {
-            vk::Pipeline m_handle;
-            vk::PipelineLayout m_layout;
-			GraphicsPipelineConfig m_config;
-        };
-
-        vk::Device                      m_Device;
-        vk::PhysicalDevice              m_physicalDevice; // needed to get infos to configure conservative rasterization
-        std::vector<GraphicsPipeline>   m_Pipelines;
-
-        void destroyPipelineById(uint64_t id);
-
+		
     };
 	
 }

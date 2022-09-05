@@ -1,4 +1,6 @@
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -69,7 +71,8 @@ int main(int argc, const char** argv) {
 		initialHeight,
 		1,
 		false,
-		true).getHandle();
+		true
+	);
 
 	vkcv::ImageHandle meanImage = core.createImage(
 		vk::Format::eR32G32B32A32Sfloat,
@@ -77,7 +80,8 @@ int main(int argc, const char** argv) {
 		initialHeight,
 		1,
 		false,
-		true).getHandle();
+		true
+	);
 
 	vkcv::shader::GLSLCompiler compiler;
 
@@ -174,17 +178,20 @@ int main(int argc, const char** argv) {
 	planes.emplace_back(Plane(glm::vec3( 0,  0,     2), glm::vec3( 0,  0, -1), glm::vec2(2), whiteMaterialIndex));
 	planes.emplace_back(Plane(glm::vec3( 0,  1.9,   0), glm::vec3( 0, -1,  0), glm::vec2(1), lightMaterialIndex));
 
-	vkcv::Buffer<Sphere> sphereBuffer = core.createBuffer<Sphere>(
+	vkcv::Buffer<Sphere> sphereBuffer = vkcv::buffer<Sphere>(
+		core,
 		vkcv::BufferType::STORAGE,
 		spheres.size());
 	sphereBuffer.fill(spheres);
 
-	vkcv::Buffer<Plane> planeBuffer = core.createBuffer<Plane>(
+	vkcv::Buffer<Plane> planeBuffer = vkcv::buffer<Plane>(
+		core,
 		vkcv::BufferType::STORAGE,
 		planes.size());
 	planeBuffer.fill(planes);
 
-	vkcv::Buffer<Material> materialBuffer = core.createBuffer<Material>(
+	vkcv::Buffer<Material> materialBuffer = vkcv::buffer<Material>(
+		core,
 		vkcv::BufferType::STORAGE,
 		materialSettings.size());
 
@@ -215,9 +222,7 @@ int main(int argc, const char** argv) {
 	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
-
-	auto    startTime       = std::chrono::system_clock::now();
-	float   time            = 0;
+	
 	int     frameIndex      = 0;
 	bool    clearMeanImage  = true;
 	bool    updateMaterials = true;
@@ -240,16 +245,9 @@ int main(int argc, const char** argv) {
 
 	glm::vec3   skyColor            = glm::vec3(0.2, 0.7, 0.8);
 	float       skyColorMultiplier  = 1;
-
-	while (vkcv::Window::hasOpenWindow())
-	{
-		vkcv::Window::pollEvents();
-
-		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
-		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-			continue;
-		}
-
+	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if (swapchainWidth != widthPrevious || swapchainHeight != heightPrevious) {
 
 			// resize images
@@ -259,7 +257,8 @@ int main(int argc, const char** argv) {
 				swapchainHeight,
 				1,
 				false,
-				true).getHandle();
+				true
+			);
 
 			meanImage = core.createImage(
 				vk::Format::eR32G32B32A32Sfloat,
@@ -267,7 +266,8 @@ int main(int argc, const char** argv) {
 				swapchainHeight,
 				1,
 				false,
-				true).getHandle();
+				true
+			);
 
 			// update descriptor sets
 			traceDescriptorWrites.writeStorageImage(3, outputImage);
@@ -292,20 +292,14 @@ int main(int argc, const char** argv) {
 			clearMeanImage = true;
 		}
 
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - startTime);
-		startTime = end;
-
-		time += 0.000001f * static_cast<float>(deltatime.count());
-
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		cameraManager.update(dt);
 
 		const vkcv::CommandStreamHandle cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-		uint32_t fullscreenDispatchCount[3] = {
-			static_cast<uint32_t> (std::ceil(swapchainWidth  / 8.f)),
-			static_cast<uint32_t> (std::ceil(swapchainHeight / 8.f)),
-			1 };
+		const auto fullscreenDispatchCount = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(swapchainWidth, swapchainHeight),
+				vkcv::DispatchSize(8, 8)
+		);
 
 		if (updateMaterials) {
 			std::vector<Material> materials;
@@ -340,7 +334,7 @@ int main(int argc, const char** argv) {
 			core.recordComputeDispatchToCmdStream(cmdStream,
 				imageClearPipeline,
 				fullscreenDispatchCount,
-				{ vkcv::DescriptorSetUsage(0, imageClearDescriptorSet) },
+				{ vkcv::useDescriptorSet(0, imageClearDescriptorSet) },
 				vkcv::PushConstants(0));
 
 			clearMeanImage = false;
@@ -362,20 +356,20 @@ int main(int argc, const char** argv) {
 		raytracingPushData.planeCount   = planes.size();
 		raytracingPushData.frameIndex   = frameIndex;
 
-		vkcv::PushConstants pushConstantsCompute(sizeof(RaytracingPushConstantData));
+		vkcv::PushConstants pushConstantsCompute = vkcv::pushConstants<RaytracingPushConstantData>();
 		pushConstantsCompute.appendDrawcall(raytracingPushData);
-
-		uint32_t traceDispatchCount[3] = { 
-			static_cast<uint32_t> (std::ceil(swapchainWidth  / 16.f)),
-			static_cast<uint32_t> (std::ceil(swapchainHeight / 16.f)),
-			1 };
+		
+		const auto traceDispatchCount = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(swapchainWidth, swapchainHeight),
+				vkcv::DispatchSize(16, 16)
+		);
 
 		core.prepareImageForStorage(cmdStream, outputImage);
 
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			tracePipeline,
 			traceDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, traceDescriptorSet) },
+			{ vkcv::useDescriptorSet(0, traceDescriptorSet) },
 			pushConstantsCompute);
 
 		core.prepareImageForStorage(cmdStream, meanImage);
@@ -385,7 +379,7 @@ int main(int argc, const char** argv) {
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			imageCombinePipeline,
 			fullscreenDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, imageCombineDescriptorSet) },
+			{ vkcv::useDescriptorSet(0, imageCombineDescriptorSet) },
 			vkcv::PushConstants(0));
 
 		core.recordImageMemoryBarrier(cmdStream, meanImage);
@@ -407,7 +401,7 @@ int main(int argc, const char** argv) {
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			presentPipeline,
 			fullscreenDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, presentDescriptorSet) },
+			{ vkcv::useDescriptorSet(0, presentDescriptorSet) },
 			vkcv::PushConstants(0));
 
 		core.prepareSwapchainImageForPresent(cmdStream);
@@ -449,9 +443,8 @@ int main(int argc, const char** argv) {
 			gui.endGUI();
 		}
 
-		core.endFrame(windowHandle);
-
 		frameIndex++;
-	}
+	});
+
 	return 0;
 }

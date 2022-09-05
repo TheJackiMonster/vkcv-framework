@@ -164,12 +164,16 @@ namespace vkcv::upscaling {
 	m_rcasDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings())),
 	m_rcasDescriptorSet(m_core.createDescriptorSet(m_rcasDescriptorSetLayout)),
 
-	m_easuConstants(m_core.createBuffer<FSRConstants>(
-			BufferType::UNIFORM,1,
+	m_easuConstants(buffer<FSRConstants>(
+			m_core,
+			BufferType::UNIFORM,
+			1,
 			BufferMemoryType::HOST_VISIBLE
 	)),
-	m_rcasConstants(m_core.createBuffer<FSRConstants>(
-			BufferType::UNIFORM,1,
+	m_rcasConstants(buffer<FSRConstants>(
+			m_core,
+			BufferType::UNIFORM,
+			1,
 			BufferMemoryType::HOST_VISIBLE
 	)),
 	m_intermediateImage(),
@@ -275,7 +279,7 @@ namespace vkcv::upscaling {
 					outputWidth, outputHeight,1,
 					false,
 					true
-			).getHandle();
+			);
 			
 			m_core.prepareImageForStorage(cmdStream, m_intermediateImage);
 		}
@@ -302,10 +306,10 @@ namespace vkcv::upscaling {
 		
 		static const uint32_t threadGroupWorkRegionDim = 16;
 		
-		uint32_t dispatch[3];
-		dispatch[0] = (outputWidth + (threadGroupWorkRegionDim - 1)) / threadGroupWorkRegionDim;
-		dispatch[1] = (outputHeight + (threadGroupWorkRegionDim - 1)) / threadGroupWorkRegionDim;
-		dispatch[2] = 1;
+		DispatchSize dispatch = dispatchInvocations(
+				DispatchSize(outputWidth, outputHeight),
+				DispatchSize(threadGroupWorkRegionDim, threadGroupWorkRegionDim)
+		);
 		
 		m_core.recordBufferMemoryBarrier(cmdStream, m_easuConstants.getHandle());
 		

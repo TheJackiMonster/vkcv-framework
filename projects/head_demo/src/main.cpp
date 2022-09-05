@@ -1,5 +1,7 @@
 #include <iostream>
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/gui/GUI.hpp>
@@ -36,49 +38,19 @@ int main(int argc, const char** argv) {
 	
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
 	
-	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
-			argc > 1 ? argv[1] : "assets/skull_scaled/scene.gltf"
-	));
+	vkcv::scene::Scene scene = vkcv::scene::Scene::load(
+			core,
+			std::filesystem::path(argc > 1 ? argv[1] : "assets/skull_scaled/scene.gltf"),
+			{
+					vkcv::asset::PrimitiveType::POSITION,
+					vkcv::asset::PrimitiveType::NORMAL
+			}
+	);
 	
 	vk::Format colorFormat = vk::Format::eR16G16B16A16Sfloat;
 	
-	const vkcv::AttachmentDescription color_attachment0(
-			vkcv::AttachmentOperation::STORE,
-			vkcv::AttachmentOperation::CLEAR,
-			colorFormat
-	);
-	
-	const vkcv::AttachmentDescription depth_attachment0(
-			vkcv::AttachmentOperation::STORE,
-			vkcv::AttachmentOperation::CLEAR,
-			vk::Format::eD32Sfloat
-	);
-	
-	const vkcv::AttachmentDescription color_attachment1(
-			vkcv::AttachmentOperation::STORE,
-			vkcv::AttachmentOperation::LOAD,
-			colorFormat
-	);
-	
-	const vkcv::AttachmentDescription depth_attachment1(
-			vkcv::AttachmentOperation::STORE,
-			vkcv::AttachmentOperation::LOAD,
-			vk::Format::eD32Sfloat
-	);
-	
-	vkcv::PassConfig linePassDefinition(
-			{ color_attachment0, depth_attachment0 },
-			vkcv::Multisampling::None
-	);
-	
-	vkcv::PassHandle linePass = core.createPass(linePassDefinition);
-	
-	vkcv::PassConfig scenePassDefinition(
-			{ color_attachment1, depth_attachment1 },
-			vkcv::Multisampling::None
-	);
-	
-	vkcv::PassHandle scenePass = core.createPass(scenePassDefinition);
+	vkcv::PassHandle linePass = vkcv::passFormats(core, { colorFormat, vk::Format::eD32Sfloat });
+	vkcv::PassHandle scenePass = vkcv::passFormats(core, { colorFormat, vk::Format::eD32Sfloat }, false);
 	
 	if ((!scenePass) || (!linePass)) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
@@ -118,7 +90,7 @@ int main(int argc, const char** argv) {
 	float clipY = 0.0f;
 	float clipZ = 0.0f;
 	
-	auto clipBuffer = core.createBuffer<float>(vkcv::BufferType::UNIFORM, 4);
+	auto clipBuffer = vkcv::buffer<float>(core, vkcv::BufferType::UNIFORM, 4);
 	clipBuffer.fill({ clipLimit, -clipX, -clipY, -clipZ });
 	
 	vkcv::DescriptorWrites clipWrites;
@@ -151,85 +123,66 @@ int main(int argc, const char** argv) {
 	const vkcv::VertexLayout sceneLayout { bindings };
 	const auto& material0 = scene.getMaterial(0);
 	
-	const vkcv::GraphicsPipelineConfig scenePipelineDefinition{
-			sceneShaderProgram,
-			UINT32_MAX,
-			UINT32_MAX,
-			scenePass,
-			{sceneLayout},
-			{ material0.getDescriptorSetLayout(), clipDescriptorSetLayout },
-			true
-	};
+	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+				sceneShaderProgram,
+				scenePass,
+				{ sceneLayout },
+				{ material0.getDescriptorSetLayout(), clipDescriptorSetLayout }
+			)
+	);
 	
-	const vkcv::GraphicsPipelineConfig linePipelineDefinition{
-			lineShaderProgram,
-			UINT32_MAX,
-			UINT32_MAX,
-			linePass,
-			{sceneLayout},
-			{ material0.getDescriptorSetLayout(), clipDescriptorSetLayout },
-			true
-	};
-	
-	vkcv::GraphicsPipelineHandle scenePipeline = core.createGraphicsPipeline(scenePipelineDefinition);
-	vkcv::GraphicsPipelineHandle linePipeline = core.createGraphicsPipeline(linePipelineDefinition);
+	vkcv::GraphicsPipelineHandle linePipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					lineShaderProgram,
+					linePass,
+					{ sceneLayout },
+					{ material0.getDescriptorSetLayout(), clipDescriptorSetLayout }
+			)
+	);
 	
 	if ((!scenePipeline) || (!linePipeline)) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 	
-	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
+	auto swapchainExtent = core.getSwapchainExtent(window.getSwapchain());
 	
 	vkcv::ImageHandle depthBuffer = core.createImage(
 			vk::Format::eD32Sfloat,
 			swapchainExtent.width,
 			swapchainExtent.height
-	).getHandle();
+	);
 	
 	vkcv::ImageHandle colorBuffer = core.createImage(
 			colorFormat,
 			swapchainExtent.width,
 			swapchainExtent.height,
 			1, false, true, true
-	).getHandle();
+	);
 	
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	
 	vkcv::effects::BloomAndFlaresEffect bloomAndFlares (core);
 	vkcv::upscaling::FSRUpscaling upscaling (core);
 	
-	auto start = std::chrono::system_clock::now();
-	while (vkcv::Window::hasOpenWindow()) {
-		vkcv::Window::pollEvents();
-		
-		if(window.getHeight() == 0 || window.getWidth() == 0)
-			continue;
-		
-		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight,windowHandle)) {
-			continue;
-		}
-		
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
-			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
+			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight);
 			
 			colorBuffer = core.createImage(
 					colorFormat,
 					swapchainExtent.width,
 					swapchainExtent.height,
 					1, false, true, true
-			).getHandle();
+			);
 			
 			swapchainExtent.width = swapchainWidth;
 			swapchainExtent.height = swapchainHeight;
 		}
-		
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-		
-		start = end;
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+
+		cameraManager.update(dt);
 		
 		clipBuffer.fill({ clipLimit, -clipX, -clipY, -clipZ });
 		
@@ -238,32 +191,34 @@ int main(int argc, const char** argv) {
 		
 		auto recordMesh = [&](const glm::mat4& MVP, const glm::mat4& M,
 							 vkcv::PushConstants &pushConstants,
-							 vkcv::DrawcallInfo& drawcallInfo) {
+							 vkcv::Drawcall& drawcall) {
 			pushConstants.appendDrawcall(MVP);
-			drawcallInfo.descriptorSets.push_back(
-					vkcv::DescriptorSetUsage(1, clipDescriptorSet)
-			);
+			drawcall.useDescriptorSet(1, clipDescriptorSet);
 		};
 		
-		scene.recordDrawcalls(cmdStream,
-							  cameraManager.getActiveCamera(),
-							  linePass,
-							  linePipeline,
-							  sizeof(glm::mat4),
-							  recordMesh,
-							  renderTargets,
-							  windowHandle);
+		scene.recordDrawcalls(
+				cmdStream,
+				cameraManager.getActiveCamera(),
+				linePass,
+				linePipeline,
+				sizeof(glm::mat4),
+				recordMesh,
+				renderTargets,
+				windowHandle
+		);
 		
 		bloomAndFlares.recordEffect(cmdStream, colorBuffer, colorBuffer);
 		
-		scene.recordDrawcalls(cmdStream,
-							  cameraManager.getActiveCamera(),
-							  scenePass,
-							  scenePipeline,
-							  sizeof(glm::mat4),
-							  recordMesh,
-							  renderTargets,
-							  windowHandle);
+		scene.recordDrawcalls(
+				cmdStream,
+				cameraManager.getActiveCamera(),
+				scenePass,
+				scenePipeline,
+				sizeof(glm::mat4),
+				recordMesh,
+				renderTargets,
+				windowHandle
+		);
 		
 		core.prepareImageForSampling(cmdStream, colorBuffer);
 		core.prepareImageForStorage(cmdStream, swapchainInput);
@@ -271,9 +226,6 @@ int main(int argc, const char** argv) {
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-		
-		auto stop = std::chrono::system_clock::now();
-		auto kektime = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 		
 		gui.beginGUI();
 		
@@ -285,9 +237,7 @@ int main(int argc, const char** argv) {
 		ImGui::End();
 		
 		gui.endGUI();
-		
-		core.endFrame(windowHandle);
-	}
+	});
 	
 	return 0;
 }

@@ -3,34 +3,30 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
-#include "vkcv/Handles.hpp"
+#include "HandleManager.hpp"
+
 #include "vkcv/Sampler.hpp"
 
 namespace vkcv {
 	
-	class Core;
-	
 	/**
 	 * @brief Class to manage the creation and destruction of samplers.
 	 */
-	class SamplerManager {
+	class SamplerManager : public HandleManager<vk::Sampler, SamplerHandle> {
 		friend class Core;
 	private:
-		vk::Device m_device;
-		std::vector<vk::Sampler> m_samplers;
+		[[nodiscard]]
+		uint64_t getIdFrom(const SamplerHandle& handle) const override;
 		
-		explicit SamplerManager(const vk::Device& device) noexcept;
+		[[nodiscard]]
+		SamplerHandle createById(uint64_t id, const HandleDestroyFunction& destroy) override;
 		
-		void destroySamplerById(uint64_t id);
+		void destroyById(uint64_t id) override;
 		
 	public:
-		~SamplerManager();
+		SamplerManager() noexcept;
 		
-		SamplerManager(const SamplerManager& other) = delete;
-		SamplerManager(SamplerManager&& other) = delete;
-		
-		SamplerManager& operator=(const SamplerManager& other) = delete;
-		SamplerManager& operator=(SamplerManager&& other) = delete;
+		~SamplerManager() noexcept override;
 		
 		SamplerHandle createSampler(SamplerFilterType magFilter,
 									SamplerFilterType minFilter,

@@ -11,6 +11,8 @@
 #include <cstdint>
 #include <filesystem>
 
+#include "vkcv/VertexData.hpp"
+
 /* LOADING MESHES
  * The description of meshes is a hierarchy of structures with the Mesh at the
  * top.
@@ -279,8 +281,8 @@ struct Scene {
  * Note that for URIs only (local) filesystem paths are supported, no
  * URLs using network protocols etc.
  *
- * @param path	must be the path to a glTF- or glb-file.
- * @param scene	is a reference to a Scene struct that will be filled with the
+ * @param[in] path must be the path to a glTF- or glb-file.
+ * @param[out] scene is a reference to a Scene struct that will be filled with the
  * 	meta-data of all objects described in the glTF file.
  * @return ASSET_ERROR on failure, otherwise ASSET_SUCCESS
  */
@@ -295,8 +297,8 @@ int probeScene(const std::filesystem::path &path, Scene &scene);
  * Besides the mesh, this function will also add any associated data to the
  * Scene struct such as Materials and Textures required by the Mesh.
  *
- * @param path	must be the path to a glTF- or glb-file.
- * @param scene	is the scene struct to which the results will be written.
+ * @param[in,out] scene	is the scene struct to which the results will be written.
+ * @param[in] mesh_index Index of the mesh to load
  * @return ASSET_ERROR on failure, otherwise ASSET_SUCCESS
  */
 int loadMesh(Scene &scene, int mesh_index);
@@ -305,8 +307,8 @@ int loadMesh(Scene &scene, int mesh_index);
  * Load every mesh from the glTF file, as well as materials, textures and other
  * associated objects.
  *
- * @param path	must be the path to a glTF- or glb-file.
- * @param scene is a reference to a Scene struct that will be filled with the
+ * @param[in] path	must be the path to a glTF- or glb-file.
+ * @param[out] scene is a reference to a Scene struct that will be filled with the
  * 	content of the glTF file being loaded.
  * @return ASSET_ERROR on failure, otherwise ASSET_SUCCESS
  */
@@ -322,10 +324,24 @@ int loadScene(const std::filesystem::path &path, Scene &scene);
  * will be cleared to all 0 with path and data being empty; make sure to always
  * check that !data.empty() before using the struct.
  *
- * @param path	must be the path to an image file.
+ * @param[in] path	must be the path to an image file.
  * @return	Texture struct describing the loaded image.
  */
 Texture loadTexture(const std::filesystem::path& path);
+
+/**
+ * Loads up the vertex attributes and creates usable vertex buffer bindings
+ * to match the desired order of primitive types as used in the vertex
+ * shader.
+ *
+ * @param[in] attributes Vertex attributes
+ * @param[in] buffer Buffer handle
+ * @param[in] types Primitive type order
+ * @return Vertex buffer bindings
+ */
+VertexBufferBindings loadVertexBufferBindings(const std::vector<VertexAttribute> &attributes,
+											  const BufferHandle &buffer,
+											  const std::vector<PrimitiveType> &types);
 
 /** @} */
 

@@ -1,21 +1,39 @@
 #include "GraphicsPipelineManager.hpp"
+
+#include "vkcv/Core.hpp"
 #include "vkcv/Image.hpp"
 #include "vkcv/Logger.hpp"
+#include "vkcv/Multisampling.hpp"
 
-namespace vkcv
-{
+namespace vkcv {
 	
-	GraphicsPipelineManager::GraphicsPipelineManager(vk::Device device, vk::PhysicalDevice physicalDevice) noexcept :
-            m_Device(device),
-            m_physicalDevice(physicalDevice),
-            m_Pipelines{}
-    {}
+	uint64_t GraphicsPipelineManager::getIdFrom(const GraphicsPipelineHandle &handle) const {
+		return handle.getId();
+	}
 	
-	GraphicsPipelineManager::~GraphicsPipelineManager() noexcept
-    {
-        for (uint64_t id = 0; id < m_Pipelines.size(); id++) {
-            destroyPipelineById(id);
-        }
+	GraphicsPipelineHandle GraphicsPipelineManager::createById(uint64_t id, const HandleDestroyFunction &destroy) {
+		return GraphicsPipelineHandle(id, destroy);
+	}
+	
+	void GraphicsPipelineManager::destroyById(uint64_t id) {
+		auto& pipeline = getById(id);
+		
+		if (pipeline.m_handle) {
+			getCore().getContext().getDevice().destroy(pipeline.m_handle);
+			pipeline.m_handle = nullptr;
+		}
+		
+		if (pipeline.m_layout) {
+			getCore().getContext().getDevice().destroy(pipeline.m_layout);
+			pipeline.m_layout = nullptr;
+		}
+	}
+	
+	GraphicsPipelineManager::GraphicsPipelineManager() noexcept :
+		HandleManager<GraphicsPipelineEntry, GraphicsPipelineHandle>() {}
+	
+	GraphicsPipelineManager::~GraphicsPipelineManager() noexcept {
+		clear();
     }
 
     // currently assuming default 32 bit formats, no lower precision or normalized variants supported
@@ -141,7 +159,7 @@ namespace vkcv
 			const GraphicsPipelineConfig &config) {
 		
 		if (existsVertexShader) {
-			const VertexLayout& layout = config.m_VertexLayout;
+			const VertexLayout& layout = config.getVertexLayout();
 			
 			// iterate over the layout's specified, mutually exclusive buffer bindings that make up a vertex buffer
 			for (const auto& vertexBinding : layout.vertexBindings)
@@ -190,7 +208,7 @@ namespace vkcv
 	vk::PipelineInputAssemblyStateCreateInfo createPipelineInputAssemblyStateCreateInfo(const GraphicsPipelineConfig &config) {
 		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
 				{},
-				primitiveTopologyToVulkanPrimitiveTopology(config.m_PrimitiveTopology),
+				primitiveTopologyToVulkanPrimitiveTopology(config.getPrimitiveTopology()),
 				false
 		);
 		
@@ -200,7 +218,7 @@ namespace vkcv
 	vk::PipelineTessellationStateCreateInfo createPipelineTessellationStateCreateInfo(const GraphicsPipelineConfig &config) {
 		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo(
 				{},
-				config.m_tessellationControlPoints
+				config.getTesselationControlPoints()
 		);
 		
 		return pipelineTessellationStateCreateInfo;
@@ -217,14 +235,14 @@ namespace vkcv
 		
 		viewport = vk::Viewport(
 				0.f, 0.f,
-				static_cast<float>(config.m_Width),
-				static_cast<float>(config.m_Height),
+				static_cast<float>(config.getWidth()),
+				static_cast<float>(config.getHeight()),
 				0.f, 1.f
 		);
 		
 		scissor = vk::Rect2D(
 				{ 0,0 },
-				{ config.m_Width, config.m_Height }
+				{ config.getWidth(), config.getHeight() }
 		);
 		
 		vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo(
@@ -253,7 +271,7 @@ namespace vkcv
 		const GraphicsPipelineConfig &config,
 		const vk::PhysicalDeviceConservativeRasterizationPropertiesEXT& conservativeRasterProperties) {
 		vk::CullModeFlags cullMode;
-		switch (config.m_culling) {
+		switch (config.getCulling()) {
 			case CullMode::None:
 				cullMode = vk::CullModeFlagBits::eNone;
 				break;
@@ -273,7 +291,7 @@ namespace vkcv
 		
 		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo (
 				{},
-				config.m_EnableDepthClamping,
+				config.isDepthClampingEnabled(),
 				false,
 				vk::PolygonMode::eFill,
 				cullMode,
@@ -287,7 +305,7 @@ namespace vkcv
 
 		static vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterization;
 		
-		if (config.m_UseConservativeRasterization) {
+		if (config.isUsingConservativeRasterization()) {
             const float overestimationSize = 1.0f - conservativeRasterProperties.primitiveOverestimationSize;
             const float maxOverestimationSize = conservativeRasterProperties.maxExtraPrimitiveOverestimationSize;
 
@@ -308,14 +326,15 @@ namespace vkcv
 	 * @param config set MSAA Sample Count Flag
 	 * @return Pipeline Multisample State Create Info Struct
 	 */
-	vk::PipelineMultisampleStateCreateInfo createPipelineMultisampleStateCreateInfo(const GraphicsPipelineConfig &config) {
+	vk::PipelineMultisampleStateCreateInfo createPipelineMultisampleStateCreateInfo(const GraphicsPipelineConfig &config,
+																					const PassConfig &passConfig) {
 		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
 				{},
-				msaaToVkSampleCountFlag(config.m_multisampling),
+				msaaToSampleCountFlagBits(passConfig.getMultisampling()),
 				false,
 				0.f,
 				nullptr,
-				config.m_alphaToCoverage,
+				config.isWritingAlphaToCoverage(),
 				false
 		);
 		
@@ -332,7 +351,7 @@ namespace vkcv
 		// currently set to additive, if not disabled
 		// BlendFactors must be set as soon as additional BlendModes are added
 		static vk::PipelineColorBlendAttachmentState colorBlendAttachmentState (
-				config.m_blendMode != BlendMode::None,
+				config.getBlendMode() != BlendMode::None,
 				vk::BlendFactor::eOne,
 				vk::BlendFactor::eOne,
 				vk::BlendOp::eAdd,
@@ -368,7 +387,7 @@ namespace vkcv
 																const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) {
 		static vk::PushConstantRange pushConstantRange;
 		
-		const size_t pushConstantsSize = config.m_ShaderProgram.getPushConstantsSize();
+		const size_t pushConstantsSize = config.getShaderProgram().getPushConstantsSize();
 		pushConstantRange = vk::PushConstantRange(
 				vk::ShaderStageFlagBits::eAll, 0, pushConstantsSize
 		);
@@ -394,9 +413,9 @@ namespace vkcv
 	vk::PipelineDepthStencilStateCreateInfo createPipelineDepthStencilStateCreateInfo(const GraphicsPipelineConfig &config) {
 		const vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilCreateInfo(
 				vk::PipelineDepthStencilStateCreateFlags(),
-				config.m_depthTest != DepthTest::None,
-				config.m_depthWrite,
-				depthTestToVkCompareOp(config.m_depthTest),
+				config.getDepthTest() != DepthTest::None,
+				config.isWritingDepth(),
+				depthTestToVkCompareOp(config.getDepthTest()),
 				false,
 				false,
 				{},
@@ -417,7 +436,7 @@ namespace vkcv
 		static std::vector<vk::DynamicState> dynamicStates;
 		dynamicStates.clear();
 		
-		if(config.m_UseDynamicViewport) {
+		if(config.isViewportDynamic()) {
 			dynamicStates.push_back(vk::DynamicState::eViewport);
 			dynamicStates.push_back(vk::DynamicState::eScissor);
 		}
@@ -433,37 +452,38 @@ namespace vkcv
 
     GraphicsPipelineHandle GraphicsPipelineManager::createPipeline(const GraphicsPipelineConfig &config,
 																   const PassManager& passManager,
-																   const DescriptorManager& descriptorManager) {
-        const vk::RenderPass &pass = passManager.getVkPass(config.m_PassHandle);
+																   const DescriptorSetLayoutManager& descriptorManager) {
+        const vk::RenderPass &pass = passManager.getVkPass(config.getPass());
 
-        const bool existsTaskShader     = config.m_ShaderProgram.existsShader(ShaderStage::TASK);
-        const bool existsMeshShader     = config.m_ShaderProgram.existsShader(ShaderStage::MESH);
-        const bool existsVertexShader   = config.m_ShaderProgram.existsShader(ShaderStage::VERTEX);
-        const bool existsFragmentShader = config.m_ShaderProgram.existsShader(ShaderStage::FRAGMENT);
-        const bool existsGeometryShader = config.m_ShaderProgram.existsShader(ShaderStage::GEOMETRY);
-		const bool existsTessellationControlShader = config.m_ShaderProgram.existsShader(ShaderStage::TESS_CONTROL);
-		const bool existsTessellationEvaluationShader = config.m_ShaderProgram.existsShader(ShaderStage::TESS_EVAL);
+		const auto& program = config.getShaderProgram();
+		
+        const bool existsTaskShader     = program.existsShader(ShaderStage::TASK);
+        const bool existsMeshShader     = program.existsShader(ShaderStage::MESH);
+        const bool existsVertexShader   = program.existsShader(ShaderStage::VERTEX);
+        const bool existsFragmentShader = program.existsShader(ShaderStage::FRAGMENT);
+        const bool existsGeometryShader = program.existsShader(ShaderStage::GEOMETRY);
+		const bool existsTessellationControlShader = program.existsShader(ShaderStage::TESS_CONTROL);
+		const bool existsTessellationEvaluationShader = program.existsShader(ShaderStage::TESS_EVAL);
 		
         const bool validGeometryStages  = (
 				(existsVertexShader && (existsTessellationControlShader == existsTessellationEvaluationShader)) ||
 				(existsTaskShader && existsMeshShader)
 		);
 
-        if (!validGeometryStages)
-        {
+        if (!validGeometryStages) {
             vkcv_log(LogLevel::ERROR, "Requires vertex or task and mesh shader");
-            return GraphicsPipelineHandle();
+            return {};
         }
 
         if (!existsFragmentShader) {
             vkcv_log(LogLevel::ERROR, "Requires fragment shader code");
-            return GraphicsPipelineHandle();
+            return {};
         }
 
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
         auto destroyShaderModules = [&shaderStages, this] {
             for (auto stage : shaderStages) {
-                m_Device.destroyShaderModule(stage.module);
+				getCore().getContext().getDevice().destroyShaderModule(stage.module);
             }
             shaderStages.clear();
         };
@@ -471,121 +491,116 @@ namespace vkcv
         if (existsVertexShader) {
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
-                    config.m_ShaderProgram,
+					program,
                     ShaderStage::VERTEX,
-                    m_Device,
+					getCore().getContext().getDevice(),
                     &createInfo);
 
             if (success) {
                 shaderStages.push_back(createInfo);
-            }
-            else {
+            } else {
                 destroyShaderModules();
-                return GraphicsPipelineHandle();
+                return {};
             }
         }
 
         if (existsTaskShader) {
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
-                    config.m_ShaderProgram,
+					program,
                     ShaderStage::TASK,
-                    m_Device,
+					getCore().getContext().getDevice(),
                     &createInfo);
 
             if (success) {
                 shaderStages.push_back(createInfo);
-            }
-            else {
+            } else {
                 destroyShaderModules();
-                return GraphicsPipelineHandle();
+                return {};
             }
         }
 
         if (existsMeshShader) {
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
-                    config.m_ShaderProgram,
+					program,
                     ShaderStage::MESH,
-                    m_Device,
+					getCore().getContext().getDevice(),
                     &createInfo);
 
             if (success) {
                 shaderStages.push_back(createInfo);
-            }
-            else {
+            } else {
                 destroyShaderModules();
-                return GraphicsPipelineHandle();
+                return {};
             }
         }
 
         {
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
-                    config.m_ShaderProgram,
+					program,
                     ShaderStage::FRAGMENT,
-                    m_Device,
+					getCore().getContext().getDevice(),
                     &createInfo);
 
             if (success) {
                 shaderStages.push_back(createInfo);
-            }
-            else {
+            } else {
                 destroyShaderModules();
-                return GraphicsPipelineHandle();
+                return {};
             }
         }
 
         if (existsGeometryShader) {
             vk::PipelineShaderStageCreateInfo createInfo;
             const bool success = createPipelineShaderStageCreateInfo(
-                    config.m_ShaderProgram,
+					program,
                     ShaderStage::GEOMETRY,
-                    m_Device,
+					getCore().getContext().getDevice(),
                     &createInfo);
 
             if (success) {
                 shaderStages.push_back(createInfo);
-            }
-            else {
+            } else {
                 destroyShaderModules();
-                return GraphicsPipelineHandle();
+                return {};
             }
         }
 	
 		if (existsTessellationControlShader) {
 			vk::PipelineShaderStageCreateInfo createInfo;
 			const bool success = createPipelineShaderStageCreateInfo(
-					config.m_ShaderProgram,
+					program,
 					ShaderStage::TESS_CONTROL,
-					m_Device,
+					getCore().getContext().getDevice(),
 					&createInfo);
 		
 			if (success) {
 				shaderStages.push_back(createInfo);
-			}
-			else {
+			} else {
 				destroyShaderModules();
-				return GraphicsPipelineHandle();
+				return {};
 			}
 		}
 	
 		if (existsTessellationEvaluationShader) {
 			vk::PipelineShaderStageCreateInfo createInfo;
 			const bool success = createPipelineShaderStageCreateInfo(
-					config.m_ShaderProgram,
+					program,
 					ShaderStage::TESS_EVAL,
-					m_Device,
+					getCore().getContext().getDevice(),
 					&createInfo);
 		
 			if (success) {
 				shaderStages.push_back(createInfo);
-			}
-			else {
+			} else {
 				destroyShaderModules();
-				return GraphicsPipelineHandle();
+				return {};
 			}
 		}
+	
+		const PassConfig& passConfig = passManager.getPassConfig(config.getPass());
 
         // vertex input state
         // Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
@@ -615,13 +630,13 @@ namespace vkcv
         vk::PhysicalDeviceProperties                                deviceProperties;
         vk::PhysicalDeviceProperties2                               deviceProperties2(deviceProperties);
         deviceProperties2.pNext = &conservativeRasterProperties;
-        m_physicalDevice.getProperties2(&deviceProperties2);
+		getCore().getContext().getPhysicalDevice().getProperties2(&deviceProperties2);
         vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo =
                 createPipelineRasterizationStateCreateInfo(config, conservativeRasterProperties);
 
         // multisample state
         vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo =
-                createPipelineMultisampleStateCreateInfo(config);
+                createPipelineMultisampleStateCreateInfo(config, passConfig);
 
         // color blend state
         vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo =
@@ -632,8 +647,8 @@ namespace vkcv
                 createPipelineDynamicStateCreateInfo(config);
 
 		std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
-		descriptorSetLayouts.reserve(config.m_DescriptorLayouts.size());
-		for (const auto& handle : config.m_DescriptorLayouts) {
+		descriptorSetLayouts.reserve(config.getDescriptorSetLayouts().size());
+		for (const auto& handle : config.getDescriptorSetLayouts()) {
 			descriptorSetLayouts.push_back(descriptorManager.getDescriptorSetLayout(handle).vulkanHandle);
 		}
 		
@@ -642,9 +657,11 @@ namespace vkcv
                 createPipelineLayoutCreateInfo(config, descriptorSetLayouts);
 
         vk::PipelineLayout vkPipelineLayout{};
-        if (m_Device.createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &vkPipelineLayout) != vk::Result::eSuccess) {
+        if (getCore().getContext().getDevice().createPipelineLayout(&pipelineLayoutCreateInfo,
+																	nullptr,
+																	&vkPipelineLayout) != vk::Result::eSuccess) {
             destroyShaderModules();
-            return GraphicsPipelineHandle();
+            return {};
         }
 
         // Depth Stencil
@@ -652,10 +669,10 @@ namespace vkcv
                 createPipelineDepthStencilStateCreateInfo(config);
 
         const vk::PipelineDepthStencilStateCreateInfo* p_depthStencilCreateInfo = nullptr;
-        const PassConfig& passConfig = passManager.getPassConfig(config.m_PassHandle);
 
-        for (const auto& attachment : passConfig.attachments) {
-            if (isDepthFormat(attachment.format)) {
+        for (const auto& attachment : passConfig.getAttachments()) {
+            if ((isDepthFormat(attachment.getFormat())) ||
+				(isStencilFormat(attachment.getFormat()))) {
                 p_depthStencilCreateInfo = &depthStencilCreateInfo;
                 break;
             }
@@ -683,77 +700,38 @@ namespace vkcv
         );
 
         vk::Pipeline vkPipeline{};
-        if (m_Device.createGraphicsPipelines(nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline) != vk::Result::eSuccess)
+        if (getCore().getContext().getDevice().createGraphicsPipelines(nullptr,
+																	   1,
+																	   &graphicsPipelineCreateInfo,
+																	   nullptr,
+																	   &vkPipeline) != vk::Result::eSuccess)
         {
             // Catch runtime error if the creation of the pipeline fails.
             // Destroy everything to keep the memory clean.
             destroyShaderModules();
-            return GraphicsPipelineHandle();
+            return {};
         }
 
         // Clean Up
         destroyShaderModules();
 
         // Hand over Handler to main Application
-        const uint64_t id = m_Pipelines.size();
-        m_Pipelines.push_back({ vkPipeline, vkPipelineLayout, config });
-        return GraphicsPipelineHandle(id, [&](uint64_t id) { destroyPipelineById(id); });
+        return add({ vkPipeline, vkPipelineLayout, config });
     }
 
-    vk::Pipeline GraphicsPipelineManager::getVkPipeline(const GraphicsPipelineHandle &handle) const
-    {
-        const uint64_t id = handle.getId();
-
-        if (id >= m_Pipelines.size()) {
-            return nullptr;
-        }
-
-        auto& pipeline = m_Pipelines[id];
-
+    vk::Pipeline GraphicsPipelineManager::getVkPipeline(const GraphicsPipelineHandle &handle) const {
+        auto& pipeline = (*this)[handle];
         return pipeline.m_handle;
     }
 
-    vk::PipelineLayout GraphicsPipelineManager::getVkPipelineLayout(const GraphicsPipelineHandle &handle) const
-    {
-        const uint64_t id = handle.getId();
-
-        if (id >= m_Pipelines.size()) {
-            return nullptr;
-        }
-
-        auto& pipeline = m_Pipelines[id];
-
+    vk::PipelineLayout GraphicsPipelineManager::getVkPipelineLayout(const GraphicsPipelineHandle &handle) const {
+		auto& pipeline = (*this)[handle];
         return pipeline.m_layout;
     }
 
-    void GraphicsPipelineManager::destroyPipelineById(uint64_t id) {
-        if (id >= m_Pipelines.size()) {
-            return;
-        }
-
-        auto& pipeline = m_Pipelines[id];
-
-        if (pipeline.m_handle) {
-            m_Device.destroy(pipeline.m_handle);
-            pipeline.m_handle = nullptr;
-        }
-
-        if (pipeline.m_layout) {
-            m_Device.destroy(pipeline.m_layout);
-            pipeline.m_layout = nullptr;
-        }
+    const GraphicsPipelineConfig& GraphicsPipelineManager::getPipelineConfig(const GraphicsPipelineHandle &handle) const {
+		auto& pipeline = (*this)[handle];
+        return pipeline.m_config;
     }
-
-    const GraphicsPipelineConfig& GraphicsPipelineManager::getPipelineConfig(const GraphicsPipelineHandle &handle) const
-    {
-        const uint64_t id = handle.getId();
-
-        if (id >= m_Pipelines.size()) {
-            static GraphicsPipelineConfig dummyConfig;
-            vkcv_log(LogLevel::ERROR, "Invalid handle");
-            return dummyConfig;
-        }
-
-        return m_Pipelines[id].m_config;
-    }
+	
 }

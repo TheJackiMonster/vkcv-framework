@@ -1,5 +1,8 @@
 #pragma once
+
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Image.hpp>
 #include <glm/glm.hpp>
 #include <vkcv/camera/Camera.hpp>
 #include <vkcv/Downsampler.hpp>
@@ -22,7 +25,7 @@ public:
 
 	void voxelizeMeshes(
 		vkcv::CommandStreamHandle                       cmdStream,
-		const std::vector<vkcv::Mesh>&                  meshes,
+		const std::vector<vkcv::VertexData>&            meshes,
 		const std::vector<glm::mat4>&                   modelMatrices,
 		const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets,
 		const vkcv::WindowHandle&                       windowHandle,

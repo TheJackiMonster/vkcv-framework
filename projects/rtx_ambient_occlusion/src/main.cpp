@@ -93,19 +93,9 @@ int main(int argc, const char** argv) {
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
 	vkcv::DescriptorWrites rtxWrites;
-
-	auto start = std::chrono::system_clock::now();
-	while (vkcv::Window::hasOpenWindow()) {
-        vkcv::Window::pollEvents();
-
-		if(core.getWindow(windowHandle).getHeight() == 0 || core.getWindow(windowHandle).getWidth() == 0)
-			continue;
-
-		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight,windowHandle)) {
-			continue;
-		}
-
+	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((!depthBuffer) ||
 			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
 			((swapchainHeight != core.getImageHeight(depthBuffer)))) {
@@ -113,14 +103,10 @@ int main(int argc, const char** argv) {
 					vk::Format::eD32Sfloat,
 					swapchainWidth,
 					swapchainHeight
-			).getHandle();
+			);
 		}
-
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-
-		start = end;
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		
+		cameraManager.update(dt);
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		
@@ -130,7 +116,7 @@ int main(int argc, const char** argv) {
 		raytracingPushData.camera_up = glm::vec4(cameraManager.getActiveCamera().getUp(),0);
 		raytracingPushData.camera_forward = glm::vec4(cameraManager.getActiveCamera().getFront(),0);
 
-		vkcv::PushConstants pushConstantsRTX(sizeof(RaytracingPushConstantData));
+		vkcv::PushConstants pushConstantsRTX = vkcv::pushConstants<RaytracingPushConstantData>();
 		pushConstantsRTX.appendDrawcall(raytracingPushData);
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
@@ -148,14 +134,13 @@ int main(int argc, const char** argv) {
 			rtxRegions.rmissRegion,
 			rtxRegions.rchitRegion,
 			rtxRegions.rcallRegion,
-			{	vkcv::DescriptorSetUsage(0, rtxShaderDescriptorSet)},
+			{ vkcv::useDescriptorSet(0, rtxShaderDescriptorSet) },
 			pushConstantsRTX,
 			windowHandle);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-		core.endFrame(windowHandle);
-	}
+	});
 
 	return 0;
 }

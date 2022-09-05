@@ -1,7 +1,10 @@
 #include "App.hpp"
 #include "AppConfig.hpp"
-#include <chrono>
+
+#include <vkcv/Sampler.hpp>
 #include <vkcv/gui/GUI.hpp>
+
+#include <chrono>
 #include <functional>
 
 const char* MotionVectorVisualisationModeLabels[6] = {
@@ -60,12 +63,7 @@ bool App::initialize() {
 	if (!m_motionBlur.initialize(&m_core, m_windowWidth, m_windowHeight))
 		return false;
 
-	m_linearSampler = m_core.createSampler(
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::CLAMP_TO_EDGE);
-
+	m_linearSampler = vkcv::samplerLinear(m_core, true);
 	m_renderTargets = createRenderTargets(m_core, m_windowWidth, m_windowHeight);
 
 	const int cameraIndex = m_cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
@@ -82,10 +80,10 @@ bool App::initialize() {
 
 void App::run() {
 
-	auto                        frameStartTime = std::chrono::system_clock::now();
-	const auto                  appStartTime   = std::chrono::system_clock::now();
-	const vkcv::ImageHandle     swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-	const vkcv::DrawcallInfo    skyDrawcall(m_cubeMesh.mesh, {}, 1);
+	auto                         frameStartTime = std::chrono::system_clock::now();
+	const auto                   appStartTime   = std::chrono::system_clock::now();
+	const vkcv::ImageHandle      swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+	const vkcv::InstanceDrawcall skyDrawcall(m_cubeMesh.mesh);
 
 	vkcv::gui::GUI gui(m_core, m_windowHandle);
 
@@ -216,14 +214,13 @@ void App::run() {
 			m_renderTargets.motionBuffer,
 			m_renderTargets.depthBuffer };
 
-		std::vector<vkcv::DrawcallInfo> prepassSceneDrawcalls;
+		std::vector<vkcv::InstanceDrawcall> prepassSceneDrawcalls;
 		for (const Object& obj : sceneObjects) {
-			prepassSceneDrawcalls.push_back(vkcv::DrawcallInfo(obj.meshResources.mesh, {}));
+			prepassSceneDrawcalls.push_back(vkcv::InstanceDrawcall(obj.meshResources.mesh));
 		}
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
-			m_prePass.renderPass,
 			m_prePass.pipeline,
 			prepassPushConstants,
 			prepassSceneDrawcalls,
@@ -239,7 +236,6 @@ void App::run() {
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
-			m_skyPrePass.renderPass,
 			m_skyPrePass.pipeline,
 			skyPrepassPushConstants,
 			{ skyDrawcall },
@@ -257,16 +253,15 @@ void App::run() {
 			meshPushConstants.appendDrawcall(matrices);
 		}
 
-		std::vector<vkcv::DrawcallInfo> forwardSceneDrawcalls;
+		std::vector<vkcv::InstanceDrawcall> forwardSceneDrawcalls;
 		for (const Object& obj : sceneObjects) {
-			forwardSceneDrawcalls.push_back(vkcv::DrawcallInfo(
-				obj.meshResources.mesh, 
-				{ vkcv::DescriptorSetUsage(0, m_meshPass.descriptorSet) }));
+			vkcv::InstanceDrawcall drawcall (obj.meshResources.mesh);
+			drawcall.useDescriptorSet(0, m_meshPass.descriptorSet);
+			forwardSceneDrawcalls.push_back(drawcall);
 		}
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
-			m_meshPass.renderPass,
 			m_meshPass.pipeline,
 			meshPushConstants,
 			forwardSceneDrawcalls,
@@ -274,12 +269,11 @@ void App::run() {
 			m_windowHandle);
 
 		// sky
-		vkcv::PushConstants skyPushConstants(sizeof(glm::mat4));
+		vkcv::PushConstants skyPushConstants = vkcv::pushConstants<glm::mat4>();
 		skyPushConstants.appendDrawcall(viewProjection);
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
-			m_skyPass.renderPass,
 			m_skyPass.pipeline,
 			skyPushConstants,
 			{ skyDrawcall },
@@ -303,7 +297,7 @@ void App::run() {
 				cameraNear,
 				cameraFar,
 				fDeltaTimeSeconds,
-				cameraShutterSpeedInverse,
+				static_cast<float>(cameraShutterSpeedInverse),
 				motionBlurTileOffsetLength,
 				motionBlurFastPathThreshold);
 		}
@@ -326,16 +320,16 @@ void App::run() {
 		m_core.prepareImageForSampling(cmdStream, motionBlurOutput);
 		m_core.prepareImageForStorage (cmdStream, swapchainInput);
 
-		const uint32_t fullScreenImageDispatch[3] = {
-			static_cast<uint32_t>((m_windowWidth  + 7) / 8),
-			static_cast<uint32_t>((m_windowHeight + 7) / 8),
-			static_cast<uint32_t>(1) };
+		const auto fullScreenImageDispatch = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(m_windowWidth, m_windowHeight),
+				vkcv::DispatchSize(8, 8)
+		);
 
 		m_core.recordComputeDispatchToCmdStream(
 			cmdStream,
 			m_gammaCorrectionPass.pipeline,
 			fullScreenImageDispatch,
-			{ vkcv::DescriptorSetUsage(0, m_gammaCorrectionPass.descriptorSet) },
+			{ vkcv::useDescriptorSet(0, m_gammaCorrectionPass.descriptorSet) },
 			vkcv::PushConstants(0));
 
 		m_core.prepareSwapchainImageForPresent(cmdStream);

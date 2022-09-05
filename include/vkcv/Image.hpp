@@ -7,13 +7,14 @@
  
 #include <vulkan/vulkan.hpp>
 
+#include "BufferTypes.hpp"
+#include "Core.hpp"
 #include "Handles.hpp"
-#include "ImageConfig.hpp"
+#include "Multisampling.hpp"
 
 namespace vkcv {
 	
 	class Downsampler;
-	class ImageManager;
 
 	/**
 	 * @brief Returns whether an image format is usable as depth buffer.
@@ -23,6 +24,15 @@ namespace vkcv {
 	 * otherwise false.
 	 */
 	bool isDepthFormat(const vk::Format format);
+	
+	/**
+	 * @brief Returns whether an image format is usable as stencil buffer.
+	 *
+	 * @param format Vulkan image format
+	 * @return True, if the format is valid to use as stencil buffer,
+	 * otherwise false.
+	 */
+	bool isStencilFormat(const vk::Format format);
 
     /**
      * @brief Class for image handling and filling data.
@@ -30,6 +40,17 @@ namespace vkcv {
 	class Image {
 		friend class Core;
 	public:
+		Image() : m_core(nullptr), m_handle() {};
+		
+		Image(Core* core, const ImageHandle& handle) : m_core(core), m_handle(handle) {}
+		
+		Image(const Image& other) = default;
+		Image(Image&& other) = default;
+		
+		~Image() = default;
+		
+		Image& operator=(const Image& other) = default;
+		Image& operator=(Image&& other) = default;
 		
 		/**
 		 * @brief Returns the format of the image.
@@ -77,7 +98,7 @@ namespace vkcv {
 		 * @return Number of mip levels
 		 */
 		[[nodiscard]]
-		uint32_t getMipCount() const;
+		uint32_t getMipLevels() const;
 
 		/**
 		 * @brief Switches the image layout,
@@ -107,39 +128,19 @@ namespace vkcv {
 									  Downsampler &downsampler);
 		
 	private:
-	    // TODO: const qualifier removed, very hacky!!!
-	    //  Else you cannot recreate an image. Pls fix.
-		ImageManager* m_manager;
+		Core* m_core;
 		ImageHandle m_handle;
 
-		Image(ImageManager* manager, const ImageHandle& handle);
-		
-		/**
-		 * @brief Creates an image with given parameters like width, height,
-		 * depth, amount of mip levels and others.
-		 *
-		 * @param[in,out] manager Image manager
-		 * @param[in] format Vulkan image format
-		 * @param[in] width Width of the image
-		 * @param[in] height Height of the image
-		 * @param[in] depth Depth of the image
-		 * @param[in] mipCount Amount of mip levels
-		 * @param[in] supportStorage Support of storage
-		 * @param[in] supportColorAttachment Support of color attachment
-		 * @param[in] msaa MSAA mode
-		 * @return New created image
-		 */
-		static Image create(
-			ImageManager*   manager,
-			vk::Format      format,
-			uint32_t        width,
-			uint32_t        height,
-			uint32_t        depth,
-			uint32_t        mipCount,
-			bool            supportStorage,
-			bool            supportColorAttachment,
-			Multisampling   msaa);
-
 	};
+	
+	Image image(Core &core,
+				vk::Format format,
+				uint32_t width,
+				uint32_t height,
+				uint32_t depth=1,
+				bool createMipChain=false,
+				bool supportStorage=false,
+				bool supportColorAttachment=false,
+				Multisampling multisampling=Multisampling::None);
 	
 }

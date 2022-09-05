@@ -1,7 +1,10 @@
 #include <iostream>
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Image.hpp>
+#include <vkcv/Pass.hpp>
+#include <vkcv/Sampler.hpp>
 #include <vkcv/camera/CameraManager.hpp>
-#include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
@@ -16,6 +19,7 @@ int main(int argc, const char** argv) {
 	);
 
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 800, 600, true);
+	vkcv::Window& window = core.getWindow(windowHandle);
 
 	vkcv::asset::Scene mesh;
 
@@ -30,7 +34,8 @@ int main(int argc, const char** argv) {
 	}
 
 	assert(!mesh.vertexGroups.empty());
-	auto vertexBuffer = core.createBuffer<uint8_t>(
+	auto vertexBuffer = vkcv::buffer<uint8_t>(
+			core,
 			vkcv::BufferType::VERTEX,
 			mesh.vertexGroups[0].vertexBuffer.data.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL
@@ -38,7 +43,8 @@ int main(int argc, const char** argv) {
 	
 	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
 
-	auto indexBuffer = core.createBuffer<uint8_t>(
+	auto indexBuffer = vkcv::buffer<uint8_t>(
+			core,
 			vkcv::BufferType::INDEX,
 			mesh.vertexGroups[0].indexBuffer.data.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL
@@ -46,25 +52,11 @@ int main(int argc, const char** argv) {
 	
 	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
 
-	// an example attachment for passes that output to the window
-	const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain(windowHandle).getFormat()
+	vkcv::PassHandle firstMeshPass = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined, vk::Format::eD32Sfloat }
 	);
-	
-	const vkcv::AttachmentDescription depth_attachment(
-			vkcv::AttachmentOperation::STORE,
-			vkcv::AttachmentOperation::CLEAR,
-			vk::Format::eD32Sfloat
-	);
-
-	vkcv::PassConfig firstMeshPassDefinition(
-			{ present_color_attachment, depth_attachment },
-			vkcv::Multisampling::None
-	);
-
-	vkcv::PassHandle firstMeshPass = core.createPass(firstMeshPassDefinition);
 
 	if (!firstMeshPass) {
 		std::cerr << "Error. Could not create renderpass. Exiting." << std::endl;
@@ -78,18 +70,20 @@ int main(int argc, const char** argv) {
 		{ vkcv::ShaderStage::VERTEX, "assets/shaders/shader.vert" },
 		{ vkcv::ShaderStage::FRAGMENT, "assets/shaders/shader.frag" }
 	}, nullptr);
- 
-	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 	
-	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-	});
+	const auto vertexBufferBindings = vkcv::asset::loadVertexBufferBindings(
+			mesh.vertexGroups[0].vertexBuffer.attributes,
+			vertexBuffer.getHandle(),
+			{
+					vkcv::asset::PrimitiveType::POSITION,
+					vkcv::asset::PrimitiveType::NORMAL,
+					vkcv::asset::PrimitiveType::TEXCOORD_0
+			}
+	);
 
-    const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
-	std::vector<vkcv::VertexBinding> bindings;
-	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
-	}
+	std::vector<vkcv::VertexBinding> bindings = vkcv::createVertexBindings(
+			firstMeshProgram.getVertexAttachments()
+	);
 	
 	const vkcv::VertexLayout firstMeshLayout { bindings };
 
@@ -102,17 +96,15 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetLayoutHandle setLayoutHandleCopy = core.createDescriptorSetLayout(set0BindingsExplicitCopy);
 
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(setLayoutHandle);
-
-	const vkcv::GraphicsPipelineConfig firstMeshPipelineConfig {
-        firstMeshProgram,
-        UINT32_MAX,
-        UINT32_MAX,
-        firstMeshPass,
-        {firstMeshLayout},
-		{ setLayoutHandle },
-		true
-	};
-	vkcv::GraphicsPipelineHandle firstMeshPipeline = core.createGraphicsPipeline(firstMeshPipelineConfig);
+	
+	vkcv::GraphicsPipelineHandle firstMeshPipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					firstMeshProgram,
+					firstMeshPass,
+					{ firstMeshLayout },
+					{ setLayoutHandle }
+			)
+	);
 	
 	if (!firstMeshPipeline) {
 		std::cerr << "Error. Could not create graphics pipeline. Exiting." << std::endl;
@@ -125,7 +117,7 @@ int main(int argc, const char** argv) {
 	}
 	
 	vkcv::asset::Texture &tex = mesh.textures[0];
-	vkcv::Image texture = core.createImage(vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
+	vkcv::Image texture = vkcv::image(core, vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
 	texture.fill(tex.data.data());
 	
 	{
@@ -134,17 +126,7 @@ int main(int argc, const char** argv) {
 		core.submitCommandStream(cmdStream, false);
 	}
 
-	vkcv::SamplerHandle sampler = core.createSampler(
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerFilterType::LINEAR,
-		vkcv::SamplerMipmapMode::LINEAR,
-		vkcv::SamplerAddressMode::REPEAT
-	);
-
-	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
+	vkcv::SamplerHandle sampler = vkcv::samplerLinear(core);
 
 	vkcv::DescriptorWrites setWrites;
 	setWrites.writeSampledImage(0, texture.getHandle());
@@ -155,30 +137,21 @@ int main(int argc, const char** argv) {
 	vkcv::ImageHandle depthBuffer;
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
+	
+	vkcv::VertexData vertexData (vertexBufferBindings);
+	vertexData.setIndexBuffer(indexBuffer.getHandle());
+	vertexData.setCount(mesh.vertexGroups[0].numIndices);
+	
+	vkcv::InstanceDrawcall drawcall (vertexData);
+	drawcall.useDescriptorSet(0, descriptorSet);
 
-	const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
-
-	vkcv::DescriptorSetUsage    descriptorUsage(0, descriptorSet);
-	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage },1);
-
-    vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
+    vkcv::camera::CameraManager cameraManager(window);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
-
-    auto start = std::chrono::system_clock::now();
-    
-	while (vkcv::Window::hasOpenWindow()) {
-        vkcv::Window::pollEvents();
-		
-		if(core.getWindow(windowHandle).getHeight() == 0 || core.getWindow(windowHandle).getWidth() == 0)
-			continue;
-		
-		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-			continue;
-		}
-		
+	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((!depthBuffer) ||
 			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
 			(swapchainHeight != core.getImageHeight(depthBuffer))) {
@@ -186,17 +159,13 @@ int main(int argc, const char** argv) {
 					vk::Format::eD32Sfloat,
 					swapchainWidth,
 					swapchainHeight
-			).getHandle();
+			);
 		}
-  
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		
-		start = end;
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		cameraManager.update(dt);
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 
-		vkcv::PushConstants pushConstants (sizeof(glm::mat4));
+		vkcv::PushConstants pushConstants = vkcv::pushConstants<glm::mat4>();
 		pushConstants.appendDrawcall(mvp);
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
@@ -204,16 +173,16 @@ int main(int argc, const char** argv) {
 
 		core.recordDrawcallsToCmdStream(
 			cmdStream,
-			firstMeshPass,
 			firstMeshPipeline,
 			pushConstants,
 			{ drawcall },
 			renderTargets,
-			windowHandle);
+			windowHandle
+		);
+		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-		core.endFrame(windowHandle);
-	}
+	});
 	
 	return 0;
 }

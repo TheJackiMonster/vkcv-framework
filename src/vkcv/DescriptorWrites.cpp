@@ -63,8 +63,9 @@ namespace vkcv {
 		return *this;
 	}
 	
-	DescriptorWrites &DescriptorWrites::writeAcceleration(uint32_t binding) {
-		m_accelerationWrites.emplace_back(binding);
+	DescriptorWrites &DescriptorWrites::writeAcceleration(uint32_t binding,
+														  const std::vector<vk::AccelerationStructureKHR> &structures) {
+		m_accelerationWrites.emplace_back(binding, structures);
 		return *this;
 	}
 	

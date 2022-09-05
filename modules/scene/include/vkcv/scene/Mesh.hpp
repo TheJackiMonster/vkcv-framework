@@ -17,7 +17,7 @@ namespace vkcv::scene {
      * An event function type to be called on per drawcall recording level to adjust data
      * like push constants with provided matrices.
      */
-	typedef typename event_function<const glm::mat4&, const glm::mat4&, PushConstants&, vkcv::DrawcallInfo&>::type RecordMeshDrawcallFunction;
+	typedef typename event_function<const glm::mat4&, const glm::mat4&, PushConstants&, vkcv::Drawcall&>::type RecordMeshDrawcallFunction;
 	
 	class Node;
 
@@ -41,7 +41,7 @@ namespace vkcv::scene {
         /**
          * List of the meshes drawcalls to render.
          */
-		std::vector<DrawcallInfo> m_drawcalls;
+		std::vector<InstanceDrawcall> m_drawcalls;
 
         /**
          * Local transformation matrix of the mesh.
@@ -55,6 +55,7 @@ namespace vkcv::scene {
 
         /**
          * Constructor of a new mesh with a given scene as parent.
+         *
          * @param[in,out] scene Scene
          */
 		explicit Mesh(Scene& scene);
@@ -62,14 +63,18 @@ namespace vkcv::scene {
         /**
          * Load mesh data from a scene structure from the asset loader
          * creating and loading all mesh parts being required.
+         *
          * @param[in] scene Scene structure from asset loader
          * @param[in] mesh Mesh structure from asset loader
+         * @param[in] types Primitive type order of vertex attributes
          */
 		void load(const asset::Scene& scene,
-				  const asset::Mesh& mesh);
+				  const asset::Mesh& mesh,
+				  const std::vector<asset::PrimitiveType>& types);
 
         /**
          * Record drawcalls of the mesh, equally to all its visible parts.
+         *
          * @param[in] viewProjection View-transformation and projection as 4x4 matrix
          * @param[out] pushConstants Structure to store push constants per drawcall
          * @param[out] drawcalls List of drawcall structures
@@ -77,12 +82,13 @@ namespace vkcv::scene {
          */
 		void recordDrawcalls(const glm::mat4& viewProjection,
 							 PushConstants& pushConstants,
-							 std::vector<DrawcallInfo>& drawcalls,
+							 std::vector<InstanceDrawcall>& drawcalls,
 							 const RecordMeshDrawcallFunction& record);
 
         /**
          * Return the amount of drawcalls of the mesh
          * as sum of all its parts.
+         *
          * @return Amount of drawcalls
          */
 		[[nodiscard]]
@@ -96,18 +102,21 @@ namespace vkcv::scene {
 
         /**
          * Copy-constructor of a mesh.
+         *
          * @param[in] other Other mesh instance
          */
 		Mesh(const Mesh& other) = default;
 
         /**
          * Move-constructor of a mesh.
+         *
          * @param[in,out] other Other mesh instance
          */
         Mesh(Mesh&& other) = default;
 
         /**
          * Copy-operator of a mesh.
+         *
          * @param[in] other Other mesh instance
          * @return Reference to this mesh instance
          */
@@ -115,6 +124,7 @@ namespace vkcv::scene {
 
         /**
          * Move-operator of a mesh.
+         *
          * @param[in,out] other Other mesh instance
          * @return Reference to this mesh instance
          */
@@ -122,6 +132,7 @@ namespace vkcv::scene {
 
         /**
          * Return the axis aligned bounding box of the mesh.
+         *
          * @return Axis aligned bounding box of this mesh
          */
 		[[nodiscard]]

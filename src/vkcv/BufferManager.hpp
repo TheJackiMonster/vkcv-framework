@@ -9,57 +9,42 @@
 #include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.hpp>
 
-#include "Handles.hpp"
+#include "vkcv/BufferTypes.hpp"
+#include "vkcv/TypeGuard.hpp"
 
-namespace vkcv
-{
+#include "HandleManager.hpp"
+
+namespace vkcv {
 	
-	/**
-	 * @brief Enum class to specify types of buffers.
-	 */
-	enum class BufferType {
-		INDEX,
-		VERTEX,
-		UNIFORM,
-		STORAGE,
-		STAGING,
-		INDIRECT
+	struct BufferEntry {
+		TypeGuard m_typeGuard;
+		
+		BufferType m_type;
+		BufferMemoryType m_memoryType;
+		size_t m_size;
+		
+		vk::Buffer m_handle;
+		vma::Allocation m_allocation;
+		
+		bool m_mappable;
 	};
-	
-	/**
-	 * @brief Enum class to specify types of buffer memory.
-	 */
-	enum class BufferMemoryType {
-		DEVICE_LOCAL,
-		HOST_VISIBLE
-	};
-	
-	class Core;
 	
 	/**
 	 * @brief Class to manage the creation, destruction, allocation
 	 * and filling of buffers.
 	 */
-	class BufferManager
-	{
+	class BufferManager : public HandleManager<BufferEntry, BufferHandle> {
 		friend class Core;
 	private:
-		
-		struct Buffer
-		{
-			vk::Buffer m_handle;
-			vma::Allocation m_allocation;
-			size_t m_size = 0;
-			bool m_mappable = false;
-		};
-		
-		Core* m_core;
-		std::vector<Buffer> m_buffers;
 		BufferHandle m_stagingBuffer;
 		
-		BufferManager() noexcept;
+		bool init(Core& core) override;
 		
-		void init();
+		[[nodiscard]]
+		uint64_t getIdFrom(const BufferHandle& handle) const override;
+		
+		[[nodiscard]]
+		BufferHandle createById(uint64_t id, const HandleDestroyFunction& destroy) override;
 		
 		/**
 		 * Destroys and deallocates buffer represented by a given
@@ -67,32 +52,30 @@ namespace vkcv
 		 *
 		 * @param id Buffer handle id
 		 */
-		void destroyBufferById(uint64_t id);
+		void destroyById(uint64_t id) override;
 		
 	public:
-		~BufferManager() noexcept;
+		BufferManager() noexcept;
 		
-		BufferManager(BufferManager&& other) = delete;
-		BufferManager(const BufferManager& other) = delete;
-		
-		BufferManager& operator=(BufferManager&& other) = delete;
-		BufferManager& operator=(const BufferManager& other) = delete;
+		~BufferManager() noexcept override;
 		
 		/**
 		 * @brief Creates and allocates a new buffer and returns its
 		 * unique buffer handle.
 		 *
+		 * @param[in] typeGuard Type guard
 		 * @param[in] type Type of buffer
-		 * @param[in] size Size of buffer in bytes
 		 * @param[in] memoryType Type of buffers memory
+		 * @param[in] size Size of buffer in bytes
 		 * @param[in] supportIndirect Support of indirect usage
 		 * @param[in] readable Support read functionality
 		 * @return New buffer handle
 		 */
-		BufferHandle createBuffer(BufferType type,
-								  size_t size,
+		[[nodiscard]]
+		BufferHandle createBuffer(const TypeGuard &typeGuard,
+								  BufferType type,
 								  BufferMemoryType memoryType,
-								  bool supportIndirect,
+								  size_t size,
 								  bool readable);
 		
 		/**
@@ -104,6 +87,36 @@ namespace vkcv
 		 */
 		[[nodiscard]]
 		vk::Buffer getBuffer(const BufferHandle& handle) const;
+		
+		/**
+		 * @brief Returns the type guard of a buffer represented
+		 * by a given buffer handle.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @return Type guard
+		 */
+		[[nodiscard]]
+		TypeGuard getTypeGuard(const BufferHandle& handle) const;
+		
+		/**
+		 * @brief Returns the buffer type of a buffer represented
+		 * by a given buffer handle.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @return Buffer type
+		 */
+		[[nodiscard]]
+		BufferType getBufferType(const BufferHandle& handle) const;
+		
+		/**
+		 * @brief Returns the buffer memory type of a buffer
+		 * represented by a given buffer handle.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @return Buffer memory type
+		 */
+		[[nodiscard]]
+		BufferMemoryType getBufferMemoryType(const BufferHandle& handle) const;
 		
 		/**
 		 * @brief Returns the size of a buffer represented

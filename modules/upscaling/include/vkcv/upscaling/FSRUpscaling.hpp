@@ -2,6 +2,7 @@
 
 #include "Upscaling.hpp"
 
+#include <vkcv/Buffer.hpp>
 #include <vkcv/ShaderProgram.hpp>
 
 namespace vkcv::upscaling {

@@ -1,4 +1,6 @@
 #include "Voxelization.hpp"
+
+#include <vkcv/Pass.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
@@ -84,20 +86,20 @@ Voxelization::Voxelization(
 	vkcv::Multisampling msaa)
 	:
 	m_corePtr(corePtr),
-	m_voxelImageIntermediate(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
-	m_voxelImage(m_corePtr->createImage(vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
-	m_voxelBuffer(m_corePtr->createBuffer<VoxelBufferContent>(vkcv::BufferType::STORAGE, voxelCount)),
-	m_dummyRenderTarget(m_corePtr->createImage(voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, false, true)),
-	m_voxelInfoBuffer(m_corePtr->createBuffer<VoxelizationInfo>(vkcv::BufferType::UNIFORM, 1)) {
+	m_voxelImageIntermediate(vkcv::image(*m_corePtr, vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
+	m_voxelImage(vkcv::image(*m_corePtr, vk::Format::eR16G16B16A16Sfloat, voxelResolution, voxelResolution, voxelResolution, true, true)),
+	m_voxelBuffer(buffer<VoxelBufferContent>(*m_corePtr, vkcv::BufferType::STORAGE, voxelCount)),
+	m_dummyRenderTarget(vkcv::image(*m_corePtr, voxelizationDummyFormat, voxelResolution, voxelResolution, 1, false, false, true)),
+	m_voxelInfoBuffer(buffer<VoxelizationInfo>(*m_corePtr, vkcv::BufferType::UNIFORM, 1)) {
 
 	const vkcv::ShaderProgram voxelizationShader = loadVoxelizationShader();
 
 	const vkcv::PassConfig voxelizationPassConfig {{
-		  {
+		  vkcv::AttachmentDescription(
+				  voxelizationDummyFormat,
 				  vkcv::AttachmentOperation::DONT_CARE,
-				  vkcv::AttachmentOperation::DONT_CARE,
-				  voxelizationDummyFormat
-		  }
+				  vkcv::AttachmentOperation::DONT_CARE
+		  )
 	}, vkcv::Multisampling::None };
 	m_voxelizationPass = m_corePtr->createPass(voxelizationPassConfig);
 
@@ -107,16 +109,16 @@ Voxelization::Voxelization(
 	vkcv::DescriptorSetLayoutHandle dummyPerMeshDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(voxelizationShader.getReflectedDescriptors().at(1));
 	vkcv::DescriptorSetHandle dummyPerMeshDescriptorSet = m_corePtr->createDescriptorSet(dummyPerMeshDescriptorSetLayout);
 
-	const vkcv::GraphicsPipelineConfig voxelizationPipeConfig{
+	vkcv::GraphicsPipelineConfig voxelizationPipeConfig (
 		voxelizationShader,
-		voxelResolution,
-		voxelResolution,
 		m_voxelizationPass,
 		dependencies.vertexLayout,
-		{ m_voxelizationDescriptorSetLayout, dummyPerMeshDescriptorSetLayout },
-		false,
-		true
-	};
+		{ m_voxelizationDescriptorSetLayout, dummyPerMeshDescriptorSetLayout }
+	);
+	
+	voxelizationPipeConfig.setResolution(voxelResolution, voxelResolution);
+	voxelizationPipeConfig.setUsingConservativeRasterization(true);
+	
 	m_voxelizationPipe = m_corePtr->createGraphicsPipeline(voxelizationPipeConfig);
 
 	vkcv::DescriptorWrites voxelizationDescriptorWrites;
@@ -136,38 +138,22 @@ Voxelization::Voxelization(
 
 	m_visualisationDescriptorSetLayout = m_corePtr->createDescriptorSetLayout(voxelVisualisationShader.getReflectedDescriptors().at(0));
 	m_visualisationDescriptorSet = m_corePtr->createDescriptorSet(m_visualisationDescriptorSetLayout);
-
-	const vkcv::AttachmentDescription voxelVisualisationColorAttachments(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		dependencies.colorBufferFormat
-	);
-
-	const vkcv::AttachmentDescription voxelVisualisationDepthAttachments(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		dependencies.depthBufferFormat
-	);
-
-	vkcv::PassConfig voxelVisualisationPassDefinition{
-		{ voxelVisualisationColorAttachments, voxelVisualisationDepthAttachments },
-		msaa
-	};
 	
-	m_visualisationPass = m_corePtr->createPass(voxelVisualisationPassDefinition);
+	m_visualisationPass = vkcv::passFormats(
+			*m_corePtr,
+			{ dependencies.colorBufferFormat, dependencies.depthBufferFormat },
+			false,
+			msaa
+	);
 
-	vkcv::GraphicsPipelineConfig voxelVisualisationPipeConfig{
+	vkcv::GraphicsPipelineConfig voxelVisualisationPipeConfig (
 		voxelVisualisationShader,
-		0,
-		0,
 		m_visualisationPass,
 		{},
-		{ m_visualisationDescriptorSetLayout },
-		true,
-		false,
-		vkcv::PrimitiveTopology::PointList
-	};	// points are extended to cubes in the geometry shader
-	voxelVisualisationPipeConfig.m_multisampling = msaa;
+		{ m_visualisationDescriptorSetLayout }
+	);	// points are extended to cubes in the geometry shader
+	
+	voxelVisualisationPipeConfig.setPrimitiveTopology(vkcv::PrimitiveTopology::PointList);
 	m_visualisationPipe = m_corePtr->createGraphicsPipeline(voxelVisualisationPipeConfig);
 
 	std::vector<uint16_t> voxelIndexData;
@@ -175,7 +161,7 @@ Voxelization::Voxelization(
 		voxelIndexData.push_back(static_cast<uint16_t>(i));
 	}
 
-	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_visualisationDescriptorSet);
+	const auto voxelizationDescriptorUsage = vkcv::useDescriptorSet(0, m_visualisationDescriptorSet);
 
 	vkcv::ShaderProgram resetVoxelShader = loadVoxelResetShader();
 
@@ -226,7 +212,7 @@ Voxelization::Voxelization(
 
 void Voxelization::voxelizeMeshes(
 	vkcv::CommandStreamHandle                       cmdStream,
-	const std::vector<vkcv::Mesh>&                  meshes,
+	const std::vector<vkcv::VertexData>&            meshes,
 	const std::vector<glm::mat4>&                   modelMatrices,
 	const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets,
 	const vkcv::WindowHandle&                       windowHandle,
@@ -254,61 +240,56 @@ void Voxelization::voxelizeMeshes(
 
 	// reset voxels
 	const uint32_t resetVoxelGroupSize = 64;
-	uint32_t resetVoxelDispatchCount[3];
-	resetVoxelDispatchCount[0] = glm::ceil(voxelCount / float(resetVoxelGroupSize));
-	resetVoxelDispatchCount[1] = 1;
-	resetVoxelDispatchCount[2] = 1;
 	
-	vkcv::PushConstants voxelCountPushConstants (sizeof(voxelCount));
+	vkcv::PushConstants voxelCountPushConstants = vkcv::pushConstants<uint32_t>();
 	voxelCountPushConstants.appendDrawcall(voxelCount);
 
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel reset", { 1, 1, 1, 1 });
 	m_corePtr->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_voxelResetPipe,
-		resetVoxelDispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_voxelResetDescriptorSet) },
-		voxelCountPushConstants);
+		vkcv::dispatchInvocations(voxelCount, resetVoxelGroupSize),
+		{ vkcv::useDescriptorSet(0, m_voxelResetDescriptorSet) },
+		voxelCountPushConstants
+	);
 	m_corePtr->recordBufferMemoryBarrier(cmdStream, m_voxelBuffer.getHandle());
 	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// voxelization
-	std::vector<vkcv::DrawcallInfo> drawcalls;
+	std::vector<vkcv::InstanceDrawcall> drawcalls;
 	for (size_t i = 0; i < meshes.size(); i++) {
-		drawcalls.push_back(vkcv::DrawcallInfo(
-			meshes[i],
-			{ 
-				vkcv::DescriptorSetUsage(0, m_voxelizationDescriptorSet),
-				vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i])
-			},1));
+		vkcv::InstanceDrawcall drawcall (meshes[i]);
+		drawcall.useDescriptorSet(0, m_voxelizationDescriptorSet);
+		drawcall.useDescriptorSet(1, perMeshDescriptorSets[i]);
+		drawcalls.push_back(drawcall);
 	}
 
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxelization", { 1, 1, 1, 1 });
 	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImageIntermediate.getHandle());
 	m_corePtr->recordDrawcallsToCmdStream(
 		cmdStream,
-		m_voxelizationPass,
 		m_voxelizationPipe,
 		voxelizationPushConstants,
 		drawcalls,
 		{ m_dummyRenderTarget.getHandle() },
-		windowHandle);
+		windowHandle
+	);
 	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// buffer to image
-	const uint32_t bufferToImageGroupSize[3] = { 4, 4, 4 };
-	uint32_t bufferToImageDispatchCount[3];
-	for (int i = 0; i < 3; i++) {
-		bufferToImageDispatchCount[i] = glm::ceil(voxelResolution / float(bufferToImageGroupSize[i]));
-	}
-
+	const auto bufferToImageDispatchCount = vkcv::dispatchInvocations(
+			vkcv::DispatchSize(voxelResolution, voxelResolution, voxelResolution),
+			vkcv::DispatchSize(4, 4, 4)
+	);
+	
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel buffer to image", { 1, 1, 1, 1 });
 	m_corePtr->recordComputeDispatchToCmdStream(
 		cmdStream,
 		m_bufferToImagePipe,
 		bufferToImageDispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_bufferToImageDescriptorSet) },
-		vkcv::PushConstants(0));
+		{ vkcv::useDescriptorSet(0, m_bufferToImageDescriptorSet) },
+		vkcv::PushConstants(0)
+	);
 
 	m_corePtr->recordImageMemoryBarrier(cmdStream, m_voxelImageIntermediate.getHandle());
 	m_corePtr->recordEndDebugLabel(cmdStream);
@@ -325,7 +306,7 @@ void Voxelization::voxelizeMeshes(
 		cmdStream,
 		m_secondaryBouncePipe,
 		bufferToImageDispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_secondaryBounceDescriptorSet) },
+		{ vkcv::useDescriptorSet(0, m_secondaryBounceDescriptorSet) },
 		vkcv::PushConstants(0));
 	m_voxelImage.recordMipChainGeneration(cmdStream, downsampler);
 	m_corePtr->recordEndDebugLabel(cmdStream);
@@ -343,10 +324,10 @@ void Voxelization::renderVoxelVisualisation(
 	uint32_t                                mipLevel,
 	const vkcv::WindowHandle&               windowHandle) {
 
-	vkcv::PushConstants voxelVisualisationPushConstants (sizeof(glm::mat4));
+	vkcv::PushConstants voxelVisualisationPushConstants = vkcv::pushConstants<glm::mat4>();
 	voxelVisualisationPushConstants.appendDrawcall(viewProjectin);
 
-	mipLevel = std::clamp(mipLevel, (uint32_t)0, m_voxelImage.getMipCount()-1);
+	mipLevel = std::clamp(mipLevel, (uint32_t) 0, m_voxelImage.getMipLevels() - 1);
 
 	// write descriptor set
 	vkcv::DescriptorWrites voxelVisualisationDescriptorWrite;
@@ -355,21 +336,23 @@ void Voxelization::renderVoxelVisualisation(
 	m_corePtr->writeDescriptorSet(m_visualisationDescriptorSet, voxelVisualisationDescriptorWrite);
 
 	uint32_t drawVoxelCount = voxelCount / exp2(mipLevel);
-
-	const auto drawcall = vkcv::DrawcallInfo(
-		vkcv::Mesh({}, nullptr, drawVoxelCount),
-		{ vkcv::DescriptorSetUsage(0, m_visualisationDescriptorSet) },1);
+	
+	vkcv::VertexData voxelData;
+	voxelData.setCount(drawVoxelCount);
+	
+	vkcv::InstanceDrawcall drawcall (voxelData);
+	drawcall.useDescriptorSet(0, m_visualisationDescriptorSet);
 
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel visualisation", { 1, 1, 1, 1 });
 	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImage.getHandle());
 	m_corePtr->recordDrawcallsToCmdStream(
 		cmdStream,
-		m_visualisationPass,
 		m_visualisationPipe,
 		voxelVisualisationPushConstants,
 		{ drawcall },
 		renderTargets,
-		windowHandle);
+		windowHandle
+	);
 	m_corePtr->recordEndDebugLabel(cmdStream);
 }
 

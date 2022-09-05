@@ -20,7 +20,9 @@ namespace vkcv::scene {
 		return matrix;
 	}
 	
-	void Mesh::load(const asset::Scene &scene, const asset::Mesh &mesh) {
+	void Mesh::load(const asset::Scene &scene,
+					const asset::Mesh &mesh,
+					const std::vector<asset::PrimitiveType>& types) {
 		m_parts.clear();
 		m_drawcalls.clear();
 		
@@ -32,7 +34,7 @@ namespace vkcv::scene {
 			}
 			
 			MeshPart part (m_scene);
-			part.load(scene, scene.vertexGroups[vertexGroupIndex], m_drawcalls);
+			part.load(scene, scene.vertexGroups[vertexGroupIndex], types, m_drawcalls);
 			
 			if (!part) {
 				continue;
@@ -67,7 +69,7 @@ namespace vkcv::scene {
 			m_parts[i] = other.m_parts[i];
 		}
 		
-		m_drawcalls = std::vector<DrawcallInfo>(other.m_drawcalls);
+		m_drawcalls = std::vector<InstanceDrawcall>(other.m_drawcalls);
 		m_transform = other.m_transform;
 		m_bounds = other.m_bounds;
 		
@@ -90,7 +92,7 @@ namespace vkcv::scene {
 	
 	void Mesh::recordDrawcalls(const glm::mat4& viewProjection,
 							   PushConstants& pushConstants,
-							   std::vector<DrawcallInfo>& drawcalls,
+							   std::vector<InstanceDrawcall>& drawcalls,
 							   const RecordMeshDrawcallFunction& record) {
 		const glm::mat4 transform = viewProjection * m_transform;
 		

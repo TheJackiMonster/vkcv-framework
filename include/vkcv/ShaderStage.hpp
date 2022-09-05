@@ -33,6 +33,9 @@ namespace vkcv {
 	
 }
 
+/**
+ * @cond VULKAN_TYPES
+ */
 namespace vk {
 	
 	template<>
@@ -58,6 +61,9 @@ namespace vk {
 	};
 	
 }
+/**
+ * @endcond
+ */
 
 namespace vkcv {
 	

@@ -1,5 +1,8 @@
 #include "AppSetup.hpp"
 #include "AppConfig.hpp"
+
+#include <vkcv/Buffer.hpp>
+#include <vkcv/Image.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
@@ -23,12 +26,14 @@ bool loadMesh(vkcv::Core& core, const std::filesystem::path& path, MeshResources
 	auto& vertexData = scene.vertexGroups[0].vertexBuffer;
 	auto& indexData  = scene.vertexGroups[0].indexBuffer;
 
-	vkcv::Buffer vertexBuffer = core.createBuffer<uint8_t>(
+	vkcv::Buffer<uint8_t> vertexBuffer = vkcv::buffer<uint8_t>(
+		core,
 		vkcv::BufferType::VERTEX,
 		vertexData.data.size(),
 		vkcv::BufferMemoryType::DEVICE_LOCAL);
 
-	vkcv::Buffer indexBuffer = core.createBuffer<uint8_t>(
+	vkcv::Buffer<uint8_t> indexBuffer = vkcv::buffer<uint8_t>(
+		core,
 		vkcv::BufferType::INDEX,
 		indexData.data.size(),
 		vkcv::BufferMemoryType::DEVICE_LOCAL);
@@ -38,20 +43,20 @@ bool loadMesh(vkcv::Core& core, const std::filesystem::path& path, MeshResources
 
 	outMesh->vertexBuffer = vertexBuffer.getHandle();
 	outMesh->indexBuffer  = indexBuffer.getHandle();
+	
+	const auto vertexBufferBindings = vkcv::asset::loadVertexBufferBindings(
+			vertexData.attributes,
+			vertexBuffer.getHandle(),
+			{
+					vkcv::asset::PrimitiveType::POSITION,
+					vkcv::asset::PrimitiveType::NORMAL,
+					vkcv::asset::PrimitiveType::TEXCOORD_0
+			}
+	);
 
-	auto& attributes = vertexData.attributes;
-
-	std::sort(attributes.begin(), attributes.end(),
-		[](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-	});
-
-	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
-
-	outMesh->mesh = vkcv::Mesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), scene.vertexGroups[0].numIndices);
+	outMesh->mesh = vkcv::VertexData(vertexBufferBindings);
+	outMesh->mesh.setIndexBuffer(indexBuffer.getHandle());
+	outMesh->mesh.setCount(scene.vertexGroups[0].numIndices);
 
 	return true;
 }
@@ -67,12 +72,14 @@ bool loadImage(vkcv::Core& core, const std::filesystem::path& path, vkcv::ImageH
 		return false;
 	}
 
-	vkcv::Image image = core.createImage(
-		vk::Format::eR8G8B8A8Srgb, 
-		textureData.width, 
-		textureData.height, 
-		1, 
-		true);
+	vkcv::Image image = vkcv::image(
+			core,
+			vk::Format::eR8G8B8A8Srgb,
+			textureData.width,
+			textureData.height,
+			1,
+			true
+	);
 
 	image.fill(textureData.data.data(), textureData.data.size());
 	
@@ -133,19 +140,16 @@ bool loadGraphicPass(
 	    outPassHandles->descriptorSet = core.createDescriptorSet(outPassHandles->descriptorSetLayout);
 	    descriptorSetLayouts.push_back(outPassHandles->descriptorSetLayout);
 	}
-
-
-	vkcv::GraphicsPipelineConfig pipelineConfig{
+	
+	vkcv::GraphicsPipelineConfig pipelineConfig(
 		shaderProgram,
-		UINT32_MAX,
-		UINT32_MAX,
 		outPassHandles->renderPass,
 		{ vertexLayout },
-		descriptorSetLayouts,
-		true
-	};
-	pipelineConfig.m_depthTest  = depthTest;
-	outPassHandles->pipeline    = core.createGraphicsPipeline(pipelineConfig);
+		descriptorSetLayouts
+	);
+	
+	pipelineConfig.setDepthTest(depthTest);
+	outPassHandles->pipeline = core.createGraphicsPipeline(pipelineConfig);
 
 	if (!outPassHandles->pipeline) {
 		vkcv_log(vkcv::LogLevel::ERROR, "Error: Could not create graphics pipeline");
@@ -160,14 +164,16 @@ bool loadMeshPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 	assert(outHandles);
 
 	vkcv::AttachmentDescription colorAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::DONT_CARE,
-		AppConfig::colorBufferFormat);
+			AppConfig::colorBufferFormat,
+			vkcv::AttachmentOperation::DONT_CARE,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	vkcv::AttachmentDescription depthAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		AppConfig::depthBufferFormat);
+			AppConfig::depthBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	return loadGraphicPass(
 		core,
@@ -186,14 +192,16 @@ bool loadSkyPass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 	assert(outHandles);
 
 	vkcv::AttachmentDescription colorAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		AppConfig::colorBufferFormat);
+			AppConfig::colorBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	vkcv::AttachmentDescription depthAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		AppConfig::depthBufferFormat);
+			AppConfig::depthBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	return loadGraphicPass(
 		core,
@@ -211,14 +219,16 @@ bool loadPrePass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 	assert(outHandles);
 
 	vkcv::AttachmentDescription motionAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		AppConfig::motionBufferFormat);
+			AppConfig::motionBufferFormat,
+			vkcv::AttachmentOperation::CLEAR,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	vkcv::AttachmentDescription depthAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		AppConfig::depthBufferFormat);
+			AppConfig::depthBufferFormat,
+			vkcv::AttachmentOperation::CLEAR,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	return loadGraphicPass(
 		core,
@@ -236,14 +246,16 @@ bool loadSkyPrePass(vkcv::Core& core, GraphicPassHandles* outHandles) {
 	assert(outHandles);
 
 	vkcv::AttachmentDescription motionAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		AppConfig::motionBufferFormat);
+			AppConfig::motionBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	vkcv::AttachmentDescription depthAttachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::LOAD,
-		AppConfig::depthBufferFormat);
+			AppConfig::depthBufferFormat,
+			vkcv::AttachmentOperation::LOAD,
+			vkcv::AttachmentOperation::STORE
+	);
 
 	return loadGraphicPass(
 		core,
@@ -288,7 +300,6 @@ bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, Comput
 }
 
 AppRenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const uint32_t height) {
-
 	AppRenderTargets targets;
 
 	targets.depthBuffer = core.createImage(
@@ -296,7 +307,8 @@ AppRenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, con
 		width,
 		height,
 		1,
-		false).getHandle();
+		false
+	);
 
 	targets.colorBuffer = core.createImage(
 		AppConfig::colorBufferFormat,
@@ -305,7 +317,8 @@ AppRenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, con
 		1,
 		false,
 		false,
-		true).getHandle();
+		true
+	);
 
 	targets.motionBuffer = core.createImage(
 		AppConfig::motionBufferFormat,
@@ -314,7 +327,8 @@ AppRenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, con
 		1,
 		false,
 		false,
-		true).getHandle();
+		true
+	);
 
 	return targets;
 }

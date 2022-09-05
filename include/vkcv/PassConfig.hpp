@@ -8,29 +8,10 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
-#include "ImageConfig.hpp"
+#include "Multisampling.hpp"
 
 namespace vkcv
 {
-	
-	/**
-	 * @brief Enum class to specify kinds of attachment layouts.
-	 */
-    enum class AttachmentLayout {
-        UNDEFINED,
-        GENERAL,
-
-        COLOR_ATTACHMENT,
-        SHADER_READ_ONLY,
-
-        DEPTH_STENCIL_ATTACHMENT,
-        DEPTH_STENCIL_READ_ONLY,
-
-        TRANSFER_SRC,
-        TRANSFER_DST,
-
-        PRESENTATION
-    };
 
 	/**
 	 * @brief Enum class to specify types of attachment operations.
@@ -43,20 +24,82 @@ namespace vkcv
     };
 
 	/**
-	 * @brief Structure to store details about an attachment of a pass.
+	 * @brief Class to store details about an attachment of a pass.
 	 */
-    struct AttachmentDescription {
-        AttachmentOperation store_operation;
-        AttachmentOperation load_operation;
-        vk::Format format;
+    class AttachmentDescription {
+	private:
+		vk::Format m_format;
+	
+		AttachmentOperation m_load_op;
+        AttachmentOperation m_store_op;
+		
+		vk::ClearValue m_clear_value;
+	public:
+		AttachmentDescription(vk::Format format,
+							  AttachmentOperation load,
+							  AttachmentOperation store);
+		
+		AttachmentDescription(vk::Format format,
+							  AttachmentOperation load,
+							  AttachmentOperation store,
+							  const vk::ClearValue &clear);
+	
+		AttachmentDescription(const AttachmentDescription &other) = default;
+		AttachmentDescription(AttachmentDescription &&other) = default;
+		
+		~AttachmentDescription() = default;
+	
+		AttachmentDescription& operator=(const AttachmentDescription &other) = default;
+		AttachmentDescription& operator=(AttachmentDescription &&other) = default;
+	
+		[[nodiscard]]
+		vk::Format getFormat() const;
+	
+		[[nodiscard]]
+		AttachmentOperation getLoadOperation() const;
+	
+		[[nodiscard]]
+		AttachmentOperation getStoreOperation() const;
+		
+		void setClearValue(const vk::ClearValue &clear);
+	
+		[[nodiscard]]
+		const vk::ClearValue& getClearValue() const;
+		
     };
+	
+	using AttachmentDescriptions = std::vector<AttachmentDescription>;
 
 	/**
-	 * @brief Structure to configure a pass for usage.
+	 * @brief Class to configure a pass for usage.
 	 */
-    struct PassConfig {
-		std::vector<AttachmentDescription> attachments;
-        Multisampling msaa;
+    class PassConfig {
+	private:
+		AttachmentDescriptions m_attachments;
+        Multisampling m_multisampling;
+		
+	public:
+		PassConfig();
+		
+		explicit PassConfig(const AttachmentDescriptions &attachments,
+							Multisampling multisampling = Multisampling::None);
+		
+		PassConfig(const PassConfig &other) = default;
+		PassConfig(PassConfig &&other) = default;
+		
+		~PassConfig() = default;
+	
+		PassConfig& operator=(const PassConfig &other) = default;
+		PassConfig& operator=(PassConfig &&other) = default;
+		
+		[[nodiscard]]
+		const AttachmentDescriptions& getAttachments() const;
+		
+		void setMultisampling(Multisampling multisampling);
+	
+		[[nodiscard]]
+		Multisampling getMultisampling() const;
+		
     };
 	
 }

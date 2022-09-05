@@ -9,25 +9,22 @@
 #include <memory>
 #include <vulkan/vulkan.hpp>
 
+#include "BufferTypes.hpp"
 #include "Context.hpp"
-#include "Swapchain.hpp"
 #include "Window.hpp"
 #include "PassConfig.hpp"
 #include "Handles.hpp"
-#include "Buffer.hpp"
-#include "Image.hpp"
 #include "BlitDownsampler.hpp"
 #include "GraphicsPipelineConfig.hpp"
 #include "ComputePipelineConfig.hpp"
-#include "CommandResources.hpp"
-#include "SyncResources.hpp"
 #include "Result.hpp"
-#include "vkcv/DescriptorConfig.hpp"
-#include "Sampler.hpp"
+#include "SamplerTypes.hpp"
 #include "DescriptorWrites.hpp"
 #include "Event.hpp"
-#include "DrawcallRecording.hpp"
-#include "CommandRecordingFunctionTypes.hpp"
+#include "Drawcall.hpp"
+#include "PushConstants.hpp"
+#include "EventFunctionTypes.hpp"
+#include "DispatchSize.hpp"
 
 #define VKCV_FRAMEWORK_NAME "VkCV"
 #define VKCV_FRAMEWORK_VERSION (VK_MAKE_VERSION(0, 1, 0))
@@ -39,7 +36,8 @@ namespace vkcv
     class PassManager;
     class GraphicsPipelineManager;
     class ComputePipelineManager;
-    class DescriptorManager;
+    class DescriptorSetLayoutManager;
+	class DescriptorSetManager;
     class BufferManager;
     class SamplerManager;
     class ImageManager;
@@ -48,22 +46,12 @@ namespace vkcv
 	class SwapchainManager;
 
 	/**
-	 * @brief Structure to store details about a queue submission.
-	 */
-	struct SubmitInfo {
-		QueueType queueType;
-		std::vector<vk::Semaphore> waitSemaphores;
-		std::vector<vk::Semaphore> signalSemaphores;
-	};
-
-	/**
 	 * @brief Class to handle the core functionality of the framework.
 	 *
 	 * The class handles the core functionality of the framework with most
 	 * calls addressing resource management via more simplified abstraction.
 	 */
-    class Core final
-    {
+    class Core final {
     private:
 
         /**
@@ -71,7 +59,8 @@ namespace vkcv
          *
          * @param context encapsulates various Vulkan objects
          */
-        Core(Context &&context, const CommandResources& commandResources, const SyncResources& syncResources) noexcept;
+        explicit Core(Context &&context) noexcept;
+		
         // explicit destruction of default constructor
         Core() = delete;
 
@@ -79,20 +68,22 @@ namespace vkcv
 
         Context m_Context;
 
-        std::unique_ptr<PassManager>             m_PassManager;
-        std::unique_ptr<GraphicsPipelineManager> m_PipelineManager;
-        std::unique_ptr<ComputePipelineManager>  m_ComputePipelineManager;
-        std::unique_ptr<DescriptorManager>       m_DescriptorManager;
-        std::unique_ptr<BufferManager>           m_BufferManager;
-        std::unique_ptr<SamplerManager>          m_SamplerManager;
-        std::unique_ptr<ImageManager>            m_ImageManager;
-        std::unique_ptr<CommandStreamManager>    m_CommandStreamManager;
-        std::unique_ptr<WindowManager>           m_WindowManager;
-        std::unique_ptr<SwapchainManager>        m_SwapchainManager;
-
-		CommandResources    m_CommandResources;
-		SyncResources       m_SyncResources;
-		uint32_t            m_currentSwapchainImageIndex;
+        std::unique_ptr<PassManager>             	m_PassManager;
+        std::unique_ptr<GraphicsPipelineManager> 	m_GraphicsPipelineManager;
+        std::unique_ptr<ComputePipelineManager>  	m_ComputePipelineManager;
+        std::unique_ptr<DescriptorSetLayoutManager> m_DescriptorSetLayoutManager;
+		std::unique_ptr<DescriptorSetManager>       m_DescriptorSetManager;
+        std::unique_ptr<BufferManager>           	m_BufferManager;
+        std::unique_ptr<SamplerManager>          	m_SamplerManager;
+        std::unique_ptr<ImageManager>            	m_ImageManager;
+        std::unique_ptr<CommandStreamManager>    	m_CommandStreamManager;
+        std::unique_ptr<WindowManager>           	m_WindowManager;
+        std::unique_ptr<SwapchainManager>        	m_SwapchainManager;
+	
+		std::vector<vk::CommandPool> m_CommandPools;
+		vk::Semaphore m_RenderFinished;
+		vk::Semaphore m_SwapchainImageAcquired;
+		uint32_t m_currentSwapchainImageIndex;
 		
 		std::unique_ptr<Downsampler> m_downsampler;
 
@@ -192,43 +183,147 @@ namespace vkcv
          * Creates a basic vulkan render pass using @p config from the render pass config class and returns it.
          * Fixed Functions for pipeline are set with standard values.
          *
-         * @param config a render pass config object from the render pass config class
+         * @param[in] config a render pass config object from the render pass config class
          * @return A handle to represent the created pass
          */
         [[nodiscard]]
         PassHandle createPass(const PassConfig &config);
-
-        /**
-            * Creates a #Buffer with data-type T and @p bufferType
-            * @param type Type of Buffer created
-            * @param count Count of elements of type T
-            * @param memoryType Type of Buffers memory
-            * return Buffer-Object
-            */
-        template<typename T>
-        Buffer<T> createBuffer(vkcv::BufferType type,
-							   size_t count,
-							   BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL,
-							   bool supportIndirect = false,
-							   bool readable = false) {
-        	return Buffer<T>::create(
-					m_BufferManager.get(),
-					type,
-					count,
-					memoryType,
-					supportIndirect,
-					readable
-			);
-        }
+		
+		/**
+		 * Returns the used configuration for a created render pass which is
+		 * represented by the given handle.
+		 *
+		 * @param[in] pass Pass handle
+		 * @return Pass configuration
+		 */
+		[[nodiscard]]
+		const PassConfig& getPassConfiguration(const PassHandle &pass);
+	
+		/**
+		 * @brief Creates a buffer with given parameters and returns its handle.
+		 *
+		 * @param[in] type Type of buffer created
+		 * @param[in] typeGuard Type guard for the buffer
+		 * @param[in] count Count of elements of its guarded type
+		 * @param[in] memoryType Type of buffers memory
+		 * @param[in] readable Flag whether the buffer supports reading from it
+		 * @return A handle to represent the created buffer
+		 */
+		BufferHandle createBuffer(BufferType type,
+								  const TypeGuard& typeGuard,
+								  size_t count,
+								  BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL,
+								  bool readable = false);
+	
+		/**
+		 * @brief Creates a buffer with given parameters and returns its handle.
+		 *
+		 * @param[in] type Type of buffer created
+		 * @param[in] size Size of the buffer
+		 * @param[in] memoryType Type of buffers memory
+		 * @param[in] readable Flag whether the buffer supports reading from it
+		 * @return A handle to represent the created buffer
+		 */
+		BufferHandle createBuffer(BufferType type,
+								  size_t size,
+								  BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL,
+								  bool readable = false);
+	
+		/**
+		 * @brief Returns the vulkan buffer of a given buffer handle.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @return Vulkan buffer
+		 */
+		vk::Buffer getBuffer(const BufferHandle& buffer) const;
+	
+		/**
+		 * @brief Returns the buffer type of a buffer represented
+		 * by a given buffer handle.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @return Buffer type
+		 */
+		[[nodiscard]]
+		BufferType getBufferType(const BufferHandle& buffer) const;
+	
+		/**
+		 * @brief Returns the buffer memory type of a buffer
+		 * represented by a given buffer handle.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @return Buffer memory type
+		 */
+		[[nodiscard]]
+		BufferMemoryType getBufferMemoryType(const BufferHandle& buffer) const;
+	
+		/**
+		 * @brief Returns the size of a buffer represented
+		 * by a given buffer handle.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @return Size of the buffer
+		 */
+		[[nodiscard]]
+		size_t getBufferSize(const BufferHandle& buffer) const;
+	
+		/**
+		 * @brief Fills a buffer represented by a given buffer
+		 * handle with custom data.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @param[in] data Pointer to data
+		 * @param[in] size Size of data in bytes
+		 * @param[in] offset Offset to fill in data in bytes
+		 */
+		void fillBuffer(const BufferHandle& buffer,
+						const void* data,
+						size_t size,
+						size_t offset);
+	
+		/**
+		 * @brief Reads from a buffer represented by a given
+		 * buffer handle to some data pointer.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @param[in] data Pointer to data
+		 * @param[in] size Size of data to read in bytes
+		 * @param[in] offset Offset to read from buffer in bytes
+		 */
+		void readBuffer(const BufferHandle& buffer,
+						void* data,
+						size_t size,
+						size_t offset);
+	
+		/**
+		 * @brief Maps memory to a buffer represented by a given
+		 * buffer handle and returns it.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @param[in] offset Offset of mapping in bytes
+		 * @param[in] size Size of mapping in bytes
+		 * @return Pointer to mapped memory
+		 */
+		void* mapBuffer(const BufferHandle& buffer,
+						size_t offset,
+						size_t size);
+	
+		/**
+		 * @brief Unmaps memory from a buffer represented by a given
+		 * buffer handle.
+		 *
+		 * @param[in] buffer Buffer handle
+		 */
+		void unmapBuffer(const BufferHandle& buffer);
         
         /**
          * Creates a Sampler with given attributes.
          *
-         * @param magFilter Magnifying filter
-         * @param minFilter Minimizing filter
-         * @param mipmapMode Mipmapping filter
-         * @param addressMode Address mode
-         * @param mipLodBias Mip level of detail bias
+         * @param[in] magFilter Magnifying filter
+         * @param[in] minFilter Minimizing filter
+         * @param[in] mipmapMode Mipmapping filter
+         * @param[in] addressMode Address mode
+         * @param[in] mipLodBias Mip level of detail bias
          * @return Sampler handle
          */
         [[nodiscard]]
@@ -237,24 +332,49 @@ namespace vkcv
 									float mipLodBias = 0.0f, SamplerBorderColor borderColor = SamplerBorderColor::INT_ZERO_OPAQUE);
 
         /**
-         * Creates an #Image with a given format, width, height and depth.
+         * Creates an #Image with a given format, width, height, depth
+         * and a lot more optional parameters.
          *
-         * @param format Image format
-         * @param width Image width
-         * @param height Image height
-         * @param depth Image depth
-         * @return Image-Object
+         * @param[in] format Image format
+         * @param[in] width Image width
+         * @param[in] height Image height
+         * @param[in] depth Image depth
+         * @param[in] createMipChain Flag to create a mip chain
+         * @param[in] supportStorage Flag whether support storage
+         * @param[in] supportColorAttachment Flag whether attachment is supported
+         * @param[in] multisampling Multisampling
+         * @return Image handle
          */
         [[nodiscard]]
-        Image createImage(
-			vk::Format      format,
-			uint32_t        width,
-			uint32_t        height,
-			uint32_t        depth = 1,
-			bool            createMipChain = false,
-			bool            supportStorage = false,
-			bool            supportColorAttachment = false,
-			Multisampling   multisampling = Multisampling::None);
+        ImageHandle createImage(vk::Format format,
+								uint32_t width,
+								uint32_t height,
+								uint32_t depth=1,
+								bool createMipChain=false,
+								bool supportStorage=false,
+								bool supportColorAttachment=false,
+								Multisampling multisampling=Multisampling::None);
+		
+		/**
+		 * @brief Fills the image with given data of a specified size
+		 * in bytes.
+		 *
+		 * @param[in] image Image handle
+		 * @param[in] data Image data pointer
+		 * @param[in] size Size of data
+		 */
+		void fillImage(const ImageHandle& image,
+					   const void *data,
+					   size_t size);
+		
+		/**
+		 * @brief Switches the images layout synchronously if possible.
+		 *
+		 * @param[in] image Image handle
+		 * @param[in] layout New image layout
+		 */
+		void switchImageLayout(const ImageHandle &image,
+							   vk::ImageLayout layout);
 		
 		/**
 		 * @brief Returns the default blit-downsampler.
@@ -266,10 +386,10 @@ namespace vkcv
 
         /**
          * Creates a new window and returns it's handle
-         * @param applicationName window name
-         * @param windowWidth
-         * @param windowHeight
-         * @param resizeable resizeability bool
+         * @param[in] applicationName Window title
+         * @param[in] windowWidth Window width
+         * @param[in] windowHeight Window height
+         * @param[in] resizeable resizeability bool
          * @return windowHandle
          */
 		[[nodiscard]]
@@ -281,39 +401,45 @@ namespace vkcv
 
 		/**
 		 * Getter for window reference
-		 * @param handle of the window
+		 * @param[in] handle of the window
 		 * @return the window
 		 */
 		[[nodiscard]]
-		Window& getWindow(const WindowHandle& handle );
-
+		Window& getWindow(const WindowHandle& handle);
+	
 		/**
-		 * Gets the swapchain of the current focused window
-		 * @return swapchain
-		 */
+         * @brief Returns the image format for the current surface
+         * of the swapchain.
+         *
+         * @param[in] handle Swapchain handle
+         * @return Swapchain image format
+         */
 		[[nodiscard]]
-		Swapchain& getSwapchainOfCurrentWindow();
-
+		vk::Format getSwapchainFormat(const SwapchainHandle& swapchain) const;
+	
 		/**
-		 * Returns the swapchain reference
-		 * @param handle of the swapchain
-		 * @return swapchain
-		 */
+		 * @brief Returns the amount of images for the swapchain.
+		 *
+		 * @param[in] handle Swapchain handle
+		 * @return Number of images
+		*/
 		[[nodiscard]]
-		Swapchain& getSwapchain(const SwapchainHandle &handle);
-
+		uint32_t getSwapchainImageCount(const SwapchainHandle& swapchain) const;
+	
 		/**
-		 * Gets the swapchain handle from the window
-		 * @param handle of the window
-		 * @return the swapchain from getSwapchain( SwapchainHandle )
-		 */
+         * @brief Returns the extent from the current surface of
+         * the swapchain.
+         *
+         * @param[in] handle Swapchain handle
+         * @return Extent of the swapchains surface
+         */
 		[[nodiscard]]
-		Swapchain& getSwapchain(const WindowHandle &handle);
+		vk::Extent2D getSwapchainExtent(const SwapchainHandle& swapchain) const;
 
 		/**
 		 * @brief Returns the image width.
 		 *
-		 * @param image Image handle
+		 * @param[in] image Image handle
 		 * @return imageWidth
 		 */
         [[nodiscard]]
@@ -381,14 +507,6 @@ namespace vkcv
 		 */
 		[[nodiscard]]
 		DescriptorSetLayoutHandle createDescriptorSetLayout(const DescriptorBindings &bindings);
-		
-		/**
-		 * @brief Returns the descriptor set layout of a descriptor set layout handle.
-		 *
-		 * @param[in] handle Descriptor set layout handle
-		 * @return Descriptor set layout
-		 */
-		DescriptorSetLayout getDescriptorSetLayout(const DescriptorSetLayoutHandle handle) const;
 
 		/**
 		 * @brief Creates a new descriptor set
@@ -408,14 +526,6 @@ namespace vkcv
 		*/
 		void writeDescriptorSet(DescriptorSetHandle handle, const DescriptorWrites& writes);
 
-		/**
-		 * @brief Returns information about a descriptor set
-		 * 
-		 * @param handle Handle of the descriptor set
-		 * @return Struct containing the descriptor set's vulkan handle, layout handle and descriptor pool index
-		*/
-		DescriptorSet getDescriptorSet(const DescriptorSetHandle handle) const;
-
 
 		/**
 		 * @brief Start recording command buffers and increment frame index
@@ -426,7 +536,6 @@ namespace vkcv
 		 * @brief Records drawcalls to a command stream
 		 * 
 		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
-		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
 		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
 		 * @param pushConstants Push constants that are used for the drawcalls, ignored if constant size is set to 0
 		 * @param drawcalls Information about each drawcall, consisting of mesh handle, descriptor set bindings and instance count
@@ -434,60 +543,48 @@ namespace vkcv
 		 * @param windowHandle Window handle that is used to retrieve the corresponding swapchain
 		*/
 		void recordDrawcallsToCmdStream(
-			const CommandStreamHandle&      cmdStreamHandle,
-			const PassHandle&               renderpassHandle,
-			const GraphicsPipelineHandle    &pipelineHandle,
-			const PushConstants             &pushConstants,
-			const std::vector<DrawcallInfo> &drawcalls,
-			const std::vector<ImageHandle>  &renderTargets,
-			const WindowHandle              &windowHandle);
+			const CommandStreamHandle							&cmdStreamHandle,
+			const GraphicsPipelineHandle    					&pipelineHandle,
+			const PushConstants             					&pushConstants,
+			const std::vector<InstanceDrawcall>					&drawcalls,
+			const std::vector<ImageHandle>  					&renderTargets,
+			const WindowHandle              					&windowHandle);
 	
 		/**
 		 * @brief Records indirect drawcalls to a command stream
 		 *
 		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
-		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
 		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
 		 * @param pushConstantData Push constants that are used for the drawcalls, ignored if constant size is set to 0
-		 * @param compiledDescriptorSet TODO
-		 * @param compiledMesh TODO
-		 * @param drawcalls Information about each drawcall, consisting of mesh handle, descriptor set bindings and instance count
+		 * @param drawcalls Information about each drawcall, consisting of mesh handle, descriptor set bindings and draw count
 		 * @param renderTargets Image handles that are used as render targets
-		 * @param indirectBuffer TODO
-		 * @param drawCount TODO
 		 * @param windowHandle Window handle that is used to retrieve the corresponding swapchain
 		*/
-		void recordIndexedIndirectDrawcallsToCmdStream(
+		void recordIndirectDrawcallsToCmdStream(
 				const CommandStreamHandle                           cmdStreamHandle,
-				const PassHandle                                    renderpassHandle,
 				const GraphicsPipelineHandle                        &pipelineHandle,
 				const PushConstants                                 &pushConstantData,
-                const vkcv::DescriptorSetHandle                     &compiledDescriptorSet,
-				const vkcv::Mesh                                    &compiledMesh,
+				const std::vector<IndirectDrawcall>					&drawcalls,
 				const std::vector<ImageHandle>                      &renderTargets,
-				const vkcv::Buffer<vk::DrawIndexedIndirectCommand>  &indirectBuffer,
-				const uint32_t                                      drawCount,
 				const WindowHandle                                  &windowHandle);
 		
 		/**
 		 * @brief Records mesh shader drawcalls to a command stream
 		 *
 		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
-		 * @param renderpassHandle Handle of the renderpass that is used for the drawcalls
 		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
 		 * @param pushConstantData Push constants that are used for the drawcalls, ignored if constant size is set to 0
-		 * @param drawcalls Information about each drawcall, consisting of descriptor set bindings and task shader dispatch count
+		 * @param drawcalls Information about each drawcall, consisting of descriptor set bindings and task shader task count
 		 * @param renderTargets Image handles that are used as render targets
 		 * @param windowHandle Window handle that is used to retrieve the corresponding swapchain
 		*/
 		void recordMeshShaderDrawcalls(
-			const CommandStreamHandle&              cmdStreamHandle,
-			const PassHandle&                       renderpassHandle,
+			const CommandStreamHandle				&cmdStreamHandle,
 			const GraphicsPipelineHandle            &pipelineHandle,
-			const PushConstants&                    pushConstantData,
-            const std::vector<MeshShaderDrawcall>&  drawcalls,
-			const std::vector<ImageHandle>&         renderTargets,
-			const WindowHandle&                     windowHandle);
+			const PushConstants						&pushConstantData,
+            const std::vector<TaskDrawcall>			&drawcalls,
+			const std::vector<ImageHandle>			&renderTargets,
+			const WindowHandle						&windowHandle);
 		
         /**
          * Records the rtx ray generation to the @p cmdStreamHandle.
@@ -514,23 +611,22 @@ namespace vkcv
             vk::StridedDeviceAddressRegionKHR rcallRegion,
             const std::vector<DescriptorSetUsage>& descriptorSetUsages,
             const PushConstants& pushConstants,
-            const WindowHandle windowHandle);
+            const WindowHandle& windowHandle);
 
 		/**
 		 * @brief Record a compute shader dispatch into a command stream
 		 * 
 		 * @param cmdStream Handle of the command stream that the dispatch is recorded into
 		 * @param computePipeline Handle of the pipeline that is used for the dispatch
-		 * @param dispatchCount How many work groups are dispatched
-		 * @param descriptorSetUsages Descriptor set bindings of the dispatch
+		 * @param dispatchSize How many work groups are dispatched
+		 * @param descriptorSetUsages Descriptor set usages of the dispatch
 		 * @param pushConstants Push constant data for the dispatch
 		 */
-		void recordComputeDispatchToCmdStream(
-			CommandStreamHandle cmdStream,
-            ComputePipelineHandle computePipeline,
-			const uint32_t dispatchCount[3],
-			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
-			const PushConstants& pushConstants);
+		void recordComputeDispatchToCmdStream(const CommandStreamHandle& cmdStream,
+											  const ComputePipelineHandle& computePipeline,
+											  const DispatchSize& dispatchSize,
+											  const std::vector<DescriptorSetUsage> &descriptorSetUsages,
+											  const PushConstants& pushConstants);
 		
 		/**
 		 * @brief Record the start of a debug label into a command stream. 
@@ -574,20 +670,6 @@ namespace vkcv
 		void endFrame( const WindowHandle& windowHandle );
 
 		/**
-		 * Submit a command buffer to any queue of selected type. The recording can be customized by a
-		 * custom record-command-function. If the command submission has finished, an optional finish-function
-		 * will be called.
-		 *
-		 * @param submitInfo Submit information
-		 * @param record Record-command-function
-		 * @param finish Finish-command-function or nullptr
-		 */
-		void recordAndSubmitCommandsImmediate(
-			const SubmitInfo            &submitInfo, 
-			const RecordCommandFunction &record, 
-			const FinishCommandFunction &finish);
-
-		/**
 		 * @brief Create a new command stream
 		 * 
 		 * @param queueType The type of queue to which the command stream will be submitted to
@@ -603,7 +685,7 @@ namespace vkcv
 		 * @param finish Finish function, called after execution of commands is finished
 		 */
 		void recordCommandsToStream(
-			const CommandStreamHandle   cmdStreamHandle,
+			const CommandStreamHandle   &stream,
 			const RecordCommandFunction &record,
 			const FinishCommandFunction &finish);
 
@@ -613,7 +695,7 @@ namespace vkcv
 		 * @param[in] handle Command stream to submit
 		 * @param[in] signalRendering Flag to specify if the command stream finishes rendering
 		 */
-		void submitCommandStream(const CommandStreamHandle& handle,
+		void submitCommandStream(const CommandStreamHandle& stream,
 								 bool signalRendering = true);
 
 		/**
@@ -728,66 +810,185 @@ namespace vkcv
 		/**
 		 * @brief Sets a debug label to a buffer handle.
 		 *
-		 * @param handle Buffer handle
-		 * @param label Debug label
+		 * @param[in,out] handle Buffer handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const BufferHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to a pass handle.
 		 *
-		 * @param handle Pass handle
-		 * @param label Debug label
+		 * @param[in,out] handle Pass handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const PassHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to a graphics pipeline handle.
 		 *
-		 * @param handle Graphics pipeline handle
-		 * @param label Debug label
+		 * @param[in,out] handle Graphics pipeline handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const GraphicsPipelineHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to a compute pipeline handle.
 		 *
-		 * @param handle Compute pipeline handle
-		 * @param label Debug label
+		 * @param[in,out] handle Compute pipeline handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const ComputePipelineHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to a descriptor set handle.
 		 *
-		 * @param handle Descriptor set handle
-		 * @param label Debug label
+		 * @param[in,out] handle Descriptor set handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const DescriptorSetHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to a sampler handle.
 		 *
-		 * @param handle Sampler handle
-		 * @param label Debug label
+		 * @param[in,out] handle Sampler handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const SamplerHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to an image handle.
 		 *
-		 * @param handle Image handle
-		 * @param label Debug label
+		 * @param[in,out] handle Image handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const ImageHandle &handle, const std::string &label);
 		
 		/**
 		 * @brief Sets a debug label to a command stream handle.
 		 *
-		 * @param handle Command stream handle
-		 * @param label Debug label
+		 * @param[in,out] handle Command stream handle
+		 * @param[in] label Debug label
 		 */
 		void setDebugLabel(const CommandStreamHandle &handle, const std::string &label);
+		
+		/**
+		 * @brief Runs the application in the current until all windows get closed.
+		 *
+		 * The frame callback will be called for each window every single frame.
+		 *
+		 * @param[in] frame Frame callback
+		 */
+		void run(const WindowFrameFunction &frame);
+		
+		/**
+		 * @brief Return the underlying vulkan handle for a render pass
+		 * by its given pass handle.
+		 *
+		 * @param[in] handle Pass handle
+		 * @return Vulkan render pass
+		 */
+		[[nodiscard]]
+		vk::RenderPass getVulkanRenderPass(const PassHandle &handle) const;
+		
+		/**
+		 * @brief Return the underlying vulkan handle for a pipeline
+		 * by its given graphics pipeline handle.
+		 *
+		 * @param[in] handle Graphics pipeline handle
+		 * @return Vulkan pipeline
+		 */
+		[[nodiscard]]
+		vk::Pipeline getVulkanPipeline(const GraphicsPipelineHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a pipeline
+		 * by its given compute pipeline handle.
+		 *
+		 * @param[in] handle Compute pipeline handle
+		 * @return Vulkan pipeline
+		 */
+		[[nodiscard]]
+		vk::Pipeline getVulkanPipeline(const ComputePipelineHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a descriptor set layout
+		 * by its given descriptor set layout handle.
+		 *
+		 * @param[in] handle Descriptor set layout handle
+		 * @return Vulkan descriptor set layout
+		 */
+		[[nodiscard]]
+		vk::DescriptorSetLayout getVulkanDescriptorSetLayout(const DescriptorSetLayoutHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a descriptor set
+		 * by its given descriptor set handle.
+		 *
+		 * @param[in] handle Descriptor set handle
+		 * @return Vulkan descriptor set
+		 */
+		[[nodiscard]]
+		vk::DescriptorSet getVulkanDescriptorSet(const DescriptorSetHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a buffer
+		 * by its given buffer handle.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @return Vulkan buffer
+		 */
+		[[nodiscard]]
+		vk::Buffer getVulkanBuffer(const BufferHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a sampler
+		 * by its given sampler handle.
+		 *
+		 * @param[in] handle Sampler handle
+		 * @return Vulkan sampler
+		 */
+		[[nodiscard]]
+		vk::Sampler getVulkanSampler(const SamplerHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a image
+		 * by its given image handle.
+		 *
+		 * @param[in] handle Image handle
+		 * @return Vulkan image
+		 */
+		[[nodiscard]]
+		vk::Image getVulkanImage(const ImageHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a image view
+		 * by its given image handle.
+		 *
+		 * @param[in] handle Image handle
+		 * @return Vulkan image view
+		 */
+		[[nodiscard]]
+		vk::ImageView getVulkanImageView(const ImageHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a device memory
+		 * by its given buffer handle.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @return Vulkan device memory
+		 */
+		[[nodiscard]]
+		vk::DeviceMemory getVulkanDeviceMemory(const BufferHandle &handle) const;
+	
+		/**
+		 * @brief Return the underlying vulkan handle for a device memory
+		 * by its given image handle.
+		 *
+		 * @param[in] handle Image handle
+		 * @return Vulkan device memory
+		 */
+		[[nodiscard]]
+		vk::DeviceMemory getVulkanDeviceMemory(const ImageHandle &handle) const;
 		
     };
 }

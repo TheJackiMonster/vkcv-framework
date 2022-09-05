@@ -5,51 +5,147 @@
  */
 #include "ImageManager.hpp"
 #include "vkcv/Core.hpp"
+#include "vkcv/Image.hpp"
 #include "vkcv/Logger.hpp"
+#include "vkcv/Multisampling.hpp"
+#include "vkcv/TypeGuard.hpp"
 
 #include <algorithm>
 
 namespace vkcv {
-
-	/**
-	 * @brief searches memory type index for image allocation, combines requirements of image and application
-	 * @param physicalMemoryProperties Memory Properties of physical device
-	 * @param typeBits Bit field for suitable memory types
-	 * @param requirements Property flags that are required
-	 * @return memory type index for image
-	 */
-	uint32_t searchImageMemoryType(const vk::PhysicalDeviceMemoryProperties& physicalMemoryProperties, uint32_t typeBits, vk::MemoryPropertyFlags requirements) {
-		const uint32_t memoryCount = physicalMemoryProperties.memoryTypeCount;
-		for (uint32_t memoryIndex = 0; memoryIndex < memoryCount; ++memoryIndex) {
-			const uint32_t memoryTypeBits = (1 << memoryIndex);
-			const bool isRequiredMemoryType = typeBits & memoryTypeBits;
-
-			const vk::MemoryPropertyFlags properties =
-				physicalMemoryProperties.memoryTypes[memoryIndex].propertyFlags;
-			const bool hasRequiredProperties =
-				(properties & requirements) == requirements;
-
-			if (isRequiredMemoryType && hasRequiredProperties)
-				return static_cast<int32_t>(memoryIndex);
+	
+	bool ImageManager::init(Core &core, BufferManager &bufferManager) {
+		if (!HandleManager<ImageEntry, ImageHandle>::init(core)) {
+			return false;
 		}
-
-		// failed to find memory type
-		return -1;
+		
+		m_bufferManager = &bufferManager;
+		m_swapchainImages.clear();
+		return true;
 	}
-
-	ImageManager::ImageManager(BufferManager& bufferManager) noexcept :
-		m_core(nullptr), m_bufferManager(bufferManager), m_images()
-	{
+	
+	uint64_t ImageManager::getIdFrom(const ImageHandle &handle) const {
+		return handle.getId();
 	}
-
+	
+	ImageHandle ImageManager::createById(uint64_t id, const HandleDestroyFunction &destroy) {
+		return ImageHandle(id, destroy);
+	}
+	
+	void ImageManager::destroyById(uint64_t id) {
+		auto& image = getById(id);
+		
+		const vk::Device& device = getCore().getContext().getDevice();
+		
+		for (auto& view : image.m_viewPerMip) {
+			if (view) {
+				device.destroyImageView(view);
+				view = nullptr;
+			}
+		}
+		
+		for (auto& view : image.m_arrayViewPerMip) {
+			if (view) {
+				device.destroyImageView(view);
+				view = nullptr;
+			}
+		}
+		
+		const vma::Allocator& allocator = getCore().getContext().getAllocator();
+		
+		if (image.m_handle) {
+			allocator.destroyImage(image.m_handle, image.m_allocation);
+			
+			image.m_handle = nullptr;
+			image.m_allocation = nullptr;
+		}
+	}
+	
+	const BufferManager &ImageManager::getBufferManager() const {
+		return *m_bufferManager;
+	}
+	
+	BufferManager &ImageManager::getBufferManager() {
+		return *m_bufferManager;
+	}
+	
+	void ImageManager::recordImageMipGenerationToCmdBuffer(vk::CommandBuffer cmdBuffer,
+														   const ImageHandle& handle) {
+		auto& image = (*this)[handle];
+		recordImageLayoutTransition(handle, 0, 0, vk::ImageLayout::eGeneral, cmdBuffer);
+		
+		vk::ImageAspectFlags aspectMask = isDepthImageFormat(image.m_format) ?
+										  vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
+		
+		uint32_t srcWidth = image.m_width;
+		uint32_t srcHeight = image.m_height;
+		uint32_t srcDepth = image.m_depth;
+		
+		auto half = [](uint32_t in) {
+			return std::max<uint32_t>(in / 2, 1);
+		};
+		
+		uint32_t dstWidth = half(srcWidth);
+		uint32_t dstHeight = half(srcHeight);
+		uint32_t dstDepth = half(srcDepth);
+		
+		for (uint32_t srcMip = 0; srcMip < image.m_viewPerMip.size() - 1; srcMip++) {
+			uint32_t dstMip = srcMip + 1;
+			vk::ImageBlit region(
+					vk::ImageSubresourceLayers(aspectMask, srcMip, 0, 1),
+					{ vk::Offset3D(0, 0, 0), vk::Offset3D(srcWidth, srcHeight, srcDepth) },
+					vk::ImageSubresourceLayers(aspectMask, dstMip, 0, 1),
+					{ vk::Offset3D(0, 0, 0), vk::Offset3D(dstWidth, dstHeight, dstDepth) });
+			
+			cmdBuffer.blitImage(
+					image.m_handle,
+					vk::ImageLayout::eGeneral,
+					image.m_handle,
+					vk::ImageLayout::eGeneral,
+					region,
+					vk::Filter::eLinear);
+			
+			srcWidth = dstWidth;
+			srcHeight = dstHeight;
+			srcDepth = dstDepth;
+			
+			dstWidth = half(dstWidth);
+			dstHeight = half(dstHeight);
+			dstDepth = half(dstDepth);
+			
+			recordImageMemoryBarrier(handle, cmdBuffer);
+		}
+	}
+	
+	const ImageEntry &ImageManager::operator[](const ImageHandle &handle) const {
+		if (handle.isSwapchainImage()) {
+			return m_swapchainImages[m_currentSwapchainInputImage];
+		}
+		
+		return HandleManager<ImageEntry, ImageHandle>::operator[](handle);
+	}
+	
+	ImageEntry &ImageManager::operator[](const ImageHandle &handle) {
+		if (handle.isSwapchainImage()) {
+			return m_swapchainImages[m_currentSwapchainInputImage];
+		}
+		
+		return HandleManager<ImageEntry, ImageHandle>::operator[](handle);
+	}
+	
+	ImageManager::ImageManager() noexcept :
+			HandleManager<ImageEntry, ImageHandle>(),
+			m_bufferManager(nullptr),
+			m_swapchainImages(),
+			m_currentSwapchainInputImage(0)
+	{}
+	
 	ImageManager::~ImageManager() noexcept {
-		for (uint64_t id = 0; id < m_images.size(); id++) {
-			destroyImageById(id);
-		}
+		clear();
 		
 		for (const auto& swapchainImage : m_swapchainImages) {
 			for (const auto view : swapchainImage.m_viewPerMip) {
-				m_core->getContext().getDevice().destroy(view);
+				getCore().getContext().getDevice().destroy(view);
 			}
 		}
 	}
@@ -72,9 +168,8 @@ namespace vkcv {
 		uint32_t        mipCount,
 		bool            supportStorage, 
 		bool            supportColorAttachment,
-		Multisampling   msaa)
-	{
-		const vk::PhysicalDevice& physicalDevice = m_core->getContext().getPhysicalDevice();
+		Multisampling   msaa) {
+		const vk::PhysicalDevice& physicalDevice = getCore().getContext().getPhysicalDevice();
 		
 		const vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(format);
 		
@@ -94,7 +189,7 @@ namespace vkcv {
 				imageTiling = vk::ImageTiling::eLinear;
 				
 				if (!(formatProperties.linearTilingFeatures & vk::FormatFeatureFlagBits::eStorageImage))
-					return ImageHandle();
+					return {};
 			}
 		}
 		
@@ -108,7 +203,7 @@ namespace vkcv {
 			imageUsageFlags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
 		}
 
-		const vma::Allocator& allocator = m_core->getContext().getAllocator();
+		const vma::Allocator& allocator = getCore().getContext().getAllocator();
 
 		vk::ImageType imageType = vk::ImageType::e3D;
 		vk::ImageViewType imageViewType = vk::ImageViewType::e3D;
@@ -134,7 +229,7 @@ namespace vkcv {
 		
 		if (!formatProperties.optimalTilingFeatures) {
 			if (!formatProperties.linearTilingFeatures)
-				return ImageHandle();
+				return {};
 			
 			imageTiling = vk::ImageTiling::eLinear;
 		}
@@ -148,8 +243,6 @@ namespace vkcv {
 		
 		const uint32_t arrayLayers = std::min<uint32_t>(1, imageFormatProperties.maxArrayLayers);
 
-		vk::SampleCountFlagBits sampleCountFlag = msaaToVkSampleCountFlag(msaa);
-
 		const vk::ImageCreateInfo imageCreateInfo (
 			createFlags,
 			imageType,
@@ -157,7 +250,7 @@ namespace vkcv {
 			vk::Extent3D(width, height, depth),
 			mipCount,
 			arrayLayers,
-			sampleCountFlag,
+			msaaToSampleCountFlagBits(msaa),
 			imageTiling,
 			imageUsageFlags,
 			vk::SharingMode::eExclusive,
@@ -189,7 +282,7 @@ namespace vkcv {
 			aspectFlags = vk::ImageAspectFlagBits::eColor;
 		}
 		
-		const vk::Device& device = m_core->getContext().getDevice();
+		const vk::Device& device = getCore().getContext().getDevice();
 		
 		std::vector<vk::ImageView> views;
 		std::vector<vk::ImageView> arrayViews;
@@ -242,25 +335,22 @@ namespace vkcv {
 			arrayViews.push_back(device.createImageView(imageViewCreateInfo));
 		}
 		
-		const uint64_t id = m_images.size();
-		m_images.push_back({
+		return add({
 			image,
 			allocation,
 			
 			views,
 			arrayViews,
-			
+	
 			width,
 			height,
 			depth,
-			
+	
 			format,
 			arrayLayers,
 			vk::ImageLayout::eUndefined,
 			supportStorage
 		});
-		
-		return ImageHandle(id, [&](uint64_t id) { destroyImageById(id); });
 	}
 	
 	ImageHandle ImageManager::createSwapchainImage() const {
@@ -268,38 +358,18 @@ namespace vkcv {
 	}
 	
 	vk::Image ImageManager::getVulkanImage(const ImageHandle &handle) const {
-
-		if (handle.isSwapchainImage()) {
-			m_swapchainImages[m_currentSwapchainInputImage].m_handle;
-		}
-
-		const uint64_t id = handle.getId();
-		if (id >= m_images.size()) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return nullptr;
-		}
-		
-		auto& image = m_images[id];
-		
+		auto& image = (*this)[handle];
 		return image.m_handle;
 	}
 	
 	vk::DeviceMemory ImageManager::getVulkanDeviceMemory(const ImageHandle &handle) const {
-
 		if (handle.isSwapchainImage()) {
 			vkcv_log(LogLevel::ERROR, "Swapchain image has no memory");
 			return nullptr;
 		}
-
-		const uint64_t id = handle.getId();
-		if (id >= m_images.size()) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return nullptr;
-		}
 		
-		auto& image = m_images[id];
-		
-		const vma::Allocator& allocator = m_core->getContext().getAllocator();
+		auto& image = (*this)[handle];
+		const vma::Allocator& allocator = getCore().getContext().getAllocator();
 		
 		auto info = allocator.getAllocationInfo(
 				image.m_allocation
@@ -311,18 +381,11 @@ namespace vkcv {
 	vk::ImageView ImageManager::getVulkanImageView(const ImageHandle &handle,
 												   size_t mipLevel,
 												   bool arrayView) const {
-		
 		if (handle.isSwapchainImage()) {
 			return m_swapchainImages[m_currentSwapchainInputImage].m_viewPerMip[0];
 		}
-
-		const uint64_t id = handle.getId();
-		if (id >= m_images.size()) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return nullptr;
-		}
 		
-		const auto& image = m_images[id];
+		const auto& image = (*this)[handle];
 		const auto& views = arrayView? image.m_arrayViewPerMip : image.m_viewPerMip;
 		
 		if (mipLevel >= views.size()) {
@@ -333,7 +396,7 @@ namespace vkcv {
 		return views[mipLevel];
 	}
 	
-	static vk::ImageMemoryBarrier createImageLayoutTransitionBarrier(const ImageManager::Image &image,
+	static vk::ImageMemoryBarrier createImageLayoutTransitionBarrier(const ImageEntry &image,
 																	 uint32_t mipLevelCount,
 																	 uint32_t mipLevelOffset,
 																	 vk::ImageLayout newLayout) {
@@ -374,23 +437,14 @@ namespace vkcv {
 	}
 	
 	void ImageManager::switchImageLayoutImmediate(const ImageHandle& handle, vk::ImageLayout newLayout) {
-		uint64_t id = handle.getId();
-		
-		const bool isSwapchainImage = handle.isSwapchainImage();
-
-		if (id >= m_images.size() && !isSwapchainImage) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return;
-		}
-		
-		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
+		auto& image = (*this)[handle];
 		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, 0, 0, newLayout);
 		
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Graphics;
+		auto& core = getCore();
+		auto stream = core.createCommandStream(QueueType::Graphics);
 		
-		m_core->recordAndSubmitCommandsImmediate(
-			submitInfo,
+		core.recordCommandsToStream(
+			stream,
 			[transitionBarrier](const vk::CommandBuffer& commandBuffer) {
 			// TODO: precise PipelineStageFlagBits, will require a lot of context
 			commandBuffer.pipelineBarrier(
@@ -405,6 +459,7 @@ namespace vkcv {
 			nullptr
 		);
 		
+		core.submitCommandStream(stream, false);
 		image.m_layout = newLayout;
 	}
 
@@ -413,15 +468,7 @@ namespace vkcv {
 												   uint32_t mipLevelOffset,
 												   vk::ImageLayout newLayout,
 												   vk::CommandBuffer cmdBuffer) {
-		const uint64_t id = handle.getId();
-		const bool isSwapchainImage = handle.isSwapchainImage();
-
-		if (id >= m_images.size() && !isSwapchainImage) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return;
-		}
-
-		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
+		auto& image = (*this)[handle];
 		const auto transitionBarrier = createImageLayoutTransitionBarrier(
 				image,
 				mipLevelCount,
@@ -441,19 +488,9 @@ namespace vkcv {
 		image.m_layout = newLayout;
 	}
 
-	void ImageManager::recordImageMemoryBarrier(
-		const ImageHandle& handle,
-		vk::CommandBuffer cmdBuffer) {
-
-		const uint64_t id = handle.getId();
-		const bool isSwapchainImage = handle.isSwapchainImage();
-
-		if (id >= m_images.size() && !isSwapchainImage) {
-			std::cerr << "Error: ImageManager::recordImageMemoryBarrier invalid handle" << std::endl;
-			return;
-		}
-
-		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
+	void ImageManager::recordImageMemoryBarrier(const ImageHandle& handle,
+												vk::CommandBuffer cmdBuffer) {
+		auto& image = (*this)[handle];
 		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, 0, 0, image.m_layout);
 		
 		cmdBuffer.pipelineBarrier(
@@ -486,25 +523,14 @@ namespace vkcv {
 		}
 	}
 	
-	void ImageManager::fillImage(const ImageHandle& handle, const void* data, size_t size)
-	{
-		const uint64_t id = handle.getId();
-		
+	void ImageManager::fillImage(const ImageHandle& handle, const void* data, size_t size) {
 		if (handle.isSwapchainImage()) {
 			vkcv_log(LogLevel::ERROR, "Swapchain image cannot be filled");
 			return;
 		}
-
-		if (id >= m_images.size()) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return;
-		}
 		
-		auto& image = m_images[id];
-		
-		switchImageLayoutImmediate(
-				handle,
-				vk::ImageLayout::eTransferDstOptimal);
+		auto& image = (*this)[handle];
+		switchImageLayoutImmediate(handle, vk::ImageLayout::eTransferDstOptimal);
 		
 		const size_t image_size = (
 				image.m_width * image.m_height * image.m_depth *
@@ -513,23 +539,23 @@ namespace vkcv {
 		
 		const size_t max_size = std::min(size, image_size);
 		
-		BufferHandle bufferHandle = m_bufferManager.createBuffer(
+		BufferHandle bufferHandle = getBufferManager().createBuffer(
+				TypeGuard(1),
 				BufferType::STAGING,
-				max_size,
 				BufferMemoryType::DEVICE_LOCAL,
-				false,
+				max_size,
 				false
 		);
 		
-		m_bufferManager.fillBuffer(bufferHandle, data, max_size, 0);
+		getBufferManager().fillBuffer(bufferHandle, data, max_size, 0);
 		
-		vk::Buffer stagingBuffer = m_bufferManager.getBuffer(bufferHandle);
+		vk::Buffer stagingBuffer = getBufferManager().getBuffer(bufferHandle);
 		
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Transfer;
+		auto& core = getCore();
+		auto stream = core.createCommandStream(QueueType::Transfer);
 		
-		m_core->recordAndSubmitCommandsImmediate(
-				submitInfo,
+		core.recordCommandsToStream(
+				stream,
 				[&image, &stagingBuffer](const vk::CommandBuffer& commandBuffer) {
 					vk::ImageAspectFlags aspectFlags;
 					
@@ -562,97 +588,28 @@ namespace vkcv {
 					);
 				},
 				[&]() {
-					switchImageLayoutImmediate(
-							handle,
-							vk::ImageLayout::eShaderReadOnlyOptimal
-					);
+					switchImageLayoutImmediate(handle,vk::ImageLayout::eShaderReadOnlyOptimal);
 				}
 		);
+		
+		core.submitCommandStream(stream, false);
 	}
 
-	void ImageManager::recordImageMipGenerationToCmdBuffer(vk::CommandBuffer cmdBuffer, const ImageHandle& handle) {
-
-		const auto id = handle.getId();
-		if (id >= m_images.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid image handle");
-			return;
-		}
-
-		auto& image = m_images[id];
-		recordImageLayoutTransition(handle, 0, 0, vk::ImageLayout::eGeneral, cmdBuffer);
-
-		vk::ImageAspectFlags aspectMask = isDepthImageFormat(image.m_format) ?
-			vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
-
-		uint32_t srcWidth = image.m_width;
-		uint32_t srcHeight = image.m_height;
-		uint32_t srcDepth = image.m_depth;
-
-		auto half = [](uint32_t in) {
-			return std::max<uint32_t>(in / 2, 1);
-		};
-
-		uint32_t dstWidth = half(srcWidth);
-		uint32_t dstHeight = half(srcHeight);
-		uint32_t dstDepth = half(srcDepth);
-
-		for (uint32_t srcMip = 0; srcMip < image.m_viewPerMip.size() - 1; srcMip++) {
-			uint32_t dstMip = srcMip + 1;
-			vk::ImageBlit region(
-				vk::ImageSubresourceLayers(aspectMask, srcMip, 0, 1),
-				{ vk::Offset3D(0, 0, 0), vk::Offset3D(srcWidth, srcHeight, srcDepth) },
-				vk::ImageSubresourceLayers(aspectMask, dstMip, 0, 1),
-				{ vk::Offset3D(0, 0, 0), vk::Offset3D(dstWidth, dstHeight, dstDepth) });
-
-			cmdBuffer.blitImage(
-				image.m_handle,
-				vk::ImageLayout::eGeneral,
-				image.m_handle,
-				vk::ImageLayout::eGeneral,
-				region,
-				vk::Filter::eLinear);
-
-			srcWidth = dstWidth;
-			srcHeight = dstHeight;
-			srcDepth = dstDepth;
-
-			dstWidth = half(dstWidth);
-			dstHeight = half(dstHeight);
-			dstDepth = half(dstDepth);
-
-			recordImageMemoryBarrier(handle, cmdBuffer);
-		}
-	}
-
-	void ImageManager::recordImageMipChainGenerationToCmdStream(
-		const vkcv::CommandStreamHandle& cmdStream,
-		const ImageHandle& handle) {
-
+	void ImageManager::recordImageMipChainGenerationToCmdStream(const vkcv::CommandStreamHandle& cmdStream,
+																const ImageHandle& handle) {
 		const auto record = [this, handle](const vk::CommandBuffer cmdBuffer) {
 			recordImageMipGenerationToCmdBuffer(cmdBuffer, handle);
 		};
-		m_core->recordCommandsToStream(cmdStream, record, nullptr);
+		
+		getCore().recordCommandsToStream(cmdStream, record, nullptr);
 	}
 
-	void ImageManager::recordMSAAResolve(vk::CommandBuffer cmdBuffer, ImageHandle src, ImageHandle dst) {
-
-		const uint64_t srcId = src.getId();
-		const uint64_t dstId = dst.getId();
-
-		const bool isSrcSwapchainImage = src.isSwapchainImage();
-		const bool isDstSwapchainImage = dst.isSwapchainImage();
-
-		const bool isSrcHandleInvalid = srcId >= m_images.size() && !isSrcSwapchainImage;
-		const bool isDstHandleInvalid = dstId >= m_images.size() && !isDstSwapchainImage;
-
-		if (isSrcHandleInvalid || isDstHandleInvalid) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return;
-		}
-
-		auto& srcImage = isSrcSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[srcId];
-		auto& dstImage = isDstSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[dstId];
-
+	void ImageManager::recordMSAAResolve(vk::CommandBuffer cmdBuffer,
+										 const ImageHandle& src,
+										 const ImageHandle& dst) {
+		auto& srcImage = (*this)[src];
+		auto& dstImage = (*this)[dst];
+		
 		vk::ImageResolve region(
 			vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
 			vk::Offset3D(0, 0, 0),
@@ -672,152 +629,62 @@ namespace vkcv {
 	}
 
 	uint32_t ImageManager::getImageWidth(const ImageHandle &handle) const {
-		const uint64_t id = handle.getId();
-		const bool isSwapchainImage = handle.isSwapchainImage();
-
-		if (id >= m_images.size() && !isSwapchainImage) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return 0;
-		}
-		
-		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
-		
+		auto& image = (*this)[handle];
 		return image.m_width;
 	}
 	
 	uint32_t ImageManager::getImageHeight(const ImageHandle &handle) const {
-		const uint64_t id = handle.getId();
-		const bool isSwapchainImage = handle.isSwapchainImage();
-		
-		if (id >= m_images.size() && !isSwapchainImage) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return 0;
-		}
-		
-		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
-		
+		auto& image = (*this)[handle];
 		return image.m_height;
 	}
 	
 	uint32_t ImageManager::getImageDepth(const ImageHandle &handle) const {
-		const uint64_t id = handle.getId();
-		const bool isSwapchainImage = handle.isSwapchainImage();
-
-		if (id >= m_images.size() && !isSwapchainImage) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return 0;
-		}
-		
-		auto& image = isSwapchainImage ? m_swapchainImages[m_currentSwapchainInputImage] : m_images[id];
-		
+		auto& image = (*this)[handle];
 		return image.m_depth;
-	}
-	
-	void ImageManager::destroyImageById(uint64_t id)
-	{
-		if (id >= m_images.size()) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return;
-		}
-		
-		auto& image = m_images[id];
-
-		const vk::Device& device = m_core->getContext().getDevice();
-		
-		for (auto& view : image.m_viewPerMip) {
-			if (view) {
-				device.destroyImageView(view);
-				view = nullptr;
-			}
-		}
-		
-		for (auto& view : image.m_arrayViewPerMip) {
-			if (view) {
-				device.destroyImageView(view);
-				view = nullptr;
-			}
-		}
-		
-		const vma::Allocator& allocator = m_core->getContext().getAllocator();
-
-		if (image.m_handle) {
-			allocator.destroyImage(image.m_handle, image.m_allocation);
-			
-			image.m_handle = nullptr;
-			image.m_allocation = nullptr;
-		}
 	}
 
 	vk::Format ImageManager::getImageFormat(const ImageHandle& handle) const {
-
-		const uint64_t id = handle.getId();
-		const bool isSwapchainFormat = handle.isSwapchainImage();
-
-		if (id >= m_images.size() && !isSwapchainFormat) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return vk::Format::eUndefined;
-		}
-
-		return isSwapchainFormat ? m_swapchainImages[m_currentSwapchainInputImage].m_format : m_images[id].m_format;
+		auto& image = (*this)[handle];
+		return image.m_format;
 	}
 	
 	bool ImageManager::isImageSupportingStorage(const ImageHandle& handle) const {
-		const uint64_t id = handle.getId();
-		const bool isSwapchainFormat = handle.isSwapchainImage();
-		
-		if (isSwapchainFormat) {
+		if (handle.isSwapchainImage()) {
 			return false;
 		}
 		
-		if (id >= m_images.size()) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return false;
-		}
-		
-		return m_images[id].m_storage;
+		auto& image = (*this)[handle];
+		return image.m_storage;
 	}
 
 	uint32_t ImageManager::getImageMipCount(const ImageHandle& handle) const {
-		const uint64_t id = handle.getId();
-
 		if (handle.isSwapchainImage()) {
 			return 1;
 		}
-
-		if (id >= m_images.size()) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return 0;
-		}
-
-		return m_images[id].m_viewPerMip.size();
+		
+		auto& image = (*this)[handle];
+		return image.m_viewPerMip.size();
 	}
 	
 	uint32_t ImageManager::getImageArrayLayers(const ImageHandle& handle) const {
-		const uint64_t id = handle.getId();
-		
-		if (handle.isSwapchainImage()) {
-			return m_swapchainImages[0].m_layers;
-		}
-		
-		if (id >= m_images.size()) {
-			vkcv_log(LogLevel::ERROR, "Invalid handle");
-			return 0;
-		}
-		
-		return m_images[id].m_layers;
+		auto& image = (*this)[handle];
+		return image.m_layers;
 	}
 
 	void ImageManager::setCurrentSwapchainImageIndex(int index) {
 		m_currentSwapchainInputImage = index;
 	}
 
-	void ImageManager::setSwapchainImages(const std::vector<vk::Image>& images, const std::vector<vk::ImageView>& views,
-		uint32_t width, uint32_t height, vk::Format format) {
+	void ImageManager::setSwapchainImages(const std::vector<vk::Image>& images,
+										  const std::vector<vk::ImageView>& views,
+										  uint32_t width,
+										  uint32_t height,
+										  vk::Format format) {
 
 		// destroy old views
 		for (const auto& image : m_swapchainImages) {
 			for (const auto& view : image.m_viewPerMip) {
-				m_core->getContext().getDevice().destroyImageView(view);
+				getCore().getContext().getDevice().destroyImageView(view);
 			}
 		}
 
@@ -840,20 +707,10 @@ namespace vkcv {
 		}
 	}
 
-	void ImageManager::updateImageLayoutManual(const vkcv::ImageHandle& handle, const vk::ImageLayout layout) {
-		const uint64_t id = handle.getId();
-
-		if (handle.isSwapchainImage()) {
-			m_swapchainImages[m_currentSwapchainInputImage].m_layout = layout;
-		}
-		else {
-			if (id >= m_images.size()) {
-				vkcv_log(LogLevel::ERROR, "Invalid handle");
-				return;
-			}
-			m_swapchainImages[id].m_layout = layout;
-		}
-		
+	void ImageManager::updateImageLayoutManual(const vkcv::ImageHandle& handle,
+											   const vk::ImageLayout layout) {
+		auto& image = (*this)[handle];
+		image.m_layout = layout;
 	}
 
 }

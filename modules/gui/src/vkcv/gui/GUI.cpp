@@ -71,7 +71,8 @@ namespace vkcv::gui {
 		m_descriptor_pool = m_context.getDevice().createDescriptorPool(descriptorPoolCreateInfo);
 		
 		const vk::PhysicalDevice& physicalDevice = m_context.getPhysicalDevice();
-		const Swapchain& swapchain = m_core.getSwapchain(m_windowHandle);
+		const SwapchainHandle& swapchainHandle = m_core.getWindow(m_windowHandle).getSwapchain();
+		const uint32_t swapchainImageCount = m_core.getSwapchainImageCount(swapchainHandle);
 		
 		const uint32_t graphicsQueueFamilyIndex = (
 				m_context.getQueueManager().getGraphicsQueues()[0].familyIndex
@@ -86,13 +87,13 @@ namespace vkcv::gui {
 		init_info.PipelineCache = 0;
 		init_info.DescriptorPool = static_cast<VkDescriptorPool>(m_descriptor_pool);
 		init_info.Allocator = nullptr;
-		init_info.MinImageCount = swapchain.getImageCount();
-		init_info.ImageCount = swapchain.getImageCount();
+		init_info.MinImageCount = swapchainImageCount;
+		init_info.ImageCount = swapchainImageCount;
 		init_info.CheckVkResultFn = checkVulkanResult;
 		
 		const vk::AttachmentDescription attachment (
 				vk::AttachmentDescriptionFlags(),
-				swapchain.getFormat(),
+				m_core.getSwapchainFormat(swapchainHandle),
 				vk::SampleCountFlagBits::e1,
 				vk::AttachmentLoadOp::eLoad,
 				vk::AttachmentStoreOp::eStore,
@@ -144,14 +145,15 @@ namespace vkcv::gui {
 		
 		ImGui_ImplVulkan_Init(&init_info, static_cast<VkRenderPass>(m_render_pass));
 		
-		const SubmitInfo submitInfo { QueueType::Graphics, {}, {} };
+		auto stream = m_core.createCommandStream(QueueType::Graphics);
 		
-		m_core.recordAndSubmitCommandsImmediate(submitInfo, [](const vk::CommandBuffer& commandBuffer) {
+		m_core.recordCommandsToStream(stream, [](const vk::CommandBuffer& commandBuffer) {
 			ImGui_ImplVulkan_CreateFontsTexture(static_cast<VkCommandBuffer>(commandBuffer));
 		}, []() {
 			ImGui_ImplVulkan_DestroyFontUploadObjects();
 		});
 		
+		m_core.submitCommandStream(stream, false);
 		m_context.getDevice().waitIdle();
 	}
 	
@@ -177,11 +179,11 @@ namespace vkcv::gui {
 	}
 	
 	void GUI::beginGUI() {
-		const Swapchain& swapchain = m_core.getSwapchain(m_windowHandle);
-		const auto extent = swapchain.getExtent();
+		const auto swapchainHandle = m_core.getWindow(m_windowHandle).getSwapchain();
+		const auto& extent = m_core.getSwapchainExtent(swapchainHandle);
 		
 		if ((extent.width > 0) && (extent.height > 0)) {
-			ImGui_ImplVulkan_SetMinImageCount(swapchain.getImageCount());
+			ImGui_ImplVulkan_SetMinImageCount(m_core.getSwapchainImageCount(swapchainHandle));
 		}
 		
 		ImGui_ImplVulkan_NewFrame();
@@ -200,8 +202,8 @@ namespace vkcv::gui {
 			return;
 		}
 		
-		const Swapchain& swapchain = m_core.getSwapchain(m_windowHandle);
-		const auto extent = swapchain.getExtent();
+		const auto swapchainHandle = m_core.getWindow(m_windowHandle).getSwapchain();
+		const auto& extent = m_core.getSwapchainExtent(swapchainHandle);
 
 		const vk::ImageView swapchainImageView = m_core.getSwapchainImageView();
 
@@ -216,11 +218,9 @@ namespace vkcv::gui {
 		);
 		
 		const vk::Framebuffer framebuffer = m_context.getDevice().createFramebuffer(framebufferCreateInfo);
+		auto stream = m_core.createCommandStream(QueueType::Graphics);
 		
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Graphics;
-		
-		m_core.recordAndSubmitCommandsImmediate(submitInfo, [&](const vk::CommandBuffer& commandBuffer) {
+		m_core.recordCommandsToStream(stream, [&](const vk::CommandBuffer& commandBuffer) {
 
 			assert(initialImageLayout == vk::ImageLayout::eColorAttachmentOptimal);
 			m_core.prepareImageForAttachmentManually(commandBuffer, vkcv::ImageHandle::createSwapchainImageHandle());
@@ -251,6 +251,8 @@ namespace vkcv::gui {
 		}, [&]() {
 			m_context.getDevice().destroyFramebuffer(framebuffer);
 		});
+		
+		m_core.submitCommandStream(stream, false);
 	}
 	
 }

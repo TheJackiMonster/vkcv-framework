@@ -6,6 +6,7 @@
  */
 
 #include <cstdio>
+#include <exception>
 
 namespace vkcv {
 	
@@ -112,5 +113,40 @@ namespace vkcv {
  */
 #define vkcv_log(level, ...) {}
 #endif
+
+/**
+ * @brief Macro-function to log the message of any error
+ * or an exception.
+ *
+ * @param[in] error Error or exception
+ */
+#define vkcv_log_error(error) {                    \
+  vkcv_log(LogLevel::ERROR, "%s", (error).what()); \
+}
+
+/**
+ * @brief Macro-function to throw and log any error or
+ * an exception.
+ *
+ * @param[in] error Error or exception
+ */
+#define vkcv_log_throw(error) {       \
+  try {                               \
+    throw error;                      \
+  } catch (const std::exception& e) { \
+    vkcv_log_error(e);                \
+    throw;                            \
+  }                                   \
+}
+
+/**
+ * @brief Macro-function to throw and log an error
+ * with its custom message.
+ *
+ * @param[in] message Error message
+ */
+#define vkcv_log_throw_error(message) {        \
+  vkcv_log_throw(std::runtime_error(message)); \
+}
 
 }

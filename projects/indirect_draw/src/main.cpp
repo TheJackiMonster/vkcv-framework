@@ -1,7 +1,10 @@
 #include <iostream>
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
+#include <vkcv/Sampler.hpp>
+#include <vkcv/Image.hpp>
 #include <vkcv/camera/CameraManager.hpp>
-#include <chrono>
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -87,28 +90,33 @@ struct CompiledMaterial
 
 void interleaveScene(vkcv::asset::Scene scene,
                      std::vector<std::vector<Vertex>> &interleavedVertexBuffers,
-                     std::vector<glm::vec4> &boundingBoxBuffers)
-{
-    for(const auto &mesh : scene.meshes)
-    {
-        for(auto vertexGroupIndex : mesh.vertexGroups)
-        {
-			// Sort attributes to fix it!
-			auto& attributes = scene.vertexGroups[vertexGroupIndex].vertexBuffer.attributes;
+                     std::vector<glm::vec4> &boundingBoxBuffers) {
 	
-			std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-				return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-			});
-			
+    for(const auto &mesh : scene.meshes) {
+        for(auto vertexGroupIndex : mesh.vertexGroups) {
             const auto &vertexGroup = scene.vertexGroups[vertexGroupIndex];
 
-            const vkcv::asset::VertexAttribute positionAttribute = vertexGroup.vertexBuffer.attributes[0];
-            const vkcv::asset::VertexAttribute normalAttribute   = vertexGroup.vertexBuffer.attributes[1];
-            const vkcv::asset::VertexAttribute uvAttribute       = vertexGroup.vertexBuffer.attributes[2];
-
-            assert(positionAttribute.type   == vkcv::asset::PrimitiveType::POSITION);
-            assert(normalAttribute.type     == vkcv::asset::PrimitiveType::NORMAL);
-            assert(uvAttribute.type         == vkcv::asset::PrimitiveType::TEXCOORD_0);
+            const vkcv::asset::VertexAttribute* positionAttribute = nullptr;
+            const vkcv::asset::VertexAttribute* normalAttribute   = nullptr;
+            const vkcv::asset::VertexAttribute* uvAttribute       = nullptr;
+			
+			for (const auto& attribute : vertexGroup.vertexBuffer.attributes) {
+				switch (attribute.type) {
+					case vkcv::asset::PrimitiveType::POSITION:
+						positionAttribute = &attribute;
+						break;
+					case vkcv::asset::PrimitiveType::NORMAL:
+						normalAttribute = &attribute;
+						break;
+					case vkcv::asset::PrimitiveType::TEXCOORD_0:
+						uvAttribute = &attribute;
+						break;
+					default:
+						break;
+				}
+			}
+	
+			assert(positionAttribute && normalAttribute && uvAttribute);
 
             const uint64_t &verticesCount          = vertexGroup.numVertices;
             const std::vector<uint8_t> &vertexData = vertexGroup.vertexBuffer.data;
@@ -116,18 +124,18 @@ void interleaveScene(vkcv::asset::Scene scene,
             std::vector<Vertex> vertices;
             vertices.reserve(verticesCount);
 
-            const size_t positionStride = positionAttribute.stride == 0 ? sizeof(glm::vec3) : positionAttribute.stride;
-            const size_t normalStride   = normalAttribute.stride   == 0 ? sizeof(glm::vec3) : normalAttribute.stride;
-            const size_t uvStride       = uvAttribute.stride       == 0 ? sizeof(glm::vec2) : uvAttribute.stride;
+            const size_t positionStride = positionAttribute->stride == 0 ? sizeof(glm::vec3) : positionAttribute->stride;
+            const size_t normalStride   = normalAttribute->stride   == 0 ? sizeof(glm::vec3) : normalAttribute->stride;
+            const size_t uvStride       = uvAttribute->stride       == 0 ? sizeof(glm::vec2) : uvAttribute->stride;
 
             glm::vec3 max_pos(-std::numeric_limits<float>::max());
             glm::vec3 min_pos(std::numeric_limits<float>::max());
 
             for(size_t i = 0; i < verticesCount; i++)
             {
-                const size_t positionOffset = positionAttribute.offset + positionStride * i;
-                const size_t normalOffset   = normalAttribute.offset   + normalStride * i;
-                const size_t uvOffset       = uvAttribute.offset       + uvStride * i;
+                const size_t positionOffset = positionAttribute->offset + positionStride * i;
+                const size_t normalOffset   = normalAttribute->offset   + normalStride * i;
+                const size_t uvOffset       = uvAttribute->offset       + uvStride * i;
 
                 Vertex v;
 
@@ -169,7 +177,7 @@ void compileMeshForIndirectDraw(vkcv::Core &core,
                                 CompiledMaterial &compiledMat,
                                 std::vector<vk::DrawIndexedIndirectCommand> &indexedIndirectCommands)
 {
-    vkcv::Image pseudoImg = core.createImage(vk::Format::eR8G8B8A8Srgb, 2, 2);
+    vkcv::Image pseudoImg = vkcv::image(core, vk::Format::eR8G8B8A8Srgb, 2, 2);
     std::vector<uint8_t> pseudoData = {0, 0, 0, 0};
     pseudoImg.fill(pseudoData.data());
 	
@@ -194,7 +202,7 @@ void compileMeshForIndirectDraw(vkcv::Core &core,
             {
                 auto &baseColor     = scene.textures[material.baseColor];
 
-                vkcv::Image baseColorImg = core.createImage(vk::Format::eR8G8B8A8Srgb, baseColor.w, baseColor.h);
+                vkcv::Image baseColorImg = vkcv::image(core, vk::Format::eR8G8B8A8Srgb, baseColor.w, baseColor.h);
                 baseColorImg.fill(baseColor.data.data());
 				baseColorImg.recordMipChainGeneration(mipStream, core.getDownsampler());
 
@@ -306,6 +314,7 @@ int main(int argc, const char** argv) {
 	);
 
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName,800,600,true);
+	vkcv::Window& window = core.getWindow(windowHandle);
 
     vkcv::gui::GUI gui (core, windowHandle);
 
@@ -326,19 +335,12 @@ int main(int argc, const char** argv) {
         return EXIT_FAILURE;
     }
 
-    const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain(windowHandle).getFormat()
+    vkcv::PassHandle passHandle = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined, vk::Format::eD32Sfloat }
 	);
-	const vkcv::AttachmentDescription depth_attachment(
-			vkcv::AttachmentOperation::STORE,
-			vkcv::AttachmentOperation::CLEAR,
-			vk::Format::eD32Sfloat
-	);
-
-	vkcv::PassConfig passDefinition({ present_color_attachment, depth_attachment }, vkcv::Multisampling::None);
-	vkcv::PassHandle passHandle = core.createPass(passDefinition);
+	
 	if (!passHandle) {
 		std::cerr << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
@@ -393,26 +395,29 @@ int main(int argc, const char** argv) {
         compiledInterleavedVertexBuffer.insert(compiledInterleavedVertexBuffer.end(),vertexGroup.begin(),vertexGroup.end());
 	}
 
-	auto vkCompiledVertexBuffer = core.createBuffer<Vertex>(
+	auto vkCompiledVertexBuffer = vkcv::buffer<Vertex>(
+			core,
 			vkcv::BufferType::VERTEX,
             compiledInterleavedVertexBuffer.size(),
-			vkcv::BufferMemoryType::DEVICE_LOCAL
-			);
+			vkcv::BufferMemoryType::DEVICE_LOCAL);
     vkCompiledVertexBuffer.fill(compiledInterleavedVertexBuffer.data());
 
-    auto vkCompiledIndexBuffer = core.createBuffer<uint8_t>(
+    auto vkCompiledIndexBuffer = vkcv::buffer<uint8_t>(
+			core,
             vkcv::BufferType::INDEX,
             compiledIndexBuffer.size(),
             vkcv::BufferMemoryType::DEVICE_LOCAL);
     vkCompiledIndexBuffer.fill(compiledIndexBuffer.data());
 
-    vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = core.createBuffer<vk::DrawIndexedIndirectCommand>(
+    vkcv::Buffer<vk::DrawIndexedIndirectCommand> indirectBuffer = vkcv::buffer<vk::DrawIndexedIndirectCommand>(
+			core,
             vkcv::BufferType::INDIRECT,
             indexedIndirectCommands.size(),
             vkcv::BufferMemoryType::DEVICE_LOCAL);
     indirectBuffer.fill(indexedIndirectCommands);
 
-    auto boundingBoxBuffer = core.createBuffer<glm::vec4>(
+    auto boundingBoxBuffer = vkcv::buffer<glm::vec4>(
+			core,
             vkcv::BufferType::STORAGE,
             compiledBoundingBoxBuffer.size());
     boundingBoxBuffer.fill(compiledBoundingBoxBuffer);
@@ -422,7 +427,8 @@ int main(int argc, const char** argv) {
 	{
 		modelMatrix.push_back(glm::make_mat4(mesh.modelMatrix.data()));
 	}
-	vkcv::Buffer<glm::mat4> modelBuffer = core.createBuffer<glm::mat4>(
+	vkcv::Buffer<glm::mat4> modelBuffer = vkcv::buffer<glm::mat4>(
+			core,
 			vkcv::BufferType::STORAGE,
 			modelMatrix.size(),
 			vkcv::BufferMemoryType::DEVICE_LOCAL
@@ -430,10 +436,11 @@ int main(int argc, const char** argv) {
 	modelBuffer.fill(modelMatrix);
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize> (0), vkCompiledVertexBuffer.getVulkanHandle() )
+			vkcv::vertexBufferBinding(vkCompiledVertexBuffer.getHandle())
 	};
-
-	const vkcv::Mesh compiledMesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), 0, vkcv::IndexBitCount::Bit32);
+	
+	vkcv::VertexData vertexData (vertexBufferBindings);
+	vertexData.setIndexBuffer(vkCompiledIndexBuffer.getHandle(), vkcv::IndexBitCount::Bit32);
 
     //assert(compiledMaterial.baseColor.size() == compiledMaterial.metalRough.size());
 
@@ -443,12 +450,7 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
 	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 
-    vkcv::SamplerHandle standardSampler = core.createSampler(
-            vkcv::SamplerFilterType::LINEAR,
-            vkcv::SamplerFilterType::LINEAR,
-            vkcv::SamplerMipmapMode::LINEAR,
-            vkcv::SamplerAddressMode::REPEAT
-    );
+    vkcv::SamplerHandle standardSampler = vkcv::samplerLinear(core);
 	
 	vkcv::DescriptorWrites setWrites;
 	
@@ -462,16 +464,15 @@ int main(int argc, const char** argv) {
 	setWrites.writeStorageBuffer(1, modelBuffer.getHandle());
     core.writeDescriptorSet(descriptorSet, setWrites);
 
-	const vkcv::GraphicsPipelineConfig sponzaPipelineConfig {
-        sponzaProgram,
-        UINT32_MAX,
-        UINT32_MAX,
-        passHandle,
-        {sponzaVertexLayout},
-		{ descriptorSetLayout },
-		true
-	};
-	vkcv::GraphicsPipelineHandle sponzaPipelineHandle = core.createGraphicsPipeline(sponzaPipelineConfig);
+	vkcv::GraphicsPipelineHandle sponzaPipelineHandle = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					sponzaProgram,
+					passHandle,
+					{ sponzaVertexLayout },
+					{ descriptorSetLayout }
+			)
+	);
+	
 	if (!sponzaPipelineHandle) {
 		std::cerr << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
@@ -481,7 +482,8 @@ int main(int argc, const char** argv) {
     vkcv::DescriptorSetLayoutHandle cullingSetLayout = core.createDescriptorSetLayout(cullingBindings);
     vkcv::DescriptorSetHandle cullingDescSet = core.createDescriptorSet(cullingSetLayout);
 
-    vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = core.createBuffer<CameraPlanes>(
+    vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = vkcv::buffer<CameraPlanes>(
+			core,
             vkcv::BufferType::UNIFORM,
             1);
 
@@ -502,7 +504,7 @@ int main(int argc, const char** argv) {
         return EXIT_FAILURE;
     }
 
-    vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
+    vkcv::camera::CameraManager cameraManager (window);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
@@ -512,46 +514,30 @@ int main(int argc, const char** argv) {
 	
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    auto start = std::chrono::system_clock::now();
-
     float ceiledDispatchCount = static_cast<float>(indexedIndirectCommands.size()) / 64.0f;
     ceiledDispatchCount = std::ceil(ceiledDispatchCount);
-    const uint32_t dispatchCount[3] = {static_cast<uint32_t>(ceiledDispatchCount), 1, 1};
+    const vkcv::DispatchSize dispatchCount = static_cast<uint32_t>(ceiledDispatchCount);
 
-
-    vkcv::DescriptorSetUsage cullingUsage(0, cullingDescSet, {});
+    vkcv::DescriptorSetUsage cullingUsage (0, cullingDescSet, {});
     vkcv::PushConstants emptyPushConstant(0);
 
     bool updateFrustumPlanes    = true;
-
-    while (vkcv::Window::hasOpenWindow()) {
-        vkcv::Window::pollEvents();
-		
-		if(core.getWindow(windowHandle).getHeight() == 0 || core.getWindow(windowHandle).getWidth() == 0)
-			continue;
-		
-		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-			continue;
-		}
-		
+	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((!depthBuffer) ||
 			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
 			(swapchainHeight != core.getImageHeight(depthBuffer))) {
-			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight).getHandle();
+			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight);
 		}
   
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		cameraManager.update(dt);
 		
-		start = end;
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
         vkcv::camera::Camera cam = cameraManager.getActiveCamera();
-		vkcv::PushConstants pushConstants(sizeof(glm::mat4));
+		vkcv::PushConstants pushConstants = vkcv::pushConstants<glm::mat4>();
 		pushConstants.appendDrawcall(cam.getProjection() * cam.getView());
 
-        if(updateFrustumPlanes)
-        {
+        if (updateFrustumPlanes) {
             const CameraPlanes cameraPlanes = computeCameraPlanes(cam);
             cameraPlaneBuffer.fill({ cameraPlanes });
         }
@@ -559,43 +545,46 @@ int main(int argc, const char** argv) {
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-        core.recordComputeDispatchToCmdStream(cmdStream,
-                                              cullingPipelineHandle,
-                                              dispatchCount,
-                                              {cullingUsage},
-                                              emptyPushConstant);
+        core.recordComputeDispatchToCmdStream(
+				cmdStream,
+				cullingPipelineHandle,
+				dispatchCount,
+				{cullingUsage},
+				emptyPushConstant
+		);
 
         core.recordBufferMemoryBarrier(cmdStream, indirectBuffer.getHandle());
 
-		core.recordIndexedIndirectDrawcallsToCmdStream(
+		vkcv::IndirectDrawcall drawcall (
+				indirectBuffer.getHandle(),
+				vertexData,
+				indexedIndirectCommands.size()
+		);
+		
+		drawcall.useDescriptorSet(0, descriptorSet);
+		
+		core.recordIndirectDrawcallsToCmdStream(
 			cmdStream,
-			passHandle,
             sponzaPipelineHandle,
             pushConstants,
-            descriptorSet,
-            compiledMesh,
+			{ drawcall },
 			renderTargets,
-			indirectBuffer,
-            indexedIndirectCommands.size(),
-			windowHandle);
+			windowHandle
+		);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-
-		auto stop = std::chrono::system_clock::now();
-		auto kektime = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+		
         gui.beginGUI();
 
         ImGui::Begin("Settings");
         ImGui::Checkbox("Update frustum culling", &updateFrustumPlanes);
-		ImGui::Text("Deltatime %fms, %f", 0.001 * static_cast<double>(kektime.count()), 1/(0.000001 * static_cast<double>(kektime.count())));
+		ImGui::Text("Deltatime %fms, %f", dt * 1000, 1/dt);
 
         ImGui::End();
 
         gui.endGUI();
-
-		core.endFrame(windowHandle);
-	}
+	});
 	
 	return 0;
 }

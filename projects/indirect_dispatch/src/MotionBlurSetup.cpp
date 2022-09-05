@@ -17,7 +17,8 @@ MotionBlurRenderTargets createRenderTargets(const uint32_t width, const uint32_t
 		motionMaxheight,
 		1,
 		false,
-		true).getHandle();
+		true
+	);
 
 	targets.motionMaxNeighbourhood = core.createImage(
 		MotionBlurConfig::motionVectorTileFormat,
@@ -25,7 +26,8 @@ MotionBlurRenderTargets createRenderTargets(const uint32_t width, const uint32_t
 		motionMaxheight,
 		1,
 		false,
-		true).getHandle();
+		true
+	);
 
 	targets.motionMin = core.createImage(
 		MotionBlurConfig::motionVectorTileFormat,
@@ -33,7 +35,8 @@ MotionBlurRenderTargets createRenderTargets(const uint32_t width, const uint32_t
 		motionMaxheight,
 		1,
 		false,
-		true).getHandle();
+		true
+	);
 
 	targets.motionMinNeighbourhood = core.createImage(
 		MotionBlurConfig::motionVectorTileFormat,
@@ -41,7 +44,8 @@ MotionBlurRenderTargets createRenderTargets(const uint32_t width, const uint32_t
 		motionMaxheight,
 		1,
 		false,
-		true).getHandle();
+		true
+	);
 
 	targets.outputColor = core.createImage(
 		MotionBlurConfig::outputColorFormat,
@@ -49,7 +53,8 @@ MotionBlurRenderTargets createRenderTargets(const uint32_t width, const uint32_t
 		height,
 		1,
 		false,
-		true).getHandle();
+		true
+	);
 
 	return targets;
 }

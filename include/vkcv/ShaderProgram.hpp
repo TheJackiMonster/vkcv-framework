@@ -13,8 +13,8 @@
 #include <vulkan/vulkan.hpp>
 #include <spirv_cross.hpp>
 
+#include "DescriptorBinding.hpp"
 #include "VertexLayout.hpp"
-#include "DescriptorConfig.hpp"
 #include "ShaderStage.hpp"
 
 namespace vkcv {

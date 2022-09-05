@@ -1,5 +1,8 @@
 
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
+#include <vkcv/Image.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -238,7 +241,8 @@ vkcv::ComputePipelineHandle createComputePipeline(vkcv::Core& core, vkcv::shader
 
 vkcv::BufferHandle resetParticles(vkcv::Core& core, size_t count, const glm::vec3& velocity,
 					float density, float size, int form, int mode) {
-	vkcv::Buffer<Particle> particles = core.createBuffer<Particle>(
+	vkcv::Buffer<Particle> particles = vkcv::buffer<Particle>(
+			core,
 			vkcv::BufferType::STORAGE,
 			count
 	);
@@ -301,15 +305,16 @@ int main(int argc, const char **argv) {
 	cameraManager.getCamera(trackballIdx).setCenter(glm::vec3(0.5f, 0.5f, 0.5f));   // set camera to look at the center of the particle volume
 	cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
-	auto swapchainExtent = core.getSwapchain(windowHandle).getExtent();
+	auto swapchainExtent = core.getSwapchainExtent(window.getSwapchain());
 	
 	vkcv::ImageHandle depthBuffer = core.createImage(
 			vk::Format::eD32Sfloat,
 			swapchainExtent.width,
 			swapchainExtent.height
-	).getHandle();
+	);
 	
-	vkcv::Image grid = core.createImage(
+	vkcv::Image grid = vkcv::image(
+			core,
 			vk::Format::eR16G16B16A16Sfloat,
 			32,
 			32,
@@ -327,8 +332,8 @@ int main(int argc, const char **argv) {
 			vkcv::SamplerBorderColor::FLOAT_ZERO_TRANSPARENT
 	);
 	
-	vkcv::Buffer<Simulation> simulation = core.createBuffer<Simulation>(
-			vkcv::BufferType::UNIFORM, 1, vkcv::BufferMemoryType::HOST_VISIBLE
+	vkcv::Buffer<Simulation> simulation = vkcv::buffer<Simulation>(
+			core, vkcv::BufferType::UNIFORM, 1, vkcv::BufferMemoryType::HOST_VISIBLE
 	);
 	
 	Simulation* sim = simulation.map();
@@ -452,45 +457,6 @@ int main(int argc, const char **argv) {
 			{ vkcv::ShaderStage::FRAGMENT, "shaders/lines.frag" }
 	}, nullptr);
 	
-	vkcv::PassConfig passConfigGrid {{
-		vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
-				vkcv::AttachmentOperation::CLEAR,
-				core.getSwapchain(windowHandle).getFormat()
-		),
-		vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
-				vkcv::AttachmentOperation::CLEAR,
-				vk::Format::eD32Sfloat
-		)
-	}, vkcv::Multisampling::None };
-	
-	vkcv::PassConfig passConfigParticles {{
-		vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
-				vkcv::AttachmentOperation::CLEAR,
-				core.getSwapchain(windowHandle).getFormat()
-		),
-		vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
-				vkcv::AttachmentOperation::CLEAR,
-				vk::Format::eD32Sfloat
-		)
-	}, vkcv::Multisampling::None };
-	
-	vkcv::PassConfig passConfigLines {{
-		vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
-				vkcv::AttachmentOperation::LOAD,
-				core.getSwapchain(windowHandle).getFormat()
-		),
-		vkcv::AttachmentDescription(
-				vkcv::AttachmentOperation::STORE,
-				vkcv::AttachmentOperation::LOAD,
-				vk::Format::eD32Sfloat
-		)
-	}, vkcv::Multisampling::None };
-	
 	vkcv::DescriptorSetLayoutHandle gfxSetLayoutGrid = core.createDescriptorSetLayout(
 			gfxProgramGrid.getReflectedDescriptors().at(0)
 	);
@@ -517,73 +483,75 @@ int main(int argc, const char **argv) {
 		core.writeDescriptorSet(gfxSetParticles, writes);
 	}
 	
-	vkcv::PassHandle gfxPassGrid = core.createPass(passConfigGrid);
-	vkcv::PassHandle gfxPassParticles = core.createPass(passConfigParticles);
-	vkcv::PassHandle gfxPassLines = core.createPass(passConfigLines);
+	vkcv::PassHandle gfxPassGrid = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined, vk::Format::eD32Sfloat }
+	);
+	
+	vkcv::PassHandle gfxPassParticles = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined, vk::Format::eD32Sfloat }
+	);
+	
+	vkcv::PassHandle gfxPassLines = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined, vk::Format::eD32Sfloat },
+			false
+	);
 	
 	vkcv::VertexLayout vertexLayoutGrid ({
 		vkcv::createVertexBinding(0, gfxProgramGrid.getVertexAttachments())
 	});
 	
-	vkcv::GraphicsPipelineConfig gfxPipelineConfigGrid;
-	gfxPipelineConfigGrid.m_ShaderProgram = gfxProgramGrid;
-	gfxPipelineConfigGrid.m_Width = windowWidth;
-	gfxPipelineConfigGrid.m_Height = windowHeight;
-	gfxPipelineConfigGrid.m_PassHandle = gfxPassGrid;
-	gfxPipelineConfigGrid.m_VertexLayout = vertexLayoutGrid;
-	gfxPipelineConfigGrid.m_DescriptorLayouts = { gfxSetLayoutGrid };
-	gfxPipelineConfigGrid.m_UseDynamicViewport = true;
+	vkcv::GraphicsPipelineConfig gfxPipelineConfigGrid (
+			gfxProgramGrid,
+			gfxPassGrid,
+			vertexLayoutGrid,
+			{ gfxSetLayoutGrid }
+	);
 	
 	vkcv::VertexLayout vertexLayoutParticles ({
 		vkcv::createVertexBinding(0, gfxProgramParticles.getVertexAttachments())
 	});
 	
-	vkcv::GraphicsPipelineConfig gfxPipelineConfigParticles;
-	gfxPipelineConfigParticles.m_ShaderProgram = gfxProgramParticles;
-	gfxPipelineConfigParticles.m_Width = windowWidth;
-	gfxPipelineConfigParticles.m_Height = windowHeight;
-	gfxPipelineConfigParticles.m_PassHandle = gfxPassParticles;
-	gfxPipelineConfigParticles.m_VertexLayout = vertexLayoutParticles;
-	gfxPipelineConfigParticles.m_DescriptorLayouts = { gfxSetLayoutParticles };
-	gfxPipelineConfigParticles.m_UseDynamicViewport = true;
+	vkcv::GraphicsPipelineConfig gfxPipelineConfigParticles (
+			gfxProgramParticles,
+			gfxPassParticles,
+			vertexLayoutParticles,
+			{ gfxSetLayoutParticles }
+	);
 	
 	vkcv::VertexLayout vertexLayoutLines ({
 		vkcv::createVertexBinding(0, gfxProgramLines.getVertexAttachments())
 	});
 	
-	vkcv::GraphicsPipelineConfig gfxPipelineConfigLines;
-	gfxPipelineConfigLines.m_ShaderProgram = gfxProgramLines;
-	gfxPipelineConfigLines.m_Width = windowWidth;
-	gfxPipelineConfigLines.m_Height = windowHeight;
-	gfxPipelineConfigLines.m_PassHandle = gfxPassLines;
-	gfxPipelineConfigLines.m_VertexLayout = vertexLayoutLines;
-	gfxPipelineConfigLines.m_DescriptorLayouts = {};
-	gfxPipelineConfigLines.m_UseDynamicViewport = true;
-	gfxPipelineConfigLines.m_PrimitiveTopology = vkcv::PrimitiveTopology::LineList;
+	vkcv::GraphicsPipelineConfig gfxPipelineConfigLines (
+			gfxProgramLines,
+			gfxPassLines,
+			vertexLayoutLines,
+			{}
+	);
+	
+	gfxPipelineConfigLines.setPrimitiveTopology(vkcv::PrimitiveTopology::LineList);
 	
 	vkcv::GraphicsPipelineHandle gfxPipelineGrid = core.createGraphicsPipeline(gfxPipelineConfigGrid);
 	vkcv::GraphicsPipelineHandle gfxPipelineParticles = core.createGraphicsPipeline(gfxPipelineConfigParticles);
 	vkcv::GraphicsPipelineHandle gfxPipelineLines = core.createGraphicsPipeline(gfxPipelineConfigLines);
 	
-	vkcv::Buffer<glm::vec2> trianglePositions = core.createBuffer<glm::vec2>(vkcv::BufferType::VERTEX, 3);
+	vkcv::Buffer<glm::vec2> trianglePositions = vkcv::buffer<glm::vec2>(core, vkcv::BufferType::VERTEX, 3);
 	trianglePositions.fill({
 		glm::vec2(-1.0f, -1.0f),
 		glm::vec2(+0.0f, +1.5f),
 		glm::vec2(+1.0f, -1.0f)
 	});
 	
-	vkcv::Buffer<uint16_t> triangleIndices = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3);
-	triangleIndices.fill({
-		0, 1, 2
-	});
+	vkcv::VertexData triangleData ({ vkcv::vertexBufferBinding(trianglePositions.getHandle()) });
+	triangleData.setCount(trianglePositions.getCount());
 	
-	vkcv::Mesh triangleMesh (
-			{ vkcv::VertexBufferBinding(0, trianglePositions.getVulkanHandle()) },
-			triangleIndices.getVulkanHandle(),
-			triangleIndices.getCount()
-	);
-	
-	vkcv::Buffer<glm::vec3> linesPositions = core.createBuffer<glm::vec3>(vkcv::BufferType::VERTEX, 8);
+	vkcv::Buffer<glm::vec3> linesPositions = vkcv::buffer<glm::vec3>(core, vkcv::BufferType::VERTEX, 8);
 	linesPositions.fill({
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(1.0f, 0.0f, 0.0f),
@@ -595,7 +563,7 @@ int main(int argc, const char **argv) {
 		glm::vec3(1.0f, 1.0f, 1.0f)
 	});
 	
-	vkcv::Buffer<uint16_t> linesIndices = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 24);
+	vkcv::Buffer<uint16_t> linesIndices = vkcv::buffer<uint16_t>(core, vkcv::BufferType::INDEX, 24);
 	linesIndices.fill({
 		0, 1,
 		1, 3,
@@ -613,90 +581,60 @@ int main(int argc, const char **argv) {
 		3, 7
 	});
 	
-	vkcv::Mesh linesMesh (
-			{ vkcv::VertexBufferBinding(0, linesPositions.getVulkanHandle()) },
-			linesIndices.getVulkanHandle(),
-			linesIndices.getCount()
+	vkcv::VertexData linesData ({ vkcv::vertexBufferBinding(linesPositions.getHandle()) });
+	linesData.setIndexBuffer(linesIndices.getHandle());
+	linesData.setCount(linesIndices.getCount());
+	
+	vkcv::InstanceDrawcall drawcallGrid (
+			triangleData,
+			grid.getWidth() * grid.getHeight() * grid.getDepth()
 	);
 	
-	std::vector<vkcv::DrawcallInfo> drawcallsGrid;
+	drawcallGrid.useDescriptorSet(0, gfxSetGrid);
 	
-	drawcallsGrid.push_back(vkcv::DrawcallInfo(
-			triangleMesh,
-			{ vkcv::DescriptorSetUsage(0, gfxSetGrid) },
-			grid.getWidth() * grid.getHeight() * grid.getDepth()
-	));
+	vkcv::InstanceDrawcall drawcallParticle (triangleData, sim->count);
+	drawcallParticle.useDescriptorSet(0, gfxSetParticles);
 	
-	std::vector<vkcv::DrawcallInfo> drawcallsParticles;
-	
-	drawcallsParticles.push_back(vkcv::DrawcallInfo(
-			triangleMesh,
-			{ vkcv::DescriptorSetUsage(0, gfxSetParticles) },
-			sim->count
-	));
-	
-	std::vector<vkcv::DrawcallInfo> drawcallsLines;
-	
-	drawcallsLines.push_back(vkcv::DrawcallInfo(
-			linesMesh,
-			{},
-			1
-	));
+	vkcv::InstanceDrawcall drawcallLines (linesData);
 	
 	bool renderGrid = true;
-	
 	float speed_factor = 1.0f;
 	
-	auto start = std::chrono::system_clock::now();
-	auto current = start;
-	
-	while (vkcv::Window::hasOpenWindow()) {
-		vkcv::Window::pollEvents();
-		
-		if (window.getHeight() == 0 || window.getWidth() == 0)
-			continue;
-		
-		uint32_t swapchainWidth, swapchainHeight;
-		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-			continue;
-		}
-		
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
 			depthBuffer = core.createImage(
 					vk::Format::eD32Sfloat,
 					swapchainWidth,
 					swapchainHeight
-			).getHandle();
+			);
 			
 			swapchainExtent.width = swapchainWidth;
 			swapchainExtent.height = swapchainHeight;
 		}
 		
-		auto next = std::chrono::system_clock::now();
-		
-		auto time = std::chrono::duration_cast<std::chrono::microseconds>(next - start);
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(next - current);
-		
-		current = next;
-		
 		Physics physics;
-		physics.t = static_cast<float>(0.000001 * static_cast<double>(time.count()));
-		physics.dt = static_cast<float>(0.000001 * static_cast<double>(deltatime.count()));
+		physics.t = static_cast<float>(t);
+		physics.dt = static_cast<float>(dt);
 		physics.speedfactor = speed_factor;
 		
-		vkcv::PushConstants physicsPushConstants(sizeof(physics));
+		vkcv::PushConstants physicsPushConstants = vkcv::pushConstants<Physics>();
 		physicsPushConstants.appendDrawcall(physics);
 		
 		cameraManager.update(physics.dt);
 		
 		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
-		vkcv::PushConstants cameraPushConstants(sizeof(glm::mat4));
+		vkcv::PushConstants cameraPushConstants = vkcv::pushConstants<glm::mat4>();
 		cameraPushConstants.appendDrawcall(mvp);
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		
-		const uint32_t dispatchSizeGrid[3] = {grid.getWidth() / 4, grid.getHeight() / 4, grid.getDepth() / 4};
-		const uint32_t dispatchSizeParticles[3] = {static_cast<uint32_t>(sim->count + 63) / 64, 1, 1};
+		const auto dispatchSizeGrid = vkcv::dispatchInvocations(
+				vkcv::DispatchSize(grid.getWidth(), grid.getHeight(), grid.getDepth()),
+				vkcv::DispatchSize(4, 4, 4)
+		);
+		
+		const auto dispatchSizeParticles = vkcv::dispatchInvocations(sim->count, 64);
 		
 		for (int step = 0; step < 1; step++) {
 			core.recordBeginDebugLabel(cmdStream, "INIT PARTICLE WEIGHTS", {0.78f, 0.89f, 0.94f, 1.0f});
@@ -708,10 +646,10 @@ int main(int argc, const char **argv) {
 					initParticleWeightsPipeline,
 					dispatchSizeParticles,
 					{
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								0, initParticleWeightsSets[0]
 						),
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								1, initParticleWeightsSets[1]
 						)
 					},
@@ -730,13 +668,13 @@ int main(int argc, const char **argv) {
 					transformParticlesToGridPipeline,
 					dispatchSizeGrid,
 					{
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								0, transformParticlesToGridSets[0]
 						),
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								1, transformParticlesToGridSets[1]
 						),
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								2, transformParticlesToGridSets[2]
 						)
 					},
@@ -756,13 +694,13 @@ int main(int argc, const char **argv) {
 					updateParticleVelocitiesPipeline,
 					dispatchSizeParticles,
 					{
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								0, updateParticleVelocitiesSets[0]
 						),
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								1, updateParticleVelocitiesSets[1]
 						),
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								2, updateParticleVelocitiesSets[2]
 						)
 					},
@@ -785,10 +723,9 @@ int main(int argc, const char **argv) {
 			
 			core.recordDrawcallsToCmdStream(
 					cmdStream,
-					gfxPassGrid,
 					gfxPipelineGrid,
 					cameraPushConstants,
-					drawcallsGrid,
+					{ drawcallGrid },
 					renderTargets,
 					windowHandle
 			);
@@ -800,10 +737,9 @@ int main(int argc, const char **argv) {
 			
 			core.recordDrawcallsToCmdStream(
 					cmdStream,
-					gfxPassParticles,
 					gfxPipelineParticles,
 					cameraPushConstants,
-					drawcallsParticles,
+					{ drawcallParticle },
 					renderTargets,
 					windowHandle
 			);
@@ -815,10 +751,9 @@ int main(int argc, const char **argv) {
 		
 		core.recordDrawcallsToCmdStream(
 				cmdStream,
-				gfxPassLines,
 				gfxPipelineLines,
 				cameraPushConstants,
-				drawcallsLines,
+				{ drawcallLines },
 				renderTargets,
 				windowHandle
 		);
@@ -896,9 +831,7 @@ int main(int argc, const char **argv) {
 		
 		ImGui::End();
 		gui.endGUI();
-		
-		core.endFrame(windowHandle);
-	}
+	});
 	
 	simulation.unmap();
 	return 0;

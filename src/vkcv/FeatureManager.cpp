@@ -431,6 +431,28 @@ m_physicalDevice.getFeatures2(&query)
 	    return true;
 	}
 	
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceVulkan13Features &features, bool required) const {
+		vkcv_check_init_features2(vk::PhysicalDeviceVulkan13Features);
+		
+		vkcv_check_feature(robustImageAccess);
+		vkcv_check_feature(inlineUniformBlock);
+		vkcv_check_feature(descriptorBindingInlineUniformBlockUpdateAfterBind);
+		vkcv_check_feature(pipelineCreationCacheControl);
+		vkcv_check_feature(privateData);
+		vkcv_check_feature(shaderDemoteToHelperInvocation);
+		vkcv_check_feature(shaderTerminateInvocation);
+		vkcv_check_feature(subgroupSizeControl);
+		vkcv_check_feature(computeFullSubgroups);
+		vkcv_check_feature(synchronization2);
+		vkcv_check_feature(textureCompressionASTC_HDR);
+		vkcv_check_feature(shaderZeroInitializeWorkgroupMemory);
+		vkcv_check_feature(dynamicRendering);
+		vkcv_check_feature(shaderIntegerDotProduct);
+		vkcv_check_feature(maintenance4);
+		
+		return true;
+	}
+	
 	vk::BaseOutStructure* FeatureManager::findFeatureStructure(vk::StructureType type) const {
 		for (auto& base : m_featuresExtensions) {
 			if (base->sType == type) {
@@ -535,7 +557,7 @@ m_physicalDevice.getFeatures2(&query)
 			
 			delete[] clone;
 			if (required) {
-				throw std::runtime_error("Required extension is not supported!");
+				vkcv_log_throw_error("Required extension is not supported!");
 			}
 			
 			return false;

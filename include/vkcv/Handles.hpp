@@ -130,23 +130,23 @@ namespace vkcv
     private:
         using Handle::Handle;
     };
-
-    /**
-     * @brief Handle class for descriptor sets.
+	
+	/**
+     * @brief Handle class for descriptor set layouts.
      */
-	class DescriptorSetHandle : public Handle {
-		friend class DescriptorManager;
+	class DescriptorSetLayoutHandle : public Handle {
+		friend class DescriptorSetLayoutManager;
 	private:
 		using Handle::Handle;
 	};
 
     /**
-     * @brief Handle class for descriptor set layouts.
+     * @brief Handle class for descriptor sets.
      */
-	class DescriptorSetLayoutHandle : public Handle {
-	    friend class DescriptorManager;
+	class DescriptorSetHandle : public Handle {
+		friend class DescriptorSetManager;
 	private:
-	    using Handle::Handle;
+		using Handle::Handle;
 	};
 
     /**

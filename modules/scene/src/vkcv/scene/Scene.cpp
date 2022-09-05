@@ -1,7 +1,9 @@
 
 #include "vkcv/scene/Scene.hpp"
 
+#include <vkcv/Image.hpp>
 #include <vkcv/Logger.hpp>
+#include <vkcv/Sampler.hpp>
 #include <vkcv/asset/asset_loader.hpp>
 
 #include <vkcv/algorithm/SinglePassDownsampler.hpp>
@@ -124,7 +126,7 @@ namespace vkcv::scene {
 		});
 		
 		PushConstants pushConstants (pushConstantsSizePerDrawcall);
-		std::vector<DrawcallInfo> drawcalls;
+		std::vector<InstanceDrawcall> drawcalls;
 		size_t count = 0;
 		
 		const glm::mat4 viewProjection = camera.getMVP();
@@ -138,7 +140,6 @@ namespace vkcv::scene {
 		
 		m_core->recordDrawcallsToCmdStream(
 				cmdStream,
-				pass,
 				pipeline,
 				pushConstants,
 				drawcalls,
@@ -157,26 +158,87 @@ namespace vkcv::scene {
 						  const asset::Texture& asset_texture,
 						  const vk::Format& format,
 						  ImageHandle& image, SamplerHandle& sampler) {
-		asset::Sampler* asset_sampler = nullptr;
+		const asset::Sampler* asset_sampler = nullptr;
 		
 		if ((asset_texture.sampler >= 0) && (asset_texture.sampler < asset_scene.samplers.size())) {
-			//asset_sampler = &(asset_scene.samplers[asset_texture.sampler]); // TODO
+			asset_sampler = &(asset_scene.samplers[asset_texture.sampler]);
 		}
 		
-		Image img = core.createImage(format, asset_texture.w, asset_texture.h, 1, true);
+		Image img = vkcv::image(core, format, asset_texture.w, asset_texture.h, 1, true);
 		img.fill(asset_texture.data.data());
 		image = img.getHandle();
 		
+		SamplerFilterType magFilter = SamplerFilterType::LINEAR;
+		SamplerFilterType minFilter = SamplerFilterType::LINEAR;
+		SamplerMipmapMode mipmapMode = SamplerMipmapMode::LINEAR;
+		SamplerAddressMode addressMode = SamplerAddressMode::REPEAT;
+		
+		float mipLodBias = 0.0f;
+		
 		if (asset_sampler) {
-			//sampler = core.createSampler(asset_sampler) // TODO
-		} else {
-			sampler = core.createSampler(
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerMipmapMode::LINEAR,
-					vkcv::SamplerAddressMode::REPEAT
-			);
+			switch (asset_sampler->magFilter) {
+				case VK_FILTER_NEAREST:
+					magFilter = SamplerFilterType::NEAREST;
+					break;
+				case VK_FILTER_LINEAR:
+					magFilter = SamplerFilterType::LINEAR;
+					break;
+				default:
+					break;
+			}
+			
+			switch (asset_sampler->minFilter) {
+				case VK_FILTER_NEAREST:
+					minFilter = SamplerFilterType::NEAREST;
+					break;
+				case VK_FILTER_LINEAR:
+					minFilter = SamplerFilterType::LINEAR;
+					break;
+				default:
+					break;
+			}
+			
+			switch (asset_sampler->mipmapMode) {
+				case VK_SAMPLER_MIPMAP_MODE_NEAREST:
+					mipmapMode = SamplerMipmapMode::NEAREST;
+					break;
+				case VK_SAMPLER_MIPMAP_MODE_LINEAR:
+					mipmapMode = SamplerMipmapMode::LINEAR;
+					break;
+				default:
+					break;
+			}
+			
+			switch (asset_sampler->addressModeU) {
+				case VK_SAMPLER_ADDRESS_MODE_REPEAT:
+					addressMode = SamplerAddressMode::REPEAT;
+					break;
+				case VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT:
+					addressMode = SamplerAddressMode::MIRRORED_REPEAT;
+					break;
+				case VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE:
+					addressMode = SamplerAddressMode::CLAMP_TO_EDGE;
+					break;
+				case VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE:
+					addressMode = SamplerAddressMode::MIRROR_CLAMP_TO_EDGE;
+					break;
+				case VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER:
+					addressMode = SamplerAddressMode::CLAMP_TO_BORDER;
+					break;
+				default:
+					break;
+			}
+			
+			mipLodBias = asset_sampler->minLOD;
 		}
+		
+		sampler = core.createSampler(
+				magFilter,
+				minFilter,
+				mipmapMode,
+				addressMode,
+				mipLodBias
+		);
 	}
 	
 	void Scene::loadMaterial(size_t index, const asset::Scene& scene,
@@ -254,7 +316,9 @@ namespace vkcv::scene {
 		);
 	}
 	
-	Scene Scene::load(Core& core, const std::filesystem::path &path) {
+	Scene Scene::load(Core& core,
+					  const std::filesystem::path &path,
+					  const std::vector<asset::PrimitiveType>& types) {
 		asset::Scene asset_scene;
 		
 		if (!asset::loadScene(path.string(), asset_scene)) {
@@ -273,15 +337,10 @@ namespace vkcv::scene {
 		const size_t root = scene.addNode();
 		
 		for (const auto& mesh : asset_scene.meshes) {
-			scene.getNode(root).loadMesh(asset_scene, mesh);
+			scene.getNode(root).loadMesh(asset_scene, mesh, types);
 		}
 		
-		vkcv::SamplerHandle sampler = core.createSampler(
-				vkcv::SamplerFilterType::LINEAR,
-				vkcv::SamplerFilterType::LINEAR,
-				vkcv::SamplerMipmapMode::LINEAR,
-				vkcv::SamplerAddressMode::REPEAT
-		);
+		vkcv::SamplerHandle sampler = samplerLinear(core);
 		
 		const vkcv::FeatureManager& featureManager = core.getContext().getFeatureManager();
 		

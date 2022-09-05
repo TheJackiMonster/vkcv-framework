@@ -1,5 +1,7 @@
 #include <iostream>
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <chrono>
@@ -103,34 +105,57 @@ int main(int argc, const char** argv) {
 
     assert(!mesh.vertexGroups.empty());
 
-    auto vertexBuffer = core.createBuffer<uint8_t>(
+    auto vertexBuffer = vkcv::buffer<uint8_t>(
+			core,
             vkcv::BufferType::VERTEX,
             mesh.vertexGroups[0].vertexBuffer.data.size(),
             vkcv::BufferMemoryType::DEVICE_LOCAL
     );
     vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
 
-    auto indexBuffer = core.createBuffer<uint8_t>(
+    auto indexBuffer = vkcv::buffer<uint8_t>(
+			core,
             vkcv::BufferType::INDEX,
             mesh.vertexGroups[0].indexBuffer.data.size(),
             vkcv::BufferMemoryType::DEVICE_LOCAL
     );
     indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
-
-	// format data for mesh shader
-	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
-
-	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-	});
-
-	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
+	
+	const auto vertexBufferBindings = vkcv::asset::loadVertexBufferBindings(
+			mesh.vertexGroups[0].vertexBuffer.attributes,
+			vertexBuffer.getHandle(),
+			{
+					vkcv::asset::PrimitiveType::POSITION,
+					vkcv::asset::PrimitiveType::NORMAL
+			}
+	);
+	
+	const vkcv::asset::VertexAttribute* positionAttribute = nullptr;
+	const vkcv::asset::VertexAttribute* normalAttribute   = nullptr;
+	
+	for (const auto& attribute : mesh.vertexGroups[0].vertexBuffer.attributes) {
+		switch (attribute.type) {
+			case vkcv::asset::PrimitiveType::POSITION:
+				positionAttribute = &attribute;
+				break;
+			case vkcv::asset::PrimitiveType::NORMAL:
+				normalAttribute = &attribute;
+				break;
+			default:
+				break;
+		}
+	}
+	
+	assert(positionAttribute && normalAttribute);
 
 	const auto& bunny = mesh.vertexGroups[0];
-	std::vector<vkcv::meshlet::Vertex> interleavedVertices = vkcv::meshlet::convertToVertices(bunny.vertexBuffer.data, bunny.numVertices, attributes[0], attributes[1]);
+	std::vector<vkcv::meshlet::Vertex> interleavedVertices = vkcv::meshlet::convertToVertices(
+			bunny.vertexBuffer.data,
+			bunny.numVertices,
+			*positionAttribute,
+			*normalAttribute
+	);
+	
 	// mesh shader buffers
 	const auto& assetLoaderIndexBuffer                    = mesh.vertexGroups[0].indexBuffer;
 	std::vector<uint32_t> indexBuffer32Bit                = vkcv::meshlet::assetLoaderIndicesTo32BitIndices(assetLoaderIndexBuffer.data, assetLoaderIndexBuffer.type);
@@ -139,41 +164,31 @@ int main(int argc, const char** argv) {
 
     const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, forsythResult.indexBuffer, forsythResult.skippedIndices);
 
-	auto meshShaderVertexBuffer = core.createBuffer<vkcv::meshlet::Vertex>(
+	auto meshShaderVertexBuffer = vkcv::buffer<vkcv::meshlet::Vertex>(
+		core,
 		vkcv::BufferType::STORAGE,
 		meshShaderModelData.vertices.size());
 	meshShaderVertexBuffer.fill(meshShaderModelData.vertices);
 
-	auto meshShaderIndexBuffer = core.createBuffer<uint32_t>(
+	auto meshShaderIndexBuffer = vkcv::buffer<uint32_t>(
+		core,
 		vkcv::BufferType::STORAGE,
 		meshShaderModelData.localIndices.size());
 	meshShaderIndexBuffer.fill(meshShaderModelData.localIndices);
 
-	auto meshletBuffer = core.createBuffer<vkcv::meshlet::Meshlet>(
+	auto meshletBuffer = vkcv::buffer<vkcv::meshlet::Meshlet>(
+		core,
 		vkcv::BufferType::STORAGE,
 		meshShaderModelData.meshlets.size(),
 		vkcv::BufferMemoryType::DEVICE_LOCAL
 		);
 	meshletBuffer.fill(meshShaderModelData.meshlets);
-
-	// attachments
-	const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain(windowHandle).getFormat());
-
-    const vkcv::AttachmentDescription depth_attachment(
-            vkcv::AttachmentOperation::STORE,
-            vkcv::AttachmentOperation::CLEAR,
-            vk::Format::eD32Sfloat
-    );
-
-	vkcv::PassConfig bunnyPassDefinition(
-			{ present_color_attachment, depth_attachment },
-			vkcv::Multisampling::None
-	);
 	
-	vkcv::PassHandle renderPass = core.createPass(bunnyPassDefinition);
+	vkcv::PassHandle renderPass = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined, vk::Format::eD32Sfloat }
+	);
 
 	if (!renderPass)
 	{
@@ -203,29 +218,26 @@ int main(int argc, const char** argv) {
 
     vkcv::DescriptorSetLayoutHandle vertexShaderDescriptorSetLayout = core.createDescriptorSetLayout(bunnyShaderProgram.getReflectedDescriptors().at(0));
     vkcv::DescriptorSetHandle vertexShaderDescriptorSet = core.createDescriptorSet(vertexShaderDescriptorSetLayout);
-	
-	const vkcv::GraphicsPipelineConfig bunnyPipelineDefinition {
-			bunnyShaderProgram,
-			UINT32_MAX,
-			UINT32_MAX,
-			renderPass,
-			{ bunnyLayout },
-			{ vertexShaderDescriptorSetLayout },
-			true
-	};
 
 	struct ObjectMatrices {
 		glm::mat4 model;
 		glm::mat4 mvp;
 	};
 	const size_t objectCount = 1;
-	vkcv::Buffer<ObjectMatrices> matrixBuffer = core.createBuffer<ObjectMatrices>(vkcv::BufferType::STORAGE, objectCount);
+	vkcv::Buffer<ObjectMatrices> matrixBuffer = vkcv::buffer<ObjectMatrices>(core, vkcv::BufferType::STORAGE, objectCount);
 
 	vkcv::DescriptorWrites vertexShaderDescriptorWrites;
 	vertexShaderDescriptorWrites.writeStorageBuffer(0, matrixBuffer.getHandle());
 	core.writeDescriptorSet(vertexShaderDescriptorSet, vertexShaderDescriptorWrites);
 
-	vkcv::GraphicsPipelineHandle bunnyPipeline = core.createGraphicsPipeline(bunnyPipelineDefinition);
+	vkcv::GraphicsPipelineHandle bunnyPipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					bunnyShaderProgram,
+					renderPass,
+					{ bunnyLayout },
+					{ vertexShaderDescriptorSetLayout }
+			)
+	);
 
 	if (!bunnyPipeline)
 	{
@@ -254,17 +266,14 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet(meshShaderDescriptorSetLayout);
 	const vkcv::VertexLayout meshShaderLayout(bindings);
 
-	const vkcv::GraphicsPipelineConfig meshShaderPipelineDefinition{
-		meshShaderProgram,
-		UINT32_MAX,
-		UINT32_MAX,
-		renderPass,
-		{meshShaderLayout},
-		{meshShaderDescriptorSetLayout},
-		true
-	};
-
-	vkcv::GraphicsPipelineHandle meshShaderPipeline = core.createGraphicsPipeline(meshShaderPipelineDefinition);
+	vkcv::GraphicsPipelineHandle meshShaderPipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					meshShaderProgram,
+					renderPass,
+					{ meshShaderLayout },
+					{ meshShaderDescriptorSetLayout }
+			)
+	);
 
 	if (!meshShaderPipeline)
 	{
@@ -272,7 +281,7 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = core.createBuffer<CameraPlanes>(vkcv::BufferType::UNIFORM, 1);
+	vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = vkcv::buffer<CameraPlanes>(core, vkcv::BufferType::UNIFORM, 1);
 
 	vkcv::DescriptorWrites meshShaderWrites;
 	meshShaderWrites.writeStorageBuffer(
@@ -292,12 +301,11 @@ int main(int argc, const char** argv) {
     core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
 
     vkcv::ImageHandle depthBuffer;
-
-    auto start = std::chrono::system_clock::now();
-
 	vkcv::ImageHandle swapchainImageHandle = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices, vkcv::IndexBitCount::Bit32);
+	vkcv::VertexData vertexData (vertexBufferBindings);
+	vertexData.setIndexBuffer(indexBuffer.getHandle(), vkcv::IndexBitCount::Bit32);
+	vertexData.setCount(mesh.vertexGroups[0].numIndices);
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -308,16 +316,9 @@ int main(int argc, const char** argv) {
 
 	bool useMeshShader          = true;
 	bool updateFrustumPlanes    = true;
-
-	while (vkcv::Window::hasOpenWindow())
-	{
-		vkcv::Window::pollEvents();
-
-		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
-		if (!core.beginFrame(swapchainWidth, swapchainHeight,windowHandle)) {
-			continue;
-		}
-		
+	
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((!depthBuffer) ||
 			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
 			(swapchainHeight != core.getImageHeight(depthBuffer))) {
@@ -325,14 +326,10 @@ int main(int argc, const char** argv) {
 					vk::Format::eD32Sfloat,
 					swapchainWidth,
 					swapchainHeight
-			).getHandle();
+			);
 		}
 		
-		auto end = std::chrono::system_clock::now();
-		auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-		start = end;
-		
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
+		cameraManager.update(dt);
 
 		const vkcv::camera::Camera& camera = cameraManager.getActiveCamera();
 
@@ -356,35 +353,35 @@ int main(int argc, const char** argv) {
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-		vkcv::PushConstants pushConstantData(sizeof(pushConstants));
+		vkcv::PushConstants pushConstantData = vkcv::pushConstants<PushConstants>();
 		pushConstantData.appendDrawcall(pushConstants);
 
 		if (useMeshShader) {
-
-			vkcv::DescriptorSetUsage descriptorUsage(0, meshShaderDescriptorSet);
 			const uint32_t taskCount = (meshShaderModelData.meshlets.size() + 31) / 32;
+			
+			vkcv::TaskDrawcall drawcall (taskCount);
+			drawcall.useDescriptorSet(0, meshShaderDescriptorSet);
 
 			core.recordMeshShaderDrawcalls(
 				cmdStream,
-				renderPass,
 				meshShaderPipeline,
 				pushConstantData,
-				{ vkcv::MeshShaderDrawcall({descriptorUsage}, taskCount)},
+				{ drawcall },
 				{ renderTargets },
-				windowHandle);
-		}
-		else {
-
-			vkcv::DescriptorSetUsage descriptorUsage(0, vertexShaderDescriptorSet);
+				windowHandle
+			);
+		} else {
+			vkcv::InstanceDrawcall drawcall (vertexData);
+			drawcall.useDescriptorSet(0, vertexShaderDescriptorSet);
 
 			core.recordDrawcallsToCmdStream(
 				cmdStream,
-				renderPass,
 				bunnyPipeline,
 				pushConstantData,
-				{ vkcv::DrawcallInfo(renderMesh, { descriptorUsage }) },
+				{ drawcall },
 				{ renderTargets },
-				windowHandle);
+				windowHandle
+			);
 		}
 
 		core.prepareSwapchainImageForPresent(cmdStream);
@@ -397,10 +394,8 @@ int main(int argc, const char** argv) {
 		ImGui::Checkbox("Update frustum culling", &updateFrustumPlanes);
 
 		ImGui::End();
-		
 		gui.endGUI();
-
-		core.endFrame(windowHandle);
-	}
+	});
+	
 	return 0;
 }

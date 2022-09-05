@@ -1,8 +1,9 @@
 
 #include "vkcv/effects/BloomAndFlaresEffect.hpp"
 
-#include <vkcv/DrawcallRecording.hpp>
 #include <vkcv/PushConstants.hpp>
+#include <vkcv/Image.hpp>
+#include <vkcv/Sampler.hpp>
 
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/asset/asset_loader.hpp>
@@ -125,7 +126,8 @@ namespace vkcv::effects {
 								   const std::string &texturePath) {
 		const auto texture = vkcv::asset::loadTexture(texturePath);
 		
-		Image image = core.createImage(
+		auto image = vkcv::image(
+				core,
 				vk::Format::eR8G8B8A8Unorm,
 				texture.width,
 				texture.height
@@ -188,12 +190,7 @@ namespace vkcv::effects {
 	m_blurImage(),
 	m_flaresImage(),
 	
-	m_linearSampler(m_core.createSampler(
-			vkcv::SamplerFilterType::LINEAR,
-			vkcv::SamplerFilterType::LINEAR,
-			vkcv::SamplerMipmapMode::LINEAR,
-			vkcv::SamplerAddressMode::CLAMP_TO_EDGE
-	)),
+	m_linearSampler(samplerLinear(m_core, true)),
 	
 	m_radialLutSampler(),
 	
@@ -236,13 +233,7 @@ namespace vkcv::effects {
 		);
 		
 		if (m_advanced) {
-			m_radialLutSampler = m_core.createSampler(
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerFilterType::LINEAR,
-					vkcv::SamplerMipmapMode::LINEAR,
-					vkcv::SamplerAddressMode::REPEAT
-			);
-			
+			m_radialLutSampler = samplerLinear(m_core);
 			m_radialLut = loadTexture(m_core, "assets/RadialLUT.png");
 			m_lensDirt = loadTexture(m_core, "assets/lensDirt.jpg");
 		}
@@ -293,10 +284,10 @@ namespace vkcv::effects {
 			
 			static const uint32_t threadGroupWorkRegionDim = 8;
 			
-			uint32_t dispatch[3];
-			dispatch[0] = calcDispatchSize(downsampleSizeX, threadGroupWorkRegionDim);
-			dispatch[1] = calcDispatchSize(downsampleSizeY, threadGroupWorkRegionDim);
-			dispatch[2] = 1;
+			DispatchSize dispatch (
+					calcDispatchSize(downsampleSizeX, threadGroupWorkRegionDim),
+					calcDispatchSize(downsampleSizeY, threadGroupWorkRegionDim)
+			);
 			
 			// mip blur dispatch
 			m_core.recordComputeDispatchToCmdStream(
@@ -342,10 +333,10 @@ namespace vkcv::effects {
 			
 			static const uint32_t threadGroupWorkRegionDim = 8;
 			
-			uint32_t dispatch[3];
-			dispatch[0] = calcDispatchSize(upsampleSizeX, threadGroupWorkRegionDim);
-			dispatch[1] = calcDispatchSize(upsampleSizeY, threadGroupWorkRegionDim);
-			dispatch[2] = 1;
+			DispatchSize dispatch (
+					calcDispatchSize(upsampleSizeX, threadGroupWorkRegionDim),
+					calcDispatchSize(upsampleSizeY, threadGroupWorkRegionDim)
+			);
 			
 			m_core.recordComputeDispatchToCmdStream(
 					cmdStream,
@@ -385,13 +376,13 @@ namespace vkcv::effects {
 			mipDivisor *= 2.0f;
 		}
 		
-		static const uint32_t threadGroupWorkRegionDim = 8.0f;
+		static const uint32_t threadGroupWorkRegionDim = 8;
 		
 		// lens feature generation dispatch
-		uint32_t dispatch[3];
-		dispatch[0] = calcDispatchSize(sampleSizeX / mipDivisor, threadGroupWorkRegionDim);
-		dispatch[1] = calcDispatchSize(sampleSizeY / mipDivisor, threadGroupWorkRegionDim);
-		dispatch[2] = 1;
+		DispatchSize dispatch (
+				calcDispatchSize(sampleSizeX / mipDivisor, threadGroupWorkRegionDim),
+				calcDispatchSize(sampleSizeY / mipDivisor, threadGroupWorkRegionDim)
+		);
 		
 		m_core.recordComputeDispatchToCmdStream(
 				cmdStream,
@@ -451,12 +442,12 @@ namespace vkcv::effects {
 		
 		static const uint32_t threadGroupWorkRegionDim = 8;
 		
-		uint32_t dispatch[3];
-		dispatch[0] = calcDispatchSize(sampleWidth, threadGroupWorkRegionDim);
-		dispatch[1] = calcDispatchSize(sampleHeight, threadGroupWorkRegionDim);
-		dispatch[2] = 1;
+		DispatchSize dispatch (
+				calcDispatchSize(sampleWidth, threadGroupWorkRegionDim),
+				calcDispatchSize(sampleHeight, threadGroupWorkRegionDim)
+		);
 		
-		PushConstants pushConstants (sizeof(m_cameraDirection));
+		PushConstants pushConstants = vkcv::pushConstants<glm::vec3>();
 		pushConstants.appendDrawcall(m_cameraDirection);
 		
 		// bloom composite dispatch
@@ -494,7 +485,7 @@ namespace vkcv::effects {
 					1,
 					true,
 					true
-			).getHandle();
+			);
 			
 			m_downsampleDescriptorSets.clear();
 			m_upsampleDescriptorSets.clear();
@@ -524,7 +515,7 @@ namespace vkcv::effects {
 					1,
 					true,
 					true
-			).getHandle();
+			);
 			
 			m_flaresDescriptorSets.clear();
 			

@@ -1,9 +1,10 @@
 #include <iostream>
+#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
+#include <vkcv/Pass.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
-#include <chrono>
 
 int main(int argc, const char** argv) {
 	const char* applicationName = "First Triangle";
@@ -21,23 +22,19 @@ int main(int argc, const char** argv) {
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
 	vkcv::Window& window = core.getWindow(windowHandle);
 
-	auto triangleIndexBuffer = core.createBuffer<uint16_t>(vkcv::BufferType::INDEX, 3, vkcv::BufferMemoryType::DEVICE_LOCAL);
+	auto triangleIndexBuffer = vkcv::buffer<uint16_t>(core, vkcv::BufferType::INDEX, 3);
 	uint16_t indices[3] = { 0, 1, 2 };
 	triangleIndexBuffer.fill(&indices[0], sizeof(indices));
 
 	core.setDebugLabel(triangleIndexBuffer.getHandle(), "Triangle Index Buffer");
 	
-	// an example attachment for passes that output to the window
-	const vkcv::AttachmentDescription present_color_attachment(
-		vkcv::AttachmentOperation::STORE,
-		vkcv::AttachmentOperation::CLEAR,
-		core.getSwapchain(windowHandle).getFormat());
+	vkcv::PassHandle trianglePass = vkcv::passSwapchain(
+			core,
+			window.getSwapchain(),
+			{ vk::Format::eUndefined }
+	);
 
-	vkcv::PassConfig trianglePassDefinition({ present_color_attachment }, vkcv::Multisampling::None);
-	vkcv::PassHandle trianglePass = core.createPass(trianglePassDefinition);
-
-	if (!trianglePass)
-	{
+	if (!trianglePass) {
 		std::cout << "Error. Could not create renderpass. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -52,77 +49,56 @@ int main(int argc, const char** argv) {
 		{ vkcv::ShaderStage::FRAGMENT, "shaders/shader.frag" }
 	}, nullptr);
 
-	const vkcv::GraphicsPipelineConfig trianglePipelineDefinition {
-		triangleShaderProgram,
-		UINT32_MAX,
-		UINT32_MAX,
-		trianglePass,
-		{},
-		{},
-		true
-	};
+	vkcv::GraphicsPipelineHandle trianglePipeline = core.createGraphicsPipeline(
+			vkcv::GraphicsPipelineConfig(
+					triangleShaderProgram,
+					trianglePass,
+					{},
+					{}
+			)
+	);
 
-	vkcv::GraphicsPipelineHandle trianglePipeline = core.createGraphicsPipeline(trianglePipelineDefinition);
-
-	if (!trianglePipeline)
-	{
+	if (!trianglePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 	
 	core.setDebugLabel(trianglePipeline, "Triangle Pipeline");
-	
-	auto start = std::chrono::system_clock::now();
 
-	const vkcv::Mesh renderMesh({}, triangleIndexBuffer.getVulkanHandle(), 3);
-	vkcv::DrawcallInfo drawcall(renderMesh, {},1);
+	vkcv::VertexData vertexData;
+	vertexData.setIndexBuffer(triangleIndexBuffer.getHandle());
+	vertexData.setCount(3);
+	
+	vkcv::InstanceDrawcall drawcall (vertexData);
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-	core.setDebugLabel(swapchainInput, "Swapchain Image");
 
     vkcv::camera::CameraManager cameraManager(window);
-    uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-    uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+    uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
-	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
-    cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-    cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
+	cameraManager.getCamera(camIndex).setPosition(glm::vec3(0, 0, -2));
 
-	while (vkcv::Window::hasOpenWindow())
-	{
-        vkcv::Window::pollEvents();
-
-		uint32_t swapchainWidth, swapchainHeight; // No resizing = No problem
-		if (!core.beginFrame(swapchainWidth, swapchainHeight, windowHandle)) {
-			continue;
-		}
+	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
+			uint32_t swapchainWidth, uint32_t swapchainHeight) {
+		cameraManager.update(dt);
 		
-        auto end = std::chrono::system_clock::now();
-        auto deltatime = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        start = end;
-		
-		cameraManager.update(0.000001 * static_cast<double>(deltatime.count()));
-        glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
-
-		vkcv::PushConstants pushConstants (sizeof(glm::mat4));
-		pushConstants.appendDrawcall(mvp);
+		glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 		core.setDebugLabel(cmdStream, "Render Commands");
-
+		
 		core.recordDrawcallsToCmdStream(
-			cmdStream,
-			trianglePass,
-			trianglePipeline,
-			pushConstants,
-			{ drawcall },
-			{ swapchainInput },
-			windowHandle);
-
+				cmdStream,
+				trianglePipeline,
+				vkcv::pushConstants<glm::mat4>(mvp),
+				{ drawcall },
+				{ swapchainInput },
+				windowHandle
+		);
+		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
-	    
-	    core.endFrame(windowHandle);
-	}
+	});
+	
 	return 0;
 }
