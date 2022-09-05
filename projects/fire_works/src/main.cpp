@@ -6,7 +6,6 @@
 #include <vkcv/Image.hpp>
 #include <vkcv/Pass.hpp>
 #include <vkcv/Sampler.hpp>
-#include <vkcv/DrawcallRecording.hpp>
 
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -575,11 +574,9 @@ int main(int argc, const char **argv) {
 		1, 4, 0
 	});
 	
-	vkcv::Mesh cubeMesh (
-		{ vkcv::VertexBufferBinding(0, cubePositions.getVulkanHandle()) },
-		cubeIndices.getVulkanHandle(),
-		cubeIndices.getCount()
-	);
+	vkcv::VertexData cubeData ({ vkcv::vertexBufferBinding(cubePositions.getHandle()) });
+	cubeData.setIndexBuffer(cubeIndices.getHandle());
+	cubeData.setCount(cubeIndices.getCount());
 	
 	const std::vector<vkcv::VertexAttachment> vaSmoke = smokeShaderProgram.getVertexAttachments();
 	
@@ -624,16 +621,9 @@ int main(int argc, const char **argv) {
 	
 	vkcv::GraphicsPipelineHandle trailPipeline = core.createGraphicsPipeline(trailPipelineDefinition);
 	
-	std::vector<vkcv::DrawcallInfo> drawcallsSmokes;
-	
-	drawcallsSmokes.push_back(vkcv::DrawcallInfo(
-		cubeMesh,
-		{
-			vkcv::DescriptorSetUsage(0, smokeDescriptorSet),
-			vkcv::DescriptorSetUsage(1, generationDescriptorSet),
-		},
-		smokeBuffer.getCount()
-	));
+	vkcv::InstanceDrawcall drawcallSmoke (cubeData, smokeBuffer.getCount());
+	drawcallSmoke.useDescriptorSet(0, smokeDescriptorSet);
+	drawcallSmoke.useDescriptorSet(1, generationDescriptorSet);
 	
 	auto trianglePositions = vkcv::buffer<glm::vec2>(
 			core,
@@ -657,29 +647,18 @@ int main(int argc, const char **argv) {
 		0, 1, 2
 	});
 	
-	vkcv::Mesh triangleMesh (
-		{ vkcv::VertexBufferBinding(0, trianglePositions.getVulkanHandle()) },
-		triangleIndices.getVulkanHandle(),
-		triangleIndices.getCount()
-	);
+	vkcv::VertexData triangleData ({ vkcv::vertexBufferBinding(trianglePositions.getHandle()) });
+	triangleData.setIndexBuffer(triangleIndices.getHandle());
+	triangleData.setCount(triangleIndices.getCount());
 	
-	vkcv::Mesh trailMesh (
-		{},
-		triangleIndices.getVulkanHandle(),
-		1
-	);
+	vkcv::VertexData trailData;
+	triangleData.setIndexBuffer(triangleIndices.getHandle());
+	trailData.setCount(1);
 	
-	std::vector<vkcv::DrawcallInfo> drawcallsTrails;
-	
-	drawcallsTrails.push_back(vkcv::DrawcallInfo(
-		trailMesh,
-		{
-			vkcv::DescriptorSetUsage(0, trailDescriptorSet),
-			vkcv::DescriptorSetUsage(1, generationDescriptorSet),
-			vkcv::DescriptorSetUsage(2, descriptorSet)
-		},
-		trailBuffer.getCount()
-	));
+	vkcv::InstanceDrawcall drawcallTrail (trailData, trailBuffer.getCount());
+	drawcallTrail.useDescriptorSet(0, trailDescriptorSet);
+	drawcallTrail.useDescriptorSet(1, generationDescriptorSet);
+	drawcallTrail.useDescriptorSet(2, descriptorSet);
 	
 	const std::vector<vkcv::VertexAttachment> vaParticles = particleShaderProgram.getVertexAttachments();
 	
@@ -701,13 +680,8 @@ int main(int argc, const char **argv) {
 	
 	vkcv::GraphicsPipelineHandle particlePipeline = core.createGraphicsPipeline(particlePipelineDefinition);
 	
-	std::vector<vkcv::DrawcallInfo> drawcallsParticles;
-	
-	drawcallsParticles.push_back(vkcv::DrawcallInfo(
-		triangleMesh,
-		{ vkcv::DescriptorSetUsage(0, descriptorSet) },
-		particleBuffer.getCount()
-	));
+	vkcv::InstanceDrawcall drawcallParticle (triangleData, particleBuffer.getCount());
+	drawcallParticle.useDescriptorSet(0, descriptorSet);
 	
 	vkcv::ShaderProgram motionShader;
 	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/motion.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
@@ -1002,7 +976,7 @@ int main(int argc, const char **argv) {
 			cmdStream,
 			voxelClearPipeline,
 			voxelDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, voxelDescriptorSet) },
+			{ vkcv::useDescriptorSet(0, voxelDescriptorSet) },
 			vkcv::PushConstants(0)
 		);
 		core.recordEndDebugLabel(cmdStream);
@@ -1025,10 +999,10 @@ int main(int argc, const char **argv) {
 			generationPipeline,
 			particleDispatchCount,
 			{
-				vkcv::DescriptorSetUsage(0, descriptorSet),
-				vkcv::DescriptorSetUsage(1, generationDescriptorSet),
-				vkcv::DescriptorSetUsage(2, smokeDescriptorSet),
-				vkcv::DescriptorSetUsage(3, trailDescriptorSet)
+				vkcv::useDescriptorSet(0, descriptorSet),
+				vkcv::useDescriptorSet(1, generationDescriptorSet),
+				vkcv::useDescriptorSet(2, smokeDescriptorSet),
+				vkcv::useDescriptorSet(3, trailDescriptorSet)
 			},
 			pushConstantsTime
 		);
@@ -1043,7 +1017,7 @@ int main(int argc, const char **argv) {
 			cmdStream,
 			scalePipeline,
 			smokeDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, smokeDescriptorSet) },
+			{ vkcv::useDescriptorSet(0, smokeDescriptorSet) },
 			pushConstantsTime
 		);
 		core.recordEndDebugLabel(cmdStream);
@@ -1055,7 +1029,7 @@ int main(int argc, const char **argv) {
 			cmdStream,
 			motionPipeline,
 			particleDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, descriptorSet) },
+			{ vkcv::useDescriptorSet(0, descriptorSet) },
 			pushConstantsTime
 		);
 		core.recordEndDebugLabel(cmdStream);
@@ -1072,8 +1046,8 @@ int main(int argc, const char **argv) {
 			trailComputePipeline,
 			trailDispatchCount,
 			{
-				vkcv::DescriptorSetUsage(0, descriptorSet),
-				vkcv::DescriptorSetUsage(1, trailDescriptorSet)
+				vkcv::useDescriptorSet(0, descriptorSet),
+				vkcv::useDescriptorSet(1, trailDescriptorSet)
 			},
 			pushConstantsTime
 		);
@@ -1099,7 +1073,7 @@ int main(int argc, const char **argv) {
 			cmdStream,
 			particlePipeline,
 			pushConstantsDraw0,
-			{ drawcallsParticles },
+			{ drawcallParticle },
 			{ colorBuffers[0] },
 			windowHandle
 		);
@@ -1119,8 +1093,8 @@ int main(int argc, const char **argv) {
 			voxelParticlePipeline,
 			particleDispatchCount,
 			{
-				vkcv::DescriptorSetUsage(0, descriptorSet),
-				vkcv::DescriptorSetUsage(1, voxelDescriptorSet)
+				vkcv::useDescriptorSet(0, descriptorSet),
+				vkcv::useDescriptorSet(1, voxelDescriptorSet)
 			},
 			pushConstantsVoxel
 		);
@@ -1141,7 +1115,7 @@ int main(int argc, const char **argv) {
 			cmdStream,
 			smokePipeline,
 			pushConstantsDraw1,
-			{ drawcallsSmokes },
+			{ drawcallSmoke },
 			{ colorBuffers[1] },
 			windowHandle
 		);
@@ -1158,8 +1132,8 @@ int main(int argc, const char **argv) {
 			voxelSmokePipeline,
 			smokeDispatchCount,
 			{
-				vkcv::DescriptorSetUsage(0, smokeDescriptorSet),
-				vkcv::DescriptorSetUsage(1, voxelDescriptorSet)
+				vkcv::useDescriptorSet(0, smokeDescriptorSet),
+				vkcv::useDescriptorSet(1, voxelDescriptorSet)
 			},
 			pushConstantsVoxel
 		);
@@ -1173,7 +1147,7 @@ int main(int argc, const char **argv) {
 			cmdStream,
 			trailPipeline,
 			pushConstantsDraw1,
-			{ drawcallsTrails },
+			{ drawcallTrail },
 			{ colorBuffers[2] },
 			windowHandle
 		);
@@ -1190,8 +1164,8 @@ int main(int argc, const char **argv) {
 			voxelTrailPipeline,
 			trailDispatchCount,
 			{
-				vkcv::DescriptorSetUsage(0, trailDescriptorSet),
-				vkcv::DescriptorSetUsage(1, voxelDescriptorSet)
+				vkcv::useDescriptorSet(0, trailDescriptorSet),
+				vkcv::useDescriptorSet(1, voxelDescriptorSet)
 			},
 			pushConstantsVoxel
 		);
@@ -1211,8 +1185,8 @@ int main(int argc, const char **argv) {
 			voxelPipeline,
 			voxelDispatchCount,
 			{
-				vkcv::DescriptorSetUsage(0, voxelDescriptorSet),
-				vkcv::DescriptorSetUsage(1, voxelOutDescriptorSet)
+				vkcv::useDescriptorSet(0, voxelDescriptorSet),
+				vkcv::useDescriptorSet(1, voxelOutDescriptorSet)
 			},
 			vkcv::PushConstants(0)
 		);
@@ -1229,7 +1203,7 @@ int main(int argc, const char **argv) {
 				cmdStream,
 				fluidPipeline,
 				voxelDispatchCount,
-				{ vkcv::DescriptorSetUsage(0, fluidDescriptorSet[i % 2]) },
+				{ vkcv::useDescriptorSet(0, fluidDescriptorSet[i % 2]) },
 				vkcv::PushConstants(0)
 			);
 		}
@@ -1251,8 +1225,8 @@ int main(int argc, const char **argv) {
 			voxelSamplePipeline,
 			sampleDispatchCount,
 			{
-				vkcv::DescriptorSetUsage(0, voxelOutDescriptorSet),
-				vkcv::DescriptorSetUsage(1, samplesDescriptorSet)
+				vkcv::useDescriptorSet(0, voxelOutDescriptorSet),
+				vkcv::useDescriptorSet(1, samplesDescriptorSet)
 			},
 			vkcv::PushConstants(0)
 		);
@@ -1283,8 +1257,8 @@ int main(int argc, const char **argv) {
 			addPipe,
 			colorDispatchCount,
 			{
-				vkcv::DescriptorSetUsage(0, addDescriptor),
-				vkcv::DescriptorSetUsage(1, generationDescriptorSet)
+				vkcv::useDescriptorSet(0, addDescriptor),
+				vkcv::useDescriptorSet(1, generationDescriptorSet)
 			},
 			vkcv::PushConstants(0)
 		);
@@ -1310,7 +1284,7 @@ int main(int argc, const char **argv) {
 			cmdStream,
 			tonemappingPipe,
 			colorDispatchCount,
-			{vkcv::DescriptorSetUsage(0, tonemappingDescriptor) },
+			{ vkcv::useDescriptorSet(0, tonemappingDescriptor) },
 			vkcv::PushConstants(0)
 		);
 		

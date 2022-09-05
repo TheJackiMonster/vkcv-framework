@@ -106,10 +106,6 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/SwapchainManager.hpp
 		${vkcv_source}/vkcv/SwapchainManager.cpp
         
-        ${vkcv_include}/vkcv/DescriptorWrites.hpp
-        
-        ${vkcv_include}/vkcv/DrawcallRecording.hpp
-        
         ${vkcv_source}/vkcv/CommandStreamManager.hpp
         ${vkcv_source}/vkcv/CommandStreamManager.cpp
         
@@ -128,6 +124,15 @@ set(vkcv_sources
 		
 		${vkcv_include}/vkcv/Sampler.hpp
 		${vkcv_source}/vkcv/Sampler.cpp
+		
+		${vkcv_include}/vkcv/DescriptorSetUsage.hpp
+		${vkcv_source}/vkcv/DescriptorSetUsage.cpp
+		
+		${vkcv_include}/vkcv/Drawcall.hpp
+		${vkcv_source}/vkcv/Drawcall.cpp
+		
+		${vkcv_include}/vkcv/VertexData.hpp
+		${vkcv_source}/vkcv/VertexData.cpp
 		
 		${vkcv_include}/vkcv/Result.hpp
 )

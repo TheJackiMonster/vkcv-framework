@@ -17,7 +17,7 @@ namespace vkcv::scene {
      * An event function type to be called on per drawcall recording level to adjust data
      * like push constants with provided matrices.
      */
-	typedef typename event_function<const glm::mat4&, const glm::mat4&, PushConstants&, vkcv::DrawcallInfo&>::type RecordMeshDrawcallFunction;
+	typedef typename event_function<const glm::mat4&, const glm::mat4&, PushConstants&, vkcv::Drawcall&>::type RecordMeshDrawcallFunction;
 	
 	class Node;
 
@@ -41,7 +41,7 @@ namespace vkcv::scene {
         /**
          * List of the meshes drawcalls to render.
          */
-		std::vector<DrawcallInfo> m_drawcalls;
+		std::vector<InstanceDrawcall> m_drawcalls;
 
         /**
          * Local transformation matrix of the mesh.
@@ -77,7 +77,7 @@ namespace vkcv::scene {
          */
 		void recordDrawcalls(const glm::mat4& viewProjection,
 							 PushConstants& pushConstants,
-							 std::vector<DrawcallInfo>& drawcalls,
+							 std::vector<InstanceDrawcall>& drawcalls,
 							 const RecordMeshDrawcallFunction& record);
 
         /**

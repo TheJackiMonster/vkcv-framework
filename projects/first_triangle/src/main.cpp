@@ -65,8 +65,11 @@ int main(int argc, const char** argv) {
 	
 	core.setDebugLabel(trianglePipeline, "Triangle Pipeline");
 
-	const vkcv::Mesh renderMesh({}, triangleIndexBuffer.getVulkanHandle(), 3);
-	vkcv::DrawcallInfo drawcall(renderMesh, {},1);
+	vkcv::VertexData vertexData;
+	vertexData.setIndexBuffer(triangleIndexBuffer.getHandle());
+	vertexData.setCount(3);
+	
+	vkcv::InstanceDrawcall drawcall (vertexData);
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 

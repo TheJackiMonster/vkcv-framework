@@ -115,18 +115,20 @@ int main(int argc, const char** argv) {
 
 		auto recordMesh = [](const glm::mat4& MVP, const glm::mat4& M,
 							 vkcv::PushConstants &pushConstants,
-							 vkcv::DrawcallInfo& drawcallInfo) {
+							 vkcv::Drawcall& drawcall) {
 			pushConstants.appendDrawcall(MVP);
 		};
 		
-		scene.recordDrawcalls(cmdStream,
-							  cameraManager.getActiveCamera(),
-							  scenePass,
-							  scenePipeline,
-							  sizeof(glm::mat4),
-							  recordMesh,
-							  renderTargets,
-							  windowHandle);
+		scene.recordDrawcalls(
+				cmdStream,
+				cameraManager.getActiveCamera(),
+				scenePass,
+				scenePipeline,
+				sizeof(glm::mat4),
+				recordMesh,
+				renderTargets,
+				windowHandle
+		);
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

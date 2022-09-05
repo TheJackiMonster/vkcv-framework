@@ -21,7 +21,8 @@
 #include "SamplerTypes.hpp"
 #include "DescriptorWrites.hpp"
 #include "Event.hpp"
-#include "DrawcallRecording.hpp"
+#include "Drawcall.hpp"
+#include "PushConstants.hpp"
 #include "EventFunctionTypes.hpp"
 #include "DispatchSize.hpp"
 
@@ -542,12 +543,12 @@ namespace vkcv
 		 * @param windowHandle Window handle that is used to retrieve the corresponding swapchain
 		*/
 		void recordDrawcallsToCmdStream(
-			const CommandStreamHandle&      cmdStreamHandle,
-			const GraphicsPipelineHandle    &pipelineHandle,
-			const PushConstants             &pushConstants,
-			const std::vector<DrawcallInfo> &drawcalls,
-			const std::vector<ImageHandle>  &renderTargets,
-			const WindowHandle              &windowHandle);
+			const CommandStreamHandle							&cmdStreamHandle,
+			const GraphicsPipelineHandle    					&pipelineHandle,
+			const PushConstants             					&pushConstants,
+			const std::vector<InstanceDrawcall>					&drawcalls,
+			const std::vector<ImageHandle>  					&renderTargets,
+			const WindowHandle              					&windowHandle);
 	
 		/**
 		 * @brief Records indirect drawcalls to a command stream
@@ -555,23 +556,16 @@ namespace vkcv
 		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
 		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
 		 * @param pushConstantData Push constants that are used for the drawcalls, ignored if constant size is set to 0
-		 * @param descriptorSetUsages Descriptor set usages of the drawcalls
-		 * @param compiledMesh TODO
-		 * @param drawcalls Information about each drawcall, consisting of mesh handle, descriptor set bindings and instance count
+		 * @param drawcalls Information about each drawcall, consisting of mesh handle, descriptor set bindings and draw count
 		 * @param renderTargets Image handles that are used as render targets
-		 * @param indirectBuffer TODO
-		 * @param drawCount TODO
 		 * @param windowHandle Window handle that is used to retrieve the corresponding swapchain
 		*/
-		void recordIndexedIndirectDrawcallsToCmdStream(
+		void recordIndirectDrawcallsToCmdStream(
 				const CommandStreamHandle                           cmdStreamHandle,
 				const GraphicsPipelineHandle                        &pipelineHandle,
 				const PushConstants                                 &pushConstantData,
-				const std::vector<DescriptorSetUsage> 				&descriptorSetUsages,
-				const vkcv::Mesh                                    &compiledMesh,
+				const std::vector<IndirectDrawcall>					&drawcalls,
 				const std::vector<ImageHandle>                      &renderTargets,
-				const BufferHandle  								&indirectBuffer,
-				const uint32_t                                      drawCount,
 				const WindowHandle                                  &windowHandle);
 		
 		/**
@@ -580,17 +574,17 @@ namespace vkcv
 		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
 		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
 		 * @param pushConstantData Push constants that are used for the drawcalls, ignored if constant size is set to 0
-		 * @param drawcalls Information about each drawcall, consisting of descriptor set bindings and task shader dispatch count
+		 * @param drawcalls Information about each drawcall, consisting of descriptor set bindings and task shader task count
 		 * @param renderTargets Image handles that are used as render targets
 		 * @param windowHandle Window handle that is used to retrieve the corresponding swapchain
 		*/
 		void recordMeshShaderDrawcalls(
-			const CommandStreamHandle&              cmdStreamHandle,
+			const CommandStreamHandle				&cmdStreamHandle,
 			const GraphicsPipelineHandle            &pipelineHandle,
-			const PushConstants&                    pushConstantData,
-            const std::vector<MeshShaderDrawcall>&  drawcalls,
-			const std::vector<ImageHandle>&         renderTargets,
-			const WindowHandle&                     windowHandle);
+			const PushConstants						&pushConstantData,
+            const std::vector<TaskDrawcall>			&drawcalls,
+			const std::vector<ImageHandle>			&renderTargets,
+			const WindowHandle						&windowHandle);
 		
         /**
          * Records the rtx ray generation to the @p cmdStreamHandle.
@@ -617,7 +611,7 @@ namespace vkcv
             vk::StridedDeviceAddressRegionKHR rcallRegion,
             const std::vector<DescriptorSetUsage>& descriptorSetUsages,
             const PushConstants& pushConstants,
-            const WindowHandle windowHandle);
+            const WindowHandle& windowHandle);
 
 		/**
 		 * @brief Record a compute shader dispatch into a command stream

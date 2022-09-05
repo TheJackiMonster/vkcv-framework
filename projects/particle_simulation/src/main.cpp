@@ -98,7 +98,8 @@ int main(int argc, const char **argv) {
     const std::vector<vkcv::VertexAttachment> vertexAttachments = particleShaderProgram.getVertexAttachments();
 
     const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-            vkcv::VertexBufferBinding(0, vertexBuffer.getVulkanHandle())};
+            vkcv::vertexBufferBinding(vertexBuffer.getHandle())
+	};
 
     std::vector<vkcv::VertexBinding> bindings;
     for (size_t i = 0; i < vertexAttachments.size(); i++) {
@@ -170,8 +171,10 @@ int main(int argc, const char **argv) {
 
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(),
-                                particleIndexBuffer.getCount());
+	vkcv::VertexData vertexData (vertexBufferBindings);
+	vertexData.setIndexBuffer(particleIndexBuffer.getHandle());
+	vertexData.setCount(particleIndexBuffer.getCount());
+	
     vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
 
     auto pos = glm::vec2(0.f);
@@ -186,8 +189,9 @@ int main(int argc, const char **argv) {
     });
 
     std::vector<glm::mat4> modelMatrices;
-    std::vector<vkcv::DrawcallInfo> drawcalls;
-    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}, particleSystem.getParticles().size()));
+	
+	vkcv::InstanceDrawcall drawcall (vertexData, particleSystem.getParticles().size());
+	drawcall.useDescriptorSet(0, descriptorSet);
 	
     glm::vec4 colorData = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
@@ -279,7 +283,7 @@ int main(int argc, const char **argv) {
                 cmdStream,
                 particlePipeline,
 				pushConstantsDraw,
-                {drawcalls},
+                { drawcall },
                 { colorBuffer },
                 windowHandle
 		);
@@ -307,8 +311,9 @@ int main(int argc, const char **argv) {
             cmdStream, 
             tonemappingPipe, 
             tonemappingDispatchCount, 
-            {vkcv::DescriptorSetUsage(0, tonemappingDescriptor) },
-            vkcv::PushConstants(0));
+            { vkcv::useDescriptorSet(0, tonemappingDescriptor) },
+            vkcv::PushConstants(0)
+		);
 
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);

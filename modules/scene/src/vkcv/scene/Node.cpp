@@ -92,7 +92,7 @@ namespace vkcv::scene {
 	
 	void Node::recordDrawcalls(const glm::mat4& viewProjection,
 							   PushConstants& pushConstants,
-							   std::vector<DrawcallInfo>& drawcalls,
+							   std::vector<InstanceDrawcall>& drawcalls,
 							   const RecordMeshDrawcallFunction& record) {
 		if (!checkFrustum(viewProjection, m_bounds)) {
 			return;

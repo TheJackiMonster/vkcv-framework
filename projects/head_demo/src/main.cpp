@@ -186,32 +186,34 @@ int main(int argc, const char** argv) {
 		
 		auto recordMesh = [&](const glm::mat4& MVP, const glm::mat4& M,
 							 vkcv::PushConstants &pushConstants,
-							 vkcv::DrawcallInfo& drawcallInfo) {
+							 vkcv::Drawcall& drawcall) {
 			pushConstants.appendDrawcall(MVP);
-			drawcallInfo.descriptorSets.push_back(
-					vkcv::DescriptorSetUsage(1, clipDescriptorSet)
-			);
+			drawcall.useDescriptorSet(1, clipDescriptorSet);
 		};
 		
-		scene.recordDrawcalls(cmdStream,
-							  cameraManager.getActiveCamera(),
-							  linePass,
-							  linePipeline,
-							  sizeof(glm::mat4),
-							  recordMesh,
-							  renderTargets,
-							  windowHandle);
+		scene.recordDrawcalls(
+				cmdStream,
+				cameraManager.getActiveCamera(),
+				linePass,
+				linePipeline,
+				sizeof(glm::mat4),
+				recordMesh,
+				renderTargets,
+				windowHandle
+		);
 		
 		bloomAndFlares.recordEffect(cmdStream, colorBuffer, colorBuffer);
 		
-		scene.recordDrawcalls(cmdStream,
-							  cameraManager.getActiveCamera(),
-							  scenePass,
-							  scenePipeline,
-							  sizeof(glm::mat4),
-							  recordMesh,
-							  renderTargets,
-							  windowHandle);
+		scene.recordDrawcalls(
+				cmdStream,
+				cameraManager.getActiveCamera(),
+				scenePass,
+				scenePipeline,
+				sizeof(glm::mat4),
+				recordMesh,
+				renderTargets,
+				windowHandle
+		);
 		
 		core.prepareImageForSampling(cmdStream, colorBuffer);
 		core.prepareImageForStorage(cmdStream, swapchainInput);

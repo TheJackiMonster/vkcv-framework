@@ -23,18 +23,18 @@ public:
 	ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vertexLayout);
 
 	void recordShadowMapRendering(
-		const vkcv::CommandStreamHandle&    cmdStream,
-		const glm::vec2&                    lightAngleRadian,
-		const glm::vec3&                    lightColor,
-		float                               lightStrength,
-		float                               maxShadowDistance,
-		const std::vector<vkcv::Mesh>&      meshes,
-		const std::vector<glm::mat4>&       modelMatrices,
-		const vkcv::camera::Camera&         camera,
-		const glm::vec3&                    voxelVolumeOffset,
-		float                               voxelVolumeExtent,
-		const vkcv::WindowHandle&           windowHandle,
-		vkcv::Downsampler&					downsampler);
+		const vkcv::CommandStreamHandle&     cmdStream,
+		const glm::vec2&                     lightAngleRadian,
+		const glm::vec3&                     lightColor,
+		float                                lightStrength,
+		float                                maxShadowDistance,
+		const std::vector<vkcv::VertexData>& meshes,
+		const std::vector<glm::mat4>&        modelMatrices,
+		const vkcv::camera::Camera&          camera,
+		const glm::vec3&                     voxelVolumeOffset,
+		float                                voxelVolumeExtent,
+		const vkcv::WindowHandle&            windowHandle,
+		vkcv::Downsampler&					 downsampler);
 
 	vkcv::ImageHandle   getShadowMap();
 	vkcv::SamplerHandle getShadowSampler();

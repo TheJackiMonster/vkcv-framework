@@ -1,7 +1,6 @@
 
 #include "vkcv/effects/BloomAndFlaresEffect.hpp"
 
-#include <vkcv/DrawcallRecording.hpp>
 #include <vkcv/PushConstants.hpp>
 #include <vkcv/Image.hpp>
 #include <vkcv/Sampler.hpp>

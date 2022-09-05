@@ -134,7 +134,7 @@ int main(int argc, const char** argv) {
 			rtxRegions.rmissRegion,
 			rtxRegions.rchitRegion,
 			rtxRegions.rcallRegion,
-			{	vkcv::DescriptorSetUsage(0, rtxShaderDescriptorSet)},
+			{ vkcv::useDescriptorSet(0, rtxShaderDescriptorSet) },
 			pushConstantsRTX,
 			windowHandle);
 

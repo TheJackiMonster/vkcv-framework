@@ -17,7 +17,7 @@ namespace vkcv::scene {
 	
 	void MeshPart::load(const asset::Scene& scene,
 						const asset::VertexGroup &vertexGroup,
-						std::vector<DrawcallInfo>& drawcalls) {
+						std::vector<InstanceDrawcall>& drawcalls) {
 		Core& core = *(m_scene.m_core);
 		
 		auto vertexBuffer = buffer<uint8_t>(
@@ -34,7 +34,7 @@ namespace vkcv::scene {
 		});
 		
 		for (const auto& attribute : attributes) {
-			m_vertexBindings.emplace_back(attribute.offset, vertexBuffer.getVulkanHandle());
+			m_vertexBindings.emplace_back(vertexBuffer.getHandle(), attribute.offset);
 		}
 		
 		auto indexBuffer = buffer<uint8_t>(
@@ -88,10 +88,14 @@ namespace vkcv::scene {
 					break;
 			}
 			
-			drawcalls.push_back(DrawcallInfo(
-					vkcv::Mesh(m_vertexBindings, indexBuffer.getVulkanHandle(), m_indexCount, indexBitCount),
-					{ DescriptorSetUsage(0, material.getDescriptorSet()) }
-			));
+			VertexData vertexData (m_vertexBindings);
+			vertexData.setIndexBuffer(indexBuffer.getHandle(), indexBitCount);
+			vertexData.setCount(m_indexCount);
+			
+			InstanceDrawcall drawcall (vertexData);
+			drawcall.useDescriptorSet(0, material.getDescriptorSet());
+			
+			drawcalls.push_back(drawcall);
 		}
 	}
 	

@@ -77,7 +77,7 @@ namespace vkcv::scene {
          */
 		void load(const asset::Scene& scene,
 				  const asset::VertexGroup& vertexGroup,
-				  std::vector<DrawcallInfo>& drawcalls);
+				  std::vector<InstanceDrawcall>& drawcalls);
 	
 	public:
         /**

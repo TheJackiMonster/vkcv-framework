@@ -181,9 +181,12 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	const vkcv::Mesh renderMesh({}, safrIndexBuffer.getVulkanHandle(), 3);
-	vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
-	vkcv::DrawcallInfo drawcall(renderMesh, { descriptorUsage }, 1);
+	vkcv::VertexData vertexData;
+	vertexData.setIndexBuffer(safrIndexBuffer.getHandle());
+	vertexData.setCount(3);
+	
+	vkcv::InstanceDrawcall drawcall (vertexData);
+	drawcall.useDescriptorSet(0, descriptorSet);
 
 	//create the camera
 	vkcv::camera::CameraManager cameraManager(window);
@@ -250,7 +253,7 @@ int main(int argc, const char** argv) {
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			computePipeline,
 			computeDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, computeDescriptorSet) },
+			{ vkcv::useDescriptorSet(0, computeDescriptorSet) },
 			pushConstantsCompute
 		);
 

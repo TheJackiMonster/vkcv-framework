@@ -10,7 +10,6 @@
 
 #include "Handles.hpp"
 #include "QueueManager.hpp"
-#include "DrawcallRecording.hpp"
 #include "Features.hpp"
 
 namespace vkcv

@@ -334,7 +334,7 @@ int main(int argc, const char** argv) {
 			core.recordComputeDispatchToCmdStream(cmdStream,
 				imageClearPipeline,
 				fullscreenDispatchCount,
-				{ vkcv::DescriptorSetUsage(0, imageClearDescriptorSet) },
+				{ vkcv::useDescriptorSet(0, imageClearDescriptorSet) },
 				vkcv::PushConstants(0));
 
 			clearMeanImage = false;
@@ -369,7 +369,7 @@ int main(int argc, const char** argv) {
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			tracePipeline,
 			traceDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, traceDescriptorSet) },
+			{ vkcv::useDescriptorSet(0, traceDescriptorSet) },
 			pushConstantsCompute);
 
 		core.prepareImageForStorage(cmdStream, meanImage);
@@ -379,7 +379,7 @@ int main(int argc, const char** argv) {
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			imageCombinePipeline,
 			fullscreenDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, imageCombineDescriptorSet) },
+			{ vkcv::useDescriptorSet(0, imageCombineDescriptorSet) },
 			vkcv::PushConstants(0));
 
 		core.recordImageMemoryBarrier(cmdStream, meanImage);
@@ -401,7 +401,7 @@ int main(int argc, const char** argv) {
 		core.recordComputeDispatchToCmdStream(cmdStream,
 			presentPipeline,
 			fullscreenDispatchCount,
-			{ vkcv::DescriptorSetUsage(0, presentDescriptorSet) },
+			{ vkcv::useDescriptorSet(0, presentDescriptorSet) },
 			vkcv::PushConstants(0));
 
 		core.prepareSwapchainImageForPresent(cmdStream);

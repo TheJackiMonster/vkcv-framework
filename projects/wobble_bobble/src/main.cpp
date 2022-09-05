@@ -548,16 +548,8 @@ int main(int argc, const char **argv) {
 		glm::vec2(+1.0f, -1.0f)
 	});
 	
-	vkcv::Buffer<uint16_t> triangleIndices = vkcv::buffer<uint16_t>(core, vkcv::BufferType::INDEX, 3);
-	triangleIndices.fill({
-		0, 1, 2
-	});
-	
-	vkcv::Mesh triangleMesh (
-			{ vkcv::VertexBufferBinding(0, trianglePositions.getVulkanHandle()) },
-			triangleIndices.getVulkanHandle(),
-			triangleIndices.getCount()
-	);
+	vkcv::VertexData triangleData ({ vkcv::vertexBufferBinding(trianglePositions.getHandle()) });
+	triangleData.setCount(trianglePositions.getCount());
 	
 	vkcv::Buffer<glm::vec3> linesPositions = vkcv::buffer<glm::vec3>(core, vkcv::BufferType::VERTEX, 8);
 	linesPositions.fill({
@@ -589,38 +581,23 @@ int main(int argc, const char **argv) {
 		3, 7
 	});
 	
-	vkcv::Mesh linesMesh (
-			{ vkcv::VertexBufferBinding(0, linesPositions.getVulkanHandle()) },
-			linesIndices.getVulkanHandle(),
-			linesIndices.getCount()
+	vkcv::VertexData linesData ({ vkcv::vertexBufferBinding(linesPositions.getHandle()) });
+	linesData.setIndexBuffer(linesIndices.getHandle());
+	linesData.setCount(linesIndices.getCount());
+	
+	vkcv::InstanceDrawcall drawcallGrid (
+			triangleData,
+			grid.getWidth() * grid.getHeight() * grid.getDepth()
 	);
 	
-	std::vector<vkcv::DrawcallInfo> drawcallsGrid;
+	drawcallGrid.useDescriptorSet(0, gfxSetGrid);
 	
-	drawcallsGrid.push_back(vkcv::DrawcallInfo(
-			triangleMesh,
-			{ vkcv::DescriptorSetUsage(0, gfxSetGrid) },
-			grid.getWidth() * grid.getHeight() * grid.getDepth()
-	));
+	vkcv::InstanceDrawcall drawcallParticle (triangleData, sim->count);
+	drawcallParticle.useDescriptorSet(0, gfxSetParticles);
 	
-	std::vector<vkcv::DrawcallInfo> drawcallsParticles;
-	
-	drawcallsParticles.push_back(vkcv::DrawcallInfo(
-			triangleMesh,
-			{ vkcv::DescriptorSetUsage(0, gfxSetParticles) },
-			sim->count
-	));
-	
-	std::vector<vkcv::DrawcallInfo> drawcallsLines;
-	
-	drawcallsLines.push_back(vkcv::DrawcallInfo(
-			linesMesh,
-			{},
-			1
-	));
+	vkcv::InstanceDrawcall drawcallLines (linesData);
 	
 	bool renderGrid = true;
-	
 	float speed_factor = 1.0f;
 	
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
@@ -669,10 +646,10 @@ int main(int argc, const char **argv) {
 					initParticleWeightsPipeline,
 					dispatchSizeParticles,
 					{
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								0, initParticleWeightsSets[0]
 						),
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								1, initParticleWeightsSets[1]
 						)
 					},
@@ -691,13 +668,13 @@ int main(int argc, const char **argv) {
 					transformParticlesToGridPipeline,
 					dispatchSizeGrid,
 					{
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								0, transformParticlesToGridSets[0]
 						),
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								1, transformParticlesToGridSets[1]
 						),
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								2, transformParticlesToGridSets[2]
 						)
 					},
@@ -717,13 +694,13 @@ int main(int argc, const char **argv) {
 					updateParticleVelocitiesPipeline,
 					dispatchSizeParticles,
 					{
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								0, updateParticleVelocitiesSets[0]
 						),
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								1, updateParticleVelocitiesSets[1]
 						),
-						vkcv::DescriptorSetUsage(
+						vkcv::useDescriptorSet(
 								2, updateParticleVelocitiesSets[2]
 						)
 					},
@@ -748,7 +725,7 @@ int main(int argc, const char **argv) {
 					cmdStream,
 					gfxPipelineGrid,
 					cameraPushConstants,
-					drawcallsGrid,
+					{ drawcallGrid },
 					renderTargets,
 					windowHandle
 			);
@@ -762,7 +739,7 @@ int main(int argc, const char **argv) {
 					cmdStream,
 					gfxPipelineParticles,
 					cameraPushConstants,
-					drawcallsParticles,
+					{ drawcallParticle },
 					renderTargets,
 					windowHandle
 			);
@@ -776,7 +753,7 @@ int main(int argc, const char **argv) {
 				cmdStream,
 				gfxPipelineLines,
 				cameraPushConstants,
-				drawcallsLines,
+				{ drawcallLines },
 				renderTargets,
 				windowHandle
 		);

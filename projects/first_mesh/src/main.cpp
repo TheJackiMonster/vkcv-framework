@@ -127,9 +127,9 @@ int main(int argc, const char** argv) {
 	vkcv::SamplerHandle sampler = vkcv::samplerLinear(core);
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle())
+			vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[0].offset),
+			vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[1].offset),
+			vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[2].offset)
 	};
 
 	vkcv::DescriptorWrites setWrites;
@@ -141,11 +141,13 @@ int main(int argc, const char** argv) {
 	vkcv::ImageHandle depthBuffer;
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-
-	const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices);
-
-	vkcv::DescriptorSetUsage    descriptorUsage(0, descriptorSet);
-	vkcv::DrawcallInfo          drawcall(renderMesh, { descriptorUsage },1);
+	
+	vkcv::VertexData vertexData (vertexBufferBindings);
+	vertexData.setIndexBuffer(indexBuffer.getHandle());
+	vertexData.setCount(mesh.vertexGroups[0].numIndices);
+	
+	vkcv::InstanceDrawcall drawcall (vertexData);
+	drawcall.useDescriptorSet(0, descriptorSet);
 
     vkcv::camera::CameraManager cameraManager(window);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);

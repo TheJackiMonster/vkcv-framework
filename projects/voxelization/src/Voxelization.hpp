@@ -25,7 +25,7 @@ public:
 
 	void voxelizeMeshes(
 		vkcv::CommandStreamHandle                       cmdStream,
-		const std::vector<vkcv::Mesh>&                  meshes,
+		const std::vector<vkcv::VertexData>&            meshes,
 		const std::vector<glm::mat4>&                   modelMatrices,
 		const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets,
 		const vkcv::WindowHandle&                       windowHandle,

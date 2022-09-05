@@ -129,9 +129,10 @@ int main(int argc, const char** argv) {
 	});
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
+			vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[0].offset),
+			vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[1].offset),
+			vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[2].offset)
+	};
 
 	const auto& bunny = mesh.vertexGroups[0];
 	std::vector<vkcv::meshlet::Vertex> interleavedVertices = vkcv::meshlet::convertToVertices(bunny.vertexBuffer.data, bunny.numVertices, attributes[0], attributes[1]);
@@ -282,7 +283,9 @@ int main(int argc, const char** argv) {
     vkcv::ImageHandle depthBuffer;
 	vkcv::ImageHandle swapchainImageHandle = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    const vkcv::Mesh renderMesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), mesh.vertexGroups[0].numIndices, vkcv::IndexBitCount::Bit32);
+	vkcv::VertexData vertexData (vertexBufferBindings);
+	vertexData.setIndexBuffer(indexBuffer.getHandle(), vkcv::IndexBitCount::Bit32);
+	vertexData.setCount(mesh.vertexGroups[0].numIndices);
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
@@ -334,26 +337,28 @@ int main(int argc, const char** argv) {
 		pushConstantData.appendDrawcall(pushConstants);
 
 		if (useMeshShader) {
-
-			vkcv::DescriptorSetUsage descriptorUsage(0, meshShaderDescriptorSet);
 			const uint32_t taskCount = (meshShaderModelData.meshlets.size() + 31) / 32;
+			
+			vkcv::TaskDrawcall drawcall (taskCount);
+			drawcall.useDescriptorSet(0, meshShaderDescriptorSet);
 
 			core.recordMeshShaderDrawcalls(
 				cmdStream,
 				meshShaderPipeline,
 				pushConstantData,
-				{ vkcv::MeshShaderDrawcall({descriptorUsage}, taskCount)},
+				{ drawcall },
 				{ renderTargets },
 				windowHandle
 			);
 		} else {
-			vkcv::DescriptorSetUsage descriptorUsage(0, vertexShaderDescriptorSet);
+			vkcv::InstanceDrawcall drawcall (vertexData);
+			drawcall.useDescriptorSet(0, vertexShaderDescriptorSet);
 
 			core.recordDrawcallsToCmdStream(
 				cmdStream,
 				bunnyPipeline,
 				pushConstantData,
-				{ vkcv::DrawcallInfo(renderMesh, { descriptorUsage }) },
+				{ drawcall },
 				{ renderTargets },
 				windowHandle
 			);

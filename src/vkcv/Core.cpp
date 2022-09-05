@@ -396,24 +396,32 @@ namespace vkcv
 	}
 	
 	static void recordDrawcall(const DescriptorSetManager &descriptorSetManager,
-							   const DrawcallInfo &drawcall,
+							   const BufferManager &bufferManager,
+							   const InstanceDrawcall &drawcall,
 							   vk::CommandBuffer cmdBuffer,
 							   vk::PipelineLayout pipelineLayout,
 							   const PushConstants &pushConstants,
 							   size_t drawcallIndex) {
 		
-		for (uint32_t i = 0; i < drawcall.mesh.vertexBufferBindings.size(); i++) {
-			const auto& vertexBinding = drawcall.mesh.vertexBufferBindings[i];
-			cmdBuffer.bindVertexBuffers(i, vertexBinding.buffer, vertexBinding.offset);
+		const auto& vertexData = drawcall.getVertexData();
+		
+		for (uint32_t i = 0; i < vertexData.getVertexBufferBindings().size(); i++) {
+			const auto& vertexBinding = vertexData.getVertexBufferBindings()[i];
+			
+			cmdBuffer.bindVertexBuffers(
+					i,
+					bufferManager.getBuffer(vertexBinding.buffer),
+					vertexBinding.offset
+			);
 		}
 		
-		for (const auto& descriptorUsage : drawcall.descriptorSets) {
+		for (const auto& usage : drawcall.getDescriptorSetUsages()) {
 			cmdBuffer.bindDescriptorSets(
 					vk::PipelineBindPoint::eGraphics,
 					pipelineLayout,
-					descriptorUsage.setLocation,
-					descriptorSetManager.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
-					descriptorUsage.dynamicOffsets
+					usage.location,
+					descriptorSetManager.getDescriptorSet(usage.descriptorSet).vulkanHandle,
+					usage.dynamicOffsets
 			);
 		}
 		
@@ -427,11 +435,16 @@ namespace vkcv
 			);
 		}
 		
-		if (drawcall.mesh.indexBuffer) {
-			cmdBuffer.bindIndexBuffer(drawcall.mesh.indexBuffer, 0, getIndexType(drawcall.mesh.indexBitCount));
-			cmdBuffer.drawIndexed(drawcall.mesh.indexCount, drawcall.instanceCount, 0, 0, {});
+		if (vertexData.getIndexBuffer()) {
+			cmdBuffer.bindIndexBuffer(
+					bufferManager.getBuffer(vertexData.getIndexBuffer()),
+					0,
+					getIndexType(vertexData.getIndexBitCount())
+			);
+			
+			cmdBuffer.drawIndexed(vertexData.getCount(), drawcall.getInstanceCount(), 0, 0, {});
 		} else {
-			cmdBuffer.draw(drawcall.mesh.indexCount, drawcall.instanceCount, 0, 0, {});
+			cmdBuffer.draw(vertexData.getCount(), drawcall.getInstanceCount(), 0, 0, {});
 		}
 	}
 	
@@ -531,7 +544,7 @@ namespace vkcv
 	void Core::recordDrawcallsToCmdStream(const CommandStreamHandle &cmdStreamHandle,
 										  const GraphicsPipelineHandle &pipelineHandle,
 										  const PushConstants &pushConstantData,
-										  const std::vector<DrawcallInfo> &drawcalls,
+										  const std::vector<InstanceDrawcall> &drawcalls,
 										  const std::vector<ImageHandle> &renderTargets,
 										  const WindowHandle &windowHandle) {
 		
@@ -547,6 +560,7 @@ namespace vkcv
 			for (size_t i = 0; i < drawcalls.size(); i++) {
 				recordDrawcall(
 						*m_DescriptorSetManager,
+						*m_BufferManager,
 						drawcalls[i],
 						cmdBuffer,
 						pipelineLayout,
@@ -570,16 +584,76 @@ namespace vkcv
 				recordFunction
 		);
 	}
+	
+	static void recordIndirectDrawcall(const Core& core,
+									   const DescriptorSetManager &descriptorSetManager,
+									   const BufferManager &bufferManager,
+									   vk::CommandBuffer cmdBuffer,
+									   vk::PipelineLayout pipelineLayout,
+									   const PushConstants& pushConstantData,
+									   size_t drawcallIndex,
+									   const IndirectDrawcall& drawcall) {
+		for (const auto& usage : drawcall.getDescriptorSetUsages()) {
+			cmdBuffer.bindDescriptorSets(
+					vk::PipelineBindPoint::eGraphics,
+					pipelineLayout,
+					usage.location,
+					descriptorSetManager.getDescriptorSet(usage.descriptorSet).vulkanHandle,
+					usage.dynamicOffsets
+			);
+		}
+		
+		const auto& vertexData = drawcall.getVertexData();
+		
+		for (uint32_t i = 0; i < vertexData.getVertexBufferBindings().size(); i++) {
+			const auto& vertexBinding = vertexData.getVertexBufferBindings()[i];
+			
+			cmdBuffer.bindVertexBuffers(
+					i,
+					bufferManager.getBuffer(vertexBinding.buffer),
+					vertexBinding.offset
+			);
+		}
+		
+		if (pushConstantData.getSizePerDrawcall() > 0) {
+			cmdBuffer.pushConstants(
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eAll,
+					0,
+					pushConstantData.getSizePerDrawcall(),
+					pushConstantData.getDrawcallData(0)
+			);
+		}
+		
+		if (vertexData.getIndexBuffer()) {
+			cmdBuffer.bindIndexBuffer(
+					bufferManager.getBuffer(vertexData.getIndexBuffer()),
+					0,
+					getIndexType(vertexData.getIndexBitCount())
+			);
+			
+			cmdBuffer.drawIndexedIndirect(
+					bufferManager.getBuffer(drawcall.getIndirectDrawBuffer()),
+					0,
+					drawcall.getDrawCount(),
+					sizeof(vk::DrawIndexedIndirectCommand)
+			);
+		} else {
+			cmdBuffer.drawIndirect(
+					bufferManager.getBuffer(drawcall.getIndirectDrawBuffer()),
+					0,
+					drawcall.getDrawCount(),
+					sizeof(vk::DrawIndirectCommand)
+			);
+		}
+	}
 
-    void Core::recordIndexedIndirectDrawcallsToCmdStream(const CommandStreamHandle cmdStreamHandle,
-														 const GraphicsPipelineHandle &pipelineHandle,
-														 const PushConstants &pushConstantData,
-														 const std::vector<DescriptorSetUsage> &descriptorSetUsages,
-														 const vkcv::Mesh &compiledMesh,
-														 const std::vector<ImageHandle> &renderTargets,
-														 const BufferHandle &indirectBuffer,
-														 const uint32_t drawCount,
-														 const WindowHandle &windowHandle) {
+	void Core::recordIndirectDrawcallsToCmdStream(const vkcv::CommandStreamHandle cmdStreamHandle,
+												  const vkcv::GraphicsPipelineHandle &pipelineHandle,
+												  const vkcv::PushConstants &pushConstantData,
+												  const std::vector<IndirectDrawcall> &drawcalls,
+												  const std::vector<ImageHandle> &renderTargets,
+												  const vkcv::WindowHandle &windowHandle) {
 
         if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
             return;
@@ -590,36 +664,18 @@ namespace vkcv
 		);
 	
 		auto recordFunction = [&](const vk::CommandBuffer& cmdBuffer) {
-			for (const auto& usage : descriptorSetUsages) {
-				cmdBuffer.bindDescriptorSets(
-						vk::PipelineBindPoint::eGraphics,
+			for (size_t i = 0; i < drawcalls.size(); i++) {
+				recordIndirectDrawcall(
+						*this,
+						*m_DescriptorSetManager,
+						*m_BufferManager,
+						cmdBuffer,
 						pipelineLayout,
-						usage.setLocation,
-						m_DescriptorSetManager->getDescriptorSet(usage.descriptorSet).vulkanHandle,
-						usage.dynamicOffsets
+						pushConstantData,
+						i,
+						drawcalls[i]
 				);
 			}
-			
-			if (pushConstantData.getSizePerDrawcall() > 0) {
-				cmdBuffer.pushConstants(
-						pipelineLayout,
-						vk::ShaderStageFlagBits::eAll,
-						0,
-						pushConstantData.getSizePerDrawcall(),
-						pushConstantData.getDrawcallData(0)
-				);
-			}
-			
-			vk::DeviceSize deviceSize = 0;
-			cmdBuffer.bindVertexBuffers(0, 1, &compiledMesh.vertexBufferBindings[0].buffer,&deviceSize);
-			cmdBuffer.bindIndexBuffer(compiledMesh.indexBuffer, 0, getIndexType(compiledMesh.indexBitCount));
-			
-			cmdBuffer.drawIndexedIndirect(
-					m_BufferManager->getBuffer(indirectBuffer),
-					0,
-					drawCount,
-					sizeof(vk::DrawIndexedIndirectCommand)
-			);
 		};
 	
 		recordGraphicsPipeline(
@@ -643,7 +699,7 @@ namespace vkcv
 										 vk::PipelineLayout pipelineLayout,
 										 const PushConstants& pushConstantData,
 										 size_t drawcallIndex,
-										 const MeshShaderDrawcall& drawcall) {
+										 const TaskDrawcall& drawcall) {
 		
 		static PFN_vkCmdDrawMeshTasksNV cmdDrawMeshTasks = reinterpret_cast<PFN_vkCmdDrawMeshTasksNV>(
 				core.getContext().getDevice().getProcAddr("vkCmdDrawMeshTasksNV")
@@ -654,11 +710,11 @@ namespace vkcv
 			return;
 		}
 		
-		for (const auto& descriptorUsage : drawcall.descriptorSets) {
+		for (const auto& descriptorUsage : drawcall.getDescriptorSetUsages()) {
 			cmdBuffer.bindDescriptorSets(
 					vk::PipelineBindPoint::eGraphics,
 					pipelineLayout,
-					descriptorUsage.setLocation,
+					descriptorUsage.location,
 					descriptorSetManager.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
 					descriptorUsage.dynamicOffsets
 			);
@@ -674,13 +730,13 @@ namespace vkcv
 			);
 		}
 		
-		cmdDrawMeshTasks(VkCommandBuffer(cmdBuffer), drawcall.taskCount, 0);
+		cmdDrawMeshTasks(VkCommandBuffer(cmdBuffer), drawcall.getTaskCount(), 0);
 	}
 
 	void Core::recordMeshShaderDrawcalls(const CommandStreamHandle &cmdStreamHandle,
 										 const GraphicsPipelineHandle &pipelineHandle,
 										 const PushConstants &pushConstantData,
-										 const std::vector<MeshShaderDrawcall> &drawcalls,
+										 const std::vector<TaskDrawcall> &drawcalls,
 										 const std::vector<ImageHandle> &renderTargets,
 										 const WindowHandle &windowHandle) {
 		
@@ -704,8 +760,6 @@ namespace vkcv
                     drawcalls[i]
 				);
 			}
-
-			cmdBuffer.endRenderPass();
 		};
 		
 		recordGraphicsPipeline(
@@ -733,7 +787,7 @@ namespace vkcv
 											  vk::StridedDeviceAddressRegionKHR rcallRegion,
 											  const std::vector<DescriptorSetUsage>& descriptorSetUsages,
 											  const PushConstants& pushConstants,
-											  const WindowHandle windowHandle) {
+											  const WindowHandle& windowHandle) {
 
 		auto submitFunction = [&](const vk::CommandBuffer& cmdBuffer) {
 			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rtxPipeline);
@@ -741,7 +795,7 @@ namespace vkcv
 				cmdBuffer.bindDescriptorSets(
 					vk::PipelineBindPoint::eRayTracingKHR,
 					rtxPipelineLayout,
-					usage.setLocation,
+					usage.location,
 					{ m_DescriptorSetManager->getDescriptorSet(usage.descriptorSet).vulkanHandle },
 					usage.dynamicOffsets
 				);
@@ -779,7 +833,7 @@ namespace vkcv
 				cmdBuffer.bindDescriptorSets(
 					vk::PipelineBindPoint::eCompute,
 					pipelineLayout,
-					usage.setLocation,
+					usage.location,
 					{ m_DescriptorSetManager->getDescriptorSet(usage.descriptorSet).vulkanHandle },
 					usage.dynamicOffsets
 				);
@@ -859,7 +913,7 @@ namespace vkcv
 				cmdBuffer.bindDescriptorSets(
 					vk::PipelineBindPoint::eCompute,
 					pipelineLayout,
-					usage.setLocation,
+					usage.location,
 					{ m_DescriptorSetManager->getDescriptorSet(usage.descriptorSet).vulkanHandle },
 					usage.dynamicOffsets
 				);

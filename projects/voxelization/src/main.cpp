@@ -175,7 +175,10 @@ int main(int argc, const char** argv) {
 	for (const auto& vertexGroup : scene.vertexGroups) {
 		for (const auto& attribute : vertexGroup.vertexBuffer.attributes) {
 			vAttributes.push_back(attribute);
-			vBufferBindings.push_back(vkcv::VertexBufferBinding(attribute.offset, vertexBuffers[vertexBufferIndex].getVulkanHandle()));
+			vBufferBindings.push_back(vkcv::vertexBufferBinding(
+					vertexBuffers[vertexBufferIndex].getHandle(),
+					attribute.offset
+			));
 		}
 		vertexBufferBindings.push_back(vBufferBindings);
 		vBufferBindings.clear();
@@ -512,22 +515,27 @@ int main(int argc, const char** argv) {
 	}
 
 	// prepare meshes
-	std::vector<vkcv::Mesh> meshes;
+	std::vector<vkcv::VertexData> meshes;
 	for (size_t i = 0; i < scene.vertexGroups.size(); i++) {
-		vkcv::Mesh mesh(vertexBufferBindings[i], indexBuffers[i].getVulkanHandle(), scene.vertexGroups[i].numIndices);
+		vkcv::VertexData mesh (vertexBufferBindings[i]);
+		mesh.setIndexBuffer(indexBuffers[i].getHandle());
+		mesh.setCount(scene.vertexGroups[i].numIndices);
 		meshes.push_back(mesh);
 	}
 
-	std::vector<vkcv::DrawcallInfo> drawcalls;
-	std::vector<vkcv::DrawcallInfo> prepassDrawcalls;
+	std::vector<vkcv::InstanceDrawcall> drawcalls;
+	std::vector<vkcv::InstanceDrawcall> prepassDrawcalls;
 	for (size_t i = 0; i < meshes.size(); i++) {
-
-		drawcalls.push_back(vkcv::DrawcallInfo(meshes[i], { 
-			vkcv::DescriptorSetUsage(0, forwardShadingDescriptorSet),
-			vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i]) }));
-		prepassDrawcalls.push_back(vkcv::DrawcallInfo(meshes[i], {
-			vkcv::DescriptorSetUsage(0, prepassDescriptorSet),
-			vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i]) }));
+		vkcv::InstanceDrawcall drawcall (meshes[i]);
+		drawcall.useDescriptorSet(0, forwardShadingDescriptorSet);
+		drawcall.useDescriptorSet(1, perMeshDescriptorSets[i]);
+		
+		vkcv::InstanceDrawcall prepassDrawcall (meshes[i]);
+		prepassDrawcall.useDescriptorSet(0, prepassDescriptorSet);
+		prepassDrawcall.useDescriptorSet(1, perMeshDescriptorSets[i]);
+		
+		drawcalls.push_back(drawcall);
+		prepassDrawcalls.push_back(prepassDrawcall);
 	}
 
 	vkcv::SamplerHandle voxelSampler = vkcv::samplerLinear(core, true);
@@ -810,6 +818,9 @@ int main(int argc, const char** argv) {
 		
 		vkcv::PushConstants skySettingsPushConstants = vkcv::pushConstants<SkySettings>();
 		skySettingsPushConstants.appendDrawcall(skySettings);
+		
+		vkcv::VertexData skyData;
+		skyData.setCount(3);
 
 		// sky
 		core.recordBeginDebugLabel(cmdStream, "Sky", { 1, 1, 1, 1 });
@@ -817,7 +828,7 @@ int main(int argc, const char** argv) {
 			cmdStream,
 			skyPipe,
 			skySettingsPushConstants,
-			{ vkcv::DrawcallInfo(vkcv::Mesh({}, nullptr, 3), {}) },
+			{ vkcv::InstanceDrawcall(skyData) },
 			renderTargets,
 			windowHandle
 		);
@@ -840,7 +851,7 @@ int main(int argc, const char** argv) {
 						cmdStream,
 						resolvePipeline,
 						fullscreenDispatchCount,
-						{ vkcv::DescriptorSetUsage(0, resolveDescriptorSet) },
+						{ vkcv::useDescriptorSet(0, resolveDescriptorSet) },
 						vkcv::PushConstants(0)
 				);
 
@@ -863,7 +874,7 @@ int main(int argc, const char** argv) {
 				cmdStream,
 				tonemappingPipeline,
 				fullscreenDispatchCount,
-				{ vkcv::DescriptorSetUsage(0, tonemappingDescriptorSet) },
+				{ vkcv::useDescriptorSet(0, tonemappingDescriptorSet) },
 				vkcv::PushConstants(0)
 		);
 		
@@ -901,7 +912,7 @@ int main(int argc, const char** argv) {
 				cmdStream,
 				postEffectsPipeline,
 				fullscreenDispatchCount,
-				{ vkcv::DescriptorSetUsage(0, postEffectsDescriptorSet) },
+				{ vkcv::useDescriptorSet(0, postEffectsDescriptorSet) },
 				timePushConstants
 		);
 		core.recordEndDebugLabel(cmdStream);

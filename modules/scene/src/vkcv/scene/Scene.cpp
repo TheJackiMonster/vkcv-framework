@@ -126,7 +126,7 @@ namespace vkcv::scene {
 		});
 		
 		PushConstants pushConstants (pushConstantsSizePerDrawcall);
-		std::vector<DrawcallInfo> drawcalls;
+		std::vector<InstanceDrawcall> drawcalls;
 		size_t count = 0;
 		
 		const glm::mat4 viewProjection = camera.getMVP();

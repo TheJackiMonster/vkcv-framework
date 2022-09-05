@@ -52,11 +52,14 @@ bool loadMesh(vkcv::Core& core, const std::filesystem::path& path, MeshResources
 	});
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[0].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[1].offset), vertexBuffer.getVulkanHandle()),
-		vkcv::VertexBufferBinding(static_cast<vk::DeviceSize>(attributes[2].offset), vertexBuffer.getVulkanHandle()) };
+		vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[0].offset),
+		vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[1].offset),
+		vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[2].offset)
+	};
 
-	outMesh->mesh = vkcv::Mesh(vertexBufferBindings, indexBuffer.getVulkanHandle(), scene.vertexGroups[0].numIndices);
+	outMesh->mesh = vkcv::VertexData(vertexBufferBindings);
+	outMesh->mesh.setIndexBuffer(indexBuffer.getHandle());
+	outMesh->mesh.setCount(scene.vertexGroups[0].numIndices);
 
 	return true;
 }

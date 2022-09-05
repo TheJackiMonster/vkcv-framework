@@ -431,10 +431,11 @@ int main(int argc, const char** argv) {
 	modelBuffer.fill(modelMatrix);
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::VertexBufferBinding(static_cast<vk::DeviceSize> (0), vkCompiledVertexBuffer.getVulkanHandle() )
+			vkcv::vertexBufferBinding(vkCompiledVertexBuffer.getHandle())
 	};
-
-	const vkcv::Mesh compiledMesh(vertexBufferBindings, vkCompiledIndexBuffer.getVulkanHandle(), 0, vkcv::IndexBitCount::Bit32);
+	
+	vkcv::VertexData vertexData (vertexBufferBindings);
+	vertexData.setIndexBuffer(vkCompiledIndexBuffer.getHandle(), vkcv::IndexBitCount::Bit32);
 
     //assert(compiledMaterial.baseColor.size() == compiledMaterial.metalRough.size());
 
@@ -512,7 +513,7 @@ int main(int argc, const char** argv) {
     ceiledDispatchCount = std::ceil(ceiledDispatchCount);
     const vkcv::DispatchSize dispatchCount = static_cast<uint32_t>(ceiledDispatchCount);
 
-    vkcv::DescriptorSetUsage cullingUsage(0, cullingDescSet, {});
+    vkcv::DescriptorSetUsage cullingUsage (0, cullingDescSet, {});
     vkcv::PushConstants emptyPushConstant(0);
 
     bool updateFrustumPlanes    = true;
@@ -549,15 +550,20 @@ int main(int argc, const char** argv) {
 
         core.recordBufferMemoryBarrier(cmdStream, indirectBuffer.getHandle());
 
-		core.recordIndexedIndirectDrawcallsToCmdStream(
+		vkcv::IndirectDrawcall drawcall (
+				indirectBuffer.getHandle(),
+				vertexData,
+				indexedIndirectCommands.size()
+		);
+		
+		drawcall.useDescriptorSet(0, descriptorSet);
+		
+		core.recordIndirectDrawcallsToCmdStream(
 			cmdStream,
             sponzaPipelineHandle,
             pushConstants,
-			{ vkcv::DescriptorSetUsage(0, descriptorSet) },
-            compiledMesh,
+			{ drawcall },
 			renderTargets,
-			indirectBuffer.getHandle(),
-            indexedIndirectCommands.size(),
 			windowHandle
 		);
 

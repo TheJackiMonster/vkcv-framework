@@ -21,7 +21,7 @@ struct ComputePassHandles {
 };
 
 struct MeshResources {
-	vkcv::Mesh          mesh;
+	vkcv::VertexData    mesh;
 	vkcv::BufferHandle  vertexBuffer;
 	vkcv::BufferHandle  indexBuffer;
 };

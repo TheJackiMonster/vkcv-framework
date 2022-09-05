@@ -212,7 +212,7 @@ Voxelization::Voxelization(
 
 void Voxelization::voxelizeMeshes(
 	vkcv::CommandStreamHandle                       cmdStream,
-	const std::vector<vkcv::Mesh>&                  meshes,
+	const std::vector<vkcv::VertexData>&            meshes,
 	const std::vector<glm::mat4>&                   modelMatrices,
 	const std::vector<vkcv::DescriptorSetHandle>&   perMeshDescriptorSets,
 	const vkcv::WindowHandle&                       windowHandle,
@@ -256,14 +256,12 @@ void Voxelization::voxelizeMeshes(
 	m_corePtr->recordEndDebugLabel(cmdStream);
 
 	// voxelization
-	std::vector<vkcv::DrawcallInfo> drawcalls;
+	std::vector<vkcv::InstanceDrawcall> drawcalls;
 	for (size_t i = 0; i < meshes.size(); i++) {
-		drawcalls.push_back(vkcv::DrawcallInfo(
-			meshes[i],
-			{ 
-				vkcv::DescriptorSetUsage(0, m_voxelizationDescriptorSet),
-				vkcv::DescriptorSetUsage(1, perMeshDescriptorSets[i])
-			},1));
+		vkcv::InstanceDrawcall drawcall (meshes[i]);
+		drawcall.useDescriptorSet(0, m_voxelizationDescriptorSet);
+		drawcall.useDescriptorSet(1, perMeshDescriptorSets[i]);
+		drawcalls.push_back(drawcall);
 	}
 
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxelization", { 1, 1, 1, 1 });
@@ -338,10 +336,12 @@ void Voxelization::renderVoxelVisualisation(
 	m_corePtr->writeDescriptorSet(m_visualisationDescriptorSet, voxelVisualisationDescriptorWrite);
 
 	uint32_t drawVoxelCount = voxelCount / exp2(mipLevel);
-
-	const auto drawcall = vkcv::DrawcallInfo(
-		vkcv::Mesh({}, nullptr, drawVoxelCount),
-		{ vkcv::DescriptorSetUsage(0, m_visualisationDescriptorSet) },1);
+	
+	vkcv::VertexData voxelData;
+	voxelData.setCount(drawVoxelCount);
+	
+	vkcv::InstanceDrawcall drawcall (voxelData);
+	drawcall.useDescriptorSet(0, m_visualisationDescriptorSet);
 
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Voxel visualisation", { 1, 1, 1, 1 });
 	m_corePtr->prepareImageForStorage(cmdStream, m_voxelImage.getHandle());

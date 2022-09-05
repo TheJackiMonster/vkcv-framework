@@ -96,7 +96,8 @@ int main(int argc, const char **argv) {
     const std::vector<vkcv::VertexAttachment> vertexAttachments = particleShaderProgram.getVertexAttachments();
 
     const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-            vkcv::VertexBufferBinding(0, vertexBuffer.getVulkanHandle())};
+            vkcv::vertexBufferBinding(vertexBuffer.getHandle())
+	};
 
     std::vector<vkcv::VertexBinding> bindings;
     for (size_t i = 0; i < vertexAttachments.size(); i++) {
@@ -197,14 +198,14 @@ int main(int argc, const char **argv) {
 
     const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
-    const vkcv::Mesh renderMesh({vertexBufferBindings}, particleIndexBuffer.getVulkanHandle(),
-                                particleIndexBuffer.getCount());
-    vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
+	vkcv::VertexData vertexData (vertexBufferBindings);
+	vertexData.setIndexBuffer(particleIndexBuffer.getHandle());
+	vertexData.setCount(particleIndexBuffer.getCount());
 
     auto pos = glm::vec2(0.f);
-
-    std::vector<vkcv::DrawcallInfo> drawcalls;
-    drawcalls.push_back(vkcv::DrawcallInfo(renderMesh, {descriptorUsage}, numberParticles));
+	
+	vkcv::InstanceDrawcall drawcall (vertexData, numberParticles);
+	drawcall.useDescriptorSet(0, descriptorSet);
 	
     glm::vec4 colorData = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
     uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
@@ -329,7 +330,7 @@ int main(int argc, const char **argv) {
 				cmdStream,
 				pressurePipeline,
 				computeDispatchCount,
-				{vkcv::DescriptorSetUsage(0, pressureDescriptorSet)},
+				{ vkcv::useDescriptorSet(0, pressureDescriptorSet) },
 				pushConstantsCompute
 		);
 
@@ -341,7 +342,7 @@ int main(int argc, const char **argv) {
 				cmdStream,
 				forcePipeline,
 				computeDispatchCount,
-				{vkcv::DescriptorSetUsage(0, forceDescriptorSet)},
+				{ vkcv::useDescriptorSet(0, forceDescriptorSet) },
 				pushConstantsCompute
 		);
 
@@ -353,7 +354,7 @@ int main(int argc, const char **argv) {
 				cmdStream,
 				updateDataPipeline,
 				computeDispatchCount,
-				{ vkcv::DescriptorSetUsage(0, updateDataDescriptorSet) },
+				{ vkcv::useDescriptorSet(0, updateDataDescriptorSet) },
 				pushConstantsCompute
 		);
 
@@ -365,7 +366,7 @@ int main(int argc, const char **argv) {
 				cmdStream,
 				flipPipeline,
 				computeDispatchCount,
-				{ vkcv::DescriptorSetUsage(0, flipDescriptorSet) },
+				{ vkcv::useDescriptorSet(0, flipDescriptorSet) },
 				pushConstantsCompute
 		);
 
@@ -381,7 +382,7 @@ int main(int argc, const char **argv) {
                 cmdStream,
                 particlePipeline,
 				pushConstantsDraw,
-                {drawcalls},
+                { drawcall },
                 { colorBuffer },
                 windowHandle
 		);
@@ -409,7 +410,7 @@ int main(int argc, const char **argv) {
             cmdStream, 
             tonemappingPipe, 
             tonemappingDispatchCount, 
-            {vkcv::DescriptorSetUsage(0, tonemappingDescriptor) },
+            { vkcv::useDescriptorSet(0, tonemappingDescriptor) },
             vkcv::PushConstants(0)
 		);
 

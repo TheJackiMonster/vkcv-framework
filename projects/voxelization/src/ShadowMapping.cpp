@@ -222,18 +222,18 @@ ShadowMapping::ShadowMapping(vkcv::Core* corePtr, const vkcv::VertexLayout& vert
 }
 
 void ShadowMapping::recordShadowMapRendering(
-	const vkcv::CommandStreamHandle&    cmdStream,
-	const glm::vec2&                    lightAngleRadian,
-	const glm::vec3&                    lightColor,
-	float                               lightStrength,
-	float                               maxShadowDistance,
-	const std::vector<vkcv::Mesh>&      meshes,
-	const std::vector<glm::mat4>&       modelMatrices,
-	const vkcv::camera::Camera&         camera,
-	const glm::vec3&                    voxelVolumeOffset,
-	float                               voxelVolumeExtent,
-	const vkcv::WindowHandle&           windowHandle,
-	vkcv::Downsampler&					downsampler) {
+	const vkcv::CommandStreamHandle&     cmdStream,
+	const glm::vec2&                     lightAngleRadian,
+	const glm::vec3&                     lightColor,
+	float                                lightStrength,
+	float                                maxShadowDistance,
+	const std::vector<vkcv::VertexData>& meshes,
+	const std::vector<glm::mat4>&        modelMatrices,
+	const vkcv::camera::Camera&          camera,
+	const glm::vec3&                     voxelVolumeOffset,
+	float                                voxelVolumeExtent,
+	const vkcv::WindowHandle&            windowHandle,
+	vkcv::Downsampler&					 downsampler) {
 
 	LightInfo lightInfo;
 	lightInfo.sunColor = lightColor;
@@ -257,9 +257,9 @@ void ShadowMapping::recordShadowMapRendering(
 		shadowPushConstants.appendDrawcall(lightInfo.lightMatrix * m);
 	}
 	
-	std::vector<vkcv::DrawcallInfo> drawcalls;
+	std::vector<vkcv::InstanceDrawcall> drawcalls;
 	for (const auto& mesh : meshes) {
-		drawcalls.push_back(vkcv::DrawcallInfo(mesh, {}));
+		drawcalls.push_back(vkcv::InstanceDrawcall(mesh));
 	}
 
 	m_corePtr->recordBeginDebugLabel(cmdStream, "Shadow map depth", {1, 1, 1, 1});
@@ -292,7 +292,7 @@ void ShadowMapping::recordShadowMapRendering(
 		cmdStream,
 		m_depthToMomentsPipe,
 		dispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_depthToMomentsDescriptorSet) },
+		{ vkcv::useDescriptorSet(0, m_depthToMomentsDescriptorSet) },
 		msaaPushConstants
 	);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMap.getHandle());
@@ -306,7 +306,7 @@ void ShadowMapping::recordShadowMapRendering(
 		cmdStream,
 		m_shadowBlurXPipe,
 		dispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_shadowBlurXDescriptorSet) },
+		{ vkcv::useDescriptorSet(0, m_shadowBlurXDescriptorSet) },
 		vkcv::PushConstants(0)
 	);
 	m_corePtr->prepareImageForSampling(cmdStream, m_shadowMapIntermediate.getHandle());
@@ -317,7 +317,7 @@ void ShadowMapping::recordShadowMapRendering(
 		cmdStream,
 		m_shadowBlurYPipe,
 		dispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_shadowBlurYDescriptorSet) },
+		{ vkcv::useDescriptorSet(0, m_shadowBlurYDescriptorSet) },
 		vkcv::PushConstants(0)
 	);
 	m_shadowMap.recordMipChainGeneration(cmdStream, downsampler);

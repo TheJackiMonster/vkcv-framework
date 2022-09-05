@@ -71,7 +71,7 @@ namespace vkcv::scene {
          */
 		void recordDrawcalls(const glm::mat4& viewProjection,
 							 PushConstants& pushConstants,
-							 std::vector<DrawcallInfo>& drawcalls,
+							 std::vector<InstanceDrawcall>& drawcalls,
 							 const RecordMeshDrawcallFunction& record);
 
         /**
