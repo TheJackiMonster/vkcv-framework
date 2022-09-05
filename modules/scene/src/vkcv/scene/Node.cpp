@@ -69,9 +69,11 @@ namespace vkcv::scene {
 		m_meshes.push_back(mesh);
 	}
 	
-	void Node::loadMesh(const asset::Scene &asset_scene, const asset::Mesh &asset_mesh) {
+	void Node::loadMesh(const asset::Scene &asset_scene,
+						const asset::Mesh &asset_mesh,
+						const std::vector<asset::PrimitiveType>& types) {
 		Mesh mesh (m_scene);
-		mesh.load(asset_scene, asset_mesh);
+		mesh.load(asset_scene, asset_mesh, types);
 		addMesh(mesh);
 	}
 	

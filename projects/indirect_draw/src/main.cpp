@@ -90,28 +90,33 @@ struct CompiledMaterial
 
 void interleaveScene(vkcv::asset::Scene scene,
                      std::vector<std::vector<Vertex>> &interleavedVertexBuffers,
-                     std::vector<glm::vec4> &boundingBoxBuffers)
-{
-    for(const auto &mesh : scene.meshes)
-    {
-        for(auto vertexGroupIndex : mesh.vertexGroups)
-        {
-			// Sort attributes to fix it!
-			auto& attributes = scene.vertexGroups[vertexGroupIndex].vertexBuffer.attributes;
+                     std::vector<glm::vec4> &boundingBoxBuffers) {
 	
-			std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-				return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-			});
-			
+    for(const auto &mesh : scene.meshes) {
+        for(auto vertexGroupIndex : mesh.vertexGroups) {
             const auto &vertexGroup = scene.vertexGroups[vertexGroupIndex];
 
-            const vkcv::asset::VertexAttribute positionAttribute = vertexGroup.vertexBuffer.attributes[0];
-            const vkcv::asset::VertexAttribute normalAttribute   = vertexGroup.vertexBuffer.attributes[1];
-            const vkcv::asset::VertexAttribute uvAttribute       = vertexGroup.vertexBuffer.attributes[2];
-
-            assert(positionAttribute.type   == vkcv::asset::PrimitiveType::POSITION);
-            assert(normalAttribute.type     == vkcv::asset::PrimitiveType::NORMAL);
-            assert(uvAttribute.type         == vkcv::asset::PrimitiveType::TEXCOORD_0);
+            const vkcv::asset::VertexAttribute* positionAttribute = nullptr;
+            const vkcv::asset::VertexAttribute* normalAttribute   = nullptr;
+            const vkcv::asset::VertexAttribute* uvAttribute       = nullptr;
+			
+			for (const auto& attribute : vertexGroup.vertexBuffer.attributes) {
+				switch (attribute.type) {
+					case vkcv::asset::PrimitiveType::POSITION:
+						positionAttribute = &attribute;
+						break;
+					case vkcv::asset::PrimitiveType::NORMAL:
+						normalAttribute = &attribute;
+						break;
+					case vkcv::asset::PrimitiveType::TEXCOORD_0:
+						uvAttribute = &attribute;
+						break;
+					default:
+						break;
+				}
+			}
+	
+			assert(positionAttribute && normalAttribute && uvAttribute);
 
             const uint64_t &verticesCount          = vertexGroup.numVertices;
             const std::vector<uint8_t> &vertexData = vertexGroup.vertexBuffer.data;
@@ -119,18 +124,18 @@ void interleaveScene(vkcv::asset::Scene scene,
             std::vector<Vertex> vertices;
             vertices.reserve(verticesCount);
 
-            const size_t positionStride = positionAttribute.stride == 0 ? sizeof(glm::vec3) : positionAttribute.stride;
-            const size_t normalStride   = normalAttribute.stride   == 0 ? sizeof(glm::vec3) : normalAttribute.stride;
-            const size_t uvStride       = uvAttribute.stride       == 0 ? sizeof(glm::vec2) : uvAttribute.stride;
+            const size_t positionStride = positionAttribute->stride == 0 ? sizeof(glm::vec3) : positionAttribute->stride;
+            const size_t normalStride   = normalAttribute->stride   == 0 ? sizeof(glm::vec3) : normalAttribute->stride;
+            const size_t uvStride       = uvAttribute->stride       == 0 ? sizeof(glm::vec2) : uvAttribute->stride;
 
             glm::vec3 max_pos(-std::numeric_limits<float>::max());
             glm::vec3 min_pos(std::numeric_limits<float>::max());
 
             for(size_t i = 0; i < verticesCount; i++)
             {
-                const size_t positionOffset = positionAttribute.offset + positionStride * i;
-                const size_t normalOffset   = normalAttribute.offset   + normalStride * i;
-                const size_t uvOffset       = uvAttribute.offset       + uvStride * i;
+                const size_t positionOffset = positionAttribute->offset + positionStride * i;
+                const size_t normalOffset   = normalAttribute->offset   + normalStride * i;
+                const size_t uvOffset       = uvAttribute->offset       + uvStride * i;
 
                 Vertex v;
 

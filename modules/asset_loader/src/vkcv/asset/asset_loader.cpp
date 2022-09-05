@@ -856,5 +856,31 @@ namespace vkcv::asset {
 		}
 		return texture;
 	}
+	
+	VertexBufferBindings loadVertexBufferBindings(const std::vector<VertexAttribute> &attributes,
+												  const BufferHandle &buffer,
+												  const std::vector<PrimitiveType> &types) {
+		VertexBufferBindings bindings;
+		
+		for (const auto& type : types) {
+			const VertexAttribute* attribute = nullptr;
+			
+			for (const auto& attr : attributes) {
+				if (type == attr.type) {
+					attribute = &(attr);
+					break;
+				}
+			}
+			
+			if (!attribute) {
+				vkcv_log(LogLevel::ERROR, "Missing primitive type in vertex attributes");
+				break;
+			}
+			
+			bindings.push_back(vkcv::vertexBufferBinding(buffer, attribute->offset));
+		}
+		
+		return bindings;
+	}
 
 }

@@ -22,6 +22,8 @@ namespace vkcv {
 	VertexBufferBinding vertexBufferBinding(const BufferHandle &buffer,
 											size_t offset = 0);
 	
+	typedef std::vector<VertexBufferBinding> VertexBufferBindings;
+	
 	/**
 	 * @brief Enum class to specify the size of indexes.
 	 */
@@ -33,13 +35,13 @@ namespace vkcv {
 	
 	class VertexData {
 	private:
-		std::vector<VertexBufferBinding> m_bindings;
+		VertexBufferBindings m_bindings;
 		BufferHandle m_indices;
 		IndexBitCount m_indexBitCount;
 		size_t m_count;
 	
 	public:
-		explicit VertexData(const std::vector<VertexBufferBinding> &bindings = {});
+		explicit VertexData(const VertexBufferBindings &bindings = {});
 		
 		VertexData(const VertexData& other) = default;
 		VertexData(VertexData&& other) noexcept = default;
@@ -50,7 +52,7 @@ namespace vkcv {
 		VertexData& operator=(VertexData&& other) noexcept = default;
 		
 		[[nodiscard]]
-		const std::vector<VertexBufferBinding>& getVertexBufferBindings() const;
+		const VertexBufferBindings& getVertexBufferBindings() const;
 		
 		void setIndexBuffer(const BufferHandle& indices,
 							IndexBitCount indexBitCount = IndexBitCount::Bit16);

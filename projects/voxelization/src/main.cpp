@@ -137,20 +137,11 @@ int main(int argc, const char** argv) {
 	std::vector<std::vector<uint8_t>> vBuffers;
 	std::vector<std::vector<uint8_t>> iBuffers;
 
-	std::vector<vkcv::VertexBufferBinding> vBufferBindings;
 	std::vector<std::vector<vkcv::VertexBufferBinding>> vertexBufferBindings;
-	std::vector<vkcv::asset::VertexAttribute> vAttributes;
 
 	for (size_t i = 0; i < scene.vertexGroups.size(); i++) {
-
 		vBuffers.push_back(scene.vertexGroups[i].vertexBuffer.data);
 		iBuffers.push_back(scene.vertexGroups[i].indexBuffer.data);
-
-		auto& attributes = scene.vertexGroups[i].vertexBuffer.attributes;
-
-		std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-			return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-		});
 	}
 
 	std::vector<vkcv::Buffer<uint8_t>> vertexBuffers;
@@ -171,18 +162,17 @@ int main(int argc, const char** argv) {
 		indexBuffers.back().fill(dataBuffer);
 	}
 
-	int vertexBufferIndex = 0;
-	for (const auto& vertexGroup : scene.vertexGroups) {
-		for (const auto& attribute : vertexGroup.vertexBuffer.attributes) {
-			vAttributes.push_back(attribute);
-			vBufferBindings.push_back(vkcv::vertexBufferBinding(
-					vertexBuffers[vertexBufferIndex].getHandle(),
-					attribute.offset
-			));
-		}
-		vertexBufferBindings.push_back(vBufferBindings);
-		vBufferBindings.clear();
-		vertexBufferIndex++;
+	for (size_t i = 0; i < scene.vertexGroups.size(); i++) {
+		vertexBufferBindings.push_back(vkcv::asset::loadVertexBufferBindings(
+				scene.vertexGroups[i].vertexBuffer.attributes,
+				vertexBuffers[i].getHandle(),
+				{
+						vkcv::asset::PrimitiveType::POSITION,
+						vkcv::asset::PrimitiveType::NORMAL,
+						vkcv::asset::PrimitiveType::TEXCOORD_0,
+						vkcv::asset::PrimitiveType::TANGENT
+				}
+		));
 	}
 
 	const vk::Format colorBufferFormat = vk::Format::eB10G11R11UfloatPack32;

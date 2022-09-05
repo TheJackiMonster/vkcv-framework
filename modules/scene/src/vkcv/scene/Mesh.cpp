@@ -20,7 +20,9 @@ namespace vkcv::scene {
 		return matrix;
 	}
 	
-	void Mesh::load(const asset::Scene &scene, const asset::Mesh &mesh) {
+	void Mesh::load(const asset::Scene &scene,
+					const asset::Mesh &mesh,
+					const std::vector<asset::PrimitiveType>& types) {
 		m_parts.clear();
 		m_drawcalls.clear();
 		
@@ -32,7 +34,7 @@ namespace vkcv::scene {
 			}
 			
 			MeshPart part (m_scene);
-			part.load(scene, scene.vertexGroups[vertexGroupIndex], m_drawcalls);
+			part.load(scene, scene.vertexGroups[vertexGroupIndex], types, m_drawcalls);
 			
 			if (!part) {
 				continue;

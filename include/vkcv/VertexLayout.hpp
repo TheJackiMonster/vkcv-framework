@@ -70,11 +70,20 @@ namespace vkcv {
 	 *
 	 * @param[in] bindingLocation Its entry in the buffers that make up the whole vertex buffer.
 	 * @param[in] attachments The vertex input attachments this specific buffer layout contains.
-	 * @return Vertex buffer binding with calculated stride
+	 * @return Vertex binding with calculated stride
 	 */
 	VertexBinding createVertexBinding(uint32_t bindingLocation, const VertexAttachments &attachments);
 	
 	typedef std::vector<VertexBinding> VertexBindings;
+	
+	/**
+	 * Creates vertex bindings in a very simplified way with one vertex binding for
+	 * each attachment.
+	 *
+	 * @param[in] attachments The vertex input attachments.
+	 * @return Vertex bindings with calculated stride
+	 */
+	VertexBindings createVertexBindings(const VertexAttachments &attachments);
 
 	/**
 	 * @brief Structure to store the details of a vertex layout.

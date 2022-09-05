@@ -70,18 +70,20 @@ int main(int argc, const char** argv) {
 		{ vkcv::ShaderStage::VERTEX, "assets/shaders/shader.vert" },
 		{ vkcv::ShaderStage::FRAGMENT, "assets/shaders/shader.frag" }
 	}, nullptr);
- 
-	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
 	
-	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-	});
+	const auto vertexBufferBindings = vkcv::asset::loadVertexBufferBindings(
+			mesh.vertexGroups[0].vertexBuffer.attributes,
+			vertexBuffer.getHandle(),
+			{
+					vkcv::asset::PrimitiveType::POSITION,
+					vkcv::asset::PrimitiveType::NORMAL,
+					vkcv::asset::PrimitiveType::TEXCOORD_0
+			}
+	);
 
-    const std::vector<vkcv::VertexAttachment> vertexAttachments = firstMeshProgram.getVertexAttachments();
-	std::vector<vkcv::VertexBinding> bindings;
-	for (size_t i = 0; i < vertexAttachments.size(); i++) {
-		bindings.push_back(vkcv::createVertexBinding(i, { vertexAttachments[i] }));
-	}
+	std::vector<vkcv::VertexBinding> bindings = vkcv::createVertexBindings(
+			firstMeshProgram.getVertexAttachments()
+	);
 	
 	const vkcv::VertexLayout firstMeshLayout { bindings };
 
@@ -125,12 +127,6 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::SamplerHandle sampler = vkcv::samplerLinear(core);
-
-	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[0].offset),
-			vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[1].offset),
-			vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[2].offset)
-	};
 
 	vkcv::DescriptorWrites setWrites;
 	setWrites.writeSampledImage(0, texture.getHandle());

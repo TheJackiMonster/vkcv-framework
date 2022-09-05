@@ -57,6 +57,7 @@ namespace vkcv::scene {
 
         /**
          * Constructor of a scene instance with a given Core instance.
+         *
          * @param[in,out] core Pointer to valid Core instance
          */
 		explicit Scene(Core* core);
@@ -64,12 +65,14 @@ namespace vkcv::scene {
         /**
          * Add a new node to the first level of the scene graph with
          * this scene as parent and return its index.
+         *
          * @return Index of the new node
          */
 		size_t addNode();
 
         /**
          * Get a reference to the first-level node with a given index.
+         *
          * @param[in] index Valid index of a first-level node
          * @return Matching first-level node
          */
@@ -77,6 +80,7 @@ namespace vkcv::scene {
 
         /**
         * Get a const reference to the first-level node with a given index.
+         *
         * @param[in] index Valid index of a first-level node
         * @return Matching first-level node
         */
@@ -85,12 +89,14 @@ namespace vkcv::scene {
 
         /**
          * Increase the amount of usages for a certain material via its index.
+         *
          * @param[in] index Index of a material
          */
 		void increaseMaterialUsage(size_t index);
 
         /**
          * Decrease the amount of usages for a certain material via its index.
+         *
          * @param[in] index Index of a material
          */
 		void decreaseMaterialUsage(size_t index);
@@ -98,6 +104,7 @@ namespace vkcv::scene {
         /**
          * Load a material from a scene preloaded with the asset loader via
          * its index.
+         *
          * @param[in] index Valid index of a material
          * @param[in] scene Scene structure from asset loader
          * @param[in] material Material structure from asset loader
@@ -113,18 +120,21 @@ namespace vkcv::scene {
 
         /**
          * Copy-constructor of a scene instance.
+         *
          * @param[in] other Other scene instance
          */
 		Scene(const Scene& other);
 
         /**
          * Move-constructor of a scene instance.
+         *
          * @param[in,out] other Other scene instance
          */
         Scene(Scene&& other) noexcept;
 
         /**
          * Copy-operator of a scene instance.
+         *
          * @param[in] other Other scene instance
          * @return Reference to this scene
          */
@@ -132,6 +142,7 @@ namespace vkcv::scene {
 
         /**
          * Move-operator of a scene instance.
+         *
          * @param[in,out] other Other scene instance
          * @return Reference to this scene
          */
@@ -139,6 +150,7 @@ namespace vkcv::scene {
 
         /**
          * Return the amount of materials managed by this scene.
+         *
          * @return Amount of materials
          */
         [[nodiscard]]
@@ -147,6 +159,7 @@ namespace vkcv::scene {
         /**
          * Get the material data by its certain index.
          * The material can still be invalid if it was not loaded properly.
+         *
          * @param[in] index Valid index of material
          * @return Material
          */
@@ -155,6 +168,7 @@ namespace vkcv::scene {
 
         /**
          * Record drawcalls of all meshes of this scene with CPU-side frustum culling.
+         *
          * @param cmdStream Command stream handle
          * @param camera Scene viewing camera
          * @param pass Render pass handle
@@ -175,7 +189,8 @@ namespace vkcv::scene {
 
         /**
          * Instantiation function to create a new scene instance.
-         * @param core Current Core instance
+         *
+         * @param[in,out] core Current Core instance
          * @return New scene instance
          */
 		static Scene create(Core& core);
@@ -183,11 +198,15 @@ namespace vkcv::scene {
         /**
          * Load function to create a new scene instance with materials and meshes
          * loaded from a file using the asset loader.
-         * @param core Current Core instance
-         * @param path Path of a valid file to load via asset loader
+         *
+         * @param[in,out] core Current Core instance
+         * @param[in] path Path of a valid file to load via asset loader
+         * @param[in] types Primitive type order of vertex attributes
          * @return New scene instance
          */
-		static Scene load(Core& core, const std::filesystem::path &path);
+		static Scene load(Core& core,
+						  const std::filesystem::path &path,
+						  const std::vector<asset::PrimitiveType>& types);
 		
 	};
 

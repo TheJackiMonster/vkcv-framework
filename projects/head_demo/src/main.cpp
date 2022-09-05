@@ -38,9 +38,14 @@ int main(int argc, const char** argv) {
 	
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
 	
-	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
-			argc > 1 ? argv[1] : "assets/skull_scaled/scene.gltf"
-	));
+	vkcv::scene::Scene scene = vkcv::scene::Scene::load(
+			core,
+			std::filesystem::path(argc > 1 ? argv[1] : "assets/skull_scaled/scene.gltf"),
+			{
+					vkcv::asset::PrimitiveType::POSITION,
+					vkcv::asset::PrimitiveType::NORMAL
+			}
+	);
 	
 	vk::Format colorFormat = vk::Format::eR16G16B16A16Sfloat;
 	

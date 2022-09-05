@@ -43,19 +43,16 @@ bool loadMesh(vkcv::Core& core, const std::filesystem::path& path, MeshResources
 
 	outMesh->vertexBuffer = vertexBuffer.getHandle();
 	outMesh->indexBuffer  = indexBuffer.getHandle();
-
-	auto& attributes = vertexData.attributes;
-
-	std::sort(attributes.begin(), attributes.end(),
-		[](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-	});
-
-	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-		vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[0].offset),
-		vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[1].offset),
-		vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[2].offset)
-	};
+	
+	const auto vertexBufferBindings = vkcv::asset::loadVertexBufferBindings(
+			vertexData.attributes,
+			vertexBuffer.getHandle(),
+			{
+					vkcv::asset::PrimitiveType::POSITION,
+					vkcv::asset::PrimitiveType::NORMAL,
+					vkcv::asset::PrimitiveType::TEXCOORD_0
+			}
+	);
 
 	outMesh->mesh = vkcv::VertexData(vertexBufferBindings);
 	outMesh->mesh.setIndexBuffer(indexBuffer.getHandle());

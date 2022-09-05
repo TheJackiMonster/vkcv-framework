@@ -64,6 +64,7 @@ namespace vkcv::scene {
 
         /**
          * Constructor of a new mesh part with a given scene as parent.
+         *
          * @param[in,out] scene Scene
          */
 		explicit MeshPart(Scene& scene);
@@ -71,12 +72,15 @@ namespace vkcv::scene {
         /**
          * Load vertex and index data from structures provided by the asset loader
          * and add a matching drawcall to the list if the loaded mesh part is valid.
+         *
          * @param[in] scene Scene structure from asset loader
          * @param[in] vertexGroup Vertex group structure from asset loader
+         * @param[in] types Primitive type order of vertex attributes
          * @param[out] drawcalls List of drawcalls
          */
 		void load(const asset::Scene& scene,
 				  const asset::VertexGroup& vertexGroup,
+				  const std::vector<asset::PrimitiveType>& types,
 				  std::vector<InstanceDrawcall>& drawcalls);
 	
 	public:
@@ -87,18 +91,21 @@ namespace vkcv::scene {
 
         /**
          * Copy-constructor of a mesh part.
+         *
          * @param[in] other Other mesh part
          */
 		MeshPart(const MeshPart& other);
 
         /**
          * Move-constructor of a mesh part.
+         *
          * @param[in,out] other Other mesh part
          */
         MeshPart(MeshPart&& other) noexcept;
 
         /**
          * Copy-operator of a mesh part.
+         *
          * @param[in] other Other mesh part
          * @return Reference to this mesh part
          */
@@ -106,6 +113,7 @@ namespace vkcv::scene {
 
         /**
          * Move-operator of a mesh part.
+         *
          * @param[in,out] other Other mesh part
          * @return Reference to this mesh part
          */
@@ -114,6 +122,7 @@ namespace vkcv::scene {
         /**
          * Get the material used by this specific part of
          * the mesh for rendering.
+         *
          * @return Material
          */
 		[[nodiscard]]
@@ -122,6 +131,7 @@ namespace vkcv::scene {
         /**
          * Return the axis aligned bounding box of this
          * specific part of the mesh.
+         *
          * @return Axis aligned bounding box of this mesh part
          */
 		[[nodiscard]]
@@ -130,6 +140,7 @@ namespace vkcv::scene {
         /**
          * Return the status if this part of the mesh is valid
          * as boolean value.
+         *
          * @return true if the mesh part is valid, otherwise false
          */
 		explicit operator bool() const;
@@ -137,6 +148,7 @@ namespace vkcv::scene {
         /**
          * Return the status if this part of the mesh is invalid
          * as boolean value.
+         *
          * @return true if the mesh part is invalid, otherwise false
          */
 		bool operator!() const;

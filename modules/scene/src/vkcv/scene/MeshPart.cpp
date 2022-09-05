@@ -17,6 +17,7 @@ namespace vkcv::scene {
 	
 	void MeshPart::load(const asset::Scene& scene,
 						const asset::VertexGroup &vertexGroup,
+						const std::vector<asset::PrimitiveType>& types,
 						std::vector<InstanceDrawcall>& drawcalls) {
 		Core& core = *(m_scene.m_core);
 		
@@ -27,15 +28,11 @@ namespace vkcv::scene {
 		vertexBuffer.fill(vertexGroup.vertexBuffer.data);
 		m_vertices = vertexBuffer.getHandle();
 		
-		auto attributes = vertexGroup.vertexBuffer.attributes;
-		
-		std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-			return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-		});
-		
-		for (const auto& attribute : attributes) {
-			m_vertexBindings.emplace_back(vertexBuffer.getHandle(), attribute.offset);
-		}
+		m_vertexBindings = asset::loadVertexBufferBindings(
+				vertexGroup.vertexBuffer.attributes,
+				vertexBuffer.getHandle(),
+				types
+		);
 		
 		auto indexBuffer = buffer<uint8_t>(
 				core, BufferType::INDEX, vertexGroup.indexBuffer.data.size()

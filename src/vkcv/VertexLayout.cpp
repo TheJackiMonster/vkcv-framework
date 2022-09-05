@@ -43,5 +43,16 @@ namespace vkcv {
 		binding.stride = offset;
 		return binding;
 	}
-
+	
+	VertexBindings createVertexBindings(const VertexAttachments &attachments) {
+		VertexBindings bindings;
+		bindings.reserve(attachments.size());
+		
+		for (uint32_t i = 0; i < attachments.size(); i++) {
+			bindings.push_back(createVertexBinding(i, { attachments[i] }));
+		}
+		
+		return bindings;
+	}
+	
 }

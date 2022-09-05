@@ -45,9 +45,15 @@ int main(int argc, const char** argv) {
 	
 	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
 
-	vkcv::scene::Scene scene = vkcv::scene::Scene::load(core, std::filesystem::path(
-			argc > 1 ? argv[1] : "assets/Sponza/Sponza.gltf"
-	));
+	vkcv::scene::Scene scene = vkcv::scene::Scene::load(
+			core,
+			std::filesystem::path(argc > 1 ? argv[1] : "assets/Sponza/Sponza.gltf"),
+			{
+				vkcv::asset::PrimitiveType::POSITION,
+				vkcv::asset::PrimitiveType::NORMAL,
+				vkcv::asset::PrimitiveType::TEXCOORD_0
+			}
+	);
 	
 	vkcv::PassHandle scenePass = vkcv::passSwapchain(
 			core,

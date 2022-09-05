@@ -316,7 +316,9 @@ namespace vkcv::scene {
 		);
 	}
 	
-	Scene Scene::load(Core& core, const std::filesystem::path &path) {
+	Scene Scene::load(Core& core,
+					  const std::filesystem::path &path,
+					  const std::vector<asset::PrimitiveType>& types) {
 		asset::Scene asset_scene;
 		
 		if (!asset::loadScene(path.string(), asset_scene)) {
@@ -335,7 +337,7 @@ namespace vkcv::scene {
 		const size_t root = scene.addNode();
 		
 		for (const auto& mesh : asset_scene.meshes) {
-			scene.getNode(root).loadMesh(asset_scene, mesh);
+			scene.getNode(root).loadMesh(asset_scene, mesh, types);
 		}
 		
 		vkcv::SamplerHandle sampler = samplerLinear(core);

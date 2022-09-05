@@ -120,22 +120,42 @@ int main(int argc, const char** argv) {
             vkcv::BufferMemoryType::DEVICE_LOCAL
     );
     indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
-
-	// format data for mesh shader
-	auto& attributes = mesh.vertexGroups[0].vertexBuffer.attributes;
-
-	std::sort(attributes.begin(), attributes.end(), [](const vkcv::asset::VertexAttribute& x, const vkcv::asset::VertexAttribute& y) {
-		return static_cast<uint32_t>(x.type) < static_cast<uint32_t>(y.type);
-	});
-
-	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[0].offset),
-			vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[1].offset),
-			vkcv::vertexBufferBinding(vertexBuffer.getHandle(), attributes[2].offset)
-	};
+	
+	const auto vertexBufferBindings = vkcv::asset::loadVertexBufferBindings(
+			mesh.vertexGroups[0].vertexBuffer.attributes,
+			vertexBuffer.getHandle(),
+			{
+					vkcv::asset::PrimitiveType::POSITION,
+					vkcv::asset::PrimitiveType::NORMAL
+			}
+	);
+	
+	const vkcv::asset::VertexAttribute* positionAttribute = nullptr;
+	const vkcv::asset::VertexAttribute* normalAttribute   = nullptr;
+	
+	for (const auto& attribute : mesh.vertexGroups[0].vertexBuffer.attributes) {
+		switch (attribute.type) {
+			case vkcv::asset::PrimitiveType::POSITION:
+				positionAttribute = &attribute;
+				break;
+			case vkcv::asset::PrimitiveType::NORMAL:
+				normalAttribute = &attribute;
+				break;
+			default:
+				break;
+		}
+	}
+	
+	assert(positionAttribute && normalAttribute);
 
 	const auto& bunny = mesh.vertexGroups[0];
-	std::vector<vkcv::meshlet::Vertex> interleavedVertices = vkcv::meshlet::convertToVertices(bunny.vertexBuffer.data, bunny.numVertices, attributes[0], attributes[1]);
+	std::vector<vkcv::meshlet::Vertex> interleavedVertices = vkcv::meshlet::convertToVertices(
+			bunny.vertexBuffer.data,
+			bunny.numVertices,
+			*positionAttribute,
+			*normalAttribute
+	);
+	
 	// mesh shader buffers
 	const auto& assetLoaderIndexBuffer                    = mesh.vertexGroups[0].indexBuffer;
 	std::vector<uint32_t> indexBuffer32Bit                = vkcv::meshlet::assetLoaderIndicesTo32BitIndices(assetLoaderIndexBuffer.data, assetLoaderIndexBuffer.type);
