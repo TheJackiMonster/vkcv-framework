@@ -553,7 +553,7 @@ int main(int argc, const char** argv) {
 			cmdStream,
             sponzaPipelineHandle,
             pushConstants,
-            descriptorSet,
+			{ vkcv::DescriptorSetUsage(0, descriptorSet) },
             compiledMesh,
 			renderTargets,
 			indirectBuffer.getHandle(),

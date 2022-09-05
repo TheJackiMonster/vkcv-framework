@@ -26,12 +26,12 @@ namespace vkcv {
 		Buffer(Core* core, const BufferHandle& handle) : m_core(core), m_handle(handle) {}
 		
 		Buffer(const Buffer& other) = default;
-		Buffer(Buffer&& other) = default;
+		Buffer(Buffer&& other) noexcept = default;
 		
 		~Buffer() = default;
 		
 		Buffer& operator=(const Buffer& other) = default;
-		Buffer& operator=(Buffer&& other) = default;
+		Buffer& operator=(Buffer&& other) noexcept = default;
 		
 		/**
 		 * @brief Returns the buffers handle.

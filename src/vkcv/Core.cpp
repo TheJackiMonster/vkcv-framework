@@ -413,7 +413,7 @@ namespace vkcv
 					pipelineLayout,
 					descriptorUsage.setLocation,
 					descriptorSetManager.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
-					nullptr
+					descriptorUsage.dynamicOffsets
 			);
 		}
 		
@@ -574,7 +574,7 @@ namespace vkcv
     void Core::recordIndexedIndirectDrawcallsToCmdStream(const CommandStreamHandle cmdStreamHandle,
 														 const GraphicsPipelineHandle &pipelineHandle,
 														 const PushConstants &pushConstantData,
-														 const vkcv::DescriptorSetHandle &compiledDescriptorSet,
+														 const std::vector<DescriptorSetUsage> &descriptorSetUsages,
 														 const vkcv::Mesh &compiledMesh,
 														 const std::vector<ImageHandle> &renderTargets,
 														 const BufferHandle &indirectBuffer,
@@ -590,15 +590,15 @@ namespace vkcv
 		);
 	
 		auto recordFunction = [&](const vk::CommandBuffer& cmdBuffer) {
-			const auto& descSet = m_DescriptorSetManager->getDescriptorSet(compiledDescriptorSet);
-			
-			cmdBuffer.bindDescriptorSets(
-					vk::PipelineBindPoint::eGraphics,
-					pipelineLayout,
-					0,
-					descSet.vulkanHandle,
-					nullptr
-			);
+			for (const auto& usage : descriptorSetUsages) {
+				cmdBuffer.bindDescriptorSets(
+						vk::PipelineBindPoint::eGraphics,
+						pipelineLayout,
+						usage.setLocation,
+						m_DescriptorSetManager->getDescriptorSet(usage.descriptorSet).vulkanHandle,
+						usage.dynamicOffsets
+				);
+			}
 			
 			if (pushConstantData.getSizePerDrawcall() > 0) {
 				cmdBuffer.pushConstants(
@@ -660,7 +660,8 @@ namespace vkcv
 					pipelineLayout,
 					descriptorUsage.setLocation,
 					descriptorSetManager.getDescriptorSet(descriptorUsage.descriptorSet).vulkanHandle,
-					nullptr);
+					descriptorUsage.dynamicOffsets
+			);
 		}
 		
 		if (pushConstantData.getData()) {

@@ -555,7 +555,7 @@ namespace vkcv
 		 * @param cmdStreamHandle Handle of the command stream that the drawcalls are recorded into
 		 * @param pipelineHandle Handle of the pipeline that is used for the drawcalls
 		 * @param pushConstantData Push constants that are used for the drawcalls, ignored if constant size is set to 0
-		 * @param compiledDescriptorSet TODO
+		 * @param descriptorSetUsages Descriptor set usages of the drawcalls
 		 * @param compiledMesh TODO
 		 * @param drawcalls Information about each drawcall, consisting of mesh handle, descriptor set bindings and instance count
 		 * @param renderTargets Image handles that are used as render targets
@@ -567,7 +567,7 @@ namespace vkcv
 				const CommandStreamHandle                           cmdStreamHandle,
 				const GraphicsPipelineHandle                        &pipelineHandle,
 				const PushConstants                                 &pushConstantData,
-                const vkcv::DescriptorSetHandle                     &compiledDescriptorSet,
+				const std::vector<DescriptorSetUsage> 				&descriptorSetUsages,
 				const vkcv::Mesh                                    &compiledMesh,
 				const std::vector<ImageHandle>                      &renderTargets,
 				const BufferHandle  								&indirectBuffer,
@@ -625,7 +625,7 @@ namespace vkcv
 		 * @param cmdStream Handle of the command stream that the dispatch is recorded into
 		 * @param computePipeline Handle of the pipeline that is used for the dispatch
 		 * @param dispatchSize How many work groups are dispatched
-		 * @param descriptorSetUsages Descriptor set bindings of the dispatch
+		 * @param descriptorSetUsages Descriptor set usages of the dispatch
 		 * @param pushConstants Push constant data for the dispatch
 		 */
 		void recordComputeDispatchToCmdStream(const CommandStreamHandle& cmdStream,
