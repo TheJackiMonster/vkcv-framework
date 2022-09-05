@@ -161,7 +161,7 @@ Voxelization::Voxelization(
 		voxelIndexData.push_back(static_cast<uint16_t>(i));
 	}
 
-	const vkcv::DescriptorSetUsage voxelizationDescriptorUsage(0, m_visualisationDescriptorSet);
+	const auto voxelizationDescriptorUsage = vkcv::useDescriptorSet(0, m_visualisationDescriptorSet);
 
 	vkcv::ShaderProgram resetVoxelShader = loadVoxelResetShader();
 
@@ -249,7 +249,7 @@ void Voxelization::voxelizeMeshes(
 		cmdStream,
 		m_voxelResetPipe,
 		vkcv::dispatchInvocations(voxelCount, resetVoxelGroupSize),
-		{ vkcv::DescriptorSetUsage(0, m_voxelResetDescriptorSet) },
+		{ vkcv::useDescriptorSet(0, m_voxelResetDescriptorSet) },
 		voxelCountPushConstants
 	);
 	m_corePtr->recordBufferMemoryBarrier(cmdStream, m_voxelBuffer.getHandle());
@@ -287,7 +287,7 @@ void Voxelization::voxelizeMeshes(
 		cmdStream,
 		m_bufferToImagePipe,
 		bufferToImageDispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_bufferToImageDescriptorSet) },
+		{ vkcv::useDescriptorSet(0, m_bufferToImageDescriptorSet) },
 		vkcv::PushConstants(0)
 	);
 
@@ -306,7 +306,7 @@ void Voxelization::voxelizeMeshes(
 		cmdStream,
 		m_secondaryBouncePipe,
 		bufferToImageDispatchCount,
-		{ vkcv::DescriptorSetUsage(0, m_secondaryBounceDescriptorSet) },
+		{ vkcv::useDescriptorSet(0, m_secondaryBounceDescriptorSet) },
 		vkcv::PushConstants(0));
 	m_voxelImage.recordMipChainGeneration(cmdStream, downsampler);
 	m_corePtr->recordEndDebugLabel(cmdStream);
