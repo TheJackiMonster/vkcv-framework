@@ -15,18 +15,12 @@ int main(int argc, const char** argv) {
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
-		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
+		{ vk::QueueFlagBits::eGraphics },
 		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 	);
 
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
 	vkcv::Window& window = core.getWindow(windowHandle);
-
-	auto triangleIndexBuffer = vkcv::buffer<uint16_t>(core, vkcv::BufferType::INDEX, 3);
-	uint16_t indices[3] = { 0, 1, 2 };
-	triangleIndexBuffer.fill(&indices[0], sizeof(indices));
-
-	core.setDebugLabel(triangleIndexBuffer.getHandle(), "Triangle Index Buffer");
 	
 	vkcv::PassHandle trianglePass = vkcv::passSwapchain(
 			core,
@@ -66,7 +60,6 @@ int main(int argc, const char** argv) {
 	core.setDebugLabel(trianglePipeline, "Triangle Pipeline");
 
 	vkcv::VertexData vertexData;
-	vertexData.setIndexBuffer(triangleIndexBuffer.getHandle());
 	vertexData.setCount(3);
 	
 	vkcv::InstanceDrawcall drawcall (vertexData);
