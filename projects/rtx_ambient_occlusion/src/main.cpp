@@ -11,7 +11,7 @@
  */
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "RTX Ambient Occlusion";
+	const std::string applicationName = "RTX Ambient Occlusion";
 
 	// prepare raytracing extensions. IMPORTANT: configure compiler to build in 64 bit mode
 	vkcv::rtx::RTXExtensions rtxExtensions;

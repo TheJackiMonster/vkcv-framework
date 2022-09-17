@@ -45,7 +45,7 @@ int main(int argc, const char** argv) {
 		glm::vec2   padding3;
 	};
 
-	const char* applicationName = "Path Tracer";
+	const std::string applicationName = "Path Tracer";
 
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,

@@ -78,7 +78,7 @@ CameraPlanes computeCameraPlanes(const vkcv::camera::Camera& camera) {
 }
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "Mesh shader";
+	const std::string applicationName = "Mesh shader";
 	
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);

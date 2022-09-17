@@ -13,7 +13,7 @@
 #include <vkcv/upscaling/FSRUpscaling.hpp>
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "First Scene";
+	const std::string applicationName = "First Scene";
 	
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;

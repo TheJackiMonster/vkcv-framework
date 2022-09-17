@@ -12,7 +12,7 @@
 #include "Particle.hpp"
 
 int main(int argc, const char **argv) {
-    const char *applicationName = "SPH";
+    const std::string applicationName = "SPH";
 
     // creating core object that will handle all vulkan objects
     vkcv::Core core = vkcv::Core::create(

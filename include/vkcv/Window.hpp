@@ -19,61 +19,61 @@ struct GLFWwindow;
 
 namespace vkcv {
 
-    /**
-     * @brief Class to handle a window.
-     */
-    class Window {
+	/**
+	 * @brief Class to handle a window.
+	 */
+	class Window {
 		friend class WindowManager;
 		friend class SwapchainManager;
-		
+
 	private:
-    	std::string m_title;
-    	bool m_resizable;
+		std::string m_title;
+		bool m_resizable;
 		bool m_shouldClose;
-		GLFWwindow *m_window;
+		GLFWwindow* m_window;
 		SwapchainHandle m_swapchainHandle;
 		event_handle<int, int> m_resizeHandle;
 
-    public:
-    	/**
-    	 * @brief Constructor of an uninitialized #Window
-    	 */
-    	Window();
-    	
-    	/**
-    	 * @brief Constructor of a #Window with an optional width,
-    	 * height and resizable attribute.
-    	 *
-         * @param[in] title title of the window
-         * @param[in] width width of the window (optional)
-         * @param[in] height height of the window (optional)
-         * @param[in] resizable resize ability of the window (optional)
-         */
-    	explicit Window(const char* title, int width = -1, int height = -1, bool resizable = false);
-	
+	public:
 		/**
-		* @brief Copy-constructor of a #Window
-		*
-		* @param[in] other Other instance of #Window
-		*/
-		Window(const Window& other) = delete;
-	
+		 * @brief Constructor of an uninitialized #Window
+		 */
+		Window();
+
 		/**
-		* @brief Copy-operator of a #Window
-		*
-		* @param[in] other Other instance of #Window
-		* @return Reference to itself
-		*/
+		 * @brief Constructor of a #Window with an optional width,
+		 * height and resizable attribute.
+		 *
+		 * @param[in] title title of the window
+		 * @param[in] width width of the window (optional)
+		 * @param[in] height height of the window (optional)
+		 * @param[in] resizable resize ability of the window (optional)
+		 */
+		explicit Window(const std::string &title, int width = -1, int height = -1,
+						bool resizable = false);
+
+		/**
+		 * @brief Copy-constructor of a #Window
+		 *
+		 * @param[in] other Other instance of #Window
+		 */
+		Window(const Window &other) = delete;
+
+		/**
+		 * @brief Copy-operator of a #Window
+		 *
+		 * @param[in] other Other instance of #Window
+		 * @return Reference to itself
+		 */
 		Window &operator=(const Window &other) = delete;
-        
-        /**
-         * @brief Checks if the window is still open, or the close event was called.
-         * TODO: This function should be changed/removed later on
-         *
-         * @return True, if the window is still open, else false
-         */
-        [[nodiscard]]
-        bool isOpen() const;
+
+		/**
+		 * @brief Checks if the window is still open, or the close event was called.
+		 * TODO: This function should be changed/removed later on
+		 *
+		 * @return True, if the window is still open, else false
+		 */
+		[[nodiscard]] bool isOpen() const;
 
 		/**
 		 * @brief Returns the currently focused window.
@@ -81,8 +81,8 @@ namespace vkcv {
 		 *
 		 * @return Current window in focus
 		 */
-		static Window& getFocusedWindow();
-		
+		static Window &getFocusedWindow();
+
 		/**
 		 * @brief Checks if any windows are active and open.
 		 *
@@ -90,87 +90,81 @@ namespace vkcv {
 		 */
 		static bool hasOpenWindow();
 
-        /**
-         * @brief Polls all events on the active windows.
-         */
-        static void pollEvents();
-		
+		/**
+		 * @brief Polls all events on the active windows.
+		 */
+		static void pollEvents();
+
 		/**
 		 * @brief Returns the required extensions to use GLFW windows with Vulkan.
 		 *
 		 * @return Required surface extensions
 		 */
-		static const std::vector<std::string>& getExtensions();
-		
-        event< int, int, int> e_mouseButton;
-        event< double, double > e_mouseMove;
-        event< double, double > e_mouseScroll;
-        event< int, int > e_resize;
-        event< int, int, int, int > e_key;
-        event< unsigned int > e_char;
-        event< int > e_gamepad;
+		static const std::vector<std::string> &getExtensions();
 
-        /**
-         * @brief Returns the GLFW window handle.
-         *
-         * @return GLFW window handle
-         */
-        [[nodiscard]]
-        GLFWwindow *getWindow() const;
-        
-        /**
-         * @brief Returns the title of the window.
-         *
-         * @return Window title
-         */
-        [[nodiscard]]
-        const std::string& getTitle() const;
+		event< int, int, int> e_mouseButton;
+		event< double, double > e_mouseMove;
+		event< double, double > e_mouseScroll;
+		event< int, int > e_resize;
+		event< int, int, int, int > e_key;
+		event< unsigned int > e_char;
+		event< int > e_gamepad;
 
-        /**
-         * @brief Returns the width of the window.
-         *
-         * @return Window width
-         */
-        [[nodiscard]]
-        int getWidth() const;
+		/**
+		 * @brief Returns the GLFW window handle.
+		 *
+		 * @return GLFW window handle
+		 */
+		[[nodiscard]] GLFWwindow* getWindow() const;
 
-        /**
-         * @brief Returns the height of the window.
-         *
-         * @return Window height
-         */
-        [[nodiscard]]
-        int getHeight() const;
-        
-        /**
-         * @brief Returns whether the window is resizable or not.
-         *
-         * @return True, if the window is resizable, else false
-         */
-        [[nodiscard]]
-        bool isResizable() const;
+		/**
+		 * @brief Returns the title of the window.
+		 *
+		 * @return Window title
+		 */
+		[[nodiscard]] const std::string &getTitle() const;
 
-        /**
-         * @brief Destructor of the window which terminates GLFW in case
-         * of the last window got destroyed.
-         */
-        virtual ~Window();
+		/**
+		 * @brief Returns the width of the window.
+		 *
+		 * @return Window width
+		 */
+		[[nodiscard]] int getWidth() const;
 
-        /**
-         * @brief Requests the windows framebuffer size.
-         *
-         * @param[out] width
-         * @param[out] height
-         */
-        void getFramebufferSize(int& width, int& height) const;
+		/**
+		 * @brief Returns the height of the window.
+		 *
+		 * @return Window height
+		 */
+		[[nodiscard]] int getHeight() const;
 
-        /**
-         * @brief Retruns the handle of the swapchain in use by the window.
-         *
-         * @return Swapchain handle
-         */
-        SwapchainHandle getSwapchain() const;
-		
-    };
+		/**
+		 * @brief Returns whether the window is resizable or not.
+		 *
+		 * @return True, if the window is resizable, else false
+		 */
+		[[nodiscard]] bool isResizable() const;
 
-}
+		/**
+		 * @brief Destructor of the window which terminates GLFW in case
+		 * of the last window got destroyed.
+		 */
+		virtual ~Window();
+
+		/**
+		 * @brief Requests the windows framebuffer size.
+		 *
+		 * @param[out] width
+		 * @param[out] height
+		 */
+		void getFramebufferSize(int &width, int &height) const;
+
+		/**
+		 * @brief Retruns the handle of the swapchain in use by the window.
+		 *
+		 * @return Swapchain handle
+		 */
+		SwapchainHandle getSwapchain() const;
+	};
+
+} // namespace vkcv

@@ -8,12 +8,12 @@
 #include "PipelineConfig.hpp"
 
 namespace vkcv {
-	
+
 	/**
 	 * @brief Class to configure a compute pipeline before its creation.
 	 */
-    class ComputePipelineConfig : public PipelineConfig {
+	class ComputePipelineConfig : public PipelineConfig {
 		using PipelineConfig::PipelineConfig;
 	};
-	
-}
+
+} // namespace vkcv

@@ -13,7 +13,7 @@
 #include <vkcv/effects/BloomAndFlaresEffect.hpp>
 
 int main(int argc, const char **argv) {
-    const char *applicationName = "Particlesystem";
+    const std::string applicationName = "Particlesystem";
 
     uint32_t windowWidth = 800;
     uint32_t windowHeight = 600;
@@ -175,7 +175,7 @@ int main(int argc, const char **argv) {
 	vertexData.setIndexBuffer(particleIndexBuffer.getHandle());
 	vertexData.setCount(particleIndexBuffer.getCount());
 	
-    vkcv::DescriptorSetUsage descriptorUsage(0, descriptorSet);
+    auto descriptorUsage = vkcv::useDescriptorSet(0, descriptorSet);
 
     auto pos = glm::vec2(0.f);
     auto spawnPosition = glm::vec3(0.f);
@@ -270,7 +270,7 @@ int main(int argc, const char **argv) {
 				cmdStream,
 				computePipeline,
 				vkcv::dispatchInvocations(particleSystem.getParticles().size(), 256),
-				{vkcv::DescriptorSetUsage(0, computeDescriptorSet)},
+				{vkcv::useDescriptorSet(0, computeDescriptorSet)},
 				pushConstantsCompute
 		);
 

@@ -17,7 +17,7 @@
 #include <vkcv/algorithm/SinglePassDownsampler.hpp>
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "Voxelization";
+	const std::string applicationName = "Voxelization";
 
 	const vkcv::Multisampling   msaa        = vkcv::Multisampling::MSAA4X;
 	const bool                  usingMsaa   = msaa != vkcv::Multisampling::None;

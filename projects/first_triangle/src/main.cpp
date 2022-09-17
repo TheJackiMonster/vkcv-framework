@@ -7,7 +7,7 @@
 #include <vkcv/shader/GLSLCompiler.hpp>
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "First Triangle";
+	const std::string applicationName = "First Triangle";
 
 	const int windowWidth = 800;
 	const int windowHeight = 600;

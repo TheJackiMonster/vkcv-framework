@@ -6,25 +6,25 @@
  * @brief Structures to handle vertex layout, bindings and attachments.
  */
 
-#include <vector>
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace vkcv {
-	
+
 	/**
 	 * @brief Enum class to specify the format of vertex attributes.
 	 */
-    enum class VertexAttachmentFormat {
-        FLOAT,
-        FLOAT2,
-        FLOAT3,
-        FLOAT4,
-        INT,
-        INT2,
-        INT3,
-        INT4
-    };
+	enum class VertexAttachmentFormat {
+		FLOAT,
+		FLOAT2,
+		FLOAT3,
+		FLOAT4,
+		INT,
+		INT2,
+		INT3,
+		INT4
+	};
 
 	/**
 	 * @brief Returns the size in bytes of a vertex with a
@@ -41,15 +41,15 @@ namespace vkcv {
 	 * Describes an individual vertex input attribute/attachment. The offset
 	 * is calculated when a collection of attachments forms a binding.
 	 */
-    struct VertexAttachment {
-        uint32_t inputLocation;
-        std::string name;
-        VertexAttachmentFormat format;
-        uint32_t offset;
-    };
-	
+	struct VertexAttachment {
+		uint32_t inputLocation;
+		std::string name;
+		VertexAttachmentFormat format;
+		uint32_t offset;
+	};
+
 	typedef std::vector<VertexAttachment> VertexAttachments;
-	
+
 	/**
 	 * @brief Structure to store the details of a vertex buffer binding.
 	 *
@@ -58,12 +58,12 @@ namespace vkcv {
 	 * various (mutually exclusive) vertex input attachments to form one
 	 * complete vertex buffer binding!
 	 */
-    struct VertexBinding {
-        uint32_t bindingLocation;
-        uint32_t stride;
+	struct VertexBinding {
+		uint32_t bindingLocation;
+		uint32_t stride;
 		VertexAttachments vertexAttachments;
-    };
-	
+	};
+
 	/**
 	 * Creates a vertex binding with given parameters and calculates its strides
 	 * depending on its attachments.
@@ -72,10 +72,11 @@ namespace vkcv {
 	 * @param[in] attachments The vertex input attachments this specific buffer layout contains.
 	 * @return Vertex binding with calculated stride
 	 */
-	VertexBinding createVertexBinding(uint32_t bindingLocation, const VertexAttachments &attachments);
-	
+	VertexBinding createVertexBinding(uint32_t bindingLocation,
+									  const VertexAttachments &attachments);
+
 	typedef std::vector<VertexBinding> VertexBindings;
-	
+
 	/**
 	 * Creates vertex bindings in a very simplified way with one vertex binding for
 	 * each attachment.
@@ -92,8 +93,8 @@ namespace vkcv {
 	 * attachments used, and all of the buffer bindings that refer to the attachments
 	 * (for when multiple buffers are used).
 	 */
-    struct VertexLayout {
+	struct VertexLayout {
 		VertexBindings vertexBindings;
-    };
-	
-}
+	};
+
+} // namespace vkcv

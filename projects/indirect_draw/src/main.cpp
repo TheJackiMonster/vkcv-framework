@@ -268,7 +268,7 @@ void compileMeshForIndirectDraw(vkcv::Core &core,
 }
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "Indirect draw";
+	const std::string applicationName = "Indirect draw";
 
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);

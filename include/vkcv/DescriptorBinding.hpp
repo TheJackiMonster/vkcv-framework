@@ -11,7 +11,7 @@
 #include "ShaderStage.hpp"
 
 namespace vkcv {
-	
+
 	/**
 	 * @brief Structure to store details from a descriptor binding.
 	 */
@@ -22,10 +22,10 @@ namespace vkcv {
 		ShaderStages shaderStages;
 		bool variableCount;
 		bool partialBinding;
-		
-		bool operator ==(const DescriptorBinding &other) const;
+
+		bool operator==(const DescriptorBinding &other) const;
 	};
-	
+
 	typedef std::unordered_map<uint32_t, DescriptorBinding> DescriptorBindings;
-	
-}
+
+} // namespace vkcv

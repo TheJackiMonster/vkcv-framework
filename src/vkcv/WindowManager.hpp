@@ -1,8 +1,9 @@
 #pragma once
 
-#include <memory>
-#include <vector>
 #include <GLFW/glfw3.h>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "vkcv/Window.hpp"
 
@@ -18,12 +19,11 @@ namespace vkcv {
 		friend class Core;
 
 	private:
-		[[nodiscard]]
-		uint64_t getIdFrom(const WindowHandle& handle) const override;
-		
-		[[nodiscard]]
-		WindowHandle createById(uint64_t id, const HandleDestroyFunction& destroy) override;
-		
+		[[nodiscard]] uint64_t getIdFrom(const WindowHandle &handle) const override;
+
+		[[nodiscard]] WindowHandle createById(uint64_t id,
+											  const HandleDestroyFunction &destroy) override;
+
 		/**
 		 * Destroys a specific window by a given id.
 		 *
@@ -49,27 +49,22 @@ namespace vkcv {
 		 * @return window handle
 		 */
 		WindowHandle createWindow(SwapchainManager &swapchainManager,
-								  const char *applicationName,
-								  uint32_t windowWidth,
-								  uint32_t windowHeight,
-								  bool resizeable);
+								  const std::string &applicationName, uint32_t windowWidth,
+								  uint32_t windowHeight, bool resizeable);
 
 		/**
 		 * @param handle of the window to get
 		 * @return the reference of the window
 		 */
-		[[nodiscard]]
-		Window &getWindow(const WindowHandle& handle) const;
-		
+		[[nodiscard]] Window &getWindow(const WindowHandle &handle) const;
+
 		/**
 		 * Returns a list of window handles for current active
 		 * and open windows.
 		 *
 		 * @return List of window handles
 		 */
-		[[nodiscard]]
-		std::vector<WindowHandle> getWindowHandles() const;
-
+		[[nodiscard]] std::vector<WindowHandle> getWindowHandles() const;
 	};
-	
-}
+
+} // namespace vkcv

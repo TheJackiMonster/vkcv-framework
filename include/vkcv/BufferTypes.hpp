@@ -6,7 +6,7 @@
  */
 
 namespace vkcv {
-	
+
 	/**
 	 * @brief Enum class to specify types of buffers.
 	 */
@@ -17,18 +17,18 @@ namespace vkcv {
 		STORAGE,
 		STAGING,
 		INDIRECT,
-		
+
 		UNKNOWN
 	};
-	
+
 	/**
 	 * @brief Enum class to specify types of buffer memory.
 	 */
 	enum class BufferMemoryType {
 		DEVICE_LOCAL,
 		HOST_VISIBLE,
-		
+
 		UNKNOWN
 	};
-	
-}
+
+} // namespace vkcv

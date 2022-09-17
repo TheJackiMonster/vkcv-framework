@@ -11,21 +11,21 @@
 #include "Handles.hpp"
 
 namespace vkcv {
-	
+
 	/**
 	 * @brief Function to be called for recording a command buffer.
 	 */
-	typedef typename event_function<const vk::CommandBuffer&>::type RecordCommandFunction;
-	
+	typedef typename event_function<const vk::CommandBuffer &>::type RecordCommandFunction;
+
 	/**
 	 * @brief Function to be called after finishing a given process.
 	 */
 	typedef typename event_function<>::type FinishCommandFunction;
-	
+
 	/**
 	 * @brief Function to be called each frame for every open window.
 	 */
-	typedef typename event_function<const WindowHandle&, double, double, uint32_t, uint32_t>::type 
-	        WindowFrameFunction;
-	
-}
+	typedef typename event_function<const WindowHandle &, double, double, uint32_t, uint32_t>::type
+		WindowFrameFunction;
+
+} // namespace vkcv

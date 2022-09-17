@@ -7,12 +7,12 @@
 
 namespace vkcv {
 
-    /**
-     * @brief Enum class to specify the result of a function call.
-     */
+	/**
+	 * @brief Enum class to specify the result of a function call.
+	 */
 	enum class Result {
 		SUCCESS = 0,
 		ERROR = 1
 	};
-	
-}
+
+} // namespace vkcv

@@ -281,7 +281,7 @@ vkcv::BufferHandle resetParticles(vkcv::Core& core, size_t count, const glm::vec
 }
 
 int main(int argc, const char **argv) {
-	const char* applicationName = "Wobble Bobble";
+	const std::string applicationName = "Wobble Bobble";
 	
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;

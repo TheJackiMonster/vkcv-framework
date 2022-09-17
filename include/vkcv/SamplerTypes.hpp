@@ -6,15 +6,15 @@
  */
 
 namespace vkcv {
-	
+
 	/**
-     * @brief Enum class to specify a samplers type to filter during access.
-     */
+	 * @brief Enum class to specify a samplers type to filter during access.
+	 */
 	enum class SamplerFilterType {
 		NEAREST = 1,
 		LINEAR = 2
 	};
-	
+
 	/**
 	 * @brief Enum class to specify a samplers mode to access mipmaps.
 	 */
@@ -22,7 +22,7 @@ namespace vkcv {
 		NEAREST = 1,
 		LINEAR = 2
 	};
-	
+
 	/**
 	 * @brief Enum class to specify a samplers mode to access via address space.
 	 */
@@ -33,19 +33,19 @@ namespace vkcv {
 		MIRROR_CLAMP_TO_EDGE = 4,
 		CLAMP_TO_BORDER = 5
 	};
-	
+
 	/**
 	 * @brief Enum class to specify a samplers color beyond a textures border.
 	 */
 	enum class SamplerBorderColor {
 		INT_ZERO_OPAQUE = 1,
 		INT_ZERO_TRANSPARENT = 2,
-		
+
 		FLOAT_ZERO_OPAQUE = 3,
 		FLOAT_ZERO_TRANSPARENT = 4,
-		
+
 		INT_ONE_OPAQUE = 5,
 		FLOAT_ONE_OPAQUE = 6
 	};
-	
-}
+
+} // namespace vkcv

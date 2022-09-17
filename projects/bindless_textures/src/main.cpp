@@ -11,7 +11,7 @@
 #include <vkcv/shader/GLSLCompiler.hpp>
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "Bindless Textures";
+	const std::string applicationName = "Bindless Textures";
 
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -62,9 +62,8 @@ int main(int argc, const char** argv) {
                                         "resources/cube/Grass001_1K_Normal.jpg",
                                         "resources/cube/Grass001_1K_Roughness.jpg" };
 	
-    for (uint32_t i = 0; i < 5; i++)
-    {
-        std::filesystem::path grassPath(grassPaths[i]);
+    for (const auto &path : grassPaths) {
+        std::filesystem::path grassPath(path);
         vkcv::asset::Texture grassTexture = vkcv::asset::loadTexture(grassPath);
 
         vkcv::Image texture = vkcv::image(

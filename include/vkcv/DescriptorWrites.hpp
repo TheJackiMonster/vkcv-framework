@@ -11,7 +11,7 @@
 #include "Handles.hpp"
 
 namespace vkcv {
-	
+
 	/**
 	 * @brief Structure to store details writing a sampled image to a descriptor set.
 	 */
@@ -24,7 +24,7 @@ namespace vkcv {
 		uint32_t mipCount;
 		bool arrayView;
 	};
-	
+
 	/**
 	 * @brief Structure to store details writing a storage image to a descriptor set.
 	 */
@@ -35,7 +35,7 @@ namespace vkcv {
 		uint32_t mipCount;
 		bool arrayView;
 	};
-	
+
 	/**
 	 * @brief Structure to store details writing a buffer to a descriptor set.
 	 */
@@ -46,7 +46,7 @@ namespace vkcv {
 		uint32_t offset;
 		uint32_t size;
 	};
-	
+
 	/**
 	 * @brief Structure to store details writing a sampler to a descriptor set.
 	 */
@@ -54,13 +54,13 @@ namespace vkcv {
 		uint32_t binding;
 		SamplerHandle sampler;
 	};
-	
+
 	/**
 	 * @brief Structure to store details writing an acceleration structure to
 	 * a descriptor set.
 	 */
 	struct AccelerationDescriptorWrite {
-	    uint32_t binding;
+		uint32_t binding;
 		std::vector<vk::AccelerationStructureKHR> structures;
 	};
 
@@ -76,7 +76,7 @@ namespace vkcv {
 		std::vector<BufferDescriptorWrite> m_storageBufferWrites;
 		std::vector<SamplerDescriptorWrite> m_samplerWrites;
 		std::vector<AccelerationDescriptorWrite> m_accelerationWrites;
-		
+
 	public:
 		/**
 		 * @brief Adds an entry to write an image to a given binding
@@ -90,14 +90,11 @@ namespace vkcv {
 		 * @param[in] mipCount Mip level count
 		 * @return Instance of descriptor writes
 		 */
-		DescriptorWrites& writeSampledImage(uint32_t binding,
-											ImageHandle image,
-											uint32_t mipLevel = 0,
-											bool useGeneralLayout = false,
-											uint32_t arrayIndex = 0,
-											uint32_t mipCount = 1,
+		DescriptorWrites &writeSampledImage(uint32_t binding, ImageHandle image,
+											uint32_t mipLevel = 0, bool useGeneralLayout = false,
+											uint32_t arrayIndex = 0, uint32_t mipCount = 1,
 											bool arrayView = false);
-		
+
 		/**
 		 * @brief Adds an entry to write an image to a given binding
 		 * of a descriptor set to store into it using specific details.
@@ -108,12 +105,10 @@ namespace vkcv {
 		 * @param[in] mipCount Mip level count
 		 * @return Instance of descriptor writes
 		 */
-		DescriptorWrites& writeStorageImage(uint32_t binding,
-											ImageHandle image,
-											uint32_t mipLevel = 0,
-											uint32_t mipCount = 1,
+		DescriptorWrites &writeStorageImage(uint32_t binding, ImageHandle image,
+											uint32_t mipLevel = 0, uint32_t mipCount = 1,
 											bool arrayView = false);
-		
+
 		/**
 		 * @brief Adds an entry to write a buffer to a given binding
 		 * of a descriptor set as uniform buffer using specific details.
@@ -125,12 +120,10 @@ namespace vkcv {
 		 * @param[in] size Size of the buffer access range
 		 * @return Instance of descriptor writes
 		 */
-		DescriptorWrites& writeUniformBuffer(uint32_t binding,
-											 BufferHandle buffer,
-											 bool dynamic = false,
-											 uint32_t offset = 0,
+		DescriptorWrites &writeUniformBuffer(uint32_t binding, BufferHandle buffer,
+											 bool dynamic = false, uint32_t offset = 0,
 											 uint32_t size = 0);
-		
+
 		/**
 		 * @brief Adds an entry to write a buffer to a given binding
 		 * of a descriptor set as storage buffer using specific details.
@@ -142,12 +135,10 @@ namespace vkcv {
 		 * @param[in] size Size of the buffer access range
 		 * @return Instance of descriptor writes
 		 */
-		DescriptorWrites& writeStorageBuffer(uint32_t binding,
-											 BufferHandle buffer,
-											 bool dynamic = false,
-											 uint32_t offset = 0,
+		DescriptorWrites &writeStorageBuffer(uint32_t binding, BufferHandle buffer,
+											 bool dynamic = false, uint32_t offset = 0,
 											 uint32_t size = 0);
-		
+
 		/**
 		 * @brief Adds an entry to write a sampler to a given binding
 		 * of a descriptor set.
@@ -156,9 +147,8 @@ namespace vkcv {
 		 * @param[in] sampler Sampler handle
 		 * @return Instance of descriptor writes
 		 */
-		DescriptorWrites& writeSampler(uint32_t binding,
-									   SamplerHandle sampler);
-		
+		DescriptorWrites &writeSampler(uint32_t binding, SamplerHandle sampler);
+
 		/**
 		 * @brief Adds an entry for acceleration to a given binding
 		 * of a descriptor set.
@@ -167,57 +157,51 @@ namespace vkcv {
 		 * @param[in] structures Acceleration structures
 		 * @return Instance of descriptor writes
 		 */
-		DescriptorWrites& writeAcceleration(uint32_t binding,
-											const std::vector<vk::AccelerationStructureKHR> &structures);
-		
+		DescriptorWrites &
+		writeAcceleration(uint32_t binding,
+						  const std::vector<vk::AccelerationStructureKHR> &structures);
+
 		/**
 		 * @brief Returns the list of stored write entries for sampled images.
 		 *
 		 * @return Sampled image write details
 		 */
-		[[nodiscard]]
-		const std::vector<SampledImageDescriptorWrite>& getSampledImageWrites() const;
-		
+		[[nodiscard]] const std::vector<SampledImageDescriptorWrite> &getSampledImageWrites() const;
+
 		/**
 		 * @brief Returns the list of stored write entries for storage images.
 		 *
 		 * @return Storage image write details
 		 */
-		[[nodiscard]]
-		const std::vector<StorageImageDescriptorWrite>& getStorageImageWrites() const;
-		
+		[[nodiscard]] const std::vector<StorageImageDescriptorWrite> &getStorageImageWrites() const;
+
 		/**
 		 * @brief Returns the list of stored write entries for uniform buffers.
 		 *
 		 * @return Uniform buffers write details
 		 */
-		[[nodiscard]]
-		const std::vector<BufferDescriptorWrite>& getUniformBufferWrites() const;
-		
+		[[nodiscard]] const std::vector<BufferDescriptorWrite> &getUniformBufferWrites() const;
+
 		/**
 		 * @brief Returns the list of stored write entries for storage buffers.
 		 *
 		 * @return Storage buffers write details
 		 */
-		[[nodiscard]]
-		const std::vector<BufferDescriptorWrite>& getStorageBufferWrites() const;
-		
+		[[nodiscard]] const std::vector<BufferDescriptorWrite> &getStorageBufferWrites() const;
+
 		/**
 		 * @brief Returns the list of stored write entries for samplers.
 		 *
 		 * @return Samplers write details
 		 */
-		[[nodiscard]]
-		const std::vector<SamplerDescriptorWrite>& getSamplerWrites() const;
-		
+		[[nodiscard]] const std::vector<SamplerDescriptorWrite> &getSamplerWrites() const;
+
 		/**
 		 * @brief Returns the list of stored write entries for accelerations.
 		 *
 		 * @return Accelerations write details
 		 */
-		[[nodiscard]]
-		const std::vector<AccelerationDescriptorWrite>& getAccelerationWrites() const;
-		
+		[[nodiscard]] const std::vector<AccelerationDescriptorWrite> &getAccelerationWrites() const;
 	};
-	
-}
+
+} // namespace vkcv

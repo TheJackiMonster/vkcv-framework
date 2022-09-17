@@ -8,7 +8,7 @@
 #include <vulkan/vulkan.hpp>
 
 namespace vkcv {
-	
+
 	enum class Multisampling {
 		None,
 		MSAA2X,
@@ -24,7 +24,7 @@ namespace vkcv {
 	 * @return Sample count flag bits
 	 */
 	vk::SampleCountFlagBits msaaToSampleCountFlagBits(Multisampling msaa);
-	
+
 	/**
 	 * @brief Returns the amount of samples of a given
 	 * multi-sample anti-aliasing mode.
@@ -33,5 +33,5 @@ namespace vkcv {
 	 * @return Number of samples
 	 */
 	uint32_t msaaToSampleCount(Multisampling msaa);
-	
-}
+
+} // namespace vkcv

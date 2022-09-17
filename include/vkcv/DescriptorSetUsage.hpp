@@ -10,7 +10,7 @@
 #include "Handles.hpp"
 
 namespace vkcv {
-	
+
 	/**
 	 * @brief Structure to configure a descriptor set usage.
 	 */
@@ -19,9 +19,8 @@ namespace vkcv {
 		DescriptorSetHandle descriptorSet;
 		std::vector<uint32_t> dynamicOffsets;
 	};
-	
-	DescriptorSetUsage useDescriptorSet(uint32_t location,
-										const DescriptorSetHandle &descriptorSet,
+
+	DescriptorSetUsage useDescriptorSet(uint32_t location, const DescriptorSetHandle &descriptorSet,
 										const std::vector<uint32_t> &dynamicOffsets = {});
-	
-}
+
+} // namespace vkcv

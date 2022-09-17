@@ -9,7 +9,7 @@
 #include <vkcv/shader/GLSLCompiler.hpp>
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "First Mesh";
+	const std::string applicationName = "First Mesh";
 
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,

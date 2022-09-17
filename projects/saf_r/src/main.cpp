@@ -29,7 +29,7 @@ void createQuadraticLightCluster(std::vector<safrScene::Light>& lights, int coun
 }
 
 int main(int argc, const char** argv) {
-	const char* applicationName = "SAF_R";
+	const std::string applicationName = "SAF_R";
 
 	//window creation
 	const int windowWidth = 800;

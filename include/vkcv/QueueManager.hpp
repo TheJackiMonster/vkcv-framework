@@ -4,7 +4,7 @@
  * @file vkcv/QueueManager.hpp
  * @brief Types to manage queues of a device.
  */
- 
+
 #include <vulkan/vulkan.hpp>
 
 namespace vkcv {
@@ -25,10 +25,10 @@ namespace vkcv {
 	struct Queue {
 		int familyIndex;
 		int queueIndex;
-		
+
 		vk::Queue handle;
 	};
-	
+
 	/**
 	 * @brief Class to manage queues of a device.
 	 */
@@ -47,40 +47,36 @@ namespace vkcv {
 								   const std::vector<std::pair<int, int>> &queuePairsGraphics,
 								   const std::vector<std::pair<int, int>> &queuePairsCompute,
 								   const std::vector<std::pair<int, int>> &queuePairsTransfer);
-		
+
 		/**
 		 * @brief Returns the default queue with present support.
 		 * Recommended to use the present queue in the swapchain.
 		 *
 		 * @return Default present queue
 		 */
-        [[nodiscard]]
-        const Queue &getPresentQueue() const;
+		[[nodiscard]] const Queue &getPresentQueue() const;
 
 		/**
 		 * @brief Returns all queues with the graphics flag.
 		 *
 		 * @return Vector of graphics queues
 		 */
-		[[nodiscard]]
-		const std::vector<Queue> &getGraphicsQueues() const;
+		[[nodiscard]] const std::vector<Queue> &getGraphicsQueues() const;
 
 		/**
 		 * @brief Returns all queues with the compute flag.
 		 *
 		 * @return Vector of compute queues
 		 */
-		[[nodiscard]]
-        const std::vector<Queue> &getComputeQueues() const;
+		[[nodiscard]] const std::vector<Queue> &getComputeQueues() const;
 
 		/**
 		 * @brief Returns all queues with the transfer flag.
 		 *
 		 * @return Vector of transfer queues
 		 */
-		[[nodiscard]]
-        const std::vector<Queue> &getTransferQueues() const;
-		
+		[[nodiscard]] const std::vector<Queue> &getTransferQueues() const;
+
 		/**
 		 * @brief Checks for presenting support of a given surface
 		 * in the queues and returns the queue family index of the
@@ -93,16 +89,14 @@ namespace vkcv {
 		static uint32_t checkSurfaceSupport(const vk::PhysicalDevice &physicalDevice,
 											const vk::SurfaceKHR &surface);
 
-    private:
-        std::vector<Queue> m_graphicsQueues;
-        std::vector<Queue> m_computeQueues;
-        std::vector<Queue> m_transferQueues;
-		
+	private:
+		std::vector<Queue> m_graphicsQueues;
+		std::vector<Queue> m_computeQueues;
+		std::vector<Queue> m_transferQueues;
+
 		size_t m_presentIndex;
 
-        QueueManager(std::vector<Queue>&& graphicsQueues,
-					 std::vector<Queue>&& computeQueues,
-					 std::vector<Queue>&& transferQueues,
-					 size_t presentIndex);
+		QueueManager(std::vector<Queue> &&graphicsQueues, std::vector<Queue> &&computeQueues,
+					 std::vector<Queue> &&transferQueues, size_t presentIndex);
 	};
-}
+} // namespace vkcv
