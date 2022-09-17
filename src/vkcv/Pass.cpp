@@ -3,7 +3,7 @@
 
 namespace vkcv {
 
-	PassHandle passFormats(Core &core, const std::vector<vk::Format> formats, bool clear,
+	PassHandle passFormats(Core &core, const std::vector<vk::Format> &formats, bool clear,
 						   Multisampling multisampling) {
 		AttachmentDescriptions attachments;
 
@@ -22,9 +22,9 @@ namespace vkcv {
 	}
 
 	PassHandle passSwapchain(Core &core, const SwapchainHandle &swapchain,
-							 const std::vector<vk::Format> formats, bool clear,
+							 const std::vector<vk::Format> &formats, bool clear,
 							 Multisampling multisampling) {
-		std::vector<vk::Format> swapchainFormats(formats);
+		std::vector<vk::Format> swapchainFormats (formats);
 
 		for (auto &format : swapchainFormats) {
 			if (vk::Format::eUndefined == format) {

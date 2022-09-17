@@ -11,7 +11,7 @@
 
 namespace vkcv {
 
-	PassHandle passFormats(Core &core, const std::vector<vk::Format> formats, bool clear = true,
+	PassHandle passFormats(Core &core, const std::vector<vk::Format> &formats, bool clear = true,
 						   Multisampling multisampling = Multisampling::None);
 
 	PassHandle passFormat(Core &core, vk::Format format, bool clear = true,

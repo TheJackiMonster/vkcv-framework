@@ -1,5 +1,4 @@
 #include <iostream>
-#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <vkcv/Pass.hpp>
 #include <GLFW/glfw3.h>
