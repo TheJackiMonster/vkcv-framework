@@ -9,6 +9,9 @@ option(BUILD_DOXYGEN_DOCS "Enables building the VkCV doxygen documentation" OFF)
 option(BUILD_SHARED "Enables building VkCV as shared libraries" OFF)
 option(BUILD_VMA_VULKAN_VERSION "Enforce a specific Vulkan version for VMA" OFF)
 
+# uncomment the following line if cmake will refuse to build projects
+#set(BUILD_PROJECTS ON)
+
 if ((WIN32) AND (NOT BUILD_VMA_VULKAN_VERSION))
 	set(BUILD_VMA_VULKAN_VERSION "1.3.0")
 endif()
