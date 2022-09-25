@@ -66,9 +66,9 @@ bool App::initialize() {
 	m_linearSampler = vkcv::samplerLinear(m_core, true);
 	m_renderTargets = createRenderTargets(m_core, m_windowWidth, m_windowHeight);
 
-	const int cameraIndex = m_cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-	m_cameraManager.getCamera(cameraIndex).setPosition(glm::vec3(0, 1, -3));
-	m_cameraManager.getCamera(cameraIndex).setNearFar(0.1f, 30.f);
+	auto cameraHandle = m_cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	m_cameraManager.getCamera(cameraHandle).setPosition(glm::vec3(0, 1, -3));
+	m_cameraManager.getCamera(cameraHandle).setNearFar(0.1f, 30.f);
 	
 	vkcv::DescriptorWrites meshPassDescriptorWrites;
 	meshPassDescriptorWrites.writeSampledImage(0, m_gridTexture);

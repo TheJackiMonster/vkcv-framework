@@ -301,8 +301,8 @@ int main(int argc, const char **argv) {
 	
 	vkcv::gui::GUI gui (core, windowHandle);
 	
-	uint32_t trackballIdx = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
-	cameraManager.getCamera(trackballIdx).setCenter(glm::vec3(0.5f, 0.5f, 0.5f));   // set camera to look at the center of the particle volume
+	auto trackballHandle = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	cameraManager.getCamera(trackballHandle).setCenter(glm::vec3(0.5f, 0.5f, 0.5f));   // set camera to look at the center of the particle volume
 	cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	auto swapchainExtent = core.getSwapchainExtent(window.getSwapchain());

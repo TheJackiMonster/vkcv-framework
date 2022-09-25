@@ -190,12 +190,13 @@ int main(int argc, const char** argv) {
 
 	//create the camera
 	vkcv::camera::CameraManager cameraManager(window);
-	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	auto camHandle0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	auto camHandle1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 
-	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, 2));
-	cameraManager.getCamera(camIndex1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-	cameraManager.getCamera(camIndex1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
+	cameraManager.getCamera(camHandle0).setPosition(glm::vec3(0, 0, 2));
+	
+	cameraManager.getCamera(camHandle1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+	cameraManager.getCamera(camHandle1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
 	
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
 				 uint32_t swapchainWidth, uint32_t swapchainHeight) {

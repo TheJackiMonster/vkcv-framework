@@ -213,17 +213,17 @@ int main(int argc, const char **argv) {
 	vkcv::Window& window = core.getWindow (windowHandle);
 	vkcv::camera::CameraManager cameraManager (window);
 	
-	uint32_t trackballIdx = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
-	cameraManager.getCamera(trackballIdx).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));   // set camera to look at the center of the particle volume
-	uint32_t pilotIdx = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	auto trackballHandle = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	auto pilotHandle = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
-	cameraManager.getCamera(trackballIdx).setNearFar(0.1f, 50.0f);
-	cameraManager.getCamera(trackballIdx).setPosition(glm::vec3(0, 0, -25));
+	cameraManager.getCamera(trackballHandle).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));   // set camera to look at the center of the particle volume
+	cameraManager.getCamera(trackballHandle).setNearFar(0.1f, 50.0f);
+	cameraManager.getCamera(trackballHandle).setPosition(glm::vec3(0, 0, -25));
 	
-	cameraManager.getCamera(pilotIdx).setNearFar(0.1f, 50.0f);
-	cameraManager.getCamera(pilotIdx).setPosition(glm::vec3(0, 0, 25));
+	cameraManager.getCamera(pilotHandle).setNearFar(0.1f, 50.0f);
+	cameraManager.getCamera(pilotHandle).setPosition(glm::vec3(0, 0, 25));
 	
-	cameraManager.setActiveCamera(pilotIdx);
+	cameraManager.setActiveCamera(pilotHandle);
 	
 	vkcv::gui::GUI gui (core, windowHandle);
 	vkcv::shader::GLSLCompiler compiler;

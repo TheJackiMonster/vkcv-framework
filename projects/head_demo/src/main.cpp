@@ -30,13 +30,13 @@ int main(int argc, const char** argv) {
 	
 	vkcv::gui::GUI gui (core, windowHandle);
 	
-	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-	uint32_t camIndex1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	auto camHandle0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	auto camHandle1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
-	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(15.5f, 0, 0));
-	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 30.0f);
+	cameraManager.getCamera(camHandle0).setPosition(glm::vec3(15.5f, 0, 0));
+	cameraManager.getCamera(camHandle0).setNearFar(0.1f, 30.0f);
 	
-	cameraManager.getCamera(camIndex1).setNearFar(0.1f, 30.0f);
+	cameraManager.getCamera(camHandle1).setNearFar(0.1f, 30.0f);
 	
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(
 			core,

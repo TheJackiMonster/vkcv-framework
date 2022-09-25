@@ -108,15 +108,15 @@ int main(int argc, const char** argv) {
 	});
 
 	vkcv::camera::CameraManager cameraManager(window);
-	uint32_t camIndex  = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-	uint32_t camIndex2 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	auto camHandle0  = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	auto camHandle1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 
-	cameraManager.getCamera(camIndex).setPosition(glm::vec3(0.f, 0.f, 3.f));
-	cameraManager.getCamera(camIndex).setNearFar(0.1f, 30.0f);
-	cameraManager.getCamera(camIndex).setYaw(180.0f);
-	cameraManager.getCamera(camIndex).setFov(glm::radians(37.8));	// fov of a 35mm lens
+	cameraManager.getCamera(camHandle0).setPosition(glm::vec3(0.f, 0.f, 3.f));
+	cameraManager.getCamera(camHandle0).setNearFar(0.1f, 30.0f);
+	cameraManager.getCamera(camHandle0).setYaw(180.0f);
+	cameraManager.getCamera(camHandle0).setFov(glm::radians(37.8));	// fov of a 35mm lens
 	
-	cameraManager.getCamera(camIndex2).setNearFar(0.1f, 30.0f);
+	cameraManager.getCamera(camHandle1).setNearFar(0.1f, 30.0f);
 
 	vkcv::asset::Scene mesh;
 

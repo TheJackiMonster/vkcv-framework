@@ -219,9 +219,9 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
-	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	auto camHandle = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 
-	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
+	cameraManager.getCamera(camHandle).setPosition(glm::vec3(0, 0, -2));
 	
 	int     frameIndex      = 0;
 	bool    clearMeanImage  = true;

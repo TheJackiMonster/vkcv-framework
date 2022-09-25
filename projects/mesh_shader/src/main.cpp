@@ -310,9 +310,9 @@ int main(int argc, const char** argv) {
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
 	vkcv::camera::CameraManager cameraManager(window);
-	uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+	auto camHandle = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
-	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -2));
+	cameraManager.getCamera(camHandle).setPosition(glm::vec3(0, 0, -2));
 
 	bool useMeshShader          = true;
 	bool updateFrustumPlanes    = true;

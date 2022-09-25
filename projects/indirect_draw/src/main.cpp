@@ -505,10 +505,10 @@ int main(int argc, const char** argv) {
     }
 
     vkcv::camera::CameraManager cameraManager (window);
-    uint32_t camIndex0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+    auto camHandle = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
-	cameraManager.getCamera(camIndex0).setPosition(glm::vec3(0, 0, -3));
-	cameraManager.getCamera(camIndex0).setNearFar(0.1f, 20.f);
+	cameraManager.getCamera(camHandle).setPosition(glm::vec3(0, 0, -3));
+	cameraManager.getCamera(camHandle).setNearFar(0.1f, 20.f);
 
     vkcv::ImageHandle depthBuffer;
 	
@@ -518,7 +518,7 @@ int main(int argc, const char** argv) {
     ceiledDispatchCount = std::ceil(ceiledDispatchCount);
     const vkcv::DispatchSize dispatchCount = static_cast<uint32_t>(ceiledDispatchCount);
 
-    vkcv::DescriptorSetUsage cullingUsage (0, cullingDescSet, {});
+    vkcv::DescriptorSetUsage cullingUsage = vkcv::useDescriptorSet(0, cullingDescSet);
     vkcv::PushConstants emptyPushConstant(0);
 
     bool updateFrustumPlanes    = true;

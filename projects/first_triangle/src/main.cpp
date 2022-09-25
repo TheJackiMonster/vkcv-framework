@@ -66,9 +66,9 @@ int main(int argc, const char** argv) {
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
     vkcv::camera::CameraManager cameraManager(window);
-    uint32_t camIndex = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
+    auto camHandle = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
-	cameraManager.getCamera(camIndex).setPosition(glm::vec3(0, 0, -2));
+	cameraManager.getCamera(camHandle).setPosition(glm::vec3(0, 0, -2));
 
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
 			uint32_t swapchainWidth, uint32_t swapchainHeight) {
