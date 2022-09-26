@@ -252,39 +252,39 @@ namespace vkcv::scene {
 		
 		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
 			loadImage(*m_core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Srgb,
-					  diffuseImg,diffuseSmp);
+					  diffuseImg, diffuseSmp);
 		}
 		
 		ImageHandle normalImg;
 		SamplerHandle normalSmp;
 		
-		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
-			loadImage(*m_core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Unorm,
-					  diffuseImg,diffuseSmp);
+		if ((material.normal >= 0) && (material.normal < scene.textures.size())) {
+			loadImage(*m_core, scene, scene.textures[material.normal], vk::Format::eR8G8B8A8Unorm,
+					  normalImg, normalSmp);
 		}
 		
 		ImageHandle metalRoughImg;
 		SamplerHandle metalRoughSmp;
 		
-		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
-			loadImage(*m_core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Unorm,
-					  diffuseImg,diffuseSmp);
+		if ((material.metalRough >= 0) && (material.metalRough < scene.textures.size())) {
+			loadImage(*m_core, scene, scene.textures[material.metalRough], vk::Format::eR8G8B8A8Unorm,
+					  metalRoughImg, metalRoughSmp);
 		}
 		
 		ImageHandle occlusionImg;
 		SamplerHandle occlusionSmp;
 		
-		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
-			loadImage(*m_core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Unorm,
-					  diffuseImg,diffuseSmp);
+		if ((material.occlusion >= 0) && (material.occlusion < scene.textures.size())) {
+			loadImage(*m_core, scene, scene.textures[material.occlusion], vk::Format::eR8G8B8A8Unorm,
+					  occlusionImg, occlusionSmp);
 		}
 		
 		ImageHandle emissionImg;
 		SamplerHandle emissionSmp;
 		
-		if ((material.baseColor >= 0) && (material.baseColor < scene.textures.size())) {
-			loadImage(*m_core, scene, scene.textures[material.baseColor], vk::Format::eR8G8B8A8Srgb,
-					  diffuseImg,diffuseSmp);
+		if ((material.emissive >= 0) && (material.emissive < scene.textures.size())) {
+			loadImage(*m_core, scene, scene.textures[material.emissive], vk::Format::eR8G8B8A8Srgb,
+					  emissionImg, emissionSmp);
 		}
 		
 		const float colorFactors [4] = {
@@ -297,7 +297,8 @@ namespace vkcv::scene {
 		const float emissionFactors[4] = {
 				material.emissiveFactor.r,
 				material.emissiveFactor.g,
-				material.emissiveFactor.b
+				material.emissiveFactor.b,
+				0.0f
 		};
 		
 		m_materials[index].m_data = material::Material::createPBR(
