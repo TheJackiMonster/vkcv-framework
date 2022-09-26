@@ -2,6 +2,7 @@
 
 #include <glm/mat4x4.hpp>
 
+#include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/camera/Camera.hpp>
 
 #include "MeshPart.hpp"

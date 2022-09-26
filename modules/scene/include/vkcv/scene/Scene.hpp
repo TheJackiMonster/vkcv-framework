@@ -5,6 +5,7 @@
 
 #include <vkcv/Core.hpp>
 #include <vkcv/Event.hpp>
+#include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/camera/Camera.hpp>
 #include <vkcv/material/Material.hpp>
 

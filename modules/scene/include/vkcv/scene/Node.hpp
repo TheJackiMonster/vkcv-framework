@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/camera/Camera.hpp>
 
 #include "Bounds.hpp"
