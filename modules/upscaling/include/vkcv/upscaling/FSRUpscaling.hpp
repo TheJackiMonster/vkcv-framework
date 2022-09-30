@@ -188,7 +188,7 @@ namespace vkcv::upscaling {
 		explicit FSRUpscaling(Core& core);
 
         /**
-         * Record the comands of the FSR upscaling instance to
+         * Record the commands of the FSR upscaling instance to
          * scale the image of the input handle to the resolution of
          * the output image handle via FidelityFX Super Resolution.
          *

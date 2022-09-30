@@ -23,7 +23,7 @@ namespace vkcv::upscaling {
 		explicit BilinearUpscaling(Core& core);
 
         /**
-         * Record the comands of the bilinear upscaling instance to
+         * Record the commands of the bilinear upscaling instance to
          * scale the image of the input handle to the resolution of
          * the output image handle via bilinear interpolation.
          *
