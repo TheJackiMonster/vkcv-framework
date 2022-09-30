@@ -264,9 +264,9 @@ namespace vkcv::upscaling {
 		dispatch.cameraFar = m_far;
 		dispatch.cameraFovAngleVertical = m_fov;
 		
-		m_core.recordCommandsToStream(cmdStream, [&dispatch](const vk::CommandBuffer& cmdBuffer) {
+		m_core.recordCommandsToStream(cmdStream, [&](const vk::CommandBuffer& cmdBuffer) {
 			dispatch.commandList = ffxGetCommandListVK(cmdBuffer);
-		}, [&]() {
+			
 			assert(ffxFsr2ContextDispatch(
 					&m_context,
 					&dispatch
@@ -274,7 +274,7 @@ namespace vkcv::upscaling {
 			
 			m_frameIndex++;
 			m_reset = false;
-		});
+		}, nullptr);
 	}
 	
 	void FSR2Upscaling::setCamera(float near, float far, float fov) {

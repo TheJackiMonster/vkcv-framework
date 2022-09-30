@@ -176,11 +176,7 @@ namespace vkcv::upscaling {
 		/**
 		 * Record the commands of the FSR2 upscaling instance to
 		 * scale the image of the input handle to the resolution of
-		 * the output image handle via FidelityFX Super Resolution
-		 * and dispatch them.
-		 *
-		 * Beware that this method will dispatch the commands
-		 * automatically!
+		 * the output image handle via FidelityFX Super Resolution.
 		 *
 		 * @param[in] cmdStream Command stream handle to record commands
 		 * @param[in] colorInput Color input image handle
