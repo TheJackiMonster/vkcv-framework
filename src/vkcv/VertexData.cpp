@@ -4,7 +4,9 @@
 namespace vkcv {
 
 	VertexBufferBinding vertexBufferBinding(const BufferHandle &buffer, size_t offset) {
-		VertexBufferBinding binding(buffer, offset);
+		VertexBufferBinding binding;
+		binding.buffer = buffer;
+		binding.offset = offset;
 		return binding;
 	}
 

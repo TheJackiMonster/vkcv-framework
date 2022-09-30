@@ -40,3 +40,6 @@
 [submodule "modules/algorithm/lib/FidelityFX-SPD"]
 	path = modules/algorithm/lib/FidelityFX-SPD
 	url = https://github.com/GPUOpen-Effects/FidelityFX-SPD.git
+[submodule "modules/upscaling/lib/FidelityFX-FSR2"]
+	path = modules/upscaling/lib/FidelityFX-FSR2
+	url = https://github.com/TheJackiMonster/FidelityFX-FSR2.git

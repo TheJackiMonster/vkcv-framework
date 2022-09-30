@@ -36,6 +36,9 @@ namespace vkcv::upscaling {
 			case FSRQualityMode::PERFORMANCE:
 				scale = 2.0f;
 				break;
+			case FSRQualityMode::ULTRA_PERFORMANCE:
+				scale = 3.0f;
+				break;
 			default:
 				scale = 1.0f;
 				break;
@@ -60,6 +63,8 @@ namespace vkcv::upscaling {
 				return -0.79f;
 			case FSRQualityMode::PERFORMANCE:
 				return -1.0f;
+			case FSRQualityMode::ULTRA_PERFORMANCE:
+				return -2.0f;
 			default:
 				return 0.0f;
 		}
@@ -333,7 +338,7 @@ namespace vkcv::upscaling {
 					cmdStream,
 					m_easuPipeline,
 					dispatch,
-					{DescriptorSetUsage(0, m_easuDescriptorSet, { 0 })},
+					{vkcv::useDescriptorSet(0, m_easuDescriptorSet, { 0 })},
 					PushConstants(0)
 			);
 			
@@ -353,7 +358,7 @@ namespace vkcv::upscaling {
 					cmdStream,
 					m_rcasPipeline,
 					dispatch,
-					{DescriptorSetUsage(0,m_rcasDescriptorSet, { 0 })},
+					{vkcv::useDescriptorSet(0,m_rcasDescriptorSet, { 0 })},
 					PushConstants(0)
 			);
 			
@@ -371,7 +376,7 @@ namespace vkcv::upscaling {
 					cmdStream,
 					m_easuPipeline,
 					dispatch,
-					{DescriptorSetUsage(0, m_easuDescriptorSet, { 0 })},
+					{vkcv::useDescriptorSet(0, m_easuDescriptorSet, { 0 })},
 					PushConstants(0)
 			);
 		}
