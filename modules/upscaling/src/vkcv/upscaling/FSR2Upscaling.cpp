@@ -4,6 +4,7 @@
 #include <cmath>
 
 #define FFX_GCC
+#include <ffx_fsr2.h>
 #include <ffx_fsr2_vk.h>
 #undef FFX_GCC
 
@@ -60,54 +61,87 @@ namespace vkcv::upscaling {
 									 uint32_t displayHeight,
 									 uint32_t renderWidth,
 									 uint32_t renderHeight) {
-		m_description.displaySize.width = displayWidth;
-		m_description.displaySize.height = displayHeight;
+		m_description->displaySize.width = displayWidth;
+		m_description->displaySize.height = displayHeight;
 		
-		m_description.maxRenderSize.width = renderWidth;
-		m_description.maxRenderSize.height = renderHeight;
+		m_description->maxRenderSize.width = renderWidth;
+		m_description->maxRenderSize.height = renderHeight;
 		
-		m_description.flags = FFX_FSR2_ENABLE_AUTO_EXPOSURE;
+		m_description->flags = FFX_FSR2_ENABLE_AUTO_EXPOSURE;
 		
 		if (m_hdr) {
-			m_description.flags |= FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
+			m_description->flags |= FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
 		}
 		
-		assert(ffxFsr2ContextCreate(&m_context, &m_description) == FFX_OK);
+		if ((m_description->displaySize.width * m_description->displaySize.height <= 1) ||
+			(m_description->maxRenderSize.width * m_description->maxRenderSize.height <= 1)) {
+			return;
+		}
+		
+		if (!m_context) {
+			m_context.reset(new FfxFsr2Context());
+		}
+		
+		memset(m_context.get(), 0, sizeof(*m_context));
+		assert(ffxFsr2ContextCreate(m_context.get(), m_description.get()) == FFX_OK);
 	}
 	
 	void FSR2Upscaling::destroyFSR2Context() {
 		m_core.getContext().getDevice().waitIdle();
 		
-		assert(ffxFsr2ContextDestroy(&m_context) == FFX_OK);
+		if (m_context) {
+			assert(ffxFsr2ContextDestroy(m_context.get()) == FFX_OK);
+			m_context.reset(nullptr);
+		}
 		
 		m_frameIndex = 0;
 	}
 	
-	FSR2Upscaling::FSR2Upscaling(Core &core) : Upscaling(core) {
+	FSR2Upscaling::FSR2Upscaling(Core &core) :
+	Upscaling(core),
+	m_scratchBuffer(),
+	
+	m_description(new FfxFsr2ContextDescription()),
+	m_context(nullptr),
+	
+	m_depth(),
+	m_velocity(),
+	
+	m_frameIndex(0),
+	
+	m_frameDeltaTime(0.0f),
+	m_reset(false),
+	
+	m_near(0.0f),
+	m_far(0.0f),
+	m_fov(0.0f),
+	
+	m_hdr(false),
+	m_sharpness(0.875f) {
 		const auto& physicalDevice = core.getContext().getPhysicalDevice();
 		
-		memset(&m_description, 0, sizeof(m_description));
+		memset(m_description.get(), 0, sizeof(*m_description));
 		
 		m_scratchBuffer.resize(ffxFsr2GetScratchMemorySizeVK(physicalDevice));
 		
 		assert(ffxFsr2GetInterfaceVK(
-				&(m_description.callbacks),
+				&(m_description->callbacks),
 				m_scratchBuffer.data(),
 				m_scratchBuffer.size(),
 				physicalDevice,
 				vkGetDeviceProcAddr
 		) == FFX_OK);
 		
-		m_description.device = ffxGetDeviceVK(core.getContext().getDevice());
+		m_description->device = ffxGetDeviceVK(core.getContext().getDevice());
 		
-		createFSR2Context(0, 0, 0, 0);
+		createFSR2Context(1, 1, 1, 1);
 	}
 	
 	FSR2Upscaling::~FSR2Upscaling() {
 		destroyFSR2Context();
 		
 		m_scratchBuffer.clear();
-		m_description.callbacks.scratchBuffer = nullptr;
+		m_description->callbacks.scratchBuffer = nullptr;
 	}
 	
 	void FSR2Upscaling::update(float deltaTime, bool reset) {
@@ -122,10 +156,10 @@ namespace vkcv::upscaling {
 	void FSR2Upscaling::calcJitterOffset(uint32_t renderWidth,
 										 uint32_t renderHeight,
 										 float &jitterOffsetX,
-										 float &jitterOffsetY) {
+										 float &jitterOffsetY) const {
 		const int32_t phaseCount = ffxFsr2GetJitterPhaseCount(
-				renderWidth,
-				renderHeight
+				static_cast<int32_t>(renderWidth),
+				static_cast<int32_t>(renderHeight)
 		);
 		
 		const int32_t phaseIndex = (static_cast<int32_t>(m_frameIndex) % phaseCount);
@@ -136,6 +170,9 @@ namespace vkcv::upscaling {
 				phaseIndex,
 				phaseCount
 		) == FFX_OK);
+		
+		jitterOffsetX *= +2.0f / renderWidth;
+		jitterOffsetY *= -2.0f / renderHeight;
 	}
 	
 	void FSR2Upscaling::bindDepthBuffer(const ImageHandle &depthInput) {
@@ -146,8 +183,13 @@ namespace vkcv::upscaling {
 		m_velocity = velocityInput;
 	}
 	
-	void FSR2Upscaling::recordUpscaling(const CommandStreamHandle &cmdStream, const ImageHandle &colorInput,
+	void FSR2Upscaling::recordUpscaling(const CommandStreamHandle &cmdStream,
+										const ImageHandle &colorInput,
 										const ImageHandle &output) {
+		m_core.recordBeginDebugLabel(cmdStream, "vkcv::upscaling::FSR2Upscaling", {
+				1.0f, 0.05f, 0.05f, 1.0f
+		});
+		
 		FfxFsr2DispatchDescription dispatch;
 		memset(&dispatch, 0, sizeof(dispatch));
 		
@@ -157,11 +199,11 @@ namespace vkcv::upscaling {
 		const uint32_t outputWidth = m_core.getImageWidth(output);
 		const uint32_t outputHeight = m_core.getImageHeight(output);
 		
-		if ((m_description.displaySize.width != outputWidth) ||
-			(m_description.displaySize.height != outputHeight) ||
-			(m_description.maxRenderSize.width < inputWidth) ||
-			(m_description.maxRenderSize.height < inputHeight) ||
-			(m_hdr != ((m_description.flags & FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE) != 0))) {
+		if ((m_description->displaySize.width != outputWidth) ||
+			(m_description->displaySize.height != outputHeight) ||
+			(m_description->maxRenderSize.width < inputWidth) ||
+			(m_description->maxRenderSize.height < inputHeight) ||
+			(m_hdr != ((m_description->flags & FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE) != 0))) {
 			destroyFSR2Context();
 			
 			createFSR2Context(
@@ -172,109 +214,114 @@ namespace vkcv::upscaling {
 			);
 		}
 		
-		const bool sharpeningEnabled = (
-				(m_sharpness > +0.0f) &&
-				((inputWidth < outputWidth) || (inputHeight < outputHeight))
-		);
-		
-		dispatch.color = ffxGetTextureResourceVK(
-				&m_context,
-				m_core.getVulkanImage(colorInput),
-				m_core.getVulkanImageView(colorInput),
-				inputWidth,
-				inputHeight,
-				static_cast<VkFormat>(m_core.getImageFormat(colorInput))
-		);
-		
-		dispatch.depth = ffxGetTextureResourceVK(
-				&m_context,
-				m_core.getVulkanImage(m_depth),
-				m_core.getVulkanImageView(m_depth),
-				m_core.getImageWidth(m_depth),
-				m_core.getImageHeight(m_depth),
-				static_cast<VkFormat>(m_core.getImageFormat(m_depth))
-		);
-		
-		dispatch.motionVectors = ffxGetTextureResourceVK(
-				&m_context,
-				m_core.getVulkanImage(m_velocity),
-				m_core.getVulkanImageView(m_velocity),
-				m_core.getImageWidth(m_velocity),
-				m_core.getImageHeight(m_velocity),
-				static_cast<VkFormat>(m_core.getImageFormat(m_velocity))
-		);
-		
-		dispatch.exposure = ffxGetTextureResourceVK(
-				&m_context,
-				nullptr,
-				nullptr,
-				1,
-				1,
-				VK_FORMAT_UNDEFINED
-		);
-		
-		dispatch.reactive = ffxGetTextureResourceVK(
-				&m_context,
-				nullptr,
-				nullptr,
-				1,
-				1,
-				VK_FORMAT_UNDEFINED
-		);
-		
-		dispatch.transparencyAndComposition = ffxGetTextureResourceVK(
-				&m_context,
-				nullptr,
-				nullptr,
-				1,
-				1,
-				VK_FORMAT_UNDEFINED
-		);
-		
-		dispatch.output = ffxGetTextureResourceVK(
-				&m_context,
-				m_core.getVulkanImage(output),
-				m_core.getVulkanImageView(output),
-				outputWidth,
-				outputHeight,
-				static_cast<VkFormat>(m_core.getImageFormat(output))
-		);
-		
-		calcJitterOffset(
-				inputWidth,
-				inputHeight,
-				dispatch.jitterOffset.x,
-				dispatch.jitterOffset.y
-		);
-		
-		dispatch.motionVectorScale.x = static_cast<float>(inputWidth);
-		dispatch.motionVectorScale.y = static_cast<float>(inputHeight);
-		
-		dispatch.renderSize.width = inputWidth;
-		dispatch.renderSize.height = inputHeight;
-		
-		dispatch.enableSharpening = sharpeningEnabled;
-		dispatch.sharpness = m_sharpness;
-		
-		dispatch.frameTimeDelta = m_frameDeltaTime * 1000.0f; // from seconds to milliseconds
-		dispatch.preExposure = 1.0f;
-		dispatch.reset = m_reset;
-		
-		dispatch.cameraNear = m_near;
-		dispatch.cameraFar = m_far;
-		dispatch.cameraFovAngleVertical = m_fov;
-		
-		m_core.recordCommandsToStream(cmdStream, [&](const vk::CommandBuffer& cmdBuffer) {
-			dispatch.commandList = ffxGetCommandListVK(cmdBuffer);
+		if (m_context) {
+			const bool sharpeningEnabled = (
+					(m_sharpness > +0.0f) &&
+					((inputWidth < outputWidth) || (inputHeight < outputHeight))
+			);
 			
-			assert(ffxFsr2ContextDispatch(
-					&m_context,
-					&dispatch
-			) == FFX_OK);
+			dispatch.color = ffxGetTextureResourceVK(
+					m_context.get(),
+					m_core.getVulkanImage(colorInput),
+					m_core.getVulkanImageView(colorInput),
+					inputWidth,
+					inputHeight,
+					static_cast<VkFormat>(m_core.getImageFormat(colorInput))
+			);
 			
-			m_frameIndex++;
-			m_reset = false;
-		}, nullptr);
+			dispatch.depth = ffxGetTextureResourceVK(
+					m_context.get(),
+					m_core.getVulkanImage(m_depth),
+					m_core.getVulkanImageView(m_depth),
+					m_core.getImageWidth(m_depth),
+					m_core.getImageHeight(m_depth),
+					static_cast<VkFormat>(m_core.getImageFormat(m_depth))
+			);
+			
+			dispatch.motionVectors = ffxGetTextureResourceVK(
+					m_context.get(),
+					m_core.getVulkanImage(m_velocity),
+					m_core.getVulkanImageView(m_velocity),
+					m_core.getImageWidth(m_velocity),
+					m_core.getImageHeight(m_velocity),
+					static_cast<VkFormat>(m_core.getImageFormat(m_velocity))
+			);
+			
+			dispatch.exposure = ffxGetTextureResourceVK(
+					m_context.get(),
+					nullptr,
+					nullptr,
+					1,
+					1,
+					VK_FORMAT_UNDEFINED
+			);
+			
+			dispatch.reactive = ffxGetTextureResourceVK(
+					m_context.get(),
+					nullptr,
+					nullptr,
+					1,
+					1,
+					VK_FORMAT_UNDEFINED
+			);
+			
+			dispatch.transparencyAndComposition = ffxGetTextureResourceVK(
+					m_context.get(),
+					nullptr,
+					nullptr,
+					1,
+					1,
+					VK_FORMAT_UNDEFINED
+			);
+			
+			dispatch.output = ffxGetTextureResourceVK(
+					m_context.get(),
+					m_core.getVulkanImage(output),
+					m_core.getVulkanImageView(output),
+					outputWidth,
+					outputHeight,
+					static_cast<VkFormat>(m_core.getImageFormat(output))
+			);
+			
+			calcJitterOffset(
+					inputWidth,
+					inputHeight,
+					dispatch.jitterOffset.x,
+					dispatch.jitterOffset.y
+			);
+			
+			dispatch.motionVectorScale.x = static_cast<float>(+2.0f);
+			dispatch.motionVectorScale.y = static_cast<float>(-2.0f);
+			
+			dispatch.renderSize.width = inputWidth;
+			dispatch.renderSize.height = inputHeight;
+			
+			dispatch.enableSharpening = sharpeningEnabled;
+			dispatch.sharpness = m_sharpness;
+			
+			dispatch.frameTimeDelta = m_frameDeltaTime * 1000.0f; // from seconds to milliseconds
+			dispatch.preExposure = 1.0f;
+			dispatch.reset = m_reset;
+			
+			dispatch.cameraNear = m_near;
+			dispatch.cameraFar = m_far;
+			dispatch.cameraFovAngleVertical = m_fov;
+			
+			m_core.recordCommandsToStream(cmdStream, [&](const vk::CommandBuffer& cmdBuffer) {
+				dispatch.commandList = ffxGetCommandListVK(cmdBuffer);
+				
+				assert(ffxFsr2ContextDispatch(
+						m_context.get(),
+						&dispatch
+				) == FFX_OK);
+				
+				m_frameIndex++;
+				m_reset = false;
+			}, nullptr);
+		}
+		
+		m_core.updateImageLayoutManual(output, vk::ImageLayout::eGeneral);
+		m_core.recordEndDebugLabel(cmdStream);
 	}
 	
 	void FSR2Upscaling::setCamera(float near, float far, float fov) {

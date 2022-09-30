@@ -4,9 +4,8 @@
 
 #include <vector>
 
-#define FFX_GCC
-#include <ffx_fsr2.h>
-#undef FFX_GCC
+struct FfxFsr2ContextDescription;
+struct FfxFsr2Context;
 
 namespace vkcv::upscaling {
 
@@ -81,8 +80,8 @@ namespace vkcv::upscaling {
 	private:
 		std::vector<char> m_scratchBuffer;
 		
-		FfxFsr2ContextDescription m_description;
-		FfxFsr2Context m_context;
+		std::unique_ptr<FfxFsr2ContextDescription> m_description;
+		std::unique_ptr<FfxFsr2Context> m_context;
 		
 		ImageHandle m_depth;
 		ImageHandle m_velocity;
@@ -155,7 +154,7 @@ namespace vkcv::upscaling {
 		void calcJitterOffset(uint32_t renderWidth,
 							 uint32_t renderHeight,
 							 float& jitterOffsetX,
-							 float& jitterOffsetY);
+							 float& jitterOffsetY) const;
 		
 		/**
 		 * Bind the depth buffer image to use with the FSR2

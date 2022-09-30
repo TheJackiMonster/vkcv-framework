@@ -299,36 +299,63 @@ bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, Comput
 	return true;
 }
 
-AppRenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const uint32_t height) {
+AppRenderTargets createRenderTargets(vkcv::Core& core,
+									 uint32_t width,
+									 uint32_t height,
+									 vkcv::upscaling::FSR2QualityMode mode) {
 	AppRenderTargets targets;
+	uint32_t renderWidth, renderHeight;
+	
+	vkcv::upscaling::getFSR2Resolution(
+			mode,
+			width,
+			height,
+			renderWidth,
+			renderHeight
+	);
 
 	targets.depthBuffer = core.createImage(
-		AppConfig::depthBufferFormat,
-		width,
-		height,
-		1,
-		false
+			AppConfig::depthBufferFormat,
+			renderWidth,
+			renderHeight,
+			1,
+			false
 	);
 
 	targets.colorBuffer = core.createImage(
-		AppConfig::colorBufferFormat,
-		width,
-		height,
-		1,
-		false,
-		false,
-		true
+			AppConfig::colorBufferFormat,
+			renderWidth,
+			renderHeight,
+			1,
+			false,
+			false,
+			true
 	);
 
 	targets.motionBuffer = core.createImage(
-		AppConfig::motionBufferFormat,
-		width,
-		height,
-		1,
-		false,
-		false,
-		true
+			AppConfig::motionBufferFormat,
+			renderWidth,
+			renderHeight,
+			1,
+			false,
+			false,
+			true
 	);
+	
+	targets.finalBuffer = core.createImage(
+			AppConfig::colorBufferFormat,
+			width,
+			height,
+			1,
+			false,
+			true,
+			true
+	);
+	
+	core.setDebugLabel(targets.depthBuffer, "Depth buffer");
+	core.setDebugLabel(targets.colorBuffer, "Color buffer");
+	core.setDebugLabel(targets.motionBuffer, "Motion buffer");
+	core.setDebugLabel(targets.finalBuffer, "Final buffer");
 
 	return targets;
 }

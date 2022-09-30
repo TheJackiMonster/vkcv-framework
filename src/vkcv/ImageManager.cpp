@@ -345,14 +345,25 @@ namespace vkcv {
 		if ((!mipLevelCount) || (mipLevelOffset + mipLevelCount > mipLevelsMax))
 			mipLevelCount = mipLevelsMax - mipLevelOffset;
 
-		vk::ImageSubresourceRange imageSubresourceRange(aspectFlags, mipLevelOffset, mipLevelCount,
-														0, image.m_layers);
-
+		vk::ImageSubresourceRange imageSubresourceRange(
+				aspectFlags,
+				mipLevelOffset,
+				mipLevelCount,
+				0,
+				image.m_layers
+		);
+		
 		// TODO: precise AccessFlagBits, will require a lot of context
-		return vk::ImageMemoryBarrier(vk::AccessFlagBits::eMemoryWrite,
-									  vk::AccessFlagBits::eMemoryRead, image.m_layout, newLayout,
-									  VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-									  image.m_handle, imageSubresourceRange);
+		return vk::ImageMemoryBarrier(
+				vk::AccessFlagBits::eMemoryWrite,
+				vk::AccessFlagBits::eMemoryRead,
+				image.m_layout,
+				newLayout,
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+				image.m_handle,
+				imageSubresourceRange
+		);
 	}
 
 	void ImageManager::switchImageLayoutImmediate(const ImageHandle &handle,
