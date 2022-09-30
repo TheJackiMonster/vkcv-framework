@@ -10,10 +10,68 @@
 
 namespace vkcv::upscaling {
 
-/**
+	/**
      * @addtogroup vkcv_upscaling
      * @{
      */
+
+	/**
+     * Enum to set the mode of quality for
+     * FSR2 upscaling.
+     */
+	enum class FSR2QualityMode : int {
+		/**
+		 * Don't upscale anything.
+		 */
+		NONE = 0,
+		
+		/**
+		 * High quality of FSR upscaling:
+		 * 1.5x per dimension
+		 */
+		QUALITY = 2,
+		
+		/**
+		 * Medium quality of FSR upscaling:
+		 * 1.7x per dimension
+		 */
+		BALANCED = 3,
+		
+		/**
+		 * Low quality of FSR upscaling:
+		 * 2.0x per dimension
+		 */
+		PERFORMANCE = 4,
+		
+		/**
+         * Lowest quality of FSR upscaling:
+         * 3.0x per dimension
+         */
+		ULTRA_PERFORMANCE = 5,
+	};
+	
+	/**
+     * Calculates the internal resolution for actual rendering if
+     * a specific mode of quality is used for upscaling with FSR2.
+     *
+     * @param[in] mode Mode of quality
+     * @param[in] outputWidth Final resolution width
+     * @param[in] outputHeight Final resolution height
+     * @param[out] inputWidth Internal resolution width
+     * @param[out] inputHeight Internal resolution height
+     */
+	void getFSR2Resolution(FSR2QualityMode mode,
+						   uint32_t outputWidth, uint32_t outputHeight,
+						   uint32_t &inputWidth, uint32_t &inputHeight);
+	
+	/**
+	 * Returns the matching negative lod bias to reduce artifacts
+	 * upscaling with FSR2 under a given mode of quality.
+	 *
+	 * @param mode Mode of quality
+	 * @return Lod bias
+	 */
+	float getFSR2LodBias(FSR2QualityMode mode);
 
 	/**
      * A class to handle upscaling via FidelityFX Super Resolution.
@@ -28,6 +86,8 @@ namespace vkcv::upscaling {
 		
 		ImageHandle m_depth;
 		ImageHandle m_velocity;
+		
+		uint32_t m_frameIndex;
 		
 		float m_frameDeltaTime;
 		bool m_reset;
@@ -82,6 +142,20 @@ namespace vkcv::upscaling {
 		 * @param[in] reset Reset temporal frame data
 		 */
 		void update(float deltaTime, bool reset = false);
+		
+		/**
+		 * Calculates the jitter offset for the projection
+		 * matrix of the camera to use in the current frame.
+		 *
+		 * @param[in] renderWidth Render resolution width
+		 * @param[in] renderHeight Render resolution height
+		 * @param[out] jitterOffsetX Jitter offset x-coordinate
+		 * @param[out] jitterOffsetY Jitter offset y-coordinate
+		 */
+		void calcJitterOffset(uint32_t renderWidth,
+							 uint32_t renderHeight,
+							 float& jitterOffsetX,
+							 float& jitterOffsetY);
 		
 		/**
 		 * Bind the depth buffer image to use with the FSR2

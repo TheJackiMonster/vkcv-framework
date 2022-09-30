@@ -45,12 +45,6 @@ namespace vkcv::upscaling {
          * 2.0x per dimension
          */
 		PERFORMANCE = 4,
-		
-		/**
-         * Lowest quality of FSR upscaling:
-         * 3.0x per dimension
-         */
-		ULTRA_PERFORMANCE = 5,
 	};
 
     /**

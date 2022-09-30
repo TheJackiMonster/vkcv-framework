@@ -1,11 +1,60 @@
 
 #include "vkcv/upscaling/FSR2Upscaling.hpp"
 
+#include <cmath>
+
 #define FFX_GCC
 #include <ffx_fsr2_vk.h>
 #undef FFX_GCC
 
 namespace vkcv::upscaling {
+	
+	void getFSR2Resolution(FSR2QualityMode mode,
+						   uint32_t outputWidth, uint32_t outputHeight,
+						   uint32_t &inputWidth, uint32_t &inputHeight) {
+		float scale;
+		
+		switch (mode) {
+			case FSR2QualityMode::QUALITY:
+				scale = 1.5f;
+				break;
+			case FSR2QualityMode::BALANCED:
+				scale = 1.7f;
+				break;
+			case FSR2QualityMode::PERFORMANCE:
+				scale = 2.0f;
+				break;
+			case FSR2QualityMode::ULTRA_PERFORMANCE:
+				scale = 3.0f;
+				break;
+			default:
+				scale = 1.0f;
+				break;
+		}
+		
+		inputWidth = static_cast<uint32_t>(
+				std::round(static_cast<float>(outputWidth) / scale)
+		);
+		
+		inputHeight = static_cast<uint32_t>(
+				std::round(static_cast<float>(outputHeight) / scale)
+		);
+	}
+	
+	float getFSR2LodBias(FSR2QualityMode mode) {
+		switch (mode) {
+			case FSR2QualityMode::QUALITY:
+				return -1.58f;
+			case FSR2QualityMode::BALANCED:
+				return -1.76f;
+			case FSR2QualityMode::PERFORMANCE:
+				return -2.0f;
+			case FSR2QualityMode::ULTRA_PERFORMANCE:
+				return -2.58f;
+			default:
+				return 0.0f;
+		}
+	}
 	
 	void FSR2Upscaling::createFSR2Context(uint32_t displayWidth,
 									 uint32_t displayHeight,
@@ -30,6 +79,8 @@ namespace vkcv::upscaling {
 		m_core.getContext().getDevice().waitIdle();
 		
 		assert(ffxFsr2ContextDestroy(&m_context) == FFX_OK);
+		
+		m_frameIndex = 0;
 	}
 	
 	FSR2Upscaling::FSR2Upscaling(Core &core) : Upscaling(core) {
@@ -60,8 +111,31 @@ namespace vkcv::upscaling {
 	}
 	
 	void FSR2Upscaling::update(float deltaTime, bool reset) {
+		if (reset) {
+			m_frameIndex = 0;
+		}
+		
 		m_frameDeltaTime = deltaTime;
 		m_reset = reset;
+	}
+	
+	void FSR2Upscaling::calcJitterOffset(uint32_t renderWidth,
+										 uint32_t renderHeight,
+										 float &jitterOffsetX,
+										 float &jitterOffsetY) {
+		const int32_t phaseCount = ffxFsr2GetJitterPhaseCount(
+				renderWidth,
+				renderHeight
+		);
+		
+		const int32_t phaseIndex = (static_cast<int32_t>(m_frameIndex) % phaseCount);
+		
+		assert(ffxFsr2GetJitterOffset(
+				&jitterOffsetX,
+				&jitterOffsetY,
+				phaseIndex,
+				phaseCount
+		) == FFX_OK);
 	}
 	
 	void FSR2Upscaling::bindDepthBuffer(const ImageHandle &depthInput) {
@@ -166,11 +240,15 @@ namespace vkcv::upscaling {
 				static_cast<VkFormat>(m_core.getImageFormat(output))
 		);
 		
-		dispatch.jitterOffset.x = 0;
-		dispatch.jitterOffset.y = 0;
+		calcJitterOffset(
+				inputWidth,
+				inputHeight,
+				dispatch.jitterOffset.x,
+				dispatch.jitterOffset.y
+		);
 		
-		dispatch.motionVectorScale.x = 0;
-		dispatch.motionVectorScale.y = 0;
+		dispatch.motionVectorScale.x = static_cast<float>(inputWidth);
+		dispatch.motionVectorScale.y = static_cast<float>(inputHeight);
 		
 		dispatch.renderSize.width = inputWidth;
 		dispatch.renderSize.height = inputHeight;
@@ -194,6 +272,7 @@ namespace vkcv::upscaling {
 					&dispatch
 			) == FFX_OK);
 			
+			m_frameIndex++;
 			m_reset = false;
 		});
 	}
