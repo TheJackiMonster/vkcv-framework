@@ -48,28 +48,13 @@ int main(int argc, const char** argv) {
 	std::string shaderPathCompute = "shaders/raytracing.comp";
 
 	//creating the shader programs
-	vkcv::ShaderProgram safrShaderProgram;
 	vkcv::shader::GLSLCompiler compiler;
-	vkcv::ShaderProgram computeShaderProgram{};
-
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("shaders/shader.vert"),
-		[&safrShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-			safrShaderProgram.addShader(shaderStage, path);
-	});
-
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("shaders/shader.frag"),
-		[&safrShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-			safrShaderProgram.addShader(shaderStage, path);
-	});
+	vkcv::ShaderProgram computeShaderProgram;
 
 	compiler.compile(vkcv::ShaderStage::COMPUTE, shaderPathCompute, [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		computeShaderProgram.addShader(shaderStage, path);
 	});
 
-	//create DescriptorSets (...) for every Shader
-	const vkcv::DescriptorBindings& descriptorBindings = safrShaderProgram.getReflectedDescriptors().at(0);
-	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(descriptorBindings);
-	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 	vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 
 	const vkcv::DescriptorBindings& computeDescriptorBindings = computeShaderProgram.getReflectedDescriptors().at(0);
@@ -103,7 +88,7 @@ int main(int argc, const char** argv) {
 	//spheres for the scene
 	std::vector<safrScene::Sphere> spheres;
 	spheres.push_back(safrScene::Sphere(glm::vec3(-3,    0,   -16), 2, ivory));
-	// spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, 12), 2, mirror));
+	//spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, 12), 2, mirror));
 	spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, -12), 2, glass));
 	spheres.push_back(safrScene::Sphere(glm::vec3(  1.5, -0.5, -18), 3, red_rubber));
 	spheres.push_back(safrScene::Sphere(glm::vec3( 7,    5,   -18), 4, mirror));
@@ -158,16 +143,6 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	//create the render pipeline + compute pipeline
-	vkcv::GraphicsPipelineHandle safrPipeline = core.createGraphicsPipeline(
-			vkcv::GraphicsPipelineConfig(
-					safrShaderProgram,
-					safrPass,
-					{},
-					{ descriptorSetLayout }
-			)
-	);
-
 	vkcv::ComputePipelineHandle computePipeline = core.createComputePipeline(
 			vkcv::ComputePipelineConfig(
 					computeShaderProgram,
@@ -175,18 +150,10 @@ int main(int argc, const char** argv) {
 			)
 	);
 
-	if (!safrPipeline || !computePipeline)
-	{
+	if (!computePipeline) {
 		std::cout << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
-	
-	vkcv::VertexData vertexData;
-	vertexData.setIndexBuffer(safrIndexBuffer.getHandle());
-	vertexData.setCount(3);
-	
-	vkcv::InstanceDrawcall drawcall (vertexData);
-	drawcall.useDescriptorSet(0, descriptorSet);
 
 	//create the camera
 	vkcv::camera::CameraManager cameraManager(window);

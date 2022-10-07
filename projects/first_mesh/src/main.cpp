@@ -8,6 +8,8 @@
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
+#include <vkcv/geometry/Cuboid.hpp>
+
 int main(int argc, const char** argv) {
 	const std::string applicationName = "First Mesh";
 
@@ -20,37 +22,6 @@ int main(int argc, const char** argv) {
 
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 800, 600, true);
 	vkcv::Window& window = core.getWindow(windowHandle);
-
-	vkcv::asset::Scene mesh;
-
-	const char* path = argc > 1 ? argv[1] : "assets/cube/cube.gltf";
-	int result = vkcv::asset::loadScene(path, mesh);
-
-	if (result == 1) {
-		std::cout << "Mesh loading successful!" << std::endl;
-	} else {
-		std::cerr << "Mesh loading failed: " << result << std::endl;
-		return 1;
-	}
-
-	assert(!mesh.vertexGroups.empty());
-	auto vertexBuffer = vkcv::buffer<uint8_t>(
-			core,
-			vkcv::BufferType::VERTEX,
-			mesh.vertexGroups[0].vertexBuffer.data.size(),
-			vkcv::BufferMemoryType::DEVICE_LOCAL
-	);
-	
-	vertexBuffer.fill(mesh.vertexGroups[0].vertexBuffer.data);
-
-	auto indexBuffer = vkcv::buffer<uint8_t>(
-			core,
-			vkcv::BufferType::INDEX,
-			mesh.vertexGroups[0].indexBuffer.data.size(),
-			vkcv::BufferMemoryType::DEVICE_LOCAL
-	);
-	
-	indexBuffer.fill(mesh.vertexGroups[0].indexBuffer.data);
 
 	vkcv::PassHandle firstMeshPass = vkcv::passSwapchain(
 			core,
@@ -70,16 +41,6 @@ int main(int argc, const char** argv) {
 		{ vkcv::ShaderStage::VERTEX, "assets/shaders/shader.vert" },
 		{ vkcv::ShaderStage::FRAGMENT, "assets/shaders/shader.frag" }
 	}, nullptr);
-	
-	const auto vertexBufferBindings = vkcv::asset::loadVertexBufferBindings(
-			mesh.vertexGroups[0].vertexBuffer.attributes,
-			vertexBuffer.getHandle(),
-			{
-					vkcv::asset::PrimitiveType::POSITION,
-					vkcv::asset::PrimitiveType::NORMAL,
-					vkcv::asset::PrimitiveType::TEXCOORD_0
-			}
-	);
 
 	std::vector<vkcv::VertexBinding> bindings = vkcv::createVertexBindings(
 			firstMeshProgram.getVertexAttachments()
@@ -111,12 +72,13 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	if (mesh.textures.empty()) {
-		std::cerr << "Error. No textures found. Exiting." << std::endl;
+	vkcv::asset::Texture tex = vkcv::asset::loadTexture("assets/cube/boards2_vcyc_jpg.jpg");
+	
+	if (tex.data.empty()) {
+		std::cerr << "Error. No texture found. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
 	
-	vkcv::asset::Texture &tex = mesh.textures[0];
 	vkcv::Image texture = vkcv::image(core, vk::Format::eR8G8B8A8Srgb, tex.w, tex.h);
 	texture.fill(tex.data.data());
 	
@@ -138,11 +100,9 @@ int main(int argc, const char** argv) {
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	
-	vkcv::VertexData vertexData (vertexBufferBindings);
-	vertexData.setIndexBuffer(indexBuffer.getHandle());
-	vertexData.setCount(mesh.vertexGroups[0].numIndices);
+	vkcv::geometry::Cuboid cube (glm::vec3(0), 1.0f);
 	
-	vkcv::InstanceDrawcall drawcall (vertexData);
+	vkcv::InstanceDrawcall drawcall (cube.generateVertexData(core));
 	drawcall.useDescriptorSet(0, descriptorSet);
 
     vkcv::camera::CameraManager cameraManager(window);

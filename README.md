@@ -23,23 +23,25 @@ Detailed build process:
 
 Most dependencies will be used via submodules but for example Vulkan needs to be installed correctly depending on your platform. So please setup your environment properly.
 
-| Name of dependency | Used as submodule |
-|-----------------------------------|---|
-| [Vulkan](https://www.vulkan.org/) | ❌ |
-| [Vulkan-Headers](https://github.com/KhronosGroup/Vulkan-Headers) | ✅ |
-| [Vulkan-Hpp](https://github.com/KhronosGroup/Vulkan-Hpp) | ✅ |
-| [GLFW](https://www.glfw.org/) | ✅ |
-| [SPIRV-CROSS](https://github.com/KhronosGroup/SPIRV-Cross) | ✅ |
+| Name of dependency                                                                | Used as submodule |
+|-----------------------------------------------------------------------------------|---|
+| [Vulkan](https://www.vulkan.org/)                                                 | ❌ |
+| [Vulkan-Headers](https://github.com/KhronosGroup/Vulkan-Headers)                  | ✅ |
+| [Vulkan-Hpp](https://github.com/KhronosGroup/Vulkan-Hpp)                          | ✅ |
+| [GLFW](https://www.glfw.org/)                                                     | ✅ |
+| [SPIRV-CROSS](https://github.com/KhronosGroup/SPIRV-Cross)                        | ✅ |
 | [VulkanMemoryAllocator-Hpp](https://github.com/malte-v/VulkanMemoryAllocator-Hpp) | ✅ |
 
 ### Modules (optional):
 
 The following modules will be provided in this repository and they will automatically be builded together with the framework if used. You can configure/adjust the build using CMake if necessary.
 
+ - [Algorithm](modules/algorithm/README.md)
  - [Asset-Loader](modules/asset_loader/README.md)
  - [Camera](modules/asset_loader/README.md)
  - [GUI](modules/gui/README.md)
  - [Effects](modules/effects/README.md)
+ - [Geometry](modules/geometry/README.md)
  - [Material](modules/material/README.md)
  - [Meshlet](modules/meshlet/README.md)
  - [Scene](modules/scene/README.md)

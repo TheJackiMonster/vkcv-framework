@@ -443,6 +443,15 @@ namespace vkcv {
 					false
 			);
 		}
+		
+		if (featureManager.useExtension(VK_EXT_INDEX_TYPE_UINT8_EXTENSION_NAME, false)) {
+			featureManager.useFeatures<vk::PhysicalDeviceIndexTypeUint8FeaturesEXT>(
+				[](vk::PhysicalDeviceIndexTypeUint8FeaturesEXT &features) {
+					features.setIndexTypeUint8(true);
+				},
+				false
+			);
+		}
 
 		featureManager.useFeatures([](vk::PhysicalDeviceFeatures &features) {
 			features.setFragmentStoresAndAtomics(true);

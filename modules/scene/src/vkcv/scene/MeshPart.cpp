@@ -8,10 +8,7 @@ namespace vkcv::scene {
 	
 	MeshPart::MeshPart(Scene& scene) :
 	m_scene(scene),
-	m_vertices(),
-	m_vertexBindings(),
-	m_indices(),
-	m_indexCount(0),
+	m_data(),
 	m_bounds(),
 	m_materialIndex(std::numeric_limits<size_t>::max()) {}
 	
@@ -26,21 +23,44 @@ namespace vkcv::scene {
 		);
 		
 		vertexBuffer.fill(vertexGroup.vertexBuffer.data);
-		m_vertices = vertexBuffer.getHandle();
 		
-		m_vertexBindings = asset::loadVertexBufferBindings(
-				vertexGroup.vertexBuffer.attributes,
-				vertexBuffer.getHandle(),
-				types
+		m_data = VertexData(
+				asset::loadVertexBufferBindings(
+						vertexGroup.vertexBuffer.attributes,
+						vertexBuffer.getHandle(),
+						types
+				)
 		);
 		
-		auto indexBuffer = buffer<uint8_t>(
-				core, BufferType::INDEX, vertexGroup.indexBuffer.data.size()
-		);
-		
-		indexBuffer.fill(vertexGroup.indexBuffer.data);
-		m_indices = indexBuffer.getHandle();
-		m_indexCount = vertexGroup.numIndices;
+		if (!vertexGroup.indexBuffer.data.empty()) {
+			auto indexBuffer = buffer<uint8_t>(
+					core, BufferType::INDEX, vertexGroup.indexBuffer.data.size()
+			);
+			
+			indexBuffer.fill(vertexGroup.indexBuffer.data);
+			
+			IndexBitCount indexBitCount;
+			switch (vertexGroup.indexBuffer.type) {
+				case asset::IndexType::UINT8:
+					indexBitCount = IndexBitCount::Bit8;
+					break;
+				case asset::IndexType::UINT16:
+					indexBitCount = IndexBitCount::Bit16;
+					break;
+				case asset::IndexType::UINT32:
+					indexBitCount = IndexBitCount::Bit32;
+					break;
+				default:
+					indexBitCount = IndexBitCount::Bit16;
+					vkcv_log(LogLevel::WARNING, "Unsupported index type!");
+					break;
+			}
+			
+			m_data.setIndexBuffer(indexBuffer.getHandle(), indexBitCount);
+			m_data.setCount(vertexGroup.numIndices);
+		} else {
+			m_data.setCount(vertexGroup.numVertices);
+		}
 		
 		m_bounds.setMin(glm::vec3(
 				vertexGroup.min.x,
@@ -70,28 +90,8 @@ namespace vkcv::scene {
 		if (*this) {
 			const auto& material = getMaterial();
 			
-			IndexBitCount indexBitCount;
-			
-			switch (vertexGroup.indexBuffer.type) {
-				case asset::IndexType::UINT16:
-					indexBitCount = IndexBitCount::Bit16;
-					break;
-				case asset::IndexType::UINT32:
-					indexBitCount = IndexBitCount::Bit32;
-					break;
-				default:
-					indexBitCount = IndexBitCount::Bit16;
-					vkcv_log(LogLevel::WARNING, "Unsupported index type!");
-					break;
-			}
-			
-			VertexData vertexData (m_vertexBindings);
-			vertexData.setIndexBuffer(indexBuffer.getHandle(), indexBitCount);
-			vertexData.setCount(m_indexCount);
-			
-			InstanceDrawcall drawcall (vertexData);
+			InstanceDrawcall drawcall (m_data);
 			drawcall.useDescriptorSet(0, material.getDescriptorSet());
-			
 			drawcalls.push_back(drawcall);
 		}
 	}
@@ -102,10 +102,7 @@ namespace vkcv::scene {
 	
 	MeshPart::MeshPart(const MeshPart &other) :
 			m_scene(other.m_scene),
-			m_vertices(other.m_vertices),
-			m_vertexBindings(other.m_vertexBindings),
-			m_indices(other.m_indices),
-			m_indexCount(other.m_indexCount),
+			m_data(other.m_data),
 			m_bounds(other.m_bounds),
 			m_materialIndex(other.m_materialIndex) {
 		m_scene.increaseMaterialUsage(m_materialIndex);
@@ -113,10 +110,7 @@ namespace vkcv::scene {
 	
 	MeshPart::MeshPart(MeshPart &&other) noexcept :
 			m_scene(other.m_scene),
-			m_vertices(other.m_vertices),
-			m_vertexBindings(other.m_vertexBindings),
-			m_indices(other.m_indices),
-			m_indexCount(other.m_indexCount),
+			m_data(other.m_data),
 			m_bounds(other.m_bounds),
 			m_materialIndex(other.m_materialIndex) {
 		m_scene.increaseMaterialUsage(m_materialIndex);
@@ -127,10 +121,7 @@ namespace vkcv::scene {
 			return *this;
 		}
 		
-		m_vertices = other.m_vertices;
-		m_vertexBindings = other.m_vertexBindings;
-		m_indices = other.m_indices;
-		m_indexCount = other.m_indexCount;
+		m_data = other.m_data;
 		m_bounds = other.m_bounds;
 		m_materialIndex = other.m_materialIndex;
 		
@@ -138,10 +129,7 @@ namespace vkcv::scene {
 	}
 	
 	MeshPart &MeshPart::operator=(MeshPart &&other) noexcept {
-		m_vertices = other.m_vertices;
-		m_vertexBindings = other.m_vertexBindings;
-		m_indices = other.m_indices;
-		m_indexCount = other.m_indexCount;
+		m_data = other.m_data;
 		m_bounds = other.m_bounds;
 		m_materialIndex = other.m_materialIndex;
 		
@@ -155,16 +143,14 @@ namespace vkcv::scene {
 	MeshPart::operator bool() const {
 		return (
 				(getMaterial()) &&
-				(m_vertices) &&
-				(m_indices)
+				(m_data.getCount() > 0)
 		);
 	}
 	
 	bool MeshPart::operator!() const {
 		return (
 				(!getMaterial()) ||
-				(!m_vertices) ||
-				(!m_indices)
+				(m_data.getCount() <= 0)
 		);
 	}
 	

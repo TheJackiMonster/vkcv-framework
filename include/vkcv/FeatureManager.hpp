@@ -344,6 +344,16 @@ namespace vkcv {
 		 */
 		[[nodiscard]] bool checkSupport(const vk::PhysicalDeviceSubgroupSizeControlFeatures &features,
 										bool required) const;
+		
+		/**
+		 * @brief Checks support of the @p vk::PhysicalDeviceIndexTypeUint8FeaturesEXT.
+		 *
+		 * @param[in] features The features
+		 * @param[in] required True, if the @p features are required, else false
+		 * @return @p True, if the @p features are supported, else @p false
+		 */
+		[[nodiscard]] bool checkSupport(const vk::PhysicalDeviceIndexTypeUint8FeaturesEXT &features,
+										bool required) const;
 
 		/**
 		 * @brief Searches for a base structure of a given structure type.
