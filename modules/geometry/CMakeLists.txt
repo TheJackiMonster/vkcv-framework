@@ -13,10 +13,14 @@ set(vkcv_geometry_sources
 		${vkcv_geometry_source}/vkcv/geometry/Geometry.cpp
 		${vkcv_geometry_include}/vkcv/geometry/Volume.hpp
 		${vkcv_geometry_source}/vkcv/geometry/Volume.cpp
+		${vkcv_geometry_include}/vkcv/geometry/Circular.hpp
+		${vkcv_geometry_source}/vkcv/geometry/Circular.cpp
 		${vkcv_geometry_include}/vkcv/geometry/Sphere.hpp
 		${vkcv_geometry_source}/vkcv/geometry/Sphere.cpp
 		${vkcv_geometry_include}/vkcv/geometry/Cuboid.hpp
 		${vkcv_geometry_source}/vkcv/geometry/Cuboid.cpp
+		${vkcv_geometry_include}/vkcv/geometry/Cylinder.hpp
+		${vkcv_geometry_source}/vkcv/geometry/Cylinder.cpp
 )
 
 # adding source files to the project

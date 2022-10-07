@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Circular.hpp"
 #include "Volume.hpp"
 
 namespace vkcv::geometry {
@@ -9,7 +10,7 @@ namespace vkcv::geometry {
      * @{
      */
 	
-	class Sphere : public Volume {
+	class Sphere : public Volume, public Circular {
 	private:
 		float m_radius;
 		
@@ -23,11 +24,6 @@ namespace vkcv::geometry {
 		
 		Sphere& operator=(const Sphere& other) = default;
 		Sphere& operator=(Sphere&& other) = default;
-		
-		[[nodiscard]]
-		float getRadius() const;
-		
-		void setRadius(float radius);
 		
 		[[nodiscard]]
 		float distanceTo(const glm::vec3& point) override;
