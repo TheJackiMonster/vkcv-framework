@@ -1,5 +1,9 @@
 #pragma once
 
+#include <vkcv/Buffer.hpp>
+#include <vkcv/Core.hpp>
+#include <vkcv/VertexData.hpp>
+
 #include <glm/glm.hpp>
 
 namespace vkcv::geometry {
@@ -29,6 +33,9 @@ namespace vkcv::geometry {
 		const glm::vec3& getPosition() const;
 		
 		void setPosition(const glm::vec3& position);
+		
+		[[nodiscard]]
+		virtual VertexData generateVertexData(Core& core) const = 0;
 		
 	};
 	

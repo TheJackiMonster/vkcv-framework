@@ -34,6 +34,9 @@ namespace vkcv::geometry {
 		[[nodiscard]]
 		float distanceTo(const glm::vec3& point) override;
 		
+		[[nodiscard]]
+		VertexData generateVertexData(Core& core) const override;
+		
 	};
 	
 	/** @} */

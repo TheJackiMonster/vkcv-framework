@@ -102,6 +102,19 @@ namespace vkcv {
 		void fill(const std::vector<T> &vector, size_t offset = 0) {
 			fill(static_cast<const T*>(vector.data()), static_cast<size_t>(vector.size()), offset);
 		}
+		
+		/**
+		 * @brief Fills the #Buffer with data from an array of type T
+		 * and size N.
+		 *
+		 * @tparam N Size of the array to be copied into the #Buffer
+		 * @param array Array of type T to be copied into the #Buffer
+		 * @param offset The offset into the #Buffer where the data is copied into
+		 */
+		template<size_t N>
+		void fill(const std::array<T, N> &array, size_t offset = 0) {
+			fill(static_cast<const T*>(array.data()), N, offset);
+		}
 
 		/**
 		 * @brief Reads the #Buffer directly into a data pointer of type T.

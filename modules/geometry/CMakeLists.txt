@@ -21,6 +21,8 @@ set(vkcv_geometry_sources
 		${vkcv_geometry_source}/vkcv/geometry/Cuboid.cpp
 		${vkcv_geometry_include}/vkcv/geometry/Cylinder.hpp
 		${vkcv_geometry_source}/vkcv/geometry/Cylinder.cpp
+		${vkcv_geometry_include}/vkcv/geometry/Teapot.hpp
+		${vkcv_geometry_source}/vkcv/geometry/Teapot.cpp
 )
 
 # adding source files to the project
