@@ -14,7 +14,7 @@
 	path = modules/asset_loader/lib/stb
 	url = https://github.com/nothings/stb.git
 [submodule "modules/camera/lib/glm"]
-	path = modules/camera/lib/glm
+	path = modules/geometry/lib/glm
 	url = https://github.com/g-truc/glm.git
 [submodule "modules/shader_compiler/lib/glslang"]
 	path = modules/shader_compiler/lib/glslang

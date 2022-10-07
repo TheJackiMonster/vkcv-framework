@@ -27,15 +27,21 @@ add_library(vkcv_camera ${vkcv_build_attribute} ${vkcv_camera_sources})
 set(vkcv_camera_lib lib)
 set(vkcv_camera_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_camera_lib})
 
-include(config/GLM.cmake)
+target_link_libraries(vkcv_camera PUBLIC
+		${vkcv_camera_libraries}
+		vkcv
+		vkcv_geometry
+)
 
-target_link_libraries(vkcv_camera PUBLIC ${vkcv_camera_libraries} vkcv)
-
-target_include_directories(vkcv_camera SYSTEM BEFORE PRIVATE ${vkcv_camera_includes} ${vkcv_include} ${vkcv_includes})
+target_include_directories(vkcv_camera SYSTEM BEFORE PRIVATE
+		${vkcv_camera_includes}
+		${vkcv_include}
+		${vkcv_includes}
+		${vkcv_geometry_include}
+)
 
 # add the own include directory for public headers
 target_include_directories(vkcv_camera BEFORE PUBLIC ${vkcv_camera_include} ${vkcv_camera_includes})
-
 target_compile_definitions(vkcv_camera PUBLIC ${vkcv_camera_definitions})
 
 if (vkcv_parent_scope)

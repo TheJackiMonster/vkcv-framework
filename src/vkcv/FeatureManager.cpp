@@ -476,6 +476,15 @@ namespace vkcv {
 
 		return true;
 	}
+	
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceIndexTypeUint8FeaturesEXT &features,
+									  bool required) const {
+		vkcv_check_init_features2(vk::PhysicalDeviceIndexTypeUint8FeaturesEXT);
+		
+		vkcv_check_feature(indexTypeUint8);
+		
+		return true;
+	}
 
 	vk::BaseOutStructure* FeatureManager::findFeatureStructure(vk::StructureType type) const {
 		for (auto &base : m_featuresExtensions) {

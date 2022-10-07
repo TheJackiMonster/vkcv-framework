@@ -413,7 +413,8 @@ namespace vkcv {
 				[](vk::PhysicalDeviceShaderFloat16Int8Features &features) {
 					features.setShaderFloat16(true);
 				},
-				false);
+				false
+			);
 		}
 
 		if (featureManager.useExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME, false)) {
@@ -421,7 +422,17 @@ namespace vkcv {
 				[](vk::PhysicalDevice16BitStorageFeatures &features) {
 					features.setStorageBuffer16BitAccess(true);
 				},
-				false);
+				false
+			);
+		}
+		
+		if (featureManager.useExtension(VK_EXT_INDEX_TYPE_UINT8_EXTENSION_NAME, false)) {
+			featureManager.useFeatures<vk::PhysicalDeviceIndexTypeUint8FeaturesEXT>(
+				[](vk::PhysicalDeviceIndexTypeUint8FeaturesEXT &features) {
+					features.setIndexTypeUint8(true);
+				},
+				false
+			);
 		}
 
 		featureManager.useFeatures([](vk::PhysicalDeviceFeatures &features) {
