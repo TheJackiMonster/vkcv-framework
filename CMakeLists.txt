@@ -3,7 +3,7 @@ project(vkcv)
 
 # cmake options
 option(BUILD_MODULES "Enables building VkCV as shared libraries" ON)
-option(BUILD_PROJECTS "Enables building the VkCV projects" ON)
+option(BUILD_PROJECTS "Enables building the VkCV projects" OFF)
 option(BUILD_CLANG_FORMAT "Enables formatting the source code" OFF)
 option(BUILD_DOXYGEN_DOCS "Enables building the VkCV doxygen documentation" OFF)
 option(BUILD_SHARED "Enables building VkCV as shared libraries" OFF)
@@ -97,7 +97,7 @@ add_compile_definitions(${vkcv_definitions})
 # check if the framework is used from a parent scope
 get_directory_property(vkcv_parent_scope PARENT_DIRECTORY)
 
-if (BUILD_MODULES)
+if ((BUILD_MODULES) AND (EXISTS ${PROJECT_SOURCE_DIR}/modules))
 	message(STATUS "Modules: ON")
 	
 	# add modules as targets
@@ -137,7 +137,7 @@ target_include_directories(vkcv BEFORE PUBLIC ${vkcv_include})
 # link the framework using all required libraries
 target_link_libraries(vkcv ${vkcv_libraries})
 
-if (BUILD_PROJECTS)
+if ((BUILD_PROJECTS) AND (EXISTS ${PROJECT_SOURCE_DIR}/projects))
 	message(STATUS "Projects: ON")
 	
 	# add sub-projects/examples as targets
