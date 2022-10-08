@@ -96,10 +96,17 @@ namespace vkcv {
 				vk::ImageSubresourceLayers(aspectMask, srcMip, 0, 1),
 				{ vk::Offset3D(0, 0, 0), vk::Offset3D(srcWidth, srcHeight, srcDepth) },
 				vk::ImageSubresourceLayers(aspectMask, dstMip, 0, 1),
-				{ vk::Offset3D(0, 0, 0), vk::Offset3D(dstWidth, dstHeight, dstDepth) });
+				{ vk::Offset3D(0, 0, 0), vk::Offset3D(dstWidth, dstHeight, dstDepth) }
+			);
 
-			cmdBuffer.blitImage(image.m_handle, vk::ImageLayout::eGeneral, image.m_handle,
-								vk::ImageLayout::eGeneral, region, vk::Filter::eLinear);
+			cmdBuffer.blitImage(
+					image.m_handle,
+					vk::ImageLayout::eGeneral,
+					image.m_handle,
+					vk::ImageLayout::eGeneral,
+					region,
+					vk::Filter::eLinear
+			);
 
 			srcWidth = dstWidth;
 			srcHeight = dstHeight;
@@ -234,10 +241,16 @@ namespace vkcv {
 
 		auto imageAllocation = allocator.createImage(
 			imageCreateInfo,
-			vma::AllocationCreateInfo(vma::AllocationCreateFlags(), vma::MemoryUsage::eGpuOnly,
-									  vk::MemoryPropertyFlagBits::eDeviceLocal,
-									  vk::MemoryPropertyFlagBits::eDeviceLocal, 0, vma::Pool(),
-									  nullptr));
+			vma::AllocationCreateInfo(
+					vma::AllocationCreateFlags(),
+					vma::MemoryUsage::eGpuOnly,
+					vk::MemoryPropertyFlagBits::eDeviceLocal,
+					vk::MemoryPropertyFlagBits::eDeviceLocal,
+					0,
+					vma::Pool(),
+					nullptr
+			)
+		);
 
 		vk::Image image = imageAllocation.first;
 		vma::Allocation allocation = imageAllocation.second;
@@ -259,9 +272,19 @@ namespace vkcv {
 			const vk::ImageViewCreateInfo imageViewCreateInfo(
 				{}, image, imageViewType, format,
 				vk::ComponentMapping(
-					vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity,
-					vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity),
-				vk::ImageSubresourceRange(aspectFlags, mip, mipCount - mip, 0, arrayLayers));
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity
+				),
+				vk::ImageSubresourceRange(
+						aspectFlags,
+						mip,
+						mipCount - mip,
+						0,
+						arrayLayers
+				)
+			);
 
 			views.push_back(device.createImageView(imageViewCreateInfo));
 		}
@@ -270,20 +293,36 @@ namespace vkcv {
 			const vk::ImageViewCreateInfo imageViewCreateInfo(
 				{}, image, vk::ImageViewType::e2DArray, format,
 				vk::ComponentMapping(
-					vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity,
-					vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity),
-				vk::ImageSubresourceRange(aspectFlags, mip, 1, 0, arrayLayers));
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity
+				),
+				vk::ImageSubresourceRange(
+						aspectFlags,
+						mip,
+						1,
+						0,
+						arrayLayers
+				)
+			);
 
 			arrayViews.push_back(device.createImageView(imageViewCreateInfo));
 		}
 
-		return add({ image, allocation,
-
-					 views, arrayViews,
-
-					 width, height, depth,
-
-					 format, arrayLayers, vk::ImageLayout::eUndefined, supportStorage });
+		return add({
+			image,
+			allocation,
+			views,
+			arrayViews,
+			width,
+			height,
+			depth,
+			format,
+			arrayLayers,
+			vk::ImageLayout::eUndefined,
+			supportStorage
+		});
 	}
 
 	ImageHandle ImageManager::createSwapchainImage() const {

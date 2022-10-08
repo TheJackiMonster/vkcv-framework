@@ -14,8 +14,13 @@ namespace vkcv {
 			return false;
 		}
 
-		m_stagingBuffer = createBuffer(TypeGuard(1), BufferType::STAGING,
-									   BufferMemoryType::HOST_VISIBLE, 1024 * 1024, false);
+		m_stagingBuffer = createBuffer(
+				TypeGuard(1),
+				BufferType::STAGING,
+				BufferMemoryType::HOST_VISIBLE,
+				1024 * 1024,
+				false
+		);
 
 		return true;
 	}
@@ -119,13 +124,29 @@ namespace vkcv {
 
 		auto bufferAllocation = allocator.createBuffer(
 			vk::BufferCreateInfo(createFlags, size, usageFlags),
-			vma::AllocationCreateInfo(vma::AllocationCreateFlags(), memoryUsage, memoryTypeFlags,
-									  memoryTypeFlags, 0, vma::Pool(), nullptr));
+			vma::AllocationCreateInfo(
+					vma::AllocationCreateFlags(),
+					memoryUsage,
+					memoryTypeFlags,
+					memoryTypeFlags,
+					0,
+					vma::Pool(),
+					nullptr
+			)
+		);
 
 		vk::Buffer buffer = bufferAllocation.first;
 		vma::Allocation allocation = bufferAllocation.second;
 
-		return add({ typeGuard, type, memoryType, size, buffer, allocation, mappable });
+		return add({
+			typeGuard,
+			type,
+			memoryType,
+			size,
+			buffer,
+			allocation,
+			mappable
+		});
 	}
 
 	/**

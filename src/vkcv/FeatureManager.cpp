@@ -485,6 +485,15 @@ namespace vkcv {
 		
 		return true;
 	}
+	
+	bool FeatureManager::checkSupport(const vk::PhysicalDevicePageableDeviceLocalMemoryFeaturesEXT &features,
+									  bool required) const {
+		vkcv_check_init_features2(vk::PhysicalDevicePageableDeviceLocalMemoryFeaturesEXT);
+		
+		vkcv_check_feature(pageableDeviceLocalMemory);
+		
+		return true;
+	}
 
 	vk::BaseOutStructure* FeatureManager::findFeatureStructure(vk::StructureType type) const {
 		for (auto &base : m_featuresExtensions) {
