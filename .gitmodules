@@ -40,3 +40,6 @@
 [submodule "modules/algorithm/lib/FidelityFX-SPD"]
 	path = modules/algorithm/lib/FidelityFX-SPD
 	url = https://github.com/GPUOpen-Effects/FidelityFX-SPD.git
+[submodule "projects"]
+	path = projects
+	url = https://gitlab.uni-koblenz.de/vulkan2021/vkcv-projects.git
