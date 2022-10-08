@@ -1,76 +1,153 @@
-/**
- * @authors Sebastian Gaida
- * @file src/vkcv/Window.cpp
- * @brief Window class to handle a basic rendering surface and input
- */
 
 #include <GLFW/glfw3.h>
+#include <thread>
+#include <vector>
+
 #include "vkcv/Window.hpp"
 
 namespace vkcv {
 
+	void Window_onMouseButtonEvent(GLFWwindow* callbackWindow, int button, int action, int mods) {
+		auto window = static_cast<Window*>(glfwGetWindowUserPointer(callbackWindow));
+
+		if (window != nullptr) {
+			window->e_mouseButton(button, action, mods);
+		}
+	}
+
+	void Window_onMouseMoveEvent(GLFWwindow* callbackWindow, double x, double y) {
+		auto window = static_cast<Window*>(glfwGetWindowUserPointer(callbackWindow));
+
+		if (window != nullptr) {
+			window->e_mouseMove(x, y);
+		}
+	}
+
+	void Window_onMouseScrollEvent(GLFWwindow* callbackWindow, double xoffset, double yoffset) {
+		auto window = static_cast<Window*>(glfwGetWindowUserPointer(callbackWindow));
+
+		if (window != nullptr) {
+			window->e_mouseScroll(xoffset, yoffset);
+		}
+	}
+
+	void Window_onResize(GLFWwindow* callbackWindow, int width, int height) {
+		auto window = static_cast<Window*>(glfwGetWindowUserPointer(callbackWindow));
+
+		if (window != nullptr) {
+			window->e_resize(width, height);
+		}
+	}
+
+	void Window_onKeyEvent(GLFWwindow* callbackWindow, int key, int scancode, int action,
+						   int mods) {
+		auto window = static_cast<Window*>(glfwGetWindowUserPointer(callbackWindow));
+
+		if (window != nullptr) {
+			window->e_key(key, scancode, action, mods);
+		}
+	}
+
+	void Window_onCharEvent(GLFWwindow* callbackWindow, unsigned int c) {
+		auto window = static_cast<Window*>(glfwGetWindowUserPointer(callbackWindow));
+
+		if (window != nullptr) {
+			window->e_char(c);
+		}
+	}
+
 	static std::vector<GLFWwindow*> s_Windows;
 
-    Window::Window(GLFWwindow *window) :
-    m_window(window),
-	e_mouseButton(true),
-	e_mouseMove(true),
-	e_mouseScroll(true),
-	e_resize(true),
-	e_key(true),
-	e_char(true),
-	e_gamepad(true)
-    {
-		glfwSetWindowUserPointer(m_window, this);
-	
-		// combine Callbacks with Events
-		glfwSetMouseButtonCallback(m_window, Window::onMouseButtonEvent);
-		glfwSetCursorPosCallback(m_window, Window::onMouseMoveEvent);
-		glfwSetWindowSizeCallback(m_window, Window::onResize);
-		glfwSetKeyCallback(m_window, Window::onKeyEvent);
-		glfwSetScrollCallback(m_window, Window::onMouseScrollEvent);
-		glfwSetCharCallback(m_window, Window::onCharEvent);
-    }
+	void Window_onGamepadEvent(int gamepadIndex) {
+		Window::getFocusedWindow().e_gamepad(gamepadIndex);
+	}
 
-    Window::~Window() {
-        Window::e_mouseButton.unlock();
-        Window::e_mouseMove.unlock();
-        Window::e_mouseScroll.unlock();
-        Window::e_resize.unlock();
-        Window::e_key.unlock();
-        Window::e_char.unlock();
-        Window::e_gamepad.unlock();
-
-		s_Windows.erase(std::find(s_Windows.begin(), s_Windows.end(), m_window));
-        glfwDestroyWindow(m_window);
-
-        if(s_Windows.empty()) {
-            glfwTerminate();
-        }
-    }
-
-    Window Window::create( const char *windowTitle, int width, int height, bool resizable) {
-		if(s_Windows.empty()) {
+	static GLFWwindow* createGLFWWindow(const char* windowTitle, int width, int height,
+										bool resizable) {
+		if (s_Windows.empty()) {
 			glfwInit();
 		}
-	
+
 		width = std::max(width, 1);
 		height = std::max(height, 1);
-	
+
+		glfwDefaultWindowHints();
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
-		GLFWwindow *window = glfwCreateWindow(width, height, windowTitle, nullptr, nullptr);
-	
-		s_Windows.push_back(window);
-	
-		return Window(window);
-    }
 
-    void Window::pollEvents() {
+		GLFWwindow* window = glfwCreateWindow(width, height, windowTitle, nullptr, nullptr);
 
-    	for (auto glfwWindow : s_Windows) {
-			auto window = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
-			
+		if (window) {
+			s_Windows.push_back(window);
+		}
+
+		return window;
+	}
+
+	static void bindGLFWWindow(GLFWwindow* windowHandle, Window* window) {
+		if (!windowHandle) {
+			return;
+		}
+
+		glfwSetWindowUserPointer(windowHandle, window);
+
+		// combine Callbacks with Events
+		glfwSetMouseButtonCallback(windowHandle, Window_onMouseButtonEvent);
+		glfwSetCursorPosCallback(windowHandle, Window_onMouseMoveEvent);
+		glfwSetWindowSizeCallback(windowHandle, Window_onResize);
+		glfwSetKeyCallback(windowHandle, Window_onKeyEvent);
+		glfwSetScrollCallback(windowHandle, Window_onMouseScrollEvent);
+		glfwSetCharCallback(windowHandle, Window_onCharEvent);
+	}
+
+	Window::Window() :
+		m_title(), m_resizable(false), m_shouldClose(false), m_window(nullptr), e_mouseButton(true),
+		e_mouseMove(true), e_mouseScroll(true), e_resize(true), e_key(true), e_char(true),
+		e_gamepad(true) {}
+
+	Window::Window(const std::string &title, int width, int height, bool resizable) :
+		m_title(title), m_resizable(resizable), m_shouldClose(false),
+		m_window(createGLFWWindow(title.c_str(), width, height, resizable)), e_mouseButton(true),
+		e_mouseMove(true), e_mouseScroll(true), e_resize(true), e_key(true), e_char(true),
+		e_gamepad(true) {
+		bindGLFWWindow(m_window, this);
+	}
+
+	Window::~Window() {
+		Window::e_mouseButton.unlock();
+		Window::e_mouseMove.unlock();
+		Window::e_mouseScroll.unlock();
+		Window::e_resize.unlock();
+		Window::e_key.unlock();
+		Window::e_char.unlock();
+		Window::e_gamepad.unlock();
+		Window::e_resize.remove(m_resizeHandle);
+		if (m_window) {
+			s_Windows.erase(std::find(s_Windows.begin(), s_Windows.end(), m_window));
+			glfwDestroyWindow(m_window);
+		}
+
+		if (s_Windows.empty()) {
+			glfwTerminate();
+		}
+	}
+
+	bool Window::hasOpenWindow() {
+		for (auto glfwWindow : s_Windows) {
+			auto window = static_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
+
+			if (window->isOpen()) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	void Window::pollEvents() {
+		for (auto glfwWindow : s_Windows) {
+			auto window = static_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
+
 			window->e_mouseButton.unlock();
 			window->e_mouseMove.unlock();
 			window->e_mouseScroll.unlock();
@@ -78,19 +155,20 @@ namespace vkcv {
 			window->e_key.unlock();
 			window->e_char.unlock();
 			window->e_gamepad.unlock();
-    	}
+		}
 
-        glfwPollEvents();
-    	
-    	for (int gamepadIndex = GLFW_JOYSTICK_1; gamepadIndex <= GLFW_JOYSTICK_LAST; gamepadIndex++) {
-    		if (glfwJoystickPresent(gamepadIndex)) {
-				onGamepadEvent(gamepadIndex);
+		glfwPollEvents();
+
+		for (int gamepadIndex = GLFW_JOYSTICK_1; gamepadIndex <= GLFW_JOYSTICK_LAST;
+			 gamepadIndex++) {
+			if (glfwJoystickPresent(gamepadIndex)) {
+				Window_onGamepadEvent(gamepadIndex);
 			}
 		}
-	
+
 		for (auto glfwWindow : s_Windows) {
-			auto window = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
-		
+			auto window = static_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
+
 			window->e_mouseButton.lock();
 			window->e_mouseMove.lock();
 			window->e_mouseScroll.lock();
@@ -98,92 +176,99 @@ namespace vkcv {
 			window->e_key.lock();
 			window->e_char.lock();
 			window->e_gamepad.lock();
+
+			window->m_shouldClose |= glfwWindowShouldClose(glfwWindow);
 		}
-    }
+	}
 
-    void Window::onMouseButtonEvent(GLFWwindow *callbackWindow, int button, int action, int mods) {
-        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+	const std::vector<std::string> &Window::getExtensions() {
+		static std::vector<std::string> extensions;
 
-        if (window != nullptr) {
-            window->e_mouseButton(button, action, mods);
-        }
-    }
+		if (extensions.empty()) {
+			if (s_Windows.empty()) {
+				glfwInit();
+			}
 
-    void Window::onMouseMoveEvent(GLFWwindow *callbackWindow, double x, double y) {
-        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
+			uint32_t glfwExtensionCount = 0;
+			const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-        if (window != nullptr) {
-            window->e_mouseMove(x, y);
-        }
-    }
+			for (uint32_t i = 0; i < glfwExtensionCount; i++) {
+				extensions.emplace_back(glfwExtensions [i]);
+			}
 
-    void Window::onMouseScrollEvent(GLFWwindow *callbackWindow, double xoffset, double yoffset) {
-        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
-
-        if (window != nullptr) {
-            window->e_mouseScroll(xoffset, yoffset);
-        }
-    }
-
-    void Window::onResize(GLFWwindow *callbackWindow, int width, int height) {
-        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
-
-        if (window != nullptr) {
-            window->e_resize(width, height);
-        }
-    }
-
-    void Window::onKeyEvent(GLFWwindow *callbackWindow, int key, int scancode, int action, int mods) {
-        auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
-
-        if (window != nullptr) {
-            window->e_key(key, scancode, action, mods);
-        }
-    }
-    
-    void Window::onCharEvent(GLFWwindow *callbackWindow, unsigned int c) {
-		auto window = static_cast<Window *>(glfwGetWindowUserPointer(callbackWindow));
-	
-		if (window != nullptr) {
-			window->e_char(c);
+			if (s_Windows.empty()) {
+				glfwTerminate();
+			}
 		}
-    }
 
-    void Window::onGamepadEvent(int gamepadIndex) {
-        int activeWindowIndex = std::find_if(s_Windows.begin(),
-                                             s_Windows.end(),
-                                             [](GLFWwindow* window){return glfwGetWindowAttrib(window, GLFW_FOCUSED);})
-                                - s_Windows.begin();
-        activeWindowIndex *= (activeWindowIndex < s_Windows.size());    // fixes index getting out of bounds (e.g. if there is no focused window)
-        auto window = static_cast<Window *>(glfwGetWindowUserPointer(s_Windows[activeWindowIndex]));
+		return extensions;
+	}
 
-        if (window != nullptr) {
-            window->e_gamepad(gamepadIndex);
-        }
-    }
+	bool Window::isOpen() const {
+		if (!m_window) {
+			return false;
+		}
 
-    bool Window::isWindowOpen() const {
-        return !glfwWindowShouldClose(m_window);
-    }
+		return !m_shouldClose;
+	}
 
-    int Window::getWidth() const {
-        int width;
-        glfwGetWindowSize(m_window, &width, nullptr);
-        return width;
-    }
+	const std::string &Window::getTitle() const {
+		return m_title;
+	}
 
-    int Window::getHeight() const {
-        int height;
-        glfwGetWindowSize(m_window, nullptr, &height);
-        return height;
-    }
+	int Window::getWidth() const {
+		int width = 0;
 
-    GLFWwindow *Window::getWindow() const {
-        return m_window;
-    }
-    
-    void Window::getFramebufferSize(int &width, int &height) const {
-		glfwGetFramebufferSize(m_window, &width, &height);
-    }
-    
-}
+		if (m_window) {
+			glfwGetWindowSize(m_window, &width, nullptr);
+		}
+
+		return std::max(width, 1);
+	}
+
+	int Window::getHeight() const {
+		int height = 0;
+
+		if (m_window) {
+			glfwGetWindowSize(m_window, nullptr, &height);
+		}
+
+		return std::max(height, 1);
+	}
+
+	bool Window::isResizable() const {
+		return m_resizable;
+	}
+
+	GLFWwindow* Window::getWindow() const {
+		return m_window;
+	}
+
+	void Window::getFramebufferSize(int &width, int &height) const {
+		if (m_window) {
+			glfwGetFramebufferSize(m_window, &width, &height);
+		} else {
+			width = 0;
+			height = 0;
+		}
+	}
+
+	Window &Window::getFocusedWindow() {
+		static Window defaultWindow;
+
+		auto activeWindowIterator =
+			std::find_if(s_Windows.begin(), s_Windows.end(), [](GLFWwindow* window) {
+				return glfwGetWindowAttrib(window, GLFW_FOCUSED);
+			});
+
+		if (activeWindowIterator == s_Windows.end()) {
+			return defaultWindow;
+		}
+		Window &window = *static_cast<Window*>(glfwGetWindowUserPointer(*activeWindowIterator));
+		return window;
+	}
+
+	SwapchainHandle Window::getSwapchain() const {
+		return m_swapchainHandle;
+	}
+} // namespace vkcv

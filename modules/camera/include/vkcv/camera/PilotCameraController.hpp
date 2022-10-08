@@ -1,8 +1,19 @@
 #pragma once
+/**
+ * @authors Vanessa Karolek, Josch Morgenstern, Tobias Frisch
+ * @file include/vkcv/camera/PilotCameraController.hpp
+ * @brief PilotCameraController class of the camera module for the vkcv framework. This class inherits from the base
+ * class @#CameraController and enables camera objects to be moved freely within the scene.
+ */
 
 #include <vkcv/camera/CameraController.hpp>
 
 namespace vkcv::camera {
+
+    /**
+     * @addtogroup vkcv_camera
+     * @{
+     */
 
     /**
      * @brief Used to move around a camera object in world space.
@@ -28,42 +39,6 @@ namespace vkcv::camera {
         int m_fov_nsteps;
         float m_fov_min;
         float m_fov_max;
-
-        /**
-         * @brief Indicates forward movement of the camera depending on the performed @p action.
-         * @param[in] action The performed action.
-         */
-        void moveForward(int action);
-
-        /**
-         * @brief Indicates backward movement of the camera depending on the performed @p action.
-         * @param[in] action The performed action.
-         */
-        void moveBackward(int action);
-
-        /**
-         * @brief Indicates left movement of the camera depending on the performed @p action.
-         * @param[in] action The performed action.
-         */
-        void moveLeft(int action);
-
-        /**
-         * @brief Indicates right movement of the camera depending on the performed @p action.
-         * @param[in] action The performed action.
-         */
-        void moveRight(int action);
-
-        /**
-         * @brief Indicates upward movement of the camera depending on the performed @p action.
-         * @param[in] action The performed action.
-         */
-        void moveUpward(int action);
-
-        /**
-         * @brief Indicates downward movement of the camera depending on the performed @p action.
-         * @param[in] action The performed action.
-         */
-        void moveDownward(int action);
 
     public:
 
@@ -146,5 +121,7 @@ namespace vkcv::camera {
          */
         void gamepadCallback(int gamepadIndex, Camera &camera, double frametime);
     };
+
+    /** @} */
 
 }

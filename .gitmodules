@@ -14,7 +14,7 @@
 	path = modules/asset_loader/lib/stb
 	url = https://github.com/nothings/stb.git
 [submodule "modules/camera/lib/glm"]
-	path = modules/camera/lib/glm
+	path = modules/geometry/lib/glm
 	url = https://github.com/g-truc/glm.git
 [submodule "modules/shader_compiler/lib/glslang"]
 	path = modules/shader_compiler/lib/glslang
@@ -22,3 +22,21 @@
 [submodule "modules/gui/lib/imgui"]
 	path = modules/gui/lib/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "modules/upscaling/lib/FidelityFX-FSR"]
+	path = modules/upscaling/lib/FidelityFX-FSR
+	url = https://github.com/GPUOpen-Effects/FidelityFX-FSR.git
+[submodule "lib/Vulkan-Headers"]
+	path = lib/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "lib/Vulkan-Hpp"]
+	path = lib/Vulkan-Hpp
+	url = https://github.com/KhronosGroup/Vulkan-Hpp
+[submodule "modules/upscaling/lib/NVIDIAImageScaling"]
+	path = modules/upscaling/lib/NVIDIAImageScaling
+	url = https://github.com/NVIDIAGameWorks/NVIDIAImageScaling.git
+[submodule "lib/VulkanMemoryAllocator-Hpp"]
+	path = lib/VulkanMemoryAllocator-Hpp
+	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp.git
+[submodule "modules/algorithm/lib/FidelityFX-SPD"]
+	path = modules/algorithm/lib/FidelityFX-SPD
+	url = https://github.com/GPUOpen-Effects/FidelityFX-SPD.git

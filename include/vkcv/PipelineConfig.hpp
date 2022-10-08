@@ -1,44 +1,48 @@
 #pragma once
 /**
- * @authors Mara Vogt, Mark Mints
- * @file src/vkcv/Pipeline.hpp
- * @brief Pipeline class to handle shader stages
+ * @authors Tobias Frisch
+ * @file vkcv/PipelineConfig.hpp
+ * @brief Pipeline config class to hand over required information to pipeline creation
  */
 
 #include <vector>
-#include <cstdint>
+
 #include "Handles.hpp"
 #include "ShaderProgram.hpp"
-#include "VertexLayout.hpp"
-#include "ImageConfig.hpp"
 
 namespace vkcv {
 
-    enum class PrimitiveTopology{PointList, LineList, TriangleList };
-	enum class CullMode{ None, Front, Back };
-    enum class DepthTest { None, Less, LessEqual, Greater, GreatherEqual, Equal };
+	/**
+	 * @brief Class to configure a general pipeline before its creation.
+	 */
+	class PipelineConfig {
+	private:
+		ShaderProgram m_ShaderProgram;
+		std::vector<DescriptorSetLayoutHandle> m_DescriptorSetLayouts;
 
-    // add more as needed
-    // alternatively we could expose the blend factors directly
-    enum class BlendMode{ None, Additive };
+	public:
+		PipelineConfig();
 
-    struct PipelineConfig {
-        ShaderProgram                         	m_ShaderProgram;
-        uint32_t                              	m_Width;
-		uint32_t                              	m_Height;
-        PassHandle                            	m_PassHandle;
-        VertexLayout                          	m_VertexLayout;
-        std::vector<vk::DescriptorSetLayout>  	m_DescriptorLayouts;
-        bool                                  	m_UseDynamicViewport;
-        bool                                  	m_UseConservativeRasterization 	= false;
-        PrimitiveTopology                     	m_PrimitiveTopology 			= PrimitiveTopology::TriangleList;
-		BlendMode                             	m_blendMode 					= BlendMode::None;
-        bool                                    m_EnableDepthClamping           = false;
-        Multisampling                           m_multisampling                 = Multisampling::None;
-        CullMode                                m_culling                       = CullMode::None;
-        DepthTest                               m_depthTest                     = DepthTest::LessEqual;
-        bool                                    m_depthWrite                    = true;
-        bool                                    m_alphaToCoverage               = false;
-    };
+		PipelineConfig(const ShaderProgram &program,
+					   const std::vector<DescriptorSetLayoutHandle> &layouts);
 
-}
+		PipelineConfig(const PipelineConfig &other) = default;
+		PipelineConfig(PipelineConfig &&other) = default;
+
+		~PipelineConfig() = default;
+
+		PipelineConfig &operator=(const PipelineConfig &other) = default;
+		PipelineConfig &operator=(PipelineConfig &&other) = default;
+
+		void setShaderProgram(const ShaderProgram &program);
+
+		[[nodiscard]] const ShaderProgram &getShaderProgram() const;
+
+		void addDescriptorSetLayout(const DescriptorSetLayoutHandle &layout);
+
+		void addDescriptorSetLayouts(const std::vector<DescriptorSetLayoutHandle> &layouts);
+
+		[[nodiscard]] const std::vector<DescriptorSetLayoutHandle> &getDescriptorSetLayouts() const;
+	};
+
+} // namespace vkcv

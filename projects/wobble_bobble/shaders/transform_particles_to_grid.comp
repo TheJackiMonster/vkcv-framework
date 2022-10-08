@@ -1,0 +1,101 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+
+#include "particle.inc"
+
+layout(set=0, binding=0, std430) readonly buffer particleBuffer {
+    Particle particles [];
+};
+
+layout(set=1, binding=0) uniform simulationBlock {
+    Simulation simulation;
+};
+
+layout(set=2, binding=0, rgba16f) restrict writeonly uniform image3D gridImage;
+
+layout( push_constant ) uniform constants {
+    float t;
+    float dt;
+    float speedfactor;
+};
+
+#define SHARED_PARTICLES_BATCH_SIZE 64
+
+shared ParticleMinimal shared_particles [SHARED_PARTICLES_BATCH_SIZE];
+
+void main()	{
+    const vec3 position = (vec3(gl_GlobalInvocationID) + vec3(0.5f)) / imageSize(gridImage);
+
+    float dts = dt * speedfactor;
+
+    vec4 gridValue = vec4(0.0f);
+
+    uint offset = 0;
+
+    for (offset = 0; offset < particles.length(); offset += SHARED_PARTICLES_BATCH_SIZE) {
+        uint localOffset = offset + gl_LocalInvocationIndex;
+
+        if (localOffset < particles.length()) {
+            shared_particles[gl_LocalInvocationIndex] = particles[localOffset].minimal;
+
+            shared_particles[gl_LocalInvocationIndex].pad = (
+                mat3(particles[localOffset].mls) *
+                (position - shared_particles[gl_LocalInvocationIndex].position)
+            ) + (
+                shared_particles[gl_LocalInvocationIndex].velocity *
+                shared_particles[gl_LocalInvocationIndex].mass
+            );
+        } else {
+            shared_particles[gl_LocalInvocationIndex].position = vec3(0.0f);
+            shared_particles[gl_LocalInvocationIndex].size = 0.0f;
+            shared_particles[gl_LocalInvocationIndex].velocity = vec3(0.0f);
+            shared_particles[gl_LocalInvocationIndex].mass = 0.0f;
+
+            shared_particles[gl_LocalInvocationIndex].pad = vec3(0.0f);
+            shared_particles[gl_LocalInvocationIndex].weight_sum = 1.0f;
+        }
+
+        barrier();
+        memoryBarrierShared();
+
+        for (uint i = 0; i < SHARED_PARTICLES_BATCH_SIZE; i++) {
+            float weight = voxel_particle_weight(position, shared_particles[i]);
+
+            gridValue += vec4(
+                shared_particles[i].pad * weight,
+                shared_particles[i].mass * weight
+            );
+        }
+
+        barrier();
+        memoryBarrierShared();
+    }
+
+    if (any(isnan(gridValue.xyz)) || any(isinf(gridValue.xyz))) {
+        gridValue.xyz = vec3(0.0f);
+    }
+
+    gridValue.xyz += vec3(0.0f, -simulation.gravity * dts * gridValue.w, 0.0f);
+
+    bvec3 lowerID = lessThanEqual(gl_GlobalInvocationID, ivec3(0));
+    bvec3 negativeVelocity = lessThan(gridValue.xyz, vec3(0.0f));
+
+    bvec3 greaterID = greaterThanEqual(gl_GlobalInvocationID + ivec3(1), imageSize(gridImage));
+    bvec3 positiveVelocity = greaterThan(gridValue.xyz, vec3(0.0f));
+
+    bvec3 collision = bvec3(
+        (lowerID.x && negativeVelocity.x) || (greaterID.x && positiveVelocity.x),
+        (lowerID.y && negativeVelocity.y) || (greaterID.y && positiveVelocity.y),
+        (lowerID.z && negativeVelocity.z) || (greaterID.z && positiveVelocity.z)
+    );
+
+    gridValue.xyz = mix(gridValue.xyz, -gridValue.xyz, collision);
+
+    imageStore(
+        gridImage,
+        ivec3(gl_GlobalInvocationID),
+        gridValue
+    );
+}

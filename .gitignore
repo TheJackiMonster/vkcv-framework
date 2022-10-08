@@ -7,6 +7,7 @@
 .editorconfig
 
 # build directories
+bin/
 build/
 cmake-build-debug/
 cmake-build-release/
@@ -18,3 +19,11 @@ cmake-build-release/
 
 # GUI configuration files
 imgui.ini
+
+# Generated source and header files for shaders
+*.hxx
+*.cxx
+
+# Cache for different tasks like source code indexing
+.cache/
+

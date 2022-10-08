@@ -35,8 +35,8 @@ namespace vkcv::camera {
 
     void CameraManager::resizeCallback(int width, int height) {
         if (glfwGetWindowAttrib(m_window.getWindow(), GLFW_ICONIFIED) == GLFW_FALSE) {
-            for (size_t i = 0; i < m_cameras.size(); i++) {
-                getCamera(i).setRatio(static_cast<float>(width) / static_cast<float>(height));;
+            for (auto& camera : m_cameras) {
+				camera.setRatio(static_cast<float>(width) / static_cast<float>(height));;
             }
         }
     }
@@ -52,8 +52,8 @@ namespace vkcv::camera {
     }
 
     void CameraManager::mouseMoveCallback(double x, double y){
-        auto xoffset = static_cast<float>(x - m_lastX);
-		auto yoffset = static_cast<float>(y - m_lastY);
+        auto xoffset = static_cast<float>(x - m_lastX) / m_window.getWidth();
+		auto yoffset = static_cast<float>(y - m_lastY) / m_window.getHeight();
         m_lastX = x;
         m_lastY = y;
 		getActiveController().mouseMoveCallback(xoffset, yoffset, getActiveCamera());
@@ -110,67 +110,67 @@ namespace vkcv::camera {
     }
 
     CameraController& CameraManager::getActiveController() {
-    	const ControllerType type = getControllerType(getActiveCameraIndex());
+    	const ControllerType type = getControllerType(getActiveCameraHandle());
     	return getControllerByType(type);
     }
 	
-	uint32_t CameraManager::addCamera(ControllerType controllerType) {
+	CameraHandle CameraManager::addCamera(ControllerType controllerType) {
     	const float ratio = static_cast<float>(m_window.getWidth()) / static_cast<float>(m_window.getHeight());
     	
         Camera camera;
         camera.setPerspective(glm::radians(60.0f), ratio, 0.1f, 10.0f);
         return addCamera(controllerType, camera);
     }
-    
-    uint32_t CameraManager::addCamera(ControllerType controllerType, const Camera &camera) {
+	
+	CameraHandle CameraManager::addCamera(ControllerType controllerType, const Camera &camera) {
     	const uint32_t index = static_cast<uint32_t>(m_cameras.size());
     	m_cameras.push_back(camera);
 		m_cameraControllerTypes.push_back(controllerType);
-		return index;
+		return CameraHandle(index);
     }
 
-    Camera& CameraManager::getCamera(uint32_t cameraIndex) {
-        if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
+    Camera& CameraManager::getCamera(const CameraHandle& cameraHandle) {
+        if (cameraHandle.getId() < 0 || cameraHandle.getId() >= m_cameras.size()) {
         	vkcv_log(LogLevel::ERROR, "Invalid camera index: The index must range from 0 to %lu", m_cameras.size());
         	return getActiveCamera();
         }
         
-        return m_cameras[cameraIndex];
+        return m_cameras[cameraHandle.getId()];
     }
 
     Camera& CameraManager::getActiveCamera() {
-        return m_cameras[getActiveCameraIndex()];
+        return m_cameras[m_activeCameraIndex];
     }
 
-    void CameraManager::setActiveCamera(uint32_t cameraIndex) {
-        if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
+    void CameraManager::setActiveCamera(const CameraHandle& cameraHandle) {
+        if (cameraHandle.getId() < 0 || cameraHandle.getId() >= m_cameras.size()) {
 			vkcv_log(LogLevel::ERROR, "Invalid camera index: The index must range from 0 to %lu", m_cameras.size());
 			return;
         }
         
-        m_activeCameraIndex = cameraIndex;
+        m_activeCameraIndex = cameraHandle.getId();
     }
 
-    uint32_t CameraManager::getActiveCameraIndex() const {
-        return m_activeCameraIndex;
+    CameraHandle CameraManager::getActiveCameraHandle() const {
+        return CameraHandle(m_activeCameraIndex);
     }
 
-    void CameraManager::setControllerType(uint32_t cameraIndex, ControllerType controllerType) {
-        if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
+    void CameraManager::setControllerType(const CameraHandle& cameraHandle, ControllerType controllerType) {
+        if (cameraHandle.getId() < 0 || cameraHandle.getId() >= m_cameras.size()) {
 			vkcv_log(LogLevel::ERROR, "Invalid camera index: The index must range from 0 to %lu", m_cameras.size());
 			return;
         }
         
-        m_cameraControllerTypes[cameraIndex] = controllerType;
+        m_cameraControllerTypes[cameraHandle.getId()] = controllerType;
     }
 
-    ControllerType CameraManager::getControllerType(uint32_t cameraIndex) {
-        if (cameraIndex < 0 || cameraIndex > m_cameras.size() - 1) {
+    ControllerType CameraManager::getControllerType(const CameraHandle& cameraHandle) {
+        if (cameraHandle.getId() < 0 || cameraHandle.getId() >= m_cameras.size()) {
 			vkcv_log(LogLevel::ERROR, "Invalid camera index: The index must range from 0 to %lu", m_cameras.size());
 			return ControllerType::NONE;
         }
         
-        return m_cameraControllerTypes[cameraIndex];
+        return m_cameraControllerTypes[cameraHandle.getId()];
     }
 
     CameraController& CameraManager::getControllerByType(ControllerType controllerType) {

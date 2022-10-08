@@ -1,10 +1,24 @@
 #pragma once
+/**
+ * @authors Vanessa Karolek, Josch Morgenstern, Sebastian Gaida, Katharina Krämer, Tobias Frisch, Alexander Gauggel
+ * @file include/vkcv/camera/Camera.hpp
+ * @brief Camera class of the camera module for the vkcv framework.
+ */
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
+#include <glm/vec3.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/mat4x4.hpp>
 
 namespace vkcv::camera {
+
+    /**
+     * @defgroup vkcv_camera Camera Module
+     * A module to manage intrinsic and extrinsic parameters with camera instances.
+     * @{
+     */
 
     /**
      * @brief Used to create a camera which governs the view and projection matrices.
@@ -20,9 +34,6 @@ namespace vkcv::camera {
 		glm::vec3 m_up;
         glm::vec3 m_position;
         glm::vec3 m_center;
-
-        float m_pitch;
-        float m_yaw;
 	
 		/**
 		 * @brief Sets the view matrix of the camera to @p view
@@ -75,7 +86,7 @@ namespace vkcv::camera {
          * @brief Gets the current projection of the camera
          * @return The current projection matrix
          */
-        glm::mat4 getProjection() const;
+        const glm::mat4& getProjection() const;
 
         /**
          * @brief Gets the model-view-projection matrix of the camera with y-axis-correction applied
@@ -156,6 +167,20 @@ namespace vkcv::camera {
          * @param[in] center The new center point.
          */
         void setCenter(const glm::vec3& center);
+        
+        /**
+         * @brief Gets the angles of the camera.
+         * @param[out] pitch The pitch value in radians
+         * @param[out] yaw The yaw value in radians
+         */
+		void getAngles(float& pitch, float& yaw);
+  
+		/**
+		 * @brief Sets the angles of the camera.
+		 * @param pitch The new pitch value in radians
+		 * @param yaw The new yaw value in radians
+		 */
+		void setAngles(float pitch, float yaw);
 
         /**
          * @brief Gets the pitch value of the camera in degrees.
@@ -193,5 +218,7 @@ namespace vkcv::camera {
          */
         void setUp(const glm::vec3 &up);
     };
+
+    /** @} */
 
 }

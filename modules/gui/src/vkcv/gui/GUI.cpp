@@ -6,6 +6,9 @@
 
 namespace vkcv::gui {
 	
+	const static vk::ImageLayout initialImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	const static vk::ImageLayout finalImageLayout   = vk::ImageLayout::ePresentSrcKHR;
+
 	static void checkVulkanResult(VkResult resultCode) {
 		if (resultCode == 0)
 			return;
@@ -15,31 +18,33 @@ namespace vkcv::gui {
 		vkcv_log(LogLevel::ERROR, "ImGui has a problem with Vulkan! (%s)", vk::to_string(result).c_str());
 	}
 	
-	GUI::GUI(Core& core, Window& window) :
-	m_window(window),
+	GUI::GUI(Core& core, WindowHandle& windowHandle) :
+	m_windowHandle(windowHandle),
 	m_core(core),
 	m_context(m_core.getContext()),
 	m_gui_context(nullptr) {
 		IMGUI_CHECKVERSION();
 		
 		m_gui_context = ImGui::CreateContext();
+
+		Window& window = m_core.getWindow(windowHandle);
+
+		ImGui_ImplGlfw_InitForVulkan(window.getWindow(), false);
 		
-		ImGui_ImplGlfw_InitForVulkan(m_window.getWindow(), false);
-		
-		f_mouseButton = m_window.e_mouseButton.add([&](int button, int action, int mods) {
-			ImGui_ImplGlfw_MouseButtonCallback(m_window.getWindow(), button, action, mods);
+		f_mouseButton = window.e_mouseButton.add([&](int button, int action, int mods) {
+			ImGui_ImplGlfw_MouseButtonCallback(window.getWindow(), button, action, mods);
 		});
 		
-		f_mouseScroll = m_window.e_mouseScroll.add([&](double xoffset, double yoffset) {
-			ImGui_ImplGlfw_ScrollCallback(m_window.getWindow(), xoffset, yoffset);
+		f_mouseScroll = window.e_mouseScroll.add([&](double xoffset, double yoffset) {
+			ImGui_ImplGlfw_ScrollCallback(window.getWindow(), xoffset, yoffset);
 		});
 		
-		f_key = m_window.e_key.add([&](int key, int scancode, int action, int mods) {
-			ImGui_ImplGlfw_KeyCallback(m_window.getWindow(), key, scancode, action, mods);
+		f_key = window.e_key.add([&](int key, int scancode, int action, int mods) {
+			ImGui_ImplGlfw_KeyCallback(window.getWindow(), key, scancode, action, mods);
 		});
 		
-		f_char = m_window.e_char.add([&](unsigned int c) {
-			ImGui_ImplGlfw_CharCallback(m_window.getWindow(), c);
+		f_char = window.e_char.add([&](unsigned int c) {
+			ImGui_ImplGlfw_CharCallback(window.getWindow(), c);
 		});
 		
 		vk::DescriptorPoolSize pool_sizes[] = {
@@ -66,7 +71,8 @@ namespace vkcv::gui {
 		m_descriptor_pool = m_context.getDevice().createDescriptorPool(descriptorPoolCreateInfo);
 		
 		const vk::PhysicalDevice& physicalDevice = m_context.getPhysicalDevice();
-		const Swapchain& swapchain = m_core.getSwapchain();
+		const SwapchainHandle& swapchainHandle = m_core.getWindow(m_windowHandle).getSwapchain();
+		const uint32_t swapchainImageCount = m_core.getSwapchainImageCount(swapchainHandle);
 		
 		const uint32_t graphicsQueueFamilyIndex = (
 				m_context.getQueueManager().getGraphicsQueues()[0].familyIndex
@@ -81,20 +87,20 @@ namespace vkcv::gui {
 		init_info.PipelineCache = 0;
 		init_info.DescriptorPool = static_cast<VkDescriptorPool>(m_descriptor_pool);
 		init_info.Allocator = nullptr;
-		init_info.MinImageCount = swapchain.getImageCount();
-		init_info.ImageCount = swapchain.getImageCount();
+		init_info.MinImageCount = swapchainImageCount;
+		init_info.ImageCount = swapchainImageCount;
 		init_info.CheckVkResultFn = checkVulkanResult;
 		
 		const vk::AttachmentDescription attachment (
 				vk::AttachmentDescriptionFlags(),
-				swapchain.getFormat(),
+				m_core.getSwapchainFormat(swapchainHandle),
 				vk::SampleCountFlagBits::e1,
 				vk::AttachmentLoadOp::eLoad,
 				vk::AttachmentStoreOp::eStore,
 				vk::AttachmentLoadOp::eDontCare,
 				vk::AttachmentStoreOp::eDontCare,
-				vk::ImageLayout::eUndefined,
-				vk::ImageLayout::ePresentSrcKHR
+				initialImageLayout,
+				finalImageLayout
 		);
 		
 		const vk::AttachmentReference attachmentReference (
@@ -139,31 +145,33 @@ namespace vkcv::gui {
 		
 		ImGui_ImplVulkan_Init(&init_info, static_cast<VkRenderPass>(m_render_pass));
 		
-		const SubmitInfo submitInfo { QueueType::Graphics, {}, {} };
+		auto stream = m_core.createCommandStream(QueueType::Graphics);
 		
-		m_core.recordAndSubmitCommandsImmediate(submitInfo, [](const vk::CommandBuffer& commandBuffer) {
+		m_core.recordCommandsToStream(stream, [](const vk::CommandBuffer& commandBuffer) {
 			ImGui_ImplVulkan_CreateFontsTexture(static_cast<VkCommandBuffer>(commandBuffer));
 		}, []() {
 			ImGui_ImplVulkan_DestroyFontUploadObjects();
 		});
 		
+		m_core.submitCommandStream(stream, false);
 		m_context.getDevice().waitIdle();
 	}
 	
 	GUI::~GUI() {
 		m_context.getDevice().waitIdle();
-		
+		Window& window = m_core.getWindow(m_windowHandle);
+
 		ImGui_ImplVulkan_Shutdown();
 		
 		m_context.getDevice().destroyRenderPass(m_render_pass);
 		m_context.getDevice().destroyDescriptorPool(m_descriptor_pool);
 		
 		ImGui_ImplGlfw_Shutdown();
-		
-		m_window.e_mouseButton.remove(f_mouseButton);
-		m_window.e_mouseScroll.remove(f_mouseScroll);
-		m_window.e_key.remove(f_key);
-		m_window.e_char.remove(f_char);
+
+		window.e_mouseButton.remove(f_mouseButton);
+		window.e_mouseScroll.remove(f_mouseScroll);
+		window.e_key.remove(f_key);
+		window.e_char.remove(f_char);
 		
 		if (m_gui_context) {
 			ImGui::DestroyContext(m_gui_context);
@@ -171,11 +179,11 @@ namespace vkcv::gui {
 	}
 	
 	void GUI::beginGUI() {
-		const Swapchain& swapchain = m_core.getSwapchain();
-		const auto extent = swapchain.getExtent();
+		const auto swapchainHandle = m_core.getWindow(m_windowHandle).getSwapchain();
+		const auto& extent = m_core.getSwapchainExtent(swapchainHandle);
 		
 		if ((extent.width > 0) && (extent.height > 0)) {
-			ImGui_ImplVulkan_SetMinImageCount(swapchain.getImageCount());
+			ImGui_ImplVulkan_SetMinImageCount(m_core.getSwapchainImageCount(swapchainHandle));
 		}
 		
 		ImGui_ImplVulkan_NewFrame();
@@ -194,9 +202,9 @@ namespace vkcv::gui {
 			return;
 		}
 		
-		const Swapchain& swapchain = m_core.getSwapchain();
-		const auto extent = swapchain.getExtent();
-		
+		const auto swapchainHandle = m_core.getWindow(m_windowHandle).getSwapchain();
+		const auto& extent = m_core.getSwapchainExtent(swapchainHandle);
+
 		const vk::ImageView swapchainImageView = m_core.getSwapchainImageView();
 
 		const vk::FramebufferCreateInfo framebufferCreateInfo (
@@ -210,11 +218,13 @@ namespace vkcv::gui {
 		);
 		
 		const vk::Framebuffer framebuffer = m_context.getDevice().createFramebuffer(framebufferCreateInfo);
+		auto stream = m_core.createCommandStream(QueueType::Graphics);
 		
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Graphics;
-		
-		m_core.recordAndSubmitCommandsImmediate(submitInfo, [&](const vk::CommandBuffer& commandBuffer) {
+		m_core.recordCommandsToStream(stream, [&](const vk::CommandBuffer& commandBuffer) {
+
+			assert(initialImageLayout == vk::ImageLayout::eColorAttachmentOptimal);
+			m_core.prepareImageForAttachmentManually(commandBuffer, vkcv::ImageHandle::createSwapchainImageHandle());
+
 			const vk::Rect2D renderArea (
 					vk::Offset2D(0, 0),
 					extent
@@ -227,15 +237,22 @@ namespace vkcv::gui {
 					0,
 					nullptr
 			);
-			
+
 			commandBuffer.beginRenderPass(beginInfo, vk::SubpassContents::eInline);
 			
 			ImGui_ImplVulkan_RenderDrawData(drawData, static_cast<VkCommandBuffer>(commandBuffer));
 			
 			commandBuffer.endRenderPass();
+
+			// executing the renderpass changed the image layout without going through the image manager
+			// therefore the layout must be updated manually
+			m_core.updateImageLayoutManual(vkcv::ImageHandle::createSwapchainImageHandle(), finalImageLayout);
+
 		}, [&]() {
 			m_context.getDevice().destroyFramebuffer(framebuffer);
 		});
+		
+		m_core.submitCommandStream(stream, false);
 	}
 	
 }

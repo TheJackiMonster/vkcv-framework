@@ -1,71 +1,105 @@
 #pragma once
 /**
- * @authors Simeon Hermann, Leonie Franken
- * @file src/vkcv/ShaderProgram.hpp
- * @brief ShaderProgram class to handle and prepare the shader stages for a graphics pipeline
+ * @authors Artur Wasmut, Leonie Franken, Tobias Frisch, Simeon Hermann, Alexander Gauggel, Mark
+ * Mints
+ * @file vkcv/ShaderProgram.hpp
+ * @brief ShaderProgram class to handle and prepare the shader stages for a graphics pipeline.
  */
 
-#include <unordered_map>
-#include <fstream>
-#include <iostream>
 #include <algorithm>
 #include <filesystem>
-#include <vulkan/vulkan.hpp>
+#include <fstream>
+#include <iostream>
 #include <spirv_cross.hpp>
-#include "VertexLayout.hpp"
+#include <unordered_map>
+#include <vulkan/vulkan.hpp>
+
+#include "DescriptorBinding.hpp"
 #include "ShaderStage.hpp"
-#include "DescriptorConfig.hpp"
+#include "VertexLayout.hpp"
 
 namespace vkcv {
 
-    struct Shader
-    {
-        std::vector<char> shaderCode;
-        ShaderStage shaderStage;
-    };
+	/**
+	 * @brief Class to manage and reflect shaders as a program.
+	 */
+	class ShaderProgram {
+	public:
+		ShaderProgram() noexcept;   // ctor
+		~ShaderProgram() = default; // dtor
 
-	class ShaderProgram
-	{
-    public:
-        ShaderProgram() noexcept; // ctor
-        ~ShaderProgram() = default; // dtor
+		/**
+		 * @brief Adds a shader into the shader program.
+		 * The shader is only added if the shader program does not contain
+		 * the particular shader stage already.
+		 * Contains:
+		 * (1) reading the SPIR-V file,
+		 * (2) creating a shader module,
+		 * (3) creating a shader stage,
+		 * (4) adding to the shader stage list,
+		 * (5) destroying of the shader module
+		 *
+		 * @param[in] stage The stage of the shader
+		 * @param[in] path Path to the SPIR-V shader file
+		 */
+		bool addShader(ShaderStage stage, const std::filesystem::path &path);
 
-        /**
-        * Adds a shader into the shader program.
-        * The shader is only added if the shader program does not contain the particular shader stage already.
-        * Contains: (1) reading of the code, (2) creation of a shader module, (3) creation of a shader stage, (4) adding to the shader stage list, (5) destroying of the shader module
-        * @param[in] flag that signals the respective shaderStage (e.g. VK_SHADER_STAGE_VERTEX_BIT)
-        * @param[in] relative path to the shader code (e.g. "../../../../../shaders/vert.spv")
-        */
-        bool addShader(ShaderStage shaderStage, const std::filesystem::path &shaderPath);
+		/**
+		 * @brief Returns the shader binary of a specified stage from the program.
+		 * Needed for the transfer to the pipeline.
+		 *
+		 * @param[in] stage The stage of the shader
+		 * @return Shader code binary of the given stage
+		 */
+		const std::vector<uint32_t> &getShaderBinary(ShaderStage stage) const;
 
-        /**
-        * Returns the shader program's shader of the specified shader.
-        * Needed for the transfer to the pipeline.
-        * @return Shader object consisting of buffer with shader code and shader stage enum
-        */
-        const Shader &getShader(ShaderStage shaderStage) const;
+		/**
+		 * @brief Returns whether a shader exists in the program for a
+		 * specified shader stage.
+		 *
+		 * @param[in] stage The stage of the shader
+		 * @return True, if a shader exists for the stage, else false
+		 */
+		bool existsShader(ShaderStage stage) const;
 
-        bool existsShader(ShaderStage shaderStage) const;
+		/**
+		 * @brief Returns the vertex attachments for the program and its
+		 * shader stages.
+		 *
+		 * @return Vertex attachments
+		 */
+		const std::vector<VertexAttachment> &getVertexAttachments() const;
 
-        const std::vector<VertexAttachment> &getVertexAttachments() const;
-		size_t getPushConstantSize() const;
+		/**
+		 * @brief Returns the size of the programs push constants.
+		 *
+		 * @return Size of push constants
+		 */
+		size_t getPushConstantsSize() const;
 
-        const std::vector<std::vector<DescriptorBinding>>& getReflectedDescriptors() const;
+		/**
+		 * @brief Returns the reflected descriptor set bindings mapped via
+		 * their descriptor set id.
+		 *
+		 * @return Reflected descriptor set bindings
+		 */
+		const std::unordered_map<uint32_t, DescriptorBindings> &getReflectedDescriptors() const;
 
 	private:
-	    /**
-	     * Called after successfully adding a shader to the program.
-	     * Fills vertex input attachments and descriptor sets (if present).
-	     * @param shaderStage the stage to reflect data from
-	     */
-        void reflectShader(ShaderStage shaderStage);
+		/**
+		 * @brief Called after successfully adding a shader to the program.
+		 * Fills vertex input attachments and descriptor sets (if present).
+		 *
+		 * @param[in] shaderStage the stage to reflect data from
+		 */
+		void reflectShader(ShaderStage shaderStage);
 
-        std::unordered_map<ShaderStage, Shader> m_Shaders;
+		std::unordered_map<ShaderStage, std::vector<uint32_t> > m_Shaders;
 
-        // contains all vertex input attachments used in the vertex buffer
-        std::vector<VertexAttachment> m_VertexAttachments;
-        std::vector<std::vector<DescriptorBinding>> m_DescriptorSets;
-		size_t m_pushConstantSize = 0;
+		// contains all vertex input attachments used in the vertex buffer
+		VertexAttachments m_VertexAttachments;
+		std::unordered_map<uint32_t, DescriptorBindings> m_DescriptorSets;
+		size_t m_pushConstantsSize = 0;
 	};
-}
+
+} // namespace vkcv

@@ -1,8 +1,19 @@
 #pragma once
+/**
+ * @authors Vanessa Karolek, Josch Morgenstern, Sebastian Gaida,Tobias Frisch
+ * @file include/vkcv/camera/TrackballCameraController.hpp
+ * @brief TrackballCameraController class of the camera module for the vkcv framework. This class inherits from the base
+ * class @#CameraController and enables camera objects to be orbited around a specific center point.
+ */
 
 #include "CameraController.hpp"
 
 namespace vkcv::camera {
+
+    /**
+     * @addtogroup vkcv_camera
+     * @{
+     */
 
     /**
      * @brief Used to orbit a camera around its center point.
@@ -14,6 +25,8 @@ namespace vkcv::camera {
         float m_cameraSpeed;
         float m_scrollSensitivity;
         float m_radius;
+        float m_pitch;
+        float m_yaw;
 
         /**
          * @brief Updates the current radius of @p camera in respect to the @p offset.
@@ -103,5 +116,7 @@ namespace vkcv::camera {
          */
         void gamepadCallback(int gamepadIndex, Camera &camera, double frametime);
     };
+
+    /** @} */
 
 }

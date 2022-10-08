@@ -1,0 +1,68 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+#include "motionBlur.inc"
+#include "motionBlurConfig.inc"
+#include "motionBlurWorkTile.inc"
+
+layout(set=0, binding=0)                    uniform texture2D   inColor;
+layout(set=0, binding=1)                    uniform texture2D   inMotionNeighbourhoodMax;  
+layout(set=0, binding=2)                    uniform sampler     nearestSampler;
+layout(set=0, binding=3, r11f_g11f_b10f)    uniform image2D     outImage;
+
+layout(set=0, binding=4) buffer WorkTileBuffer {
+    WorkTiles workTiles;
+};
+
+layout(local_size_x = motionTileSize, local_size_y = motionTileSize, local_size_z = 1) in;
+
+layout( push_constant ) uniform constants{
+    // computed from delta time and shutter speed
+    float motionScaleFactor;
+};
+
+void main(){
+
+    uint    tileIndex       = gl_WorkGroupID.x;
+    ivec2   tileCoordinates = workTiles.tileXY[tileIndex];
+    ivec2   coord           = ivec2(tileCoordinates * motionTileSize + gl_LocalInvocationID.xy);
+
+    if(any(greaterThanEqual(coord, imageSize(outImage))))
+        return;
+   
+    ivec2   textureRes  = textureSize(sampler2D(inColor, nearestSampler), 0);
+    vec2    uv          = vec2(coord + 0.5) / textureRes;   // + 0.5 to shift uv into pixel center
+    
+    vec2    motionNeighbourhoodMax  = processMotionVector(texelFetch(sampler2D(inMotionNeighbourhoodMax, nearestSampler), coord / motionTileSize, 0).rg, motionScaleFactor, imageSize(outImage));
+    
+    // early out on movement less than half a pixel
+    if(length(motionNeighbourhoodMax * imageSize(outImage)) <= 0.5){
+        vec3 color = texture(sampler2D(inColor, nearestSampler), uv).rgb;
+        imageStore(outImage, coord, vec4(color, 0.f));
+        return;
+    }
+    
+    vec3    color = vec3(0);   
+    
+    // clamping start and end points avoids artifacts at image borders
+    // the sampler clamps the sample uvs anyways, but without clamping here, many samples can be stuck at the border
+    vec2 uvStart    = clamp(uv - motionNeighbourhoodMax, 0, 1);
+    vec2 uvEnd      = clamp(uv + motionNeighbourhoodMax, 0, 1);
+    
+    // samples are placed evenly, but the entire filter is jittered
+    // dither returns either 0 or 1
+    // the sampleUV code expects an offset in range [-0.5, 0.5], so the dither is rescaled to a binary -0.25/0.25
+    float random = dither(coord) * 0.5 - 0.25;
+    
+    const int sampleCount = 16; 
+    
+    for(int i = 0; i < sampleCount; i++){
+        
+        vec2 sampleUV   = mix(uvStart, uvEnd,     (i + random + 1) / float(sampleCount + 1));
+        color           += texture(sampler2D(inColor, nearestSampler), sampleUV).rgb;
+    }
+    
+    color /= sampleCount;
+
+    imageStore(outImage, coord, vec4(color, 0.f));
+}

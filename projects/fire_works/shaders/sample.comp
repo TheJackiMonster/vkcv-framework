@@ -1,0 +1,39 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+#include "voxel.inc"
+#include "smoke.inc"
+
+layout(set=0, binding=0, rgba16) restrict readonly uniform image3D voxelImage;
+layout(set=1, binding=0, rgba16f) restrict writeonly uniform image2D outImage;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void main() {
+    const ivec2 res = imageSize(outImage);
+
+    if(any(greaterThanEqual(gl_GlobalInvocationID.xy, res))){
+        return;
+    }
+
+    ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
+
+    const ivec3 voxelRes = imageSize(voxelImage);
+
+    vec4 voxel = vec4(0.0f);
+
+    for (int i = 0; i < voxelRes.z; i++) {
+        const ivec3 voxelPos = ivec3(uv, i);
+
+        vec4 data = imageLoad(voxelImage, voxelPos);
+
+        voxel = smokeBlend(voxel, data);
+    }
+
+    voxel.r = clamp(voxel.r, 0, 1);
+    voxel.g = clamp(voxel.g, 0, 1);
+    voxel.b = clamp(voxel.b, 0, 1);
+    voxel.a = clamp(voxel.a, 0, 1);
+
+    imageStore(outImage, uv, voxel);
+}
