@@ -79,6 +79,48 @@ namespace vkcv::geometry {
 			offset += (resolution + 1);
 		}
 		
+		std::vector<glm::vec3> sphereTangents;
+		sphereTangents.resize(sphereVertices.size(), glm::vec3(0.0f));
+		
+		std::vector<size_t> sphereTangentWeights;
+		sphereTangentWeights.resize(sphereTangents.size(), 0);
+		
+		for (i = 0; i < sphereIndices.size(); i += 3) {
+			const auto index0 = sphereIndices[i + 0];
+			const auto index1 = sphereIndices[i + 1];
+			const auto index2 = sphereIndices[i + 2];
+			
+			const std::array<glm::vec3, 3> positions = {
+					sphereVertices[index0],
+					sphereVertices[index1],
+					sphereVertices[index2]
+			};
+			
+			const std::array<glm::vec2, 3> uvs = {
+					sphereUVCoords[index0],
+					sphereUVCoords[index1],
+					sphereUVCoords[index2]
+			};
+			
+			const glm::vec3 tangent = generateTangent(positions, uvs);
+			
+			sphereTangents[index0] += tangent;
+			sphereTangents[index1] += tangent;
+			sphereTangents[index2] += tangent;
+			
+			sphereTangentWeights[index0]++;
+			sphereTangentWeights[index1]++;
+			sphereTangentWeights[index2]++;
+		}
+		
+		for (i = 0; i < sphereTangents.size(); i++) {
+			if (sphereTangentWeights[i] <= 0) {
+				continue;
+			}
+			
+			sphereTangents[i] /= sphereTangentWeights[i];
+		}
+		
 		auto positionBuffer = buffer<glm::vec3>(core, BufferType::VERTEX, sphereVertices.size());
 		positionBuffer.fill(sphereVertices);
 		
@@ -88,13 +130,17 @@ namespace vkcv::geometry {
 		auto uvBuffer = buffer<glm::vec2>(core, BufferType::VERTEX, sphereUVCoords.size());
 		uvBuffer.fill(sphereUVCoords);
 		
+		auto tangentBuffer = buffer<glm::vec3>(core, BufferType::VERTEX, sphereTangents.size());
+		tangentBuffer.fill(sphereTangents);
+		
 		auto indexBuffer = buffer<uint32_t>(core, BufferType::INDEX, sphereIndices.size());
 		indexBuffer.fill(sphereIndices);
 		
 		VertexData data ({
 			vkcv::vertexBufferBinding(positionBuffer.getHandle()),
 			vkcv::vertexBufferBinding(normalBuffer.getHandle()),
-			vkcv::vertexBufferBinding(uvBuffer.getHandle())
+			vkcv::vertexBufferBinding(uvBuffer.getHandle()),
+			vkcv::vertexBufferBinding(tangentBuffer.getHandle())
 		});
 		
 		data.setIndexBuffer(indexBuffer.getHandle(), IndexBitCount::Bit32);
