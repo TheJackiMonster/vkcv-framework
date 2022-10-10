@@ -200,7 +200,7 @@ namespace vkcv::geometry {
 		const auto& position = getPosition();
 		const auto& size = getSize();
 		
-		for (size_t i = 0; i < 8; i++) {
+		for (size_t i = 0; i < 24; i++) {
 			cuboidPositions[i * 3 + 0] = cuboidPositions[i * 3 + 0] * size.x + position.x;
 			cuboidPositions[i * 3 + 1] = cuboidPositions[i * 3 + 1] * size.y + position.y;
 			cuboidPositions[i * 3 + 2] = cuboidPositions[i * 3 + 2] * size.z + position.z;
