@@ -192,6 +192,7 @@ namespace vkcv {
 		}
 
 		const vma::Allocator &allocator = getCore().getContext().getAllocator();
+		uint32_t requiredArrayLayers = 1;
 
 		vk::ImageType imageType = vk::ImageType::e3D;
 		vk::ImageViewType imageViewType = vk::ImageViewType::e3D;
@@ -212,6 +213,8 @@ namespace vkcv {
 		}
 		
 		if (config.isCubeMapImage()) {
+			requiredArrayLayers = 6;
+			
 			imageViewType = vk::ImageViewType::eCube;
 			createFlags |= vk::ImageCreateFlagBits::eCubeCompatible;
 		} else
@@ -235,7 +238,10 @@ namespace vkcv {
 			)
 		);
 
-		const uint32_t arrayLayers = std::min<uint32_t>(1, imageFormatProperties.maxArrayLayers);
+		const uint32_t arrayLayers = std::min<uint32_t>(
+				requiredArrayLayers,
+				imageFormatProperties.maxArrayLayers
+		);
 
 		const vk::ImageCreateInfo imageCreateInfo(
 			createFlags,
