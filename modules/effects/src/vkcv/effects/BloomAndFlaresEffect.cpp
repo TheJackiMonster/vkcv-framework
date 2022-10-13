@@ -294,7 +294,7 @@ namespace vkcv::effects {
 					cmdStream,
 					m_downsamplePipeline,
 					dispatch,
-					{ DescriptorSetUsage(0, mipDescriptorSets[mipLevel]) },
+					{ useDescriptorSet(0, mipDescriptorSets[mipLevel]) },
 					PushConstants(0)
 			);
 			
@@ -342,7 +342,7 @@ namespace vkcv::effects {
 					cmdStream,
 					m_upsamplePipeline,
 					dispatch,
-					{ DescriptorSetUsage(0, mipDescriptorSets[mipLevel - 1]) },
+					{ useDescriptorSet(0, mipDescriptorSets[mipLevel - 1]) },
 					PushConstants(0)
 			);
 			
@@ -388,7 +388,7 @@ namespace vkcv::effects {
 				cmdStream,
 				m_lensFlaresPipeline,
 				dispatch,
-				{ DescriptorSetUsage(0, m_lensFlaresDescriptorSet) },
+				{ useDescriptorSet(0, m_lensFlaresDescriptorSet) },
 				PushConstants(0)
 		);
 	}
@@ -455,7 +455,7 @@ namespace vkcv::effects {
 				cmdStream,
 				m_compositePipeline,
 				dispatch,
-				{ DescriptorSetUsage(0, m_compositeDescriptorSet) },
+				{ useDescriptorSet(0, m_compositeDescriptorSet) },
 				m_advanced? pushConstants : PushConstants(0)
 		);
 	}
@@ -475,15 +475,15 @@ namespace vkcv::effects {
 				static_cast<float>(m_core.getImageHeight(output)) * 0.5f
 		));
 		
+		vkcv::ImageConfig imageConfig (halfWidth, halfHeight);
+		imageConfig.setSupportingStorage(true);
+		
 		if ((!m_blurImage) ||
 			(halfWidth != m_core.getImageWidth(m_blurImage)) ||
 			(halfHeight != m_core.getImageHeight(m_blurImage))) {
 			m_blurImage = m_core.createImage(
 					m_core.getImageFormat(output),
-					halfWidth,
-					halfHeight,
-					1,
-					true,
+					imageConfig,
 					true
 			);
 			
@@ -510,10 +510,7 @@ namespace vkcv::effects {
 			(halfHeight != m_core.getImageHeight(m_flaresImage))) {
 			m_flaresImage = m_core.createImage(
 					m_core.getImageFormat(output),
-					halfWidth,
-					halfHeight,
-					1,
-					true,
+					imageConfig,
 					true
 			);
 			

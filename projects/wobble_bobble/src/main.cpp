@@ -309,8 +309,10 @@ int main(int argc, const char **argv) {
 	
 	vkcv::ImageHandle depthBuffer = core.createImage(
 			vk::Format::eD32Sfloat,
-			swapchainExtent.width,
-			swapchainExtent.height
+			vkcv::ImageConfig(
+					swapchainExtent.width,
+					swapchainExtent.height
+			)
 	);
 	
 	vkcv::Image grid = vkcv::image(
@@ -605,8 +607,10 @@ int main(int argc, const char **argv) {
 		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
 			depthBuffer = core.createImage(
 					vk::Format::eD32Sfloat,
-					swapchainWidth,
-					swapchainHeight
+					vkcv::ImageConfig(
+							swapchainWidth,
+							swapchainHeight
+					)
 			);
 			
 			swapchainExtent.width = swapchainWidth;

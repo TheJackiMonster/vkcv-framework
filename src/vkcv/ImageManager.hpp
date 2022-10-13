@@ -10,7 +10,7 @@
 
 #include "BufferManager.hpp"
 #include "HandleManager.hpp"
-#include "vkcv/Multisampling.hpp"
+#include "vkcv/ImageConfig.hpp"
 
 namespace vkcv {
 
@@ -86,12 +86,9 @@ namespace vkcv {
 
 		~ImageManager() noexcept override;
 
-		[[nodiscard]] ImageHandle createImage(uint32_t width, uint32_t height, uint32_t depth,
-											  vk::Format format, uint32_t mipCount,
-											  bool supportStorage, bool supportColorAttachment,
-											  Multisampling msaa);
-
-		[[nodiscard]] ImageHandle createSwapchainImage() const;
+		[[nodiscard]] ImageHandle createImage(vk::Format format,
+											  uint32_t mipCount,
+											  const ImageConfig& config);
 
 		[[nodiscard]] vk::Image getVulkanImage(const ImageHandle &handle) const;
 

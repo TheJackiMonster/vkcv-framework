@@ -21,6 +21,7 @@
 #include "EventFunctionTypes.hpp"
 #include "GraphicsPipelineConfig.hpp"
 #include "Handles.hpp"
+#include "ImageConfig.hpp"
 #include "PassConfig.hpp"
 #include "PushConstants.hpp"
 #include "Result.hpp"
@@ -318,24 +319,17 @@ namespace vkcv {
 					  SamplerBorderColor borderColor = SamplerBorderColor::INT_ZERO_OPAQUE);
 
 		/**
-		 * Creates an #Image with a given format, width, height, depth
-		 * and a lot more optional parameters.
+		 * Creates an #Image with a given format, configuration
+		 * and whether a mipchain should be created.
 		 *
 		 * @param[in] format Image format
-		 * @param[in] width Image width
-		 * @param[in] height Image height
-		 * @param[in] depth Image depth
+		 * @param[in] config Image configuration
 		 * @param[in] createMipChain Flag to create a mip chain
-		 * @param[in] supportStorage Flag whether support storage
-		 * @param[in] supportColorAttachment Flag whether attachment is supported
-		 * @param[in] multisampling Multisampling
 		 * @return Image handle
 		 */
-		[[nodiscard]] ImageHandle createImage(vk::Format format, uint32_t width, uint32_t height,
-											  uint32_t depth = 1, bool createMipChain = false,
-											  bool supportStorage = false,
-											  bool supportColorAttachment = false,
-											  Multisampling multisampling = Multisampling::None);
+		[[nodiscard]] ImageHandle createImage(vk::Format format,
+											  const ImageConfig& config,
+											  bool createMipChain = false);
 
 		/**
 		 * @brief Fills the image with given data of a specified size

@@ -10,6 +10,7 @@
 #include "BufferTypes.hpp"
 #include "Core.hpp"
 #include "Handles.hpp"
+#include "ImageConfig.hpp"
 #include "Multisampling.hpp"
 
 namespace vkcv {
@@ -131,5 +132,10 @@ namespace vkcv {
 				bool createMipChain = false, bool supportStorage = false,
 				bool supportColorAttachment = false,
 				Multisampling multisampling = Multisampling::None);
+	
+	Image image(Core &core,
+				vk::Format format,
+				const ImageConfig &config,
+				bool createMipChain = false);
 
 } // namespace vkcv

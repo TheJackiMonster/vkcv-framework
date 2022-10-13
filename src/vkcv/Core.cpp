@@ -859,17 +859,24 @@ namespace vkcv {
 											   mipLodBias, borderColor);
 	}
 
-	ImageHandle Core::createImage(vk::Format format, uint32_t width, uint32_t height,
-								  uint32_t depth, bool createMipChain, bool supportStorage,
-								  bool supportColorAttachment, Multisampling multisampling) {
+	ImageHandle Core::createImage(vk::Format format,
+								  const ImageConfig& config,
+								  bool createMipChain) {
 		uint32_t mipCount = 1;
 		if (createMipChain) {
-			mipCount =
-				1 + (uint32_t)std::floor(std::log2(std::max(width, std::max(height, depth))));
+			mipCount = 1 + (uint32_t) std::floor(
+					std::log2(std::max(
+							config.getWidth(),
+							std::max(config.getHeight(), config.getDepth()))
+					)
+			);
 		}
 
-		return m_ImageManager->createImage(width, height, depth, format, mipCount, supportStorage,
-										   supportColorAttachment, multisampling);
+		return m_ImageManager->createImage(
+				format,
+				mipCount,
+				config
+		);
 	}
 
 	void Core::fillImage(const ImageHandle &image, const void* data, size_t size) {
