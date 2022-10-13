@@ -338,8 +338,14 @@ namespace vkcv {
 		 * @param[in] image Image handle
 		 * @param[in] data Image data pointer
 		 * @param[in] size Size of data
+		 * @param[in] firstLayer First image layer
+		 * @param[in] layerCount Image layer count
 		 */
-		void fillImage(const ImageHandle &image, const void* data, size_t size);
+		void fillImage(const ImageHandle &image,
+					   const void* data,
+					   size_t size,
+					   uint32_t firstLayer,
+					   uint32_t layerCount);
 
 		/**
 		 * @brief Switches the images layout synchronously if possible.

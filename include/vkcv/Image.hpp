@@ -112,6 +112,17 @@ namespace vkcv {
 		 * the actual number of copied bytes is min(size, imageDataSize)
 		 */
 		void fill(const void* data, size_t size = SIZE_MAX);
+		
+		/**
+		 * @brief Fills a specific image layer with data of a given
+		 * size in bytes.
+		 *
+		 * @param[in] layer Image layer destination
+		 * @param[in] data Pointer to the source data
+		 * @param[in] size Lower limit of the data size to copy in bytes,
+		 * the actual number of copied bytes is min(size, imageDataSize)
+		 */
+		void fillLayer(uint32_t layer, const void* data, size_t size = SIZE_MAX);
 
 		/**
 		 * @brief Records mip chain generation to command stream,

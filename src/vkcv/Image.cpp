@@ -64,7 +64,11 @@ namespace vkcv {
 	}
 
 	void Image::fill(const void* data, size_t size) {
-		m_core->fillImage(m_handle, data, size);
+		m_core->fillImage(m_handle, data, size, 0, 0);
+	}
+	
+	void Image::fillLayer(uint32_t layer, const void* data, size_t size) {
+		m_core->fillImage(m_handle, data, size, layer, 1);
 	}
 
 	void Image::recordMipChainGeneration(const vkcv::CommandStreamHandle &cmdStream,

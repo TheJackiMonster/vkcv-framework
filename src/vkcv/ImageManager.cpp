@@ -488,22 +488,48 @@ namespace vkcv {
 		}
 	}
 
-	void ImageManager::fillImage(const ImageHandle &handle, const void* data, size_t size) {
+	void ImageManager::fillImage(const ImageHandle &handle,
+								 const void* data,
+								 size_t size,
+								 uint32_t firstLayer,
+								 uint32_t layerCount) {
 		if (handle.isSwapchainImage()) {
 			vkcv_log(LogLevel::ERROR, "Swapchain image cannot be filled");
 			return;
 		}
 
 		auto &image = (*this) [handle];
+		
+		const uint32_t baseArrayLayer = std::min<uint32_t>(firstLayer, image.m_layers);
+		
+		if (baseArrayLayer >= image.m_layers) {
+			return;
+		}
+		
+		uint32_t arrayLayerCount;
+		
+		if (layerCount > 0) {
+			arrayLayerCount = std::min<uint32_t>(layerCount, image.m_layers);
+		} else {
+			arrayLayerCount = image.m_layers;
+		}
+		
+		if (arrayLayerCount < baseArrayLayer) {
+			return;
+		}
+		
+		arrayLayerCount -= baseArrayLayer;
 		switchImageLayoutImmediate(handle, vk::ImageLayout::eTransferDstOptimal);
 
-		const size_t image_size =
-			(image.m_width * image.m_height * image.m_depth * getBytesPerPixel(image.m_format));
+		const size_t image_size = (
+				image.m_width * image.m_height * image.m_depth * getBytesPerPixel(image.m_format)
+		);
 
 		const size_t max_size = std::min(size, image_size);
 
 		BufferHandle bufferHandle = getBufferManager().createBuffer(
-			TypeGuard(1), BufferType::STAGING, BufferMemoryType::DEVICE_LOCAL, max_size, false);
+			TypeGuard(1), BufferType::STAGING, BufferMemoryType::DEVICE_LOCAL, max_size, false
+		);
 
 		getBufferManager().fillBuffer(bufferHandle, data, max_size, 0);
 
@@ -514,7 +540,8 @@ namespace vkcv {
 
 		core.recordCommandsToStream(
 			stream,
-			[&image, &stagingBuffer](const vk::CommandBuffer &commandBuffer) {
+			[&image, &stagingBuffer, &baseArrayLayer, &arrayLayerCount]
+			(const vk::CommandBuffer &commandBuffer) {
 				vk::ImageAspectFlags aspectFlags;
 
 				if (isDepthImageFormat(image.m_format)) {
@@ -524,16 +551,26 @@ namespace vkcv {
 				}
 
 				const vk::BufferImageCopy region(
-					0, 0, 0, vk::ImageSubresourceLayers(aspectFlags, 0, 0, image.m_layers),
+					0,
+					0,
+					0,
+					vk::ImageSubresourceLayers(aspectFlags, 0, baseArrayLayer, arrayLayerCount),
 					vk::Offset3D(0, 0, 0),
-					vk::Extent3D(image.m_width, image.m_height, image.m_depth));
+					vk::Extent3D(image.m_width, image.m_height, image.m_depth)
+				);
 
-				commandBuffer.copyBufferToImage(stagingBuffer, image.m_handle,
-												vk::ImageLayout::eTransferDstOptimal, 1, &region);
+				commandBuffer.copyBufferToImage(
+						stagingBuffer,
+						image.m_handle,
+						vk::ImageLayout::eTransferDstOptimal,
+						1,
+						&region
+				);
 			},
 			[&]() {
 				switchImageLayoutImmediate(handle, vk::ImageLayout::eShaderReadOnlyOptimal);
-			});
+			}
+		);
 
 		core.submitCommandStream(stream, false);
 	}
@@ -553,17 +590,23 @@ namespace vkcv {
 		auto &dstImage = (*this) [dst];
 
 		vk::ImageResolve region(
-			vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
+			vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, srcImage.m_layers),
 			vk::Offset3D(0, 0, 0),
-			vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
+			vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, dstImage.m_layers),
 			vk::Offset3D(0, 0, 0),
-			vk::Extent3D(dstImage.m_width, dstImage.m_height, dstImage.m_depth));
+			vk::Extent3D(dstImage.m_width, dstImage.m_height, dstImage.m_depth)
+		);
 
 		recordImageLayoutTransition(src, 0, 0, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer);
 		recordImageLayoutTransition(dst, 0, 0, vk::ImageLayout::eTransferDstOptimal, cmdBuffer);
 
-		cmdBuffer.resolveImage(srcImage.m_handle, srcImage.m_layout, dstImage.m_handle,
-							   dstImage.m_layout, region);
+		cmdBuffer.resolveImage(
+				srcImage.m_handle,
+				srcImage.m_layout,
+				dstImage.m_handle,
+				dstImage.m_layout,
+				region
+		);
 	}
 
 	uint32_t ImageManager::getImageWidth(const ImageHandle &handle) const {

@@ -106,7 +106,11 @@ namespace vkcv {
 
 		void recordImageMemoryBarrier(const ImageHandle &handle, vk::CommandBuffer cmdBuffer);
 
-		void fillImage(const ImageHandle &handle, const void* data, size_t size);
+		void fillImage(const ImageHandle &handle,
+					   const void* data,
+					   size_t size,
+					   uint32_t firstLayer,
+					   uint32_t layerCount);
 
 		void recordImageMipChainGenerationToCmdStream(const vkcv::CommandStreamHandle &cmdStream,
 													  const ImageHandle &handle);

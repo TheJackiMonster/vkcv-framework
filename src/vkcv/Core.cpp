@@ -879,8 +879,12 @@ namespace vkcv {
 		);
 	}
 
-	void Core::fillImage(const ImageHandle &image, const void* data, size_t size) {
-		m_ImageManager->fillImage(image, data, size);
+	void Core::fillImage(const ImageHandle &image,
+						 const void* data,
+						 size_t size,
+						 uint32_t firstLayer,
+						 uint32_t layerCount) {
+		m_ImageManager->fillImage(image, data, size, firstLayer, layerCount);
 	}
 
 	void Core::switchImageLayout(const ImageHandle &image, vk::ImageLayout layout) {
