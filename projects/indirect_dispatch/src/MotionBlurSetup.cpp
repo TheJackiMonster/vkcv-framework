@@ -9,51 +9,37 @@ MotionBlurRenderTargets createRenderTargets(const uint32_t width, const uint32_t
 
 	// divide and ceil to int
 	const uint32_t motionMaxWidth  = (width  + (MotionBlurConfig::maxMotionTileSize - 1)) / MotionBlurConfig::maxMotionTileSize;
-	const uint32_t motionMaxheight = (height + (MotionBlurConfig::maxMotionTileSize - 1)) / MotionBlurConfig::maxMotionTileSize;
+	const uint32_t motionMaxHeight = (height + (MotionBlurConfig::maxMotionTileSize - 1)) / MotionBlurConfig::maxMotionTileSize;
 
+	vkcv::ImageConfig targetConfig (motionMaxWidth, motionMaxHeight);
+	targetConfig.setSupportingStorage(true);
+	
 	targets.motionMax = core.createImage(
 		MotionBlurConfig::motionVectorTileFormat,
-		motionMaxWidth,
-		motionMaxheight,
-		1,
-		false,
-		true
+		targetConfig
 	);
 
 	targets.motionMaxNeighbourhood = core.createImage(
 		MotionBlurConfig::motionVectorTileFormat,
-		motionMaxWidth,
-		motionMaxheight,
-		1,
-		false,
-		true
+		targetConfig
 	);
 
 	targets.motionMin = core.createImage(
 		MotionBlurConfig::motionVectorTileFormat,
-		motionMaxWidth,
-		motionMaxheight,
-		1,
-		false,
-		true
+		targetConfig
 	);
 
 	targets.motionMinNeighbourhood = core.createImage(
 		MotionBlurConfig::motionVectorTileFormat,
-		motionMaxWidth,
-		motionMaxheight,
-		1,
-		false,
-		true
+		targetConfig
 	);
+	
+	vkcv::ImageConfig outputConfig (width, height);
+	outputConfig.setSupportingStorage(true);
 
 	targets.outputColor = core.createImage(
 		MotionBlurConfig::outputColorFormat,
-		width,
-		height,
-		1,
-		false,
-		true
+		outputConfig
 	);
 
 	return targets;

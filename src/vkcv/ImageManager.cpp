@@ -153,21 +153,22 @@ namespace vkcv {
 		}
 	}
 
-	ImageHandle ImageManager::createImage(uint32_t width, uint32_t height, uint32_t depth,
-										  vk::Format format, uint32_t mipCount, bool supportStorage,
-										  bool supportColorAttachment, Multisampling msaa) {
+	ImageHandle ImageManager::createImage(vk::Format format,
+										  uint32_t mipCount,
+										  const ImageConfig& config) {
 		const vk::PhysicalDevice &physicalDevice = getCore().getContext().getPhysicalDevice();
-
 		const vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(format);
 
 		vk::ImageCreateFlags createFlags;
-		vk::ImageUsageFlags imageUsageFlags =
-			(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst
-			 | vk::ImageUsageFlagBits::eTransferSrc);
+		vk::ImageUsageFlags imageUsageFlags = (
+				vk::ImageUsageFlagBits::eSampled |
+				vk::ImageUsageFlagBits::eTransferDst |
+				vk::ImageUsageFlagBits::eTransferSrc
+		);
 
 		vk::ImageTiling imageTiling = vk::ImageTiling::eOptimal;
 
-		if (supportStorage) {
+		if (config.isSupportingStorage()) {
 			imageUsageFlags |= vk::ImageUsageFlagBits::eStorage;
 
 			if (!(formatProperties.optimalTilingFeatures
@@ -180,7 +181,7 @@ namespace vkcv {
 			}
 		}
 
-		if (supportColorAttachment) {
+		if (config.isSupportingColorAttachment()) {
 			imageUsageFlags |= vk::ImageUsageFlagBits::eColorAttachment;
 		}
 
@@ -191,12 +192,13 @@ namespace vkcv {
 		}
 
 		const vma::Allocator &allocator = getCore().getContext().getAllocator();
+		uint32_t requiredArrayLayers = 1;
 
 		vk::ImageType imageType = vk::ImageType::e3D;
 		vk::ImageViewType imageViewType = vk::ImageViewType::e3D;
 
-		if (depth <= 1) {
-			if (height <= 1) {
+		if (config.getDepth() <= 1) {
+			if (config.getHeight() <= 1) {
 				imageType = vk::ImageType::e1D;
 				imageViewType = vk::ImageViewType::e1D;
 			} else {
@@ -209,7 +211,13 @@ namespace vkcv {
 			imageType = vk::ImageType::e2D;
 			imageViewType = vk::ImageViewType::e2D;
 		}
-
+		
+		if (config.isCubeMapImage()) {
+			requiredArrayLayers = 6;
+			
+			imageViewType = vk::ImageViewType::eCube;
+			createFlags |= vk::ImageCreateFlagBits::eCubeCompatible;
+		} else
 		if (vk::ImageType::e3D == imageType) {
 			createFlags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
 		}
@@ -221,27 +229,56 @@ namespace vkcv {
 			imageTiling = vk::ImageTiling::eLinear;
 		}
 
-		const vk::ImageFormatProperties imageFormatProperties =
-			physicalDevice.getImageFormatProperties(format, imageType, imageTiling,
-													imageUsageFlags);
+		const vk::ImageFormatProperties imageFormatProperties = (
+			physicalDevice.getImageFormatProperties(
+					format,
+					imageType,
+					imageTiling,
+					imageUsageFlags
+			)
+		);
 
-		const uint32_t arrayLayers = std::min<uint32_t>(1, imageFormatProperties.maxArrayLayers);
+		const uint32_t arrayLayers = std::min<uint32_t>(
+				requiredArrayLayers,
+				imageFormatProperties.maxArrayLayers
+		);
 
 		const vk::ImageCreateInfo imageCreateInfo(
-			createFlags, imageType, format, vk::Extent3D(width, height, depth), mipCount,
-			arrayLayers, msaaToSampleCountFlagBits(msaa), imageTiling, imageUsageFlags,
-			vk::SharingMode::eExclusive, {}, vk::ImageLayout::eUndefined);
+			createFlags,
+			imageType,
+			format,
+			vk::Extent3D(
+					config.getWidth(),
+					config.getHeight(),
+					config.getDepth()
+			),
+			mipCount,
+			arrayLayers,
+			msaaToSampleCountFlagBits(
+					config.getMultisampling()
+			),
+			imageTiling,
+			imageUsageFlags,
+			vk::SharingMode::eExclusive,
+			{},
+			vk::ImageLayout::eUndefined
+		);
 
 		auto imageAllocation = allocator.createImage(
 			imageCreateInfo,
-			vma::AllocationCreateInfo(vma::AllocationCreateFlags(), vma::MemoryUsage::eGpuOnly,
-									  vk::MemoryPropertyFlagBits::eDeviceLocal,
-									  vk::MemoryPropertyFlagBits::eDeviceLocal, 0, vma::Pool(),
-									  nullptr));
+			vma::AllocationCreateInfo(
+					vma::AllocationCreateFlags(),
+					vma::MemoryUsage::eGpuOnly,
+					vk::MemoryPropertyFlagBits::eDeviceLocal,
+					vk::MemoryPropertyFlagBits::eDeviceLocal,
+					0,
+					vma::Pool(),
+					nullptr
+			)
+		);
 
 		vk::Image image = imageAllocation.first;
 		vma::Allocation allocation = imageAllocation.second;
-
 		vk::ImageAspectFlags aspectFlags;
 
 		if (isDepthFormat) {
@@ -257,37 +294,65 @@ namespace vkcv {
 
 		for (uint32_t mip = 0; mip < mipCount; mip++) {
 			const vk::ImageViewCreateInfo imageViewCreateInfo(
-				{}, image, imageViewType, format,
+				{},
+				image,
+				imageViewType,
+				format,
 				vk::ComponentMapping(
-					vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity,
-					vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity),
-				vk::ImageSubresourceRange(aspectFlags, mip, mipCount - mip, 0, arrayLayers));
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity
+				),
+				vk::ImageSubresourceRange(
+						aspectFlags,
+						mip,
+						mipCount - mip,
+						0,
+						arrayLayers
+				)
+			);
 
 			views.push_back(device.createImageView(imageViewCreateInfo));
 		}
 
 		for (uint32_t mip = 0; mip < mipCount; mip++) {
 			const vk::ImageViewCreateInfo imageViewCreateInfo(
-				{}, image, vk::ImageViewType::e2DArray, format,
+				{},
+				image,
+				vk::ImageViewType::e2DArray,
+				format,
 				vk::ComponentMapping(
-					vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity,
-					vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity),
-				vk::ImageSubresourceRange(aspectFlags, mip, 1, 0, arrayLayers));
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity
+				),
+				vk::ImageSubresourceRange(
+						aspectFlags,
+						mip,
+						1,
+						0,
+						arrayLayers
+				)
+			);
 
 			arrayViews.push_back(device.createImageView(imageViewCreateInfo));
 		}
 
-		return add({ image, allocation,
-
-					 views, arrayViews,
-
-					 width, height, depth,
-
-					 format, arrayLayers, vk::ImageLayout::eUndefined, supportStorage });
-	}
-
-	ImageHandle ImageManager::createSwapchainImage() const {
-		return ImageHandle::createSwapchainImageHandle();
+		return add({
+			image,
+			allocation,
+			views,
+			arrayViews,
+			config.getWidth(),
+			config.getHeight(),
+			config.getDepth(),
+			format,
+			arrayLayers,
+			vk::ImageLayout::eUndefined,
+			config.isSupportingStorage()
+		});
 	}
 
 	vk::Image ImageManager::getVulkanImage(const ImageHandle &handle) const {
@@ -423,22 +488,48 @@ namespace vkcv {
 		}
 	}
 
-	void ImageManager::fillImage(const ImageHandle &handle, const void* data, size_t size) {
+	void ImageManager::fillImage(const ImageHandle &handle,
+								 const void* data,
+								 size_t size,
+								 uint32_t firstLayer,
+								 uint32_t layerCount) {
 		if (handle.isSwapchainImage()) {
 			vkcv_log(LogLevel::ERROR, "Swapchain image cannot be filled");
 			return;
 		}
 
 		auto &image = (*this) [handle];
+		
+		const uint32_t baseArrayLayer = std::min<uint32_t>(firstLayer, image.m_layers);
+		
+		if (baseArrayLayer >= image.m_layers) {
+			return;
+		}
+		
+		uint32_t arrayLayerCount;
+		
+		if (layerCount > 0) {
+			arrayLayerCount = std::min<uint32_t>(layerCount, image.m_layers);
+		} else {
+			arrayLayerCount = image.m_layers;
+		}
+		
+		if (arrayLayerCount < baseArrayLayer) {
+			return;
+		}
+		
+		arrayLayerCount -= baseArrayLayer;
 		switchImageLayoutImmediate(handle, vk::ImageLayout::eTransferDstOptimal);
 
-		const size_t image_size =
-			(image.m_width * image.m_height * image.m_depth * getBytesPerPixel(image.m_format));
+		const size_t image_size = (
+				image.m_width * image.m_height * image.m_depth * getBytesPerPixel(image.m_format)
+		);
 
 		const size_t max_size = std::min(size, image_size);
 
 		BufferHandle bufferHandle = getBufferManager().createBuffer(
-			TypeGuard(1), BufferType::STAGING, BufferMemoryType::DEVICE_LOCAL, max_size, false);
+			TypeGuard(1), BufferType::STAGING, BufferMemoryType::DEVICE_LOCAL, max_size, false
+		);
 
 		getBufferManager().fillBuffer(bufferHandle, data, max_size, 0);
 
@@ -449,7 +540,8 @@ namespace vkcv {
 
 		core.recordCommandsToStream(
 			stream,
-			[&image, &stagingBuffer](const vk::CommandBuffer &commandBuffer) {
+			[&image, &stagingBuffer, &baseArrayLayer, &arrayLayerCount]
+			(const vk::CommandBuffer &commandBuffer) {
 				vk::ImageAspectFlags aspectFlags;
 
 				if (isDepthImageFormat(image.m_format)) {
@@ -459,16 +551,26 @@ namespace vkcv {
 				}
 
 				const vk::BufferImageCopy region(
-					0, 0, 0, vk::ImageSubresourceLayers(aspectFlags, 0, 0, image.m_layers),
+					0,
+					0,
+					0,
+					vk::ImageSubresourceLayers(aspectFlags, 0, baseArrayLayer, arrayLayerCount),
 					vk::Offset3D(0, 0, 0),
-					vk::Extent3D(image.m_width, image.m_height, image.m_depth));
+					vk::Extent3D(image.m_width, image.m_height, image.m_depth)
+				);
 
-				commandBuffer.copyBufferToImage(stagingBuffer, image.m_handle,
-												vk::ImageLayout::eTransferDstOptimal, 1, &region);
+				commandBuffer.copyBufferToImage(
+						stagingBuffer,
+						image.m_handle,
+						vk::ImageLayout::eTransferDstOptimal,
+						1,
+						&region
+				);
 			},
 			[&]() {
 				switchImageLayoutImmediate(handle, vk::ImageLayout::eShaderReadOnlyOptimal);
-			});
+			}
+		);
 
 		core.submitCommandStream(stream, false);
 	}
@@ -488,17 +590,23 @@ namespace vkcv {
 		auto &dstImage = (*this) [dst];
 
 		vk::ImageResolve region(
-			vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
+			vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, srcImage.m_layers),
 			vk::Offset3D(0, 0, 0),
-			vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
+			vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, dstImage.m_layers),
 			vk::Offset3D(0, 0, 0),
-			vk::Extent3D(dstImage.m_width, dstImage.m_height, dstImage.m_depth));
+			vk::Extent3D(dstImage.m_width, dstImage.m_height, dstImage.m_depth)
+		);
 
 		recordImageLayoutTransition(src, 0, 0, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer);
 		recordImageLayoutTransition(dst, 0, 0, vk::ImageLayout::eTransferDstOptimal, cmdBuffer);
 
-		cmdBuffer.resolveImage(srcImage.m_handle, srcImage.m_layout, dstImage.m_handle,
-							   dstImage.m_layout, region);
+		cmdBuffer.resolveImage(
+				srcImage.m_handle,
+				srcImage.m_layout,
+				dstImage.m_handle,
+				dstImage.m_layout,
+				region
+		);
 	}
 
 	uint32_t ImageManager::getImageWidth(const ImageHandle &handle) const {
@@ -562,17 +670,19 @@ namespace vkcv {
 		assert(images.size() == views.size());
 		m_swapchainImages.clear();
 		for (size_t i = 0; i < images.size(); i++) {
-			m_swapchainImages.push_back({ images [i],
-										  nullptr,
-										  { views [i] },
-										  {},
-										  width,
-										  height,
-										  1,
-										  format,
-										  1,
-										  vk::ImageLayout::eUndefined,
-										  false });
+			m_swapchainImages.push_back({
+				images [i],
+				nullptr,
+				{ views [i] },
+				{},
+				width,
+				height,
+				1,
+				format,
+				1,
+				vk::ImageLayout::eUndefined,
+				false
+			});
 		}
 	}
 

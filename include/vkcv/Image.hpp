@@ -10,6 +10,7 @@
 #include "BufferTypes.hpp"
 #include "Core.hpp"
 #include "Handles.hpp"
+#include "ImageConfig.hpp"
 #include "Multisampling.hpp"
 
 namespace vkcv {
@@ -111,6 +112,17 @@ namespace vkcv {
 		 * the actual number of copied bytes is min(size, imageDataSize)
 		 */
 		void fill(const void* data, size_t size = SIZE_MAX);
+		
+		/**
+		 * @brief Fills a specific image layer with data of a given
+		 * size in bytes.
+		 *
+		 * @param[in] layer Image layer destination
+		 * @param[in] data Pointer to the source data
+		 * @param[in] size Lower limit of the data size to copy in bytes,
+		 * the actual number of copied bytes is min(size, imageDataSize)
+		 */
+		void fillLayer(uint32_t layer, const void* data, size_t size = SIZE_MAX);
 
 		/**
 		 * @brief Records mip chain generation to command stream,
@@ -131,5 +143,10 @@ namespace vkcv {
 				bool createMipChain = false, bool supportStorage = false,
 				bool supportColorAttachment = false,
 				Multisampling multisampling = Multisampling::None);
+	
+	Image image(Core &core,
+				vk::Format format,
+				const ImageConfig &config,
+				bool createMipChain = false);
 
 } // namespace vkcv

@@ -301,33 +301,24 @@ bool loadComputePass(vkcv::Core& core, const std::filesystem::path& path, Comput
 
 AppRenderTargets createRenderTargets(vkcv::Core& core, const uint32_t width, const uint32_t height) {
 	AppRenderTargets targets;
+	vkcv::ImageConfig depthBufferConfig (width, height);
 
 	targets.depthBuffer = core.createImage(
 		AppConfig::depthBufferFormat,
-		width,
-		height,
-		1,
-		false
+		depthBufferConfig
 	);
+	
+	vkcv::ImageConfig bufferConfig (width, height);
+	bufferConfig.setSupportingColorAttachment(true);
 
 	targets.colorBuffer = core.createImage(
 		AppConfig::colorBufferFormat,
-		width,
-		height,
-		1,
-		false,
-		false,
-		true
+		bufferConfig
 	);
 
 	targets.motionBuffer = core.createImage(
 		AppConfig::motionBufferFormat,
-		width,
-		height,
-		1,
-		false,
-		false,
-		true
+		bufferConfig
 	);
 
 	return targets;

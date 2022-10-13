@@ -274,11 +274,12 @@ namespace vkcv::upscaling {
 		if ((!m_intermediateImage) ||
 			(outputWidth != m_core.getImageWidth(m_intermediateImage)) ||
 			(outputHeight != m_core.getImageHeight(m_intermediateImage))) {
+			ImageConfig imageConfig (outputWidth, outputHeight);
+			imageConfig.setSupportingStorage(true);
+			
 			m_intermediateImage = m_core.createImage(
 					m_core.getImageFormat(output),
-					outputWidth, outputHeight,1,
-					false,
-					true
+					imageConfig
 			);
 			
 			m_core.prepareImageForStorage(cmdStream, m_intermediateImage);
@@ -333,7 +334,7 @@ namespace vkcv::upscaling {
 					cmdStream,
 					m_easuPipeline,
 					dispatch,
-					{DescriptorSetUsage(0, m_easuDescriptorSet, { 0 })},
+					{ useDescriptorSet(0, m_easuDescriptorSet, { 0 }) },
 					PushConstants(0)
 			);
 			
@@ -353,7 +354,7 @@ namespace vkcv::upscaling {
 					cmdStream,
 					m_rcasPipeline,
 					dispatch,
-					{DescriptorSetUsage(0,m_rcasDescriptorSet, { 0 })},
+					{ useDescriptorSet(0,m_rcasDescriptorSet, { 0 }) },
 					PushConstants(0)
 			);
 			
@@ -371,7 +372,7 @@ namespace vkcv::upscaling {
 					cmdStream,
 					m_easuPipeline,
 					dispatch,
-					{DescriptorSetUsage(0, m_easuDescriptorSet, { 0 })},
+					{ useDescriptorSet(0, m_easuDescriptorSet, { 0 }) },
 					PushConstants(0)
 			);
 		}
