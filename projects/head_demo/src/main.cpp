@@ -150,15 +150,23 @@ int main(int argc, const char** argv) {
 	
 	vkcv::ImageHandle depthBuffer = core.createImage(
 			vk::Format::eD32Sfloat,
+			vkcv::ImageConfig(
+					swapchainExtent.width,
+					swapchainExtent.height
+			)
+	);
+	
+	vkcv::ImageConfig colorBufferConfig (
 			swapchainExtent.width,
 			swapchainExtent.height
 	);
 	
+	colorBufferConfig.setSupportingStorage(true);
+	colorBufferConfig.setSupportingColorAttachment(true);
+	
 	vkcv::ImageHandle colorBuffer = core.createImage(
 			colorFormat,
-			swapchainExtent.width,
-			swapchainExtent.height,
-			1, false, true, true
+			colorBufferConfig
 	);
 	
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
@@ -168,14 +176,22 @@ int main(int argc, const char** argv) {
 	
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
 				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
-		if ((swapchainWidth != swapchainExtent.width) || ((swapchainHeight != swapchainExtent.height))) {
-			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight);
+		if ((swapchainWidth != swapchainExtent.width) ||
+			((swapchainHeight != swapchainExtent.height))) {
+			depthBuffer = core.createImage(
+					vk::Format::eD32Sfloat,
+					vkcv::ImageConfig(
+							swapchainWidth,
+							swapchainHeight
+					)
+			);
+			
+			colorBufferConfig.setWidth(swapchainWidth);
+			colorBufferConfig.setHeight(swapchainHeight);
 			
 			colorBuffer = core.createImage(
 					colorFormat,
-					swapchainExtent.width,
-					swapchainExtent.height,
-					1, false, true, true
+					colorBufferConfig
 			);
 			
 			swapchainExtent.width = swapchainWidth;

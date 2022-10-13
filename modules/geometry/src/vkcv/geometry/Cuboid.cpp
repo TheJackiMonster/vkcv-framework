@@ -41,12 +41,12 @@ namespace vkcv::geometry {
 				+0.5f, +0.5f, +0.5f,
 				
 				-0.5f, -0.5f, -0.5f,
-				-0.5f, -0.5f, +0.5f,
 				+0.5f, -0.5f, -0.5f,
+				-0.5f, -0.5f, +0.5f,
 				+0.5f, -0.5f, +0.5f,
 				-0.5f, +0.5f, -0.5f,
-				-0.5f, +0.5f, +0.5f,
 				+0.5f, +0.5f, -0.5f,
+				-0.5f, +0.5f, +0.5f,
 				+0.5f, +0.5f, +0.5f,
 				
 				-0.5f, -0.5f, -0.5f,
@@ -134,10 +134,73 @@ namespace vkcv::geometry {
 				20, 23, 21
 		};
 		
+		std::vector<glm::vec3> cuboidTangents;
+		cuboidTangents.resize(24, glm::vec3(0.0f));
+		
+		std::vector<size_t> cuboidTangentWeights;
+		cuboidTangentWeights.resize(cuboidTangents.size(), 0);
+		
+		for (size_t i = 0; i < cuboidIndices.size(); i += 3) {
+			const auto index0 = cuboidIndices[i + 0];
+			const auto index1 = cuboidIndices[i + 1];
+			const auto index2 = cuboidIndices[i + 2];
+			
+			const std::array<glm::vec3, 3> positions = {
+					glm::vec3(
+							cuboidPositions[index0 * 3 + 0],
+							cuboidPositions[index0 * 3 + 1],
+							cuboidPositions[index0 * 3 + 2]
+					),
+					glm::vec3(
+							cuboidPositions[index1 * 3 + 0],
+							cuboidPositions[index1 * 3 + 1],
+							cuboidPositions[index1 * 3 + 2]
+					),
+					glm::vec3(
+							cuboidPositions[index2 * 3 + 0],
+							cuboidPositions[index2 * 3 + 1],
+							cuboidPositions[index2 * 3 + 2]
+					)
+			};
+			
+			const std::array<glm::vec2, 3> uvs = {
+					glm::vec2(
+							cuboidUVCoords[index0 * 3 + 0],
+							cuboidUVCoords[index0 * 3 + 1]
+					),
+					glm::vec2(
+							cuboidUVCoords[index1 * 3 + 0],
+							cuboidUVCoords[index1 * 3 + 1]
+					),
+					glm::vec2(
+							cuboidUVCoords[index2 * 3 + 0],
+							cuboidUVCoords[index2 * 3 + 1]
+					)
+			};
+			
+			const glm::vec3 tangent = generateTangent(positions, uvs);
+			
+			cuboidTangents[index0] += tangent;
+			cuboidTangents[index1] += tangent;
+			cuboidTangents[index2] += tangent;
+			
+			cuboidTangentWeights[index0]++;
+			cuboidTangentWeights[index1]++;
+			cuboidTangentWeights[index2]++;
+		}
+		
+		for (size_t i = 0; i < cuboidTangents.size(); i++) {
+			if (cuboidTangentWeights[i] <= 0) {
+				continue;
+			}
+			
+			cuboidTangents[i] /= cuboidTangentWeights[i];
+		}
+		
 		const auto& position = getPosition();
 		const auto& size = getSize();
 		
-		for (size_t i = 0; i < 8; i++) {
+		for (size_t i = 0; i < 24; i++) {
 			cuboidPositions[i * 3 + 0] = cuboidPositions[i * 3 + 0] * size.x + position.x;
 			cuboidPositions[i * 3 + 1] = cuboidPositions[i * 3 + 1] * size.y + position.y;
 			cuboidPositions[i * 3 + 2] = cuboidPositions[i * 3 + 2] * size.z + position.z;
@@ -152,10 +215,14 @@ namespace vkcv::geometry {
 		auto uvBuffer = buffer<float>(core, BufferType::VERTEX, cuboidUVCoords.size());
 		uvBuffer.fill(cuboidUVCoords);
 		
+		auto tangentBuffer = buffer<glm::vec3>(core, BufferType::VERTEX, cuboidTangents.size());
+		tangentBuffer.fill(cuboidTangents);
+		
 		VertexData data ({
 			vkcv::vertexBufferBinding(positionBuffer.getHandle()),
 			vkcv::vertexBufferBinding(normalBuffer.getHandle()),
-			vkcv::vertexBufferBinding(uvBuffer.getHandle())
+			vkcv::vertexBufferBinding(uvBuffer.getHandle()),
+			vkcv::vertexBufferBinding(tangentBuffer.getHandle())
 		});
 		
 		const auto& featureManager = core.getContext().getFeatureManager();
@@ -174,7 +241,8 @@ namespace vkcv::geometry {
 			data.setIndexBuffer(indexBuffer.getHandle(), IndexBitCount::Bit8);
 			data.setCount(indexBuffer.getCount());
 		} else {
-			std::array<uint16_t, cuboidIndices.size()> cuboidIndices16;
+			std::vector<uint16_t> cuboidIndices16;
+			cuboidIndices16.resize(cuboidIndices.size());
 			
 			for (size_t i = 0; i < cuboidIndices16.size(); i++) {
 				cuboidIndices16[i] = static_cast<uint16_t>(cuboidIndices[i]);

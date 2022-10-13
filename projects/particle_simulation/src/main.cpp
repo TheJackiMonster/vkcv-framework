@@ -208,11 +208,17 @@ int main(int argc, const char **argv) {
 
 	const auto swapchainExtent = core.getSwapchainExtent(window.getSwapchain());
 	
+	vkcv::ImageConfig colorBufferConfig (
+			swapchainExtent.width,
+			swapchainExtent.height
+	);
+	
+	colorBufferConfig.setSupportingStorage(true);
+	colorBufferConfig.setSupportingColorAttachment(true);
+	
     vkcv::ImageHandle colorBuffer = core.createImage(
 			colorFormat,
-			swapchainExtent.width,
-			swapchainExtent.height,
-			1, false, true, true
+			colorBufferConfig
 	);
 	
 	vkcv::effects::BloomAndFlaresEffect bloomAndFlares (core);
@@ -237,11 +243,12 @@ int main(int argc, const char **argv) {
 				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
 		if ((core.getImageWidth(colorBuffer) != swapchainWidth) ||
 			(core.getImageHeight(colorBuffer) != swapchainHeight)) {
+			colorBufferConfig.setWidth(swapchainWidth);
+			colorBufferConfig.setHeight(swapchainHeight);
+			
 			colorBuffer = core.createImage(
 					colorFormat,
-					swapchainWidth,
-					swapchainHeight,
-					1, false, true, true
+					colorBufferConfig
 			);
 		}
 

@@ -41,6 +41,9 @@ set(vkcv_sources
 		
 		${vkcv_source}/vkcv/BufferManager.hpp
 		${vkcv_source}/vkcv/BufferManager.cpp
+		
+		${vkcv_include}/vkcv/ImageConfig.hpp
+		${vkcv_source}/vkcv/ImageConfig.cpp
 
 		${vkcv_include}/vkcv/Image.hpp
 		${vkcv_source}/vkcv/Image.cpp

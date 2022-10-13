@@ -24,6 +24,19 @@ namespace vkcv::geometry {
 		 */
 		glm::vec3 m_position;
 		
+	protected:
+		/**
+		 * Generate tangent from positions and uv-coordinates
+		 * for a given triangle.
+		 *
+		 * @param[in] positions Array of positions
+		 * @param[in] uvs Array of uv-coordinates
+		 * @return Calculated tangent
+		 */
+		[[nodiscard]]
+		glm::vec3 generateTangent(const std::array<glm::vec3, 3>& positions,
+								  const  std::array<glm::vec2, 3>& uvs) const;
+		
 	public:
 		/**
 		 * Constructor creating geometry by a given position

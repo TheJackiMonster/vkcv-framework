@@ -313,43 +313,34 @@ AppRenderTargets createRenderTargets(vkcv::Core& core,
 			renderWidth,
 			renderHeight
 	);
+	
+	vkcv::ImageConfig depthBufferConfig (renderWidth, renderHeight);
 
 	targets.depthBuffer = core.createImage(
-			AppConfig::depthBufferFormat,
-			renderWidth,
-			renderHeight,
-			1,
-			false
+		AppConfig::depthBufferFormat,
+		depthBufferConfig
 	);
+	
+	vkcv::ImageConfig bufferConfig (renderWidth, renderHeight);
+	bufferConfig.setSupportingColorAttachment(true);
 
 	targets.colorBuffer = core.createImage(
-			AppConfig::colorBufferFormat,
-			renderWidth,
-			renderHeight,
-			1,
-			false,
-			false,
-			true
+		AppConfig::colorBufferFormat,
+		bufferConfig
 	);
 
 	targets.motionBuffer = core.createImage(
-			AppConfig::motionBufferFormat,
-			renderWidth,
-			renderHeight,
-			1,
-			false,
-			false,
-			true
+		AppConfig::motionBufferFormat,
+		bufferConfig
 	);
+	
+	vkcv::ImageConfig finalConfig (width, height);
+	finalConfig.setSupportingColorAttachment(true);
+	finalConfig.setSupportingStorage(true);
 	
 	targets.finalBuffer = core.createImage(
 			AppConfig::colorBufferFormat,
-			width,
-			height,
-			1,
-			false,
-			true,
-			true
+			finalConfig
 	);
 	
 	core.setDebugLabel(targets.depthBuffer, "Depth buffer");

@@ -49,8 +49,8 @@ namespace vkcv {
 		VertexBindings bindings;
 		bindings.reserve(attachments.size());
 
-		for (uint32_t i = 0; i < attachments.size(); i++) {
-			bindings.push_back(createVertexBinding(i, { attachments [i] }));
+		for (const auto& attachment : attachments) {
+			bindings.push_back(createVertexBinding(attachment.inputLocation, { attachment }));
 		}
 
 		return bindings;

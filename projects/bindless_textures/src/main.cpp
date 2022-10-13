@@ -185,9 +185,7 @@ int main(int argc, const char** argv) {
 	vkcv::SamplerHandle sampler = vkcv::samplerLinear(core);
 	vkcv::DescriptorWrites setWrites;
 	
-	for(uint32_t i = 0; i < 6; i++)
-	{
-		
+	for(uint32_t i = 0; i < 6; i++) {
 		setWrites.writeSampledImage(
 				1,
 				texturesArray[i].getHandle(),
@@ -225,8 +223,7 @@ int main(int argc, const char** argv) {
 			(swapchainHeight != core.getImageHeight(depthBuffer))) {
 			depthBuffer = core.createImage(
 					vk::Format::eD32Sfloat,
-					swapchainWidth,
-					swapchainHeight
+					vkcv::ImageConfig(swapchainWidth, swapchainHeight)
 			);
 		}
 

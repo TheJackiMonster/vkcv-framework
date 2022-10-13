@@ -14846,6 +14846,69 @@ namespace vkcv::geometry {
 				3859, 3860, 3870, 3870, 3860, 3871
 		};
 		
+		std::vector<glm::vec3> teapotTangents;
+		teapotTangents.resize(teapotVertices.size() / 3, glm::vec3(0.0f));
+		
+		std::vector<size_t> teapotTangentWeights;
+		teapotTangentWeights.resize(teapotTangents.size(), 0);
+		
+		for (size_t i = 0; i < teapotIndices.size(); i += 3) {
+			const auto index0 = teapotIndices[i + 0];
+			const auto index1 = teapotIndices[i + 1];
+			const auto index2 = teapotIndices[i + 2];
+			
+			const std::array<glm::vec3, 3> positions = {
+					glm::vec3(
+							teapotVertices[index0 * 3 + 0],
+							teapotVertices[index0 * 3 + 1],
+							teapotVertices[index0 * 3 + 2]
+					),
+					glm::vec3(
+							teapotVertices[index1 * 3 + 0],
+							teapotVertices[index1 * 3 + 1],
+							teapotVertices[index1 * 3 + 2]
+					),
+					glm::vec3(
+							teapotVertices[index2 * 3 + 0],
+							teapotVertices[index2 * 3 + 1],
+							teapotVertices[index2 * 3 + 2]
+					)
+			};
+			
+			const std::array<glm::vec2, 3> uvs = {
+					glm::vec2(
+							teapotUVCoords[index0 * 3 + 0],
+							teapotUVCoords[index0 * 3 + 1]
+					),
+					glm::vec2(
+							teapotUVCoords[index1 * 3 + 0],
+							teapotUVCoords[index1 * 3 + 1]
+					),
+					glm::vec2(
+							teapotUVCoords[index2 * 3 + 0],
+							teapotUVCoords[index2 * 3 + 1]
+					)
+			};
+			
+			const glm::vec3 tangent = generateTangent(positions, uvs);
+			
+			teapotTangents[index0] += tangent;
+			teapotTangents[index1] += tangent;
+			teapotTangents[index2] += tangent;
+			
+			teapotTangentWeights[index0]++;
+			teapotTangentWeights[index1]++;
+			teapotTangentWeights[index2]++;
+		}
+		
+		for (size_t i = 0; i < teapotTangents.size(); i++) {
+			if (teapotTangentWeights[i] <= 0) {
+				continue;
+			}
+			
+			teapotTangents[i] /= teapotTangentWeights[i];
+		}
+		
 		const auto& position = getPosition();
 		const auto scale = getScale();
 		
@@ -14864,13 +14927,17 @@ namespace vkcv::geometry {
 		auto uvBuffer = buffer<float>(core, BufferType::VERTEX, teapotUVCoords.size());
 		uvBuffer.fill(teapotUVCoords);
 		
+		auto tangentBuffer = buffer<glm::vec3>(core, BufferType::VERTEX, teapotTangents.size());
+		tangentBuffer.fill(teapotTangents);
+		
 		auto indexBuffer = buffer<uint16_t>(core, BufferType::INDEX, teapotIndices.size());
 		indexBuffer.fill(teapotIndices);
 		
 		VertexData data ({
 			vkcv::vertexBufferBinding(positionBuffer.getHandle()),
 			vkcv::vertexBufferBinding(normalBuffer.getHandle()),
-			vkcv::vertexBufferBinding(uvBuffer.getHandle())
+			vkcv::vertexBufferBinding(uvBuffer.getHandle()),
+			vkcv::vertexBufferBinding(tangentBuffer.getHandle())
 		});
 		
 		data.setIndexBuffer(indexBuffer.getHandle());

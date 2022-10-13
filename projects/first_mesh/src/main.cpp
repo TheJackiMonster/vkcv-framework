@@ -1,5 +1,4 @@
 #include <iostream>
-#include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
 #include <vkcv/Image.hpp>
 #include <vkcv/Pass.hpp>
@@ -117,8 +116,10 @@ int main(int argc, const char** argv) {
 			(swapchainHeight != core.getImageHeight(depthBuffer))) {
 			depthBuffer = core.createImage(
 					vk::Format::eD32Sfloat,
-					swapchainWidth,
-					swapchainHeight
+					vkcv::ImageConfig(
+							swapchainWidth,
+							swapchainHeight
+					)
 			);
 		}
 		

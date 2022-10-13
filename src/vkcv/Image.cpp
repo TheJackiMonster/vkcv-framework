@@ -64,7 +64,11 @@ namespace vkcv {
 	}
 
 	void Image::fill(const void* data, size_t size) {
-		m_core->fillImage(m_handle, data, size);
+		m_core->fillImage(m_handle, data, size, 0, 0);
+	}
+	
+	void Image::fillLayer(uint32_t layer, const void* data, size_t size) {
+		m_core->fillImage(m_handle, data, size, layer, 1);
 	}
 
 	void Image::recordMipChainGeneration(const vkcv::CommandStreamHandle &cmdStream,
@@ -75,9 +79,22 @@ namespace vkcv {
 	Image image(Core &core, vk::Format format, uint32_t width, uint32_t height, uint32_t depth,
 				bool createMipChain, bool supportStorage, bool supportColorAttachment,
 				Multisampling multisampling) {
-		return Image(&core,
-					 core.createImage(format, width, height, depth, createMipChain, supportStorage,
-									  supportColorAttachment, multisampling));
+		ImageConfig config (width, height, depth);
+		config.setSupportingStorage(supportStorage);
+		config.setSupportingColorAttachment(supportColorAttachment);
+		config.setMultisampling(multisampling);
+		return image(core, format, config, createMipChain);
+	}
+	
+	Image image(Core &core, vk::Format format, const ImageConfig &config, bool createMipChain) {
+		return Image(
+				&core,
+				core.createImage(
+						format,
+						config,
+						createMipChain
+				)
+		);
 	}
 
 } // namespace vkcv

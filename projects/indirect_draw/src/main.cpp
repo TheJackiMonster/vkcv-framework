@@ -528,7 +528,13 @@ int main(int argc, const char** argv) {
 		if ((!depthBuffer) ||
 			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
 			(swapchainHeight != core.getImageHeight(depthBuffer))) {
-			depthBuffer = core.createImage(vk::Format::eD32Sfloat, swapchainWidth, swapchainHeight);
+			depthBuffer = core.createImage(
+					vk::Format::eD32Sfloat,
+					vkcv::ImageConfig(
+							swapchainWidth,
+							swapchainHeight
+					)
+			);
 		}
   
 		cameraManager.update(dt);

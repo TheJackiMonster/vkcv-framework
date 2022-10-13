@@ -1,5 +1,5 @@
 /**
- * @authors Simeon Hermann, Leonie Franken
+ * @authors Simeon Hermann, Leonie Franken, Tobias Frisch
  * @file src/vkcv/ShaderProgram.cpp
  * @brief ShaderProgram class to handle and prepare the shader stages for a graphics pipeline
  */
@@ -165,6 +165,8 @@ namespace vkcv {
 			auto insertionResult =
 				m_DescriptorSets [setID].insert(std::make_pair(bindingID, binding));
 			if (!insertionResult.second) {
+				insertionResult.first->second.shaderStages |= shaderStage;
+				
 				vkcv_log(LogLevel::WARNING,
 						 "Attempting to overwrite already existing binding %u at set ID %u.",
 						 bindingID, setID);
@@ -197,6 +199,8 @@ namespace vkcv {
 			auto insertionResult =
 				m_DescriptorSets [setID].insert(std::make_pair(bindingID, binding));
 			if (!insertionResult.second) {
+				insertionResult.first->second.shaderStages |= shaderStage;
+				
 				vkcv_log(LogLevel::WARNING,
 						 "Attempting to overwrite already existing binding %u at set ID %u.",
 						 bindingID, setID);
@@ -228,6 +232,8 @@ namespace vkcv {
 			auto insertionResult =
 				m_DescriptorSets [setID].insert(std::make_pair(bindingID, binding));
 			if (!insertionResult.second) {
+				insertionResult.first->second.shaderStages |= shaderStage;
+				
 				vkcv_log(LogLevel::WARNING,
 						 "Attempting to overwrite already existing binding %u at set ID %u.",
 						 bindingID, setID);
@@ -260,6 +266,8 @@ namespace vkcv {
 			auto insertionResult =
 				m_DescriptorSets [setID].insert(std::make_pair(bindingID, binding));
 			if (!insertionResult.second) {
+				insertionResult.first->second.shaderStages |= shaderStage;
+				
 				vkcv_log(LogLevel::WARNING,
 						 "Attempting to overwrite already existing binding %u at set ID %u.",
 						 bindingID, setID);
@@ -292,6 +300,8 @@ namespace vkcv {
 			auto insertionResult =
 				m_DescriptorSets [setID].insert(std::make_pair(bindingID, binding));
 			if (!insertionResult.second) {
+				insertionResult.first->second.shaderStages |= shaderStage;
+				
 				vkcv_log(LogLevel::WARNING,
 						 "Attempting to overwrite already existing binding %u at set ID %u.",
 						 bindingID, setID);
@@ -315,6 +325,8 @@ namespace vkcv {
 			auto insertionResult =
 				m_DescriptorSets [setID].insert(std::make_pair(bindingID, binding));
 			if (!insertionResult.second) {
+				insertionResult.first->second.shaderStages |= shaderStage;
+				
 				vkcv_log(LogLevel::WARNING,
 						 "Attempting to overwrite already existing binding %u at set ID %u.",
 						 bindingID, setID);
@@ -343,3 +355,4 @@ namespace vkcv {
 		return m_pushConstantsSize;
 	}
 } // namespace vkcv
+

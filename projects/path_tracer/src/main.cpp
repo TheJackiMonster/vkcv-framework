@@ -63,24 +63,23 @@ int main(int argc, const char** argv) {
 			initialHeight,
 			true
 	);
+	
+	vkcv::ImageConfig imageConfig (
+			initialWidth,
+			initialHeight
+	);
+	
+	imageConfig.setSupportingStorage(true);
 
 	// images
 	vkcv::ImageHandle outputImage = core.createImage(
 		vk::Format::eR32G32B32A32Sfloat,
-		initialWidth,
-		initialHeight,
-		1,
-		false,
-		true
+		imageConfig
 	);
 
 	vkcv::ImageHandle meanImage = core.createImage(
 		vk::Format::eR32G32B32A32Sfloat,
-		initialWidth,
-		initialHeight,
-		1,
-		false,
-		true
+		imageConfig
 	);
 
 	vkcv::shader::GLSLCompiler compiler;
@@ -248,25 +247,19 @@ int main(int argc, const char** argv) {
 	
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
 				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
-		if (swapchainWidth != widthPrevious || swapchainHeight != heightPrevious) {
+		if ((swapchainWidth != widthPrevious) || (swapchainHeight != heightPrevious)) {
+			imageConfig.setWidth(swapchainWidth);
+			imageConfig.setHeight(swapchainHeight);
 
 			// resize images
 			outputImage = core.createImage(
 				vk::Format::eR32G32B32A32Sfloat,
-				swapchainWidth,
-				swapchainHeight,
-				1,
-				false,
-				true
+				imageConfig
 			);
 
 			meanImage = core.createImage(
 				vk::Format::eR32G32B32A32Sfloat,
-				swapchainWidth,
-				swapchainHeight,
-				1,
-				false,
-				true
+				imageConfig
 			);
 
 			// update descriptor sets

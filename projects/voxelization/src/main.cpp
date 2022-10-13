@@ -387,48 +387,69 @@ int main(int argc, const char** argv) {
 	skyPipeConfig.setWritingDepth(false);
 
 	vkcv::GraphicsPipelineHandle skyPipe = core.createGraphicsPipeline(skyPipeConfig);
+	
+	vkcv::ImageConfig depthBufferConfig (
+			swapchainExtent.width,
+			swapchainExtent.height
+	);
+	
+	depthBufferConfig.setMultisampling(msaa);
 
 	// render targets
 	vkcv::ImageHandle depthBuffer = core.createImage(
 			depthBufferFormat,
-			swapchainExtent.width,
-			swapchainExtent.height,
-			1, false, false, false, msaa
+			depthBufferConfig
 	);
+	
+	const bool colorBufferRequiresStorage = !usingMsaa;
+	
+	vkcv::ImageConfig colorBufferConfig (
+			swapchainExtent.width,
+			swapchainExtent.height
+	);
+	
+	colorBufferConfig.setSupportingStorage(colorBufferRequiresStorage);
+	colorBufferConfig.setSupportingColorAttachment(true);
+	colorBufferConfig.setMultisampling(msaa);
 
-    const bool colorBufferRequiresStorage = !usingMsaa;
 	vkcv::ImageHandle colorBuffer = core.createImage(
 			colorBufferFormat,
-			swapchainExtent.width,
-			swapchainExtent.height,
-			1, false, colorBufferRequiresStorage, true, msaa
+			colorBufferConfig
 	);
+	
+	vkcv::ImageConfig resolveBufferConfig (
+			swapchainExtent.width,
+			swapchainExtent.height
+	);
+	
+	resolveBufferConfig.setSupportingStorage(true);
+	resolveBufferConfig.setSupportingColorAttachment(true);
 
 	vkcv::ImageHandle resolvedColorBuffer;
 	if (usingMsaa) {
 		resolvedColorBuffer = core.createImage(
 				colorBufferFormat,
-				swapchainExtent.width,
-				swapchainExtent.height,
-				1, false, true, true
+				resolveBufferConfig
 		);
-	}
-	else {
+	} else {
 		resolvedColorBuffer = colorBuffer;
 	}
 	
+	vkcv::ImageConfig swapBufferConfig (
+			swapchainExtent.width,
+			swapchainExtent.height
+	);
+	
+	swapBufferConfig.setSupportingStorage(true);
+	
 	vkcv::ImageHandle swapBuffer = core.createImage(
 			colorBufferFormat,
-			swapchainExtent.width,
-			swapchainExtent.height,
-			1, false, true
+			swapBufferConfig
 	);
 	
 	vkcv::ImageHandle swapBuffer2 = core.createImage(
 			colorBufferFormat,
-			swapchainExtent.width,
-			swapchainExtent.height,
-			1, false, true
+			swapBufferConfig
 	);
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
@@ -657,40 +678,48 @@ int main(int argc, const char** argv) {
 				core.writeDescriptorSet(materialDescriptorSets[i], setWrites);
 			}
 			
+			depthBufferConfig.setWidth(fsrWidth);
+			depthBufferConfig.setHeight(fsrHeight);
+			
 			depthBuffer = core.createImage(
 					depthBufferFormat,
-					fsrWidth, fsrHeight, 1,
-					false, false, false,
-					msaa
+					depthBufferConfig
 			);
+			
+			colorBufferConfig.setWidth(fsrWidth);
+			colorBufferConfig.setHeight(fsrHeight);
 			
 			colorBuffer = core.createImage(
 					colorBufferFormat,
-					fsrWidth, fsrHeight, 1,
-					false, colorBufferRequiresStorage, true,
-					msaa
+					colorBufferConfig
 			);
 
 			if (usingMsaa) {
+				resolveBufferConfig.setWidth(fsrWidth);
+				resolveBufferConfig.setHeight(fsrHeight);
+				
 				resolvedColorBuffer = core.createImage(
 						colorBufferFormat,
-						fsrWidth, fsrHeight, 1,
-						false, true, true
+						resolveBufferConfig
 				);
 			} else {
 				resolvedColorBuffer = colorBuffer;
 			}
 			
+			swapBufferConfig.setWidth(fsrWidth);
+			swapBufferConfig.setHeight(fsrHeight);
+			
 			swapBuffer = core.createImage(
 					colorBufferFormat,
-					fsrWidth, fsrHeight, 1,
-					false, true
+					swapBufferConfig
 			);
+			
+			swapBufferConfig.setWidth(swapchainWidth);
+			swapBufferConfig.setHeight(swapchainHeight);
 			
 			swapBuffer2 = core.createImage(
 					colorBufferFormat,
-					swapchainWidth, swapchainHeight, 1,
-					false, true
+					swapBufferConfig
 			);
 		}
 
@@ -956,8 +985,8 @@ int main(int argc, const char** argv) {
 			upscaling2.setSharpness(sharpness);
 
 			if (ImGui::Button("Reload forward pass")) {
-
 				vkcv::ShaderProgram newForwardProgram;
+				
 				compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 					newForwardProgram.addShader(shaderStage, path);
@@ -974,8 +1003,8 @@ int main(int argc, const char** argv) {
 					forwardPipeline = newPipeline;
 				}
 			}
+			
 			if (ImGui::Button("Reload tonemapping")) {
-
 				vkcv::ShaderProgram newProgram;
 				compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("assets/shaders/tonemapping.comp"),
 					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
@@ -991,6 +1020,7 @@ int main(int argc, const char** argv) {
 					tonemappingPipeline = newPipeline;
 				}
 			}
+			
 			ImGui::End();
 		}
 

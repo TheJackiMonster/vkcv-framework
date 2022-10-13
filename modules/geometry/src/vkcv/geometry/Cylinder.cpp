@@ -73,7 +73,7 @@ namespace vkcv::geometry {
 		size_t offset = 0;
 		
 		for (i = 0; i < resolution; i++) {
-			u = static_cast<float>(i) / static_cast<float>(resolution);
+			u = static_cast<float>(i) / static_cast<float>(resolution - 1);
 			phi = 2.0f * std::numbers::pi_v<float> * u;
 			
 			sinPhi = std::sin(phi);
@@ -95,16 +95,68 @@ namespace vkcv::geometry {
 				cylinderNormals.push_back(glm::vec3(sinPhi, 0.0f, cosPhi));
 				cylinderUVCoords.push_back(glm::vec2(u, v));
 				
-				cylinderIndices.push_back(2 + (offset + j * 2) % (vertexCount - 2));
-				cylinderIndices.push_back(2 + (offset + j * 2 + 4) % (vertexCount - 2));
-				cylinderIndices.push_back(j);
-				
-				cylinderIndices.push_back(2 + (offset + j * 2 + 1) % (vertexCount - 2));
-				cylinderIndices.push_back(2 + (offset + j * 2 + 5) % (vertexCount - 2));
-				cylinderIndices.push_back(2 + (offset + j * 2 + 3) % (vertexCount - 2));
+				if (j == 1) {
+					cylinderIndices.push_back(2 + (offset + j * 2) % (vertexCount - 2));
+					cylinderIndices.push_back(2 + (offset + j * 2 + 4) % (vertexCount - 2));
+					cylinderIndices.push_back(j);
+					
+					cylinderIndices.push_back(2 + (offset + j * 2 + 5) % (vertexCount - 2));
+					cylinderIndices.push_back(2 + (offset + j * 2 + 1) % (vertexCount - 2));
+					cylinderIndices.push_back(2 + (offset + j * 2 + 3) % (vertexCount - 2));
+				} else {
+					cylinderIndices.push_back(2 + (offset + j * 2 + 4) % (vertexCount - 2));
+					cylinderIndices.push_back(2 + (offset + j * 2) % (vertexCount - 2));
+					cylinderIndices.push_back(j);
+					
+					cylinderIndices.push_back(2 + (offset + j * 2 + 1) % (vertexCount - 2));
+					cylinderIndices.push_back(2 + (offset + j * 2 + 5) % (vertexCount - 2));
+					cylinderIndices.push_back(2 + (offset + j * 2 + 3) % (vertexCount - 2));
+				}
 			}
 			
 			offset += 4;
+		}
+		
+		std::vector<glm::vec3> cylinderTangents;
+		cylinderTangents.resize(cylinderVertices.size(), glm::vec3(0.0f));
+		
+		std::vector<size_t> cylinderTangentWeights;
+		cylinderTangentWeights.resize(cylinderTangents.size(), 0);
+		
+		for (i = 0; i < cylinderIndices.size(); i += 3) {
+			const auto index0 = cylinderIndices[i + 0];
+			const auto index1 = cylinderIndices[i + 1];
+			const auto index2 = cylinderIndices[i + 2];
+			
+			const std::array<glm::vec3, 3> positions = {
+					cylinderVertices[index0],
+					cylinderVertices[index1],
+					cylinderVertices[index2]
+			};
+			
+			const std::array<glm::vec2, 3> uvs = {
+					cylinderUVCoords[index0],
+					cylinderUVCoords[index1],
+					cylinderUVCoords[index2]
+			};
+			
+			const glm::vec3 tangent = generateTangent(positions, uvs);
+			
+			cylinderTangents[index0] += tangent;
+			cylinderTangents[index1] += tangent;
+			cylinderTangents[index2] += tangent;
+			
+			cylinderTangentWeights[index0]++;
+			cylinderTangentWeights[index1]++;
+			cylinderTangentWeights[index2]++;
+		}
+		
+		for (i = 0; i < cylinderTangents.size(); i++) {
+			if (cylinderTangentWeights[i] <= 0) {
+				continue;
+			}
+			
+			cylinderTangents[i] /= cylinderTangentWeights[i];
 		}
 		
 		auto positionBuffer = buffer<glm::vec3>(core, BufferType::VERTEX, cylinderVertices.size());
@@ -116,13 +168,17 @@ namespace vkcv::geometry {
 		auto uvBuffer = buffer<glm::vec2>(core, BufferType::VERTEX, cylinderUVCoords.size());
 		uvBuffer.fill(cylinderUVCoords);
 		
+		auto tangentBuffer = buffer<glm::vec3>(core, BufferType::VERTEX, cylinderTangents.size());
+		tangentBuffer.fill(cylinderTangents);
+		
 		auto indexBuffer = buffer<uint32_t>(core, BufferType::INDEX, cylinderIndices.size());
 		indexBuffer.fill(cylinderIndices);
 		
 		VertexData data ({
 			vkcv::vertexBufferBinding(positionBuffer.getHandle()),
 			vkcv::vertexBufferBinding(normalBuffer.getHandle()),
-			vkcv::vertexBufferBinding(uvBuffer.getHandle())
+			vkcv::vertexBufferBinding(uvBuffer.getHandle()),
+			vkcv::vertexBufferBinding(tangentBuffer.getHandle())
 		});
 		
 		data.setIndexBuffer(indexBuffer.getHandle(), IndexBitCount::Bit32);

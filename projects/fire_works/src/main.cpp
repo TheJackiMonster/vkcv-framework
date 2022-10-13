@@ -331,11 +331,17 @@ int main(int argc, const char **argv) {
 	
 	std::array<vkcv::ImageHandle, 4> colorBuffers;
 	for (size_t i = 0; i < colorBuffers.size(); i++) {
+		vkcv::ImageConfig colorBufferConfig (
+				swapchainExtent.width,
+				swapchainExtent.height
+		);
+		
+		colorBufferConfig.setSupportingStorage(true);
+		colorBufferConfig.setSupportingColorAttachment(true);
+		
 		colorBuffers[i] = core.createImage(
 				colorFormat,
-				swapchainExtent.width,
-				swapchainExtent.height,
-				1, false, true, true
+				colorBufferConfig
 		);
 	}
 	
@@ -700,65 +706,60 @@ int main(int argc, const char **argv) {
 	std::vector<uint32_t> zeroVoxel;
 	zeroVoxel.resize(voxelWidth * voxelHeight * voxelDepth, 0);
 	
+	vkcv::ImageConfig voxelImageConfig (
+			voxelWidth,
+			voxelHeight,
+			voxelDepth
+	);
+	
+	voxelImageConfig.setSupportingStorage(true);
+	
 	vkcv::Image voxelRed = vkcv::image(
 			core,
 			vk::Format::eR32Uint,
-			voxelWidth,
-			voxelHeight,
-			voxelDepth,
-			false, true
+			voxelImageConfig
 	);
 	
 	vkcv::Image voxelGreen = vkcv::image(
 			core,
 			vk::Format::eR32Uint,
-			voxelWidth,
-			voxelHeight,
-			voxelDepth,
-			false, true
+			voxelImageConfig
 	);
 	
 	vkcv::Image voxelBlue = vkcv::image(
 			core,
 			vk::Format::eR32Uint,
-			voxelWidth,
-			voxelHeight,
-			voxelDepth,
-			false, true
+			voxelImageConfig
 	);
 	
 	vkcv::Image voxelDensity = vkcv::image(
 			core,
 			vk::Format::eR32Uint,
-			voxelWidth,
-			voxelHeight,
-			voxelDepth,
-			false, true
+			voxelImageConfig
 	);
 	
 	std::array<vkcv::ImageHandle, 2> voxelData {
 		core.createImage(
 			vk::Format::eR16G16B16A16Sfloat,
-			voxelWidth,
-			voxelHeight,
-			voxelDepth,
-			false, true
+			voxelImageConfig
 		),
 		core.createImage(
 			vk::Format::eR16G16B16A16Sfloat,
-			voxelWidth,
-			voxelHeight,
-			voxelDepth,
-			false, true
+			voxelImageConfig
 		)
 	};
+	
+	vkcv::ImageConfig voxelSamplesConfig (
+			voxelWidth,
+			voxelHeight
+	);
+	
+	voxelImageConfig.setSupportingStorage(true);
 	
 	vkcv::Image voxelSamples = vkcv::image(
 			core,
 			colorFormat,
-			voxelWidth,
-			voxelHeight,
-			1, false, true
+			voxelSamplesConfig
    	);
 	
 	vkcv::SamplerHandle voxelSampler = vkcv::samplerLinear(core, true);
@@ -934,14 +935,20 @@ int main(int argc, const char **argv) {
 			continue;
 		}
 	
-		for (size_t i = 0; i < colorBuffers.size(); i++) {
-			if ((core.getImageWidth(colorBuffers[i]) != swapchainWidth) ||
-				(core.getImageHeight(colorBuffers[i]) != swapchainHeight)) {
-				colorBuffers[i] = core.createImage(
+		for (auto& colorBuffer : colorBuffers) {
+			if ((core.getImageWidth(colorBuffer) != swapchainWidth) ||
+				(core.getImageHeight(colorBuffer) != swapchainHeight)) {
+				vkcv::ImageConfig colorBufferConfig (
+						swapchainWidth,
+						swapchainHeight
+				);
+				
+				colorBufferConfig.setSupportingStorage(true);
+				colorBufferConfig.setSupportingColorAttachment(true);
+				
+				colorBuffer = core.createImage(
 					colorFormat,
-					swapchainWidth,
-					swapchainHeight,
-					1, false, true, true
+					colorBufferConfig
 				);
 			}
 		}

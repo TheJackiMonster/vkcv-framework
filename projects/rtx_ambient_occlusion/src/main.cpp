@@ -101,8 +101,10 @@ int main(int argc, const char** argv) {
 			((swapchainHeight != core.getImageHeight(depthBuffer)))) {
 			depthBuffer = core.createImage(
 					vk::Format::eD32Sfloat,
-					swapchainWidth,
-					swapchainHeight
+					vkcv::ImageConfig(
+							swapchainWidth,
+							swapchainHeight
+					)
 			);
 		}
 		
