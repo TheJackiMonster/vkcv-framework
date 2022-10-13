@@ -84,7 +84,7 @@ namespace vkcv::upscaling {
 		explicit NISUpscaling(Core &core);
 		
 		/**
-         * Record the comands of the NIS upscaling instance to
+         * Record the commands of the NIS upscaling instance to
          * scale the image of the input handle to the resolution of
          * the output image handle via NVIDIA Image Scaling.
          *

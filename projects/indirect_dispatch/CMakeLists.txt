@@ -25,7 +25,25 @@ target_sources(indirect_dispatch PRIVATE
     src/MotionBlurSetup.cpp)
 
 # including headers of dependencies and the VkCV framework
-target_include_directories(indirect_dispatch SYSTEM BEFORE PRIVATE ${vkcv_include} ${vkcv_includes} ${vkcv_testing_include} ${vkcv_camera_include} ${vkcv_shader_compiler_include} ${vkcv_gui_include})
+target_include_directories(indirect_dispatch SYSTEM BEFORE PRIVATE
+		${vkcv_include}
+		${vkcv_includes}
+		${vkcv_testing_include}
+		${vkcv_camera_include}
+		${vkcv_shader_compiler_include}
+		${vkcv_gui_include}
+		${vkcv_upscaling_include}
+)
 
 # linking with libraries from all dependencies and the VkCV framework
-target_link_libraries(indirect_dispatch vkcv ${vkcv_libraries} vkcv_asset_loader ${vkcv_asset_loader_libraries} vkcv_testing vkcv_camera vkcv_shader_compiler vkcv_gui)
+target_link_libraries(indirect_dispatch
+		vkcv
+		${vkcv_libraries}
+		vkcv_asset_loader
+		${vkcv_asset_loader_libraries}
+		vkcv_testing
+		vkcv_camera
+		vkcv_shader_compiler
+		vkcv_gui
+		vkcv_upscaling
+)

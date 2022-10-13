@@ -477,6 +477,25 @@ namespace vkcv {
 		return true;
 	}
 	
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceCoherentMemoryFeaturesAMD &features,
+									  bool required) const {
+		vkcv_check_init_features2(vk::PhysicalDeviceCoherentMemoryFeaturesAMD);
+		
+		vkcv_check_feature(deviceCoherentMemory);
+		
+		return true;
+	}
+	
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceSubgroupSizeControlFeatures &features,
+									  bool required) const {
+		vkcv_check_init_features2(vk::PhysicalDeviceSubgroupSizeControlFeatures);
+		
+		vkcv_check_feature(subgroupSizeControl);
+		vkcv_check_feature(computeFullSubgroups);
+		
+		return true;
+	}
+	
 	bool FeatureManager::checkSupport(const vk::PhysicalDeviceIndexTypeUint8FeaturesEXT &features,
 									  bool required) const {
 		vkcv_check_init_features2(vk::PhysicalDeviceIndexTypeUint8FeaturesEXT);

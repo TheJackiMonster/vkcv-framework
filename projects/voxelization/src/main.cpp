@@ -658,7 +658,8 @@ int main(int argc, const char** argv) {
 				width, height
 		);
 
-		if ((width != fsrWidth) || ((height != fsrHeight)) || (fsrMipLoadBiasFlagBackup != fsrMipLoadBiasFlag)) {
+		if ((width != fsrWidth) || ((height != fsrHeight)) ||
+			(fsrMipLoadBiasFlagBackup != fsrMipLoadBiasFlag)) {
 			fsrWidth = width;
 			fsrHeight = height;
 			fsrMipLoadBiasFlagBackup = fsrMipLoadBiasFlag;

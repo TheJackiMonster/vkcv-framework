@@ -426,6 +426,24 @@ namespace vkcv {
 			);
 		}
 		
+		if (featureManager.useExtension(VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME, false)) {
+			featureManager.useFeatures<vk::PhysicalDeviceCoherentMemoryFeaturesAMD>(
+				[](vk::PhysicalDeviceCoherentMemoryFeaturesAMD &features) {
+					features.setDeviceCoherentMemory(true);
+				},
+				false
+			);
+		}
+		
+		if (featureManager.useExtension(VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME, false)) {
+			featureManager.useFeatures<vk::PhysicalDeviceSubgroupSizeControlFeatures>(
+					[](vk::PhysicalDeviceSubgroupSizeControlFeatures &features) {
+						features.setSubgroupSizeControl(true);
+					},
+					false
+			);
+		}
+		
 		if (featureManager.useExtension(VK_EXT_INDEX_TYPE_UINT8_EXTENSION_NAME, false)) {
 			featureManager.useFeatures<vk::PhysicalDeviceIndexTypeUint8FeaturesEXT>(
 				[](vk::PhysicalDeviceIndexTypeUint8FeaturesEXT &features) {
@@ -467,13 +485,37 @@ namespace vkcv {
 
 		vk::Device device = physicalDevice.createDevice(deviceCreateInfo);
 
-		QueueManager queueManager =
-			QueueManager::create(device, queuePairsGraphics, queuePairsCompute, queuePairsTransfer);
+		QueueManager queueManager = QueueManager::create(
+				device,
+				queuePairsGraphics,
+				queuePairsCompute,
+				queuePairsTransfer
+		);
+		
+		const bool coherentDeviceMemory = featureManager.checkFeatures<vk::PhysicalDeviceCoherentMemoryFeaturesAMD>(
+				vk::StructureType::ePhysicalDeviceCoherentMemoryFeaturesAMD,
+				[](const vk::PhysicalDeviceCoherentMemoryFeaturesAMD &features) {
+					return features.deviceCoherentMemory;
+				}
+		);
 
 		vma::AllocatorCreateFlags vmaFlags;
-		const vma::AllocatorCreateInfo allocatorCreateInfo(vmaFlags, physicalDevice, device, 0,
-														   nullptr, nullptr, nullptr, nullptr,
-														   instance, VK_HEADER_VERSION_COMPLETE);
+		if (coherentDeviceMemory) {
+			vmaFlags |= vma::AllocatorCreateFlagBits::eAmdDeviceCoherentMemory;
+		}
+		
+		const vma::AllocatorCreateInfo allocatorCreateInfo(
+				vmaFlags,
+				physicalDevice,
+				device,
+				0,
+				nullptr,
+				nullptr,
+				nullptr,
+				nullptr,
+				instance,
+				VK_HEADER_VERSION_COMPLETE
+		);
 
 		vma::Allocator allocator = vma::createAllocator(allocatorCreateInfo);
 

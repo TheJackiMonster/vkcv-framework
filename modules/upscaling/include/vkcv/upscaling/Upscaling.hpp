@@ -32,7 +32,7 @@ namespace vkcv::upscaling {
 		~Upscaling() = default;
 
         /**
-         * Record the comands of the given upscaling instance to
+         * Record the commands of the given upscaling instance to
          * scale the image of the input handle to the resolution of
          * the output image handle.
          *

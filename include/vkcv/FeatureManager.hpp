@@ -326,6 +326,26 @@ namespace vkcv {
 										bool required) const;
 		
 		/**
+		 * @brief Checks support of the @p vk::PhysicalDeviceCoherentMemoryFeaturesAMD.
+		 *
+		 * @param[in] features The features
+		 * @param[in] required True, if the @p features are required, else false
+		 * @return @p True, if the @p features are supported, else @p false
+		 */
+		[[nodiscard]] bool checkSupport(const vk::PhysicalDeviceCoherentMemoryFeaturesAMD &features,
+										bool required) const;
+		
+		/**
+		 * @brief Checks support of the @p vk::PhysicalDeviceSubgroupSizeControlFeatures.
+		 *
+		 * @param[in] features The features
+		 * @param[in] required True, if the @p features are required, else false
+		 * @return @p True, if the @p features are supported, else @p false
+		 */
+		[[nodiscard]] bool checkSupport(const vk::PhysicalDeviceSubgroupSizeControlFeatures &features,
+										bool required) const;
+		
+		/**
 		 * @brief Checks support of the @p vk::PhysicalDeviceIndexTypeUint8FeaturesEXT.
 		 *
 		 * @param[in] features The features

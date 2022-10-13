@@ -4,6 +4,11 @@
 #include <vkcv/Sampler.hpp>
 #include <vkcv/gui/GUI.hpp>
 
+#include <vkcv/upscaling/FSR2Upscaling.hpp>
+#include <vkcv/upscaling/FSRUpscaling.hpp>
+#include <vkcv/upscaling/NISUpscaling.hpp>
+#include <vkcv/upscaling/BilinearUpscaling.hpp>
+
 #include <chrono>
 #include <functional>
 
@@ -35,7 +40,6 @@ App::App() :
 	m_cameraManager(m_core.getWindow(m_windowHandle)){}
 
 bool App::initialize() {
-
 	if (!loadMeshPass(m_core, &m_meshPass))
 		return false;
 
@@ -64,7 +68,12 @@ bool App::initialize() {
 		return false;
 
 	m_linearSampler = vkcv::samplerLinear(m_core, true);
-	m_renderTargets = createRenderTargets(m_core, m_windowWidth, m_windowHeight);
+	m_renderTargets = createRenderTargets(
+			m_core,
+			m_windowWidth,
+			m_windowHeight,
+			vkcv::upscaling::FSR2QualityMode::NONE
+	);
 
 	auto cameraHandle = m_cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	m_cameraManager.getCamera(cameraHandle).setPosition(glm::vec3(0, 1, -3));
@@ -143,11 +152,46 @@ void App::run() {
 			}
 		}
 	});
-
+	
+	vkcv::upscaling::FSR2Upscaling fsr2 (m_core);
+	
+	fsr2.bindDepthBuffer(m_renderTargets.depthBuffer);
+	fsr2.bindVelocityBuffer(m_renderTargets.motionBuffer);
+	
+	vkcv::upscaling::FSR2QualityMode fsrMode = vkcv::upscaling::FSR2QualityMode::NONE;
+	vkcv::upscaling::FSR2QualityMode oldFsrMode = fsrMode;
+	
+	int fsrModeIndex = static_cast<int>(fsrMode);
+	
+	const std::vector<const char*> fsrModeNames = {
+			"None",
+			"Quality",
+			"Balanced",
+			"Performance",
+			"Ultra Performance"
+	};
+	
+	bool fsrMipLoadBiasFlag = true;
+	bool fsrMipLoadBiasFlagBackup = fsrMipLoadBiasFlag;
+	
+	vkcv::upscaling::FSRUpscaling fsr1 (m_core);
+	vkcv::upscaling::BilinearUpscaling bilinear (m_core);
+	vkcv::upscaling::NISUpscaling nis (m_core);
+	
+	const std::vector<const char*> modeNames = {
+			"FSR Upscaling 1.0",
+			"FSR Upscaling 2.1.1",
+			"NIS Upscaling",
+			"Bilinear Upscaling"
+	};
+	
+	int upscalingMode = 3;
+	
+	vkcv::SamplerHandle fsr2Sampler;
+	
 	auto frameEndTime = std::chrono::system_clock::now();
 
 	while (vkcv::Window::hasOpenWindow()) {
-
 		vkcv::Window::pollEvents();
 
 		if (!freezeFrame) {
@@ -167,13 +211,42 @@ void App::run() {
 		if (!m_core.beginFrame(swapchainWidth, swapchainHeight,m_windowHandle))
 			continue;
 
-		const bool hasResolutionChanged = (swapchainWidth != m_windowWidth) || (swapchainHeight != m_windowHeight);
+		const bool hasResolutionChanged = (
+				(swapchainWidth != m_windowWidth) ||
+				(swapchainHeight != m_windowHeight) ||
+				(oldFsrMode != fsrMode) ||
+				(fsrMipLoadBiasFlagBackup != fsrMipLoadBiasFlag)
+		);
+		
 		if (hasResolutionChanged) {
 			m_windowWidth  = swapchainWidth;
 			m_windowHeight = swapchainHeight;
+			oldFsrMode = fsrMode;
+			fsrMipLoadBiasFlagBackup = fsrMipLoadBiasFlag;
+			
+			fsr2Sampler = m_core.createSampler(
+					vkcv::SamplerFilterType::LINEAR,
+					vkcv::SamplerFilterType::LINEAR,
+					vkcv::SamplerMipmapMode::LINEAR,
+					vkcv::SamplerAddressMode::REPEAT,
+					fsrMipLoadBiasFlag? vkcv::upscaling::getFSR2LodBias(fsrMode) : 0.0f
+			);
+			
+			vkcv::DescriptorWrites meshPassDescriptorWrites;
+			meshPassDescriptorWrites.writeSampler(1, fsr2Sampler);
+			m_core.writeDescriptorSet(m_meshPass.descriptorSet, meshPassDescriptorWrites);
 
-			m_renderTargets = createRenderTargets(m_core, m_windowWidth, m_windowHeight);
+			m_renderTargets = createRenderTargets(
+					m_core,
+					m_windowWidth,
+					m_windowHeight,
+					fsrMode
+			);
+			
 			m_motionBlur.setResolution(m_windowWidth, m_windowHeight);
+			
+			fsr2.bindDepthBuffer(m_renderTargets.depthBuffer);
+			fsr2.bindVelocityBuffer(m_renderTargets.motionBuffer);
 		}
 
 		if(!freezeFrame)
@@ -183,20 +256,41 @@ void App::run() {
 		const float fDeltaTimeSeconds = microsecondToSecond * std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - frameStartTime).count();
 
 		m_cameraManager.update(fDeltaTimeSeconds);
+		fsr2.update(fDeltaTimeSeconds, false);
+		
+		const auto& camera = m_cameraManager.getActiveCamera();
+		float near, far;
+		
+		camera.getNearFar(near, far);
+		fsr2.setCamera(near, far, camera.getFov());
 
-		const auto      time                = frameEndTime - appStartTime;
-		const float     fCurrentTime        = std::chrono::duration_cast<std::chrono::milliseconds>(time).count() * 0.001f;
+		const auto  time         = frameEndTime - appStartTime;
+		const float fCurrentTime = std::chrono::duration_cast<std::chrono::milliseconds>(time).count() * 0.001f;
+		
+		float jitterX, jitterY;
+		
+		fsr2.calcJitterOffset(
+				m_core.getImageWidth(m_renderTargets.colorBuffer),
+				m_core.getImageHeight(m_renderTargets.colorBuffer),
+				jitterX,
+				jitterY
+		);
+		
+		const glm::mat4 jitterMatrix = glm::translate(
+				glm::identity<glm::mat4>(),
+				glm::vec3(jitterX, jitterY, 0.0f)
+		);
 
 		// update matrices
 		if (!freezeFrame) {
-
-			viewProjection = m_cameraManager.getActiveCamera().getMVP();
+			viewProjection = camera.getMVP();
 
 			for (Object& obj : sceneObjects) {
 				if (obj.modelMatrixUpdate) {
 					obj.modelMatrixUpdate(fCurrentTime, obj);
 				}
-				obj.mvp = viewProjection * obj.modelMatrix;
+				
+				obj.mvp = jitterMatrix * viewProjection * obj.modelMatrix;
 			}
 		}
 
@@ -212,7 +306,8 @@ void App::run() {
 
 		const std::vector<vkcv::ImageHandle> prepassRenderTargets = {
 			m_renderTargets.motionBuffer,
-			m_renderTargets.depthBuffer };
+			m_renderTargets.depthBuffer
+		};
 
 		std::vector<vkcv::InstanceDrawcall> prepassSceneDrawcalls;
 		for (const Object& obj : sceneObjects) {
@@ -225,12 +320,15 @@ void App::run() {
 			prepassPushConstants,
 			prepassSceneDrawcalls,
 			prepassRenderTargets,
-			m_windowHandle);
+			m_windowHandle
+		);
 
 		// sky prepass
 		glm::mat4 skyPrepassMatrices[2] = {
 			viewProjection,
-			viewProjectionPrevious };
+			viewProjectionPrevious
+		};
+		
 		vkcv::PushConstants skyPrepassPushConstants(sizeof(glm::mat4) * 2);
 		skyPrepassPushConstants.appendDrawcall(skyPrepassMatrices);
 
@@ -240,12 +338,14 @@ void App::run() {
 			skyPrepassPushConstants,
 			{ skyDrawcall },
 			prepassRenderTargets,
-			m_windowHandle);
+			m_windowHandle
+		);
 
 		// main pass
 		const std::vector<vkcv::ImageHandle> renderTargets   = { 
 			m_renderTargets.colorBuffer, 
-			m_renderTargets.depthBuffer };
+			m_renderTargets.depthBuffer
+		};
 
 		vkcv::PushConstants meshPushConstants(2 * sizeof(glm::mat4));
 		for (const Object& obj : sceneObjects) {
@@ -266,11 +366,12 @@ void App::run() {
 			meshPushConstants,
 			forwardSceneDrawcalls,
 			renderTargets,
-			m_windowHandle);
+			m_windowHandle
+		);
 
 		// sky
 		vkcv::PushConstants skyPushConstants = vkcv::pushConstants<glm::mat4>();
-		skyPushConstants.appendDrawcall(viewProjection);
+		skyPushConstants.appendDrawcall(jitterMatrix * viewProjection);
 
 		m_core.recordDrawcallsToCmdStream(
 			cmdStream,
@@ -278,35 +379,82 @@ void App::run() {
 			skyPushConstants,
 			{ skyDrawcall },
 			renderTargets,
-			m_windowHandle);
+			m_windowHandle
+		);
+		
+		// upscaling
+		m_core.prepareImageForSampling(cmdStream, m_renderTargets.colorBuffer);
+		
+		switch (upscalingMode) {
+			case 0:
+				m_core.prepareImageForStorage(cmdStream, m_renderTargets.finalBuffer);
+				
+				fsr1.recordUpscaling(
+						cmdStream,
+						m_renderTargets.colorBuffer,
+						m_renderTargets.finalBuffer
+				);
+				break;
+			case 1:
+				m_core.prepareImageForSampling(cmdStream, m_renderTargets.depthBuffer);
+				m_core.prepareImageForSampling(cmdStream, m_renderTargets.motionBuffer);
+				
+				m_core.prepareImageForSampling(cmdStream, m_renderTargets.finalBuffer);
+				
+				fsr2.recordUpscaling(
+						cmdStream,
+						m_renderTargets.colorBuffer,
+						m_renderTargets.finalBuffer
+				);
+				break;
+			case 2:
+				m_core.prepareImageForStorage(cmdStream, m_renderTargets.finalBuffer);
+				
+				nis.recordUpscaling(
+						cmdStream,
+						m_renderTargets.colorBuffer,
+						m_renderTargets.finalBuffer
+				);
+				break;
+			case 3:
+				m_core.prepareImageForStorage(cmdStream, m_renderTargets.finalBuffer);
+				
+				bilinear.recordUpscaling(
+						cmdStream,
+						m_renderTargets.colorBuffer,
+						m_renderTargets.finalBuffer
+				);
+				break;
+			default:
+				break;
+		}
+		
+		m_core.prepareImageForSampling(cmdStream, m_renderTargets.finalBuffer);
 
 		// motion blur
 		vkcv::ImageHandle motionBlurOutput;
 
 		if (motionVectorVisualisationMode == eMotionVectorVisualisationMode::None) {
-			float cameraNear;
-			float cameraFar;
-			m_cameraManager.getActiveCamera().getNearFar(cameraNear, cameraFar);
-
 			motionBlurOutput = m_motionBlur.render(
 				cmdStream,
 				m_renderTargets.motionBuffer,
-				m_renderTargets.colorBuffer,
+				m_renderTargets.finalBuffer,
 				m_renderTargets.depthBuffer,
 				motionBlurMode,
-				cameraNear,
-				cameraFar,
+				near,
+				far,
 				fDeltaTimeSeconds,
 				static_cast<float>(cameraShutterSpeedInverse),
 				motionBlurTileOffsetLength,
-				motionBlurFastPathThreshold);
-		}
-		else {
+				motionBlurFastPathThreshold
+			);
+		} else {
 			motionBlurOutput = m_motionBlur.renderMotionVectorVisualisation(
 				cmdStream,
 				m_renderTargets.motionBuffer,
 				motionVectorVisualisationMode,
-				motionVectorVisualisationRange);
+				motionVectorVisualisationRange
+			);
 		}
 
 		// gamma correction
@@ -330,7 +478,8 @@ void App::run() {
 			m_gammaCorrectionPass.pipeline,
 			fullScreenImageDispatch,
 			{ vkcv::useDescriptorSet(0, m_gammaCorrectionPass.descriptorSet) },
-			vkcv::PushConstants(0));
+			vkcv::PushConstants(0)
+		);
 
 		m_core.prepareSwapchainImageForPresent(cmdStream);
 		m_core.submitCommandStream(cmdStream);
@@ -364,6 +513,21 @@ void App::run() {
 		ImGui::InputFloat("Object mean height",         &objectMeanHeight);
 		ImGui::InputFloat("Object rotation speed X",    &objectRotationSpeedX);
 		ImGui::InputFloat("Object rotation speed Y",    &objectRotationSpeedY);
+		
+		float sharpness = fsr2.getSharpness();
+		
+		ImGui::Combo("FSR Quality Mode", &fsrModeIndex, fsrModeNames.data(), fsrModeNames.size());
+		ImGui::DragFloat("FSR Sharpness", &sharpness, 0.001, 0.0f, 1.0f);
+		ImGui::Checkbox("FSR Mip Lod Bias", &fsrMipLoadBiasFlag);
+		ImGui::Combo("Upscaling Mode", &upscalingMode, modeNames.data(), modeNames.size());
+		
+		if ((fsrModeIndex >= 0) && (fsrModeIndex <= 4)) {
+			fsrMode = static_cast<vkcv::upscaling::FSR2QualityMode>(fsrModeIndex);
+		}
+		
+		fsr1.setSharpness(sharpness);
+		fsr2.setSharpness(sharpness);
+		nis.setSharpness(sharpness);
 
 		ImGui::End();
 		gui.endGUI();
