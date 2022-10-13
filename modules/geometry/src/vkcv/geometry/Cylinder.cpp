@@ -73,7 +73,7 @@ namespace vkcv::geometry {
 		size_t offset = 0;
 		
 		for (i = 0; i < resolution; i++) {
-			u = static_cast<float>(i) / static_cast<float>(resolution);
+			u = static_cast<float>(i) / static_cast<float>(resolution - 1);
 			phi = 2.0f * std::numbers::pi_v<float> * u;
 			
 			sinPhi = std::sin(phi);
@@ -95,13 +95,23 @@ namespace vkcv::geometry {
 				cylinderNormals.push_back(glm::vec3(sinPhi, 0.0f, cosPhi));
 				cylinderUVCoords.push_back(glm::vec2(u, v));
 				
-				cylinderIndices.push_back(2 + (offset + j * 2) % (vertexCount - 2));
-				cylinderIndices.push_back(2 + (offset + j * 2 + 4) % (vertexCount - 2));
-				cylinderIndices.push_back(j);
-				
-				cylinderIndices.push_back(2 + (offset + j * 2 + 1) % (vertexCount - 2));
-				cylinderIndices.push_back(2 + (offset + j * 2 + 5) % (vertexCount - 2));
-				cylinderIndices.push_back(2 + (offset + j * 2 + 3) % (vertexCount - 2));
+				if (j == 1) {
+					cylinderIndices.push_back(2 + (offset + j * 2) % (vertexCount - 2));
+					cylinderIndices.push_back(2 + (offset + j * 2 + 4) % (vertexCount - 2));
+					cylinderIndices.push_back(j);
+					
+					cylinderIndices.push_back(2 + (offset + j * 2 + 5) % (vertexCount - 2));
+					cylinderIndices.push_back(2 + (offset + j * 2 + 1) % (vertexCount - 2));
+					cylinderIndices.push_back(2 + (offset + j * 2 + 3) % (vertexCount - 2));
+				} else {
+					cylinderIndices.push_back(2 + (offset + j * 2 + 4) % (vertexCount - 2));
+					cylinderIndices.push_back(2 + (offset + j * 2) % (vertexCount - 2));
+					cylinderIndices.push_back(j);
+					
+					cylinderIndices.push_back(2 + (offset + j * 2 + 1) % (vertexCount - 2));
+					cylinderIndices.push_back(2 + (offset + j * 2 + 5) % (vertexCount - 2));
+					cylinderIndices.push_back(2 + (offset + j * 2 + 3) % (vertexCount - 2));
+				}
 			}
 			
 			offset += 4;
