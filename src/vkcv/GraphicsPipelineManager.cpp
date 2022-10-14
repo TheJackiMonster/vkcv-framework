@@ -317,19 +317,48 @@ namespace vkcv {
 	 * @return
 	 */
 	vk::PipelineColorBlendStateCreateInfo
-	createPipelineColorBlendStateCreateInfo(const GraphicsPipelineConfig &config) {
-		// currently set to additive, if not disabled
-		// BlendFactors must be set as soon as additional BlendModes are added
-		static vk::PipelineColorBlendAttachmentState colorBlendAttachmentState(
-			config.getBlendMode() != BlendMode::None, vk::BlendFactor::eOne, vk::BlendFactor::eOne,
-			vk::BlendOp::eAdd, vk::BlendFactor::eOne, vk::BlendFactor::eOne, vk::BlendOp::eAdd,
-			vk::ColorComponentFlags(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
-									| VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT));
+	createPipelineColorBlendStateCreateInfo(const GraphicsPipelineConfig &config,
+											const PassConfig &passConfig) {
+		static std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
+		
+		colorBlendAttachmentStates.clear();
+		colorBlendAttachmentStates.reserve(passConfig.getAttachments().size());
+		
+		for (const auto& attachment : passConfig.getAttachments()) {
+			if ((isDepthFormat(attachment.getFormat())) ||
+				(isStencilFormat(attachment.getFormat()))) {
+				continue;
+			}
+			
+			// currently set to additive, if not disabled
+			// BlendFactors must be set as soon as additional BlendModes are added
+			vk::PipelineColorBlendAttachmentState colorBlendAttachmentState (
+					config.getBlendMode() != BlendMode::None,
+					vk::BlendFactor::eOne,
+					vk::BlendFactor::eOne,
+					vk::BlendOp::eAdd,
+					vk::BlendFactor::eOne,
+					vk::BlendFactor::eOne,
+					vk::BlendOp::eAdd,
+					vk::ColorComponentFlags(
+							VK_COLOR_COMPONENT_R_BIT |
+							VK_COLOR_COMPONENT_G_BIT |
+							VK_COLOR_COMPONENT_B_BIT |
+							VK_COLOR_COMPONENT_A_BIT
+					)
+			);
+			
+			colorBlendAttachmentStates.push_back(colorBlendAttachmentState);
+		}
 
 		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo(
-			{}, false, vk::LogicOp::eClear,
-			1, // TODO: hardcoded to one
-			&colorBlendAttachmentState, { 1.f, 1.f, 1.f, 1.f });
+			{},
+			false,
+			vk::LogicOp::eClear,
+			colorBlendAttachmentStates.size(),
+			colorBlendAttachmentStates.data(),
+			{ 1.f, 1.f, 1.f, 1.f }
+		);
 
 		return pipelineColorBlendStateCreateInfo;
 	}
@@ -568,7 +597,7 @@ namespace vkcv {
 
 		// color blend state
 		vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo =
-			createPipelineColorBlendStateCreateInfo(config);
+			createPipelineColorBlendStateCreateInfo(config, passConfig);
 
 		// Dynamic State
 		vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo =
