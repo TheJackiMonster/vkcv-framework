@@ -504,6 +504,15 @@ namespace vkcv {
 		
 		return true;
 	}
+	
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceShaderTerminateInvocationFeatures &features,
+									  bool required) const {
+		vkcv_check_init_features2(vk::PhysicalDeviceShaderTerminateInvocationFeatures);
+		
+		vkcv_check_feature(shaderTerminateInvocation);
+		
+		return true;
+	}
 
 	vk::BaseOutStructure* FeatureManager::findFeatureStructure(vk::StructureType type) const {
 		for (auto &base : m_featuresExtensions) {
