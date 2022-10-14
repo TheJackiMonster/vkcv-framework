@@ -55,5 +55,10 @@ namespace vkcv {
 
 		return bindings;
 	}
-
+	
+	VertexLayout createVertexLayout(const VertexBindings &bindings) {
+		VertexLayout layout { bindings };
+		return layout;
+	}
+	
 } // namespace vkcv

@@ -90,7 +90,7 @@ namespace vkcv {
 		 * @param[in] mipCount Mip level count
 		 * @return Instance of descriptor writes
 		 */
-		DescriptorWrites &writeSampledImage(uint32_t binding, ImageHandle image,
+		DescriptorWrites &writeSampledImage(uint32_t binding, const ImageHandle& image,
 											uint32_t mipLevel = 0, bool useGeneralLayout = false,
 											uint32_t arrayIndex = 0, uint32_t mipCount = 1,
 											bool arrayView = false);
@@ -105,7 +105,7 @@ namespace vkcv {
 		 * @param[in] mipCount Mip level count
 		 * @return Instance of descriptor writes
 		 */
-		DescriptorWrites &writeStorageImage(uint32_t binding, ImageHandle image,
+		DescriptorWrites &writeStorageImage(uint32_t binding, const ImageHandle& image,
 											uint32_t mipLevel = 0, uint32_t mipCount = 1,
 											bool arrayView = false);
 
@@ -120,7 +120,7 @@ namespace vkcv {
 		 * @param[in] size Size of the buffer access range
 		 * @return Instance of descriptor writes
 		 */
-		DescriptorWrites &writeUniformBuffer(uint32_t binding, BufferHandle buffer,
+		DescriptorWrites &writeUniformBuffer(uint32_t binding, const BufferHandle& buffer,
 											 bool dynamic = false, uint32_t offset = 0,
 											 uint32_t size = 0);
 
@@ -135,7 +135,7 @@ namespace vkcv {
 		 * @param[in] size Size of the buffer access range
 		 * @return Instance of descriptor writes
 		 */
-		DescriptorWrites &writeStorageBuffer(uint32_t binding, BufferHandle buffer,
+		DescriptorWrites &writeStorageBuffer(uint32_t binding, const BufferHandle& buffer,
 											 bool dynamic = false, uint32_t offset = 0,
 											 uint32_t size = 0);
 
@@ -147,7 +147,7 @@ namespace vkcv {
 		 * @param[in] sampler Sampler handle
 		 * @return Instance of descriptor writes
 		 */
-		DescriptorWrites &writeSampler(uint32_t binding, SamplerHandle sampler);
+		DescriptorWrites &writeSampler(uint32_t binding, const SamplerHandle& sampler);
 
 		/**
 		 * @brief Adds an entry for acceleration to a given binding

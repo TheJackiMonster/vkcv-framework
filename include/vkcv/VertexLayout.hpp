@@ -96,5 +96,13 @@ namespace vkcv {
 	struct VertexLayout {
 		VertexBindings vertexBindings;
 	};
+	
+	/**
+	 * Creates vertex layout from a list of vertex bindings in a simplified way.
+	 *
+	 * @param[in] bindings The vertex bindings
+	 * @return Vertex layout
+	 */
+	VertexLayout createVertexLayout(const VertexBindings &bindings);
 
 } // namespace vkcv

@@ -341,7 +341,7 @@ namespace vkcv::algorithm {
 		}
 		
 		m_core.recordComputeDispatchToCmdStream(cmdStream, m_pipeline, dispatch, {
-			vkcv::DescriptorSetUsage(0, descriptorSet)
+			useDescriptorSet(0, descriptorSet)
 		}, pushConstants);
 		
 		if (m_sampler) {

@@ -255,7 +255,7 @@ namespace vkcv::upscaling {
 				cmdStream,
 				m_scalerPipeline,
 				dispatch,
-				{DescriptorSetUsage(0, m_scalerDescriptorSet, { 0 })},
+				{ useDescriptorSet(0, m_scalerDescriptorSet, { 0 }) },
 				PushConstants(0)
 		);
 		

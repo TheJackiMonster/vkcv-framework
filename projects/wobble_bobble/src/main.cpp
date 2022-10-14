@@ -504,7 +504,7 @@ int main(int argc, const char **argv) {
 			false
 	);
 	
-	vkcv::VertexLayout vertexLayoutGrid ({
+	vkcv::VertexLayout vertexLayoutGrid = vkcv::createVertexLayout({
 		vkcv::createVertexBinding(0, gfxProgramGrid.getVertexAttachments())
 	});
 	
@@ -515,7 +515,7 @@ int main(int argc, const char **argv) {
 			{ gfxSetLayoutGrid }
 	);
 	
-	vkcv::VertexLayout vertexLayoutParticles ({
+	vkcv::VertexLayout vertexLayoutParticles = vkcv::createVertexLayout({
 		vkcv::createVertexBinding(0, gfxProgramParticles.getVertexAttachments())
 	});
 	
@@ -526,7 +526,7 @@ int main(int argc, const char **argv) {
 			{ gfxSetLayoutParticles }
 	);
 	
-	vkcv::VertexLayout vertexLayoutLines ({
+	vkcv::VertexLayout vertexLayoutLines = vkcv::createVertexLayout({
 		vkcv::createVertexBinding(0, gfxProgramLines.getVertexAttachments())
 	});
 	

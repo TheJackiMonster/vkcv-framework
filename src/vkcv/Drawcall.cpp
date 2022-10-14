@@ -13,11 +13,18 @@ namespace vkcv {
 
 	void Drawcall::useDescriptorSet(uint32_t location, const DescriptorSetHandle &descriptorSet,
 									const std::vector<uint32_t> &dynamicOffsets) {
-		m_usages.emplace_back(location, descriptorSet, dynamicOffsets);
+		DescriptorSetUsage usage;
+		usage.location = location;
+		usage.descriptorSet = descriptorSet;
+		usage.dynamicOffsets = dynamicOffsets;
+		m_usages.push_back(usage);
 	}
 
-	InstanceDrawcall::InstanceDrawcall(const VertexData &vertexData, uint32_t instanceCount) :
-		Drawcall(), m_vertexData(vertexData), m_instanceCount(instanceCount) {}
+	InstanceDrawcall::InstanceDrawcall(const VertexData &vertexData,
+									   uint32_t instanceCount) :
+		Drawcall(),
+		m_vertexData(vertexData),
+		m_instanceCount(instanceCount) {}
 
 	const VertexData &InstanceDrawcall::getVertexData() const {
 		return m_vertexData;
@@ -28,9 +35,12 @@ namespace vkcv {
 	}
 
 	IndirectDrawcall::IndirectDrawcall(const BufferHandle &indirectDrawBuffer,
-									   const VertexData &vertexData, uint32_t drawCount) :
+									   const VertexData &vertexData,
+									   uint32_t drawCount) :
 		Drawcall(),
-		m_indirectDrawBuffer(indirectDrawBuffer), m_vertexData(vertexData), m_drawCount(drawCount) {
+		m_indirectDrawBuffer(indirectDrawBuffer),
+		m_vertexData(vertexData),
+		m_drawCount(drawCount) {
 	}
 
 	BufferHandle IndirectDrawcall::getIndirectDrawBuffer() const {

@@ -264,7 +264,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::DescriptorSetLayoutHandle meshShaderDescriptorSetLayout = core.createDescriptorSetLayout(meshShaderProgram.getReflectedDescriptors().at(0));
 	vkcv::DescriptorSetHandle meshShaderDescriptorSet = core.createDescriptorSet(meshShaderDescriptorSetLayout);
-	const vkcv::VertexLayout meshShaderLayout(bindings);
+	const vkcv::VertexLayout meshShaderLayout = vkcv::createVertexLayout(bindings);
 
 	vkcv::GraphicsPipelineHandle meshShaderPipeline = core.createGraphicsPipeline(
 			vkcv::GraphicsPipelineConfig(

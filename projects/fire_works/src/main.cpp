@@ -99,93 +99,93 @@ void InitializeParticles(std::vector<particle_t> &particles) {
 }
 
 void InitializeFireworkEvents(std::vector<event_t>& events) {
-	events.emplace_back(glm::vec3(0, 1, 0), 0.5f, glm::vec3(0.0f, 1.0f, 0.0f), 12.5f,
+	events.push_back({
+		glm::vec3(0, 1, 0), 0.5f, glm::vec3(0.0f, 1.0f, 0.0f), 12.5f,
+		1, 0, UINT_MAX, 0,
+		1.0f, 1.0f, 0.5f, 0
+	});
 
-						1, 0, UINT_MAX, 0,
+	events.push_back({
+		glm::vec3(0.0f), 1.5f, glm::vec3(0.0f, 1.0f, 1.0f), 10.0f,
+		100, 0, 0, 0,
+		10.0f, 1.0f, 0.0f, 0
+	});
 
-						1.0f, 1.0f, 0.5f, 0);
+	events.push_back({
+		glm::vec3(0.5, 1, 0), 0.25f, glm::vec3(0.0f, 1.5f, 0.0f), 15.0f,
+		1, 0, UINT_MAX, 0,
+		0.5f, 1.0f, 0.5f, 0
+	});
 
-	events.emplace_back(glm::vec3(0.0f), 1.5f, glm::vec3(0.0f, 1.0f, 1.0f), 10.0f,
+	events.push_back({
+		glm::vec3(0.0f), 0.75f, glm::vec3(0.0f, 1.5f, 1.0f), 8.0f,
+		150, 0, 2, 0,
+		10.0f, 1.0f, 0.0f, 0
+	});
 
-						100, 0, events.size() - 1, 0,
+	events.push_back({
+		glm::vec3(-2.5, 3, 0.5), 1.0f, glm::vec3(246.0f, 189.0f, 255.0f), 12.5f,
+		1, 0, UINT_MAX, 0,
+		1.0f, 1.0f, 0.5f, 0
+	});
 
-						10.0f, 1.0f, 0.0f, 0);
-
-	events.emplace_back(glm::vec3(0.5, 1, 0), 0.25f, glm::vec3(0.0f, 1.5f, 0.0f), 15.0f,
-
-						1, 0, UINT_MAX, 0,
-
-						0.5f, 1.0f, 0.5f, 0);
-
-	events.emplace_back(glm::vec3(0.0f), 0.75f, glm::vec3(0.0f, 1.5f, 1.0f), 8.0f,
-
-						150, 0, events.size() - 1, 0,
-
-						10.0f, 1.0f, 0.0f, 0);
-
-	events.emplace_back(glm::vec3(-2.5, 3, 0.5), 1.0f, glm::vec3(246.0f, 189.0f, 255.0f), 12.5f,
-
-						1, 0, UINT_MAX, 0,
-
-						1.0f, 1.0f, 0.5f, 0);
-
-	events.emplace_back(glm::vec3(0.0f), 2.0f, glm::vec3(235.0f, 137.0f, 250.0f), 8.0f,
-
-						75, 0, events.size() - 1, 0,
-
-						10.0f, 1.0f, 0.0f, 0);
+	events.push_back({
+		glm::vec3(0.0f), 2.0f, glm::vec3(235.0f, 137.0f, 250.0f), 8.0f,
+		75, 0, 4, 0,
+		10.0f, 1.0f, 0.0f, 0
+	});
 }
 
 void InitializeSparklerEvents(std::vector<event_t> &events) {
-	events.emplace_back(glm::vec3(0, 1, 0), 0.0f, glm::vec3(251.0f, 255.0f, 145.0f), 1.0f,
+	events.push_back({
+		glm::vec3(0, 1, 0), 0.0f, glm::vec3(251.0f, 255.0f, 145.0f), 1.0f,
+		1, 0, UINT_MAX, 0,
+		8.0f, 0.0f, 0.5f, 0
+	});
 
-						1, 0, UINT_MAX, 0,
-
-						8.0f, 0.0f, 0.5f, 0);
-
-	events.emplace_back(glm::vec3(0.0f), 0.0f, glm::vec3(251.0f, 255.0f, 145.0f), 10.0f,
-
-						1000, 1, events.size() - 1, 10,
-
-						0.5f, -1.0f, 0.0f, 100);
+	events.push_back({
+		glm::vec3(0.0f), 0.0f, glm::vec3(251.0f, 255.0f, 145.0f), 10.0f,
+		1000, 1, 0, 10,
+		0.5f, -1.0f, 0.0f, 100
+	});
 }
 
 void InitializeNestedFireworkEvents(std::vector<event_t>& events) {
-	events.emplace_back(glm::vec3(0, 2, 0), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f), 12.5f,
+	events.push_back({
+		glm::vec3(0, 2, 0), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f), 12.5f,
+		1, 0, UINT_MAX, 0,
+		1.0f, 1.0f, 0.5f, 0
+	});
 
-						1, 0, UINT_MAX, 0,
+	events.push_back({
+		glm::vec3(0.0f), 0.9f, glm::vec3(0.0f, 1.0f, 1.0f), 7.0f,
+		100, 0, 0, 0,
+		10.1f, 1.0f, 0.0f, 0
+	});
 
-						1.0f, 1.0f, 0.5f, 0);
+	events.push_back({
+		glm::vec3(0.0f), 2.0f, glm::vec3(0.0f, 0.0f, 0.0f), 10.0f,
+		100, 0, 1, 0,
+		10.0f, 1.0f, 0.0f, 0
+	});
 
-	events.emplace_back(glm::vec3(0.0f), 0.9f, glm::vec3(0.0f, 1.0f, 1.0f), 7.0f,
+	events.push_back({
+		glm::vec3(0.0f), 1.0f, glm::vec3(42.0f,0.0f, 1.0f), 12.5f,
+		100, 0, 1, 0,
+		1.0f, 1.0f, 0.5f, 0
+	});
 
-						100, 0, events.size() - 1, 0,
+	events.push_back({
+		glm::vec3(0.0f), 1.5f, glm::vec3(42.0f, 0.0f, 1.0f), 10.0f,
+		100, 0, 3, 0,
+		10.0f, 1.0f, 0.0f, 0
+	});
 
-						10.1f, 1.0f, 0.0f, 0);
-
-	events.emplace_back(glm::vec3(0.0f), 2.0f, glm::vec3(0.0f, 0.0f, 0.0f), 10.0f,
-
-						100, 0, events.size() - 1, 0,
-
-						10.0f, 1.0f, 0.0f, 0);
-
-	events.emplace_back(glm::vec3(0.0f), 1.0f, glm::vec3(42.0f,0.0f, 1.0f), 12.5f,
-
-						100, 0, events.size() - 2, 0,
-
-						1.0f, 1.0f, 0.5f, 0);
-
-	events.emplace_back(glm::vec3(0.0f), 1.5f, glm::vec3(42.0f, 0.0f, 1.0f), 10.0f,
-
-						100, 0, events.size() - 1, 0,
-
-						10.0f, 1.0f, 0.0f, 0);
-
-	events.emplace_back(glm::vec3(0.0f), 2.0f, glm::vec3(42.0f, 0.0f, 1.0f), 10.0f,
-
-						100, 0, events.size() - 1, 0,
-
-						10.0f, 1.0f, 0.0f, 0);
+	events.push_back({
+		glm::vec3(0.0f), 2.0f, glm::vec3(42.0f, 0.0f, 1.0f), 10.0f,
+		100, 0, 4, 0,
+		10.0f, 1.0f, 0.0f, 0
+	});
 }
 
 void ChangeColor(std::vector<event_t>& events, glm::vec3 color) {

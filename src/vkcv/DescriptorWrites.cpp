@@ -3,46 +3,85 @@
 
 namespace vkcv {
 
-	DescriptorWrites &DescriptorWrites::writeSampledImage(uint32_t binding, ImageHandle image,
-														  uint32_t mipLevel, bool useGeneralLayout,
-														  uint32_t arrayIndex, uint32_t mipCount,
+	DescriptorWrites &DescriptorWrites::writeSampledImage(uint32_t binding,
+														  const ImageHandle& image,
+														  uint32_t mipLevel,
+														  bool useGeneralLayout,
+														  uint32_t arrayIndex,
+														  uint32_t mipCount,
 														  bool arrayView) {
-		m_sampledImageWrites.emplace_back(binding, image, mipLevel, useGeneralLayout, arrayIndex,
-										  mipCount, arrayView);
-
+		SampledImageDescriptorWrite write;
+		write.binding = binding;
+		write.image = image;
+		write.mipLevel = mipLevel;
+		write.useGeneralLayout = useGeneralLayout;
+		write.arrayIndex = arrayIndex;
+		write.mipCount = mipCount;
+		write.arrayView = arrayView;
+		m_sampledImageWrites.push_back(write);
 		return *this;
 	}
 
-	DescriptorWrites &DescriptorWrites::writeStorageImage(uint32_t binding, ImageHandle image,
-														  uint32_t mipLevel, uint32_t mipCount,
+	DescriptorWrites &DescriptorWrites::writeStorageImage(uint32_t binding,
+														  const ImageHandle& image,
+														  uint32_t mipLevel,
+														  uint32_t mipCount,
 														  bool arrayView) {
-		m_storageImageWrites.emplace_back(binding, image, mipLevel, mipCount, arrayView);
-
+		StorageImageDescriptorWrite write;
+		write.binding = binding;
+		write.image = image;
+		write.mipLevel = mipLevel;
+		write.mipCount = mipCount;
+		write.arrayView = arrayView;
+		m_storageImageWrites.push_back(write);
 		return *this;
 	}
 
-	DescriptorWrites &DescriptorWrites::writeUniformBuffer(uint32_t binding, BufferHandle buffer,
-														   bool dynamic, uint32_t offset,
+	DescriptorWrites &DescriptorWrites::writeUniformBuffer(uint32_t binding,
+														   const BufferHandle& buffer,
+														   bool dynamic,
+														   uint32_t offset,
 														   uint32_t size) {
-		m_uniformBufferWrites.emplace_back(binding, buffer, dynamic, offset, size);
+		BufferDescriptorWrite write;
+		write.binding = binding;
+		write.buffer = buffer;
+		write.dynamic = dynamic;
+		write.offset = offset;
+		write.size = size;
+		m_uniformBufferWrites.push_back(write);
 		return *this;
 	}
 
-	DescriptorWrites &DescriptorWrites::writeStorageBuffer(uint32_t binding, BufferHandle buffer,
-														   bool dynamic, uint32_t offset,
+	DescriptorWrites &DescriptorWrites::writeStorageBuffer(uint32_t binding,
+														   const BufferHandle& buffer,
+														   bool dynamic,
+														   uint32_t offset,
 														   uint32_t size) {
-		m_storageBufferWrites.emplace_back(binding, buffer, dynamic, offset, size);
+		BufferDescriptorWrite write;
+		write.binding = binding;
+		write.buffer = buffer;
+		write.dynamic = dynamic;
+		write.offset = offset;
+		write.size = size;
+		m_storageBufferWrites.push_back(write);
 		return *this;
 	}
 
-	DescriptorWrites &DescriptorWrites::writeSampler(uint32_t binding, SamplerHandle sampler) {
-		m_samplerWrites.emplace_back(binding, sampler);
+	DescriptorWrites &DescriptorWrites::writeSampler(uint32_t binding,
+													 const SamplerHandle& sampler) {
+		SamplerDescriptorWrite write;
+		write.binding = binding;
+		write.sampler = sampler;
+		m_samplerWrites.push_back(write);
 		return *this;
 	}
 
 	DescriptorWrites &DescriptorWrites::writeAcceleration(
 		uint32_t binding, const std::vector<vk::AccelerationStructureKHR> &structures) {
-		m_accelerationWrites.emplace_back(binding, structures);
+		AccelerationDescriptorWrite write;
+		write.binding = binding;
+		write.structures = structures;
+		m_accelerationWrites.push_back(write);
 		return *this;
 	}
 
