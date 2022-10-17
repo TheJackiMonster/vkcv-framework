@@ -340,6 +340,9 @@ namespace vkcv {
 			arrayViews.push_back(device.createImageView(imageViewCreateInfo));
 		}
 		
+		std::vector<vk::ImageLayout> layers;
+		layers.resize(arrayLayers, vk::ImageLayout::eUndefined);
+		
 		return add({
 			image,
 			allocation,
@@ -349,8 +352,7 @@ namespace vkcv {
 			config.getHeight(),
 			config.getDepth(),
 			format,
-			arrayLayers,
-			vk::ImageLayout::eUndefined,
+			layers,
 			config.isSupportingStorage()
 		});
 	}
@@ -417,20 +419,22 @@ namespace vkcv {
 				mipLevelOffset,
 				mipLevelCount,
 				0,
-				image.m_layers
+				static_cast<uint32_t>(image.m_layers.size())
 		);
 		
 		// TODO: precise AccessFlagBits, will require a lot of context
-		return vk::ImageMemoryBarrier(
+		vk::ImageMemoryBarrier barrier (
 				vk::AccessFlagBits::eMemoryWrite,
 				vk::AccessFlagBits::eMemoryRead,
-				image.m_layout,
+				image.m_layers[0],
 				newLayout,
 				VK_QUEUE_FAMILY_IGNORED,
 				VK_QUEUE_FAMILY_IGNORED,
 				image.m_handle,
 				imageSubresourceRange
 		);
+		
+		return barrier;
 	}
 	
 	void ImageManager::switchImageLayoutImmediate(const ImageHandle &handle,
@@ -445,14 +449,23 @@ namespace vkcv {
 				stream,
 				[transitionBarrier](const vk::CommandBuffer &commandBuffer) {
 					// TODO: precise PipelineStageFlagBits, will require a lot of context
-					commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
-												  vk::PipelineStageFlagBits::eBottomOfPipe, {}, nullptr,
-												  nullptr, transitionBarrier);
+					commandBuffer.pipelineBarrier(
+							vk::PipelineStageFlagBits::eTopOfPipe,
+							vk::PipelineStageFlagBits::eBottomOfPipe,
+							{},
+							nullptr,
+							nullptr,
+							transitionBarrier
+					);
 				},
-				nullptr);
+				nullptr
+		);
 		
 		core.submitCommandStream(stream, false);
-		image.m_layout = newLayout;
+		
+		for (auto& layer : image.m_layers) {
+			layer = newLayout;
+		}
 	}
 	
 	void ImageManager::recordImageLayoutTransition(const ImageHandle &handle,
@@ -460,25 +473,45 @@ namespace vkcv {
 												   vk::ImageLayout newLayout,
 												   vk::CommandBuffer cmdBuffer) {
 		auto &image = (*this) [handle];
-		const auto transitionBarrier =
-				createImageLayoutTransitionBarrier(image, mipLevelCount, mipLevelOffset, newLayout);
+		const auto transitionBarrier = createImageLayoutTransitionBarrier(
+				image,
+				mipLevelCount,
+				mipLevelOffset,
+				newLayout
+		);
 		
-		cmdBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
-								  vk::PipelineStageFlagBits::eAllCommands, {}, nullptr, nullptr,
-								  transitionBarrier);
+		cmdBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eAllCommands,
+				vk::PipelineStageFlagBits::eAllCommands,
+				{},
+				nullptr,
+				nullptr,
+				transitionBarrier
+		);
 		
-		image.m_layout = newLayout;
+		for (auto& layer : image.m_layers) {
+			layer = newLayout;
+		}
 	}
 	
 	void ImageManager::recordImageMemoryBarrier(const ImageHandle &handle,
 												vk::CommandBuffer cmdBuffer) {
 		auto &image = (*this) [handle];
-		const auto transitionBarrier =
-				createImageLayoutTransitionBarrier(image, 0, 0, image.m_layout);
+		const auto transitionBarrier = createImageLayoutTransitionBarrier(
+				image,
+				0,
+				0,
+				image.m_layers[0]
+		);
 		
-		cmdBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
-								  vk::PipelineStageFlagBits::eAllCommands, {}, nullptr, nullptr,
-								  transitionBarrier);
+		cmdBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eAllCommands,
+				vk::PipelineStageFlagBits::eAllCommands,
+				{},
+				nullptr,
+				nullptr,
+				transitionBarrier
+		);
 	}
 	
 	constexpr uint32_t getBytesPerPixel(vk::Format format) {
@@ -512,18 +545,20 @@ namespace vkcv {
 		}
 		
 		auto &image = (*this) [handle];
-		const uint32_t baseArrayLayer = std::min<uint32_t>(firstLayer, image.m_layers);
 		
-		if (baseArrayLayer >= image.m_layers) {
+		const auto imageLayerCount = static_cast<uint32_t>(image.m_layers.size());
+		const uint32_t baseArrayLayer = std::min<uint32_t>(firstLayer, imageLayerCount);
+		
+		if (baseArrayLayer >= image.m_layers.size()) {
 			return;
 		}
 		
 		uint32_t arrayLayerCount;
 		
 		if (layerCount > 0) {
-			arrayLayerCount = std::min<uint32_t>(layerCount, image.m_layers - baseArrayLayer);
+			arrayLayerCount = std::min<uint32_t>(layerCount, imageLayerCount - baseArrayLayer);
 		} else {
-			arrayLayerCount = image.m_layers - baseArrayLayer;
+			arrayLayerCount = imageLayerCount - baseArrayLayer;
 		}
 		
 		switchImageLayoutImmediate(handle, vk::ImageLayout::eTransferDstOptimal);
@@ -596,10 +631,13 @@ namespace vkcv {
 		auto &srcImage = (*this) [src];
 		auto &dstImage = (*this) [dst];
 		
+		const auto srcLayerCount = static_cast<uint32_t>(srcImage.m_layers.size());
+		const auto dstLayerCount = static_cast<uint32_t>(dstImage.m_layers.size());
+		
 		vk::ImageResolve region(
-				vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, srcImage.m_layers),
+				vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, srcLayerCount),
 				vk::Offset3D(0, 0, 0),
-				vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, dstImage.m_layers),
+				vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, dstLayerCount),
 				vk::Offset3D(0, 0, 0),
 				vk::Extent3D(dstImage.m_width, dstImage.m_height, dstImage.m_depth)
 		);
@@ -609,9 +647,9 @@ namespace vkcv {
 		
 		cmdBuffer.resolveImage(
 				srcImage.m_handle,
-				srcImage.m_layout,
+				srcImage.m_layers[0],
 				dstImage.m_handle,
-				dstImage.m_layout,
+				dstImage.m_layers[0],
 				region
 		);
 	}
@@ -656,7 +694,7 @@ namespace vkcv {
 	
 	uint32_t ImageManager::getImageArrayLayers(const ImageHandle &handle) const {
 		auto &image = (*this) [handle];
-		return image.m_layers;
+		return static_cast<uint32_t>(image.m_layers.size());
 	}
 	
 	void ImageManager::setCurrentSwapchainImageIndex(int index) {
@@ -686,17 +724,18 @@ namespace vkcv {
 					height,
 					1,
 					format,
-					1,
-					vk::ImageLayout::eUndefined,
+					{ vk::ImageLayout::eUndefined },
 					false
 			});
 		}
 	}
 	
 	void ImageManager::updateImageLayoutManual(const vkcv::ImageHandle &handle,
-											   const vk::ImageLayout layout) {
+											   vk::ImageLayout layout) {
 		auto &image = (*this) [handle];
-		image.m_layout = layout;
+		for (auto& layer : image.m_layers) {
+			layer = layout;
+		}
 	}
 	
 } // namespace vkcv

@@ -35,8 +35,7 @@ namespace vkcv {
 		uint32_t m_depth;
 
 		vk::Format m_format;
-		uint32_t m_layers;
-		vk::ImageLayout m_layout;
+		std::vector<vk::ImageLayout> m_layers;
 		bool m_storage;
 	};
 
@@ -140,6 +139,6 @@ namespace vkcv {
 
 		// if manual vulkan work, e.g. ImGui integration, changes an image layout this function must
 		// be used to update the internal image state
-		void updateImageLayoutManual(const vkcv::ImageHandle &handle, const vk::ImageLayout layout);
+		void updateImageLayoutManual(const vkcv::ImageHandle &handle, vk::ImageLayout layout);
 	};
 } // namespace vkcv
