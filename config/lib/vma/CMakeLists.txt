@@ -2,9 +2,14 @@ cmake_minimum_required(VERSION 3.9)
 
 project(VulkanMemoryAllocator)
 
+# settings c++ standard for the vma
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 find_package(Vulkan REQUIRED)
 
 option(VMA_VULKAN_VERSION "Enforced Vulkan version" OFF)
+option(VMA_H_PATH "Location of C headers" "")
 option(VMA_HPP_PATH "Location of C++ headers" "")
 
 option(VMA_VULKAN_H_PATH "Location of Vulkan C headers" "")
@@ -41,12 +46,11 @@ set_target_properties(
 		VulkanMemoryAllocator PROPERTIES
 		
 		CXX_EXTENSIONS OFF
-		# Use C++14
-		CXX_STANDARD 14
+		CXX_STANDARD ${CMAKE_CXX_STANDARD}
 		CXX_STANDARD_REQUIRED ON
 )
 
-target_include_directories(VulkanMemoryAllocator SYSTEM BEFORE PRIVATE ${VMA_VULKAN_H_PATH} ${VMA_VULKAN_HPP_PATH})
+target_include_directories(VulkanMemoryAllocator SYSTEM BEFORE PRIVATE ${VMA_VULKAN_H_PATH} ${VMA_VULKAN_HPP_PATH} ${VMA_H_PATH})
 target_include_directories(VulkanMemoryAllocator PUBLIC ${VMA_HPP_PATH})
 
 # Only link to Vulkan if static linking is used

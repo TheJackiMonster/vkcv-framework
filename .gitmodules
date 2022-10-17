@@ -43,3 +43,6 @@
 [submodule "modules/upscaling/lib/FidelityFX-FSR2"]
 	path = modules/upscaling/lib/FidelityFX-FSR2
 	url = https://github.com/TheJackiMonster/FidelityFX-FSR2.git
+[submodule "lib/VulkanMemoryAllocator"]
+	path = lib/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

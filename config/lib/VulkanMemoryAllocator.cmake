@@ -15,6 +15,18 @@ if (BUILD_VMA_VULKAN_VERSION)
 	math(EXPR VMA_VULKAN_VERSION "1000000 * ${VMA_VULKAN_MAJOR_VERSION} + 1000 * ${VMA_VULKAN_MINOR_VERSION} + ${VMA_VULKAN_PATCH_VERSION}" OUTPUT_FORMAT DECIMAL)
 endif()
 
+use_git_submodule("${vkcv_lib_path}/VulkanMemoryAllocator" vma_status)
+
+if (${vma_status})
+	if (EXISTS "${vkcv_lib_path}/VulkanMemoryAllocator/include")
+		set(VMA_H_PATH "${vkcv_lib_path}/VulkanMemoryAllocator/include" CACHE INTERNAL "")
+	else()
+		set(VMA_H_PATH "${vkcv_lib_path}/VulkanMemoryAllocator" CACHE INTERNAL "")
+	endif()
+
+	list(APPEND vkcv_includes ${VMA_H_PATH})
+endif()
+
 use_git_submodule("${vkcv_lib_path}/VulkanMemoryAllocator-Hpp" vma_hpp_status)
 
 if (${vma_hpp_status})
