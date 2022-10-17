@@ -7,6 +7,8 @@
 #include "vkcv/Core.hpp"
 #include <vkcv/Logger.hpp>
 
+#include <limits>
+
 namespace vkcv {
 
 	bool BufferManager::init(Core &core) {
@@ -287,7 +289,7 @@ namespace vkcv {
 		auto &buffer = (*this) [handle];
 
 		if (size == 0) {
-			size = SIZE_MAX;
+			size = std::numeric_limits<size_t>::max();
 		}
 
 		const vma::Allocator &allocator = getCore().getContext().getAllocator();
@@ -326,7 +328,7 @@ namespace vkcv {
 		auto &buffer = (*this) [handle];
 
 		if (size == 0) {
-			size = SIZE_MAX;
+			size = std::numeric_limits<size_t>::max();
 		}
 
 		const vma::Allocator &allocator = getCore().getContext().getAllocator();
@@ -364,7 +366,7 @@ namespace vkcv {
 		auto &buffer = (*this) [handle];
 
 		if (size == 0) {
-			size = SIZE_MAX;
+			size = std::numeric_limits<size_t>::max();
 		}
 
 		const vma::Allocator &allocator = getCore().getContext().getAllocator();

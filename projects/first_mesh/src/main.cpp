@@ -87,7 +87,7 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::SamplerHandle sampler = vkcv::samplerLinear(core);
-
+	
 	vkcv::DescriptorWrites setWrites;
 	setWrites.writeSampledImage(0, texture.getHandle());
 	setWrites.writeSampler(1, sampler);
@@ -143,6 +143,8 @@ int main(int argc, const char** argv) {
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
 	});
+	
+	core.getContext().getDevice().waitIdle();
 	
 	return 0;
 }

@@ -3,6 +3,8 @@
 
 #include "vkcv/Logger.hpp"
 
+#include <limits>
+
 namespace vkcv {
 
 	uint64_t CommandStreamManager::getIdFrom(const CommandStreamHandle &handle) const {
@@ -86,7 +88,12 @@ namespace vkcv {
 											 signalSemaphores);
 
 		stream.queue.submit(queueSubmitInfo, waitFence);
-		assert(device.waitForFences(waitFence, true, UINT64_MAX) == vk::Result::eSuccess);
+		
+		const auto result = device.waitForFences(waitFence, true, std::numeric_limits<uint64_t>::max());
+		
+		if (result == vk::Result::eTimeout) {
+			device.waitIdle();
+		}
 
 		device.destroyFence(waitFence);
 		stream.queue = nullptr;

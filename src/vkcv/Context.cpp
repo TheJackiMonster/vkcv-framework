@@ -4,6 +4,7 @@
 #include "vkcv/Window.hpp"
 
 namespace vkcv {
+	
 	Context::Context(Context &&other) noexcept :
 		m_Instance(other.m_Instance), m_PhysicalDevice(other.m_PhysicalDevice),
 		m_Device(other.m_Device), m_FeatureManager(std::move(other.m_FeatureManager)),
@@ -147,7 +148,7 @@ namespace vkcv {
 	std::vector<std::string> getRequiredExtensions() {
 		std::vector<std::string> extensions = Window::getExtensions();
 
-#ifndef NDEBUG
+#ifdef VULKAN_DEBUG_LABELS
 		extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
@@ -346,7 +347,7 @@ namespace vkcv {
 		}
 
 // if in debug mode, check if validation layers are supported. Enable them if supported
-#ifndef NDEBUG
+#ifdef VULKAN_VALIDATION_LAYERS
 		std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 
 		if (!checkSupport(supportedLayers, validationLayers)) {
@@ -388,7 +389,7 @@ namespace vkcv {
 			vk::InstanceCreateFlags(), &applicationInfo, 0, nullptr,
 			static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
 
-#ifndef NDEBUG
+#ifdef VULKAN_VALIDATION_LAYERS
 		instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		instanceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif
@@ -478,7 +479,7 @@ namespace vkcv {
 			vk::DeviceCreateFlags(), qCreateInfos.size(), qCreateInfos.data(), 0, nullptr,
 			extensions.size(), extensions.data(), nullptr, &(featureManager.getFeatures()));
 
-#ifndef NDEBUG
+#ifdef VULKAN_VALIDATION_LAYERS
 		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
 #endif

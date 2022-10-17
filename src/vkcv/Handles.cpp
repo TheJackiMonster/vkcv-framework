@@ -1,10 +1,11 @@
 #include "vkcv/Handles.hpp"
 
 #include <iostream>
+#include <limits>
 
 namespace vkcv {
 
-	Handle::Handle() : m_id(UINT64_MAX), m_rc(nullptr), m_destroy(nullptr) {}
+	Handle::Handle() : m_id(std::numeric_limits<uint64_t>::max()), m_rc(nullptr), m_destroy(nullptr) {}
 
 	Handle::Handle(uint64_t id, const HandleDestroyFunction &destroy) :
 		m_id(id), m_rc(new uint64_t(1)), m_destroy(destroy) {}
@@ -66,11 +67,11 @@ namespace vkcv {
 	}
 
 	Handle::operator bool() const {
-		return (m_id < UINT64_MAX);
+		return (m_id < std::numeric_limits<uint64_t>::max());
 	}
 
 	bool Handle::operator!() const {
-		return (m_id == UINT64_MAX);
+		return (m_id == std::numeric_limits<uint64_t>::max());
 	}
 
 	std::ostream &operator<<(std::ostream &out, const Handle &handle) {
@@ -83,11 +84,11 @@ namespace vkcv {
 	}
 
 	bool ImageHandle::isSwapchainImage() const {
-		return (getId() == UINT64_MAX - 1);
+		return (getId() == std::numeric_limits<uint64_t>::max() - 1);
 	}
 
 	ImageHandle ImageHandle::createSwapchainImageHandle(const HandleDestroyFunction &destroy) {
-		return ImageHandle(uint64_t(UINT64_MAX - 1), destroy);
+		return ImageHandle(uint64_t(std::numeric_limits<uint64_t>::max() - 1), destroy);
 	}
 
 } // namespace vkcv
