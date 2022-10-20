@@ -6,7 +6,7 @@ if (WIN32)
 else()
 	find_program(wine_program "wine")
 	
-	if (EXISTS ${xxd_program})
+	if (EXISTS ${wine_program})
 		set(vkcv_upscaling_fsr2_override OFF)
 	endif()
 endif()
