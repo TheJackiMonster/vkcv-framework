@@ -1,6 +1,8 @@
 
 #ifndef NDEBUG
+#ifndef _DEBUG
 #define _DEBUG
+#endif
 #endif
 
 #ifndef _MSVC_LANG

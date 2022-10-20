@@ -1,6 +1,8 @@
 
 #include "vkcv/geometry/Cylinder.hpp"
 
+#include <numbers>
+
 namespace vkcv::geometry {
 	
 	Cylinder::Cylinder(const glm::vec3 &position, float height, float radius)

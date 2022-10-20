@@ -137,7 +137,7 @@ namespace vkcv {
 	template <typename T>
 	PushConstants pushConstants(const T &value) {
 		auto pc = pushConstants<T>();
-		pc.template appendDrawcall(value);
+		pc.template appendDrawcall<T>(value);
 		return pc;
 	}
 
@@ -146,7 +146,7 @@ namespace vkcv {
 		auto pc = pushConstants<T>();
 
 		for (const T &value : values) {
-			if (!(pc.template appendDrawcall(value))) {
+			if (!(pc.template appendDrawcall<T>(value))) {
 				break;
 			}
 		}

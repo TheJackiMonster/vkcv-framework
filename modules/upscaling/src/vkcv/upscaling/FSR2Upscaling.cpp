@@ -3,10 +3,16 @@
 
 #include <cmath>
 
+#ifndef _MSVC_LANG
 #define FFX_GCC
+#endif
+
 #include <ffx_fsr2.h>
 #include <ffx_fsr2_vk.h>
+
+#ifdef FFX_GCC
 #undef FFX_GCC
+#endif
 
 namespace vkcv::upscaling {
 	
