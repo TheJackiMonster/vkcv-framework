@@ -10,11 +10,12 @@ if(NOT WIN32)
 	
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 		list(APPEND vkcv_flags -Xpreprocessor)
+	else()
+		# optimization for loading times
+		list(APPEND vkcv_flags -fopenmp)
 	endif()
 	
-	# optimization for loading times
 	list(APPEND vkcv_flags -pthread)
-	list(APPEND vkcv_flags -fopenmp)
 endif()
 
 # add custom functions to check for git submodules

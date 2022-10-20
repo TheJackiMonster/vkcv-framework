@@ -384,11 +384,10 @@ void App::run() {
 		
 		// upscaling
 		m_core.prepareImageForSampling(cmdStream, m_renderTargets.colorBuffer);
+		m_core.prepareImageForStorage(cmdStream, m_renderTargets.finalBuffer);
 		
 		switch (upscalingMode) {
 			case 0:
-				m_core.prepareImageForStorage(cmdStream, m_renderTargets.finalBuffer);
-				
 				fsr1.recordUpscaling(
 						cmdStream,
 						m_renderTargets.colorBuffer,
@@ -399,8 +398,6 @@ void App::run() {
 				m_core.prepareImageForSampling(cmdStream, m_renderTargets.depthBuffer);
 				m_core.prepareImageForSampling(cmdStream, m_renderTargets.motionBuffer);
 				
-				m_core.prepareImageForSampling(cmdStream, m_renderTargets.finalBuffer);
-				
 				fsr2.recordUpscaling(
 						cmdStream,
 						m_renderTargets.colorBuffer,
@@ -408,8 +405,6 @@ void App::run() {
 				);
 				break;
 			case 2:
-				m_core.prepareImageForStorage(cmdStream, m_renderTargets.finalBuffer);
-				
 				nis.recordUpscaling(
 						cmdStream,
 						m_renderTargets.colorBuffer,
@@ -417,8 +412,6 @@ void App::run() {
 				);
 				break;
 			case 3:
-				m_core.prepareImageForStorage(cmdStream, m_renderTargets.finalBuffer);
-				
 				bilinear.recordUpscaling(
 						cmdStream,
 						m_renderTargets.colorBuffer,

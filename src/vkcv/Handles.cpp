@@ -30,6 +30,7 @@ namespace vkcv {
 	Handle::Handle(Handle &&other) noexcept :
 		m_id(other.m_id), m_rc(other.m_rc), m_destroy(other.m_destroy) {
 		other.m_rc = nullptr;
+		other.m_destroy = nullptr;
 	}
 
 	Handle &Handle::operator=(const Handle &other) {
@@ -54,6 +55,7 @@ namespace vkcv {
 		m_destroy = other.m_destroy;
 
 		other.m_rc = nullptr;
+		other.m_destroy = nullptr;
 
 		return *this;
 	}

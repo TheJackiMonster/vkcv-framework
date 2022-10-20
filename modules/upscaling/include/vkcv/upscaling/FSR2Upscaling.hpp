@@ -2,10 +2,15 @@
 
 #include "Upscaling.hpp"
 
+#include <memory>
 #include <vector>
 
+#ifdef VKCV_OVERRIDE_FSR2_WITH_FSR1
+#include "FSRUpscaling.hpp"
+#else
 struct FfxFsr2ContextDescription;
 struct FfxFsr2Context;
+#endif
 
 namespace vkcv::upscaling {
 
@@ -78,6 +83,9 @@ namespace vkcv::upscaling {
      */
 	class FSR2Upscaling : public Upscaling {
 	private:
+#ifdef VKCV_OVERRIDE_FSR2_WITH_FSR1
+		std::unique_ptr<FSRUpscaling> m_fsr1;
+#else
 		std::vector<char> m_scratchBuffer;
 		
 		std::unique_ptr<FfxFsr2ContextDescription> m_description;
@@ -118,6 +126,7 @@ namespace vkcv::upscaling {
 							   uint32_t renderHeight);
 		
 		void destroyFSR2Context();
+#endif
 		
 	public:
 		/**

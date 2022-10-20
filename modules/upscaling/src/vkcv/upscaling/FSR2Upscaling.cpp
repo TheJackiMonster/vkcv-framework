@@ -3,6 +3,7 @@
 
 #include <cmath>
 
+#ifndef VKCV_OVERRIDE_FSR2_WITH_FSR1
 #ifndef _MSVC_LANG
 #define FFX_GCC
 #endif
@@ -12,6 +13,7 @@
 
 #ifdef FFX_GCC
 #undef FFX_GCC
+#endif
 #endif
 
 namespace vkcv::upscaling {
@@ -63,6 +65,7 @@ namespace vkcv::upscaling {
 		}
 	}
 	
+#ifndef VKCV_OVERRIDE_FSR2_WITH_FSR1
 	void FSR2Upscaling::createFSR2Context(uint32_t displayWidth,
 									 uint32_t displayHeight,
 									 uint32_t renderWidth,
@@ -149,20 +152,29 @@ namespace vkcv::upscaling {
 		m_scratchBuffer.clear();
 		m_description->callbacks.scratchBuffer = nullptr;
 	}
+#else
+	FSR2Upscaling::FSR2Upscaling(vkcv::Core &core) :
+	Upscaling(core), m_fsr1(new FSRUpscaling(m_core)) {}
+	
+	FSR2Upscaling::~FSR2Upscaling() {}
+#endif
 	
 	void FSR2Upscaling::update(float deltaTime, bool reset) {
+#ifndef VKCV_OVERRIDE_FSR2_WITH_FSR1
 		if (reset) {
 			m_frameIndex = 0;
 		}
 		
 		m_frameDeltaTime = deltaTime;
 		m_reset = reset;
+#endif
 	}
 	
 	void FSR2Upscaling::calcJitterOffset(uint32_t renderWidth,
 										 uint32_t renderHeight,
 										 float &jitterOffsetX,
 										 float &jitterOffsetY) const {
+#ifndef VKCV_OVERRIDE_FSR2_WITH_FSR1
 		const int32_t phaseCount = ffxFsr2GetJitterPhaseCount(
 				static_cast<int32_t>(renderWidth),
 				static_cast<int32_t>(renderHeight)
@@ -179,22 +191,33 @@ namespace vkcv::upscaling {
 		
 		jitterOffsetX *= +2.0f / renderWidth;
 		jitterOffsetY *= -2.0f / renderHeight;
+#else
+		jitterOffsetX = 0.0f;
+		jitterOffsetY = 0.0f;
+#endif
 	}
 	
 	void FSR2Upscaling::bindDepthBuffer(const ImageHandle &depthInput) {
+#ifndef VKCV_OVERRIDE_FSR2_WITH_FSR1
 		m_depth = depthInput;
+#endif
 	}
 	
 	void FSR2Upscaling::bindVelocityBuffer(const ImageHandle &velocityInput) {
+#ifndef VKCV_OVERRIDE_FSR2_WITH_FSR1
 		m_velocity = velocityInput;
+#endif
 	}
 	
 	void FSR2Upscaling::recordUpscaling(const CommandStreamHandle &cmdStream,
 										const ImageHandle &colorInput,
 										const ImageHandle &output) {
+#ifndef VKCV_OVERRIDE_FSR2_WITH_FSR1
 		m_core.recordBeginDebugLabel(cmdStream, "vkcv::upscaling::FSR2Upscaling", {
 				1.0f, 0.05f, 0.05f, 1.0f
 		});
+		
+		m_core.prepareImageForSampling(cmdStream, output);
 		
 		FfxFsr2DispatchDescription dispatch;
 		memset(&dispatch, 0, sizeof(dispatch));
@@ -328,28 +351,49 @@ namespace vkcv::upscaling {
 		
 		m_core.updateImageLayoutManual(output, vk::ImageLayout::eGeneral);
 		m_core.recordEndDebugLabel(cmdStream);
+#else
+		m_fsr1->recordUpscaling(cmdStream, colorInput, output);
+#endif
 	}
 	
 	void FSR2Upscaling::setCamera(float near, float far, float fov) {
+#ifndef VKCV_OVERRIDE_FSR2_WITH_FSR1
 		m_near = near;
 		m_far = far;
 		m_fov = fov;
+#endif
 	}
 	
 	bool FSR2Upscaling::isHdrEnabled() const {
+#ifdef VKCV_OVERRIDE_FSR2_WITH_FSR1
+		return m_fsr1->isHdrEnabled();
+#else
 		return m_hdr;
+#endif
 	}
 	
 	void FSR2Upscaling::setHdrEnabled(bool enabled) {
+#ifdef VKCV_OVERRIDE_FSR2_WITH_FSR1
+		m_fsr1->setHdrEnabled(true);
+#else
 		m_hdr = enabled;
+#endif
 	}
 	
 	float FSR2Upscaling::getSharpness() const {
+#ifdef VKCV_OVERRIDE_FSR2_WITH_FSR1
+		return m_fsr1->getSharpness();
+#else
 		return m_sharpness;
+#endif
 	}
 	
 	void FSR2Upscaling::setSharpness(float sharpness) {
+#ifdef VKCV_OVERRIDE_FSR2_WITH_FSR1
+		m_fsr1->setSharpness(sharpness);
+#else
 		m_sharpness = (sharpness < 0.0f ? 0.0f : (sharpness > 1.0f ? 1.0f : sharpness));
+#endif
 	}
 	
 }

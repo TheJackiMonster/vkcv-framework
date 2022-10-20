@@ -24,7 +24,7 @@ namespace vkcv {
 		 */
 		explicit Downsampler(Core &core);
 
-		~Downsampler() = default;
+		virtual ~Downsampler() = default;
 
 		/**
 		 * @brief Record the commands of the given downsampler instance to

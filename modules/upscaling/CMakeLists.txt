@@ -38,6 +38,9 @@ include(config/FidelityFX_FSR2.cmake)
 # Check and load NVIDIAImageScaling
 include(config/NVIDIAImageScaling.cmake)
 
+# Add compile definitions depending on the build context of the module
+add_compile_definitions(${vkcv_upscaling_definitions})
+
 # adding source files to the project
 add_library(vkcv_upscaling ${vkcv_build_attribute} ${vkcv_upscaling_sources})
 
