@@ -9,6 +9,9 @@
 
 namespace vkcv {
 	
+	/**
+	 * Structure to configure image before its creation
+	 */
 	struct ImageConfig {
 	private:
 		uint32_t m_width;
