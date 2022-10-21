@@ -10,7 +10,7 @@
 namespace vkcv {
 	
 	/**
-	 * Structure to configure image before its creation
+	 * @brief Structure to configure image before its creation
 	 */
 	struct ImageConfig {
 	private:
