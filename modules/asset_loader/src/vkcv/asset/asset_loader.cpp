@@ -825,6 +825,7 @@ namespace vkcv::asset {
 	
 	int loadScene(const std::filesystem::path &path, Scene &scene) {
 		int result = probeScene(path, scene);
+		size_t i;
 		
 		if (result != ASSET_SUCCESS) {
 			vkcv_log(LogLevel::ERROR, "Loading scene failed '%s'",
@@ -832,7 +833,13 @@ namespace vkcv::asset {
 			return result;
 		}
 		
-		for (size_t i = 0; i < scene.meshes.size(); i++) {
+		/* Preloading the textures of the scene to improve performance */
+		#pragma omp parallel for shared(scene.textures) private(i)
+		for (i = 0; i < scene.textures.size(); i++) {
+			loadTextureData(scene.textures[i]);
+		}
+		
+		for (i = 0; i < scene.meshes.size(); i++) {
 			result = loadMesh(scene, static_cast<int>(i));
 			
 			if (result != ASSET_SUCCESS) {
@@ -849,6 +856,7 @@ namespace vkcv::asset {
 		Texture texture;
 		texture.path = path;
 		texture.sampler = -1;
+		
 		if (loadTextureData(texture) != ASSET_SUCCESS) {
 			texture.path.clear();
 			texture.w = texture.h = texture.channels = 0;
