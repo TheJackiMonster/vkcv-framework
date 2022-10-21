@@ -37,6 +37,7 @@ namespace vkcv {
 		friend class Core;
 
 	private:
+		bool m_resizableBar;
 		BufferHandle m_stagingBuffer;
 
 		bool init(Core &core) override;

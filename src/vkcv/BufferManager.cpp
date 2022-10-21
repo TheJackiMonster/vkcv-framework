@@ -15,9 +15,55 @@ namespace vkcv {
 		if (!HandleManager<BufferEntry, BufferHandle>::init(core)) {
 			return false;
 		}
+		
+		const vma::Allocator &allocator = getCore().getContext().getAllocator();
+		const auto& memoryProperties = allocator.getMemoryProperties();
+		const auto& heaps = memoryProperties->memoryHeaps;
+		
+		std::vector<vk::MemoryPropertyFlags> heapMemoryFlags;
+		heapMemoryFlags.resize(heaps.size());
+		
+		for (const auto& type : memoryProperties->memoryTypes) {
+			if (type.heapIndex >= heaps.size()) {
+				continue;
+			}
+			
+			heapMemoryFlags[type.heapIndex] |= type.propertyFlags;
+		}
+		
+		vk::DeviceSize maxDeviceHeapSize = 0;
+		uint32_t deviceHeapIndex = 0;
+		
+		for (uint32_t i = 0; i < heaps.size(); i++) {
+			if (!(heaps[i].flags & vk::MemoryHeapFlagBits::eDeviceLocal)) {
+				continue;
+			}
+			
+			if (!(heapMemoryFlags[i] & vk::MemoryPropertyFlagBits::eDeviceLocal)) {
+				continue;
+			}
+			
+			if (heaps[i].size < maxDeviceHeapSize) {
+				continue;
+			}
+			
+			maxDeviceHeapSize = heaps[i].size;
+			deviceHeapIndex = i;
+		}
+		
+		if (heapMemoryFlags[deviceHeapIndex] & vk::MemoryPropertyFlagBits::eHostVisible) {
+			m_resizableBar = true;
+		} else {
+			m_resizableBar = false;
+		}
 
-		m_stagingBuffer = createBuffer(TypeGuard(1), BufferType::STAGING,
-									   BufferMemoryType::HOST_VISIBLE, 1024 * 1024, false);
+		m_stagingBuffer = createBuffer(
+				TypeGuard(1),
+				BufferType::STAGING,
+				BufferMemoryType::HOST_VISIBLE,
+				1024 * 1024,
+				false
+		);
 
 		return true;
 	}
@@ -44,7 +90,9 @@ namespace vkcv {
 	}
 
 	BufferManager::BufferManager() noexcept :
-		HandleManager<BufferEntry, BufferHandle>(), m_stagingBuffer(BufferHandle()) {}
+		HandleManager<BufferEntry, BufferHandle>(),
+		m_resizableBar(false),
+		m_stagingBuffer(BufferHandle()) {}
 
 	BufferManager::~BufferManager() noexcept {
 		clear();
@@ -67,15 +115,15 @@ namespace vkcv {
 			usageFlags = vk::BufferUsageFlagBits::eStorageBuffer;
 			break;
 		case BufferType::STAGING:
-			usageFlags =
-				vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
+			usageFlags = vk::BufferUsageFlagBits::eTransferSrc
+						| vk::BufferUsageFlagBits::eTransferDst;
 			break;
 		case BufferType::INDEX:
 			usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
 			break;
 		case BufferType::INDIRECT:
-			usageFlags =
-				vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndirectBuffer;
+			usageFlags = vk::BufferUsageFlagBits::eStorageBuffer
+						| vk::BufferUsageFlagBits::eIndirectBuffer;
 			break;
 		default:
 			vkcv_log(LogLevel::WARNING, "Unknown buffer type");
@@ -92,20 +140,16 @@ namespace vkcv {
 
 		const vma::Allocator &allocator = getCore().getContext().getAllocator();
 
-		vk::MemoryPropertyFlags memoryTypeFlags;
 		vma::MemoryUsage memoryUsage;
 		bool mappable = false;
 
 		switch (memoryType) {
 		case BufferMemoryType::DEVICE_LOCAL:
-			memoryTypeFlags = vk::MemoryPropertyFlagBits::eDeviceLocal;
-			memoryUsage = vma::MemoryUsage::eGpuOnly;
+			memoryUsage = vma::MemoryUsage::eAutoPreferDevice;
 			mappable = false;
 			break;
 		case BufferMemoryType::HOST_VISIBLE:
-			memoryTypeFlags = vk::MemoryPropertyFlagBits::eHostVisible
-							| vk::MemoryPropertyFlagBits::eHostCoherent;
-			memoryUsage = vma::MemoryUsage::eCpuOnly;
+			memoryUsage = vma::MemoryUsage::eAutoPreferHost;
 			mappable = true;
 			break;
 		default:
@@ -114,18 +158,44 @@ namespace vkcv {
 			mappable = false;
 			break;
 		}
-
-		if (type == BufferType::STAGING) {
-			memoryUsage = vma::MemoryUsage::eCpuToGpu;
+		
+		vma::AllocationCreateFlags allocationCreateFlags;
+		
+		if (mappable) {
+			if (type == vkcv::BufferType::STAGING) {
+				allocationCreateFlags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite;
+			} else {
+				allocationCreateFlags = vma::AllocationCreateFlagBits::eHostAccessRandom;
+			}
+		} else
+		if ((m_resizableBar) && (memoryType == BufferMemoryType::DEVICE_LOCAL)) {
+			allocationCreateFlags = vma::AllocationCreateFlagBits::eHostAccessAllowTransferInstead
+									| vma::AllocationCreateFlagBits::eHostAccessSequentialWrite;
 		}
 
 		auto bufferAllocation = allocator.createBuffer(
 			vk::BufferCreateInfo(createFlags, size, usageFlags),
-			vma::AllocationCreateInfo(vma::AllocationCreateFlags(), memoryUsage, memoryTypeFlags,
-									  memoryTypeFlags, 0, vma::Pool(), nullptr));
+			vma::AllocationCreateInfo(
+					allocationCreateFlags,
+					memoryUsage,
+					vk::MemoryPropertyFlags(),
+					vk::MemoryPropertyFlags(),
+					0,
+					vma::Pool(),
+					nullptr
+			)
+		);
 
 		vk::Buffer buffer = bufferAllocation.first;
 		vma::Allocation allocation = bufferAllocation.second;
+		
+		const vk::MemoryPropertyFlags finalMemoryFlags = allocator.getAllocationMemoryProperties(
+				allocation
+		);
+		
+		if (vk::MemoryPropertyFlagBits::eHostVisible & finalMemoryFlags) {
+			mappable = true;
+		}
 
 		return add({ typeGuard, type, memoryType, size, buffer, allocation, mappable });
 	}
