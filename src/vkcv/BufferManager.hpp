@@ -5,7 +5,9 @@
  * @brief Manager to handle buffer operations.
  */
 
+#include <memory>
 #include <vector>
+
 #include <vk_mem_alloc.hpp>
 #include <vulkan/vulkan.hpp>
 
@@ -26,7 +28,10 @@ namespace vkcv {
 		vk::Buffer m_handle;
 		vma::Allocation m_allocation;
 
+		bool m_readable;
 		bool m_mappable;
+		char *m_mapping;
+		size_t m_mapCounter;
 	};
 
 	/**
@@ -37,6 +42,8 @@ namespace vkcv {
 		friend class Core;
 
 	private:
+		std::allocator<char> m_allocator;
+		
 		bool m_resizableBar;
 		BufferHandle m_stagingBuffer;
 

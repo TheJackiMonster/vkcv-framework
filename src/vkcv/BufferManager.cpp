@@ -82,6 +82,10 @@ namespace vkcv {
 		const vma::Allocator &allocator = getCore().getContext().getAllocator();
 
 		if (buffer.m_handle) {
+			if (buffer.m_mapping) {
+				allocator.unmapMemory(buffer.m_allocation);
+			}
+			
 			allocator.destroyBuffer(buffer.m_handle, buffer.m_allocation);
 
 			buffer.m_handle = nullptr;
@@ -197,7 +201,18 @@ namespace vkcv {
 			mappable = true;
 		}
 
-		return add({ typeGuard, type, memoryType, size, buffer, allocation, mappable });
+		return add({
+			typeGuard,
+			type,
+			memoryType,
+			size,
+			buffer,
+			allocation,
+			readable,
+			mappable,
+			nullptr,
+			0
+		});
 	}
 
 	/**
@@ -439,21 +454,65 @@ namespace vkcv {
 			size = std::numeric_limits<size_t>::max();
 		}
 
-		const vma::Allocator &allocator = getCore().getContext().getAllocator();
-
 		if (offset > buffer.m_size) {
 			return nullptr;
 		}
-
-		return reinterpret_cast<char*>(allocator.mapMemory(buffer.m_allocation)) + offset;
+		
+		if (buffer.m_mapping) {
+			++buffer.m_mapCounter;
+			
+			vkcv_log(LogLevel::WARNING,
+					 "Mapping a buffer multiple times (%lu) is not recommended",
+					 buffer.m_mapCounter);
+			
+			return buffer.m_mapping + offset;
+		}
+		
+		if (buffer.m_mappable) {
+			const vma::Allocator &allocator = getCore().getContext().getAllocator();
+			
+			buffer.m_mapping = reinterpret_cast<char*>(allocator.mapMemory(buffer.m_allocation));
+		} else {
+			buffer.m_mapping = m_allocator.allocate(buffer.m_size);
+			
+			if (buffer.m_readable) {
+				readBuffer(handle, buffer.m_mapping, buffer.m_size, 0);
+			}
+		}
+		
+		buffer.m_mapCounter = 1;
+		return buffer.m_mapping + offset;
 	}
 
 	void BufferManager::unmapBuffer(const BufferHandle &handle) {
 		auto &buffer = (*this) [handle];
-
-		const vma::Allocator &allocator = getCore().getContext().getAllocator();
-
-		allocator.unmapMemory(buffer.m_allocation);
+		
+		if (buffer.m_mapCounter > 1) {
+			--buffer.m_mapCounter;
+			return;
+		}
+		
+		if (buffer.m_mapCounter == 0) {
+			vkcv_log(LogLevel::WARNING,
+					 "It seems like the buffer is not mapped to memory");
+		}
+		
+		if (!buffer.m_mapping) {
+			vkcv_log(LogLevel::ERROR,
+					 "Buffer is not mapped to memory");
+		}
+		
+		if (buffer.m_mappable) {
+			const vma::Allocator &allocator = getCore().getContext().getAllocator();
+			
+			allocator.unmapMemory(buffer.m_allocation);
+		} else {
+			fillBuffer(handle, buffer.m_mapping, buffer.m_size, 0);
+			m_allocator.deallocate(buffer.m_mapping, buffer.m_size);
+		}
+		
+		buffer.m_mapping = nullptr;
+		buffer.m_mapCounter = 0;
 	}
 
 	void BufferManager ::recordBufferMemoryBarrier(const BufferHandle &handle,
