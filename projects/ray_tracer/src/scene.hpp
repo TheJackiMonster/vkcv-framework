@@ -10,7 +10,7 @@
 #include <vector>
 #include <string.h>	// memcpy(3)
 
-class safrScene {
+class scene {
 
 public:
 

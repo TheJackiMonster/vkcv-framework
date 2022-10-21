@@ -13,14 +13,14 @@
 #include <cstring>
 #include <GLFW/glfw3.h>
 
-#include "safrScene.hpp"
+#include "scene.hpp"
 
-void createQuadraticLightCluster(std::vector<safrScene::Light>& lights, int countPerDimension, float dimension, float height, float intensity) {
+void createQuadraticLightCluster(std::vector<scene::Light>& lights, int countPerDimension, float dimension, float height, float intensity) {
     float distance = dimension/countPerDimension;
 
     for(int x = 0; x <= countPerDimension; x++) {
         for (int z = 0; z <= countPerDimension; z++) {
-            lights.push_back(safrScene::Light(glm::vec3(x * distance, height,  z * distance),
+            lights.push_back(scene::Light(glm::vec3(x * distance, height, z * distance),
                                               float (intensity/countPerDimension) / 10.f) // Divide by 10, because intensity is busting O.o
                                               );
         }
@@ -29,7 +29,7 @@ void createQuadraticLightCluster(std::vector<safrScene::Light>& lights, int coun
 }
 
 int main(int argc, const char** argv) {
-	const std::string applicationName = "SAF_R";
+	const std::string applicationName = "Ray tracer";
 
 	//window creation
 	const int windowWidth = 800;
@@ -75,26 +75,26 @@ int main(int argc, const char** argv) {
 	*/
 
 	//materials for the spheres
-	std::vector<safrScene::Material> materials;
-	safrScene::Material ivory(glm::vec4(0.6, 0.3, 0.1, 0.0), glm::vec3(0.4, 0.4, 0.3), 50., 1.0);
-	safrScene::Material red_rubber(glm::vec4(0.9, 0.1, 0.0, 0.0), glm::vec3(0.3, 0.1, 0.1), 10., 1.0);
-	safrScene::Material mirror( glm::vec4(0.0, 10.0, 0.8, 0.0), glm::vec3(1.0, 1.0, 1.0), 1425., 1.0);
-    safrScene::Material glass( glm::vec4(0.0, 10.0, 0.8, 0.0), glm::vec3(1.0, 1.0, 1.0), 1425., 1.5);
+	std::vector<scene::Material> materials;
+	scene::Material ivory(glm::vec4(0.6, 0.3, 0.1, 0.0), glm::vec3(0.4, 0.4, 0.3), 50., 1.0);
+	scene::Material red_rubber(glm::vec4(0.9, 0.1, 0.0, 0.0), glm::vec3(0.3, 0.1, 0.1), 10., 1.0);
+	scene::Material mirror(glm::vec4(0.0, 10.0, 0.8, 0.0), glm::vec3(1.0, 1.0, 1.0), 1425., 1.0);
+    scene::Material glass(glm::vec4(0.0, 10.0, 0.8, 0.0), glm::vec3(1.0, 1.0, 1.0), 1425., 1.5);
 
 	materials.push_back(ivory);
 	materials.push_back(red_rubber);
 	materials.push_back(mirror);
 
 	//spheres for the scene
-	std::vector<safrScene::Sphere> spheres;
-	spheres.push_back(safrScene::Sphere(glm::vec3(-3,    0,   -16), 2, ivory));
+	std::vector<scene::Sphere> spheres;
+	spheres.push_back(scene::Sphere(glm::vec3(-3, 0, -16), 2, ivory));
 	//spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, 12), 2, mirror));
-	spheres.push_back(safrScene::Sphere(glm::vec3(-1.0, -1.5, -12), 2, glass));
-	spheres.push_back(safrScene::Sphere(glm::vec3(  1.5, -0.5, -18), 3, red_rubber));
-	spheres.push_back(safrScene::Sphere(glm::vec3( 7,    5,   -18), 4, mirror));
+	spheres.push_back(scene::Sphere(glm::vec3(-1.0, -1.5, -12), 2, glass));
+	spheres.push_back(scene::Sphere(glm::vec3(1.5, -0.5, -18), 3, red_rubber));
+	spheres.push_back(scene::Sphere(glm::vec3(7, 5, -18), 4, mirror));
 
 	//lights for the scene
-	std::vector<safrScene::Light> lights;
+	std::vector<scene::Light> lights;
 	/*
 	lights.push_back(safrScene::Light(glm::vec3(-20, 20,  20), 1.5));
 	lights.push_back(safrScene::Light(glm::vec3(30,  50, -25), 1.8));
@@ -105,14 +105,14 @@ int main(int argc, const char** argv) {
 	vkcv::SamplerHandle sampler = vkcv::samplerLinear(core);
 	
 	//create Buffer for compute shader
-	vkcv::Buffer<safrScene::Light> lightsBuffer = vkcv::buffer<safrScene::Light>(
+	vkcv::Buffer<scene::Light> lightsBuffer = vkcv::buffer<scene::Light>(
 		core,
 		vkcv::BufferType::STORAGE,
 		lights.size()
 	);
 	lightsBuffer.fill(lights);
 
-	vkcv::Buffer<safrScene::Sphere> sphereBuffer = vkcv::buffer<safrScene::Sphere>(
+	vkcv::Buffer<scene::Sphere> sphereBuffer = vkcv::buffer<scene::Sphere>(
 		core,
 		vkcv::BufferType::STORAGE,
 		spheres.size()

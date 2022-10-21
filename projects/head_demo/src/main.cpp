@@ -5,7 +5,6 @@
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/gui/GUI.hpp>
-#include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/scene/Scene.hpp>
@@ -13,7 +12,7 @@
 #include <vkcv/upscaling/FSRUpscaling.hpp>
 
 int main(int argc, const char** argv) {
-	const std::string applicationName = "First Scene";
+	const std::string applicationName = "Head Demo";
 	
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;

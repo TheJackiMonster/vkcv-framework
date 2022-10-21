@@ -5,14 +5,16 @@
 
 ## Repository
 
-Git LFS is used for bigger resource files like meshes and textures. So you need to install Git LFS and use `git lfs install` after cloning.
+Git LFS is used for bigger resource files like meshes and textures. So you need to install Git LFS 
+and use `git lfs install` after cloning.
 
 More information about Git LFS [here](https://git-lfs.github.com/).
 
 ## Build
 
-Git submodules are used for libraries. 
-To download the submodules either clone using `git clone --recurse-submodules` or after `git clone` use `git submodule init` and `git submodule update`.
+Git submodules are used for libraries. To download the submodules either clone using 
+`git clone --recurse-submodules` or after `git clone` use `git submodule init` and 
+`git submodule update`.
 
 Detailed build process:
  - [How to build on Windows](doc/BUILD_WINDOWS.md)
@@ -21,7 +23,8 @@ Detailed build process:
 
 ### Dependencies (required):
 
-Most dependencies will be used via submodules but for example Vulkan needs to be installed correctly depending on your platform. So please setup your environment properly.
+Most dependencies are used via submodules but for example Vulkan needs to be installed correctly 
+depending on your platform. So please setup your environment properly.
 
 | Name of dependency                                                                | Used as submodule |
 |-----------------------------------------------------------------------------------|---|
@@ -34,7 +37,8 @@ Most dependencies will be used via submodules but for example Vulkan needs to be
 
 ### Modules (optional):
 
-The following modules will be provided in this repository and they will automatically be builded together with the framework if used. You can configure/adjust the build using CMake if necessary.
+The following modules are provided in this repository and they build automatically together with 
+the framework if used. You can configure/adjust the build using CMake if necessary.
 
  - [Algorithm](modules/algorithm/README.md)
  - [Asset-Loader](modules/asset_loader/README.md)
@@ -48,6 +52,28 @@ The following modules will be provided in this repository and they will automati
  - [Shader-Compiler](modules/shader_compiler/README.md)
  - [Upscaling](modules/upscaling/README.md)
 
+### Projects (optional):
+
+The following projects are provided in this repository and can be build with their own CMake 
+targets:
+
+ - [bindless_textures](projects/bindless_textures/README.md)
+ - [fire_works](projects/fire_works/README.md)
+ - [first_mesh](projects/first_mesh/README.md)
+ - [first_scene](projects/first_scene/README.md)
+ - [first_triangle](projects/first_triangle/README.md)
+ - [head_demo](projects/head_demo/README.md)
+ - [indirect_dispatch](projects/indirect_dispatch/README.md)
+ - [indirect_draw](projects/indirect_draw/README.md)
+ - [mesh_shader](projects/mesh_shader/README.md)
+ - [mpm](projects/mpm/README.md)
+ - [particle_simulation](projects/particle_simulation/README.md)
+ - [path_tracer](projects/path_tracer/README.md)
+ - [ray_tracer](projects/ray_tracer/README.md)
+ - [rtx_ambient_occlusion](projects/rtx_ambient_occlusion/README.md)
+ - [sph](projects/sph/README.md)
+ - [voxelization](projects/voxelization/README.md)
+
 ## Development
 
 See this guide to setup your IDE for most forward development.
@@ -58,4 +84,5 @@ See this guide to setup your IDE for most forward development.
 A pre-built documentation can be found here:  
 https://userpages.uni-koblenz.de/~vkcv/doc/
 
-But it is recommended to build the documentation with Doxygen locally to get the most recent changes. There is also an optional CMake target to build the documentation via Doxygen.
+But it is recommended to build the documentation with Doxygen locally to get the most recent 
+changes. There is also an optional CMake target to build the documentation via Doxygen.
