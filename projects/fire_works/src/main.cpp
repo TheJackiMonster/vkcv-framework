@@ -754,7 +754,7 @@ int main(int argc, const char **argv) {
 			voxelHeight
 	);
 	
-	voxelImageConfig.setSupportingStorage(true);
+	voxelSamplesConfig.setSupportingStorage(true);
 	
 	vkcv::Image voxelSamples = vkcv::image(
 			core,

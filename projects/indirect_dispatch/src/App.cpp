@@ -27,6 +27,38 @@ const char* MotionBlurModeLabels[3] = {
 		"Tile visualisation"
 };
 
+static vkcv::Features getAppFeatures() {
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	
+	features.requireFeature([](vk::PhysicalDeviceFeatures& features) {
+		features.setShaderInt16(true);
+	});
+	
+	features.requireExtensionFeature<vk::PhysicalDeviceSubgroupSizeControlFeatures>(
+			VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME,
+			[](vk::PhysicalDeviceSubgroupSizeControlFeatures &features) {
+				features.setSubgroupSizeControl(true);
+			}
+	);
+	
+	features.requireExtensionFeature<vk::PhysicalDeviceShaderFloat16Int8Features>(
+			VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME,
+			[](vk::PhysicalDeviceShaderFloat16Int8Features &features) {
+				features.setShaderFloat16(true);
+			}
+	);
+	
+	features.tryExtensionFeature<vk::PhysicalDeviceCoherentMemoryFeaturesAMD>(
+			VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME,
+			[](vk::PhysicalDeviceCoherentMemoryFeaturesAMD &features) {
+				features.setDeviceCoherentMemory(true);
+			}
+	);
+	
+	return features;
+}
+
 App::App() : 
 	m_applicationName("Indirect Dispatch"),
 	m_windowWidth(AppConfig::defaultWindowWidth),
@@ -35,7 +67,7 @@ App::App() :
 		m_applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
-		{ VK_KHR_SWAPCHAIN_EXTENSION_NAME })),
+		getAppFeatures())),
 	m_windowHandle(m_core.createWindow(m_applicationName, m_windowWidth, m_windowHeight, true)),
 	m_cameraManager(m_core.getWindow(m_windowHandle)){}
 

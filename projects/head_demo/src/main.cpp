@@ -17,12 +17,20 @@ int main(int argc, const char** argv) {
 	uint32_t windowWidth = 800;
 	uint32_t windowHeight = 600;
 	
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	
+	features.requireFeature([](vk::PhysicalDeviceFeatures& features) {
+		features.setGeometryShader(true);
+	});
+	
 	vkcv::Core core = vkcv::Core::create(
 			applicationName,
 			VK_MAKE_VERSION(0, 0, 1),
 			{vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute},
-			{ VK_KHR_SWAPCHAIN_EXTENSION_NAME }
+			features
 	);
+	
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);
 	vkcv::Window& window = core.getWindow(windowHandle);
 	vkcv::camera::CameraManager cameraManager(window);

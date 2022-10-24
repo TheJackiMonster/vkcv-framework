@@ -409,58 +409,6 @@ namespace vkcv {
 		featureManager.useExtension("VK_KHR_portability_subset", true);
 #endif
 
-		if (featureManager.useExtension(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME, false)) {
-			featureManager.useFeatures<vk::PhysicalDeviceShaderFloat16Int8Features>(
-				[](vk::PhysicalDeviceShaderFloat16Int8Features &features) {
-					features.setShaderFloat16(true);
-				},
-				false
-			);
-		}
-
-		if (featureManager.useExtension(VK_KHR_16BIT_STORAGE_EXTENSION_NAME, false)) {
-			featureManager.useFeatures<vk::PhysicalDevice16BitStorageFeatures>(
-				[](vk::PhysicalDevice16BitStorageFeatures &features) {
-					features.setStorageBuffer16BitAccess(true);
-				},
-				false
-			);
-		}
-		
-		if (featureManager.useExtension(VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME, false)) {
-			featureManager.useFeatures<vk::PhysicalDeviceCoherentMemoryFeaturesAMD>(
-				[](vk::PhysicalDeviceCoherentMemoryFeaturesAMD &features) {
-					features.setDeviceCoherentMemory(true);
-				},
-				false
-			);
-		}
-		
-		if (featureManager.useExtension(VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME, false)) {
-			featureManager.useFeatures<vk::PhysicalDeviceSubgroupSizeControlFeatures>(
-					[](vk::PhysicalDeviceSubgroupSizeControlFeatures &features) {
-						features.setSubgroupSizeControl(true);
-					},
-					false
-			);
-		}
-		
-		if (featureManager.useExtension(VK_EXT_INDEX_TYPE_UINT8_EXTENSION_NAME, false)) {
-			featureManager.useFeatures<vk::PhysicalDeviceIndexTypeUint8FeaturesEXT>(
-				[](vk::PhysicalDeviceIndexTypeUint8FeaturesEXT &features) {
-					features.setIndexTypeUint8(true);
-				},
-				false
-			);
-		}
-
-		featureManager.useFeatures([](vk::PhysicalDeviceFeatures &features) {
-			features.setFragmentStoresAndAtomics(true);
-			features.setGeometryShader(true);
-			features.setDepthClamp(true);
-			features.setShaderInt16(true);
-		});
-
 		for (const auto &feature : features.getList()) {
 			feature(featureManager);
 		}
