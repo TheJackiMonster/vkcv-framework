@@ -37,6 +37,7 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camHandle0).setPosition(glm::vec3(-8, 1, -0.5));
 	cameraManager.getCamera(camHandle0).setNearFar(0.1f, 30.0f);
 	
+	cameraManager.getCamera(camHandle1).setPosition(glm::vec3(-8, 1, -0.5));
 	cameraManager.getCamera(camHandle1).setNearFar(0.1f, 30.0f);
 
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(

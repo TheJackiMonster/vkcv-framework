@@ -197,14 +197,13 @@ int main(int argc, const char **argv) {
     auto camHandle0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
     auto camHandle1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 
-    cameraManager.getCamera(camHandle0).setNearFar(0.1, 30);
-    cameraManager.getCamera(camHandle0).setNearFar(0.1, 30);
+    cameraManager.getCamera(camHandle0).setNearFar(0.1f, 30.0f);
+    cameraManager.getCamera(camHandle1).setNearFar(0.1f, 30.0f);
 
     cameraManager.setActiveCamera(camHandle1);
 
-    cameraManager.getCamera(camHandle1).setPosition(glm::vec3(0, 0, -2));
+    cameraManager.getCamera(camHandle0).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
     cameraManager.getCamera(camHandle1).setPosition(glm::vec3(0.0f, 0.0f, -2.0f));
-    cameraManager.getCamera(camHandle1).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));
 
 	const auto swapchainExtent = core.getSwapchainExtent(window.getSwapchain());
 	

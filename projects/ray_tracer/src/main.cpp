@@ -162,7 +162,7 @@ int main(int argc, const char** argv) {
 
 	cameraManager.getCamera(camHandle0).setPosition(glm::vec3(0, 0, 2));
 	
-	cameraManager.getCamera(camHandle1).setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+	cameraManager.getCamera(camHandle1).setPosition(glm::vec3(0, 0, -4));
 	cameraManager.getCamera(camHandle1).setCenter(glm::vec3(0.0f, 0.0f, -1.0f));
 	
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,

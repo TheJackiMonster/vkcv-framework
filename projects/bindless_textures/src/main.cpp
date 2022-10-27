@@ -212,9 +212,10 @@ int main(int argc, const char** argv) {
 
     vkcv::camera::CameraManager cameraManager(window);
     auto camHandle0 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
-	cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	auto camHandle1 = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
 	cameraManager.getCamera(camHandle0).setPosition(glm::vec3(0, 0, -3));
+	cameraManager.getCamera(camHandle1).setPosition(glm::vec3(0, 0, -3));
 	
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
 				 uint32_t swapchainWidth, uint32_t swapchainHeight) {

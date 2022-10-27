@@ -112,7 +112,7 @@ namespace vkcv::camera {
     	xoffset *= static_cast<float>(m_rotationActive);
     	yoffset *= static_cast<float>(m_rotationActive);
 
-        panView(xoffset , yoffset, camera);
+        panView(xoffset, yoffset, camera);
     }
 
     void PilotCameraController::mouseButtonCallback(int button, int action, int mods, Camera &camera) {

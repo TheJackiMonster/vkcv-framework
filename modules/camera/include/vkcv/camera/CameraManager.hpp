@@ -103,7 +103,7 @@ namespace vkcv::camera {
         void gamepadCallback(int gamepadIndex);
 	
 		/**
-		 * @brief Gets a camera controller object of specified @p controllerType.
+		 * @brief Returns a camera controller object of specified @p controllerType.
 		 * @param[in] controllerType The type of the camera controller.
 		 * @return The specified camera controller object.
 		 */
@@ -147,7 +147,7 @@ namespace vkcv::camera {
 		CameraHandle addCamera(ControllerType controllerType, const Camera& camera);
 
         /**
-         * @brief Gets the stored camera object located by @p cameraHandle.
+         * @brief Returns the stored camera object located by @p cameraHandle.
          * @param[in] cameraHandle The camera handle.
          * @return The camera object by @p cameraHandle.
          * @throws std::runtime_error If @p cameraHandle is not a valid camera handle.
@@ -155,7 +155,7 @@ namespace vkcv::camera {
         Camera& getCamera(const CameraHandle& cameraHandle);
 
         /**
-         * @brief Gets the stored camera object set as the active camera.
+         * @brief Returns the stored camera object set as the active camera.
          * @return The active camera.
          */
         Camera& getActiveCamera();
@@ -168,7 +168,7 @@ namespace vkcv::camera {
         void setActiveCamera(const CameraHandle& cameraHandle);
 
         /**
-         * @brief Gets the handle of the stored active camera object.
+         * @brief Returns the handle of the stored active camera object.
          * @return The active camera handle.
          */
 		CameraHandle getActiveCameraHandle() const;
@@ -183,7 +183,7 @@ namespace vkcv::camera {
         void setControllerType(const CameraHandle& cameraHandle, ControllerType controllerType);
 
         /**
-         * @brief Gets the currently bound camera controller type of the stored camera object located by @p cameraHandle.
+         * @brief Returns the currently bound camera controller type of the stored camera object located by @p cameraHandle.
          * @param[in] cameraHandle The camera handle.
          * @return The type of the camera controller of the specified camera object.
          * @throws std::runtime_error If @p cameraHandle is not a valid camera handle.

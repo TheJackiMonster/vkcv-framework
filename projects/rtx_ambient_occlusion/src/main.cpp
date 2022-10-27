@@ -36,6 +36,8 @@ int main(int argc, const char** argv) {
 
 	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
 	auto camHandle = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	
+	cameraManager.getCamera(camHandle).setPosition(glm::vec3(0, 0, -3));
 	cameraManager.getCamera(camHandle).setNearFar(0.1f, 30.0f);
 	
     // get Teapot vertices and indices

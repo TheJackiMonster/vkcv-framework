@@ -218,7 +218,7 @@ int main(int argc, const char **argv) {
 	
 	cameraManager.getCamera(trackballHandle).setCenter(glm::vec3(0.0f, 0.0f, 0.0f));   // set camera to look at the center of the particle volume
 	cameraManager.getCamera(trackballHandle).setNearFar(0.1f, 50.0f);
-	cameraManager.getCamera(trackballHandle).setPosition(glm::vec3(0, 0, -25));
+	cameraManager.getCamera(trackballHandle).setPosition(glm::vec3(0, 0, 25));
 	
 	cameraManager.getCamera(pilotHandle).setNearFar(0.1f, 50.0f);
 	cameraManager.getCamera(pilotHandle).setPosition(glm::vec3(0, 0, 25));

@@ -69,7 +69,7 @@ namespace vkcv::camera {
         void setPerspective(float fov, float ratio, float near, float far);
 
         /**
-         * @brief Gets the view matrix of the camera
+         * @brief Returns the view matrix of the camera
          * @return The view matrix of the camera
          */
 		[[nodiscard]]
@@ -84,28 +84,28 @@ namespace vkcv::camera {
         void lookAt(const glm::vec3& position, const glm::vec3& center, const glm::vec3& up);
 
         /**
-         * @brief Gets the current projection of the camera
+         * @brief Returns the current projection of the camera
          * @return The current projection matrix
          */
 		[[nodiscard]]
         const glm::mat4& getProjection() const;
 
         /**
-         * @brief Gets the model-view-projection matrix of the camera with y-axis-correction applied
+         * @brief Returns the model-view-projection matrix of the camera with y-axis-correction applied
          * @return The model-view-projection matrix
          */
 		[[nodiscard]]
         glm::mat4 getMVP() const;
 
         /**
-         * @brief Gets the near and far bounds of the view frustum of the camera.
+         * @brief Returns the near and far bounds of the view frustum of the camera.
          * @param[out] near The near bound of the view frustum
          * @param[out] far The far bound of the view frustum
          */
         void getNearFar(float &near, float &far) const;
 
         /**
-         * @brief Gets the current field of view of the camera in radians
+         * @brief Returns the current field of view of the camera in radians
          * @return[in] The current field of view in radians
          */
 		[[nodiscard]]
@@ -118,7 +118,7 @@ namespace vkcv::camera {
         void setFov(float fov);
 
         /**
-         * @brief Gets the current aspect ratio of the camera
+         * @brief Returns the current aspect ratio of the camera
          * @return The current aspect ratio of the camera
          */
 		[[nodiscard]]
@@ -138,7 +138,7 @@ namespace vkcv::camera {
         void setNearFar(float near, float far);
 
         /**
-         * @brief Gets the current front vector of the camera in world space
+         * @brief Returns the current front vector of the camera in world space
          * @return The current front vector of the camera
          */
 		[[nodiscard]]
@@ -151,7 +151,7 @@ namespace vkcv::camera {
         void setFront(const glm::vec3& front);
 
         /**
-         * @brief Gets the current position of the camera in world space
+         * @brief Returns the current position of the camera in world space
          * @return The current position of the camera in world space
          */
 		[[nodiscard]]
@@ -164,7 +164,7 @@ namespace vkcv::camera {
         void setPosition( const glm::vec3& position );
 
         /**
-         * @brief Gets the center point.
+         * @brief Returns the center point.
          * @return The center point.
          */
 		[[nodiscard]]
@@ -177,7 +177,7 @@ namespace vkcv::camera {
         void setCenter(const glm::vec3& center);
         
         /**
-         * @brief Gets the angles of the camera.
+         * @brief Returns the angles of the camera.
          * @param[out] pitch The pitch value in radians
          * @param[out] yaw The yaw value in radians
          */
@@ -191,7 +191,7 @@ namespace vkcv::camera {
 		void setAngles(float pitch, float yaw);
 
         /**
-         * @brief Gets the pitch value of the camera in degrees.
+         * @brief Returns the pitch value of the camera in degrees.
          * @return The pitch value in degrees.
          */
 		[[nodiscard]]
@@ -204,7 +204,7 @@ namespace vkcv::camera {
         void setPitch(float pitch);
 
         /**
-         * @brief Gets the yaw value of the camera in degrees.
+         * @brief Returns the yaw value of the camera in degrees.
          * @return The yaw value in degrees.
          */
 		[[nodiscard]]
@@ -217,7 +217,7 @@ namespace vkcv::camera {
         void setYaw(float yaw);
 
         /**
-         * @brief Gets the up vector.
+         * @brief Returns the up vector.
          * @return The up vector.
          */
 		[[nodiscard]]

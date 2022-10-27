@@ -73,7 +73,7 @@ namespace vkcv::camera {
          * @param[in] deltaTime The time that has passed since last update.
          * @param[in] camera The camera object.
          */
-        void updateCamera(double deltaTime, Camera &camera);
+        void updateCamera(double deltaTime, Camera &camera) override;
 
         /**
          * @brief A callback function for key events. Currently, 3D camera movement via W, A, S, D, E, Q are supported.
@@ -83,7 +83,7 @@ namespace vkcv::camera {
          * @param[in] mods The modifier bits.
          * @param[in] camera The camera object.
          */
-        void keyCallback(int key, int scancode, int action, int mods, Camera &camera);
+        void keyCallback(int key, int scancode, int action, int mods, Camera &camera) override;
 
         /**
          * @brief A callback function for mouse scrolling events. Currently, this leads to changes in the field of view
@@ -92,7 +92,7 @@ namespace vkcv::camera {
          * @param[in] offsetY The offset in vertical direction.
          * @param[in] camera The camera object.
          */
-        void scrollCallback(double offsetX, double offsetY, Camera &camera);
+        void scrollCallback(double offsetX, double offsetY, Camera &camera) override;
 
         /**
          * @brief A callback function for mouse movement events. Currently, this leads to panning the view of the camera,
@@ -101,7 +101,7 @@ namespace vkcv::camera {
          * @param[in] y The vertical mouse position
          * @param[in] camera The camera object.
          */
-        void mouseMoveCallback(double x, double y, Camera &camera);
+        void mouseMoveCallback(double x, double y, Camera &camera) override;
 
         /**
          * @brief A callback function for mouse button events. Currently, the right mouse button enables panning the
@@ -111,7 +111,7 @@ namespace vkcv::camera {
          * @param[in] mods The modifier bits
          * @param[in] camera The camera object.
          */
-        void mouseButtonCallback(int button, int action, int mods, Camera &camera);
+        void mouseButtonCallback(int button, int action, int mods, Camera &camera) override;
 
         /**
          * @brief A callback function for gamepad input events.
@@ -119,7 +119,7 @@ namespace vkcv::camera {
          * @param camera The camera object.
          * @param frametime The current frametime.
          */
-        void gamepadCallback(int gamepadIndex, Camera &camera, double frametime);
+        void gamepadCallback(int gamepadIndex, Camera &camera, double frametime) override;
     };
 
     /** @} */

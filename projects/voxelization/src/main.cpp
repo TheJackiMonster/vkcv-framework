@@ -122,6 +122,7 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camHandle0).setYaw(180.0f);
 	cameraManager.getCamera(camHandle0).setFov(glm::radians(37.8));	// fov of a 35mm lens
 	
+	cameraManager.getCamera(camHandle1).setPosition(glm::vec3(0.f, 0.f, 3.f));
 	cameraManager.getCamera(camHandle1).setNearFar(0.1f, 30.0f);
 
 	vkcv::asset::Scene mesh;
