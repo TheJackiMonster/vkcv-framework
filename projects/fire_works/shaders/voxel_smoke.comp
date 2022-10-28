@@ -1,0 +1,72 @@
+#version 450 core
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(local_size_x = 256) in;
+
+#include "physics.inc"
+#include "smoke.inc"
+
+layout(set=0, binding=0, std430) readonly buffer smokeBuffer {
+    smoke_t smokes [];
+};
+
+#include "voxel.inc"
+
+layout(set=1, binding=0, r32ui) uniform uimage3D voxelRed;
+layout(set=1, binding=1, r32ui) uniform uimage3D voxelGreen;
+layout(set=1, binding=2, r32ui) uniform uimage3D voxelBlue;
+layout(set=1, binding=3, r32ui) uniform uimage3D voxelDensity;
+
+layout( push_constant ) uniform constants{
+    mat4 mvp;
+};
+
+#define NUM_SMOKE_SAMPLES 4
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+
+    if (id >= smokes.length()) {
+        return;
+    }
+
+    vec3 position = smokes[id].position;
+    float size = smokes[id].size;
+
+    const float density = smokeDensity(size);
+
+    if (density <= mediumDensity) {
+        return;
+    }
+
+    vec3 offset = vec3(-size);
+
+    for (;offset.x <= size; offset.x += size / NUM_SMOKE_SAMPLES) {
+        for (;offset.y <= size; offset.y += size / NUM_SMOKE_SAMPLES) {
+            for (;offset.z <= size; offset.z += size / NUM_SMOKE_SAMPLES) {
+                vec4 cs_pos = mvp * vec4(position + offset, 1);
+
+                if (abs(cs_pos.w) <= 0.0f) {
+                    return;
+                }
+
+                vec3 ndc_pos = cs_pos.xyz / cs_pos.w;
+                vec3 pos = voxel_pos(ndc_pos);
+
+                if ((any(greaterThanEqual(pos, vec3(1.5f)))) || (any(lessThanEqual(pos, vec3(-0.5f))))) {
+                    return;
+                }
+
+                vec3 color = smokes[id].color;
+
+                float local_density = density * max(1.0f - length(offset / size), 0.0f);
+
+                voxel_add(voxelRed, pos, color.r);
+                voxel_add(voxelGreen, pos, color.g);
+                voxel_add(voxelBlue, pos, color.b);
+                voxel_add(voxelDensity, pos, local_density);
+            }
+        }
+    }
+}

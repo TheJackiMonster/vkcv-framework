@@ -1,8 +1,19 @@
 #pragma once
+/**
+ * @authors Vanessa Karolek, Josch Morgenstern, Sebastian Gaida,Tobias Frisch
+ * @file include/vkcv/camera/TrackballCameraController.hpp
+ * @brief TrackballCameraController class of the camera module for the vkcv framework. This class inherits from the base
+ * class @#CameraController and enables camera objects to be orbited around a specific center point.
+ */
 
 #include "CameraController.hpp"
 
 namespace vkcv::camera {
+
+    /**
+     * @addtogroup vkcv_camera
+     * @{
+     */
 
     /**
      * @brief Used to orbit a camera around its center point.
@@ -10,10 +21,10 @@ namespace vkcv::camera {
     class TrackballCameraController final : public CameraController {
     private:
         bool m_rotationActive;
-
         float m_cameraSpeed;
         float m_scrollSensitivity;
-        float m_radius;
+        float m_pitch;
+        float m_yaw;
 
         /**
          * @brief Updates the current radius of @p camera in respect to the @p offset.
@@ -35,12 +46,6 @@ namespace vkcv::camera {
         ~TrackballCameraController() = default;
 
         /**
-         * @brief Sets @p radius as the new radius for orbiting around the camera's center point.
-         * @param[in] radius The new radius.
-         */
-        void setRadius(const float radius);
-
-        /**
          * @brief Pans the view of @p camera according to the pitch and yaw values and additional offsets @p xOffset
          * and @p yOffset.
          * @param[in] xOffset The offset added to the yaw value.
@@ -54,7 +59,7 @@ namespace vkcv::camera {
          * @param[in] deltaTime The time that has passed since last update.
          * @param[in] camera The camera object
          */
-        void updateCamera(double deltaTime, Camera &camera);
+        void updateCamera(double deltaTime, Camera &camera) override;
 
         /**
          * @brief A callback function for key events. Currently, the trackball camera does not support camera movement.
@@ -65,7 +70,7 @@ namespace vkcv::camera {
          * @param[in] mods The modifier bits.
          * @param[in] camera The camera object.
          */
-        void keyCallback(int key, int scancode, int action, int mods, Camera &camera);
+        void keyCallback(int key, int scancode, int action, int mods, Camera &camera) override;
 
         /**
          * @brief A callback function for mouse scrolling events. Currently, this leads to changes in the field of view
@@ -74,7 +79,7 @@ namespace vkcv::camera {
          * @param[in] offsetY The offset in vertical direction.
          * @param[in] camera The camera object.
          */
-        void scrollCallback(double offsetX, double offsetY, Camera &camera);
+        void scrollCallback(double offsetX, double offsetY, Camera &camera) override;
 
         /**
          * @brief A callback function for mouse movement events. Currently, this leads to panning the view of the
@@ -83,7 +88,7 @@ namespace vkcv::camera {
          * @param[in] yoffset The vertical mouse position.
          * @param[in] camera The camera object.
          */
-        void mouseMoveCallback(double xoffset, double yoffset, Camera &camera);
+        void mouseMoveCallback(double xoffset, double yoffset, Camera &camera) override;
 
         /**
          * @brief A callback function for mouse button events. Currently, the right mouse button enables panning the
@@ -93,7 +98,7 @@ namespace vkcv::camera {
          * @param[in] mods The modifier bits.
          * @param[in] camera The camera object.
          */
-        void mouseButtonCallback(int button, int action, int mods, Camera &camera);
+        void mouseButtonCallback(int button, int action, int mods, Camera &camera) override;
 
         /**
          * @brief A callback function for gamepad input events.
@@ -101,7 +106,9 @@ namespace vkcv::camera {
          * @param camera The camera object.
          * @param frametime The current frametime.
          */
-        void gamepadCallback(int gamepadIndex, Camera &camera, double frametime);
+        void gamepadCallback(int gamepadIndex, Camera &camera, double frametime) override;
     };
+
+    /** @} */
 
 }

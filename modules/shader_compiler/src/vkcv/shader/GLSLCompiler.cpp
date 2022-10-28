@@ -2,16 +2,20 @@
 #include "vkcv/shader/GLSLCompiler.hpp"
 
 #include <fstream>
+#include <sstream>
 #include <glslang/SPIRV/GlslangToSpv.h>
 #include <glslang/StandAlone/DirStackFileIncluder.h>
 
+#include <vkcv/File.hpp>
 #include <vkcv/Logger.hpp>
 
 namespace vkcv::shader {
 	
 	static uint32_t s_CompilerCount = 0;
 	
-	GLSLCompiler::GLSLCompiler() {
+	GLSLCompiler::GLSLCompiler(GLSLCompileTarget target) :
+		Compiler(),
+		m_target(target) {
 		if (s_CompilerCount == 0) {
 			glslang::InitializeProcess();
 		}
@@ -19,7 +23,7 @@ namespace vkcv::shader {
 		s_CompilerCount++;
 	}
 	
-	GLSLCompiler::GLSLCompiler(const GLSLCompiler &other) {
+	GLSLCompiler::GLSLCompiler(const GLSLCompiler &other) : Compiler(other) {
 		s_CompilerCount++;
 	}
 	
@@ -50,6 +54,22 @@ namespace vkcv::shader {
 				return EShLangFragment;
 			case ShaderStage::COMPUTE:
 				return EShLangCompute;
+			case ShaderStage::TASK:
+				return EShLangTaskNV;
+			case ShaderStage::MESH:
+				return EShLangMeshNV;
+			case ShaderStage::RAY_GEN:
+			    return EShLangRayGen;
+			case ShaderStage::RAY_CLOSEST_HIT:
+			    return EShLangClosestHit;
+			case ShaderStage::RAY_MISS:
+			    return EShLangMiss;
+			case ShaderStage::RAY_INTERSECTION:
+				return EShLangIntersect;
+			case ShaderStage::RAY_ANY_HIT:
+				return EShLangAnyHit;
+			case ShaderStage::RAY_CALLABLE:
+				return EShLangCallable;
 			default:
 				return EShLangCount;
 		}
@@ -197,22 +217,57 @@ namespace vkcv::shader {
 		return true;
 	}
 	
-	void GLSLCompiler::compile(ShaderStage shaderStage, const std::filesystem::path &shaderPath,
-							   const ShaderCompiledFunction& compiled, bool update) {
+	bool GLSLCompiler::compileSource(ShaderStage shaderStage, const char* shaderSource,
+									 const ShaderCompiledFunction &compiled,
+									 const std::filesystem::path& includePath) {
 		const EShLanguage language = findShaderLanguage(shaderStage);
 		
 		if (language == EShLangCount) {
-			vkcv_log(LogLevel::ERROR, "Shader stage not supported (%s)", shaderPath.string().c_str());
-			return;
+			vkcv_log(LogLevel::ERROR, "Shader stage not supported");
+			return false;
 		}
 		
-		const std::vector<char> code = readShaderCode(shaderPath);
-		
 		glslang::TShader shader (language);
+		switch (m_target) {
+			case GLSLCompileTarget::SUBGROUP_OP:
+				shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_1);
+				shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_3);
+				break;
+			case GLSLCompileTarget::RAY_TRACING:
+				shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_2);
+				shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_4);
+				break;
+			default:
+				break;
+		}
+
 		glslang::TProgram program;
+		std::string source (shaderSource);
+		
+		if (!m_defines.empty()) {
+			std::ostringstream defines;
+			for (const auto& define : m_defines) {
+				defines << "#define " << define.first << " " << define.second << std::endl;
+			}
+
+			size_t pos = source.find("#version") + 8;
+			if (pos >= source.length()) {
+				pos = 0;
+			}
+			
+			const size_t epos = source.find_last_of("#extension", pos) + 10;
+			if (epos < source.length()) {
+				pos = epos;
+			}
+			
+			const auto defines_str = defines.str();
+			
+			pos = source.find('\n', pos) + 1;
+			source = source.insert(pos, defines_str);
+		}
 		
 		const char *shaderStrings [1];
-		shaderStrings[0] = code.data();
+		shaderStrings[0] = source.c_str();
 		
 		shader.setStrings(shaderStrings, 1);
 		
@@ -222,51 +277,53 @@ namespace vkcv::shader {
 		const auto messages = (EShMessages)(
 			EShMsgSpvRules |
 			EShMsgVulkanRules
-			);
+		);
 
 		std::string preprocessedGLSL;
 
 		DirStackFileIncluder includer;
-		includer.pushExternalLocalDirectory(shaderPath.parent_path().string());
+		includer.pushExternalLocalDirectory(includePath.string());
 
-		if (!shader.preprocess(&resources, 100, ENoProfile, false, false, messages, &preprocessedGLSL, includer)) {
-			vkcv_log(LogLevel::ERROR, "Shader parsing failed {\n%s\n%s\n} (%s)",
-				shader.getInfoLog(), shader.getInfoDebugLog(), shaderPath.string().c_str());
-			return;
+		if (!shader.preprocess(&resources, 100, ENoProfile,
+							   false, false,
+							   messages, &preprocessedGLSL, includer)) {
+			vkcv_log(LogLevel::ERROR, "Shader preprocessing failed {\n%s\n%s\n}",
+				shader.getInfoLog(), shader.getInfoDebugLog());
+			return false;
 		}
 		
 		const char* preprocessedCString = preprocessedGLSL.c_str();
 		shader.setStrings(&preprocessedCString, 1);
 
 		if (!shader.parse(&resources, 100, false, messages)) {
-			vkcv_log(LogLevel::ERROR, "Shader parsing failed {\n%s\n%s\n} (%s)",
-					 shader.getInfoLog(), shader.getInfoDebugLog(), shaderPath.string().c_str());
-			return;
+			vkcv_log(LogLevel::ERROR, "Shader parsing failed {\n%s\n%s\n}",
+					 shader.getInfoLog(), shader.getInfoDebugLog());
+			return false;
 		}
 		
 		program.addShader(&shader);
 		
 		if (!program.link(messages)) {
-			vkcv_log(LogLevel::ERROR, "Shader linking failed {\n%s\n%s\n} (%s)",
-					 shader.getInfoLog(), shader.getInfoDebugLog(), shaderPath.string().c_str());
-			return;
+			vkcv_log(LogLevel::ERROR, "Shader linking failed {\n%s\n%s\n}",
+					 shader.getInfoLog(), shader.getInfoDebugLog());
+			return false;
 		}
 		
 		const glslang::TIntermediate* intermediate = program.getIntermediate(language);
 		
 		if (!intermediate) {
-			vkcv_log(LogLevel::ERROR, "No valid intermediate representation (%s)", shaderPath.string().c_str());
-			return;
+			vkcv_log(LogLevel::ERROR, "No valid intermediate representation");
+			return false;
 		}
 		
 		std::vector<uint32_t> spirv;
 		glslang::GlslangToSpv(*intermediate, spirv);
 		
-		const std::filesystem::path tmp_path (std::tmpnam(nullptr));
+		const std::filesystem::path tmp_path = generateTemporaryFilePath();
 		
 		if (!writeSpirvCode(tmp_path, spirv)) {
-			vkcv_log(LogLevel::ERROR, "Spir-V could not be written to disk (%s)", shaderPath.string().c_str());
-			return;
+			vkcv_log(LogLevel::ERROR, "Spir-V could not be written to disk");
+			return false;
 		}
 		
 		if (compiled) {
@@ -274,6 +331,24 @@ namespace vkcv::shader {
 		}
 		
 		std::filesystem::remove(tmp_path);
+		return true;
+	}
+	
+	void GLSLCompiler::compile(ShaderStage shaderStage, const std::filesystem::path &shaderPath,
+							   const ShaderCompiledFunction& compiled,
+							   const std::filesystem::path& includePath, bool update) {
+		const std::vector<char> code = readShaderCode(shaderPath);
+		bool result;
+		
+		if (!includePath.empty()) {
+			result = compileSource(shaderStage, code.data(), compiled, includePath);
+		} else {
+			result = compileSource(shaderStage, code.data(), compiled, shaderPath.parent_path());
+		}
+		
+		if (!result) {
+			vkcv_log(LogLevel::ERROR, "Shader compilation failed: (%s)", shaderPath.string().c_str());
+		}
 		
 		if (update) {
 			// TODO: Shader hot compilation during runtime

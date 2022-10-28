@@ -1,121 +1,112 @@
-#include "vkcv/CommandStreamManager.hpp"
+#include "CommandStreamManager.hpp"
 #include "vkcv/Core.hpp"
 
 #include "vkcv/Logger.hpp"
 
+#include <limits>
+
 namespace vkcv {
-	CommandStreamManager::CommandStreamManager() noexcept : m_core(nullptr){}
+
+	uint64_t CommandStreamManager::getIdFrom(const CommandStreamHandle &handle) const {
+		return handle.getId();
+	}
+
+	CommandStreamHandle CommandStreamManager::createById(uint64_t id,
+														 const HandleDestroyFunction &destroy) {
+		return CommandStreamHandle(id, destroy);
+	}
+
+	void CommandStreamManager::destroyById(uint64_t id) {
+		auto &stream = getById(id);
+
+		if (stream.cmdBuffer) {
+			getCore().getContext().getDevice().freeCommandBuffers(stream.cmdPool, stream.cmdBuffer);
+			stream.cmdBuffer = nullptr;
+			stream.callbacks.clear();
+		}
+	}
+
+	CommandStreamManager::CommandStreamManager() noexcept :
+		HandleManager<CommandStreamEntry, CommandStreamHandle>() {}
 
 	CommandStreamManager::~CommandStreamManager() noexcept {
-		for (const auto& stream : m_commandStreams) {
-			if (stream.cmdBuffer && stream.cmdBuffer) {
-				m_core->getContext().getDevice().freeCommandBuffers(stream.cmdPool, stream.cmdBuffer);
-			}
-		}
+		clear();
 	}
 
-	void CommandStreamManager::init(Core* core) {
-		if (!core) {
-			vkcv_log(LogLevel::ERROR, "Requires valid core pointer");
+	CommandStreamHandle CommandStreamManager::createCommandStream(const vk::Queue &queue,
+																  vk::CommandPool cmdPool) {
+		const vk::CommandBufferAllocateInfo info(cmdPool, vk::CommandBufferLevel::ePrimary, 1);
+		auto &device = getCore().getContext().getDevice();
+
+		const vk::CommandBuffer cmdBuffer = device.allocateCommandBuffers(info).front();
+
+		const vk::CommandBufferBeginInfo beginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+		cmdBuffer.begin(beginInfo);
+
+		for (uint64_t id = 0; id < getCount(); id++) {
+			auto &stream = getById(id);
+
+			if (!(stream.cmdBuffer)) {
+				stream.cmdBuffer = cmdBuffer;
+				stream.cmdPool = cmdPool;
+				stream.queue = queue;
+
+				return createById(id, [&](uint64_t id) {
+					destroyById(id);
+				});
+			}
 		}
-		m_core = core;
+
+		return add({ cmdBuffer, cmdPool, queue, {} });
 	}
 
-	CommandStreamHandle CommandStreamManager::createCommandStream(
-		const vk::Queue queue, 
-		vk::CommandPool cmdPool) {
-
-		const vk::CommandBuffer cmdBuffer = allocateCommandBuffer(m_core->getContext().getDevice(), cmdPool);
-
-		CommandStream stream(cmdBuffer, queue, cmdPool);
-		beginCommandBuffer(stream.cmdBuffer, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-
-		// find unused stream
-		int unusedStreamIndex = -1;
-		for (int i = 0; i < m_commandStreams.size(); i++) {
-			if (m_commandStreams[i].cmdBuffer) {
-				// still in use
-			}
-			else {
-				unusedStreamIndex = i;
-				break;
-			}
-		}
-
-        const bool foundUnusedStream = unusedStreamIndex >= 0;
-        if (foundUnusedStream) {
-            m_commandStreams[unusedStreamIndex] = stream;
-            return CommandStreamHandle(unusedStreamIndex);
-        }
-
-        CommandStreamHandle handle(m_commandStreams.size());
-        m_commandStreams.push_back(stream);
-        return handle;
-    }
-
-	void CommandStreamManager::recordCommandsToStream(
-		const CommandStreamHandle   handle, 
-		const RecordCommandFunction record) {
-
-		const size_t id = handle.getId();
-		if (id >= m_commandStreams.size()) {
-			vkcv_log(LogLevel::ERROR, "Requires valid handle");
-			return;
-		}
-
-		CommandStream& stream = m_commandStreams[id];
+	void CommandStreamManager::recordCommandsToStream(const CommandStreamHandle &handle,
+													  const RecordCommandFunction &record) {
+		auto &stream = (*this) [handle];
 		record(stream.cmdBuffer);
 	}
 
-	void CommandStreamManager::addFinishCallbackToStream(
-		const CommandStreamHandle   handle, 
-		const FinishCommandFunction finish) {
-
-		const size_t id = handle.getId();
-		if (id >= m_commandStreams.size()) {
-			vkcv_log(LogLevel::ERROR, "Requires valid handle");
-			return;
-		}
-
-		CommandStream& stream = m_commandStreams[id];
+	void CommandStreamManager::addFinishCallbackToStream(const CommandStreamHandle &handle,
+														 const FinishCommandFunction &finish) {
+		auto &stream = (*this) [handle];
 		stream.callbacks.push_back(finish);
 	}
 
 	void CommandStreamManager::submitCommandStreamSynchronous(
-		const CommandStreamHandle   handle,
-		std::vector<vk::Semaphore>  &waitSemaphores,
-		std::vector<vk::Semaphore>  &signalSemaphores) {
-
-		const size_t id = handle.getId();
-		if (id >= m_commandStreams.size()) {
-			vkcv_log(LogLevel::ERROR, "Requires valid handle");
-			return;
-		}
-		CommandStream& stream = m_commandStreams[id];
+		const CommandStreamHandle &handle, std::vector<vk::Semaphore> &waitSemaphores,
+		std::vector<vk::Semaphore> &signalSemaphores) {
+		auto &stream = (*this) [handle];
 		stream.cmdBuffer.end();
 
-		const auto device = m_core->getContext().getDevice();
-		const vk::Fence waitFence = createFence(device);
-		submitCommandBufferToQueue(stream.queue, stream.cmdBuffer, waitFence, waitSemaphores, signalSemaphores);
-		waitForFence(device, waitFence);
+		const auto device = getCore().getContext().getDevice();
+		const vk::Fence waitFence = device.createFence({});
+
+		const std::vector<vk::PipelineStageFlags> waitDstStageMasks(
+			waitSemaphores.size(), vk::PipelineStageFlagBits::eAllCommands);
+
+		const vk::SubmitInfo queueSubmitInfo(waitSemaphores, waitDstStageMasks, stream.cmdBuffer,
+											 signalSemaphores);
+
+		stream.queue.submit(queueSubmitInfo, waitFence);
+		
+		const auto result = device.waitForFences(waitFence, true, std::numeric_limits<uint64_t>::max());
+		
+		if (result == vk::Result::eTimeout) {
+			device.waitIdle();
+		}
+
 		device.destroyFence(waitFence);
+		stream.queue = nullptr;
 
-		device.freeCommandBuffers(stream.cmdPool, stream.cmdBuffer);
-		stream.cmdBuffer    = nullptr;
-		stream.cmdPool      = nullptr;
-		stream.queue        = nullptr;
-
-		for (const auto& finishCallback : stream.callbacks) {
+		for (const auto &finishCallback : stream.callbacks) {
 			finishCallback();
 		}
 	}
 
-	vk::CommandBuffer CommandStreamManager::getStreamCommandBuffer(const CommandStreamHandle handle) {
-		const size_t id = handle.getId();
-		if (id >= m_commandStreams.size()) {
-			vkcv_log(LogLevel::ERROR, "Requires valid handle");
-			return nullptr;
-		}
-		return m_commandStreams[id].cmdBuffer;
+	vk::CommandBuffer
+	CommandStreamManager::getStreamCommandBuffer(const CommandStreamHandle &handle) {
+		auto &stream = (*this) [handle];
+		return stream.cmdBuffer;
 	}
-}
+
+} // namespace vkcv

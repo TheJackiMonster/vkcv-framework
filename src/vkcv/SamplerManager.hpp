@@ -3,40 +3,36 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
-#include "vkcv/Handles.hpp"
+#include "HandleManager.hpp"
+
 #include "vkcv/Sampler.hpp"
 
 namespace vkcv {
-	
-	class Core;
-	
-	class SamplerManager {
+
+	/**
+	 * @brief Class to manage the creation and destruction of samplers.
+	 */
+	class SamplerManager : public HandleManager<vk::Sampler, SamplerHandle> {
 		friend class Core;
+
 	private:
-		vk::Device m_device;
-		std::vector<vk::Sampler> m_samplers;
-		
-		explicit SamplerManager(const vk::Device& device) noexcept;
-		
-		void destroySamplerById(uint64_t id);
-		
+		[[nodiscard]] uint64_t getIdFrom(const SamplerHandle &handle) const override;
+
+		[[nodiscard]] SamplerHandle createById(uint64_t id,
+											   const HandleDestroyFunction &destroy) override;
+
+		void destroyById(uint64_t id) override;
+
 	public:
-		~SamplerManager();
-		
-		SamplerManager(const SamplerManager& other) = delete;
-		SamplerManager(SamplerManager&& other) = delete;
-		
-		SamplerManager& operator=(const SamplerManager& other) = delete;
-		SamplerManager& operator=(SamplerManager&& other) = delete;
-		
-		SamplerHandle createSampler(SamplerFilterType magFilter,
-							  		SamplerFilterType minFilter,
-							  		SamplerMipmapMode mipmapMode,
-							  		SamplerAddressMode addressMode);
-		
-		[[nodiscard]]
-		vk::Sampler getVulkanSampler(const SamplerHandle& handle) const;
-	
+		SamplerManager() noexcept;
+
+		~SamplerManager() noexcept override;
+
+		SamplerHandle createSampler(SamplerFilterType magFilter, SamplerFilterType minFilter,
+									SamplerMipmapMode mipmapMode, SamplerAddressMode addressMode,
+									float mipLodBias, SamplerBorderColor borderColor);
+
+		[[nodiscard]] vk::Sampler getVulkanSampler(const SamplerHandle &handle) const;
 	};
-	
-}
+
+} // namespace vkcv

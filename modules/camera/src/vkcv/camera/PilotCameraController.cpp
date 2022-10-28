@@ -50,12 +50,11 @@ namespace vkcv::camera {
         }
 
         // handle yaw rotation
-        float yaw = camera.getYaw() + static_cast<float>(xOffset);
-        yaw += 360.0f * (yaw < -180.0f) - 360.0f * (yaw > 180.0f);
+        float yaw = camera.getYaw() + static_cast<float>(xOffset) * 90.0f * m_cameraSpeed;
         camera.setYaw(yaw);
 
         // handle pitch rotation
-        float pitch = camera.getPitch() - static_cast<float>(yOffset);
+        float pitch = camera.getPitch() - static_cast<float>(yOffset) * 90.0f * m_cameraSpeed;
         pitch = glm::clamp(pitch, -89.0f, 89.0f);
         camera.setPitch(pitch);
     }
@@ -83,22 +82,22 @@ namespace vkcv::camera {
     void PilotCameraController::keyCallback(int key, int scancode, int action, int mods, Camera &camera) {
         switch (key) {
             case GLFW_KEY_W:
-                moveForward(action);
+            	m_forward = static_cast<bool>(action);
                 break;
             case GLFW_KEY_S:
-                moveBackward(action);
+            	m_backward = static_cast<bool>(action);
                 break;
             case GLFW_KEY_A:
-                moveLeft(action);
+            	m_left = static_cast<bool>(action);
                 break;
             case GLFW_KEY_D:
-                moveRight(action);
+            	m_right = static_cast<bool>(action);
                 break;
             case GLFW_KEY_E:
-                moveUpward(action);
+            	m_upward = static_cast<bool>(action);
                 break;
             case GLFW_KEY_Q:
-                moveDownward(action);
+            	m_downward = static_cast<bool>(action);
                 break;
             default:
                 break;
@@ -110,31 +109,25 @@ namespace vkcv::camera {
     }
 
     void PilotCameraController::mouseMoveCallback(double xoffset, double yoffset, Camera &camera) {
-        if(!m_rotationActive){
-            return;
-        }
+    	xoffset *= static_cast<float>(m_rotationActive);
+    	yoffset *= static_cast<float>(m_rotationActive);
 
-        float sensitivity = 0.05f;
-        xoffset *= sensitivity;
-        yoffset *= sensitivity;
-
-        panView(xoffset , yoffset, camera);
+        panView(xoffset, yoffset, camera);
     }
 
     void PilotCameraController::mouseButtonCallback(int button, int action, int mods, Camera &camera) {
-        if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == false && action == GLFW_PRESS){
-            m_rotationActive = true;
-        }
-        else if(button == GLFW_MOUSE_BUTTON_2 && m_rotationActive == true && action == GLFW_RELEASE){
-            m_rotationActive = false;
-        }
+    	if (button == GLFW_MOUSE_BUTTON_2) {
+    		if (m_rotationActive != (action == GLFW_PRESS)) {
+    			m_rotationActive = (action == GLFW_PRESS);
+    		}
+    	}
     }
 
     void PilotCameraController::gamepadCallback(int gamepadIndex, Camera &camera, double frametime) {
         GLFWgamepadstate gamepadState;
         glfwGetGamepadState(gamepadIndex, &gamepadState);
 
-        float sensitivity = 100.0f;
+        float sensitivity = 1.0f;
         double threshold = 0.1;
 
         // handle rotations
@@ -161,31 +154,6 @@ namespace vkcv::camera {
                      * -copysign(1.0, stickLeftY);
         m_gamepadX = glm::clamp(std::abs(stickLeftX) - threshold, 0.0, 1.0)
                      * -copysign(1.0, stickLeftX);
-    }
-
-
-    void PilotCameraController::moveForward(int action){
-        m_forward = static_cast<bool>(action);
-    }
-
-    void PilotCameraController::moveBackward(int action){
-        m_backward = static_cast<bool>(action);
-    }
-
-    void PilotCameraController::moveLeft(int action){
-        m_left = static_cast<bool>(action);
-    }
-
-    void PilotCameraController::moveRight(int action){
-        m_right = static_cast<bool>(action);
-    }
-
-    void PilotCameraController::moveUpward(int action){
-        m_upward = static_cast<bool>(action);
-    }
-
-    void PilotCameraController::moveDownward(int action){
-        m_downward = static_cast<bool>(action);
     }
 
 }

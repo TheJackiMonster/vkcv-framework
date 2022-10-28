@@ -1,6 +1,6 @@
 
 # check if Doxygen is installed
-find_package(Doxygen)
+find_package(Doxygen QUIET)
 
 if (DOXYGEN_FOUND)
 	# note the option ALL which allows to build the docs together with the application

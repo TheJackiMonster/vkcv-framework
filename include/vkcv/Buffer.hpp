@@ -1,84 +1,172 @@
 #pragma once
 /**
- * @authors Lars Hoerttrich, Tobias Frisch
+ * @authors Tobias Frisch, Lars Hoerttrich, Alexander Gauggel
  * @file vkcv/Buffer.hpp
- * @brief template buffer class, template for type security, implemented here because template classes can't be written in .cpp
+ * @brief Template buffer class for type security with buffers.
  */
-#include "Handles.hpp"
-#include "BufferManager.hpp"
 
 #include <vector>
 
+#include "BufferTypes.hpp"
+#include "Core.hpp"
+#include "Handles.hpp"
+
 namespace vkcv {
 
-	template<typename T>
+	/**
+	 * @brief Template class for buffer handling and filling data.
+	 *
+	 * @tparam T Buffer content type
+	 */
+	template <typename T>
 	class Buffer {
-		friend class Core;
 	public:
-		// explicit destruction of default constructor
-		Buffer<T>() = delete;
-		
-		[[nodiscard]]
-		const BufferHandle& getHandle() const {
+		Buffer() : m_core(nullptr), m_handle() {}
+
+		Buffer(Core* core, const BufferHandle &handle) : m_core(core), m_handle(handle) {}
+
+		Buffer(const Buffer &other) = default;
+		Buffer(Buffer &&other) noexcept = default;
+
+		~Buffer() = default;
+
+		Buffer &operator=(const Buffer &other) = default;
+		Buffer &operator=(Buffer &&other) noexcept = default;
+
+		/**
+		 * @brief Returns the buffers handle.
+		 *
+		 * @return The #BufferHandle to be used with the #Core
+		 */
+		[[nodiscard]] const BufferHandle &getHandle() const {
 			return m_handle;
 		}
-		
-		[[nodiscard]]
-		BufferType getType() const {
-			return m_type;
+
+		/**
+		 * @brief Returns the type of the buffer.
+		 *
+		 * @return The #BufferType of the #Buffer
+		 */
+		[[nodiscard]] BufferType getType() const {
+			return m_core->getBufferType(m_handle);
 		};
-		
-		[[nodiscard]]
-		size_t getCount() const {
-			return m_count;
-		}
-		
-		[[nodiscard]]
-		size_t getSize() const {
-			return m_count * sizeof(T);
+
+		[[nodiscard]] BufferMemoryType getMemoryType() const {
+			return m_core->getBufferMemoryType(m_handle);
 		}
 
-        [[nodiscard]]
-        const vk::Buffer getVulkanHandle() const {
-            return m_manager->getBuffer(m_handle);
-        }
-		
+		/**
+		 * @brief Returns the count of elements in the buffer.
+		 *
+		 * @return The number of objects of type T the #Buffer holds
+		 */
+		[[nodiscard]] size_t getCount() const {
+			return m_core->getBufferSize(m_handle) / sizeof(T);
+		}
+
+		/**
+		 * @brief Returns the size of the buffer in bytes.
+		 *
+		 * @return The size of the #Buffer in bytes
+		 */
+		[[nodiscard]] size_t getSize() const {
+			return m_core->getBufferSize(m_handle);
+		}
+
+		/**
+		 * @brief Returns the vulkan buffer handle of the buffer.
+		 *
+		 * @return The vulkan handle of the #Buffer to be used for manual vulkan commands
+		 */
+		[[nodiscard]] vk::Buffer getVulkanHandle() const {
+			return m_core->getBuffer(m_handle);
+		}
+
+		/**
+		 * @brief Fills the #Buffer with data of type T.
+		 *
+		 * @param[in] data Pointer to the array of object type T
+		 * @param[in] count The number of objects to copy from the data array
+		 * @param[in] offset The offset into the #Buffer where the data is copied into
+		 */
 		void fill(const T* data, size_t count = 0, size_t offset = 0) {
-			 m_manager->fillBuffer(m_handle, data, count * sizeof(T), offset * sizeof(T));
-		}
-		
-		void fill(const std::vector<T>& vector, size_t offset = 0) {
-			fill( static_cast<const T*>(vector.data()), static_cast<size_t>(vector.size()), offset);
-		}
-		
-		[[nodiscard]]
-		T* map(size_t offset = 0, size_t count = 0) {
-			return reinterpret_cast<T*>(m_manager->mapBuffer(m_handle, offset * sizeof(T), count * sizeof(T)));
+			m_core->fillBuffer(m_handle, data, count * sizeof(T), offset * sizeof(T));
 		}
 
+		/**
+		 * @brief Fills the #Buffer with data from a vector of type T.
+		 *
+		 * @param vector Vector of type T to be copied into the #Buffer
+		 * @param offset The offset into the #Buffer where the data is copied into
+		 */
+		void fill(const std::vector<T> &vector, size_t offset = 0) {
+			fill(static_cast<const T*>(vector.data()), static_cast<size_t>(vector.size()), offset);
+		}
+		
+		/**
+		 * @brief Fills the #Buffer with data from an array of type T
+		 * and size N.
+		 *
+		 * @tparam N Size of the array to be copied into the #Buffer
+		 * @param array Array of type T to be copied into the #Buffer
+		 * @param offset The offset into the #Buffer where the data is copied into
+		 */
+		template<size_t N>
+		void fill(const std::array<T, N> &array, size_t offset = 0) {
+			fill(static_cast<const T*>(array.data()), N, offset);
+		}
+
+		/**
+		 * @brief Reads the #Buffer directly into a data pointer of type T.
+		 *
+		 * @param[in] data Pointer to the array of object type T
+		 * @param[in] count The number of objects to copy from the buffer
+		 * @param[in] offset The offset into the #Buffer where the data is copied from
+		 */
+		void read(T* data, size_t count = 0, size_t offset = 0) {
+			m_core->readBuffer(m_handle, data, count * sizeof(T), offset * sizeof(T));
+		}
+
+		/**
+		 * @brief Reads the #Buffer directly to a vector of type T.
+		 *
+		 * @param vector Vector of type T to be copied into from the #Buffer
+		 * @param offset The offset into the #Buffer where the data is copied from
+		 */
+		void read(std::vector<T> &vector, size_t offset = 0) {
+			read(static_cast<T*>(vector.data()), static_cast<size_t>(vector.size()), offset);
+		}
+
+		/**
+		 * @brief Maps memory to the #Buffer and returns it.
+		 *
+		 * @param[in] offset Offset of mapping in objects of type T
+		 * @param[in] count Count of objects of type T that are mapped
+		 * @return Pointer to mapped memory as type T
+		 */
+		[[nodiscard]] T* map(size_t offset = 0, size_t count = 0) {
+			return reinterpret_cast<T*>(
+				m_core->mapBuffer(m_handle, offset * sizeof(T), count * sizeof(T)));
+		}
+
+		/**
+		 * @brief Unmaps the #Buffer, invalidates the pointer obtained by map().
+		 */
 		void unmap() {
-			m_manager->unmapBuffer(m_handle);
+			m_core->unmapBuffer(m_handle);
 		}
 
 	private:
-		BufferManager* const m_manager;
-		const BufferHandle m_handle;
-		const BufferType m_type;
-		const size_t m_count;
-		const BufferMemoryType m_memoryType;
-		
-		Buffer<T>(BufferManager* manager, BufferHandle handle, BufferType type, size_t count, BufferMemoryType memoryType) :
-				m_manager(manager),
-				m_handle(handle),
-				m_type(type),
-				m_count(count),
-				m_memoryType(memoryType)
-		{}
-		
-		[[nodiscard]]
-		static Buffer<T> create(BufferManager* manager, BufferType type, size_t count, BufferMemoryType memoryType) {
-			return Buffer<T>(manager, manager->createBuffer(type, count * sizeof(T), memoryType), type, count, memoryType);
-		}
-		
+		Core* m_core;
+		BufferHandle m_handle;
 	};
-}
+
+	template <typename T>
+	Buffer<T> buffer(Core &core, BufferType type, size_t count,
+					 BufferMemoryType memoryType = BufferMemoryType::DEVICE_LOCAL,
+					 bool readable = false) {
+		return Buffer<T>(&core,
+						 core.createBuffer(type, typeGuard<T>(), count, memoryType, readable));
+	}
+
+} // namespace vkcv

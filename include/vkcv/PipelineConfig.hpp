@@ -1,30 +1,48 @@
 #pragma once
 /**
- * @authors Mara Vogt, Mark Mints
- * @file src/vkcv/Pipeline.hpp
- * @brief Pipeline class to handle shader stages
+ * @authors Tobias Frisch
+ * @file vkcv/PipelineConfig.hpp
+ * @brief Pipeline config class to hand over required information to pipeline creation
  */
 
 #include <vector>
-#include <cstdint>
+
 #include "Handles.hpp"
 #include "ShaderProgram.hpp"
-#include "VertexLayout.hpp"
 
 namespace vkcv {
 
-    enum class PrimitiveTopology{PointList, LineList, TriangleList };
+	/**
+	 * @brief Class to configure a general pipeline before its creation.
+	 */
+	class PipelineConfig {
+	private:
+		ShaderProgram m_ShaderProgram;
+		std::vector<DescriptorSetLayoutHandle> m_DescriptorSetLayouts;
 
-    struct PipelineConfig {
-        ShaderProgram                         m_ShaderProgram;
-        uint32_t                              m_Width;
-		uint32_t                              m_Height;
-        PassHandle                            m_PassHandle;
-        VertexLayout                          m_VertexLayout;
-        std::vector<vk::DescriptorSetLayout>  m_DescriptorLayouts;
-        bool                                  m_UseDynamicViewport;
-        bool                                  m_UseConservativeRasterization = false;
-        PrimitiveTopology                     m_PrimitiveTopology = PrimitiveTopology::TriangleList;
-    };
+	public:
+		PipelineConfig();
 
-}
+		PipelineConfig(const ShaderProgram &program,
+					   const std::vector<DescriptorSetLayoutHandle> &layouts);
+
+		PipelineConfig(const PipelineConfig &other) = default;
+		PipelineConfig(PipelineConfig &&other) = default;
+
+		~PipelineConfig() = default;
+
+		PipelineConfig &operator=(const PipelineConfig &other) = default;
+		PipelineConfig &operator=(PipelineConfig &&other) = default;
+
+		void setShaderProgram(const ShaderProgram &program);
+
+		[[nodiscard]] const ShaderProgram &getShaderProgram() const;
+
+		void addDescriptorSetLayout(const DescriptorSetLayoutHandle &layout);
+
+		void addDescriptorSetLayouts(const std::vector<DescriptorSetLayoutHandle> &layouts);
+
+		[[nodiscard]] const std::vector<DescriptorSetLayoutHandle> &getDescriptorSetLayouts() const;
+	};
+
+} // namespace vkcv

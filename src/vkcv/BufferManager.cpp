@@ -3,139 +3,234 @@
  * @file vkcv/BufferManager.cpp
  */
 
-#include "vkcv/BufferManager.hpp"
+#include "BufferManager.hpp"
 #include "vkcv/Core.hpp"
 #include <vkcv/Logger.hpp>
 
+#include <limits>
+
 namespace vkcv {
-	
-	BufferManager::BufferManager() noexcept :
-		m_core(nullptr), m_buffers(), m_stagingBuffer(BufferHandle())
-	{
-	}
-	
-	void BufferManager::init() {
-		if (!m_core) {
-			return;
+
+	bool BufferManager::init(Core &core) {
+		if (!HandleManager<BufferEntry, BufferHandle>::init(core)) {
+			return false;
 		}
 		
-		m_stagingBuffer = createBuffer(BufferType::STAGING, 1024 * 1024, BufferMemoryType::HOST_VISIBLE);
+		const vma::Allocator &allocator = getCore().getContext().getAllocator();
+		const auto& memoryProperties = allocator.getMemoryProperties();
+		const auto& heaps = memoryProperties->memoryHeaps;
+		
+		std::vector<vk::MemoryPropertyFlags> heapMemoryFlags;
+		heapMemoryFlags.resize(heaps.size());
+		
+		for (const auto& type : memoryProperties->memoryTypes) {
+			if (type.heapIndex >= heaps.size()) {
+				continue;
+			}
+			
+			heapMemoryFlags[type.heapIndex] |= type.propertyFlags;
+		}
+		
+		vk::DeviceSize maxDeviceHeapSize = 0;
+		uint32_t deviceHeapIndex = 0;
+		
+		for (uint32_t i = 0; i < heaps.size(); i++) {
+			if (!(heaps[i].flags & vk::MemoryHeapFlagBits::eDeviceLocal)) {
+				continue;
+			}
+			
+			if (!(heapMemoryFlags[i] & vk::MemoryPropertyFlagBits::eDeviceLocal)) {
+				continue;
+			}
+			
+			if (heaps[i].size < maxDeviceHeapSize) {
+				continue;
+			}
+			
+			maxDeviceHeapSize = heaps[i].size;
+			deviceHeapIndex = i;
+		}
+		
+		if (heapMemoryFlags[deviceHeapIndex] & vk::MemoryPropertyFlagBits::eHostVisible) {
+			m_resizableBar = true;
+		} else {
+			m_resizableBar = false;
+		}
+
+		m_stagingBuffer = createBuffer(
+				TypeGuard(1),
+				BufferType::STAGING,
+				BufferMemoryType::HOST_VISIBLE,
+				1024 * 1024,
+				false
+		);
+
+		return true;
 	}
-	
+
+	uint64_t BufferManager::getIdFrom(const BufferHandle &handle) const {
+		return handle.getId();
+	}
+
+	BufferHandle BufferManager::createById(uint64_t id, const HandleDestroyFunction &destroy) {
+		return BufferHandle(id, destroy);
+	}
+
+	void BufferManager::destroyById(uint64_t id) {
+		auto &buffer = getById(id);
+
+		const vma::Allocator &allocator = getCore().getContext().getAllocator();
+
+		if (buffer.m_handle) {
+			if (buffer.m_mapping) {
+				allocator.unmapMemory(buffer.m_allocation);
+			}
+			
+			allocator.destroyBuffer(buffer.m_handle, buffer.m_allocation);
+
+			buffer.m_handle = nullptr;
+			buffer.m_allocation = nullptr;
+		}
+	}
+
+	BufferManager::BufferManager() noexcept :
+		HandleManager<BufferEntry, BufferHandle>(),
+		m_resizableBar(false),
+		m_stagingBuffer(BufferHandle()) {}
+
 	BufferManager::~BufferManager() noexcept {
-		for (uint64_t id = 0; id < m_buffers.size(); id++) {
-			destroyBufferById(id);
-		}
+		clear();
 	}
-	
-	/**
-	 * @brief searches memory type index for buffer allocation, combines requirements of buffer and application
-	 * @param physicalMemoryProperties Memory Properties of physical device
-	 * @param typeBits Bit field for suitable memory types
-	 * @param requirements Property flags that are required
-	 * @return memory type index for Buffer
-	 */
-	uint32_t searchBufferMemoryType(const vk::PhysicalDeviceMemoryProperties& physicalMemoryProperties, uint32_t typeBits, vk::MemoryPropertyFlags requirements) {
-		const uint32_t memoryCount = physicalMemoryProperties.memoryTypeCount;
-		for (uint32_t memoryIndex = 0; memoryIndex < memoryCount; ++memoryIndex) {
-			const uint32_t memoryTypeBits = (1 << memoryIndex);
-			const bool isRequiredMemoryType = typeBits & memoryTypeBits;
 
-			const vk::MemoryPropertyFlags properties =
-				physicalMemoryProperties.memoryTypes[memoryIndex].propertyFlags;
-			const bool hasRequiredProperties =
-				(properties & requirements) == requirements;
-
-			if (isRequiredMemoryType && hasRequiredProperties)
-				return static_cast<int32_t>(memoryIndex);
-		}
-
-		// failed to find memory type
-		return -1;
-	}
-	
-	BufferHandle BufferManager::createBuffer(BufferType type, size_t size, BufferMemoryType memoryType) {
+	BufferHandle BufferManager::createBuffer(const TypeGuard &typeGuard, BufferType type,
+											 BufferMemoryType memoryType, size_t size,
+											 bool readable) {
 		vk::BufferCreateFlags createFlags;
 		vk::BufferUsageFlags usageFlags;
-		
+
 		switch (type) {
-			case BufferType::VERTEX:
-				usageFlags = vk::BufferUsageFlagBits::eVertexBuffer;
-				break;
-			case BufferType::UNIFORM:
-				usageFlags = vk::BufferUsageFlagBits::eUniformBuffer;
-				break;
-			case BufferType::STORAGE:
-				usageFlags = vk::BufferUsageFlagBits::eStorageBuffer;
-				break;
-			case BufferType::STAGING:
-				usageFlags = vk::BufferUsageFlagBits::eTransferSrc;
-				break;
-			case BufferType::INDEX:
-				usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
-				break;
-			default:
-				// TODO: maybe an issue
-				break;
+		case BufferType::VERTEX:
+			usageFlags = vk::BufferUsageFlagBits::eVertexBuffer;
+			break;
+		case BufferType::UNIFORM:
+			usageFlags = vk::BufferUsageFlagBits::eUniformBuffer;
+			break;
+		case BufferType::STORAGE:
+			usageFlags = vk::BufferUsageFlagBits::eStorageBuffer;
+			break;
+		case BufferType::STAGING:
+			usageFlags = vk::BufferUsageFlagBits::eTransferSrc
+						| vk::BufferUsageFlagBits::eTransferDst;
+			break;
+		case BufferType::INDEX:
+			usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
+			break;
+		case BufferType::INDIRECT:
+			usageFlags = vk::BufferUsageFlagBits::eStorageBuffer
+						| vk::BufferUsageFlagBits::eIndirectBuffer;
+			break;
+		default:
+			vkcv_log(LogLevel::WARNING, "Unknown buffer type");
+			break;
 		}
-		
+
 		if (memoryType == BufferMemoryType::DEVICE_LOCAL) {
 			usageFlags |= vk::BufferUsageFlagBits::eTransferDst;
 		}
-		
-		const vk::Device& device = m_core->getContext().getDevice();
-		
-		vk::Buffer buffer = device.createBuffer(
-				vk::BufferCreateInfo(createFlags, size, usageFlags)
-		);
-		
-		const vk::MemoryRequirements requirements = device.getBufferMemoryRequirements(buffer);
-		const vk::PhysicalDevice& physicalDevice = m_core->getContext().getPhysicalDevice();
-		
-		vk::MemoryPropertyFlags memoryTypeFlags;
+
+		if (readable) {
+			usageFlags |= vk::BufferUsageFlagBits::eTransferSrc;
+		}
+
+		const vma::Allocator &allocator = getCore().getContext().getAllocator();
+
+		vma::MemoryUsage memoryUsage;
 		bool mappable = false;
-		
+
 		switch (memoryType) {
-			case BufferMemoryType::DEVICE_LOCAL:
-				memoryTypeFlags = vk::MemoryPropertyFlagBits::eDeviceLocal;
-				break;
-			case BufferMemoryType::HOST_VISIBLE:
-				memoryTypeFlags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
-				mappable = true;
-				break;
-			default:
-				// TODO: maybe an issue
-				break;
+		case BufferMemoryType::DEVICE_LOCAL:
+			memoryUsage = vma::MemoryUsage::eAutoPreferDevice;
+			mappable = false;
+			break;
+		case BufferMemoryType::HOST_VISIBLE:
+			memoryUsage = vma::MemoryUsage::eAutoPreferHost;
+			mappable = true;
+			break;
+		default:
+			vkcv_log(LogLevel::WARNING, "Unknown buffer memory type");
+			memoryUsage = vma::MemoryUsage::eUnknown;
+			mappable = false;
+			break;
 		}
 		
-		const uint32_t memoryTypeIndex = searchBufferMemoryType(
-				physicalDevice.getMemoryProperties(),
-				requirements.memoryTypeBits,
-				memoryTypeFlags
+		vma::AllocationCreateFlags allocationCreateFlags;
+		
+		if (mappable) {
+			if (type == vkcv::BufferType::STAGING) {
+				allocationCreateFlags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite;
+			} else {
+				allocationCreateFlags = vma::AllocationCreateFlagBits::eHostAccessRandom;
+			}
+		} else
+		if ((m_resizableBar) && (memoryType == BufferMemoryType::DEVICE_LOCAL)) {
+			allocationCreateFlags = vma::AllocationCreateFlagBits::eHostAccessAllowTransferInstead
+									| vma::AllocationCreateFlagBits::eHostAccessSequentialWrite;
+		}
+
+		auto bufferAllocation = allocator.createBuffer(
+			vk::BufferCreateInfo(createFlags, size, usageFlags),
+			vma::AllocationCreateInfo(
+					allocationCreateFlags,
+					memoryUsage,
+					vk::MemoryPropertyFlags(),
+					vk::MemoryPropertyFlags(),
+					0,
+					vma::Pool(),
+					nullptr
+			)
+		);
+
+		vk::Buffer buffer = bufferAllocation.first;
+		vma::Allocation allocation = bufferAllocation.second;
+		
+		const vk::MemoryPropertyFlags finalMemoryFlags = allocator.getAllocationMemoryProperties(
+				allocation
 		);
 		
-		vk::DeviceMemory memory = device.allocateMemory(vk::MemoryAllocateInfo(requirements.size, memoryTypeIndex));
-		
-		device.bindBufferMemory(buffer, memory, 0);
-		
-		const uint64_t id = m_buffers.size();
-		m_buffers.push_back({ buffer, memory, size, nullptr, mappable });
-		return BufferHandle(id, [&](uint64_t id) { destroyBufferById(id); });
+		if (vk::MemoryPropertyFlagBits::eHostVisible & finalMemoryFlags) {
+			mappable = true;
+		}
+
+		return add({
+			typeGuard,
+			type,
+			memoryType,
+			size,
+			buffer,
+			allocation,
+			readable,
+			mappable,
+			nullptr,
+			0
+		});
 	}
-	
-	struct StagingStepInfo {
+
+	/**
+	 * @brief Structure to store details required for a write staging process.
+	 */
+	struct StagingWriteInfo {
 		const void* data;
 		size_t size;
 		size_t offset;
-		
+
 		vk::Buffer buffer;
 		vk::Buffer stagingBuffer;
-		vk::DeviceMemory stagingMemory;
-		
+		vma::Allocation stagingAllocation;
+
 		size_t stagingLimit;
 		size_t stagingPosition;
 	};
-	
+
 	/**
 	 * Copies data from CPU to a staging buffer and submits the commands to copy
 	 * each part one after another into the actual target buffer.
@@ -146,223 +241,291 @@ namespace vkcv {
 	 * @param core Core instance
 	 * @param info Staging-info structure
 	 */
-	void copyFromStagingBuffer(Core* core, StagingStepInfo& info) {
+	static void fillFromStagingBuffer(Core &core, StagingWriteInfo &info) {
 		const size_t remaining = info.size - info.stagingPosition;
 		const size_t mapped_size = std::min(remaining, info.stagingLimit);
-		
-		const vk::Device& device = core->getContext().getDevice();
-		
-		void* mapped = device.mapMemory(info.stagingMemory, 0, mapped_size);
-		memcpy(mapped, reinterpret_cast<const char*>(info.data) + info.stagingPosition, mapped_size);
-		device.unmapMemory(info.stagingMemory);
-		
-		SubmitInfo submitInfo;
-		submitInfo.queueType = QueueType::Transfer;
-		
-		core->recordAndSubmitCommandsImmediate(
-				submitInfo,
-				[&info, &mapped_size](const vk::CommandBuffer& commandBuffer) {
-					const vk::BufferCopy region (
-							0,
-							info.offset + info.stagingPosition,
-							mapped_size
-					);
-					
-					commandBuffer.copyBuffer(info.stagingBuffer, info.buffer, 1, &region);
-				},
-				[&core, &info, &mapped_size, &remaining]() {
-					if (mapped_size < remaining) {
-						info.stagingPosition += mapped_size;
-						
-						copyFromStagingBuffer(
-								core,
-								info
-						);
-					}
+
+		const vma::Allocator &allocator = core.getContext().getAllocator();
+
+		void* mapped = allocator.mapMemory(info.stagingAllocation);
+		memcpy(mapped, reinterpret_cast<const char*>(info.data) + info.stagingPosition,
+			   mapped_size);
+		allocator.unmapMemory(info.stagingAllocation);
+
+		auto stream = core.createCommandStream(QueueType::Transfer);
+
+		core.recordCommandsToStream(
+			stream,
+			[&info, &mapped_size](const vk::CommandBuffer &commandBuffer) {
+				const vk::BufferCopy region(0, info.offset + info.stagingPosition, mapped_size);
+
+				commandBuffer.copyBuffer(info.stagingBuffer, info.buffer, 1, &region);
+			},
+			[&core, &info, &mapped_size, &remaining]() {
+				if (mapped_size < remaining) {
+					info.stagingPosition += mapped_size;
+
+					fillFromStagingBuffer(core, info);
 				}
-		);
+			});
+
+		core.submitCommandStream(stream, false);
 	}
-	
-	vk::Buffer BufferManager::getBuffer(const BufferHandle& handle) const {
-		const uint64_t id = handle.getId();
-		
-		if (id >= m_buffers.size()) {
-			return nullptr;
-		}
-		
-		auto& buffer = m_buffers[id];
-		
+
+	/**
+	 * @brief Structure to store details required for a read staging process.
+	 */
+	struct StagingReadInfo {
+		void* data;
+		size_t size;
+		size_t offset;
+
+		vk::Buffer buffer;
+		vk::Buffer stagingBuffer;
+		vma::Allocation stagingAllocation;
+
+		size_t stagingLimit;
+		size_t stagingPosition;
+	};
+
+	/**
+	 * Copies data from a staging buffer to CPU and submits the commands to copy
+	 * each part one after another into the actual target data pointer.
+	 *
+	 * The function can be used fully asynchronously!
+	 * Just be careful to not use the staging buffer in parallel!
+	 *
+	 * @param core Core instance
+	 * @param info Staging-info structure
+	 */
+	static void readToStagingBuffer(Core &core, StagingReadInfo &info) {
+		const size_t remaining = info.size - info.stagingPosition;
+		const size_t mapped_size = std::min(remaining, info.stagingLimit);
+
+		auto stream = core.createCommandStream(QueueType::Transfer);
+
+		core.recordCommandsToStream(
+			stream,
+			[&info, &mapped_size](const vk::CommandBuffer &commandBuffer) {
+				const vk::BufferCopy region(info.offset + info.stagingPosition, 0, mapped_size);
+
+				commandBuffer.copyBuffer(info.buffer, info.stagingBuffer, 1, &region);
+			},
+			[&core, &info, &mapped_size, &remaining]() {
+				const vma::Allocator &allocator = core.getContext().getAllocator();
+
+				const void* mapped = allocator.mapMemory(info.stagingAllocation);
+				memcpy(reinterpret_cast<char*>(info.data) + info.stagingPosition, mapped,
+					   mapped_size);
+				allocator.unmapMemory(info.stagingAllocation);
+
+				if (mapped_size < remaining) {
+					info.stagingPosition += mapped_size;
+
+					readToStagingBuffer(core, info);
+				}
+			});
+
+		core.submitCommandStream(stream, false);
+	}
+
+	vk::Buffer BufferManager::getBuffer(const BufferHandle &handle) const {
+		auto &buffer = (*this) [handle];
+
 		return buffer.m_handle;
 	}
-	
+
+	TypeGuard BufferManager::getTypeGuard(const BufferHandle &handle) const {
+		auto &buffer = (*this) [handle];
+
+		return buffer.m_typeGuard;
+	}
+
+	BufferType BufferManager::getBufferType(const BufferHandle &handle) const {
+		auto &buffer = (*this) [handle];
+
+		return buffer.m_type;
+	}
+
+	BufferMemoryType BufferManager::getBufferMemoryType(const BufferHandle &handle) const {
+		auto &buffer = (*this) [handle];
+
+		return buffer.m_memoryType;
+	}
+
 	size_t BufferManager::getBufferSize(const BufferHandle &handle) const {
-		const uint64_t id = handle.getId();
-		
-		if (id >= m_buffers.size()) {
-			return 0;
-		}
-		
-		auto& buffer = m_buffers[id];
-		
+		auto &buffer = (*this) [handle];
+
 		return buffer.m_size;
 	}
-	
-	vk::DeviceMemory BufferManager::getDeviceMemory(const BufferHandle& handle) const {
-		const uint64_t id = handle.getId();
-		
-		if (id >= m_buffers.size()) {
-			return nullptr;
-		}
-		
-		auto& buffer = m_buffers[id];
-		
-		return buffer.m_memory;
+
+	vk::DeviceMemory BufferManager::getDeviceMemory(const BufferHandle &handle) const {
+		auto &buffer = (*this) [handle];
+
+		const vma::Allocator &allocator = getCore().getContext().getAllocator();
+
+		auto info = allocator.getAllocationInfo(buffer.m_allocation);
+
+		return info.deviceMemory;
 	}
-	
-	void BufferManager::fillBuffer(const BufferHandle& handle, const void *data, size_t size, size_t offset) {
-		const uint64_t id = handle.getId();
-		
+
+	void BufferManager::fillBuffer(const BufferHandle &handle, const void* data, size_t size,
+								   size_t offset) {
+		auto &buffer = (*this) [handle];
+
 		if (size == 0) {
-			size = SIZE_MAX;
+			size = std::numeric_limits<size_t>::max();
 		}
-		
-		if (id >= m_buffers.size()) {
-			return;
-		}
-		
-		auto& buffer = m_buffers[id];
-		
-		if (buffer.m_mapped) {
-			return;
-		}
-		
-		const vk::Device& device = m_core->getContext().getDevice();
-		
+
+		const vma::Allocator &allocator = getCore().getContext().getAllocator();
+
 		if (offset > buffer.m_size) {
 			return;
 		}
-		
+
 		const size_t max_size = std::min(size, buffer.m_size - offset);
-		
+
 		if (buffer.m_mappable) {
-			void* mapped = device.mapMemory(buffer.m_memory, offset, max_size);
-			memcpy(mapped, data, max_size);
-			device.unmapMemory(buffer.m_memory);
+			void* mapped = allocator.mapMemory(buffer.m_allocation);
+			memcpy(reinterpret_cast<char*>(mapped) + offset, data, max_size);
+			allocator.unmapMemory(buffer.m_allocation);
 		} else {
-			auto& stagingBuffer = m_buffers[ m_stagingBuffer.getId() ];
-			
-			StagingStepInfo info;
+			auto &stagingBuffer = (*this) [m_stagingBuffer];
+
+			StagingWriteInfo info;
 			info.data = data;
-			info.size = std::min(size, max_size - offset);
+			info.size = max_size;
 			info.offset = offset;
-			
+
 			info.buffer = buffer.m_handle;
 			info.stagingBuffer = stagingBuffer.m_handle;
-			info.stagingMemory = stagingBuffer.m_memory;
-			
-			const vk::MemoryRequirements stagingRequirements = device.getBufferMemoryRequirements(stagingBuffer.m_handle);
-			
-			info.stagingLimit = stagingRequirements.size;
+			info.stagingAllocation = stagingBuffer.m_allocation;
+
+			info.stagingLimit = stagingBuffer.m_size;
 			info.stagingPosition = 0;
-			
-			copyFromStagingBuffer(m_core, info);
+
+			fillFromStagingBuffer(getCore(), info);
 		}
 	}
-	
-	void* BufferManager::mapBuffer(const BufferHandle& handle, size_t offset, size_t size) {
-		const uint64_t id = handle.getId();
-		
+
+	void BufferManager::readBuffer(const BufferHandle &handle, void* data, size_t size,
+								   size_t offset) {
+		auto &buffer = (*this) [handle];
+
 		if (size == 0) {
-			size = SIZE_MAX;
+			size = std::numeric_limits<size_t>::max();
 		}
-		
-		if (id >= m_buffers.size()) {
-			return nullptr;
+
+		const vma::Allocator &allocator = getCore().getContext().getAllocator();
+
+		if (offset > buffer.m_size) {
+			return;
 		}
-		
-		auto& buffer = m_buffers[id];
-		
-		if (buffer.m_mapped) {
-			return nullptr;
+
+		const size_t max_size = std::min(size, buffer.m_size - offset);
+
+		if (buffer.m_mappable) {
+			const void* mapped = allocator.mapMemory(buffer.m_allocation);
+			memcpy(data, reinterpret_cast<const char*>(mapped) + offset, max_size);
+			allocator.unmapMemory(buffer.m_allocation);
+		} else {
+			auto &stagingBuffer = (*this) [m_stagingBuffer];
+
+			StagingReadInfo info;
+			info.data = data;
+			info.size = max_size;
+			info.offset = offset;
+
+			info.buffer = buffer.m_handle;
+			info.stagingBuffer = stagingBuffer.m_handle;
+			info.stagingAllocation = stagingBuffer.m_allocation;
+
+			info.stagingLimit = stagingBuffer.m_size;
+			info.stagingPosition = 0;
+
+			readToStagingBuffer(getCore(), info);
 		}
-		
-		const vk::Device& device = m_core->getContext().getDevice();
-		
+	}
+
+	void* BufferManager::mapBuffer(const BufferHandle &handle, size_t offset, size_t size) {
+		auto &buffer = (*this) [handle];
+
+		if (size == 0) {
+			size = std::numeric_limits<size_t>::max();
+		}
+
 		if (offset > buffer.m_size) {
 			return nullptr;
 		}
 		
-		const size_t max_size = std::min(size, buffer.m_size - offset);
-		buffer.m_mapped = device.mapMemory(buffer.m_memory, offset, max_size);
-		return buffer.m_mapped;
-	}
-	
-	void BufferManager::unmapBuffer(const BufferHandle& handle) {
-		const uint64_t id = handle.getId();
+		if (buffer.m_mapping) {
+			++buffer.m_mapCounter;
+			
+			vkcv_log(LogLevel::WARNING,
+					 "Mapping a buffer multiple times (%lu) is not recommended",
+					 buffer.m_mapCounter);
+			
+			return buffer.m_mapping + offset;
+		}
 		
-		if (id >= m_buffers.size()) {
+		if (buffer.m_mappable) {
+			const vma::Allocator &allocator = getCore().getContext().getAllocator();
+			
+			buffer.m_mapping = reinterpret_cast<char*>(allocator.mapMemory(buffer.m_allocation));
+		} else {
+			buffer.m_mapping = m_allocator.allocate(buffer.m_size);
+			
+			if (buffer.m_readable) {
+				readBuffer(handle, buffer.m_mapping, buffer.m_size, 0);
+			}
+		}
+		
+		buffer.m_mapCounter = 1;
+		return buffer.m_mapping + offset;
+	}
+
+	void BufferManager::unmapBuffer(const BufferHandle &handle) {
+		auto &buffer = (*this) [handle];
+		
+		if (buffer.m_mapCounter > 1) {
+			--buffer.m_mapCounter;
 			return;
 		}
 		
-		auto& buffer = m_buffers[id];
-		
-		if (buffer.m_mapped == nullptr) {
-			return;
+		if (buffer.m_mapCounter == 0) {
+			vkcv_log(LogLevel::WARNING,
+					 "It seems like the buffer is not mapped to memory");
 		}
 		
-		const vk::Device& device = m_core->getContext().getDevice();
-		
-		device.unmapMemory(buffer.m_memory);
-		buffer.m_mapped = nullptr;
-	}
-	
-	void BufferManager::destroyBufferById(uint64_t id) {
-		if (id >= m_buffers.size()) {
-			return;
+		if (!buffer.m_mapping) {
+			vkcv_log(LogLevel::ERROR,
+					 "Buffer is not mapped to memory");
 		}
 		
-		auto& buffer = m_buffers[id];
-		
-		const vk::Device& device = m_core->getContext().getDevice();
-		
-		if (buffer.m_memory) {
-			device.freeMemory(buffer.m_memory);
-			buffer.m_memory = nullptr;
+		if (buffer.m_mappable) {
+			const vma::Allocator &allocator = getCore().getContext().getAllocator();
+			
+			allocator.unmapMemory(buffer.m_allocation);
+		} else {
+			fillBuffer(handle, buffer.m_mapping, buffer.m_size, 0);
+			m_allocator.deallocate(buffer.m_mapping, buffer.m_size);
 		}
 		
-		if (buffer.m_handle) {
-			device.destroyBuffer(buffer.m_handle);
-			buffer.m_handle = nullptr;
-		}
+		buffer.m_mapping = nullptr;
+		buffer.m_mapCounter = 0;
 	}
 
-	void BufferManager ::recordBufferMemoryBarrier(const BufferHandle& handle, vk::CommandBuffer cmdBuffer) {
+	void BufferManager ::recordBufferMemoryBarrier(const BufferHandle &handle,
+												   vk::CommandBuffer cmdBuffer) {
+		auto &buffer = (*this) [handle];
 
-		const uint64_t id = handle.getId();
+		vk::BufferMemoryBarrier memoryBarrier(vk::AccessFlagBits::eMemoryWrite,
+											  vk::AccessFlagBits::eMemoryRead, 0, 0,
+											  buffer.m_handle, 0, buffer.m_size);
 
-		if (id >= m_buffers.size()) {
-			vkcv_log(vkcv::LogLevel::ERROR, "Invalid buffer handle");
-			return;
-		}
-
-		auto& buffer = m_buffers[id];
-		
-		vk::BufferMemoryBarrier memoryBarrier(
-			vk::AccessFlagBits::eMemoryWrite, 
-			vk::AccessFlagBits::eMemoryRead,
-			0,
-			0,
-			buffer.m_handle,
-			0,
-			buffer.m_size);
-
-		cmdBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eTopOfPipe,
-			vk::PipelineStageFlagBits::eBottomOfPipe,
-			{},
-			nullptr,
-			memoryBarrier,
-			nullptr);
+		cmdBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
+								  vk::PipelineStageFlagBits::eAllCommands, {}, nullptr,
+								  memoryBarrier, nullptr);
 	}
 
-}
+} // namespace vkcv

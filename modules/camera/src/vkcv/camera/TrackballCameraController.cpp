@@ -5,82 +5,78 @@ namespace vkcv::camera {
 
     TrackballCameraController::TrackballCameraController() {
         m_rotationActive = false;
-        m_radius = 3.0f;
         m_cameraSpeed = 2.5f;
         m_scrollSensitivity = 0.2f;
-    }
-
-    void TrackballCameraController::setRadius(const float radius) {
-        m_radius = 0.1f * (radius < 0.1f) + radius * (1 - (radius < 0.1f));
+		m_pitch = 0.0f;
+		m_yaw = 0.0f;
     }
 
     void TrackballCameraController::panView(double xOffset, double yOffset, Camera &camera) {
-        // update only if there is (valid) input
-        if (xOffset == 0.0 && yOffset == 0.0) {
-            return;
-        }
-
-        // handle yaw rotation
-        float yaw = camera.getYaw() + static_cast<float>(xOffset) * m_cameraSpeed;
-        yaw += 360.0f * (yaw < 0.0f) - 360.0f * (yaw > 360.0f);
-        camera.setYaw(yaw);
-
-        // handle pitch rotation
-        float pitch = camera.getPitch() + static_cast<float>(yOffset) * m_cameraSpeed;
-        pitch += 360.0f * (pitch < 0.0f) - 360.0f * (pitch > 360.0f);
-        camera.setPitch(pitch);
-    }
+		// update only if there is (valid) input
+		if (xOffset == 0.0 && yOffset == 0.0) {
+			return;
+		}
+	
+		m_yaw += static_cast<float>(xOffset) * 90.0f * m_cameraSpeed;
+		m_pitch += static_cast<float>(yOffset) * 90.0f * m_cameraSpeed;
+	}
 
     void TrackballCameraController::updateRadius(double offset, Camera &camera) {
         // update only if there is (valid) input
         if (offset == 0.0) {
             return;
         }
-
-        glm::vec3 cameraPosition = camera.getPosition();
-        glm::vec3 cameraCenter = camera.getCenter();
-        float radius = glm::length(cameraCenter - cameraPosition);  // get current camera radius
-        setRadius(radius - static_cast<float>(offset) * m_scrollSensitivity);
+		
+		camera.setPosition(
+				camera.getPosition() +
+				camera.getFront() * static_cast<float>(offset)
+		);
     }
 
     void TrackballCameraController::updateCamera(double deltaTime, Camera &camera) {
-		float yaw = camera.getYaw();
-		float pitch = camera.getPitch();
-		
-		const glm::vec3 yAxis = glm::vec3(0.0f, 1.0f, 0.0f);
-		const glm::vec3 xAxis = glm::vec3(1.0f, 0.0f, 0.0f);
+		const auto center = camera.getCenter();
+		const auto distance = center - camera.getPosition();
+		const float radius = glm::length(distance);
 	
-		const glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(yaw), yAxis);
-		const glm::mat4 rotationX = glm::rotate(rotationY, -glm::radians(pitch), xAxis);
-		const glm::vec3 translation = glm::vec3(
-				rotationX * glm::vec4(0.0f, 0.0f, m_radius, 0.0f)
+		glm::vec3 front = distance / radius;
+		glm::vec3 up = camera.getUp();
+		glm::vec3 left;
+	
+		const auto rotationY = glm::rotate(
+				glm::identity<glm::mat4>(),
+				glm::radians(m_yaw),
+				up
 		);
-		
-		const glm::vec3 center = camera.getCenter();
-		const glm::vec3 position = center + translation;
-		const glm::vec3 up = glm::vec3(
-				rotationX * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)
+	
+		front = glm::vec3(rotationY * glm::vec4(front, 0.0f));
+		left = glm::normalize(glm::cross(up, front));
+	
+		const auto rotationX = glm::rotate(
+				rotationY,
+				glm::radians(m_pitch),
+				left
 		);
+	
+		up = glm::vec3(rotationX * glm::vec4(up, 0.0f));
+		front = glm::normalize(glm::cross(up, left));
 		
-		camera.lookAt(position, center, up);
-    }
+		m_yaw = 0.0f;
+		m_pitch = 0.0f;
+	
+		camera.lookAt(center + front * radius, center, up);
+	}
 
     void TrackballCameraController::keyCallback(int key, int scancode, int action, int mods, Camera &camera) {}
 
     void TrackballCameraController::scrollCallback(double offsetX, double offsetY, Camera &camera) {
-        updateRadius(offsetY, camera);
+        updateRadius(offsetY * m_scrollSensitivity, camera);
     }
 
     void TrackballCameraController::mouseMoveCallback(double xoffset, double yoffset, Camera &camera) {
-        if(!m_rotationActive){
-            return;
-        }
+        xoffset *= static_cast<float>(m_rotationActive);
+        yoffset *= static_cast<float>(m_rotationActive);
 
-        float sensitivity = 0.025f;
-        xoffset *= sensitivity;
-        yoffset *= sensitivity;
-
-        panView(xoffset , yoffset, camera);
+        panView(xoffset, yoffset, camera);
     }
 
     void TrackballCameraController::mouseButtonCallback(int button, int action, int mods, Camera &camera) {
@@ -96,23 +92,23 @@ namespace vkcv::camera {
         GLFWgamepadstate gamepadState;
         glfwGetGamepadState(gamepadIndex, &gamepadState);
 
-        float sensitivity = 100.0f;
+        float sensitivity = 1.0f;
         double threshold = 0.1;
 
         // handle rotations
-        double stickRightX = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
-        double stickRightY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
+        auto stickRightX = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
+        auto stickRightY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
         
-        double rightXVal = glm::clamp((abs(stickRightX)-threshold), 0.0, 1.0)
-                * std::copysign(1.0, stickRightX) * sensitivity * frametime;
-        double rightYVal = glm::clamp((abs(stickRightY)-threshold), 0.0, 1.0)
-                * std::copysign(1.0, stickRightY) * sensitivity * frametime;
+        double rightXVal = glm::clamp((glm::abs(stickRightX)-threshold), 0.0, 1.0)
+                * glm::sign(stickRightX) * sensitivity * frametime;
+        double rightYVal = glm::clamp((glm::abs(stickRightY)-threshold), 0.0, 1.0)
+                * glm::sign(stickRightY) * sensitivity * frametime;
         panView(rightXVal, rightYVal, camera);
 
         // handle translation
-        double stickLeftY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);
-        double leftYVal = glm::clamp((abs(stickLeftY)-threshold), 0.0, 1.0)
-                * std::copysign(1.0, stickLeftY) * sensitivity * frametime;
+        auto stickLeftY = static_cast<double>(gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);
+        double leftYVal = glm::clamp((glm::abs(stickLeftY)-threshold), 0.0, 1.0)
+                * glm::sign(stickLeftY) * sensitivity * frametime;
         updateRadius(-leftYVal, camera);
     }
 }

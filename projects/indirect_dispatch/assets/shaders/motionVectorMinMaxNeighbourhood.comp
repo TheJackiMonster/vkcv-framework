@@ -1,0 +1,59 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+layout(set=0, binding=0)        uniform texture2D   inMotionMax;
+layout(set=0, binding=1)        uniform texture2D   inMotionMin;
+layout(set=0, binding=2)        uniform sampler     textureSampler;
+layout(set=0, binding=3, rg16)  uniform image2D     outMotionMaxNeighbourhood;
+layout(set=0, binding=4, rg16)  uniform image2D     outMotionMinNeighbourhood;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void main(){
+    
+    ivec2 outImageRes       = imageSize(outMotionMaxNeighbourhood);
+    ivec2 inImageRes        = textureSize(sampler2D(inMotionMax, textureSampler), 0);
+    ivec2 motionTileCoord   = ivec2(gl_GlobalInvocationID.xy);
+    
+    if(any(greaterThanEqual(motionTileCoord, outImageRes)))
+        return;
+    
+    float   velocityMax = 0;
+    vec2    motionMax   = vec2(0);
+    
+    float   velocityMin = 10000;
+    vec2    motionMin   = vec2(0);
+    
+    for(int x = -1; x <= 1; x++){
+        for(int y = -1; y <= 1; y++){
+            ivec2   sampleCoord         = motionTileCoord + ivec2(x, y);
+            
+            bool sampleIsOutsideImage = false;
+            sampleIsOutsideImage = sampleIsOutsideImage || any(greaterThanEqual(sampleCoord, inImageRes));
+            sampleIsOutsideImage = sampleIsOutsideImage || any(lessThan(sampleCoord, ivec2(0)));
+            
+            if(sampleIsOutsideImage)
+                continue;
+            
+            vec2    motionSampleMax     = texelFetch(sampler2D(inMotionMax, textureSampler), sampleCoord, 0).rg;
+            float   velocitySampleMax   = length(motionSampleMax);
+            
+            if(velocitySampleMax > velocityMax){
+                velocityMax = velocitySampleMax;
+                motionMax   = motionSampleMax;
+            }
+            
+            
+            vec2    motionSampleMin     = texelFetch(sampler2D(inMotionMin, textureSampler), sampleCoord, 0).rg;
+            float   velocitySampleMin   = length(motionSampleMin);
+            
+            if(velocitySampleMin < velocityMin){
+                velocityMin = velocitySampleMin;
+                motionMin   = motionSampleMin;
+            }
+        }
+    }
+
+    imageStore(outMotionMaxNeighbourhood, motionTileCoord, vec4(motionMax, 0, 0));
+    imageStore(outMotionMinNeighbourhood, motionTileCoord, vec4(motionMin, 0, 0));
+}

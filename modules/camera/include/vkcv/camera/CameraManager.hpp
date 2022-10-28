@@ -1,23 +1,28 @@
 #pragma once
+/**
+ * @authors Vanessa Karolek, Josch Morgenstern, Sebastian Gaida, Katharina Krämer, Tobias Frisch, Alexander Gauggel
+ * @file include/vkcv/camera/CameraManager.hpp
+ * @brief CameraManager class of the camera module for the vkcv framework. The camera manager manages several camera
+ * controller objects. Camera objects can be created and bound to a specific camera controller via this class.
+ */
 
+#include "CameraHandle.hpp"
+#include "ControllerType.hpp"
 #include "PilotCameraController.hpp"
 #include "TrackballCameraController.hpp"
 #include "CameraController.hpp"
+
 #include "vkcv/Window.hpp"
+
 #include <GLFW/glfw3.h>
 #include <functional>
 
 namespace vkcv::camera {
 
     /**
-     * @brief Used for specifying existing types of camera controllers when adding a new controller object to the
-     * #CameraManager.
+     * @addtogroup vkcv_camera
+     * @{
      */
-    enum class ControllerType {
-        NONE,
-        PILOT,
-        TRACKBALL,
-    };
 
     /**
      * @brief Used for managing an arbitrary amount of camera controllers.
@@ -34,7 +39,7 @@ namespace vkcv::camera {
         Window& m_window;
         std::vector<Camera> m_cameras;
         std::vector<ControllerType> m_cameraControllerTypes;
-        uint32_t m_activeCameraIndex;
+        uint64_t m_activeCameraIndex;
 
         PilotCameraController m_pilotController;
         TrackballCameraController m_trackController;
@@ -98,26 +103,11 @@ namespace vkcv::camera {
         void gamepadCallback(int gamepadIndex);
 	
 		/**
-		 * @brief Gets a camera controller object of specified @p controllerType.
+		 * @brief Returns a camera controller object of specified @p controllerType.
 		 * @param[in] controllerType The type of the camera controller.
 		 * @return The specified camera controller object.
 		 */
 		CameraController& getControllerByType(ControllerType controllerType);
-        
-        /**
-         * @briof A method to get the currently active controller for the active camera.
-         * @return Reference to the active #CameraController
-         */
-        CameraController& getActiveController();
-
-        /**
-         * @brief Returns 'true' if the camera has a controller.
-         * 
-         * @param cameraIndex 
-         * @return true 
-         * @return false 
-         */
-        bool cameraHasController(uint32_t cameraIndex);
 
     public:
 
@@ -125,7 +115,7 @@ namespace vkcv::camera {
          * @brief The constructor of the #CameraManager.
          * @param[in] window The window.
          */
-        CameraManager(Window &window);
+        explicit CameraManager(Window &window);
 
         /**
          * @brief The destructor of the #CameraManager. Destroying the #CameraManager leads to deletion of all stored
@@ -137,67 +127,74 @@ namespace vkcv::camera {
          * @brief Adds a new camera object to the #CameraManager and binds it to a camera controller object of specified
          * @p controllerType.
          * @param[in] controllerType The type of the camera controller.
-         * @return The index of the newly created camera object.
+         * @return The handle of the newly created camera object.
          */
-		uint32_t addCamera(ControllerType controllerType = ControllerType::NONE);
+		CameraHandle addCamera(ControllerType controllerType = ControllerType::NONE);
 	
 		/**
 		 * @brief Adds a new camera object to the #CameraManager and binds it to a camera controller object of specified
 		 * @p controllerType.
 		 * @param[in] controllerType The type of the camera controller.
 		 * @param[in] camera The new camera object.
-		 * @return The index of the newly bound camera object.
+		 * @return The handle of the newly bound camera object.
 		 */
-		uint32_t addCamera(ControllerType controllerType, const Camera& camera);
+		CameraHandle addCamera(ControllerType controllerType, const Camera& camera);
 
         /**
-         * @brief Gets the stored camera object located at @p cameraIndex.
-         * @param[in] cameraIndex The camera index.
-         * @return The camera object at @p cameraIndex.
-         * @throws std::runtime_error If @p cameraIndex is not a valid camera index.
+         * @brief Returns the stored camera object located by @p cameraHandle.
+         * @param[in] cameraHandle The camera handle.
+         * @return The camera object by @p cameraHandle.
+         * @throws std::runtime_error If @p cameraHandle is not a valid camera handle.
          */
-        Camera& getCamera(uint32_t cameraIndex);
+		[[nodiscard]]
+        Camera& getCamera(const CameraHandle& cameraHandle);
 
         /**
-         * @brief Gets the stored camera object set as the active camera.
+         * @brief Returns the stored camera object set as the active camera.
          * @return The active camera.
          */
+		[[nodiscard]]
         Camera& getActiveCamera();
 
         /**
-         * @brief Sets the stored camera object located at @p cameraIndex as the active camera.
-         * @param[in] cameraIndex The camera index.
-         * @throws std::runtime_error If @p cameraIndex is not a valid camera index.
+         * @brief Sets the stored camera object located at @p cameraHandle as the active camera.
+         * @param[in] cameraHandle The camera handle.
+         * @throws std::runtime_error If @p cameraHandle is not a valid camera handle.
          */
-        void setActiveCamera(uint32_t cameraIndex);
+        void setActiveCamera(const CameraHandle& cameraHandle);
 
         /**
-         * @brief Gets the index of the stored active camera object.
-         * @return The active camera index.
+         * @brief Returns the handle of the stored active camera object.
+         * @return The active camera handle.
          */
-        uint32_t getActiveCameraIndex() const;
+		[[nodiscard]]
+		CameraHandle getActiveCameraHandle() const;
 
         /**
-         * @brief Binds a stored camera object located at @p cameraIndex to a camera controller of specified
+         * @brief Binds a stored camera object located by @p cameraHandle to a camera controller of specified
          * @p controllerType.
-         * @param[in] cameraIndex The camera index.
+         * @param[in] cameraHandle The camera handle.
          * @param[in] controllerType The type of the camera controller.
-         * @throws std::runtime_error If @p cameraIndex is not a valid camera index.
+         * @throws std::runtime_error If @p cameraHandle is not a valid camera handle.
          */
-        void setControllerType(uint32_t cameraIndex, ControllerType controllerType);
+        void setControllerType(const CameraHandle& cameraHandle, ControllerType controllerType);
 
         /**
-         * @brief Gets the currently bound camera controller type of the stored camera object located at @p cameraIndex.
-         * @param[in] cameraIndex The camera index.
+         * @brief Returns the currently bound camera controller type of the stored camera object located by @p cameraHandle.
+         * @param[in] cameraHandle The camera handle.
          * @return The type of the camera controller of the specified camera object.
-         * @throws std::runtime_error If @p cameraIndex is not a valid camera index.
+         * @throws std::runtime_error If @p cameraHandle is not a valid camera handle.
          */
-        ControllerType getControllerType(uint32_t cameraIndex);
-        
+		[[nodiscard]]
+        ControllerType getControllerType(const CameraHandle& cameraHandle);
+
         /**
          * @brief Updates all stored camera controllers in respect to @p deltaTime.
          * @param[in] deltaTime The time that has passed since last update.
          */
         void update(double deltaTime);
     };
+
+    /** @} */
+
 }

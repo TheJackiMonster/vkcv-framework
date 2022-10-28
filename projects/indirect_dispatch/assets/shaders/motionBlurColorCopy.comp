@@ -1,0 +1,29 @@
+#version 440
+#extension GL_GOOGLE_include_directive : enable
+
+#include "motionBlurConfig.inc"
+#include "motionBlurWorkTile.inc"
+
+layout(set=0, binding=0)                    uniform texture2D   inColor;
+layout(set=0, binding=1)                    uniform sampler     nearestSampler;
+layout(set=0, binding=2, r11f_g11f_b10f)    uniform image2D     outImage;
+
+layout(set=0, binding=3) buffer WorkTileBuffer {
+    WorkTiles workTiles;
+};
+
+layout(local_size_x = motionTileSize, local_size_y = motionTileSize, local_size_z = 1) in;
+
+void main(){
+
+    uint    tileIndex       = gl_WorkGroupID.x;
+    ivec2   tileCoordinates = workTiles.tileXY[tileIndex];
+    ivec2   coordinate      = ivec2(tileCoordinates * motionTileSize + gl_LocalInvocationID.xy);
+    
+    if(any(greaterThanEqual(coordinate, imageSize(outImage))))
+        return;
+    
+    vec3 color = texelFetch(sampler2D(inColor, nearestSampler), coordinate, 0).rgb;
+    
+    imageStore(outImage, coordinate, vec4(color, 0.f));
+}

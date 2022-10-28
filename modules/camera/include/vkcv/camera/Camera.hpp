@@ -1,10 +1,24 @@
 #pragma once
+/**
+ * @authors Vanessa Karolek, Josch Morgenstern, Sebastian Gaida, Katharina Krämer, Tobias Frisch, Alexander Gauggel
+ * @file include/vkcv/camera/Camera.hpp
+ * @brief Camera class of the camera module for the vkcv framework.
+ */
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
+#include <glm/vec3.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/mat4x4.hpp>
 
 namespace vkcv::camera {
+
+    /**
+     * @defgroup vkcv_camera Camera Module
+     * A module to manage intrinsic and extrinsic parameters with camera instances.
+     * @{
+     */
 
     /**
      * @brief Used to create a camera which governs the view and projection matrices.
@@ -20,9 +34,6 @@ namespace vkcv::camera {
 		glm::vec3 m_up;
         glm::vec3 m_position;
         glm::vec3 m_center;
-
-        float m_pitch;
-        float m_yaw;
 	
 		/**
 		 * @brief Sets the view matrix of the camera to @p view
@@ -58,9 +69,10 @@ namespace vkcv::camera {
         void setPerspective(float fov, float ratio, float near, float far);
 
         /**
-         * @brief Gets the view matrix of the camera
+         * @brief Returns the view matrix of the camera
          * @return The view matrix of the camera
          */
+		[[nodiscard]]
         const glm::mat4& getView() const;
 
         /**
@@ -72,28 +84,31 @@ namespace vkcv::camera {
         void lookAt(const glm::vec3& position, const glm::vec3& center, const glm::vec3& up);
 
         /**
-         * @brief Gets the current projection of the camera
+         * @brief Returns the current projection of the camera
          * @return The current projection matrix
          */
+		[[nodiscard]]
         const glm::mat4& getProjection() const;
 
         /**
-         * @brief Gets the model-view-projection matrix of the camera with y-axis-correction applied
+         * @brief Returns the model-view-projection matrix of the camera with y-axis-correction applied
          * @return The model-view-projection matrix
          */
+		[[nodiscard]]
         glm::mat4 getMVP() const;
 
         /**
-         * @brief Gets the near and far bounds of the view frustum of the camera.
+         * @brief Returns the near and far bounds of the view frustum of the camera.
          * @param[out] near The near bound of the view frustum
          * @param[out] far The far bound of the view frustum
          */
         void getNearFar(float &near, float &far) const;
 
         /**
-         * @brief Gets the current field of view of the camera in radians
+         * @brief Returns the current field of view of the camera in radians
          * @return[in] The current field of view in radians
          */
+		[[nodiscard]]
         float getFov() const;
 
         /**
@@ -103,9 +118,10 @@ namespace vkcv::camera {
         void setFov(float fov);
 
         /**
-         * @brief Gets the current aspect ratio of the camera
+         * @brief Returns the current aspect ratio of the camera
          * @return The current aspect ratio of the camera
          */
+		[[nodiscard]]
         float getRatio() const;
 
         /**
@@ -122,9 +138,10 @@ namespace vkcv::camera {
         void setNearFar(float near, float far);
 
         /**
-         * @brief Gets the current front vector of the camera in world space
+         * @brief Returns the current front vector of the camera in world space
          * @return The current front vector of the camera
          */
+		[[nodiscard]]
         glm::vec3 getFront() const;
         
         /**
@@ -134,9 +151,10 @@ namespace vkcv::camera {
         void setFront(const glm::vec3& front);
 
         /**
-         * @brief Gets the current position of the camera in world space
+         * @brief Returns the current position of the camera in world space
          * @return The current position of the camera in world space
          */
+		[[nodiscard]]
         const glm::vec3& getPosition() const;
 
         /**
@@ -146,9 +164,10 @@ namespace vkcv::camera {
         void setPosition( const glm::vec3& position );
 
         /**
-         * @brief Gets the center point.
+         * @brief Returns the center point.
          * @return The center point.
          */
+		[[nodiscard]]
         const glm::vec3& getCenter() const;
 
         /**
@@ -156,11 +175,26 @@ namespace vkcv::camera {
          * @param[in] center The new center point.
          */
         void setCenter(const glm::vec3& center);
+        
+        /**
+         * @brief Returns the angles of the camera.
+         * @param[out] pitch The pitch value in radians
+         * @param[out] yaw The yaw value in radians
+         */
+		void getAngles(float& pitch, float& yaw);
+  
+		/**
+		 * @brief Sets the angles of the camera.
+		 * @param pitch The new pitch value in radians
+		 * @param yaw The new yaw value in radians
+		 */
+		void setAngles(float pitch, float yaw);
 
         /**
-         * @brief Gets the pitch value of the camera in degrees.
+         * @brief Returns the pitch value of the camera in degrees.
          * @return The pitch value in degrees.
          */
+		[[nodiscard]]
         float getPitch() const;
 
         /**
@@ -170,9 +204,10 @@ namespace vkcv::camera {
         void setPitch(float pitch);
 
         /**
-         * @brief Gets the yaw value of the camera in degrees.
+         * @brief Returns the yaw value of the camera in degrees.
          * @return The yaw value in degrees.
          */
+		[[nodiscard]]
         float getYaw() const;
 
         /**
@@ -182,9 +217,10 @@ namespace vkcv::camera {
         void setYaw(float yaw);
 
         /**
-         * @brief Gets the up vector.
+         * @brief Returns the up vector.
          * @return The up vector.
          */
+		[[nodiscard]]
         const glm::vec3& getUp() const;
 
         /**
@@ -192,6 +228,9 @@ namespace vkcv::camera {
          * @param[in] up The new up vector.
          */
         void setUp(const glm::vec3 &up);
+		
     };
+
+    /** @} */
 
 }
