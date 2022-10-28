@@ -1,11 +1,10 @@
 #include <iostream>
 #include <vkcv/Core.hpp>
 #include <vkcv/Image.hpp>
+#include <vkcv/Interpolation.hpp>
 #include <vkcv/Pass.hpp>
 #include <vkcv/Sampler.hpp>
 #include <vkcv/camera/CameraManager.hpp>
-#include <vkcv/camera/InterpolationLinear.hpp>
-#include <chrono>
 
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -115,14 +114,14 @@ int main(int argc, const char** argv) {
 	cameraManager.getCamera(camHandle1).setPosition(glm::vec3(0, 0, -3));
 	cameraManager.getCamera(camHandle2).setPosition(glm::vec3(0, 0, -3));
 	
-	vkcv::camera::InterpolationLinear interp (cameraManager.getCamera(camHandle0));
+	auto interp = vkcv::linearInterpolation<glm::vec3, float>();
 	
-	interp.addPosition(glm::vec3(5,5,-5));
-	interp.addPosition(glm::vec3(0,5,-5));
-	interp.addPosition(glm::vec3(0,-3,-3));
-	interp.addPosition(glm::vec3(3,0,-6));
-	interp.addPosition(glm::vec3(5,5,5));
-	interp.addPosition(glm::vec3(5,5,-5));
+	interp.add( 0.0f, glm::vec3(+5, +5, -5));
+	interp.add( 2.0f, glm::vec3(+0, +5, -5));
+	interp.add( 4.0f, glm::vec3(+0, -3, -3));
+	interp.add( 6.0f, glm::vec3(+3, +0, -6));
+	interp.add( 8.0f, glm::vec3(+5, +5, +5));
+	interp.add(10.0f, glm::vec3(+5, +5, -5));
 	
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
 				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
@@ -139,7 +138,9 @@ int main(int argc, const char** argv) {
 		}
 		
 		cameraManager.update(dt);
-		interp.updateCamera();
+		cameraManager.getCamera(camHandle0).setPosition(
+				interp(static_cast<float>(std::fmod<double>(t, 10.0)))
+		);
 		
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();
 

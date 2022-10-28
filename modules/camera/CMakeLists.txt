@@ -18,8 +18,6 @@ set(vkcv_camera_sources
 		${vkcv_camera_source}/vkcv/camera/PilotCameraController.cpp
 		${vkcv_camera_include}/vkcv/camera/TrackballCameraController.hpp
 		${vkcv_camera_source}/vkcv/camera/TrackballCameraController.cpp
-		${vkcv_camera_include}/vkcv/camera/InterpolationLinear.hpp
-		${vkcv_camera_source}/vkcv/camera/InterpolationLinear.cpp
 )
 
 # adding source files to the project

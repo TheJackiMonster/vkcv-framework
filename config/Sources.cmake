@@ -54,6 +54,8 @@ set(vkcv_sources
 		${vkcv_include}/vkcv/PipelineConfig.hpp
 		${vkcv_source}/vkcv/PipelineConfig.cpp
 		
+		${vkcv_include}/vkcv/Interpolation.hpp
+		
 		${vkcv_include}/vkcv/Logger.hpp
 		
 		${vkcv_include}/vkcv/ShaderStage.hpp
