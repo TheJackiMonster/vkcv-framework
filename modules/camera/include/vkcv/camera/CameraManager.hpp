@@ -108,12 +108,6 @@ namespace vkcv::camera {
 		 * @return The specified camera controller object.
 		 */
 		CameraController& getControllerByType(ControllerType controllerType);
-        
-        /**
-         * @briof A method to get the currently active controller for the active camera.
-         * @return Reference to the active #CameraController
-         */
-        CameraController& getActiveController();
 
     public:
 
@@ -152,12 +146,14 @@ namespace vkcv::camera {
          * @return The camera object by @p cameraHandle.
          * @throws std::runtime_error If @p cameraHandle is not a valid camera handle.
          */
+		[[nodiscard]]
         Camera& getCamera(const CameraHandle& cameraHandle);
 
         /**
          * @brief Returns the stored camera object set as the active camera.
          * @return The active camera.
          */
+		[[nodiscard]]
         Camera& getActiveCamera();
 
         /**
@@ -171,6 +167,7 @@ namespace vkcv::camera {
          * @brief Returns the handle of the stored active camera object.
          * @return The active camera handle.
          */
+		[[nodiscard]]
 		CameraHandle getActiveCameraHandle() const;
 
         /**
@@ -188,6 +185,7 @@ namespace vkcv::camera {
          * @return The type of the camera controller of the specified camera object.
          * @throws std::runtime_error If @p cameraHandle is not a valid camera handle.
          */
+		[[nodiscard]]
         ControllerType getControllerType(const CameraHandle& cameraHandle);
 
         /**

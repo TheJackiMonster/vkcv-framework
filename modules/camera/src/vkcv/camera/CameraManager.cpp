@@ -41,53 +41,78 @@ namespace vkcv::camera {
         }
     }
 
-    void CameraManager::mouseButtonCallback(int button, int action, int mods){
-        if(button == GLFW_MOUSE_BUTTON_2 && action == GLFW_PRESS){
+    void CameraManager::mouseButtonCallback(int button, int action, int mods) {
+		const ControllerType type = getControllerType(getActiveCameraHandle());
+		
+        if ((button == GLFW_MOUSE_BUTTON_2) && (action == GLFW_PRESS)) {
             glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        }
-        else if(button == GLFW_MOUSE_BUTTON_2 && action == GLFW_RELEASE){
+        } else
+		if ((button == GLFW_MOUSE_BUTTON_2) && (action == GLFW_RELEASE)) {
             glfwSetInputMode(m_window.getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
-		getActiveController().mouseButtonCallback(button, action, mods, getActiveCamera());
+	
+		if (type == ControllerType::NONE) {
+			return;
+		}
+		
+		getControllerByType(type).mouseButtonCallback(button, action, mods, getActiveCamera());
     }
 
-    void CameraManager::mouseMoveCallback(double x, double y){
+    void CameraManager::mouseMoveCallback(double x, double y) {
+		const ControllerType type = getControllerType(getActiveCameraHandle());
+		
         auto xoffset = static_cast<float>(x - m_lastX) / m_window.getWidth();
 		auto yoffset = static_cast<float>(y - m_lastY) / m_window.getHeight();
         m_lastX = x;
         m_lastY = y;
-		getActiveController().mouseMoveCallback(xoffset, yoffset, getActiveCamera());
+	
+		if (type == ControllerType::NONE) {
+			return;
+		}
+		
+		getControllerByType(type).mouseMoveCallback(xoffset, yoffset, getActiveCamera());
     }
 
     void CameraManager::scrollCallback(double offsetX, double offsetY) {
-		getActiveController().scrollCallback(offsetX, offsetY, getActiveCamera());
+		const ControllerType type = getControllerType(getActiveCameraHandle());
+	
+		if (type == ControllerType::NONE) {
+			return;
+		}
+		
+		getControllerByType(type).scrollCallback(offsetX, offsetY, getActiveCamera());
     }
 
     void CameraManager::keyCallback(int key, int scancode, int action, int mods)  {
-        switch (action) {
-            case GLFW_RELEASE:
-                switch (key) {
-                    case GLFW_KEY_TAB:
-                        if (m_activeCameraIndex + 1 == m_cameras.size()) {
-                            m_activeCameraIndex = 0;
-                        }
-                        else {
-                            m_activeCameraIndex++;
-                        }
-                        return;
-                    case GLFW_KEY_ESCAPE:
-                        glfwSetWindowShouldClose(m_window.getWindow(), 1);
-                        return;
-					default:
-						break;
-                }
-            default:
-				getActiveController().keyCallback(key, scancode, action, mods, getActiveCamera());
-                break;
+		const ControllerType type = getControllerType(getActiveCameraHandle());
+		
+        if (action == GLFW_RELEASE) {
+			switch (key) {
+				case GLFW_KEY_TAB:
+					if (m_activeCameraIndex + 1 == m_cameras.size()) {
+						m_activeCameraIndex = 0;
+					} else {
+						m_activeCameraIndex++;
+					}
+					return;
+				case GLFW_KEY_ESCAPE:
+					glfwSetWindowShouldClose(m_window.getWindow(), 1);
+					return;
+				default:
+					break;
+			}
         }
+		
+		if (type == ControllerType::NONE) {
+			return;
+		}
+	
+		getControllerByType(type).keyCallback(key, scancode, action, mods, getActiveCamera());
     }
 
     void CameraManager::gamepadCallback(int gamepadIndex) {
+		const ControllerType type = getControllerType(getActiveCameraHandle());
+		
         // handle camera switching
         GLFWgamepadstate gamepadState;
         glfwGetGamepadState(gamepadIndex, &gamepadState);
@@ -96,22 +121,23 @@ namespace vkcv::camera {
         if (time - m_inputDelayTimer > 0.2) {
             int switchDirection = gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] - gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT];
             m_activeCameraIndex += switchDirection;
-            if (std::greater<int>{}(m_activeCameraIndex, m_cameras.size() - 1)) {
+            
+			if (std::greater<int>{}(m_activeCameraIndex, m_cameras.size() - 1)) {
                 m_activeCameraIndex = 0;
-            }
-            else if (std::less<int>{}(m_activeCameraIndex, 0)) {
+            } else
+			if (std::less<int>{}(m_activeCameraIndex, 0)) {
                 m_activeCameraIndex = m_cameras.size() - 1;
             }
+			
             uint32_t triggered = abs(switchDirection);
             m_inputDelayTimer = (1-triggered)*m_inputDelayTimer + triggered * time; // Only reset timer, if dpad was pressed - is this cheaper than if-clause?
         }
-
-        getActiveController().gamepadCallback(gamepadIndex, getActiveCamera(), m_frameTime);     // handle camera rotation, translation
-    }
-
-    CameraController& CameraManager::getActiveController() {
-    	const ControllerType type = getControllerType(getActiveCameraHandle());
-    	return getControllerByType(type);
+		
+		if (type == ControllerType::NONE) {
+			return;
+		}
+	
+		getControllerByType(type).gamepadCallback(gamepadIndex, getActiveCamera(), m_frameTime);     // handle camera rotation, translation
     }
 	
 	CameraHandle CameraManager::addCamera(ControllerType controllerType) {
@@ -185,9 +211,17 @@ namespace vkcv::camera {
     }
 
     void CameraManager::update(double deltaTime) {
-        m_frameTime = deltaTime;
+		const ControllerType type = getControllerType(getActiveCameraHandle());
+		
+		if (type != ControllerType::NONE) {
+			m_frameTime = deltaTime;
+		} else {
+			m_frameTime = 0.0;
+			return;
+		}
+		
         if (glfwGetWindowAttrib(m_window.getWindow(), GLFW_FOCUSED) == GLFW_TRUE) {
-            getActiveController().updateCamera(deltaTime, getActiveCamera());
+			getControllerByType(type).updateCamera(m_frameTime, getActiveCamera());
         }
 	}
 	

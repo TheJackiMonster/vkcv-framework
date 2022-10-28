@@ -22,7 +22,6 @@ namespace vkcv::camera {
      * PilotCameraController.
      */
     class CameraController {
-
     public:
 
         /**

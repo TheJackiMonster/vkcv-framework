@@ -19,8 +19,7 @@ namespace vkcv::camera {
 	enum class ControllerType {
 		NONE,
 		PILOT,
-		TRACKBALL,
-		TRACE
+		TRACKBALL
 	};
 	
 	/** @} */
