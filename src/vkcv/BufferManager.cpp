@@ -129,6 +129,10 @@ namespace vkcv {
 			usageFlags = vk::BufferUsageFlagBits::eStorageBuffer
 						| vk::BufferUsageFlagBits::eIndirectBuffer;
 			break;
+		case BufferType::SHADER_BINDING:
+			usageFlags = vk::BufferUsageFlagBits::eShaderBindingTableKHR
+						| vk::BufferUsageFlagBits::eShaderDeviceAddressKHR;
+			break;
 		default:
 			vkcv_log(LogLevel::WARNING, "Unknown buffer type");
 			break;

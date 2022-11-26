@@ -17,6 +17,7 @@ namespace vkcv {
 		STORAGE,
 		STAGING,
 		INDIRECT,
+		SHADER_BINDING,
 
 		UNKNOWN
 	};

@@ -73,6 +73,9 @@ set(vkcv_sources
 
 		${vkcv_source}/vkcv/GraphicsPipelineManager.hpp
 		${vkcv_source}/vkcv/GraphicsPipelineManager.cpp
+		
+		${vkcv_source}/vkcv/RayTracingPipelineManager.hpp
+		${vkcv_source}/vkcv/RayTracingPipelineManager.cpp
         
         ${vkcv_include}/vkcv/QueueManager.hpp
         ${vkcv_source}/vkcv/QueueManager.cpp
@@ -140,6 +143,9 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/VertexData.cpp
 		
 		${vkcv_include}/vkcv/Result.hpp
+		
+		${vkcv_include}/vkcv/RayTracingPipelineConfig.hpp
+		${vkcv_source}/vkcv/RayTracingPipelineConfig.cpp
 )
 
 if (BUILD_CLANG_FORMAT)

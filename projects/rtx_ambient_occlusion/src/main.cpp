@@ -80,15 +80,11 @@ int main(int argc, const char** argv) {
 	    glm::vec4 camera_up;         // for computing ray direction
 	    glm::vec4 camera_forward;    // for computing ray direction
 	};
-
-	uint32_t pushConstantSize = sizeof(RaytracingPushConstantData);
-
-    rtxModule.createRTXPipelineAndLayout(pushConstantSize, descriptorSetLayoutHandles, rtxShaderProgram);
-
-	vk::Pipeline rtxPipeline = rtxModule.getPipeline();
-	vk::PipelineLayout rtxPipelineLayout = rtxModule.getPipelineLayout();
-
-	vkcv::rtx::ShaderBindingTableRegions rtxRegions = rtxModule.createRegions();
+	
+	auto rtxPipeline = core.createRayTracingPipeline(vkcv::RayTracingPipelineConfig(
+			rtxShaderProgram,
+			descriptorSetLayoutHandles
+	));
 
 	vkcv::ImageHandle depthBuffer;
 
@@ -133,14 +129,11 @@ int main(int argc, const char** argv) {
 		core.recordRayGenerationToCmdStream(
 			cmdStream,
 			rtxPipeline,
-			rtxPipelineLayout,
-			rtxRegions.rgenRegion,
-			rtxRegions.rmissRegion,
-			rtxRegions.rchitRegion,
-			rtxRegions.rcallRegion,
+			vkcv::DispatchSize(swapchainWidth, swapchainHeight),
 			{ vkcv::useDescriptorSet(0, rtxShaderDescriptorSet) },
 			pushConstantsRTX,
-			windowHandle);
+			windowHandle
+		);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

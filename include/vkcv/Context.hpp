@@ -58,6 +58,13 @@ namespace vkcv {
 		 * @return Vulkan device
 		 */
 		[[nodiscard]] const vk::Device &getDevice() const;
+		
+		/**
+		 * @brief Returns a dynamic dispatch loader of the context.
+		 *
+		 * @return Dynamic dispatch loader
+		 */
+		[[nodiscard]] const vk::DispatchLoaderDynamic &getDispatchLoaderDynamic() const;
 
 		/**
 		 * @brief Returns the feature manager of the context.
@@ -113,6 +120,7 @@ namespace vkcv {
 		vk::Instance m_Instance;
 		vk::PhysicalDevice m_PhysicalDevice;
 		vk::Device m_Device;
+		vk::DispatchLoaderDynamic m_DispatchDynamic;
 		FeatureManager m_FeatureManager;
 		QueueManager m_QueueManager;
 		vma::Allocator m_Allocator;

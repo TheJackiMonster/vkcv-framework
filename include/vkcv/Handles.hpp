@@ -130,6 +130,16 @@ namespace vkcv {
 	private:
 		using Handle::Handle;
 	};
+	
+	/**
+	 * @brief Handle class for ray tracing pipelines.
+	 */
+	class RayTracingPipelineHandle : public Handle {
+		friend class RayTracingPipelineManager;
+	
+	private:
+		using Handle::Handle;
+	};
 
 	/**
 	 * @brief Handle class for descriptor set layouts.

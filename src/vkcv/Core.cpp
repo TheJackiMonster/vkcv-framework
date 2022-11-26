@@ -15,6 +15,7 @@
 #include "GraphicsPipelineManager.hpp"
 #include "ImageManager.hpp"
 #include "PassManager.hpp"
+#include "RayTracingPipelineManager.hpp"
 #include "SamplerManager.hpp"
 #include "WindowManager.hpp"
 #include "vkcv/BlitDownsampler.hpp"
@@ -90,6 +91,7 @@ namespace vkcv {
 		m_Context(std::move(context)), m_PassManager(std::make_unique<PassManager>()),
 		m_GraphicsPipelineManager(std::make_unique<GraphicsPipelineManager>()),
 		m_ComputePipelineManager(std::make_unique<ComputePipelineManager>()),
+		m_RayTracingPipelineManager(std::make_unique<RayTracingPipelineManager>()),
 		m_DescriptorSetLayoutManager(std::make_unique<DescriptorSetLayoutManager>()),
 		m_DescriptorSetManager(std::make_unique<DescriptorSetManager>()),
 		m_BufferManager(std::make_unique<BufferManager>()),
@@ -108,6 +110,7 @@ namespace vkcv {
 		m_PassManager->init(*this);
 		m_GraphicsPipelineManager->init(*this);
 		m_ComputePipelineManager->init(*this);
+		m_RayTracingPipelineManager->init(*this);
 		m_DescriptorSetLayoutManager->init(*this);
 		m_DescriptorSetManager->init(*this, *m_DescriptorSetLayoutManager);
 		m_BufferManager->init(*this);
@@ -145,6 +148,13 @@ namespace vkcv {
 		}
 
 		return m_ComputePipelineManager->createComputePipeline(config.getShaderProgram(), layouts);
+	}
+	
+	RayTracingPipelineHandle Core::createRayTracingPipeline(
+			const vkcv::RayTracingPipelineConfig &config) {
+		return m_RayTracingPipelineManager->createPipeline(config,
+														   *m_DescriptorSetLayoutManager,
+														   *m_BufferManager);
 	}
 
 	PassHandle Core::createPass(const PassConfig &config) {
@@ -624,46 +634,80 @@ namespace vkcv {
 	}
 
 	void Core::recordRayGenerationToCmdStream(
-		CommandStreamHandle cmdStreamHandle, vk::Pipeline rtxPipeline,
-		vk::PipelineLayout rtxPipelineLayout, vk::StridedDeviceAddressRegionKHR rgenRegion,
-		vk::StridedDeviceAddressRegionKHR rmissRegion,
-		vk::StridedDeviceAddressRegionKHR rchitRegion,
-		vk::StridedDeviceAddressRegionKHR rcallRegion,
+		const CommandStreamHandle &cmdStreamHandle,
+		const RayTracingPipelineHandle &rayTracingPipeline,
+		const DispatchSize &dispatchSize,
 		const std::vector<DescriptorSetUsage> &descriptorSetUsages,
-		const PushConstants &pushConstants, const WindowHandle &windowHandle) {
+		const PushConstants &pushConstants,
+		const vkcv::WindowHandle &windowHandle) {
+		
+		const SwapchainHandle swapchainHandle = getWindow(windowHandle).getSwapchain();
+		
+		const vk::Pipeline pipeline = m_RayTracingPipelineManager->getVkPipeline(
+				rayTracingPipeline
+		);
+		
+		const vk::PipelineLayout pipelineLayout = m_RayTracingPipelineManager->getVkPipelineLayout(
+				rayTracingPipeline
+		);
+		
+		const vk::StridedDeviceAddressRegionKHR *rayGenAddress = (
+				m_RayTracingPipelineManager->getRayGenShaderBindingTableAddress(rayTracingPipeline)
+		);
+		
+		const vk::StridedDeviceAddressRegionKHR *rayMissAddress = (
+				m_RayTracingPipelineManager->getMissShaderBindingTableAddress(rayTracingPipeline)
+		);
+		
+		const vk::StridedDeviceAddressRegionKHR *rayHitAddress = (
+				m_RayTracingPipelineManager->getHitShaderBindingTableAddress(rayTracingPipeline)
+		);
+		
+		const vk::StridedDeviceAddressRegionKHR *rayCallAddress = (
+				m_RayTracingPipelineManager->getCallShaderBindingTableAddress(rayTracingPipeline)
+		);
 
 		auto submitFunction = [&](const vk::CommandBuffer &cmdBuffer) {
-			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, rtxPipeline);
+			cmdBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, pipeline);
+			
 			for (const auto &usage : descriptorSetUsages) {
 				cmdBuffer.bindDescriptorSets(
-					vk::PipelineBindPoint::eRayTracingKHR, rtxPipelineLayout, usage.location,
+					vk::PipelineBindPoint::eRayTracingKHR,
+					pipelineLayout,
+					usage.location,
 					{ m_DescriptorSetManager->getDescriptorSet(usage.descriptorSet).vulkanHandle },
-					usage.dynamicOffsets);
+					usage.dynamicOffsets
+				);
 			}
 
 			if (pushConstants.getSizePerDrawcall() > 0) {
 				cmdBuffer.pushConstants(
-					rtxPipelineLayout,
-					(vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR
-					 | vk::ShaderStageFlagBits::eRaygenKHR), // TODO: add Support for eAnyHitKHR,
-															 // eCallableKHR, eIntersectionKHR
-					0, pushConstants.getSizePerDrawcall(), pushConstants.getData());
+					pipelineLayout,
+					vk::ShaderStageFlagBits::eAll,
+					0,
+					pushConstants.getSizePerDrawcall(),
+					pushConstants.getData()
+				);
 			}
-
-			auto m_rtxDispatcher = vk::DispatchLoaderDynamic(
-				(PFN_vkGetInstanceProcAddr)m_Context.getInstance().getProcAddr(
-					"vkGetInstanceProcAddr"));
-			m_rtxDispatcher.init(m_Context.getInstance());
-
-			cmdBuffer.traceRaysKHR(&rgenRegion, &rmissRegion, &rchitRegion, &rcallRegion,
-								   getWindow(windowHandle).getWidth(),
-								   getWindow(windowHandle).getHeight(), 1, m_rtxDispatcher);
+			
+			cmdBuffer.traceRaysKHR(
+					rayGenAddress,
+					rayMissAddress,
+					rayHitAddress,
+					rayCallAddress,
+					dispatchSize.x(),
+					dispatchSize.y(),
+					dispatchSize.z(),
+					m_Context.getDispatchLoaderDynamic()
+			);
 		};
+		
 		recordCommandsToStream(cmdStreamHandle, submitFunction, nullptr);
 	}
 
 	void Core::recordComputeDispatchToCmdStream(
-		const CommandStreamHandle &cmdStreamHandle, const ComputePipelineHandle &computePipeline,
+		const CommandStreamHandle &cmdStreamHandle,
+		const ComputePipelineHandle &computePipeline,
 		const DispatchSize &dispatchSize,
 		const std::vector<DescriptorSetUsage> &descriptorSetUsages,
 		const PushConstants &pushConstants) {

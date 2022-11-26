@@ -100,7 +100,7 @@ namespace vkcv {
 		}
 	}
 
-	vk::ShaderStageFlagBits shaderStageToVkShaderStage(ShaderStage stage) {
+	static vk::ShaderStageFlagBits shaderStageToVkShaderStage(ShaderStage stage) {
 		switch (stage) {
 		case ShaderStage::VERTEX:
 			return vk::ShaderStageFlagBits::eVertex;
@@ -123,10 +123,12 @@ namespace vkcv {
 			return vk::ShaderStageFlagBits::eAll;
 		}
 	}
-
-	bool createPipelineShaderStageCreateInfo(const ShaderProgram &shaderProgram, ShaderStage stage,
-											 vk::Device device,
-											 vk::PipelineShaderStageCreateInfo* outCreateInfo) {
+	
+	static bool createPipelineShaderStageCreateInfo(
+			const ShaderProgram &shaderProgram,
+			ShaderStage stage,
+			vk::Device device,
+			vk::PipelineShaderStageCreateInfo* outCreateInfo) {
 
 		assert(outCreateInfo);
 		std::vector<uint32_t> code = shaderProgram.getShaderBinary(stage);
@@ -152,7 +154,7 @@ namespace vkcv {
 	 * @param existsVertexShader
 	 * @param config
 	 */
-	void fillVertexInputDescription(
+	static void fillVertexInputDescription(
 		std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
 		std::vector<vk::VertexInputBindingDescription> &vertexBindingDescriptions,
 		const bool existsVertexShader, const GraphicsPipelineConfig &config) {
@@ -186,7 +188,7 @@ namespace vkcv {
 	 * @param vertexBindingDescriptions
 	 * @return Pipeline Vertex Input State Create Info Struct
 	 */
-	vk::PipelineVertexInputStateCreateInfo createPipelineVertexInputStateCreateInfo(
+	static vk::PipelineVertexInputStateCreateInfo createPipelineVertexInputStateCreateInfo(
 		std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
 		std::vector<vk::VertexInputBindingDescription> &vertexBindingDescriptions) {
 
@@ -201,15 +203,15 @@ namespace vkcv {
 	 * @param config provides data for primitive topology.
 	 * @return Pipeline Input Assembly State Create Info Struct
 	 */
-	vk::PipelineInputAssemblyStateCreateInfo
+	static vk::PipelineInputAssemblyStateCreateInfo
 	createPipelineInputAssemblyStateCreateInfo(const GraphicsPipelineConfig &config) {
 		vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo(
 			{}, primitiveTopologyToVulkanPrimitiveTopology(config.getPrimitiveTopology()), false);
 
 		return pipelineInputAssemblyStateCreateInfo;
 	}
-
-	vk::PipelineTessellationStateCreateInfo
+	
+	static vk::PipelineTessellationStateCreateInfo
 	createPipelineTessellationStateCreateInfo(const GraphicsPipelineConfig &config) {
 		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo(
 			{}, config.getTesselationControlPoints());
@@ -223,7 +225,7 @@ namespace vkcv {
 	 * @param config provides with and height of the output window
 	 * @return Pipeline Viewport State Create Info Struct
 	 */
-	vk::PipelineViewportStateCreateInfo
+	static vk::PipelineViewportStateCreateInfo
 	createPipelineViewportStateCreateInfo(const GraphicsPipelineConfig &config) {
 		static vk::Viewport viewport;
 		static vk::Rect2D scissor;
@@ -250,7 +252,7 @@ namespace vkcv {
 	 * @param config sets Depth Clamping and Culling Mode
 	 * @return Pipeline Rasterization State Create Info Struct
 	 */
-	vk::PipelineRasterizationStateCreateInfo createPipelineRasterizationStateCreateInfo(
+	static vk::PipelineRasterizationStateCreateInfo createPipelineRasterizationStateCreateInfo(
 		const GraphicsPipelineConfig &config,
 		const vk::PhysicalDeviceConservativeRasterizationPropertiesEXT
 			&conservativeRasterProperties) {
@@ -300,7 +302,7 @@ namespace vkcv {
 	 * @param config set MSAA Sample Count Flag
 	 * @return Pipeline Multisample State Create Info Struct
 	 */
-	vk::PipelineMultisampleStateCreateInfo
+	static vk::PipelineMultisampleStateCreateInfo
 	createPipelineMultisampleStateCreateInfo(const GraphicsPipelineConfig &config,
 											 const PassConfig &passConfig) {
 		vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo(
@@ -316,7 +318,7 @@ namespace vkcv {
 	 * @param config sets blend mode
 	 * @return
 	 */
-	vk::PipelineColorBlendStateCreateInfo
+	static vk::PipelineColorBlendStateCreateInfo
 	createPipelineColorBlendStateCreateInfo(const GraphicsPipelineConfig &config,
 											const PassConfig &passConfig) {
 		static std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
@@ -368,7 +370,7 @@ namespace vkcv {
 	 * @param config sets Push Constant Size and Descriptor Layouts.
 	 * @return Pipeline Layout Create Info Struct
 	 */
-	vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(
+	static vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(
 		const GraphicsPipelineConfig &config,
 		const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts) {
 		static vk::PushConstantRange pushConstantRange;
@@ -392,7 +394,7 @@ namespace vkcv {
 	 * @param config sets if depth test in enabled or not.
 	 * @return Pipeline Layout Create Info Struct
 	 */
-	vk::PipelineDepthStencilStateCreateInfo
+	static vk::PipelineDepthStencilStateCreateInfo
 	createPipelineDepthStencilStateCreateInfo(const GraphicsPipelineConfig &config) {
 		const vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilCreateInfo(
 			vk::PipelineDepthStencilStateCreateFlags(), config.getDepthTest() != DepthTest::None,
@@ -407,7 +409,7 @@ namespace vkcv {
 	 * @param config sets whenever a dynamic viewport is used or not.
 	 * @return Pipeline Dynamic State Create Info Struct
 	 */
-	vk::PipelineDynamicStateCreateInfo
+	static vk::PipelineDynamicStateCreateInfo
 	createPipelineDynamicStateCreateInfo(const GraphicsPipelineConfig &config) {
 		static std::vector<vk::DynamicState> dynamicStates;
 		dynamicStates.clear();
@@ -651,6 +653,7 @@ namespace vkcv {
 			!= vk::Result::eSuccess) {
 			// Catch runtime error if the creation of the pipeline fails.
 			// Destroy everything to keep the memory clean.
+			getCore().getContext().getDevice().destroy(vkPipelineLayout);
 			destroyShaderModules();
 			return {};
 		}

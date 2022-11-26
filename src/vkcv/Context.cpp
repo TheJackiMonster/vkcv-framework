@@ -6,9 +6,13 @@
 namespace vkcv {
 	
 	Context::Context(Context &&other) noexcept :
-		m_Instance(other.m_Instance), m_PhysicalDevice(other.m_PhysicalDevice),
-		m_Device(other.m_Device), m_FeatureManager(std::move(other.m_FeatureManager)),
-		m_QueueManager(std::move(other.m_QueueManager)), m_Allocator(other.m_Allocator) {
+		m_Instance(other.m_Instance),
+		m_PhysicalDevice(other.m_PhysicalDevice),
+		m_Device(other.m_Device),
+		m_DispatchDynamic(other.m_DispatchDynamic),
+		m_FeatureManager(std::move(other.m_FeatureManager)),
+		m_QueueManager(std::move(other.m_QueueManager)),
+		m_Allocator(other.m_Allocator) {
 		other.m_Instance = nullptr;
 		other.m_PhysicalDevice = nullptr;
 		other.m_Device = nullptr;
@@ -19,6 +23,7 @@ namespace vkcv {
 		m_Instance = other.m_Instance;
 		m_PhysicalDevice = other.m_PhysicalDevice;
 		m_Device = other.m_Device;
+		m_DispatchDynamic = other.m_DispatchDynamic;
 		m_FeatureManager = std::move(other.m_FeatureManager);
 		m_QueueManager = std::move(other.m_QueueManager);
 		m_Allocator = other.m_Allocator;
@@ -35,9 +40,18 @@ namespace vkcv {
 					 FeatureManager &&featureManager, QueueManager &&queueManager,
 					 vma::Allocator &&allocator) noexcept :
 		m_Instance(instance),
-		m_PhysicalDevice(physicalDevice), m_Device(device),
-		m_FeatureManager(std::move(featureManager)), m_QueueManager(std::move(queueManager)),
-		m_Allocator(allocator) {}
+		m_PhysicalDevice(physicalDevice),
+		m_Device(device),
+		m_DispatchDynamic(),
+		m_FeatureManager(std::move(featureManager)),
+		m_QueueManager(std::move(queueManager)),
+		m_Allocator(allocator) {
+		m_DispatchDynamic.init(
+				m_Instance,
+				(PFN_vkGetInstanceProcAddr) m_Instance.getProcAddr("vkGetInstanceProcAddr"),
+				m_Device
+		);
+	}
 
 	Context::~Context() noexcept {
 		m_Allocator.destroy();
@@ -55,6 +69,10 @@ namespace vkcv {
 
 	const vk::Device &Context::getDevice() const {
 		return m_Device;
+	}
+	
+	const vk::DispatchLoaderDynamic &Context::getDispatchLoaderDynamic() const {
+		return m_DispatchDynamic;
 	}
 
 	const FeatureManager &Context::getFeatureManager() const {
@@ -452,6 +470,8 @@ namespace vkcv {
 		if (coherentDeviceMemory) {
 			vmaFlags |= vma::AllocatorCreateFlagBits::eAmdDeviceCoherentMemory;
 		}
+		
+		vmaFlags |= vma::AllocatorCreateFlagBits::eBufferDeviceAddress;
 		
 		const vma::AllocatorCreateInfo allocatorCreateInfo(
 				vmaFlags,

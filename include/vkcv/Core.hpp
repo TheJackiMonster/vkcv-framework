@@ -24,6 +24,7 @@
 #include "ImageConfig.hpp"
 #include "PassConfig.hpp"
 #include "PushConstants.hpp"
+#include "RayTracingPipelineConfig.hpp"
 #include "Result.hpp"
 #include "SamplerTypes.hpp"
 #include "Window.hpp"
@@ -37,6 +38,7 @@ namespace vkcv {
 	class PassManager;
 	class GraphicsPipelineManager;
 	class ComputePipelineManager;
+	class RayTracingPipelineManager;
 	class DescriptorSetLayoutManager;
 	class DescriptorSetManager;
 	class BufferManager;
@@ -71,6 +73,7 @@ namespace vkcv {
 		std::unique_ptr<PassManager> m_PassManager;
 		std::unique_ptr<GraphicsPipelineManager> m_GraphicsPipelineManager;
 		std::unique_ptr<ComputePipelineManager> m_ComputePipelineManager;
+		std::unique_ptr<RayTracingPipelineManager> m_RayTracingPipelineManager;
 		std::unique_ptr<DescriptorSetLayoutManager> m_DescriptorSetLayoutManager;
 		std::unique_ptr<DescriptorSetManager> m_DescriptorSetManager;
 		std::unique_ptr<BufferManager> m_BufferManager;
@@ -180,6 +183,17 @@ namespace vkcv {
 		 */
 		[[nodiscard]] ComputePipelineHandle
 		createComputePipeline(const ComputePipelineConfig &config);
+		
+		/**
+		 * Creates a basic vulkan ray tracing pipeline using @p shader program and returns it using
+		 * the @p handle. Fixed Functions for pipeline are set with standard values.
+		 *
+		 * @param config a pipeline config object from the pipeline config class
+		 * layout
+		 * @return True if pipeline creation was successful, False if not
+		 */
+		[[nodiscard]] RayTracingPipelineHandle
+		createRayTracingPipeline(const RayTracingPipelineConfig &config);
 
 		/**
 		 * Creates a basic vulkan render pass using @p config from the render pass config class and
@@ -553,29 +567,23 @@ namespace vkcv {
 									   const WindowHandle &windowHandle);
 
 		/**
-		 * Records the rtx ray generation to the @p cmdStreamHandle.
-		 * Currently only supports @p closestHit, @p rayGen and @c miss shaderstages @c.
+		 * Records the ray generation via ray tracing pipeline to the @p cmdStreamHandle.
 		 *
 		 * @param cmdStreamHandle The command stream handle which receives relevant commands for
 		 * drawing.
-		 * @param rtxPipeline The raytracing pipeline from the RTXModule.
-		 * @param rtxPipelineLayout The raytracing pipeline layout from the RTXModule.
-		 * @param rgenRegion The shader binding table region for ray generation shaders.
-		 * @param rmissRegion The shader binding table region for ray miss shaders.
-		 * @param rchitRegion The shader binding table region for ray closest hit shaders.
-		 * @param rcallRegion The shader binding table region for callable shaders.
+		 * @param rayTracingPipeline The raytracing pipeline
+		 * @param dispatchSize How many work groups are dispatched
 		 * @param descriptorSetUsages The descriptor set usages.
 		 * @param pushConstants The push constants.
 		 * @param windowHandle The window handle defining in which window to render.
 		 */
-		void recordRayGenerationToCmdStream(
-			CommandStreamHandle cmdStreamHandle, vk::Pipeline rtxPipeline,
-			vk::PipelineLayout rtxPipelineLayout, vk::StridedDeviceAddressRegionKHR rgenRegion,
-			vk::StridedDeviceAddressRegionKHR rmissRegion,
-			vk::StridedDeviceAddressRegionKHR rchitRegion,
-			vk::StridedDeviceAddressRegionKHR rcallRegion,
-			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
-			const PushConstants &pushConstants, const WindowHandle &windowHandle);
+		void recordRayGenerationToCmdStream(const CommandStreamHandle &cmdStreamHandle,
+											const RayTracingPipelineHandle &rayTracingPipeline,
+											const DispatchSize &dispatchSize,
+											const std::vector<DescriptorSetUsage>
+											        &descriptorSetUsages,
+											const PushConstants &pushConstants,
+											const vkcv::WindowHandle &windowHandle);
 
 		/**
 		 * @brief Record a compute shader dispatch into a command stream
