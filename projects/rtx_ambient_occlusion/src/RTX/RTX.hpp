@@ -31,12 +31,13 @@ namespace vkcv::rtx {
          * @brief Initializes the @#RTXModule with scene data.
          * @param core The reference to the @#Core.
          * @param asManager The reference to the @#ASManager.
-         * @param vertices The vertex data of the scene.
-         * @param indices The index data of the scene.
+         * @param vertexData The vertex data of the scene.
          * @param descriptorSetHandles The descriptor set handles for RTX.
          */
-        RTXModule(Core* core, ASManager* asManager, std::vector<float>& vertices,
-            std::vector<uint32_t>& indices, std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles);
+        RTXModule(Core* core,
+				  ASManager* asManager,
+				  const vkcv::VertexData &vertexData,
+				  std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles);
 
         /**
          * @brief Default #RTXModule destructor.

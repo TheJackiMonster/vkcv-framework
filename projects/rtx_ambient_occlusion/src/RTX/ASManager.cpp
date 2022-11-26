@@ -157,8 +157,39 @@ namespace vkcv::rtx {
         m_device->freeMemory(cpuBuffer.deviceMemory);
     }
 
-    void ASManager::buildBLAS(RTXBuffer vertexBuffer, uint32_t vertexCount, RTXBuffer indexBuffer, uint32_t indexCount) {
+    void ASManager::buildBLAS(const vkcv::VertexData &vertexData) {
         // TODO: organize hierarchical structure of multiple BLAS
+		
+		const auto& originalVertexBuffer = vertexData.getVertexBufferBindings()[0].buffer;
+		const auto& originalIndexBuffer = vertexData.getIndexBuffer();
+		
+		std::vector<float> vertices;
+		std::vector<uint16_t> indices;
+	
+		vertices.resize(
+				m_core->getBufferSize(originalVertexBuffer) / sizeof(float)
+		);
+		
+		const float *raw_vertices = reinterpret_cast<float*>(
+				m_core->mapBuffer(originalVertexBuffer, 0, 0)
+		);
+	
+		memcpy(vertices.data(), raw_vertices, vertices.size() * sizeof(float));
+		m_core->unmapBuffer(originalVertexBuffer);
+	
+		indices.resize(
+				m_core->getBufferSize(originalIndexBuffer) / sizeof(uint16_t)
+		);
+	
+		const uint16_t *raw_indices = reinterpret_cast<uint16_t*>(
+				m_core->mapBuffer(originalIndexBuffer, 0, 0)
+		);
+	
+		memcpy(indices.data(), raw_indices, indices.size() * sizeof(uint16_t));
+		m_core->unmapBuffer(originalIndexBuffer);
+		
+		auto vertexBuffer = makeBufferFromData(vertices);
+		auto indexBuffer = makeBufferFromData(indices);
 
         vk::DeviceAddress vertexBufferAddress = getBufferDeviceAddress(vertexBuffer.vulkanHandle);
         vk::DeviceAddress indexBufferAddress = getBufferDeviceAddress(indexBuffer.vulkanHandle);
@@ -168,8 +199,8 @@ namespace vkcv::rtx {
                 vk::Format::eR32G32B32Sfloat,   // vertex format
                 vertexBufferAddress, // vertex buffer address (vk::DeviceOrHostAddressConstKHR)
                 3 * sizeof(float), // vertex stride (vk::DeviceSize)
-                uint32_t(vertexCount - 1), // maxVertex (uint32_t)
-                vk::IndexType::eUint32, // indexType (vk::IndexType) --> INFO: UINT16 oder UINT32!
+                uint32_t(vertices.size() / 3 - 1), // maxVertex (uint32_t)
+                vk::IndexType::eUint16, // indexType (vk::IndexType) --> INFO: UINT16 oder UINT32!
                 indexBufferAddress, // indexData (vk::DeviceOrHostAddressConstKHR)
                 {} // transformData (vk::DeviceOrHostAddressConstKHR)
         );
@@ -183,7 +214,7 @@ namespace vkcv::rtx {
 
         // Ranges for data lists
         vk::AccelerationStructureBuildRangeInfoKHR asRangeInfo(
-                uint32_t(indexCount / 3), // the primitiveCount (uint32_t)
+                uint32_t(indices.size() / 3), // the primitiveCount (uint32_t)
                 0, // primitiveOffset (uint32_t)
                 0, // firstVertex (uint32_t)
                 0  // transformOffset (uint32_t)
@@ -322,7 +353,6 @@ namespace vkcv::rtx {
         bufferInstances.deviceSize = sizeof(accelerationStructureInstanceKhr);
         bufferInstances.bufferUsageFlagBits = vk::BufferUsageFlagBits::eShaderDeviceAddress
             | vk::BufferUsageFlagBits::eTransferDst
-			| vk::BufferUsageFlagBits::eTransferSrc
 			| vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
         bufferInstances.memoryPropertyFlagBits = vk::MemoryPropertyFlagBits::eDeviceLocal;
 

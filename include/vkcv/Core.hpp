@@ -44,6 +44,7 @@ namespace vkcv {
 	class BufferManager;
 	class SamplerManager;
 	class ImageManager;
+	class AccelerationStructureManager;
 	class CommandStreamManager;
 	class WindowManager;
 	class SwapchainManager;
@@ -79,6 +80,7 @@ namespace vkcv {
 		std::unique_ptr<BufferManager> m_BufferManager;
 		std::unique_ptr<SamplerManager> m_SamplerManager;
 		std::unique_ptr<ImageManager> m_ImageManager;
+		std::unique_ptr<AccelerationStructureManager> m_AccelerationStructureManager;
 		std::unique_ptr<CommandStreamManager> m_CommandStreamManager;
 		std::unique_ptr<WindowManager> m_WindowManager;
 		std::unique_ptr<SwapchainManager> m_SwapchainManager;
@@ -274,6 +276,15 @@ namespace vkcv {
 		 * @return Size of the buffer
 		 */
 		[[nodiscard]] size_t getBufferSize(const BufferHandle &buffer) const;
+		
+		/**
+		 * @brief Returns the device address of a buffer represented
+		 * by a given buffer handle.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @return Device address of the buffer
+		 */
+		[[nodiscard]] vk::DeviceAddress getBufferDeviceAddress(const BufferHandle &buffer) const;
 
 		/**
 		 * @brief Fills a buffer represented by a given buffer

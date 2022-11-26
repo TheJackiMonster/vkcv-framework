@@ -1,10 +1,8 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/CameraManager.hpp>
-#include <chrono>
+#include <vkcv/geometry/Teapot.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include "RTX/RTX.hpp"
-#include "RTX/RTXExtensions.hpp"
-#include "teapot.hpp"
 
 /**
  * Note: This project is based on the following tutorial https://github.com/Apress/Ray-Tracing-Gems-II/tree/main/Chapter_16.
@@ -12,38 +10,66 @@
 
 int main(int argc, const char** argv) {
 	const std::string applicationName = "RTX Ambient Occlusion";
-
-	// prepare raytracing extensions. IMPORTANT: configure compiler to build in 64 bit mode
-	vkcv::rtx::RTXExtensions rtxExtensions;
-	std::vector<const char*> raytracingInstanceExtensions = rtxExtensions.getInstanceExtensions();
-
-	std::vector<const char*> instanceExtensions = {};   // add some more instance extensions, if needed
-	instanceExtensions.insert(instanceExtensions.end(), raytracingInstanceExtensions.begin(), raytracingInstanceExtensions.end());  // merge together all instance extensions
-
-	vkcv::Features features = rtxExtensions.getFeatures();  // all features required by the RTX device extensions
+	
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
+	features.requireExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+	features.requireExtension(VK_KHR_SPIRV_1_4_EXTENSION_NAME);
+	features.requireExtension(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	
+	features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
+			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+			[](vk::PhysicalDeviceDescriptorIndexingFeatures& features) {}
+	);
+	
+	features.requireExtensionFeature<vk::PhysicalDeviceBufferDeviceAddressFeatures>(
+			VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+			[](vk::PhysicalDeviceBufferDeviceAddressFeatures& features) {
+				features.setBufferDeviceAddress(true);
+			}
+	);
+	
+	features.requireExtensionFeature<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>(
+			VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+			[](vk::PhysicalDeviceAccelerationStructureFeaturesKHR& features) {
+				features.setAccelerationStructure(true);
+			}
+	);
+	
+	features.requireExtensionFeature<vk::PhysicalDeviceRayTracingPipelineFeaturesKHR>(
+			VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+			[](vk::PhysicalDeviceRayTracingPipelineFeaturesKHR& features) {
+				features.setRayTracingPipeline(true);
+			}
+	);
+	
+	features.requireFeature<vk::PhysicalDevice16BitStorageFeatures>(
+			[](vk::PhysicalDevice16BitStorageFeatures &features) {
+				features.setStorageBuffer16BitAccess(true);
+			}
+	);
+	
 	vkcv::Core core = vkcv::Core::create(
 			applicationName,
 			VK_MAKE_VERSION(0, 0, 1),
 			{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
 			features,
-			instanceExtensions
+			{ VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME }
 	);
 
 	vkcv::rtx::ASManager asManager(&core);
 
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 800, 600, true);
+	
+	vkcv::geometry::Teapot teapot (glm::vec3(0.0f), 1.0f);
+	vkcv::VertexData vertexData = teapot.generateVertexData(core);
 
 	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
 	auto camHandle = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
 	
 	cameraManager.getCamera(camHandle).setPosition(glm::vec3(0, 0, -3));
 	cameraManager.getCamera(camHandle).setNearFar(0.1f, 30.0f);
-	
-    // get Teapot vertices and indices
-    Teapot teapot;
-    std::vector<float> vertices = teapot.getVertices();
-    std::vector<uint32_t> indices = teapot.getIndices();
 
 	vkcv::shader::GLSLCompiler compiler (vkcv::shader::GLSLCompileTarget::RAY_TRACING);
 
@@ -72,7 +98,12 @@ int main(int argc, const char** argv) {
 	descriptorSetLayoutHandles.push_back(rtxShaderDescriptorSetLayout);
 
 	// init RTXModule
-	vkcv::rtx::RTXModule rtxModule(&core, &asManager, vertices, indices,descriptorSetHandles);
+	vkcv::rtx::RTXModule rtxModule (
+			&core,
+			&asManager,
+			vertexData,
+			descriptorSetHandles
+	);
 
 	struct RaytracingPushConstantData {
 	    glm::vec4 camera_position;   // as origin for ray generation

@@ -51,6 +51,9 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/ImageManager.hpp
 		${vkcv_source}/vkcv/ImageManager.cpp
 		
+		${vkcv_source}/vkcv/AccelerationStructureManager.hpp
+		${vkcv_source}/vkcv/AccelerationStructureManager.cpp
+		
 		${vkcv_include}/vkcv/PipelineConfig.hpp
 		${vkcv_source}/vkcv/PipelineConfig.cpp
 		

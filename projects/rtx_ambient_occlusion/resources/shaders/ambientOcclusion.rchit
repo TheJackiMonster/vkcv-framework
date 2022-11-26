@@ -1,6 +1,7 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_scalar_block_layout : require
+#extension GL_EXT_shader_16bit_storage : require
 
 hitAttributeEXT vec2 attributes;
 
@@ -10,16 +11,16 @@ layout(location = 0) rayPayloadInEXT Payload {
   vec3 worldNormal;
 } payload;
 
-layout(binding = 2, set = 0) uniform accelerationStructureEXT tlas;     // top level acceleration structure
+layout(binding = 1, set = 0) uniform accelerationStructureEXT tlas;     // top level acceleration structure
 
-layout(binding = 3, set = 0, scalar) buffer rtxVertices
+layout(binding = 2, set = 0, scalar) buffer rtxVertices
 {
     float vertices[];
 };
 
-layout(binding = 4, set = 0, scalar) buffer rtxIndices
+layout(binding = 3, set = 0, scalar) buffer rtxIndices
 {
-    uint indices[];
+    uint16_t indices[];
 };
 
 void main() {

@@ -17,6 +17,10 @@ namespace vkcv {
 	void RayTracingPipelineManager::destroyById(uint64_t id) {
 		auto &pipeline = getById(id);
 		
+		if (pipeline.m_shaderBindingTable) {
+			pipeline.m_shaderBindingTable = BufferHandle();
+		}
+		
 		if (pipeline.m_handle) {
 			getCore().getContext().getDevice().destroy(pipeline.m_handle);
 			pipeline.m_handle = nullptr;
@@ -425,15 +429,8 @@ namespace vkcv {
 		
 		bufferManager.unmapBuffer(shaderBindingTable);
 		
-		const vk::BufferDeviceAddressInfoKHR shaderBindingTableAddressInfo (
-				bufferManager.getBuffer(shaderBindingTable)
-		);
-		
-		const vk::DeviceAddress bufferBaseAddress = (
-				getCore().getContext().getDevice().getBufferAddressKHR(
-						shaderBindingTableAddressInfo,
-						dynamicDispatch
-				)
+		const vk::DeviceAddress bufferBaseAddress = bufferManager.getBufferDeviceAddress(
+				shaderBindingTable
 		);
 		
 		vk::StridedDeviceAddressRegionKHR rayGenAddress {};

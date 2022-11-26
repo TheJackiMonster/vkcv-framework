@@ -131,7 +131,16 @@ namespace vkcv {
 			break;
 		case BufferType::SHADER_BINDING:
 			usageFlags = vk::BufferUsageFlagBits::eShaderBindingTableKHR
-						| vk::BufferUsageFlagBits::eShaderDeviceAddressKHR;
+						| vk::BufferUsageFlagBits::eShaderDeviceAddress;
+			break;
+		case BufferType::ACCELERATION_STRUCTURE_INPUT:
+			usageFlags = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
+						| vk::BufferUsageFlagBits::eShaderDeviceAddress;
+			break;
+		case BufferType::ACCELERATION_STRUCTURE_STORAGE:
+			usageFlags = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
+						 | vk::BufferUsageFlagBits::eShaderDeviceAddress
+						 | vk::BufferUsageFlagBits::eStorageBuffer;
 			break;
 		default:
 			vkcv_log(LogLevel::WARNING, "Unknown buffer type");
@@ -371,6 +380,15 @@ namespace vkcv {
 		auto info = allocator.getAllocationInfo(buffer.m_allocation);
 
 		return info.deviceMemory;
+	}
+	
+	vk::DeviceAddress BufferManager::getBufferDeviceAddress(
+			const vkcv::BufferHandle &handle) const {
+		auto &buffer = (*this) [handle];
+		
+		return getCore().getContext().getDevice().getBufferAddress(
+				vk::BufferDeviceAddressInfo(buffer.m_handle)
+		);
 	}
 
 	void BufferManager::fillBuffer(const BufferHandle &handle, const void* data, size_t size,

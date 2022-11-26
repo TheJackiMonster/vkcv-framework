@@ -153,12 +153,9 @@ namespace vkcv::rtx {
 
         /**
          * @brief Build a Bottom Level Acceleration Structure (BLAS) object from given @p vertexBuffer and @p indexBuffer.
-         * @param[in] vertexBuffer The vertex data.
-         * @param[in] vertexCount The amount of vertices in @p vertexBuffer.
-         * @param[in] indexBuffer The index data.
-         * @param[in] indexCount The amount of indices in @p indexBuffer.
+         * @param[in] vertexData The vertex data.
          */
-        void buildBLAS(RTXBuffer vertexBuffer, uint32_t vertexCount, RTXBuffer indexBuffer, uint32_t indexCount);
+        void buildBLAS(const vkcv::VertexData &vertexData);
 
         /**
          * @brief Build a Top Level Acceleration Structure (TLAS) object from the created

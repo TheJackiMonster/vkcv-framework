@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 #include <cmath>
 
+#include "AccelerationStructureManager.hpp"
 #include "BufferManager.hpp"
 #include "CommandStreamManager.hpp"
 #include "ComputePipelineManager.hpp"
@@ -97,6 +98,7 @@ namespace vkcv {
 		m_BufferManager(std::make_unique<BufferManager>()),
 		m_SamplerManager(std::make_unique<SamplerManager>()),
 		m_ImageManager(std::make_unique<ImageManager>()),
+		m_AccelerationStructureManager(std::make_unique<AccelerationStructureManager>()),
 		m_CommandStreamManager { std::make_unique<CommandStreamManager>() },
 		m_WindowManager(std::make_unique<WindowManager>()),
 		m_SwapchainManager(std::make_unique<SwapchainManager>()), m_CommandPools(),
@@ -116,6 +118,7 @@ namespace vkcv {
 		m_BufferManager->init(*this);
 		m_SamplerManager->init(*this);
 		m_ImageManager->init(*this, *m_BufferManager);
+		m_AccelerationStructureManager->init(*this, *m_BufferManager);
 		m_CommandStreamManager->init(*this);
 		m_SwapchainManager->init(*this);
 		m_downsampler = std::unique_ptr<Downsampler>(new BlitDownsampler(*this, *m_ImageManager));
@@ -190,6 +193,10 @@ namespace vkcv {
 
 	size_t Core::getBufferSize(const BufferHandle &handle) const {
 		return m_BufferManager->getBufferSize(handle);
+	}
+	
+	vk::DeviceAddress Core::getBufferDeviceAddress(const vkcv::BufferHandle &buffer) const {
+		return m_BufferManager->getBufferDeviceAddress(buffer);
 	}
 
 	void Core::fillBuffer(const BufferHandle &handle, const void* data, size_t size,

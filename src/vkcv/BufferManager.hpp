@@ -136,6 +136,15 @@ namespace vkcv {
 		 * @return Vulkan device memory handle
 		 */
 		[[nodiscard]] vk::DeviceMemory getDeviceMemory(const BufferHandle &handle) const;
+		
+		/**
+		 * @brief Returns the Vulkan device address of a buffer
+		 * represented by a given buffer handle id.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @return Vulkan device address
+		 */
+		[[nodiscard]] vk::DeviceAddress getBufferDeviceAddress(const BufferHandle &handle) const;
 
 		/**
 		 * @brief Fills a buffer represented by a given buffer

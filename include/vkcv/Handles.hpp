@@ -198,6 +198,16 @@ namespace vkcv {
 		static ImageHandle
 		createSwapchainImageHandle(const HandleDestroyFunction &destroy = nullptr);
 	};
+	
+	/**
+	 * @brief Handle class for acceleration structures.
+	 */
+	class AccelerationStructureHandle : public Handle {
+		friend class AccelerationStructureManager;
+	
+	private:
+		using Handle::Handle;
+	};
 
 	/**
 	 * @brief Handle class for windows.
