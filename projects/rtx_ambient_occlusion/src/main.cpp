@@ -12,16 +12,8 @@ int main(int argc, const char** argv) {
 	const std::string applicationName = "RTX Ambient Occlusion";
 	
 	vkcv::Features features;
-	features.requireExtension(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
 	features.requireExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
-	features.requireExtension(VK_KHR_SPIRV_1_4_EXTENSION_NAME);
-	features.requireExtension(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	
-	features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
-			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-			[](vk::PhysicalDeviceDescriptorIndexingFeatures& features) {}
-	);
 	
 	features.requireExtensionFeature<vk::PhysicalDeviceBufferDeviceAddressFeatures>(
 			VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
@@ -54,8 +46,7 @@ int main(int argc, const char** argv) {
 			applicationName,
 			VK_MAKE_VERSION(0, 0, 1),
 			{ vk::QueueFlagBits::eGraphics ,vk::QueueFlagBits::eCompute , vk::QueueFlagBits::eTransfer },
-			features,
-			{ VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME }
+			features
 	);
 
 	vkcv::rtx::ASManager asManager(&core);

@@ -465,13 +465,23 @@ namespace vkcv {
 					return features.deviceCoherentMemory;
 				}
 		);
+		
+		const bool bufferDeviceAddress = featureManager.checkFeatures<vk::PhysicalDeviceBufferDeviceAddressFeatures>(
+				vk::StructureType::ePhysicalDeviceBufferDeviceAddressFeatures,
+				[](const vk::PhysicalDeviceBufferDeviceAddressFeatures &features) {
+					return features.bufferDeviceAddress;
+				}
+		);
 
 		vma::AllocatorCreateFlags vmaFlags;
+		
 		if (coherentDeviceMemory) {
 			vmaFlags |= vma::AllocatorCreateFlagBits::eAmdDeviceCoherentMemory;
 		}
 		
-		vmaFlags |= vma::AllocatorCreateFlagBits::eBufferDeviceAddress;
+		if (bufferDeviceAddress) {
+			vmaFlags |= vma::AllocatorCreateFlagBits::eBufferDeviceAddress;
+		}
 		
 		const vma::AllocatorCreateInfo allocatorCreateInfo(
 				vmaFlags,
