@@ -81,9 +81,9 @@ int main(int argc, const char** argv) {
 	const std::string applicationName = "Mesh shader";
 	
 	vkcv::Features features;
-	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	features.requireExtensionFeature<vk::PhysicalDeviceMeshShaderFeaturesNV>(
-			VK_NV_MESH_SHADER_EXTENSION_NAME, [](vk::PhysicalDeviceMeshShaderFeaturesNV& features) {
+	features.requireExtension(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+	features.requireExtensionFeature<vk::PhysicalDeviceMeshShaderFeaturesEXT>(
+			VK_EXT_MESH_SHADER_EXTENSION_NAME, [](vk::PhysicalDeviceMeshShaderFeaturesEXT& features) {
 		features.setTaskShader(true);
 		features.setMeshShader(true);
 	});

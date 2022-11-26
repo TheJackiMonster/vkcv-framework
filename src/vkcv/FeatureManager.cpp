@@ -513,6 +513,19 @@ namespace vkcv {
 		
 		return true;
 	}
+	
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceMeshShaderFeaturesEXT &features,
+									  bool required) const {
+		vkcv_check_init_features2(vk::PhysicalDeviceMeshShaderFeaturesEXT);
+		
+		vkcv_check_feature(taskShader);
+		vkcv_check_feature(meshShader);
+		vkcv_check_feature(multiviewMeshShader);
+		vkcv_check_feature(primitiveFragmentShadingRateMeshShader);
+		vkcv_check_feature(meshShaderQueries);
+		
+		return true;
+	}
 
 	vk::BaseOutStructure* FeatureManager::findFeatureStructure(vk::StructureType type) const {
 		for (auto &base : m_featuresExtensions) {
