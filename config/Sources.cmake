@@ -145,6 +145,9 @@ set(vkcv_sources
 		${vkcv_include}/vkcv/VertexData.hpp
 		${vkcv_source}/vkcv/VertexData.cpp
 		
+		${vkcv_include}/vkcv/GeometryData.hpp
+		${vkcv_source}/vkcv/GeometryData.cpp
+		
 		${vkcv_include}/vkcv/Result.hpp
 		
 		${vkcv_include}/vkcv/RayTracingPipelineConfig.hpp

@@ -19,6 +19,7 @@
 #include "Drawcall.hpp"
 #include "Event.hpp"
 #include "EventFunctionTypes.hpp"
+#include "GeometryData.hpp"
 #include "GraphicsPipelineConfig.hpp"
 #include "Handles.hpp"
 #include "ImageConfig.hpp"
@@ -959,5 +960,35 @@ namespace vkcv {
 		 * @return Vulkan device memory
 		 */
 		[[nodiscard]] vk::DeviceMemory getVulkanDeviceMemory(const ImageHandle &handle) const;
+		
+		/**
+		 * @brief Creates an acceleration structure handle built with a given list of geometry data.
+		 *
+		 * @param[in] geometryData List of geometry data
+		 * @return Acceleration structure handle
+		 */
+		AccelerationStructureHandle createAccelerationStructure(
+				const std::vector<GeometryData> &geometryData);
+		
+		/**
+		 * @brief the underlying vulkan handle for an acceleration structure
+		 * by its given acceleration structure handle.
+		 *
+		 * @param[in] handle Acceleration structure handle
+		 * @return Vulkan acceleration structure
+		 */
+		[[nodiscard]] vk::AccelerationStructureKHR getVulkanAccelerationStructure(
+				const AccelerationStructureHandle &handle) const;
+		
+		/**
+		 * @brief Return the underlying vulkan handle for an acceleration
+		 * structure by its given acceleration structure handle.
+		 *
+		 * @param[in] handle Acceleration structure handle
+		 * @return Vulkan buffer
+		 */
+		[[nodiscard]] vk::Buffer getVulkanBuffer(
+				const vkcv::AccelerationStructureHandle &handle) const;
+		
 	};
 } // namespace vkcv

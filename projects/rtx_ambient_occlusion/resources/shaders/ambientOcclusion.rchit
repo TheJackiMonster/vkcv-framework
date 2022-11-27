@@ -11,8 +11,6 @@ layout(location = 0) rayPayloadInEXT Payload {
   vec3 worldNormal;
 } payload;
 
-layout(binding = 1, set = 0) uniform accelerationStructureEXT tlas;     // top level acceleration structure
-
 layout(binding = 2, set = 0, scalar) buffer rtxVertices
 {
     float vertices[];

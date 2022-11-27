@@ -391,8 +391,10 @@ namespace vkcv {
 			return {};
 		}
 		
+		const auto baseAlignment = rayTracingPipelineProperties.shaderGroupBaseAlignment;
+		
 		const size_t tableSizeAlignment = std::max(
-				rayTracingPipelineProperties.shaderGroupBaseAlignment,
+				baseAlignment,
 				rayTracingPipelineProperties.shaderGroupHandleSize
 		);
 		
@@ -400,14 +402,27 @@ namespace vkcv {
 				tableSizeAlignment * shaderGroups.size()
 		);
 		
-		const BufferHandle &shaderBindingTable = getCore().createBuffer(
+		const BufferHandle &shaderBindingTable = bufferManager.createBuffer(
+				TypeGuard(baseAlignment),
 				BufferType::SHADER_BINDING,
-				shaderBindingTableSize
+				BufferMemoryType::DEVICE_LOCAL,
+				(shaderBindingTableSize + baseAlignment - 1) / baseAlignment,
+				false
 		);
+		
+		vk::DeviceAddress bufferBaseAddress = bufferManager.getBufferDeviceAddress(
+				shaderBindingTable
+		);
+		
+		size_t bufferBaseOffset = 0;
+		if (bufferBaseAddress % baseAlignment != 0) {
+			bufferBaseOffset = (baseAlignment - (bufferBaseAddress % baseAlignment));
+			bufferBaseAddress += bufferBaseOffset;
+		}
 		
 		void* mappedBindingTable = bufferManager.mapBuffer(
 				shaderBindingTable,
-				0,
+				bufferBaseOffset,
 				shaderBindingTableSize
 		);
 		
@@ -428,10 +443,6 @@ namespace vkcv {
 		}
 		
 		bufferManager.unmapBuffer(shaderBindingTable);
-		
-		const vk::DeviceAddress bufferBaseAddress = bufferManager.getBufferDeviceAddress(
-				shaderBindingTable
-		);
 		
 		vk::StridedDeviceAddressRegionKHR rayGenAddress {};
 		vk::StridedDeviceAddressRegionKHR rayMissAddress {};

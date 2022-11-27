@@ -45,6 +45,8 @@ namespace vkcv {
 		std::allocator<char> m_allocator;
 		
 		bool m_resizableBar;
+		bool m_shaderDeviceAddress;
+		
 		BufferHandle m_stagingBuffer;
 
 		bool init(Core &core) override;

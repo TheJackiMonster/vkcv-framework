@@ -12,12 +12,15 @@
 #include <vulkan/vulkan.hpp>
 
 #include "BufferManager.hpp"
+
 #include "vkcv/Handles.hpp"
+#include "vkcv/GeometryData.hpp"
 
 namespace vkcv {
 	
 	struct AccelerationStructureEntry {
 		vk::AccelerationStructureKHR m_accelerationStructure;
+		vkcv::BufferHandle m_storageBuffer;
 	};
 	
 	/**
@@ -55,6 +58,14 @@ namespace vkcv {
 		AccelerationStructureManager() noexcept;
 		
 		~AccelerationStructureManager() noexcept override;
+		
+		[[nodiscard]] vk::AccelerationStructureKHR getVulkanAccelerationStructure(
+				const AccelerationStructureHandle &handle) const;
+		
+		[[nodiscard]] vk::Buffer getVulkanBuffer(const AccelerationStructureHandle &handle) const;
+		
+		[[nodiscard]] AccelerationStructureHandle createAccelerationStructure(
+				const std::vector<GeometryData> &geometryData);
 		
 	};
 	

@@ -55,6 +55,7 @@ int main(int argc, const char** argv) {
 	
 	vkcv::geometry::Teapot teapot (glm::vec3(0.0f), 1.0f);
 	vkcv::VertexData vertexData = teapot.generateVertexData(core);
+	vkcv::GeometryData geometryData = teapot.extractGeometryData(vertexData);
 
 	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
 	auto camHandle = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
@@ -87,14 +88,24 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorSetHandle rtxShaderDescriptorSet = core.createDescriptorSet(rtxShaderDescriptorSetLayout);
 	descriptorSetHandles.push_back(rtxShaderDescriptorSet);
 	descriptorSetLayoutHandles.push_back(rtxShaderDescriptorSetLayout);
+	
+	vkcv::AccelerationStructureHandle blas = core.createAccelerationStructure({ geometryData });
+	
+	asManager.add(geometryData, blas);
 
 	// init RTXModule
 	vkcv::rtx::RTXModule rtxModule (
 			&core,
 			&asManager,
-			vertexData,
 			descriptorSetHandles
 	);
+	
+	{
+		vkcv::DescriptorWrites writes;
+		writes.writeStorageBuffer(2, geometryData.getVertexBufferBinding().buffer);
+		writes.writeStorageBuffer(3, geometryData.getIndexBuffer());
+		core.writeDescriptorSet(descriptorSetHandles[0], writes);
+	}
 
 	struct RaytracingPushConstantData {
 	    glm::vec4 camera_position;   // as origin for ray generation

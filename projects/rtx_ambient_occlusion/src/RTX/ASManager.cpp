@@ -23,14 +23,7 @@ namespace vkcv::rtx {
         // destroy every BLAS, its data containers and free used memory blocks
         for (size_t i=0; i < m_bottomLevelAccelerationStructures.size(); i++) {
             BottomLevelAccelerationStructure blas = m_bottomLevelAccelerationStructures[i];
-            m_core->getContext().getDevice().destroyAccelerationStructureKHR(blas.vulkanHandle, nullptr, m_rtxDispatcher);
-            m_core->getContext().getDevice().destroy(blas.accelerationBuffer.vulkanHandle);
-            m_core->getContext().getDevice().destroy(blas.indexBuffer.vulkanHandle);
-            m_core->getContext().getDevice().destroy(blas.vertexBuffer.vulkanHandle);
-
-            m_core->getContext().getDevice().freeMemory(blas.accelerationBuffer.deviceMemory);
-            m_core->getContext().getDevice().freeMemory(blas.indexBuffer.deviceMemory);
-            m_core->getContext().getDevice().freeMemory(blas.vertexBuffer.deviceMemory);
+            //m_core->getContext().getDevice().destroyAccelerationStructureKHR(blas.vulkanHandle, nullptr, m_rtxDispatcher);
         }
 
         // destroy the TLAS, its data containers and free used memory blocks
@@ -163,43 +156,17 @@ namespace vkcv::rtx {
 		const auto& originalVertexBuffer = vertexData.getVertexBufferBindings()[0].buffer;
 		const auto& originalIndexBuffer = vertexData.getIndexBuffer();
 		
-		std::vector<float> vertices;
-		std::vector<uint16_t> indices;
-	
-		vertices.resize(
-				m_core->getBufferSize(originalVertexBuffer) / sizeof(float)
-		);
-		
-		const float *raw_vertices = reinterpret_cast<float*>(
-				m_core->mapBuffer(originalVertexBuffer, 0, 0)
-		);
-	
-		memcpy(vertices.data(), raw_vertices, vertices.size() * sizeof(float));
-		m_core->unmapBuffer(originalVertexBuffer);
-	
-		indices.resize(
-				m_core->getBufferSize(originalIndexBuffer) / sizeof(uint16_t)
-		);
-	
-		const uint16_t *raw_indices = reinterpret_cast<uint16_t*>(
-				m_core->mapBuffer(originalIndexBuffer, 0, 0)
-		);
-	
-		memcpy(indices.data(), raw_indices, indices.size() * sizeof(uint16_t));
-		m_core->unmapBuffer(originalIndexBuffer);
-		
-		auto vertexBuffer = makeBufferFromData(vertices);
-		auto indexBuffer = makeBufferFromData(indices);
+		const auto vbSize = m_core->getBufferSize(originalVertexBuffer);
 
-        vk::DeviceAddress vertexBufferAddress = getBufferDeviceAddress(vertexBuffer.vulkanHandle);
-        vk::DeviceAddress indexBufferAddress = getBufferDeviceAddress(indexBuffer.vulkanHandle);
+        vk::DeviceAddress vertexBufferAddress = m_core->getBufferDeviceAddress(originalVertexBuffer);//getBufferDeviceAddress(vertexBuffer.vulkanHandle);
+        vk::DeviceAddress indexBufferAddress = m_core->getBufferDeviceAddress(originalIndexBuffer);//getBufferDeviceAddress(indexBuffer.vulkanHandle);
 
         // triangle mesh data
         vk::AccelerationStructureGeometryTrianglesDataKHR asTriangles(
                 vk::Format::eR32G32B32Sfloat,   // vertex format
                 vertexBufferAddress, // vertex buffer address (vk::DeviceOrHostAddressConstKHR)
                 3 * sizeof(float), // vertex stride (vk::DeviceSize)
-                uint32_t(vertices.size() / 3 - 1), // maxVertex (uint32_t)
+                uint32_t(vbSize / (3 * sizeof(float)) - 1), // maxVertex (uint32_t)
                 vk::IndexType::eUint16, // indexType (vk::IndexType) --> INFO: UINT16 oder UINT32!
                 indexBufferAddress, // indexData (vk::DeviceOrHostAddressConstKHR)
                 {} // transformData (vk::DeviceOrHostAddressConstKHR)
@@ -214,7 +181,7 @@ namespace vkcv::rtx {
 
         // Ranges for data lists
         vk::AccelerationStructureBuildRangeInfoKHR asRangeInfo(
-                uint32_t(indices.size() / 3), // the primitiveCount (uint32_t)
+                uint32_t(vertexData.getCount() / 3), // the primitiveCount (uint32_t)
                 0, // primitiveOffset (uint32_t)
                 0, // firstVertex (uint32_t)
                 0  // transformOffset (uint32_t)
@@ -300,13 +267,24 @@ namespace vkcv::rtx {
         m_core->getContext().getDevice().freeMemory(scratchBuffer.deviceMemory, nullptr, m_rtxDispatcher);
                 
         BottomLevelAccelerationStructure blas = {
-                vertexBuffer,
-                indexBuffer,
-                blasBuffer,
+                vertexData.getVertexBufferBindings()[0].buffer,
+                vertexData.getIndexBuffer(),
+				nullptr,
                 blasKHR
         };
         m_bottomLevelAccelerationStructures.push_back(blas);
     }
+	
+	void ASManager::add(const vkcv::GeometryData &geometryData, const vkcv::AccelerationStructureHandle &blas) {
+		BottomLevelAccelerationStructure blasEntry = {
+				geometryData.getVertexBufferBinding().buffer,
+				geometryData.getIndexBuffer(),
+				m_core->getVulkanBuffer(blas),
+				m_core->getVulkanAccelerationStructure(blas)
+		};
+		
+		m_bottomLevelAccelerationStructures.push_back(blasEntry);
+	}
 
     void ASManager::buildTLAS() {
         // TODO: organize hierarchical structure of multiple BLAS

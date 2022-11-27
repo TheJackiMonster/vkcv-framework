@@ -56,6 +56,15 @@ namespace vkcv {
 		} else {
 			m_resizableBar = false;
 		}
+		
+		m_shaderDeviceAddress = getCore().getContext().getFeatureManager().checkFeatures<
+		        vk::PhysicalDeviceBufferDeviceAddressFeatures
+		>(
+				vk::StructureType::ePhysicalDeviceBufferDeviceAddressFeatures,
+				[](const vk::PhysicalDeviceBufferDeviceAddressFeatures &features) {
+					return features.bufferDeviceAddress;
+				}
+		);
 
 		m_stagingBuffer = createBuffer(
 				TypeGuard(1),
@@ -96,6 +105,7 @@ namespace vkcv {
 	BufferManager::BufferManager() noexcept :
 		HandleManager<BufferEntry, BufferHandle>(),
 		m_resizableBar(false),
+		m_shaderDeviceAddress(false),
 		m_stagingBuffer(BufferHandle()) {}
 
 	BufferManager::~BufferManager() noexcept {
@@ -110,7 +120,9 @@ namespace vkcv {
 
 		switch (type) {
 		case BufferType::VERTEX:
-			usageFlags = vk::BufferUsageFlagBits::eVertexBuffer;
+			usageFlags = vk::BufferUsageFlagBits::eVertexBuffer
+						| vk::BufferUsageFlagBits::eStorageBuffer
+						| vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 			break;
 		case BufferType::UNIFORM:
 			usageFlags = vk::BufferUsageFlagBits::eUniformBuffer;
@@ -123,23 +135,22 @@ namespace vkcv {
 						| vk::BufferUsageFlagBits::eTransferDst;
 			break;
 		case BufferType::INDEX:
-			usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
+			usageFlags = vk::BufferUsageFlagBits::eIndexBuffer
+						| vk::BufferUsageFlagBits::eStorageBuffer
+						| vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 			break;
 		case BufferType::INDIRECT:
 			usageFlags = vk::BufferUsageFlagBits::eStorageBuffer
 						| vk::BufferUsageFlagBits::eIndirectBuffer;
 			break;
 		case BufferType::SHADER_BINDING:
-			usageFlags = vk::BufferUsageFlagBits::eShaderBindingTableKHR
-						| vk::BufferUsageFlagBits::eShaderDeviceAddress;
+			usageFlags = vk::BufferUsageFlagBits::eShaderBindingTableKHR;
 			break;
 		case BufferType::ACCELERATION_STRUCTURE_INPUT:
-			usageFlags = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR
-						| vk::BufferUsageFlagBits::eShaderDeviceAddress;
+			usageFlags = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 			break;
 		case BufferType::ACCELERATION_STRUCTURE_STORAGE:
 			usageFlags = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
-						 | vk::BufferUsageFlagBits::eShaderDeviceAddress
 						 | vk::BufferUsageFlagBits::eStorageBuffer;
 			break;
 		default:
@@ -153,6 +164,10 @@ namespace vkcv {
 
 		if (readable) {
 			usageFlags |= vk::BufferUsageFlagBits::eTransferSrc;
+		}
+		
+		if (m_shaderDeviceAddress) {
+			usageFlags |= vk::BufferUsageFlagBits::eShaderDeviceAddress;
 		}
 
 		const vma::Allocator &allocator = getCore().getContext().getAllocator();

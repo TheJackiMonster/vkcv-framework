@@ -36,7 +36,6 @@ namespace vkcv::rtx {
          */
         RTXModule(Core* core,
 				  ASManager* asManager,
-				  const vkcv::VertexData &vertexData,
 				  std::vector<vkcv::DescriptorSetHandle>& descriptorSetHandles);
 
         /**

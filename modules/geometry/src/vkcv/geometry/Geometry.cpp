@@ -28,4 +28,17 @@ namespace vkcv::geometry {
 		));
 	}
 	
+	GeometryData Geometry::extractGeometryData(const vkcv::VertexData &vertexData) const {
+		GeometryData data (
+				vertexData.getVertexBufferBindings()[0],
+				sizeof(glm::vec3),
+				GeometryVertexType::POSITION_FLOAT3
+		);
+		
+		data.setIndexBuffer(vertexData.getIndexBuffer(), vertexData.getIndexBitCount());
+		data.setCount(vertexData.getCount());
+		
+		return data;
+	}
+	
 }

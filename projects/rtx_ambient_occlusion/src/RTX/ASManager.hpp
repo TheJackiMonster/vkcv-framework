@@ -32,9 +32,9 @@ namespace vkcv::rtx {
      * @brief Used as a container to handle bottom-level acceleration structure (BLAS) construction and destruction.
      */
     struct BottomLevelAccelerationStructure {
-        RTXBuffer vertexBuffer;
-        RTXBuffer indexBuffer;
-        RTXBuffer accelerationBuffer;
+        vkcv::BufferHandle vertexBuffer;
+		vkcv::BufferHandle indexBuffer;
+		vk::Buffer accelerationBuffer;
         vk::AccelerationStructureKHR vulkanHandle;
     };
 
@@ -156,6 +156,8 @@ namespace vkcv::rtx {
          * @param[in] vertexData The vertex data.
          */
         void buildBLAS(const vkcv::VertexData &vertexData);
+		
+		void add(const vkcv::GeometryData &geometryData, const vkcv::AccelerationStructureHandle &blas);
 
         /**
          * @brief Build a Top Level Acceleration Structure (TLAS) object from the created

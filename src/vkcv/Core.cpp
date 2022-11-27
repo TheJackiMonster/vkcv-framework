@@ -358,7 +358,7 @@ namespace vkcv {
 		cmdBuffer.setScissor(0, 1, &dynamicScissor);
 	}
 
-	vk::IndexType getIndexType(IndexBitCount indexByteCount) {
+	static vk::IndexType getIndexType(IndexBitCount indexByteCount) {
 		switch (indexByteCount) {
 		case IndexBitCount::Bit8:
 			return vk::IndexType::eUint8EXT;
@@ -1350,5 +1350,17 @@ namespace vkcv {
 	vk::DeviceMemory Core::getVulkanDeviceMemory(const ImageHandle &handle) const {
 		return m_ImageManager->getVulkanDeviceMemory(handle);
 	}
-
+	
+	AccelerationStructureHandle Core::createAccelerationStructure(const std::vector<GeometryData> &geometryData) {
+		return m_AccelerationStructureManager->createAccelerationStructure(geometryData);
+	}
+	
+	vk::AccelerationStructureKHR Core::getVulkanAccelerationStructure(const AccelerationStructureHandle &handle) const {
+		return m_AccelerationStructureManager->getVulkanAccelerationStructure(handle);
+	}
+	
+	vk::Buffer Core::getVulkanBuffer(const vkcv::AccelerationStructureHandle &handle) const {
+		return m_AccelerationStructureManager->getVulkanBuffer(handle);
+	}
+	
 } // namespace vkcv
