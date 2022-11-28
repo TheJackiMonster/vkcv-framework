@@ -1351,16 +1351,28 @@ namespace vkcv {
 		return m_ImageManager->getVulkanDeviceMemory(handle);
 	}
 	
-	AccelerationStructureHandle Core::createAccelerationStructure(const std::vector<GeometryData> &geometryData) {
+	AccelerationStructureHandle Core::createAccelerationStructure(
+			const std::vector<GeometryData> &geometryData) {
 		return m_AccelerationStructureManager->createAccelerationStructure(geometryData);
 	}
 	
-	vk::AccelerationStructureKHR Core::getVulkanAccelerationStructure(const AccelerationStructureHandle &handle) const {
+	AccelerationStructureHandle Core::createAccelerationStructure(
+			const std::vector<AccelerationStructureHandle> &handles) {
+		return m_AccelerationStructureManager->createAccelerationStructure(handles);
+	}
+	
+	vk::AccelerationStructureKHR Core::getVulkanAccelerationStructure(
+			const AccelerationStructureHandle &handle) const {
 		return m_AccelerationStructureManager->getVulkanAccelerationStructure(handle);
 	}
 	
 	vk::Buffer Core::getVulkanBuffer(const vkcv::AccelerationStructureHandle &handle) const {
 		return m_AccelerationStructureManager->getVulkanBuffer(handle);
+	}
+	
+	vk::DeviceAddress Core::getAccelerationStructureDeviceAddress(
+			const vkcv::AccelerationStructureHandle &handle) const {
+		return m_AccelerationStructureManager->getAccelerationStructureDeviceAddress(handle);
 	}
 	
 } // namespace vkcv

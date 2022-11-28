@@ -22,13 +22,14 @@ namespace vkcv {
 			vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
 			vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000),
 			vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic, 1000),
-			vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic, 1000),    // for RTX
-			vk::DescriptorPoolSize(vk::DescriptorType::eAccelerationStructureKHR, 1000) // for RTX
+			vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic, 1000),
+			vk::DescriptorPoolSize(vk::DescriptorType::eAccelerationStructureKHR, 1000)
 		};
 
 		m_PoolInfo = vk::DescriptorPoolCreateInfo(
 			vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, 1000,
-			static_cast<uint32_t>(m_PoolSizes.size()), m_PoolSizes.data());
+			static_cast<uint32_t>(m_PoolSizes.size()), m_PoolSizes.data()
+		);
 
 		return allocateDescriptorPool();
 	}

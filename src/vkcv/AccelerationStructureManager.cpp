@@ -71,6 +71,20 @@ namespace vkcv {
 		return getBufferManager().getBuffer(accelerationStructure.m_storageBuffer);
 	}
 	
+	vk::DeviceAddress AccelerationStructureManager::getAccelerationStructureDeviceAddress(
+			const vkcv::AccelerationStructureHandle &handle) const {
+		auto &accelerationStructure = (*this) [handle];
+		
+		const vk::AccelerationStructureDeviceAddressInfoKHR addressInfo (
+				accelerationStructure.m_accelerationStructure
+		);
+		
+		return getCore().getContext().getDevice().getAccelerationStructureAddressKHR(
+				addressInfo,
+				getCore().getContext().getDispatchLoaderDynamic()
+		);
+	}
+	
 	static vk::Format getVertexFormat(GeometryVertexType vertexType) {
 		switch (vertexType) {
 			case GeometryVertexType::POSITION_FLOAT3:
@@ -95,6 +109,109 @@ namespace vkcv {
 				vkcv_log(LogLevel::ERROR, "unknown Enum");
 				return vk::IndexType::eNoneKHR;
 		}
+	}
+	
+	static AccelerationStructureEntry buildAccelerationStructure(
+			Core& core,
+			BufferManager& bufferManager,
+			std::vector<vk::AccelerationStructureBuildGeometryInfoKHR> &geometryInfos,
+			const std::vector<std::vector<vk::AccelerationStructureBuildRangeInfoKHR>> &rangeInfos,
+			size_t accelerationStructureSize,
+			size_t scratchBufferSize,
+			vk::AccelerationStructureTypeKHR accelerationStructureType) {
+		const auto &dynamicDispatch = core.getContext().getDispatchLoaderDynamic();
+		const vk::PhysicalDevice &physicalDevice = core.getContext().getPhysicalDevice();
+		
+		vk::PhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProperties;
+		
+		vk::PhysicalDeviceProperties2 physicalProperties2;
+		physicalProperties2.pNext = &accelerationStructureProperties;
+		physicalDevice.getProperties2(&physicalProperties2);
+		
+		const auto minScratchAlignment = (
+				accelerationStructureProperties.minAccelerationStructureScratchOffsetAlignment
+		);
+		
+		const BufferHandle &asStorageBuffer = bufferManager.createBuffer(
+				typeGuard<uint8_t>(),
+				BufferType::ACCELERATION_STRUCTURE_STORAGE,
+				BufferMemoryType::DEVICE_LOCAL,
+				accelerationStructureSize,
+				false
+		);
+		
+		const BufferHandle &asScratchBuffer = bufferManager.createBuffer(
+				vkcv::typeGuard<uint8_t>(),
+				BufferType::STORAGE,
+				BufferMemoryType::DEVICE_LOCAL,
+				scratchBufferSize,
+				false,
+				minScratchAlignment
+		);
+		
+		if ((!asStorageBuffer) || (!asScratchBuffer)) {
+			return {};
+		}
+		
+		const vk::AccelerationStructureCreateInfoKHR asCreateInfo (
+				vk::AccelerationStructureCreateFlagsKHR(),
+				bufferManager.getBuffer(asStorageBuffer),
+				0,
+				accelerationStructureSize,
+				accelerationStructureType
+		);
+		
+		vk::AccelerationStructureKHR accelerationStructure;
+		const vk::Result result = core.getContext().getDevice().createAccelerationStructureKHR(
+				&asCreateInfo,
+				nullptr,
+				&accelerationStructure,
+				dynamicDispatch
+		);
+		
+		if (result != vk::Result::eSuccess) {
+			return {};
+		}
+		
+		const vk::DeviceAddress scratchBufferAddress = bufferManager.getBufferDeviceAddress(
+				asScratchBuffer
+		);
+		
+		for (auto& geometryInfo : geometryInfos) {
+			geometryInfo.setDstAccelerationStructure(accelerationStructure);
+			geometryInfo.setScratchData(scratchBufferAddress);
+		}
+		
+		std::vector<const vk::AccelerationStructureBuildRangeInfoKHR*> pRangeInfos;
+		pRangeInfos.resize(rangeInfos.size());
+		
+		for (size_t i = 0; i < rangeInfos.size(); i++) {
+			pRangeInfos[i] = rangeInfos[i].data();
+		}
+		
+		auto cmdStream = core.createCommandStream(vkcv::QueueType::Compute);
+		
+		core.recordCommandsToStream(
+				cmdStream,
+				[&geometryInfos, &pRangeInfos, &dynamicDispatch](
+						const vk::CommandBuffer &cmdBuffer) {
+					cmdBuffer.buildAccelerationStructuresKHR(
+							static_cast<uint32_t>(geometryInfos.size()),
+							geometryInfos.data(),
+							pRangeInfos.data(),
+							dynamicDispatch
+					);
+				},
+				nullptr
+		);
+		
+		core.submitCommandStream(cmdStream, false);
+		core.getContext().getDevice().waitIdle(); // TODO: Fix that mess!
+		
+		return {
+			accelerationStructure,
+			asStorageBuffer
+		};
 	}
 	
 	AccelerationStructureHandle AccelerationStructureManager::createAccelerationStructure(
@@ -189,96 +306,158 @@ namespace vkcv {
 			scratchBufferSize = std::max(scratchBufferSize, asBuildSizesInfo.buildScratchSize);
 		}
 		
-		const BufferHandle &asStorageBuffer = bufferManager.createBuffer(
-				typeGuard<uint8_t>(),
-				BufferType::ACCELERATION_STRUCTURE_STORAGE,
-				BufferMemoryType::DEVICE_LOCAL,
+		const auto entry = buildAccelerationStructure(
+				getCore(),
+				bufferManager,
+				geometryInfos,
+				rangeInfos,
 				accelerationStructureSize,
-				false
-		);
-		
-		vk::PhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProperties;
-		
-		vk::PhysicalDeviceProperties2 physicalProperties2;
-		physicalProperties2.pNext = &accelerationStructureProperties;
-		
-		getCore().getContext().getPhysicalDevice().getProperties2(&physicalProperties2);
-		
-		const auto minScratchAlignment = (
-				accelerationStructureProperties.minAccelerationStructureScratchOffsetAlignment
-		);
-		
-		const BufferHandle &asScratchBuffer = bufferManager.createBuffer(
-				vkcv::TypeGuard(minScratchAlignment),
-				BufferType::STORAGE,
-				BufferMemoryType::DEVICE_LOCAL,
-				(scratchBufferSize + minScratchAlignment - 1) / minScratchAlignment,
-				false
-		);
-		
-		if ((!asStorageBuffer) || (!asScratchBuffer)) {
-			return {};
-		}
-		
-		const vk::AccelerationStructureCreateInfoKHR asCreateInfo (
-				vk::AccelerationStructureCreateFlagsKHR(),
-				bufferManager.getBuffer(asStorageBuffer),
-				0,
-				accelerationStructureSize,
+				scratchBufferSize,
 				vk::AccelerationStructureTypeKHR::eBottomLevel
 		);
 		
-		vk::AccelerationStructureKHR accelerationStructure;
-		const vk::Result result = getCore().getContext().getDevice().createAccelerationStructureKHR(
-				&asCreateInfo,
-				nullptr,
-				&accelerationStructure,
-				dynamicDispatch
-		);
-		
-		if (result != vk::Result::eSuccess) {
+		if ((!entry.m_accelerationStructure) || (!entry.m_storageBuffer)) {
 			return {};
 		}
 		
-		vk::DeviceAddress scratchBufferAddress = bufferManager.getBufferDeviceAddress(
-				asScratchBuffer
+		return add(entry);
+	}
+	
+	AccelerationStructureHandle AccelerationStructureManager::createAccelerationStructure(
+			const std::vector<AccelerationStructureHandle> &accelerationStructures) {
+		std::vector<vk::AccelerationStructureInstanceKHR> asInstances;
+		asInstances.reserve(accelerationStructures.size());
+		
+		auto& bufferManager = getBufferManager();
+		
+		const auto &dynamicDispatch = getCore().getContext().getDispatchLoaderDynamic();
+		
+		for (const auto& accelerationStructure : accelerationStructures) {
+			const vk::DeviceAddress asDeviceAddress = getAccelerationStructureDeviceAddress(
+					accelerationStructure
+			);
+			
+			const std::array<std::array<float, 4>, 3> transformMatrixValues = {
+					std::array<float, 4>{1.f, 0.f, 0.f, 0.f},
+					std::array<float, 4>{0.f, 1.f, 0.f, 0.f},
+					std::array<float, 4>{0.f, 0.f, 1.f, 0.f},
+			};
+			
+			const vk::TransformMatrixKHR transformMatrix (
+					transformMatrixValues
+			);
+			
+			const vk::GeometryInstanceFlagsKHR instanceFlags (
+					vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable
+			);
+			
+			const vk::AccelerationStructureInstanceKHR asInstance (
+					transformMatrix,
+					0,
+					0xFF,
+					0,
+					instanceFlags,
+					asDeviceAddress
+			);
+			
+			asInstances.push_back(asInstance);
+		}
+		
+		const auto asInstanceTypeGuard = typeGuard<vk::AccelerationStructureInstanceKHR>();
+		
+		auto asInputBuffer = bufferManager.createBuffer(
+				asInstanceTypeGuard,
+				BufferType::ACCELERATION_STRUCTURE_INPUT,
+				BufferMemoryType::DEVICE_LOCAL,
+				asInstances.size() * asInstanceTypeGuard.typeSize(),
+				false
 		);
 		
-		if (scratchBufferAddress % minScratchAlignment != 0) {
-			scratchBufferAddress += (
-					minScratchAlignment - (scratchBufferAddress % minScratchAlignment)
+		bufferManager.fillBuffer(
+				asInputBuffer,
+				asInstances.data(),
+				0,
+				0
+		);
+		
+		const vk::AccelerationStructureBuildRangeInfoKHR asBuildRangeInfo (
+				static_cast<uint32_t>(asInstances.size()),
+				0,
+				0,
+				0
+		);
+		
+		auto cmdStream = getCore().createCommandStream(QueueType::Compute);
+		
+		getCore().recordCommandsToStream(cmdStream, [](const vk::CommandBuffer &cmdBuffer) {
+			const vk::MemoryBarrier barrier (
+					vk::AccessFlagBits::eTransferWrite,
+					vk::AccessFlagBits::eAccelerationStructureReadKHR
 			);
-		}
-		
-		for (auto& geometryInfo : geometryInfos) {
-			geometryInfo.setDstAccelerationStructure(accelerationStructure);
-			geometryInfo.setScratchData(scratchBufferAddress);
-		}
-		
-		std::vector<vk::AccelerationStructureBuildRangeInfoKHR*> pRangeInfos;
-		pRangeInfos.resize(rangeInfos.size());
-		
-		for (size_t i = 0; i < rangeInfos.size(); i++) {
-			pRangeInfos[i] = rangeInfos[i].data();
-		}
-		
-		auto cmdStream = getCore().createCommandStream(vkcv::QueueType::Compute);
-		
-		getCore().recordCommandsToStream(
-				cmdStream,
-				[&geometryInfos, &pRangeInfos, &dynamicDispatch](
-						const vk::CommandBuffer &cmdBuffer) {
-			cmdBuffer.buildAccelerationStructuresKHR(
-					static_cast<uint32_t>(geometryInfos.size()),
-					geometryInfos.data(),
-					pRangeInfos.data(),
-					dynamicDispatch
+			
+			cmdBuffer.pipelineBarrier(
+					vk::PipelineStageFlagBits::eTransfer,
+					vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
+					{},
+					barrier,
+					nullptr,
+					nullptr
 			);
 		}, nullptr);
 		
 		getCore().submitCommandStream(cmdStream, false);
 		
-		return add({ accelerationStructure, asStorageBuffer });
+		const vk::DeviceAddress inputBufferAddress = bufferManager.getBufferDeviceAddress(
+				asInputBuffer
+		);
+		
+		const vk::AccelerationStructureGeometryInstancesDataKHR asInstancesData (
+				false,
+				inputBufferAddress
+		);
+		
+		const vk::AccelerationStructureGeometryKHR asGeometry (
+				vk::GeometryTypeKHR::eInstances,
+				asInstancesData,
+				{}
+		);
+		
+		std::vector<vk::AccelerationStructureBuildGeometryInfoKHR> asBuildGeometryInfos = {
+				vk::AccelerationStructureBuildGeometryInfoKHR(
+						vk::AccelerationStructureTypeKHR::eTopLevel,
+						vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace,
+						vk::BuildAccelerationStructureModeKHR::eBuild,
+						{},
+						{},
+						1,
+						&(asGeometry)
+				)
+		};
+		
+		vk::AccelerationStructureBuildSizesInfoKHR asBuildSizesInfo;
+		getCore().getContext().getDevice().getAccelerationStructureBuildSizesKHR(
+				vk::AccelerationStructureBuildTypeKHR::eDevice,
+				asBuildGeometryInfos.data(),
+				&(asBuildRangeInfo.primitiveCount),
+				&(asBuildSizesInfo),
+				dynamicDispatch
+		);
+		
+		const auto entry = buildAccelerationStructure(
+				getCore(),
+				bufferManager,
+				asBuildGeometryInfos,
+				{ { asBuildRangeInfo } },
+				asBuildSizesInfo.accelerationStructureSize,
+				asBuildSizesInfo.buildScratchSize,
+				vk::AccelerationStructureTypeKHR::eTopLevel
+		);
+		
+		if ((!entry.m_accelerationStructure) || (!entry.m_storageBuffer)) {
+			return {};
+		}
+		
+		return add(entry);
 	}
 	
 }

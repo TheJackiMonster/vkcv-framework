@@ -20,7 +20,7 @@ namespace vkcv {
 	
 	struct AccelerationStructureEntry {
 		vk::AccelerationStructureKHR m_accelerationStructure;
-		vkcv::BufferHandle m_storageBuffer;
+		BufferHandle m_storageBuffer;
 	};
 	
 	/**
@@ -64,8 +64,22 @@ namespace vkcv {
 		
 		[[nodiscard]] vk::Buffer getVulkanBuffer(const AccelerationStructureHandle &handle) const;
 		
+		/**
+		 * @brief Returns the Vulkan device address of an acceleration
+		 * structure represented by a given acceleration structure
+		 * handle id.
+		 *
+		 * @param[in] handle Acceleration structure handle
+		 * @return Vulkan device address
+		 */
+		[[nodiscard]] vk::DeviceAddress getAccelerationStructureDeviceAddress(
+				const AccelerationStructureHandle &handle) const;
+		
 		[[nodiscard]] AccelerationStructureHandle createAccelerationStructure(
 				const std::vector<GeometryData> &geometryData);
+		
+		[[nodiscard]] AccelerationStructureHandle createAccelerationStructure(
+				const std::vector<AccelerationStructureHandle> &accelerationStructures);
 		
 	};
 	

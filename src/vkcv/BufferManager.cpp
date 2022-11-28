@@ -114,7 +114,7 @@ namespace vkcv {
 
 	BufferHandle BufferManager::createBuffer(const TypeGuard &typeGuard, BufferType type,
 											 BufferMemoryType memoryType, size_t size,
-											 bool readable) {
+											 bool readable, size_t alignment) {
 		vk::BufferCreateFlags createFlags;
 		vk::BufferUsageFlags usageFlags;
 
@@ -173,7 +173,7 @@ namespace vkcv {
 		const vma::Allocator &allocator = getCore().getContext().getAllocator();
 
 		vma::MemoryUsage memoryUsage;
-		bool mappable = false;
+		bool mappable;
 
 		switch (memoryType) {
 		case BufferMemoryType::DEVICE_LOCAL:
@@ -205,7 +205,7 @@ namespace vkcv {
 									| vma::AllocationCreateFlagBits::eHostAccessSequentialWrite;
 		}
 
-		auto bufferAllocation = allocator.createBuffer(
+		const auto bufferAllocation = allocator.createBufferWithAlignment(
 			vk::BufferCreateInfo(createFlags, size, usageFlags),
 			vma::AllocationCreateInfo(
 					allocationCreateFlags,
@@ -215,11 +215,12 @@ namespace vkcv {
 					0,
 					vma::Pool(),
 					nullptr
-			)
+			),
+			static_cast<vk::DeviceSize>(alignment)
 		);
 
-		vk::Buffer buffer = bufferAllocation.first;
-		vma::Allocation allocation = bufferAllocation.second;
+		const vk::Buffer buffer = bufferAllocation.first;
+		const vma::Allocation allocation = bufferAllocation.second;
 		
 		const vk::MemoryPropertyFlags finalMemoryFlags = allocator.getAllocationMemoryProperties(
 				allocation
@@ -406,8 +407,11 @@ namespace vkcv {
 		);
 	}
 
-	void BufferManager::fillBuffer(const BufferHandle &handle, const void* data, size_t size,
-								   size_t offset) {
+	void BufferManager::fillBuffer(const BufferHandle &handle,
+								   const void* data,
+								   size_t size,
+								   size_t offset,
+								   bool forceStaging) {
 		auto &buffer = (*this) [handle];
 
 		if (size == 0) {
@@ -422,7 +426,7 @@ namespace vkcv {
 
 		const size_t max_size = std::min(size, buffer.m_size - offset);
 
-		if (buffer.m_mappable) {
+		if ((buffer.m_mappable) && (!forceStaging)) {
 			void* mapped = allocator.mapMemory(buffer.m_allocation);
 			memcpy(reinterpret_cast<char*>(mapped) + offset, data, max_size);
 			allocator.unmapMemory(buffer.m_allocation);
@@ -445,7 +449,9 @@ namespace vkcv {
 		}
 	}
 
-	void BufferManager::readBuffer(const BufferHandle &handle, void* data, size_t size,
+	void BufferManager::readBuffer(const BufferHandle &handle,
+								   void* data,
+								   size_t size,
 								   size_t offset) {
 		auto &buffer = (*this) [handle];
 

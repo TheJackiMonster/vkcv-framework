@@ -2,14 +2,13 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/geometry/Teapot.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
-#include "RTX/RTX.hpp"
 
 /**
  * Note: This project is based on the following tutorial https://github.com/Apress/Ray-Tracing-Gems-II/tree/main/Chapter_16.
  */
 
 int main(int argc, const char** argv) {
-	const std::string applicationName = "RTX Ambient Occlusion";
+	const std::string applicationName = "Ray Tracing: Ambient Occlusion";
 	
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
@@ -49,8 +48,6 @@ int main(int argc, const char** argv) {
 			features
 	);
 
-	vkcv::rtx::ASManager asManager(&core);
-
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 800, 600, true);
 	
 	vkcv::geometry::Teapot teapot (glm::vec3(0.0f), 1.0f);
@@ -65,43 +62,36 @@ int main(int argc, const char** argv) {
 
 	vkcv::shader::GLSLCompiler compiler (vkcv::shader::GLSLCompileTarget::RAY_TRACING);
 
-	vkcv::ShaderProgram rtxShaderProgram;
+	vkcv::ShaderProgram shaderProgram;
 	compiler.compile(vkcv::ShaderStage::RAY_GEN, std::filesystem::path("resources/shaders/ambientOcclusion.rgen"),
-		[&rtxShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-            rtxShaderProgram.addShader(shaderStage, path);
+		[&shaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+            shaderProgram.addShader(shaderStage, path);
 		});
 
 	compiler.compile(vkcv::ShaderStage::RAY_CLOSEST_HIT, std::filesystem::path("resources/shaders/ambientOcclusion.rchit"),
-		[&rtxShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-            rtxShaderProgram.addShader(shaderStage, path);
+		[&shaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+            shaderProgram.addShader(shaderStage, path);
 		});
 
 	compiler.compile(vkcv::ShaderStage::RAY_MISS, std::filesystem::path("resources/shaders/ambientOcclusion.rmiss"),
-		[&rtxShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-            rtxShaderProgram.addShader(shaderStage, path);
+		[&shaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+            shaderProgram.addShader(shaderStage, path);
 		});
 
 	std::vector<vkcv::DescriptorSetHandle> descriptorSetHandles;
 	std::vector<vkcv::DescriptorSetLayoutHandle> descriptorSetLayoutHandles;
 
-	vkcv::DescriptorSetLayoutHandle rtxShaderDescriptorSetLayout = core.createDescriptorSetLayout(rtxShaderProgram.getReflectedDescriptors().at(0));
-	vkcv::DescriptorSetHandle rtxShaderDescriptorSet = core.createDescriptorSet(rtxShaderDescriptorSetLayout);
-	descriptorSetHandles.push_back(rtxShaderDescriptorSet);
-	descriptorSetLayoutHandles.push_back(rtxShaderDescriptorSetLayout);
+	vkcv::DescriptorSetLayoutHandle shaderDescriptorSetLayout = core.createDescriptorSetLayout(shaderProgram.getReflectedDescriptors().at(0));
+	vkcv::DescriptorSetHandle shaderDescriptorSet = core.createDescriptorSet(shaderDescriptorSetLayout);
+	descriptorSetHandles.push_back(shaderDescriptorSet);
+	descriptorSetLayoutHandles.push_back(shaderDescriptorSetLayout);
 	
 	vkcv::AccelerationStructureHandle blas = core.createAccelerationStructure({ geometryData });
-	
-	asManager.add(geometryData, blas);
-
-	// init RTXModule
-	vkcv::rtx::RTXModule rtxModule (
-			&core,
-			&asManager,
-			descriptorSetHandles
-	);
+	vkcv::AccelerationStructureHandle tlas = core.createAccelerationStructure({ blas });
 	
 	{
 		vkcv::DescriptorWrites writes;
+		writes.writeAcceleration(1, { core.getVulkanAccelerationStructure(tlas) });
 		writes.writeStorageBuffer(2, geometryData.getVertexBufferBinding().buffer);
 		writes.writeStorageBuffer(3, geometryData.getIndexBuffer());
 		core.writeDescriptorSet(descriptorSetHandles[0], writes);
@@ -114,16 +104,14 @@ int main(int argc, const char** argv) {
 	    glm::vec4 camera_forward;    // for computing ray direction
 	};
 	
-	auto rtxPipeline = core.createRayTracingPipeline(vkcv::RayTracingPipelineConfig(
-			rtxShaderProgram,
+	auto pipeline = core.createRayTracingPipeline(vkcv::RayTracingPipelineConfig(
+			shaderProgram,
 			descriptorSetLayoutHandles
 	));
 
 	vkcv::ImageHandle depthBuffer;
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-
-	vkcv::DescriptorWrites rtxWrites;
 	
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
 				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
@@ -149,22 +137,25 @@ int main(int argc, const char** argv) {
 		raytracingPushData.camera_up = glm::vec4(cameraManager.getActiveCamera().getUp(),0);
 		raytracingPushData.camera_forward = glm::vec4(cameraManager.getActiveCamera().getFront(),0);
 
-		vkcv::PushConstants pushConstantsRTX = vkcv::pushConstants<RaytracingPushConstantData>();
-		pushConstantsRTX.appendDrawcall(raytracingPushData);
+		vkcv::PushConstants pushConstants = vkcv::pushConstants<RaytracingPushConstantData>();
+		pushConstants.appendDrawcall(raytracingPushData);
+		
+		{
+			vkcv::DescriptorWrites writes;
+			writes.writeStorageImage(0, swapchainInput);
+			core.writeDescriptorSet(shaderDescriptorSet, writes);
+		}
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
-
-		rtxWrites.writeStorageImage(0, swapchainInput);
-		core.writeDescriptorSet(rtxShaderDescriptorSet, rtxWrites);
 
 		core.prepareImageForStorage(cmdStream, swapchainInput);
 
 		core.recordRayGenerationToCmdStream(
 			cmdStream,
-			rtxPipeline,
+			pipeline,
 			vkcv::DispatchSize(swapchainWidth, swapchainHeight),
-			{ vkcv::useDescriptorSet(0, rtxShaderDescriptorSet) },
-			pushConstantsRTX,
+			{ vkcv::useDescriptorSet(0, shaderDescriptorSet) },
+			pushConstants,
 			windowHandle
 		);
 

@@ -403,26 +403,21 @@ namespace vkcv {
 		);
 		
 		const BufferHandle &shaderBindingTable = bufferManager.createBuffer(
-				TypeGuard(baseAlignment),
+				typeGuard<uint8_t>(),
 				BufferType::SHADER_BINDING,
 				BufferMemoryType::DEVICE_LOCAL,
-				(shaderBindingTableSize + baseAlignment - 1) / baseAlignment,
-				false
+				shaderBindingTableSize,
+				false,
+				baseAlignment
 		);
 		
-		vk::DeviceAddress bufferBaseAddress = bufferManager.getBufferDeviceAddress(
+		const vk::DeviceAddress bufferBaseAddress = bufferManager.getBufferDeviceAddress(
 				shaderBindingTable
 		);
 		
-		size_t bufferBaseOffset = 0;
-		if (bufferBaseAddress % baseAlignment != 0) {
-			bufferBaseOffset = (baseAlignment - (bufferBaseAddress % baseAlignment));
-			bufferBaseAddress += bufferBaseOffset;
-		}
-		
 		void* mappedBindingTable = bufferManager.mapBuffer(
 				shaderBindingTable,
-				bufferBaseOffset,
+				0,
 				shaderBindingTableSize
 		);
 		

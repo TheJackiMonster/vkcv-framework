@@ -971,6 +971,16 @@ namespace vkcv {
 				const std::vector<GeometryData> &geometryData);
 		
 		/**
+		 * @brief Creates an acceleration structure handle built with a given list of
+		 * other bottom-level acceleration structures.
+		 *
+		 * @param[in] handles List of acceleration structure handles
+		 * @return Acceleration structure handle
+		 */
+		AccelerationStructureHandle createAccelerationStructure(
+				const std::vector<AccelerationStructureHandle> &handles);
+		
+		/**
 		 * @brief the underlying vulkan handle for an acceleration structure
 		 * by its given acceleration structure handle.
 		 *
@@ -988,6 +998,16 @@ namespace vkcv {
 		 * @return Vulkan buffer
 		 */
 		[[nodiscard]] vk::Buffer getVulkanBuffer(
+				const vkcv::AccelerationStructureHandle &handle) const;
+		
+		/**
+		 * @brief Returns the device address of an acceleration structure represented
+		 * by a given acceleration structure handle.
+		 *
+		 * @param[in] handle Acceleration structure handle
+		 * @return Device address of the acceleration structure
+		 */
+		[[nodiscard]] vk::DeviceAddress getAccelerationStructureDeviceAddress(
 				const vkcv::AccelerationStructureHandle &handle) const;
 		
 	};

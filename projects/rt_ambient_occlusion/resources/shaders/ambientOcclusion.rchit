@@ -11,12 +11,12 @@ layout(location = 0) rayPayloadInEXT Payload {
   vec3 worldNormal;
 } payload;
 
-layout(binding = 2, set = 0, scalar) buffer rtxVertices
+layout(binding = 2, set = 0, scalar) buffer rtVertices
 {
     float vertices[];
 };
 
-layout(binding = 3, set = 0, scalar) buffer rtxIndices
+layout(binding = 3, set = 0, scalar) buffer rtIndices
 {
     uint16_t indices[];
 };
