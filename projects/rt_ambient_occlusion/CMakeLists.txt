@@ -16,7 +16,8 @@ target_include_directories(rt_ambient_occlusion SYSTEM BEFORE PRIVATE
 		${vkcv_camera_include}
 		${vkcv_geometry_include}
 		${vkcv_scene_include}
-		${vkcv_shader_compiler_include})
+		${vkcv_shader_compiler_include}
+		${vkcv_scene_include})
 
 # linking with libraries from all dependencies and the VkCV framework
 target_link_libraries(rt_ambient_occlusion
@@ -25,4 +26,5 @@ target_link_libraries(rt_ambient_occlusion
 		vkcv_camera
 		vkcv_geometry
 		vkcv_scene
-		vkcv_shader_compiler)
+		vkcv_shader_compiler
+		vkcv_scene)

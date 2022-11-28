@@ -150,6 +150,16 @@ namespace vkcv::scene {
 		m_core->recordEndDebugLabel(cmdStream);
 	}
 	
+	AccelerationStructureHandle Scene::createAccelerationStructure() const {
+		std::vector<AccelerationStructureHandle> accelerationStructures;
+		
+		for (auto& node : m_nodes) {
+			node.appendAccelerationStructures(*m_core, accelerationStructures);
+		}
+		
+		return m_core->createAccelerationStructure(accelerationStructures);
+	}
+	
 	Scene Scene::create(Core& core) {
 		return Scene(&core);
 	}

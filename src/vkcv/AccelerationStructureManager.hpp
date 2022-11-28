@@ -21,6 +21,7 @@ namespace vkcv {
 	struct AccelerationStructureEntry {
 		vk::AccelerationStructureKHR m_accelerationStructure;
 		BufferHandle m_storageBuffer;
+		std::vector<AccelerationStructureHandle> m_children;
 	};
 	
 	/**

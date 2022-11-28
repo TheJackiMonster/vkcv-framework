@@ -123,6 +123,29 @@ namespace vkcv::scene {
 		}
 	}
 	
+	void Mesh::appendAccelerationStructures(Core &core,
+			std::vector<AccelerationStructureHandle> &accelerationStructures) const {
+		std::vector<GeometryData> geometryData;
+		geometryData.reserve(m_parts.size());
+		
+		for (auto& part : m_parts) {
+			if (part.m_geometry.isValid()) {
+				geometryData.push_back(part.m_geometry);
+				break; // TODO: Ensure safe support of multiple geometry data structures to build bottom-level acceleration structures first! Avoid crashes!
+			}
+		}
+		
+		if (geometryData.empty()) {
+			return;
+		}
+		
+		const AccelerationStructureHandle handle = core.createAccelerationStructure(geometryData);
+		
+		if (handle) {
+			accelerationStructures.push_back(handle);
+		}
+	}
+	
 	size_t Mesh::getDrawcallCount() const {
 		return m_drawcalls.size();
 	}

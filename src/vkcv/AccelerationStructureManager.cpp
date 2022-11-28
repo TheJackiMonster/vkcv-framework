@@ -40,6 +40,10 @@ namespace vkcv {
 		if (accelerationStructure.m_storageBuffer) {
 			accelerationStructure.m_storageBuffer = BufferHandle();
 		}
+		
+		if (!accelerationStructure.m_children.empty()) {
+			accelerationStructure.m_children.clear();
+		}
 	}
 	
 	const BufferManager &AccelerationStructureManager::getBufferManager() const {
@@ -210,7 +214,8 @@ namespace vkcv {
 		
 		return {
 			accelerationStructure,
-			asStorageBuffer
+			asStorageBuffer,
+			{}
 		};
 	}
 	
@@ -219,6 +224,17 @@ namespace vkcv {
 		std::vector<vk::AccelerationStructureGeometryKHR> geometries;
 		std::vector<vk::AccelerationStructureBuildGeometryInfoKHR> geometryInfos;
 		std::vector<std::vector<vk::AccelerationStructureBuildRangeInfoKHR>> rangeInfos;
+		
+		if (geometryData.empty()) {
+			return {};
+		}
+		
+		for (const auto& geometry : geometryData) {
+			if (!geometry.isValid()) {
+				vkcv_log(LogLevel::ERROR, "Invalid geometry used for acceleration structure")
+				return {};
+			}
+		}
 		
 		auto& bufferManager = getBufferManager();
 		
@@ -326,10 +342,14 @@ namespace vkcv {
 	AccelerationStructureHandle AccelerationStructureManager::createAccelerationStructure(
 			const std::vector<AccelerationStructureHandle> &accelerationStructures) {
 		std::vector<vk::AccelerationStructureInstanceKHR> asInstances;
+		
+		if (accelerationStructures.empty()) {
+			return {};
+		}
+		
 		asInstances.reserve(accelerationStructures.size());
 		
 		auto& bufferManager = getBufferManager();
-		
 		const auto &dynamicDispatch = getCore().getContext().getDispatchLoaderDynamic();
 		
 		for (const auto& accelerationStructure : accelerationStructures) {
@@ -443,7 +463,7 @@ namespace vkcv {
 				dynamicDispatch
 		);
 		
-		const auto entry = buildAccelerationStructure(
+		auto entry = buildAccelerationStructure(
 				getCore(),
 				bufferManager,
 				asBuildGeometryInfos,
@@ -456,6 +476,8 @@ namespace vkcv {
 		if ((!entry.m_accelerationStructure) || (!entry.m_storageBuffer)) {
 			return {};
 		}
+		
+		entry.m_children = accelerationStructures;
 		
 		return add(entry);
 	}

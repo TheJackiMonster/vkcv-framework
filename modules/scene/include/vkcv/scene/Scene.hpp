@@ -187,6 +187,15 @@ namespace vkcv::scene {
 							 const RecordMeshDrawcallFunction &record,
 							 const std::vector<ImageHandle>   &renderTargets,
 							 const WindowHandle               &windowHandle);
+		
+		/**
+		 * Create a top-level acceleration structure representing the scene in current state
+		 * which contains all of its meshes as bottom-level acceleration structures with
+		 * its given geometry.
+		 *
+		 * @return Acceleration structure
+		 */
+		AccelerationStructureHandle createAccelerationStructure() const;
 
         /**
          * Instantiation function to create a new scene instance.

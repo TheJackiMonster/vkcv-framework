@@ -2,6 +2,7 @@
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/geometry/Teapot.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
+#include <vkcv/scene/Scene.hpp>
 
 /**
  * Note: This project is based on the following tutorial https://github.com/Apress/Ray-Tracing-Gems-II/tree/main/Chapter_16.
@@ -50,6 +51,16 @@ int main(int argc, const char** argv) {
 
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 800, 600, true);
 	
+	vkcv::scene::Scene scene = vkcv::scene::Scene::load(
+			core,
+			"../first_scene/assets/Sponza/Sponza.gltf",
+			{
+					vkcv::asset::PrimitiveType::POSITION,
+					vkcv::asset::PrimitiveType::NORMAL,
+					vkcv::asset::PrimitiveType::TEXCOORD_0
+			}
+	);
+	
 	vkcv::geometry::Teapot teapot (glm::vec3(0.0f), 1.0f);
 	vkcv::VertexData vertexData = teapot.generateVertexData(core);
 	vkcv::GeometryData geometryData = teapot.extractGeometryData(vertexData);
@@ -89,9 +100,11 @@ int main(int argc, const char** argv) {
 	vkcv::AccelerationStructureHandle blas = core.createAccelerationStructure({ geometryData });
 	vkcv::AccelerationStructureHandle tlas = core.createAccelerationStructure({ blas });
 	
+	vkcv::AccelerationStructureHandle scene_tlas = scene.createAccelerationStructure();
+	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.writeAcceleration(1, { core.getVulkanAccelerationStructure(tlas) });
+		writes.writeAcceleration(1, { core.getVulkanAccelerationStructure(scene_tlas) });
 		writes.writeStorageBuffer(2, geometryData.getVertexBufferBinding().buffer);
 		writes.writeStorageBuffer(3, geometryData.getIndexBuffer());
 		core.writeDescriptorSet(descriptorSetHandles[0], writes);

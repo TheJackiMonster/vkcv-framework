@@ -109,6 +109,17 @@ namespace vkcv::scene {
 		}
 	}
 	
+	void Node::appendAccelerationStructures(Core& core,
+			std::vector<AccelerationStructureHandle> &accelerationStructures) const {
+		for (auto& mesh : m_meshes) {
+			mesh.appendAccelerationStructures(core, accelerationStructures);
+		}
+		
+		for (auto& node : m_nodes) {
+			node.appendAccelerationStructures(core, accelerationStructures);
+		}
+	}
+	
 	void Node::splitMeshesToSubNodes(size_t maxMeshesPerNode) {
 		if (m_meshes.size() <= maxMeshesPerNode) {
 			return;

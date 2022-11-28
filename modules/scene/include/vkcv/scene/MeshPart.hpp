@@ -35,6 +35,11 @@ namespace vkcv::scene {
          * The vertex data containing its part of the mesh.
          */
 		VertexData m_data;
+		
+		/**
+		 * The geometry data describing its part of the mesh.
+		 */
+		GeometryData m_geometry;
 
         /**
          * Axis aligned bounding box of the mesh part.

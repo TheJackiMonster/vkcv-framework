@@ -81,6 +81,16 @@ namespace vkcv::scene {
 							 PushConstants& pushConstants,
 							 std::vector<InstanceDrawcall>& drawcalls,
 							 const RecordMeshDrawcallFunction& record);
+		
+		/**
+		 * Creates acceleration structures for all meshes of this node and its child
+		 * nodes to append them to a given list.
+		 *
+		 * @param[in,out] core Core instance
+		 * @param[out] accelerationStructures List of acceleration structures
+		 */
+		void appendAccelerationStructures(Core& core,
+				std::vector<AccelerationStructureHandle>&accelerationStructures) const;
 
         /**
          * Splits child nodes into tree based graphs of nodes

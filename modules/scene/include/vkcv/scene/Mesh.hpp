@@ -85,6 +85,16 @@ namespace vkcv::scene {
 							 PushConstants& pushConstants,
 							 std::vector<InstanceDrawcall>& drawcalls,
 							 const RecordMeshDrawcallFunction& record);
+		
+		/**
+		 * Creates acceleration structures for the whole geometry of this mesh and
+		 * appends it to a given list.
+		 *
+		 * @param[in,out] core Core instance
+		 * @param[out] accelerationStructures List of acceleration structures
+		 */
+		void appendAccelerationStructures(Core& core,
+				std::vector<AccelerationStructureHandle>&accelerationStructures) const;
 
         /**
          * Return the amount of drawcalls of the mesh

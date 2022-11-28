@@ -22,7 +22,7 @@ namespace vkcv {
 		m_count(0) {}
 	
 	bool GeometryData::isValid() const {
-		return m_vertexType == GeometryVertexType::UNDEFINED;
+		return m_vertexType != GeometryVertexType::UNDEFINED;
 	}
 	
 	const VertexBufferBinding &GeometryData::getVertexBufferBinding() const {
