@@ -8,6 +8,7 @@
 #include <vkcv/Logger.hpp>
 
 #include <limits>
+#include <numeric>
 
 namespace vkcv {
 
@@ -168,6 +169,10 @@ namespace vkcv {
 		
 		if (m_shaderDeviceAddress) {
 			usageFlags |= vk::BufferUsageFlagBits::eShaderDeviceAddress;
+		}
+		
+		if (usageFlags & vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR) {
+			alignment = (alignment > 0? std::lcm(alignment, 16) : 16);
 		}
 
 		const vma::Allocator &allocator = getCore().getContext().getAllocator();
