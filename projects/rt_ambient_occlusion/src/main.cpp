@@ -55,9 +55,7 @@ int main(int argc, const char** argv) {
 			core,
 			"../first_scene/assets/Sponza/Sponza.gltf",
 			{
-					vkcv::asset::PrimitiveType::POSITION,
-					vkcv::asset::PrimitiveType::NORMAL,
-					vkcv::asset::PrimitiveType::TEXCOORD_0
+					vkcv::asset::PrimitiveType::POSITION
 			}
 	);
 	
@@ -67,6 +65,7 @@ int main(int argc, const char** argv) {
 
 	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
 	auto camHandle = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
+	auto camHandle2 = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
 	cameraManager.getCamera(camHandle).setPosition(glm::vec3(0, 0, -3));
 	cameraManager.getCamera(camHandle).setNearFar(0.1f, 30.0f);
@@ -149,6 +148,10 @@ int main(int argc, const char** argv) {
 		raytracingPushData.camera_right = glm::vec4(glm::cross(cameraManager.getActiveCamera().getUp(), cameraManager.getActiveCamera().getFront()), 0);
 		raytracingPushData.camera_up = glm::vec4(cameraManager.getActiveCamera().getUp(),0);
 		raytracingPushData.camera_forward = glm::vec4(cameraManager.getActiveCamera().getFront(),0);
+		
+		raytracingPushData.camera_right = glm::normalize(raytracingPushData.camera_right);
+		raytracingPushData.camera_up = glm::normalize(raytracingPushData.camera_up);
+		raytracingPushData.camera_forward = glm::normalize(raytracingPushData.camera_forward);
 
 		vkcv::PushConstants pushConstants = vkcv::pushConstants<RaytracingPushConstantData>();
 		pushConstants.appendDrawcall(raytracingPushData);

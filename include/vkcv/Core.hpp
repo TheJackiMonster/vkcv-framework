@@ -968,7 +968,8 @@ namespace vkcv {
 		 * @return Acceleration structure handle
 		 */
 		AccelerationStructureHandle createAccelerationStructure(
-				const std::vector<GeometryData> &geometryData);
+				const std::vector<GeometryData> &geometryData,
+				const BufferHandle &transformBuffer = {});
 		
 		/**
 		 * @brief Creates an acceleration structure handle built with a given list of

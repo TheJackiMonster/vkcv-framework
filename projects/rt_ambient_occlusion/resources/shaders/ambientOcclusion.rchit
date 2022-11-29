@@ -24,8 +24,6 @@ layout(binding = 3, set = 0, scalar) buffer rtIndices
 void main() {
     payload.worldPosition = vec3(1.0, 0.0, 0.5);
 
-    payload.worldNormal = vec3(1.0 - attributes.x - attributes.y, attributes.xy);
-/*
     ivec3 indicesVec = ivec3(indices[3 * gl_PrimitiveID + 0], indices[3 * gl_PrimitiveID + 1], indices[3 * gl_PrimitiveID + 2]);
 
     // current triangle
@@ -42,8 +40,7 @@ void main() {
     const vec3 objectNormal = cross(v1 - v0, v2 - v0);
 
     payload.worldNormal = normalize((objectNormal * gl_WorldToObjectEXT).xyz);
-
     payload.worldNormal = faceforward(payload.worldNormal, gl_WorldRayDirectionEXT, payload.worldNormal);
-*/
+
     payload.hitSky = 0.0f;
 }

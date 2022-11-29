@@ -41,9 +41,13 @@ namespace vkcv::scene {
 			}
 		}
 		
-		const uint32_t stride = vertexGroup.numVertices > 0? static_cast<uint32_t>(
-				vertexGroup.vertexBuffer.data.size() / vertexGroup.numVertices
-		) : 0;
+		uint32_t stride = 0;
+		for (const auto& attr : vertexGroup.vertexBuffer.attributes) {
+			if (attr.type == asset::PrimitiveType::POSITION) {
+				stride = attr.stride;
+				break;
+			}
+		}
 		
 		if ((positionAttributeIndex < m_data.getVertexBufferBindings().size()) &&
 			(stride > 0)) {
@@ -89,7 +93,7 @@ namespace vkcv::scene {
 			m_data.setCount(vertexGroup.numVertices);
 			
 			if (m_geometry.isValid()) {
-				m_geometry.setCount(vertexGroup.numIndices);
+				m_geometry.setCount(vertexGroup.numVertices);
 			}
 		}
 		

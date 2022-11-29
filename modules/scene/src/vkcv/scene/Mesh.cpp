@@ -138,7 +138,15 @@ namespace vkcv::scene {
 			return;
 		}
 		
-		const AccelerationStructureHandle handle = core.createAccelerationStructure(geometryData);
+		const glm::mat4 transformT = glm::transpose(m_transform);
+		
+		auto transformBuffer = buffer<glm::mat4>(core, BufferType::ACCELERATION_STRUCTURE_INPUT, 1);
+		transformBuffer.fill(&(transformT));
+		
+		const AccelerationStructureHandle handle = core.createAccelerationStructure(
+				geometryData,
+				transformBuffer.getHandle()
+		);
 		
 		if (handle) {
 			accelerationStructures.push_back(handle);

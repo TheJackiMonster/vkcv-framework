@@ -77,7 +77,8 @@ namespace vkcv {
 				const AccelerationStructureHandle &handle) const;
 		
 		[[nodiscard]] AccelerationStructureHandle createAccelerationStructure(
-				const std::vector<GeometryData> &geometryData);
+				const std::vector<GeometryData> &geometryData,
+				const BufferHandle &transformBuffer);
 		
 		[[nodiscard]] AccelerationStructureHandle createAccelerationStructure(
 				const std::vector<AccelerationStructureHandle> &accelerationStructures);

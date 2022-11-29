@@ -1352,8 +1352,12 @@ namespace vkcv {
 	}
 	
 	AccelerationStructureHandle Core::createAccelerationStructure(
-			const std::vector<GeometryData> &geometryData) {
-		return m_AccelerationStructureManager->createAccelerationStructure(geometryData);
+			const std::vector<GeometryData> &geometryData,
+			const BufferHandle &transformBuffer) {
+		return m_AccelerationStructureManager->createAccelerationStructure(
+				geometryData,
+				transformBuffer
+		);
 	}
 	
 	AccelerationStructureHandle Core::createAccelerationStructure(

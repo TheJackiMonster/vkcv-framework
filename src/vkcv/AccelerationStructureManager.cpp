@@ -235,7 +235,8 @@ namespace vkcv {
 	}
 	
 	AccelerationStructureHandle AccelerationStructureManager::createAccelerationStructure(
-			const std::vector<GeometryData> &geometryData) {
+			const std::vector<GeometryData> &geometryData,
+			const BufferHandle &transformBuffer) {
 		std::vector<vk::AccelerationStructureGeometryKHR> geometries;
 		std::vector<vk::AccelerationStructureBuildGeometryInfoKHR> geometryInfos;
 		std::vector<std::vector<vk::AccelerationStructureBuildRangeInfoKHR>> rangeInfos;
@@ -252,6 +253,13 @@ namespace vkcv {
 		}
 		
 		auto& bufferManager = getBufferManager();
+		
+		vk::DeviceAddress transformBufferAddress;
+		if (transformBuffer) {
+			transformBufferAddress = bufferManager.getBufferDeviceAddress(transformBuffer);
+		} else {
+			transformBufferAddress = 0;
+		}
 		
 		vk::DeviceSize accelerationStructureSize = 0;
 		vk::DeviceSize scratchBufferSize = 0;
@@ -286,7 +294,7 @@ namespace vkcv {
 					static_cast<uint32_t>(vertexCount - 1),
 					indexType,
 					indexBufferAddress,
-					{}
+					transformBufferAddress
 			);
 			
 			const vk::AccelerationStructureGeometryKHR asGeometry (
