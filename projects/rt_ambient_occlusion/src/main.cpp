@@ -1,7 +1,9 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/CameraManager.hpp>
+#include <vkcv/gui/GUI.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/scene/Scene.hpp>
+#include <vkcv/upscaling/FSRUpscaling.hpp>
 
 /**
  * Note: This project is based on the following tutorial https://github.com/Apress/Ray-Tracing-Gems-II/tree/main/Chapter_16.
@@ -147,16 +149,38 @@ int main(int argc, const char** argv) {
 	
 	objDescBuffer.fill(objDescList);
 	
-	auto instanceCountBuffer = vkcv::buffer<uint32_t>(core, vkcv::BufferType::STORAGE, 1);
-	instanceCountBuffer.fill(&instanceCount);
+	auto contextBuffer = vkcv::buffer<uint32_t>(
+			core, vkcv::BufferType::STORAGE, 2
+	);
+	
+	uint32_t* context = contextBuffer.map();
+	
+	context[0] = instanceCount;
+	context[1] = 16;
 	
 	{
 		vkcv::DescriptorWrites writes;
 		writes.writeAcceleration(1, { scene_tlas });
 		writes.writeStorageBuffer(2, objDescBuffer.getHandle());
-		writes.writeStorageBuffer(3, instanceCountBuffer.getHandle());
+		writes.writeStorageBuffer(3, contextBuffer.getHandle());
 		core.writeDescriptorSet(descriptorSetHandles[0], writes);
 	}
+	
+	vkcv::upscaling::FSRUpscaling upscaling (core);
+	
+	uint32_t fsrWidth = core.getWindow(windowHandle).getWidth();
+	uint32_t fsrHeight = core.getWindow(windowHandle).getHeight();
+	
+	vkcv::upscaling::FSRQualityMode fsrMode = vkcv::upscaling::FSRQualityMode::NONE;
+	int fsrModeIndex = static_cast<int>(fsrMode);
+	
+	const std::vector<const char*> fsrModeNames = {
+			"None",
+			"Ultra Quality",
+			"Quality",
+			"Balanced",
+			"Performance"
+	};
 
 	struct RaytracingPushConstantData {
 	    glm::vec4 camera_position;   // as origin for ray generation
@@ -169,23 +193,67 @@ int main(int argc, const char** argv) {
 			shaderProgram,
 			descriptorSetLayoutHandles
 	));
-
-	vkcv::ImageHandle depthBuffer;
+	
+	const vk::Format depthBufferFormat = vk::Format::eD32Sfloat;
+	const vk::Format colorBufferFormat = vk::Format::eR16G16B16A16Sfloat;
+	
+	vkcv::ImageConfig depthBufferConfig (
+			fsrWidth,
+			fsrHeight
+	);
+	
+	vkcv::ImageHandle depthBuffer = core.createImage(
+			depthBufferFormat,
+			depthBufferConfig
+	);
+	
+	vkcv::ImageConfig colorBufferConfig (
+			fsrWidth,
+			fsrHeight
+	);
+	
+	colorBufferConfig.setSupportingStorage(true);
+	colorBufferConfig.setSupportingColorAttachment(true);
+	
+	vkcv::ImageHandle colorBuffer;
 
 	const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
 	
+	vkcv::gui::GUI gui (core, windowHandle);
+	
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
 				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
-		if ((!depthBuffer) ||
-			(swapchainWidth != core.getImageWidth(depthBuffer)) ||
-			((swapchainHeight != core.getImageHeight(depthBuffer)))) {
+		uint32_t width, height;
+		vkcv::upscaling::getFSRResolution(
+				fsrMode,
+				swapchainWidth, swapchainHeight,
+				width, height
+		);
+		
+		if ((!colorBuffer) || (!depthBuffer) ||
+			(width != fsrWidth) || (height != fsrHeight)) {
+			fsrWidth = width;
+			fsrHeight = height;
+			
+			depthBufferConfig.setWidth(fsrWidth);
+			depthBufferConfig.setHeight(fsrHeight);
+			
 			depthBuffer = core.createImage(
-					vk::Format::eD32Sfloat,
-					vkcv::ImageConfig(
-							swapchainWidth,
-							swapchainHeight
-					)
+					depthBufferFormat,
+					depthBufferConfig
 			);
+			
+			colorBufferConfig.setWidth(fsrWidth);
+			colorBufferConfig.setHeight(fsrHeight);
+			
+			colorBuffer = core.createImage(
+					colorBufferFormat,
+					colorBufferConfig
+			);
+		}
+		
+		if ((!colorBuffer) || (!depthBuffer)) {
+			return;
 		}
 		
 		cameraManager.update(dt);
@@ -205,26 +273,59 @@ int main(int argc, const char** argv) {
 		
 		{
 			vkcv::DescriptorWrites writes;
-			writes.writeStorageImage(0, swapchainInput);
+			writes.writeStorageImage(0, colorBuffer);
 			core.writeDescriptorSet(shaderDescriptorSet, writes);
 		}
 
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-		core.prepareImageForStorage(cmdStream, swapchainInput);
+		core.prepareImageForStorage(cmdStream, colorBuffer);
 
 		core.recordRayGenerationToCmdStream(
 			cmdStream,
 			pipeline,
-			vkcv::DispatchSize(swapchainWidth, swapchainHeight),
+			vkcv::DispatchSize(width, height),
 			{ vkcv::useDescriptorSet(0, shaderDescriptorSet) },
 			pushConstants,
 			windowHandle
 		);
+		
+		core.prepareImageForSampling(cmdStream, colorBuffer);
+		core.prepareImageForStorage(cmdStream, swapchainInput);
+		
+		upscaling.recordUpscaling(cmdStream, colorBuffer, swapchainInput);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
+		
+		gui.beginGUI();
+		
+		ImGui::Begin("Settings");
+		
+		int sampleCount = static_cast<int>(context[1]);
+		
+		ImGui::SliderInt("Samples", &sampleCount, 1, 128);
+		
+		if (static_cast<uint32_t>(sampleCount) != context[1]) {
+			context[1] = static_cast<uint32_t>(sampleCount);
+		}
+		
+		float sharpness = upscaling.getSharpness();
+		
+		ImGui::Combo("FSR Quality Mode", &fsrModeIndex, fsrModeNames.data(), fsrModeNames.size());
+		ImGui::DragFloat("FSR Sharpness", &sharpness, 0.001, 0.0f, 1.0f);
+		
+		if ((fsrModeIndex >= 0) && (fsrModeIndex <= 4)) {
+			fsrMode = static_cast<vkcv::upscaling::FSRQualityMode>(fsrModeIndex);
+		}
+		
+		upscaling.setSharpness(sharpness);
+		
+		ImGui::End();
+		
+		gui.endGUI();
 	});
-
+	
+	contextBuffer.unmap();
 	return 0;
 }

@@ -38,12 +38,13 @@ layout(binding = 2, set = 0, scalar) buffer rtObjects {
     ObjDesc objects[];
 };
 
-layout(binding = 3, set = 0, scalar) buffer rtInstanceCount {
-    int instanceCount;
+layout(binding = 3, set = 0, scalar) buffer rtContext {
+    uint instanceCount;
+    uint sampleCount;
 };
 
 void main() {
-    int instanceIndex = gl_InstanceID + gl_GeometryIndexEXT * instanceCount;
+    int instanceIndex = gl_InstanceID + gl_GeometryIndexEXT * int(instanceCount);
 
     if (instanceIndex >= objects.length()) {
         payload.hitSky = 1.0f;
