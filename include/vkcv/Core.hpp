@@ -969,7 +969,8 @@ namespace vkcv {
 		 */
 		AccelerationStructureHandle createAccelerationStructure(
 				const std::vector<GeometryData> &geometryData,
-				const BufferHandle &transformBuffer = {});
+				const BufferHandle &transformBuffer = {},
+				bool compaction = false);
 		
 		/**
 		 * @brief Creates an acceleration structure handle built with a given list of

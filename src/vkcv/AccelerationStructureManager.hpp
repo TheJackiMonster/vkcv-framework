@@ -19,9 +19,11 @@
 namespace vkcv {
 	
 	struct AccelerationStructureEntry {
+		vk::AccelerationStructureTypeKHR m_type;
+		vk::DeviceSize m_size;
 		vk::AccelerationStructureKHR m_accelerationStructure;
-		BufferHandle m_storageBuffer;
 		std::vector<AccelerationStructureHandle> m_children;
+		BufferHandle m_storageBuffer;
 	};
 	
 	/**
@@ -78,7 +80,8 @@ namespace vkcv {
 		
 		[[nodiscard]] AccelerationStructureHandle createAccelerationStructure(
 				const std::vector<GeometryData> &geometryData,
-				const BufferHandle &transformBuffer);
+				const BufferHandle &transformBuffer,
+				bool compaction);
 		
 		[[nodiscard]] AccelerationStructureHandle createAccelerationStructure(
 				const std::vector<AccelerationStructureHandle> &accelerationStructures);

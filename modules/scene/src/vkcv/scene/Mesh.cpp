@@ -146,7 +146,8 @@ namespace vkcv::scene {
 		
 		const AccelerationStructureHandle handle = core.createAccelerationStructure(
 				geometryData,
-				transformBuffer.getHandle()
+				transformBuffer.getHandle(),
+				true
 		);
 		
 		if (handle) {
