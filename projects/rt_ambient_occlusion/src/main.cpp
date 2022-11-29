@@ -143,15 +143,13 @@ int main(int argc, const char** argv) {
 
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		
-		RaytracingPushConstantData raytracingPushData;
-		raytracingPushData.camera_position = glm::vec4(cameraManager.getActiveCamera().getPosition(),0);
-		raytracingPushData.camera_right = glm::vec4(glm::cross(cameraManager.getActiveCamera().getUp(), cameraManager.getActiveCamera().getFront()), 0);
-		raytracingPushData.camera_up = glm::vec4(cameraManager.getActiveCamera().getUp(),0);
-		raytracingPushData.camera_forward = glm::vec4(cameraManager.getActiveCamera().getFront(),0);
+		const glm::mat4 view = glm::transpose(cameraManager.getActiveCamera().getView());
 		
-		raytracingPushData.camera_right = glm::normalize(raytracingPushData.camera_right);
-		raytracingPushData.camera_up = glm::normalize(raytracingPushData.camera_up);
-		raytracingPushData.camera_forward = glm::normalize(raytracingPushData.camera_forward);
+		RaytracingPushConstantData raytracingPushData;
+		raytracingPushData.camera_position = glm::vec4(cameraManager.getActiveCamera().getPosition(), 0);
+		raytracingPushData.camera_right = glm::vec4(glm::vec3(view[0]), 0);
+		raytracingPushData.camera_up = glm::vec4(glm::vec3(view[1]), 0);
+		raytracingPushData.camera_forward = glm::vec4(glm::vec3(view[2]), 0);
 
 		vkcv::PushConstants pushConstants = vkcv::pushConstants<RaytracingPushConstantData>();
 		pushConstants.appendDrawcall(raytracingPushData);
