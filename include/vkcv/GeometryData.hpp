@@ -23,7 +23,7 @@ namespace vkcv {
 	class GeometryData {
 	private:
 		VertexBufferBinding m_vertexBinding;
-		uint32_t m_vertexStride;
+		size_t m_maxVertexIndex;
 		GeometryVertexType m_vertexType;
 		BufferHandle m_indices;
 		IndexBitCount m_indexBitCount;
@@ -44,7 +44,7 @@ namespace vkcv {
 		 * @param[in] geometryVertexType Geometry vertex type
 		 */
 		explicit GeometryData(const VertexBufferBinding &binding,
-							  uint32_t stride = sizeof(float) * 3,
+							  size_t maxVertexIndex = 0,
 							  GeometryVertexType geometryVertexType =
 									  GeometryVertexType::POSITION_FLOAT3);
 		
@@ -76,6 +76,13 @@ namespace vkcv {
 		 * @return Vertex stride
 		 */
 		[[nodiscard]] uint32_t getVertexStride() const;
+		
+		/**
+		 * @brief Return the maximal index from vertex elements of the geometry data.
+		 *
+		 * @return Maximal vertex index
+		 */
+		[[nodiscard]] size_t getMaxVertexIndex() const;
 		
 		/**
 		 * @brief Return the geometry vertex type of the geometry data.

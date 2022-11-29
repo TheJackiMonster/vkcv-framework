@@ -270,19 +270,15 @@ namespace vkcv {
 		
 		for (const GeometryData &data : geometryData) {
 			const auto vertexBufferAddress = bufferManager.getBufferDeviceAddress(
-					data.getVertexBufferBinding().buffer
-			) + data.getVertexBufferBinding().offset;
+					data.getVertexBufferBinding().m_buffer
+			) + data.getVertexBufferBinding().m_offset;
 			
 			const auto indexBufferAddress = bufferManager.getBufferDeviceAddress(
 					data.getIndexBuffer()
 			);
 			
 			const auto vertexStride = data.getVertexStride();
-			const auto vertexBufferSize = bufferManager.getBufferSize(
-					data.getVertexBufferBinding().buffer
-			);
-			
-			const auto vertexCount = (vertexBufferSize / vertexStride);
+			const auto maxVertex = data.getMaxVertexIndex();
 			
 			const vk::Format vertexFormat = getVertexFormat(data.getGeometryVertexType());
 			const vk::IndexType indexType = getIndexType(data.getIndexBitCount());
@@ -291,7 +287,7 @@ namespace vkcv {
 					vertexFormat,
 					vertexBufferAddress,
 					vertexStride,
-					static_cast<uint32_t>(vertexCount - 1),
+					static_cast<uint32_t>(maxVertex),
 					indexType,
 					indexBufferAddress,
 					transformBufferAddress

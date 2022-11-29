@@ -9,6 +9,7 @@ layout(location = 0) rayPayloadInEXT Payload {
   float hitSky;
   vec3 worldPosition;
   vec3 worldNormal;
+  uvec4 hit;
 } payload;
 
 layout(binding = 2, set = 0, scalar) buffer rtVertices
@@ -23,6 +24,13 @@ layout(binding = 3, set = 0, scalar) buffer rtIndices
 
 void main() {
     payload.worldPosition = vec3(1.0, 0.0, 0.5);
+
+    payload.hit = uvec4(
+        gl_PrimitiveID,
+        gl_InstanceID,
+        gl_InstanceCustomIndexEXT,
+        gl_GeometryIndexEXT
+    );
 
     ivec3 indicesVec = ivec3(indices[3 * gl_PrimitiveID + 0], indices[3 * gl_PrimitiveID + 1], indices[3 * gl_PrimitiveID + 2]);
 

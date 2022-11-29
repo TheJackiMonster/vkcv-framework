@@ -28,10 +28,24 @@ namespace vkcv::geometry {
 		));
 	}
 	
-	GeometryData Geometry::extractGeometryData(const vkcv::VertexData &vertexData) const {
+	GeometryData Geometry::extractGeometryData(Core& core,
+											   const vkcv::VertexData &vertexData) const {
+		const VertexBufferBinding positionBufferBinding = vertexData.getVertexBufferBindings()[0];
+		const size_t bufferSize = core.getBufferSize(positionBufferBinding.m_buffer);
+		
+		if (positionBufferBinding.m_stride < sizeof(float) * 3) {
+			return {};
+		}
+		
+		const size_t vertexCount = (bufferSize / positionBufferBinding.m_stride);
+		
+		if (vertexCount < 3) {
+			return {};
+		}
+		
 		GeometryData data (
-				vertexData.getVertexBufferBindings()[0],
-				sizeof(glm::vec3),
+				positionBufferBinding,
+				vertexCount - 1,
 				GeometryVertexType::POSITION_FLOAT3
 		);
 		

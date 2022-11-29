@@ -41,19 +41,10 @@ namespace vkcv::scene {
 			}
 		}
 		
-		uint32_t stride = 0;
-		for (const auto& attr : vertexGroup.vertexBuffer.attributes) {
-			if (attr.type == asset::PrimitiveType::POSITION) {
-				stride = attr.stride;
-				break;
-			}
-		}
-		
-		if ((positionAttributeIndex < m_data.getVertexBufferBindings().size()) &&
-			(stride > 0)) {
+		if (positionAttributeIndex < m_data.getVertexBufferBindings().size()) {
 			m_geometry = GeometryData(
 					m_data.getVertexBufferBindings()[positionAttributeIndex],
-					stride,
+					vertexGroup.numVertices - 1,
 					GeometryVertexType::POSITION_FLOAT3
 			);
 		}

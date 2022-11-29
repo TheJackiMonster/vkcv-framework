@@ -61,7 +61,7 @@ int main(int argc, const char** argv) {
 	
 	vkcv::geometry::Teapot teapot (glm::vec3(0.0f), 1.0f);
 	vkcv::VertexData vertexData = teapot.generateVertexData(core);
-	vkcv::GeometryData geometryData = teapot.extractGeometryData(vertexData);
+	vkcv::GeometryData geometryData = teapot.extractGeometryData(core, vertexData);
 
 	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
 	auto camHandle = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
@@ -104,7 +104,7 @@ int main(int argc, const char** argv) {
 	{
 		vkcv::DescriptorWrites writes;
 		writes.writeAcceleration(1, { core.getVulkanAccelerationStructure(scene_tlas) });
-		writes.writeStorageBuffer(2, geometryData.getVertexBufferBinding().buffer);
+		writes.writeStorageBuffer(2, geometryData.getVertexBufferBinding().m_buffer);
 		writes.writeStorageBuffer(3, geometryData.getIndexBuffer());
 		core.writeDescriptorSet(descriptorSetHandles[0], writes);
 	}

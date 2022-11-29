@@ -5,17 +5,17 @@ namespace vkcv {
 	
 	GeometryData::GeometryData() :
 		m_vertexBinding({}),
-		m_vertexStride(0),
+		m_maxVertexIndex(0),
 		m_vertexType(GeometryVertexType::UNDEFINED),
 		m_indices(),
 		m_indexBitCount(IndexBitCount::Bit16),
 		m_count(0) {}
 	
 	GeometryData::GeometryData(const VertexBufferBinding &binding,
-							   uint32_t stride,
+							   size_t maxVertexIndex,
 							   GeometryVertexType geometryVertexType) :
 		m_vertexBinding(binding),
-		m_vertexStride(stride),
+		m_maxVertexIndex(maxVertexIndex),
 		m_vertexType(geometryVertexType),
 		m_indices(),
 		m_indexBitCount(IndexBitCount::Bit16),
@@ -30,7 +30,11 @@ namespace vkcv {
 	}
 	
 	uint32_t GeometryData::getVertexStride() const {
-		return m_vertexStride;
+		return m_vertexBinding.m_stride;
+	}
+	
+	size_t GeometryData::getMaxVertexIndex() const {
+		return m_maxVertexIndex;
 	}
 	
 	GeometryVertexType GeometryData::getGeometryVertexType() const {

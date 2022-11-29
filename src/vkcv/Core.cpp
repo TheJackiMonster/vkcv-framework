@@ -382,15 +382,21 @@ namespace vkcv {
 		for (uint32_t i = 0; i < vertexData.getVertexBufferBindings().size(); i++) {
 			const auto &vertexBinding = vertexData.getVertexBufferBindings() [i];
 
-			cmdBuffer.bindVertexBuffers(i, bufferManager.getBuffer(vertexBinding.buffer),
-										vertexBinding.offset);
+			cmdBuffer.bindVertexBuffers(
+					i,
+					bufferManager.getBuffer(vertexBinding.m_buffer),
+					vertexBinding.m_offset
+			);
 		}
 
 		for (const auto &usage : drawcall.getDescriptorSetUsages()) {
 			cmdBuffer.bindDescriptorSets(
-				vk::PipelineBindPoint::eGraphics, pipelineLayout, usage.location,
+				vk::PipelineBindPoint::eGraphics,
+				pipelineLayout,
+				usage.location,
 				descriptorSetManager.getDescriptorSet(usage.descriptorSet).vulkanHandle,
-				usage.dynamicOffsets);
+				usage.dynamicOffsets
+			);
 		}
 
 		if (pushConstants.getSizePerDrawcall() > 0) {
@@ -534,8 +540,11 @@ namespace vkcv {
 		for (uint32_t i = 0; i < vertexData.getVertexBufferBindings().size(); i++) {
 			const auto &vertexBinding = vertexData.getVertexBufferBindings() [i];
 
-			cmdBuffer.bindVertexBuffers(i, bufferManager.getBuffer(vertexBinding.buffer),
-										vertexBinding.offset);
+			cmdBuffer.bindVertexBuffers(
+					i,
+					bufferManager.getBuffer(vertexBinding.m_buffer),
+					vertexBinding.m_offset
+			);
 		}
 
 		if (pushConstantData.getSizePerDrawcall() > 0) {

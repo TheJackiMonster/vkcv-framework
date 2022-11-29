@@ -8,6 +8,7 @@ layout(location = 0) rayPayloadEXT Payload {
   float hitSky;
   vec3 worldPosition;
   vec3 worldNormal;
+  uvec4 hit;
 } payload;
 
 layout(binding = 0, set = 0, rgba16) uniform image2D outImg;            // the output image -> maybe use 16 bit values?
@@ -49,14 +50,18 @@ vec2 random(){
  * @param[in,out] pos The position of intersection
  * @param[in,out] norm The normal at the position of intersection
  */
-void TraceCameraRay(out bool hitSky, out vec3 pos, out vec3 norm){
+void TraceCameraRay(out bool hitSky, out vec3 pos, out vec3 norm, out uvec4 hit){
   // Use a camera model to generate a ray for this pixel.
   vec2 uv = gl_LaunchIDEXT.xy + vec2(random()); // random breaks up aliasing
   uv /= vec2(gl_LaunchSizeEXT.xy);
   uv = (uv * 2.0 - 1.0) // normalize uv coordinates into Vulkan viewport space
     * vec2(1.0, -1.0);  // flips y-axis
   const vec3 orig   = camera.camera_position.xyz;
-  const vec3 dir    = normalize(uv.x * camera.camera_right + uv.y * camera.camera_up + camera.camera_forward).xyz;
+  const vec3 dir    = normalize(
+    uv.x * camera.camera_right +
+    uv.y * camera.camera_up +
+    camera.camera_forward
+  ).xyz;
 
   // Trace a ray into the scene; get back data in the payload.
   traceRayEXT(tlas,  // Acceleration structure
@@ -75,6 +80,7 @@ void TraceCameraRay(out bool hitSky, out vec3 pos, out vec3 norm){
   hitSky    = (payload.hitSky > 0.0);
   pos       = payload.worldPosition;
   norm      = payload.worldNormal;
+  hit       = payload.hit;
 }
 
 /**
@@ -137,7 +143,8 @@ void main(){
     uvec2 pixel = gl_LaunchIDEXT.xy;
     bool pixelIsSky; // Does the pixel show the sky (not an object)?
     vec3 pos, norm;  // AO rays from where?
-    TraceCameraRay(pixelIsSky, pos, norm);
+    uvec4 hit;
+    TraceCameraRay(pixelIsSky, pos, norm, hit);
     
     if(pixelIsSky){
         // Don't compute ambient occlusion for the sky
@@ -145,6 +152,12 @@ void main(){
         return;
     }
 
+    imageStore(outImg, ivec2(pixel), vec4(vec3(
+        0,//float(hit.x) / 0xFFFF,
+        0,//float(hit.y) / 381,
+        hit.z > 0 || hit.w > 0? 1 : 0
+    ), 1));
+/*
     // Compute ambient occlusion
     float aoValue = 0.0;
     for(uint i = 0; i < rayCount; i++){
@@ -155,4 +168,5 @@ void main(){
     aoValue /= rayCount;
     
     imageStore(outImg, ivec2(pixel), vec4(vec3(aoValue), 1));
+*/
 }

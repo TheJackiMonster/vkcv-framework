@@ -116,11 +116,12 @@ namespace vkcv::geometry {
 		 * generated vertex data, which can be used for
 		 * building bottom level acceleration structures.
 		 *
+		 * @param[in,out] core Core instance
 		 * @param[in, out] vertexData Vertex data with generated geometry
 		 * @return Geometry data from generated vertex data
 		 */
 		[[nodiscard]]
-		virtual GeometryData extractGeometryData(const VertexData &vertexData) const;
+		virtual GeometryData extractGeometryData(Core& core, const VertexData &vertexData) const;
 		
 	};
 	

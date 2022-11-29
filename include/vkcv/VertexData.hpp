@@ -15,11 +15,23 @@ namespace vkcv {
 	 * @brief Structure to store details about a vertex buffer binding.
 	 */
 	struct VertexBufferBinding {
-		BufferHandle buffer;
-		size_t offset;
+		BufferHandle m_buffer;
+		size_t m_stride;
+		size_t m_offset;
 	};
 
-	VertexBufferBinding vertexBufferBinding(const BufferHandle &buffer, size_t offset = 0);
+	/**
+	 * Create a vertex buffer binding using a given buffer handle and
+	 * its stride in bytes.
+	 *
+	 * @param[in] buffer Vertex buffer
+	 * @param[in] stride Stride in bytes
+	 * @param[in] offset (Optional) Offset in bytes
+	 * @return Vertex buffer binding
+	 */
+	VertexBufferBinding vertexBufferBinding(const BufferHandle &buffer,
+											size_t stride,
+											size_t offset = 0);
 
 	typedef std::vector<VertexBufferBinding> VertexBufferBindings;
 

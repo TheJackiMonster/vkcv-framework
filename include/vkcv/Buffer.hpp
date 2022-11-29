@@ -54,6 +54,19 @@ namespace vkcv {
 		[[nodiscard]] BufferMemoryType getMemoryType() const {
 			return m_core->getBufferMemoryType(m_handle);
 		}
+		
+		/**
+		 * @brief Returns the stride of elements in the buffer.
+		 *
+		 * Beware that this returned value is only the correct
+		 * stride for this buffer if it is used tightly packed
+		 * storing elements of type T.
+		 *
+		 * @return The likely stride of the #Buffer using type T
+		 */
+		[[nodiscard]] size_t getStride() const {
+			return sizeof(T);
+		}
 
 		/**
 		 * @brief Returns the count of elements in the buffer.
@@ -167,6 +180,11 @@ namespace vkcv {
 					 bool readable = false) {
 		return Buffer<T>(&core,
 						 core.createBuffer(type, typeGuard<T>(), count, memoryType, readable));
+	}
+	
+	template <typename T>
+	VertexBufferBinding vertexBufferBinding(const Buffer<T>& buffer) {
+		return vertexBufferBinding(buffer.getHandle(), buffer.getStride());
 	}
 
 } // namespace vkcv
