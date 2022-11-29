@@ -199,18 +199,33 @@ namespace vkcv {
 				cmdStream,
 				[&geometryInfos, &pRangeInfos, &dynamicDispatch](
 						const vk::CommandBuffer &cmdBuffer) {
-					cmdBuffer.buildAccelerationStructuresKHR(
-							static_cast<uint32_t>(geometryInfos.size()),
-							geometryInfos.data(),
-							pRangeInfos.data(),
-							dynamicDispatch
+					const vk::MemoryBarrier barrier (
+							vk::AccessFlagBits::eAccelerationStructureWriteKHR,
+							vk::AccessFlagBits::eAccelerationStructureReadKHR
 					);
+					
+					for (size_t i = 0; i < geometryInfos.size(); i++) {
+						cmdBuffer.buildAccelerationStructuresKHR(
+								1,
+								&(geometryInfos[i]),
+								&(pRangeInfos[i]),
+								dynamicDispatch
+						);
+						
+						cmdBuffer.pipelineBarrier(
+								vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
+								vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
+								vk::DependencyFlags(),
+								barrier,
+								nullptr,
+								nullptr
+						);
+					}
 				},
 				nullptr
 		);
 		
 		core.submitCommandStream(cmdStream, false);
-		core.getContext().getDevice().waitIdle(); // TODO: Fix that mess!
 		
 		return {
 			accelerationStructure,
@@ -262,7 +277,6 @@ namespace vkcv {
 			const auto vertexCount = (vertexBufferSize / vertexStride);
 			
 			const vk::Format vertexFormat = getVertexFormat(data.getGeometryVertexType());
-			
 			const vk::IndexType indexType = getIndexType(data.getIndexBitCount());
 			
 			const vk::AccelerationStructureGeometryTrianglesDataKHR asTrianglesData (

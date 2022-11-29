@@ -131,7 +131,6 @@ namespace vkcv::scene {
 		for (auto& part : m_parts) {
 			if (part.m_geometry.isValid()) {
 				geometryData.push_back(part.m_geometry);
-				break; // TODO: Ensure safe support of multiple geometry data structures to build bottom-level acceleration structures first! Avoid crashes!
 			}
 		}
 		
