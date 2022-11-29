@@ -103,7 +103,7 @@ int main(int argc, const char** argv) {
 	
 	{
 		vkcv::DescriptorWrites writes;
-		writes.writeAcceleration(1, { core.getVulkanAccelerationStructure(scene_tlas) });
+		writes.writeAcceleration(1, { scene_tlas });
 		writes.writeStorageBuffer(2, geometryData.getVertexBufferBinding().m_buffer);
 		writes.writeStorageBuffer(3, geometryData.getIndexBuffer());
 		core.writeDescriptorSet(descriptorSetHandles[0], writes);
