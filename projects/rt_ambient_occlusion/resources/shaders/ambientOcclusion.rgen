@@ -8,7 +8,6 @@ layout(location = 0) rayPayloadEXT Payload {
   float hitSky;
   vec3 worldPosition;
   vec3 worldNormal;
-  uvec4 hit;
 } payload;
 
 layout(binding = 0, set = 0, rgba16) uniform image2D outImg;            // the output image -> maybe use 16 bit values?
@@ -50,7 +49,7 @@ vec2 random(){
  * @param[in,out] pos The position of intersection
  * @param[in,out] norm The normal at the position of intersection
  */
-void TraceCameraRay(out bool hitSky, out vec3 pos, out vec3 norm, out uvec4 hit){
+void TraceCameraRay(out bool hitSky, out vec3 pos, out vec3 norm) {
   // Use a camera model to generate a ray for this pixel.
   vec2 uv = gl_LaunchIDEXT.xy + vec2(random()); // random breaks up aliasing
   uv /= vec2(gl_LaunchSizeEXT.xy);
@@ -77,10 +76,9 @@ void TraceCameraRay(out bool hitSky, out vec3 pos, out vec3 norm, out uvec4 hit)
               0);                   // Location of payload
 
   // Read the values from the payload:
-  hitSky    = (payload.hitSky > 0.0);
+  hitSky    = (payload.hitSky > 0.0f);
   pos       = payload.worldPosition;
   norm      = payload.worldNormal;
-  hit       = payload.hit;
 }
 
 /**
@@ -88,8 +86,8 @@ void TraceCameraRay(out bool hitSky, out vec3 pos, out vec3 norm, out uvec4 hit)
  * @param[in] orig The point of origin of the shadow ray.
  * @param[in] dir The direction of the shadow ray.
  */
-float CastShadowRay(vec3 orig, vec3 dir){
-  payload.hitSky = 0.0f;  // Assume ray is occluded
+float CastShadowRay(vec3 orig, vec3 dir) {
+  payload.hitSky = 0.0f;
   traceRayEXT(tlas,   // Acceleration structure
               gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsTerminateOnFirstHitEXT, // Ray flags, here saying "ignore any hit shaders and closest hit shaders, and terminate the ray on the first found intersection"
               0xFF,    // 8-bit instance mask, here saying "trace against all instances"
@@ -109,7 +107,8 @@ vec3 sampleCosineDistribution(vec2 xi){
 	return vec3(
 		sqrt(xi.x) * cos(phi),
 		sqrt(1 - xi.x),
-		sqrt(xi.x) * sin(phi));
+		sqrt(xi.x) * sin(phi)
+    );
 }
 
 struct Basis{
@@ -129,44 +128,39 @@ Basis buildBasisAroundNormal(vec3 N){
 
 vec3 sampleTangentToWorldSpace(vec3 tangentSpaceSample, vec3 N){
 	Basis tangentBasis = buildBasisAroundNormal(N);
-	return
+	return (
 		tangentBasis.right		* tangentSpaceSample.x +
 		tangentBasis.up			* tangentSpaceSample.y +
-		tangentBasis.forward 	* tangentSpaceSample.z;
+		tangentBasis.forward 	* tangentSpaceSample.z
+    );
 }
 
 void main(){
-    uint rayCount = 64;    // the amount of rays to be casted
+    uint rayCount = 16;    // the amount of rays to be casted
 
     initRandom(gl_LaunchIDEXT.xy);
 
     uvec2 pixel = gl_LaunchIDEXT.xy;
     bool pixelIsSky; // Does the pixel show the sky (not an object)?
     vec3 pos, norm;  // AO rays from where?
-    uvec4 hit;
-    TraceCameraRay(pixelIsSky, pos, norm, hit);
-    
-    if(pixelIsSky){
+    TraceCameraRay(pixelIsSky, pos, norm);
+
+    if (pixelIsSky){
         // Don't compute ambient occlusion for the sky
         imageStore(outImg, ivec2(pixel), vec4(0.8,0.8,0.8,1.0));
         return;
     }
 
-    imageStore(outImg, ivec2(pixel), vec4(vec3(
-        0,//float(hit.x) / 0xFFFF,
-        0,//float(hit.y) / 381,
-        hit.z > 0 || hit.w > 0? 1 : 0
-    ), 1));
-/*
     // Compute ambient occlusion
-    float aoValue = 0.0;
+    float aoValue = 0.0f;
     for(uint i = 0; i < rayCount; i++){
         vec3 sampleTangentSpace = sampleCosineDistribution(random());
         vec3 sampleWorldSpace   = sampleTangentToWorldSpace(sampleTangentSpace, norm);
-        aoValue                 += CastShadowRay(pos, sampleWorldSpace);
+
+        aoValue += CastShadowRay(pos, sampleWorldSpace);
     }
+
     aoValue /= rayCount;
     
     imageStore(outImg, ivec2(pixel), vec4(vec3(aoValue), 1));
-*/
 }

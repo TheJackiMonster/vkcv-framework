@@ -1,12 +1,21 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/CameraManager.hpp>
-#include <vkcv/geometry/Teapot.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/scene/Scene.hpp>
 
 /**
  * Note: This project is based on the following tutorial https://github.com/Apress/Ray-Tracing-Gems-II/tree/main/Chapter_16.
  */
+
+struct ObjDesc {
+	uint64_t vertexAddress;
+	uint64_t indexAddress;
+	uint32_t vertexStride;
+	uint32_t pad0;
+	uint32_t pad1;
+	uint32_t pad2;
+	glm::mat4 transform;
+};
 
 int main(int argc, const char** argv) {
 	const std::string applicationName = "Ray Tracing: Ambient Occlusion";
@@ -42,6 +51,12 @@ int main(int argc, const char** argv) {
 			}
 	);
 	
+	features.requireFeature(
+			[](vk::PhysicalDeviceFeatures &features) {
+				features.setShaderInt64(true);
+			}
+	);
+	
 	vkcv::Core core = vkcv::Core::create(
 			applicationName,
 			VK_MAKE_VERSION(0, 0, 1),
@@ -53,15 +68,11 @@ int main(int argc, const char** argv) {
 	
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(
 			core,
-			"../first_scene/assets/Sponza/Sponza.gltf",
+			"resources/Sponza/Sponza.gltf",
 			{
 					vkcv::asset::PrimitiveType::POSITION
 			}
 	);
-	
-	vkcv::geometry::Teapot teapot (glm::vec3(0.0f), 1.0f);
-	vkcv::VertexData vertexData = teapot.generateVertexData(core);
-	vkcv::GeometryData geometryData = teapot.extractGeometryData(core, vertexData);
 
 	vkcv::camera::CameraManager cameraManager(core.getWindow(windowHandle));
 	auto camHandle = cameraManager.addCamera(vkcv::camera::ControllerType::TRACKBALL);
@@ -96,16 +107,54 @@ int main(int argc, const char** argv) {
 	descriptorSetHandles.push_back(shaderDescriptorSet);
 	descriptorSetLayoutHandles.push_back(shaderDescriptorSetLayout);
 	
-	vkcv::AccelerationStructureHandle blas = core.createAccelerationStructure({ geometryData });
-	vkcv::AccelerationStructureHandle tlas = core.createAccelerationStructure({ blas });
+	const uint32_t instanceCount = scene.getMeshCount();
+	const uint32_t geometryCount = scene.getMeshPartCount();
 	
-	vkcv::AccelerationStructureHandle scene_tlas = scene.createAccelerationStructure();
+	std::vector<ObjDesc> objDescList;
+	objDescList.resize(instanceCount * static_cast<size_t>(
+			std::ceil(static_cast<float>(geometryCount) / instanceCount)
+	));
+	
+	vkcv::AccelerationStructureHandle scene_tlas = scene.createAccelerationStructure(
+			[&core, &objDescList, instanceCount](
+					size_t instanceIndex,
+					size_t geometryIndex,
+					const vkcv::GeometryData &geometry,
+					const glm::mat4 &transform
+			) {
+				ObjDesc obj {};
+				
+				obj.vertexAddress = core.getBufferDeviceAddress(
+						geometry.getVertexBufferBinding().m_buffer
+				);
+				
+				obj.indexAddress = core.getBufferDeviceAddress(
+						geometry.getIndexBuffer()
+				);
+				
+				obj.vertexStride = geometry.getVertexStride() / sizeof(float);
+				obj.transform = transform;
+				
+				objDescList[geometryIndex * instanceCount + instanceIndex] = obj;
+			}
+	);
+	
+	auto objDescBuffer = vkcv::buffer<ObjDesc>(
+			core,
+			vkcv::BufferType::STORAGE,
+			objDescList.size()
+	);
+	
+	objDescBuffer.fill(objDescList);
+	
+	auto instanceCountBuffer = vkcv::buffer<uint32_t>(core, vkcv::BufferType::STORAGE, 1);
+	instanceCountBuffer.fill(&instanceCount);
 	
 	{
 		vkcv::DescriptorWrites writes;
 		writes.writeAcceleration(1, { scene_tlas });
-		writes.writeStorageBuffer(2, geometryData.getVertexBufferBinding().m_buffer);
-		writes.writeStorageBuffer(3, geometryData.getIndexBuffer());
+		writes.writeStorageBuffer(2, objDescBuffer.getHandle());
+		writes.writeStorageBuffer(3, instanceCountBuffer.getHandle());
 		core.writeDescriptorSet(descriptorSetHandles[0], writes);
 	}
 

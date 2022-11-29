@@ -124,7 +124,8 @@ namespace vkcv::scene {
 	}
 	
 	void Mesh::appendAccelerationStructures(Core &core,
-			std::vector<AccelerationStructureHandle> &accelerationStructures) const {
+			std::vector<AccelerationStructureHandle> &accelerationStructures,
+			const ProcessGeometryFunction &process) const {
 		std::vector<GeometryData> geometryData;
 		geometryData.reserve(m_parts.size());
 		
@@ -149,7 +150,15 @@ namespace vkcv::scene {
 		);
 		
 		if (handle) {
+			const size_t instanceIndex = accelerationStructures.size();
+			
 			accelerationStructures.push_back(handle);
+			
+			if (process) {
+				for (size_t i = 0; i < geometryData.size(); i++) {
+					process(instanceIndex, i, geometryData[i], m_transform);
+				}
+			}
 		}
 	}
 	

@@ -5,7 +5,6 @@ layout(location = 0) rayPayloadInEXT Payload {
   float hitSky;
   vec3 worldPosition;
   vec3 worldNormal;
-  uvec4 hit;
 } payload;
 
 void main() {

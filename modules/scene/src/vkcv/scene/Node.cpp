@@ -58,6 +58,44 @@ namespace vkcv::scene {
 		return *this;
 	}
 	
+	size_t Node::getNodeCount() const {
+		size_t count = 1;
+		
+		for (const auto& node : m_nodes) {
+			count += node.getNodeCount();
+		}
+		
+		return count;
+	}
+	
+	size_t Node::getMeshCount() const {
+		size_t count = 0;
+		
+		for (auto& mesh : m_meshes) {
+			count++;
+		}
+		
+		for (const auto& node : m_nodes) {
+			count += node.getMeshCount();
+		}
+		
+		return count;
+	}
+	
+	size_t Node::getMeshPartCount() const {
+		size_t count = 0;
+		
+		for (auto& mesh : m_meshes) {
+			count += mesh.m_parts.size();
+		}
+		
+		for (const auto& node : m_nodes) {
+			count += node.getMeshPartCount();
+		}
+		
+		return count;
+	}
+	
 	void Node::addMesh(const Mesh& mesh) {
 		if (m_meshes.empty()) {
 			m_bounds = mesh.getBounds();
@@ -110,13 +148,14 @@ namespace vkcv::scene {
 	}
 	
 	void Node::appendAccelerationStructures(Core& core,
-			std::vector<AccelerationStructureHandle> &accelerationStructures) const {
+			std::vector<AccelerationStructureHandle> &accelerationStructures,
+			const ProcessGeometryFunction &process) const {
 		for (auto& mesh : m_meshes) {
-			mesh.appendAccelerationStructures(core, accelerationStructures);
+			mesh.appendAccelerationStructures(core, accelerationStructures, process);
 		}
 		
 		for (auto& node : m_nodes) {
-			node.appendAccelerationStructures(core, accelerationStructures);
+			node.appendAccelerationStructures(core, accelerationStructures, process);
 		}
 	}
 	

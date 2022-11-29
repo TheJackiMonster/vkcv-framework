@@ -119,7 +119,7 @@ namespace vkcv {
 			Core& core,
 			BufferManager& bufferManager,
 			std::vector<vk::AccelerationStructureBuildGeometryInfoKHR> &geometryInfos,
-			const std::vector<std::vector<vk::AccelerationStructureBuildRangeInfoKHR>> &rangeInfos,
+			const std::vector<vk::AccelerationStructureBuildRangeInfoKHR> &rangeInfos,
 			size_t accelerationStructureSize,
 			size_t scratchBufferSize,
 			vk::AccelerationStructureTypeKHR accelerationStructureType) {
@@ -190,7 +190,7 @@ namespace vkcv {
 		pRangeInfos.resize(rangeInfos.size());
 		
 		for (size_t i = 0; i < rangeInfos.size(); i++) {
-			pRangeInfos[i] = rangeInfos[i].data();
+			pRangeInfos[i] = &(rangeInfos[i]);
 		}
 		
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Compute);
@@ -239,7 +239,7 @@ namespace vkcv {
 			const BufferHandle &transformBuffer) {
 		std::vector<vk::AccelerationStructureGeometryKHR> geometries;
 		std::vector<vk::AccelerationStructureBuildGeometryInfoKHR> geometryInfos;
-		std::vector<std::vector<vk::AccelerationStructureBuildRangeInfoKHR>> rangeInfos;
+		std::vector<vk::AccelerationStructureBuildRangeInfoKHR> rangeInfos;
 		
 		if (geometryData.empty()) {
 			return {};
@@ -267,6 +267,11 @@ namespace vkcv {
 		const auto &dynamicDispatch = getCore().getContext().getDispatchLoaderDynamic();
 		
 		geometries.reserve(geometryData.size());
+		rangeInfos.reserve(geometryData.size());
+		
+		std::vector<uint32_t> maxPrimitiveCount;
+		
+		maxPrimitiveCount.reserve(geometryData.size());
 		
 		for (const GeometryData &data : geometryData) {
 			const auto vertexBufferAddress = bufferManager.getBufferDeviceAddress(
@@ -300,45 +305,43 @@ namespace vkcv {
 			);
 			
 			geometries.push_back(asGeometry);
+			
+			const vk::AccelerationStructureBuildRangeInfoKHR asBuildRangeInfo (
+					static_cast<uint32_t>(data.getCount() / 3),
+					0,
+					0,
+					0
+			);
+			
+			rangeInfos.push_back(asBuildRangeInfo);
+			maxPrimitiveCount.push_back(asBuildRangeInfo.primitiveCount);
 		}
 		
-		geometryInfos.reserve(geometries.size());
-		rangeInfos.reserve(geometries.size());
-		
-		for (size_t i = 0; i < geometries.size(); i++) {
+		{
 			const vk::AccelerationStructureBuildGeometryInfoKHR asBuildGeometryInfo(
 					vk::AccelerationStructureTypeKHR::eBottomLevel,
 					vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace,
 					vk::BuildAccelerationStructureModeKHR::eBuild,
 					{},
 					{},
-					1,
-					&(geometries[i])
+					static_cast<uint32_t>(geometries.size()),
+					geometries.data()
 			);
 			
 			geometryInfos.push_back(asBuildGeometryInfo);
-			
-			const vk::AccelerationStructureBuildRangeInfoKHR asBuildRangeInfo (
-					static_cast<uint32_t>(geometryData[i].getCount() / 3),
-					0,
-					0,
-					0
-			);
-			
-			rangeInfos.push_back({ asBuildRangeInfo });
-			
-			vk::AccelerationStructureBuildSizesInfoKHR asBuildSizesInfo;
-			getCore().getContext().getDevice().getAccelerationStructureBuildSizesKHR(
-					vk::AccelerationStructureBuildTypeKHR::eDevice,
-					&(asBuildGeometryInfo),
-					&(asBuildRangeInfo.primitiveCount),
-					&(asBuildSizesInfo),
-					dynamicDispatch
-			);
-			
-			accelerationStructureSize += asBuildSizesInfo.accelerationStructureSize;
-			scratchBufferSize = std::max(scratchBufferSize, asBuildSizesInfo.buildScratchSize);
 		}
+		
+		vk::AccelerationStructureBuildSizesInfoKHR asBuildSizesInfo;
+		getCore().getContext().getDevice().getAccelerationStructureBuildSizesKHR(
+				vk::AccelerationStructureBuildTypeKHR::eDevice,
+				geometryInfos.data(),
+				maxPrimitiveCount.data(),
+				&(asBuildSizesInfo),
+				dynamicDispatch
+		);
+		
+		accelerationStructureSize += asBuildSizesInfo.accelerationStructureSize;
+		scratchBufferSize = std::max(scratchBufferSize, asBuildSizesInfo.buildScratchSize);
 		
 		const auto entry = buildAccelerationStructure(
 				getCore(),
@@ -485,7 +488,7 @@ namespace vkcv {
 				getCore(),
 				bufferManager,
 				asBuildGeometryInfos,
-				{ { asBuildRangeInfo } },
+				{ asBuildRangeInfo },
 				asBuildSizesInfo.accelerationStructureSize,
 				asBuildSizesInfo.buildScratchSize,
 				vk::AccelerationStructureTypeKHR::eTopLevel
