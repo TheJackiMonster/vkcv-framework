@@ -91,7 +91,7 @@ namespace vkcv::material {
 			vec[i] = data[i % 4];
 		}
 		
-		image.fill(data);
+		image.fill(vec.data());
 	}
 	
 	Material Material::createPBR(Core &core,
