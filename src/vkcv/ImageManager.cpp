@@ -414,6 +414,10 @@ namespace vkcv {
 			mipLevelCount = mipLevelsMax - mipLevelOffset;
 		}
 		
+		if (mipLevelCount <= 0) {
+			return {};
+		}
+		
 		vk::ImageSubresourceRange imageSubresourceRange(
 				aspectFlags,
 				mipLevelOffset,
@@ -480,14 +484,16 @@ namespace vkcv {
 				newLayout
 		);
 		
-		cmdBuffer.pipelineBarrier(
-				vk::PipelineStageFlagBits::eAllCommands,
-				vk::PipelineStageFlagBits::eAllCommands,
-				{},
-				nullptr,
-				nullptr,
-				transitionBarrier
-		);
+		if (transitionBarrier.subresourceRange.levelCount > 0) {
+			cmdBuffer.pipelineBarrier(
+					vk::PipelineStageFlagBits::eAllCommands,
+					vk::PipelineStageFlagBits::eAllCommands,
+					{},
+					nullptr,
+					nullptr,
+					transitionBarrier
+			);
+		}
 		
 		for (auto& layer : image.m_layers) {
 			layer = newLayout;

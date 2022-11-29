@@ -77,7 +77,7 @@ namespace vkcv {
 	}
 
 	DescriptorWrites &DescriptorWrites::writeAcceleration(
-		uint32_t binding, const std::vector<vk::AccelerationStructureKHR> &structures) {
+		uint32_t binding, const std::vector<AccelerationStructureHandle> &structures) {
 		AccelerationDescriptorWrite write;
 		write.binding = binding;
 		write.structures = structures;

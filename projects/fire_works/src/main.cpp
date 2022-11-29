@@ -580,7 +580,7 @@ int main(int argc, const char **argv) {
 		1, 4, 0
 	});
 	
-	vkcv::VertexData cubeData ({ vkcv::vertexBufferBinding(cubePositions.getHandle()) });
+	vkcv::VertexData cubeData ({ vkcv::vertexBufferBinding(cubePositions) });
 	cubeData.setIndexBuffer(cubeIndices.getHandle());
 	cubeData.setCount(cubeIndices.getCount());
 	
@@ -653,7 +653,7 @@ int main(int argc, const char **argv) {
 		0, 1, 2
 	});
 	
-	vkcv::VertexData triangleData ({ vkcv::vertexBufferBinding(trianglePositions.getHandle()) });
+	vkcv::VertexData triangleData ({ vkcv::vertexBufferBinding(trianglePositions) });
 	triangleData.setIndexBuffer(triangleIndices.getHandle());
 	triangleData.setCount(triangleIndices.getCount());
 	

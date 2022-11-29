@@ -19,11 +19,13 @@
 #include "Drawcall.hpp"
 #include "Event.hpp"
 #include "EventFunctionTypes.hpp"
+#include "GeometryData.hpp"
 #include "GraphicsPipelineConfig.hpp"
 #include "Handles.hpp"
 #include "ImageConfig.hpp"
 #include "PassConfig.hpp"
 #include "PushConstants.hpp"
+#include "RayTracingPipelineConfig.hpp"
 #include "Result.hpp"
 #include "SamplerTypes.hpp"
 #include "Window.hpp"
@@ -37,11 +39,13 @@ namespace vkcv {
 	class PassManager;
 	class GraphicsPipelineManager;
 	class ComputePipelineManager;
+	class RayTracingPipelineManager;
 	class DescriptorSetLayoutManager;
 	class DescriptorSetManager;
 	class BufferManager;
 	class SamplerManager;
 	class ImageManager;
+	class AccelerationStructureManager;
 	class CommandStreamManager;
 	class WindowManager;
 	class SwapchainManager;
@@ -71,11 +75,13 @@ namespace vkcv {
 		std::unique_ptr<PassManager> m_PassManager;
 		std::unique_ptr<GraphicsPipelineManager> m_GraphicsPipelineManager;
 		std::unique_ptr<ComputePipelineManager> m_ComputePipelineManager;
+		std::unique_ptr<RayTracingPipelineManager> m_RayTracingPipelineManager;
 		std::unique_ptr<DescriptorSetLayoutManager> m_DescriptorSetLayoutManager;
 		std::unique_ptr<DescriptorSetManager> m_DescriptorSetManager;
 		std::unique_ptr<BufferManager> m_BufferManager;
 		std::unique_ptr<SamplerManager> m_SamplerManager;
 		std::unique_ptr<ImageManager> m_ImageManager;
+		std::unique_ptr<AccelerationStructureManager> m_AccelerationStructureManager;
 		std::unique_ptr<CommandStreamManager> m_CommandStreamManager;
 		std::unique_ptr<WindowManager> m_WindowManager;
 		std::unique_ptr<SwapchainManager> m_SwapchainManager;
@@ -180,6 +186,17 @@ namespace vkcv {
 		 */
 		[[nodiscard]] ComputePipelineHandle
 		createComputePipeline(const ComputePipelineConfig &config);
+		
+		/**
+		 * Creates a basic vulkan ray tracing pipeline using @p shader program and returns it using
+		 * the @p handle. Fixed Functions for pipeline are set with standard values.
+		 *
+		 * @param config a pipeline config object from the pipeline config class
+		 * layout
+		 * @return True if pipeline creation was successful, False if not
+		 */
+		[[nodiscard]] RayTracingPipelineHandle
+		createRayTracingPipeline(const RayTracingPipelineConfig &config);
 
 		/**
 		 * Creates a basic vulkan render pass using @p config from the render pass config class and
@@ -260,6 +277,15 @@ namespace vkcv {
 		 * @return Size of the buffer
 		 */
 		[[nodiscard]] size_t getBufferSize(const BufferHandle &buffer) const;
+		
+		/**
+		 * @brief Returns the device address of a buffer represented
+		 * by a given buffer handle.
+		 *
+		 * @param[in] buffer Buffer handle
+		 * @return Device address of the buffer
+		 */
+		[[nodiscard]] vk::DeviceAddress getBufferDeviceAddress(const BufferHandle &buffer) const;
 
 		/**
 		 * @brief Fills a buffer represented by a given buffer
@@ -553,29 +579,23 @@ namespace vkcv {
 									   const WindowHandle &windowHandle);
 
 		/**
-		 * Records the rtx ray generation to the @p cmdStreamHandle.
-		 * Currently only supports @p closestHit, @p rayGen and @c miss shaderstages @c.
+		 * Records the ray generation via ray tracing pipeline to the @p cmdStreamHandle.
 		 *
 		 * @param cmdStreamHandle The command stream handle which receives relevant commands for
 		 * drawing.
-		 * @param rtxPipeline The raytracing pipeline from the RTXModule.
-		 * @param rtxPipelineLayout The raytracing pipeline layout from the RTXModule.
-		 * @param rgenRegion The shader binding table region for ray generation shaders.
-		 * @param rmissRegion The shader binding table region for ray miss shaders.
-		 * @param rchitRegion The shader binding table region for ray closest hit shaders.
-		 * @param rcallRegion The shader binding table region for callable shaders.
+		 * @param rayTracingPipeline The raytracing pipeline
+		 * @param dispatchSize How many work groups are dispatched
 		 * @param descriptorSetUsages The descriptor set usages.
 		 * @param pushConstants The push constants.
 		 * @param windowHandle The window handle defining in which window to render.
 		 */
-		void recordRayGenerationToCmdStream(
-			CommandStreamHandle cmdStreamHandle, vk::Pipeline rtxPipeline,
-			vk::PipelineLayout rtxPipelineLayout, vk::StridedDeviceAddressRegionKHR rgenRegion,
-			vk::StridedDeviceAddressRegionKHR rmissRegion,
-			vk::StridedDeviceAddressRegionKHR rchitRegion,
-			vk::StridedDeviceAddressRegionKHR rcallRegion,
-			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
-			const PushConstants &pushConstants, const WindowHandle &windowHandle);
+		void recordRayGenerationToCmdStream(const CommandStreamHandle &cmdStreamHandle,
+											const RayTracingPipelineHandle &rayTracingPipeline,
+											const DispatchSize &dispatchSize,
+											const std::vector<DescriptorSetUsage>
+											        &descriptorSetUsages,
+											const PushConstants &pushConstants,
+											const vkcv::WindowHandle &windowHandle);
 
 		/**
 		 * @brief Record a compute shader dispatch into a command stream
@@ -940,5 +960,57 @@ namespace vkcv {
 		 * @return Vulkan device memory
 		 */
 		[[nodiscard]] vk::DeviceMemory getVulkanDeviceMemory(const ImageHandle &handle) const;
+		
+		/**
+		 * @brief Creates an acceleration structure handle built with a given list of geometry data.
+		 *
+		 * @param[in] geometryData List of geometry data
+		 * @return Acceleration structure handle
+		 */
+		AccelerationStructureHandle createAccelerationStructure(
+				const std::vector<GeometryData> &geometryData,
+				const BufferHandle &transformBuffer = {},
+				bool compaction = false);
+		
+		/**
+		 * @brief Creates an acceleration structure handle built with a given list of
+		 * other bottom-level acceleration structures.
+		 *
+		 * @param[in] handles List of acceleration structure handles
+		 * @return Acceleration structure handle
+		 */
+		AccelerationStructureHandle createAccelerationStructure(
+				const std::vector<AccelerationStructureHandle> &handles);
+		
+		/**
+		 * @brief the underlying vulkan handle for an acceleration structure
+		 * by its given acceleration structure handle.
+		 *
+		 * @param[in] handle Acceleration structure handle
+		 * @return Vulkan acceleration structure
+		 */
+		[[nodiscard]] vk::AccelerationStructureKHR getVulkanAccelerationStructure(
+				const AccelerationStructureHandle &handle) const;
+		
+		/**
+		 * @brief Return the underlying vulkan handle for an acceleration
+		 * structure by its given acceleration structure handle.
+		 *
+		 * @param[in] handle Acceleration structure handle
+		 * @return Vulkan buffer
+		 */
+		[[nodiscard]] vk::Buffer getVulkanBuffer(
+				const vkcv::AccelerationStructureHandle &handle) const;
+		
+		/**
+		 * @brief Returns the device address of an acceleration structure represented
+		 * by a given acceleration structure handle.
+		 *
+		 * @param[in] handle Acceleration structure handle
+		 * @return Device address of the acceleration structure
+		 */
+		[[nodiscard]] vk::DeviceAddress getAccelerationStructureDeviceAddress(
+				const vkcv::AccelerationStructureHandle &handle) const;
+		
 	};
 } // namespace vkcv

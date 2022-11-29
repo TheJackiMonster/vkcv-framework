@@ -70,7 +70,7 @@ targets:
  - [particle_simulation](projects/particle_simulation/README.md)
  - [path_tracer](projects/path_tracer/README.md)
  - [ray_tracer](projects/ray_tracer/README.md)
- - [rtx_ambient_occlusion](projects/rtx_ambient_occlusion/README.md)
+ - [rt_ambient_occlusion](projects/rt_ambient_occlusion/README.md)
  - [sph](projects/sph/README.md)
  - [voxelization](projects/voxelization/README.md)
 

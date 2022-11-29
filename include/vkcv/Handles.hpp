@@ -130,6 +130,16 @@ namespace vkcv {
 	private:
 		using Handle::Handle;
 	};
+	
+	/**
+	 * @brief Handle class for ray tracing pipelines.
+	 */
+	class RayTracingPipelineHandle : public Handle {
+		friend class RayTracingPipelineManager;
+	
+	private:
+		using Handle::Handle;
+	};
 
 	/**
 	 * @brief Handle class for descriptor set layouts.
@@ -187,6 +197,16 @@ namespace vkcv {
 		 */
 		static ImageHandle
 		createSwapchainImageHandle(const HandleDestroyFunction &destroy = nullptr);
+	};
+	
+	/**
+	 * @brief Handle class for acceleration structures.
+	 */
+	class AccelerationStructureHandle : public Handle {
+		friend class AccelerationStructureManager;
+	
+	private:
+		using Handle::Handle;
 	};
 
 	/**

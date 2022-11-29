@@ -3,10 +3,13 @@
 
 namespace vkcv {
 
-	VertexBufferBinding vertexBufferBinding(const BufferHandle &buffer, size_t offset) {
+	VertexBufferBinding vertexBufferBinding(const BufferHandle &buffer,
+											size_t stride,
+											size_t offset) {
 		VertexBufferBinding binding;
-		binding.buffer = buffer;
-		binding.offset = offset;
+		binding.m_buffer = buffer;
+		binding.m_stride = stride;
+		binding.m_offset = offset;
 		return binding;
 	}
 

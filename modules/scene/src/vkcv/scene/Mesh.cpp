@@ -123,6 +123,46 @@ namespace vkcv::scene {
 		}
 	}
 	
+	void Mesh::appendAccelerationStructures(Core &core,
+			std::vector<AccelerationStructureHandle> &accelerationStructures,
+			const ProcessGeometryFunction &process) const {
+		std::vector<GeometryData> geometryData;
+		geometryData.reserve(m_parts.size());
+		
+		for (auto& part : m_parts) {
+			if (part.m_geometry.isValid()) {
+				geometryData.push_back(part.m_geometry);
+			}
+		}
+		
+		if (geometryData.empty()) {
+			return;
+		}
+		
+		const glm::mat4 transformT = glm::transpose(m_transform);
+		
+		auto transformBuffer = buffer<glm::mat4>(core, BufferType::ACCELERATION_STRUCTURE_INPUT, 1);
+		transformBuffer.fill(&(transformT));
+		
+		const AccelerationStructureHandle handle = core.createAccelerationStructure(
+				geometryData,
+				transformBuffer.getHandle(),
+				true
+		);
+		
+		if (handle) {
+			const size_t instanceIndex = accelerationStructures.size();
+			
+			accelerationStructures.push_back(handle);
+			
+			if (process) {
+				for (size_t i = 0; i < geometryData.size(); i++) {
+					process(instanceIndex, i, geometryData[i], m_transform);
+				}
+			}
+		}
+	}
+	
 	size_t Mesh::getDrawcallCount() const {
 		return m_drawcalls.size();
 	}

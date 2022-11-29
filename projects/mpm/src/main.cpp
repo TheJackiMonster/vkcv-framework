@@ -550,7 +550,7 @@ int main(int argc, const char **argv) {
 		glm::vec2(+1.0f, -1.0f)
 	});
 	
-	vkcv::VertexData triangleData ({ vkcv::vertexBufferBinding(trianglePositions.getHandle()) });
+	vkcv::VertexData triangleData ({ vkcv::vertexBufferBinding(trianglePositions) });
 	triangleData.setCount(trianglePositions.getCount());
 	
 	vkcv::Buffer<glm::vec3> linesPositions = vkcv::buffer<glm::vec3>(core, vkcv::BufferType::VERTEX, 8);
@@ -583,7 +583,7 @@ int main(int argc, const char **argv) {
 		3, 7
 	});
 	
-	vkcv::VertexData linesData ({ vkcv::vertexBufferBinding(linesPositions.getHandle()) });
+	vkcv::VertexData linesData ({ vkcv::vertexBufferBinding(linesPositions) });
 	linesData.setIndexBuffer(linesIndices.getHandle());
 	linesData.setCount(linesIndices.getCount());
 	

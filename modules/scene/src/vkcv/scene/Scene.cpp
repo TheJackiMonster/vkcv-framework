@@ -99,6 +99,36 @@ namespace vkcv::scene {
 		}
 	}
 	
+	size_t Scene::getNodeCount() const {
+		size_t count = 0;
+		
+		for (const auto& node : m_nodes) {
+			count += node.getNodeCount();
+		}
+		
+		return count;
+	}
+	
+	size_t Scene::getMeshCount() const {
+		size_t count = 0;
+		
+		for (const auto& node : m_nodes) {
+			count += node.getMeshCount();
+		}
+		
+		return count;
+	}
+	
+	size_t Scene::getMeshPartCount() const {
+		size_t count = 0;
+		
+		for (const auto& node : m_nodes) {
+			count += node.getMeshPartCount();
+		}
+		
+		return count;
+	}
+	
 	size_t Scene::getMaterialCount() const {
 		return m_materials.size();
 	}
@@ -148,6 +178,17 @@ namespace vkcv::scene {
 		);
 		
 		m_core->recordEndDebugLabel(cmdStream);
+	}
+	
+	AccelerationStructureHandle Scene::createAccelerationStructure(
+			const ProcessGeometryFunction &process) const {
+		std::vector<AccelerationStructureHandle> accelerationStructures;
+		
+		for (auto& node : m_nodes) {
+			node.appendAccelerationStructures(*m_core, accelerationStructures, process);
+		}
+		
+		return m_core->createAccelerationStructure(accelerationStructures);
 	}
 	
 	Scene Scene::create(Core& core) {

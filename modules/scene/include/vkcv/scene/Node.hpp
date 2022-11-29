@@ -50,6 +50,30 @@ namespace vkcv::scene {
          * @param[in,out] scene Scene
          */
 		explicit Node(Scene& scene);
+		
+		/**
+		 * Return the amount of nodes managed by this node and its children.
+		 *
+		 * @return Amount of nodes
+		 */
+		[[nodiscard]]
+		size_t getNodeCount() const;
+		
+		/**
+		 * Return the amount of meshes managed by this node and its children.
+		 *
+		 * @return Amount of meshes
+		 */
+		[[nodiscard]]
+		size_t getMeshCount() const;
+		
+		/**
+		 * Return the amount of mesh parts managed by this node and its children.
+		 *
+		 * @return Amount of mesh parts
+		 */
+		[[nodiscard]]
+		size_t getMeshPartCount() const;
 
         /**
          * Add a given mesh to this node for drawcall recording.
@@ -81,6 +105,18 @@ namespace vkcv::scene {
 							 PushConstants& pushConstants,
 							 std::vector<InstanceDrawcall>& drawcalls,
 							 const RecordMeshDrawcallFunction& record);
+		
+		/**
+		 * Creates acceleration structures for all meshes of this node and its child
+		 * nodes to append them to a given list.
+		 *
+		 * @param[in,out] core Core instance
+		 * @param[out] accelerationStructures List of acceleration structures
+		 * @param[in] process Geometry processing event function
+		 */
+		void appendAccelerationStructures(Core& core,
+				std::vector<AccelerationStructureHandle>&accelerationStructures,
+				const ProcessGeometryFunction &process) const;
 
         /**
          * Splits child nodes into tree based graphs of nodes

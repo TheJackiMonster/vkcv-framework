@@ -148,6 +148,30 @@ namespace vkcv::scene {
          * @return Reference to this scene
          */
         Scene& operator=(Scene&& other) noexcept;
+		
+		/**
+		 * Return the amount of nodes managed by this scene in total.
+		 *
+		 * @return Amount of nodes
+		 */
+		[[nodiscard]]
+		size_t getNodeCount() const;
+		
+		/**
+		 * Return the amount of meshes managed by this scene in total.
+		 *
+		 * @return Amount of meshes
+		 */
+		[[nodiscard]]
+		size_t getMeshCount() const;
+		
+		/**
+		 * Return the amount of mesh parts managed by this scene in total.
+		 *
+		 * @return Amount of mesh parts
+		 */
+		[[nodiscard]]
+		size_t getMeshPartCount() const;
 
         /**
          * Return the amount of materials managed by this scene.
@@ -187,6 +211,17 @@ namespace vkcv::scene {
 							 const RecordMeshDrawcallFunction &record,
 							 const std::vector<ImageHandle>   &renderTargets,
 							 const WindowHandle               &windowHandle);
+		
+		/**
+		 * Create a top-level acceleration structure representing the scene in current state
+		 * which contains all of its meshes as bottom-level acceleration structures with
+		 * its given geometry.
+		 *
+		 * @param[in] process Geometry processing event function
+		 * @return Acceleration structure
+		 */
+		AccelerationStructureHandle createAccelerationStructure(
+				const ProcessGeometryFunction &process = nullptr) const;
 
         /**
          * Instantiation function to create a new scene instance.

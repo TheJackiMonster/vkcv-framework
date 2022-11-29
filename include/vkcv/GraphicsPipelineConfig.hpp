@@ -80,7 +80,8 @@ namespace vkcv {
 	public:
 		GraphicsPipelineConfig();
 
-		GraphicsPipelineConfig(const ShaderProgram &program, const PassHandle &pass,
+		GraphicsPipelineConfig(const ShaderProgram &program,
+							   const PassHandle &pass,
 							   const VertexLayout &vertexLayout,
 							   const std::vector<DescriptorSetLayoutHandle> &layouts);
 
