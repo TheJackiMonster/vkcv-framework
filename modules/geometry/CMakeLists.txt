@@ -11,22 +11,31 @@ set(vkcv_geometry_include ${PROJECT_SOURCE_DIR}/include)
 set(vkcv_geometry_sources
 		${vkcv_geometry_include}/vkcv/geometry/Geometry.hpp
 		${vkcv_geometry_source}/vkcv/geometry/Geometry.cpp
+		
 		${vkcv_geometry_include}/vkcv/geometry/Volume.hpp
 		${vkcv_geometry_source}/vkcv/geometry/Volume.cpp
+		
 		${vkcv_geometry_include}/vkcv/geometry/Circular.hpp
 		${vkcv_geometry_source}/vkcv/geometry/Circular.cpp
+		
 		${vkcv_geometry_include}/vkcv/geometry/Sphere.hpp
 		${vkcv_geometry_source}/vkcv/geometry/Sphere.cpp
+		
 		${vkcv_geometry_include}/vkcv/geometry/Cuboid.hpp
 		${vkcv_geometry_source}/vkcv/geometry/Cuboid.cpp
+		
 		${vkcv_geometry_include}/vkcv/geometry/Cylinder.hpp
 		${vkcv_geometry_source}/vkcv/geometry/Cylinder.cpp
+		
 		${vkcv_geometry_include}/vkcv/geometry/Teapot.hpp
 		${vkcv_geometry_source}/vkcv/geometry/Teapot.cpp
 )
 
+filter_headers(vkcv_geometry_sources ${vkcv_geometry_include} vkcv_geometry_headers)
+
 # adding source files to the project
 add_library(vkcv_geometry ${vkcv_build_attribute} ${vkcv_geometry_sources})
+set_target_properties(vkcv_geometry PROPERTIES PUBLIC_HEADER "${vkcv_geometry_headers}")
 
 # Setup some path variables to load libraries
 set(vkcv_geometry_lib lib)
@@ -56,3 +65,6 @@ if (vkcv_parent_scope)
 	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
 	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
 endif()
+
+install(TARGETS vkcv_geometry PUBLIC_HEADER DESTINATION
+		${CMAKE_INSTALL_INCLUDEDIR}/vkcv/geometry)

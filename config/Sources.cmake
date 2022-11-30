@@ -154,6 +154,8 @@ set(vkcv_sources
 		${vkcv_source}/vkcv/RayTracingPipelineConfig.cpp
 )
 
+filter_headers(vkcv_sources ${vkcv_include} vkcv_headers)
+
 if (BUILD_CLANG_FORMAT)
 	message(STATUS "Clang-Format: ON")
 	

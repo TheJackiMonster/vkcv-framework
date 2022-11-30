@@ -17,11 +17,14 @@ set(vkcv_meshlet_sources
 		${vkcv_meshlet_source}/vkcv/meshlet/Tipsify.cpp
 
 		${vkcv_meshlet_include}/vkcv/meshlet/Forsyth.hpp
-		${vkcv_meshlet_source}/vkcv/meshlet/Forsyth.cpp)
+		${vkcv_meshlet_source}/vkcv/meshlet/Forsyth.cpp
+)
+
+filter_headers(vkcv_meshlet_sources ${vkcv_meshlet_include} vkcv_meshlet_headers)
 
 # adding source files to the module
 add_library(vkcv_meshlet ${vkcv_build_attribute} ${vkcv_meshlet_sources})
-
+set_target_properties(vkcv_meshlet PROPERTIES PUBLIC_HEADER "${vkcv_meshlet_headers}")
 
 # link the required libraries to the module
 target_link_libraries(vkcv_meshlet vkcv ${vkcv_libraries})
@@ -42,3 +45,6 @@ if (vkcv_parent_scope)
 	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
 	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
 endif()
+
+install(TARGETS vkcv_meshlet PUBLIC_HEADER DESTINATION
+		${CMAKE_INSTALL_INCLUDEDIR}/vkcv/meshlet)

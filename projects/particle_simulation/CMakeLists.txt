@@ -17,7 +17,6 @@ add_project(particle_simulation
 target_include_directories(particle_simulation SYSTEM BEFORE PRIVATE
 		${vkcv_include}
 		${vkcv_includes}
-		${vkcv_testing_include}
 		${vkcv_camera_include}
 		${vkcv_shader_compiler_include}
 		${vkcv_effects_include})
@@ -25,7 +24,6 @@ target_include_directories(particle_simulation SYSTEM BEFORE PRIVATE
 # linking with libraries from all dependencies and the VkCV framework
 target_link_libraries(particle_simulation
 		vkcv
-		vkcv_testing
 		vkcv_camera
 		vkcv_shader_compiler
 		vkcv_effects)

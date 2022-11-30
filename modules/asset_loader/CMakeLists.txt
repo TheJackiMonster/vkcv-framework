@@ -14,8 +14,11 @@ set(vkcv_asset_loader_sources
 		${vkcv_asset_loader_source}/vkcv/asset/asset_loader.cpp
 )
 
+filter_headers(vkcv_asset_loader_sources ${vkcv_asset_loader_include} vkcv_asset_loader_headers)
+
 # adding source files to the module
 add_library(vkcv_asset_loader ${vkcv_build_attribute} ${vkcv_asset_loader_sources})
+set_target_properties(vkcv_asset_loader PROPERTIES PUBLIC_HEADER "${vkcv_asset_loader_headers}")
 
 # Setup some path variables to load libraries
 set(vkcv_asset_loader_lib lib)
@@ -48,3 +51,6 @@ if (vkcv_parent_scope)
 	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
 	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
 endif()
+
+install(TARGETS vkcv_asset_loader PUBLIC_HEADER DESTINATION
+		${CMAKE_INSTALL_INCLUDEDIR}/vkcv/asset)

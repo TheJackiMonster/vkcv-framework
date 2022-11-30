@@ -13,6 +13,8 @@ set(vkcv_algorithm_sources
 		${vkcv_algorithm_source}/vkcv/algorithm/SinglePassDownsampler.cpp
 )
 
+filter_headers(vkcv_algorithm_sources ${vkcv_algorithm_include} vkcv_algorithm_headers)
+
 # Setup some path variables to load libraries
 set(vkcv_algorithm_lib lib)
 set(vkcv_algorithm_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_algorithm_lib})
@@ -22,6 +24,7 @@ include(config/FidelityFX_SPD.cmake)
 
 # adding source files to the project
 add_library(vkcv_algorithm ${vkcv_build_attribute} ${vkcv_algorithm_sources})
+set_target_properties(vkcv_algorithm PROPERTIES PUBLIC_HEADER "${vkcv_algorithm_headers}")
 
 # link the required libraries to the module
 target_link_libraries(vkcv_algorithm ${vkcv_algorithm_libraries} vkcv vkcv_shader_compiler vkcv_camera vkcv_asset_loader)
@@ -39,3 +42,6 @@ if (vkcv_parent_scope)
 	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
 	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
 endif()
+
+install(TARGETS vkcv_algorithm PUBLIC_HEADER DESTINATION
+		${CMAKE_INSTALL_INCLUDEDIR}/vkcv/algorithm)

@@ -16,6 +16,8 @@ set(vkcv_effects_sources
 		${vkcv_effects_source}/vkcv/effects/BloomAndFlaresEffect.cpp
 )
 
+filter_headers(vkcv_effects_sources ${vkcv_effects_include} vkcv_effects_headers)
+
 set(vkcv_effects_shaders ${PROJECT_SOURCE_DIR}/shaders)
 
 include_shader(${vkcv_effects_shaders}/bloomDownsample.comp ${vkcv_effects_include} ${vkcv_effects_source})
@@ -35,6 +37,7 @@ list(APPEND vkcv_effects_sources ${vkcv_effects_include}/lensFlares.comp.hxx)
 
 # adding source files to the project
 add_library(vkcv_effects ${vkcv_build_attribute} ${vkcv_effects_sources})
+set_target_properties(vkcv_effects PROPERTIES PUBLIC_HEADER "${vkcv_effects_headers}")
 
 # link the required libraries to the module
 target_link_libraries(vkcv_effects ${vkcv_effects_libraries} vkcv vkcv_shader_compiler vkcv_camera vkcv_asset_loader)
@@ -52,3 +55,6 @@ if (vkcv_parent_scope)
 	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
 	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
 endif()
+
+install(TARGETS vkcv_effects PUBLIC_HEADER DESTINATION
+		${CMAKE_INSTALL_INCLUDEDIR}/vkcv/effects)

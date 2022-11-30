@@ -54,3 +54,6 @@ if (vkcv_definitions)
 endif ()
 
 list(JOIN vkcv_flags " " vkcv_flags)
+
+# add custom function to filter headers from source file lists
+include(${vkcv_config_ext}/FilterHeaders.cmake)
