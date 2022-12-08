@@ -61,7 +61,7 @@ namespace vkcv {
 	 */
 	struct AccelerationDescriptorWrite {
 		uint32_t binding;
-		std::vector<vk::AccelerationStructureKHR> structures;
+		std::vector<AccelerationStructureHandle> structures;
 	};
 
 	/**
@@ -154,12 +154,12 @@ namespace vkcv {
 		 * of a descriptor set.
 		 *
 		 * @param[in] binding Binding index
-		 * @param[in] structures Acceleration structures
+		 * @param[in] structures Acceleration structure handles
 		 * @return Instance of descriptor writes
 		 */
 		DescriptorWrites &
 		writeAcceleration(uint32_t binding,
-						  const std::vector<vk::AccelerationStructureKHR> &structures);
+						  const std::vector<AccelerationStructureHandle> &structures);
 
 		/**
 		 * @brief Returns the list of stored write entries for sampled images.

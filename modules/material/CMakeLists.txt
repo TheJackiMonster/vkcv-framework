@@ -14,8 +14,11 @@ set(vkcv_material_sources
 		${vkcv_material_source}/vkcv/material/Material.cpp
 )
 
+filter_headers(vkcv_material_sources ${vkcv_material_include} vkcv_material_headers)
+
 # adding source files to the module
 add_library(vkcv_material ${vkcv_build_attribute} ${vkcv_material_sources})
+set_target_properties(vkcv_material PROPERTIES PUBLIC_HEADER "${vkcv_material_headers}")
 
 # link the required libraries to the module
 target_link_libraries(vkcv_material vkcv ${vkcv_libraries})
@@ -33,3 +36,6 @@ if (vkcv_parent_scope)
 	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
 	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
 endif()
+
+install(TARGETS vkcv_material PUBLIC_HEADER DESTINATION
+		${CMAKE_INSTALL_INCLUDEDIR}/vkcv/material)

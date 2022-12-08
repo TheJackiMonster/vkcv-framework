@@ -45,6 +45,8 @@ namespace vkcv {
 		std::allocator<char> m_allocator;
 		
 		bool m_resizableBar;
+		bool m_shaderDeviceAddress;
+		
 		BufferHandle m_stagingBuffer;
 
 		bool init(Core &core) override;
@@ -77,11 +79,12 @@ namespace vkcv {
 		 * @param[in] size Size of buffer in bytes
 		 * @param[in] supportIndirect Support of indirect usage
 		 * @param[in] readable Support read functionality
+		 * @param[in] alignment (optional) Alignment for buffer memory
 		 * @return New buffer handle
 		 */
 		[[nodiscard]] BufferHandle createBuffer(const TypeGuard &typeGuard, BufferType type,
 												BufferMemoryType memoryType, size_t size,
-												bool readable);
+												bool readable, size_t alignment = 0);
 
 		/**
 		 * @brief Returns the Vulkan buffer handle of a buffer
@@ -136,6 +139,15 @@ namespace vkcv {
 		 * @return Vulkan device memory handle
 		 */
 		[[nodiscard]] vk::DeviceMemory getDeviceMemory(const BufferHandle &handle) const;
+		
+		/**
+		 * @brief Returns the Vulkan device address of a buffer
+		 * represented by a given buffer handle id.
+		 *
+		 * @param[in] handle Buffer handle
+		 * @return Vulkan device address
+		 */
+		[[nodiscard]] vk::DeviceAddress getBufferDeviceAddress(const BufferHandle &handle) const;
 
 		/**
 		 * @brief Fills a buffer represented by a given buffer
@@ -145,8 +157,13 @@ namespace vkcv {
 		 * @param[in] data Pointer to data
 		 * @param[in] size Size of data in bytes
 		 * @param[in] offset Offset to fill in data in bytes
+		 * @param[in] forceStaging (Optional) Flag to enforce transfer via staging buffer
 		 */
-		void fillBuffer(const BufferHandle &handle, const void* data, size_t size, size_t offset);
+		void fillBuffer(const BufferHandle &handle,
+						const void* data,
+						size_t size,
+						size_t offset,
+						bool forceStaging = false);
 
 		/**
 		 * @brief Reads from a buffer represented by a given

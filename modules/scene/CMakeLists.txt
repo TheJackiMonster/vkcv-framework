@@ -29,8 +29,11 @@ set(vkcv_scene_sources
 		${vkcv_scene_source}/vkcv/scene/Scene.cpp
 )
 
+filter_headers(vkcv_scene_sources ${vkcv_scene_include} vkcv_scene_headers)
+
 # adding source files to the module
 add_library(vkcv_scene ${vkcv_build_attribute} ${vkcv_scene_sources})
+set_target_properties(vkcv_scene PROPERTIES PUBLIC_HEADER "${vkcv_scene_headers}")
 
 # link the required libraries to the module
 target_link_libraries(vkcv_scene vkcv)
@@ -62,3 +65,6 @@ if (vkcv_parent_scope)
 	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
 	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
 endif()
+
+install(TARGETS vkcv_scene PUBLIC_HEADER DESTINATION
+		${CMAKE_INSTALL_INCLUDEDIR}/vkcv/scene)

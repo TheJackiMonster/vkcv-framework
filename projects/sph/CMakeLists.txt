@@ -17,7 +17,6 @@ add_project(sph
 target_include_directories(sph SYSTEM BEFORE PRIVATE
 		${vkcv_include}
 		${vkcv_includes}
-		${vkcv_testing_include}
 		${vkcv_camera_include}
 		${vkcv_shader_compiler_include}
 		${vkcv_effects_include})
@@ -25,7 +24,6 @@ target_include_directories(sph SYSTEM BEFORE PRIVATE
 # linking with libraries from all dependencies and the VkCV framework
 target_link_libraries(sph
 		vkcv
-		vkcv_testing
 		vkcv_camera
 		vkcv_shader_compiler
 		vkcv_effects)

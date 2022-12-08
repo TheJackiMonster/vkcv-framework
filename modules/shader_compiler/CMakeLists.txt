@@ -17,8 +17,11 @@ set(vkcv_shader_compiler_sources
 		${vkcv_shader_compiler_source}/vkcv/shader/GLSLCompiler.cpp
 )
 
+filter_headers(vkcv_shader_compiler_sources ${vkcv_shader_compiler_include} vkcv_shader_compiler_headers)
+
 # adding source files to the module
 add_library(vkcv_shader_compiler ${vkcv_build_attribute} ${vkcv_shader_compiler_sources})
+set_target_properties(vkcv_shader_compiler PROPERTIES PUBLIC_HEADER "${vkcv_shader_compiler_headers}")
 
 # Setup some path variables to load libraries
 set(vkcv_shader_compiler_lib lib)
@@ -43,3 +46,6 @@ if (vkcv_parent_scope)
 	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
 	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
 endif()
+
+install(TARGETS vkcv_shader_compiler PUBLIC_HEADER DESTINATION
+		${CMAKE_INSTALL_INCLUDEDIR}/vkcv/shader)

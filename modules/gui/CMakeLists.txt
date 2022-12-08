@@ -12,7 +12,9 @@ set(vkcv_gui_include ${PROJECT_SOURCE_DIR}/include)
 set(vkcv_gui_sources
 		${vkcv_gui_include}/vkcv/gui/GUI.hpp
 		${vkcv_gui_source}/vkcv/gui/GUI.cpp
-		)
+)
+
+filter_headers(vkcv_gui_sources ${vkcv_gui_include} vkcv_gui_headers)
 
 # Setup some path variables to load libraries
 set(vkcv_gui_lib lib)
@@ -23,6 +25,7 @@ include(config/ImGui.cmake)
 
 # adding source files to the module
 add_library(vkcv_gui ${vkcv_build_attribute} ${vkcv_gui_sources} ${vkcv_imgui_sources})
+set_target_properties(vkcv_gui PROPERTIES PUBLIC_HEADER "${vkcv_gui_headers}")
 
 # link the required libraries to the module
 target_link_libraries(vkcv_gui ${vkcv_gui_libraries} vkcv ${vkcv_libraries})
@@ -42,3 +45,6 @@ if (vkcv_parent_scope)
 	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
 	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
 endif()
+
+install(TARGETS vkcv_gui PUBLIC_HEADER DESTINATION
+		${CMAKE_INSTALL_INCLUDEDIR}/vkcv/gui)

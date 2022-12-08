@@ -9,10 +9,13 @@ namespace vkcv {
 		m_Height(std::numeric_limits<uint32_t>::max()) {}
 
 	GraphicsPipelineConfig::GraphicsPipelineConfig(
-		const ShaderProgram &program, const PassHandle &pass, const VertexLayout &vertexLayout,
+		const ShaderProgram &program,
+		const PassHandle &pass,
+		const VertexLayout &vertexLayout,
 		const std::vector<DescriptorSetLayoutHandle> &layouts) :
 		PipelineConfig(program, layouts),
-		m_PassHandle(pass), m_VertexLayout(vertexLayout),
+		m_PassHandle(pass),
+		m_VertexLayout(vertexLayout),
 		m_Width(std::numeric_limits<uint32_t>::max()),
 		m_Height(std::numeric_limits<uint32_t>::max()) {}
 

@@ -885,7 +885,11 @@ namespace vkcv::asset {
 				break;
 			}
 			
-			bindings.push_back(vkcv::vertexBufferBinding(buffer, attribute->offset));
+			bindings.push_back(vkcv::vertexBufferBinding(
+					buffer,
+					attribute->stride,
+					attribute->offset
+			));
 		}
 		
 		return bindings;

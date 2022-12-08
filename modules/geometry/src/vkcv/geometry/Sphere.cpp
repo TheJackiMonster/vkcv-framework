@@ -137,10 +137,10 @@ namespace vkcv::geometry {
 		indexBuffer.fill(sphereIndices);
 		
 		VertexData data ({
-			vkcv::vertexBufferBinding(positionBuffer.getHandle()),
-			vkcv::vertexBufferBinding(normalBuffer.getHandle()),
-			vkcv::vertexBufferBinding(uvBuffer.getHandle()),
-			vkcv::vertexBufferBinding(tangentBuffer.getHandle())
+			vkcv::vertexBufferBinding(positionBuffer),
+			vkcv::vertexBufferBinding(normalBuffer),
+			vkcv::vertexBufferBinding(uvBuffer),
+			vkcv::vertexBufferBinding(tangentBuffer)
 		});
 		
 		data.setIndexBuffer(indexBuffer.getHandle(), IndexBitCount::Bit32);

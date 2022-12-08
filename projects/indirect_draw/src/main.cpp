@@ -436,7 +436,7 @@ int main(int argc, const char** argv) {
 	modelBuffer.fill(modelMatrix);
 
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-			vkcv::vertexBufferBinding(vkCompiledVertexBuffer.getHandle())
+			vkcv::vertexBufferBinding(vkCompiledVertexBuffer)
 	};
 	
 	vkcv::VertexData vertexData (vertexBufferBindings);

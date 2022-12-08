@@ -118,12 +118,14 @@ message(STATUS "Framework:")
 message(" - Includes: [ ${vkcv_includes} ]")
 message(" - Libraries: [ ${vkcv_libraries} ]")
 message(" - Flags: [ ${vkcv_flags} ]")
+message(" - Headers: [ ${vkcv_headers} ]")
 
 # set the compiler flags for the framework
 set(CMAKE_CXX_FLAGS ${vkcv_flags})
 
 # create VkCV framework as library using all source files
 add_library(vkcv ${vkcv_build_attribute} ${vkcv_sources})
+set_target_properties(vkcv PROPERTIES PUBLIC_HEADER "${vkcv_headers}")
 
 if(MSVC)
   #enable multicore compilation on visual studio
@@ -172,3 +174,6 @@ if (vkcv_parent_scope)
 	set(vkcv_includes ${vkcv_includes} PARENT_SCOPE)
 	set(vkcv_libraries ${vkcv_libraries} PARENT_SCOPE)
 endif()
+
+install(TARGETS vkcv PUBLIC_HEADER DESTINATION
+		${CMAKE_INSTALL_INCLUDEDIR}/vkcv)

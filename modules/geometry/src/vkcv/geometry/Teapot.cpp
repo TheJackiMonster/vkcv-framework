@@ -14934,10 +14934,10 @@ namespace vkcv::geometry {
 		indexBuffer.fill(teapotIndices);
 		
 		VertexData data ({
-			vkcv::vertexBufferBinding(positionBuffer.getHandle()),
-			vkcv::vertexBufferBinding(normalBuffer.getHandle()),
-			vkcv::vertexBufferBinding(uvBuffer.getHandle()),
-			vkcv::vertexBufferBinding(tangentBuffer.getHandle())
+			vkcv::vertexBufferBinding(positionBuffer.getHandle(), sizeof(float) * 3),
+			vkcv::vertexBufferBinding(normalBuffer.getHandle(), sizeof(float) * 3),
+			vkcv::vertexBufferBinding(uvBuffer.getHandle(), sizeof(float) * 2),
+			vkcv::vertexBufferBinding(tangentBuffer)
 		});
 		
 		data.setIndexBuffer(indexBuffer.getHandle());

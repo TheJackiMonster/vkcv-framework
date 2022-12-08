@@ -25,6 +25,8 @@ set(vkcv_upscaling_sources
 		${vkcv_upscaling_source}/vkcv/upscaling/FSR2Upscaling.cpp
 )
 
+filter_headers(vkcv_upscaling_sources ${vkcv_upscaling_include} vkcv_upscaling_headers)
+
 # Setup some path variables to load libraries
 set(vkcv_upscaling_lib lib)
 set(vkcv_upscaling_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_upscaling_lib})
@@ -43,6 +45,7 @@ add_compile_definitions(${vkcv_upscaling_definitions})
 
 # adding source files to the project
 add_library(vkcv_upscaling ${vkcv_build_attribute} ${vkcv_upscaling_sources})
+set_target_properties(vkcv_upscaling PROPERTIES PUBLIC_HEADER "${vkcv_upscaling_headers}")
 
 # link the required libraries to the module
 target_link_libraries(vkcv_upscaling ${vkcv_upscaling_libraries} vkcv vkcv_shader_compiler)
@@ -60,3 +63,6 @@ if (vkcv_parent_scope)
 	set(vkcv_modules_includes ${vkcv_modules_includes} PARENT_SCOPE)
 	set(vkcv_modules_libraries ${vkcv_modules_libraries} PARENT_SCOPE)
 endif()
+
+install(TARGETS vkcv_upscaling PUBLIC_HEADER DESTINATION
+		${CMAKE_INSTALL_INCLUDEDIR}/vkcv/upscaling)

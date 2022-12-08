@@ -8,6 +8,7 @@
 #include <vkcv/Logger.hpp>
 
 #include <limits>
+#include <numeric>
 
 namespace vkcv {
 
@@ -56,6 +57,15 @@ namespace vkcv {
 		} else {
 			m_resizableBar = false;
 		}
+		
+		m_shaderDeviceAddress = getCore().getContext().getFeatureManager().checkFeatures<
+		        vk::PhysicalDeviceBufferDeviceAddressFeatures
+		>(
+				vk::StructureType::ePhysicalDeviceBufferDeviceAddressFeatures,
+				[](const vk::PhysicalDeviceBufferDeviceAddressFeatures &features) {
+					return features.bufferDeviceAddress;
+				}
+		);
 
 		m_stagingBuffer = createBuffer(
 				TypeGuard(1),
@@ -96,6 +106,7 @@ namespace vkcv {
 	BufferManager::BufferManager() noexcept :
 		HandleManager<BufferEntry, BufferHandle>(),
 		m_resizableBar(false),
+		m_shaderDeviceAddress(false),
 		m_stagingBuffer(BufferHandle()) {}
 
 	BufferManager::~BufferManager() noexcept {
@@ -104,13 +115,15 @@ namespace vkcv {
 
 	BufferHandle BufferManager::createBuffer(const TypeGuard &typeGuard, BufferType type,
 											 BufferMemoryType memoryType, size_t size,
-											 bool readable) {
+											 bool readable, size_t alignment) {
 		vk::BufferCreateFlags createFlags;
 		vk::BufferUsageFlags usageFlags;
 
 		switch (type) {
 		case BufferType::VERTEX:
-			usageFlags = vk::BufferUsageFlagBits::eVertexBuffer;
+			usageFlags = vk::BufferUsageFlagBits::eVertexBuffer
+						| vk::BufferUsageFlagBits::eStorageBuffer
+						| vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 			break;
 		case BufferType::UNIFORM:
 			usageFlags = vk::BufferUsageFlagBits::eUniformBuffer;
@@ -123,11 +136,23 @@ namespace vkcv {
 						| vk::BufferUsageFlagBits::eTransferDst;
 			break;
 		case BufferType::INDEX:
-			usageFlags = vk::BufferUsageFlagBits::eIndexBuffer;
+			usageFlags = vk::BufferUsageFlagBits::eIndexBuffer
+						| vk::BufferUsageFlagBits::eStorageBuffer
+						| vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 			break;
 		case BufferType::INDIRECT:
 			usageFlags = vk::BufferUsageFlagBits::eStorageBuffer
 						| vk::BufferUsageFlagBits::eIndirectBuffer;
+			break;
+		case BufferType::SHADER_BINDING:
+			usageFlags = vk::BufferUsageFlagBits::eShaderBindingTableKHR;
+			break;
+		case BufferType::ACCELERATION_STRUCTURE_INPUT:
+			usageFlags = vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
+			break;
+		case BufferType::ACCELERATION_STRUCTURE_STORAGE:
+			usageFlags = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
+						 | vk::BufferUsageFlagBits::eStorageBuffer;
 			break;
 		default:
 			vkcv_log(LogLevel::WARNING, "Unknown buffer type");
@@ -141,11 +166,19 @@ namespace vkcv {
 		if (readable) {
 			usageFlags |= vk::BufferUsageFlagBits::eTransferSrc;
 		}
+		
+		if (m_shaderDeviceAddress) {
+			usageFlags |= vk::BufferUsageFlagBits::eShaderDeviceAddress;
+		}
+		
+		if (usageFlags & vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR) {
+			alignment = (alignment > 0? std::lcm(alignment, 16) : 16);
+		}
 
 		const vma::Allocator &allocator = getCore().getContext().getAllocator();
 
 		vma::MemoryUsage memoryUsage;
-		bool mappable = false;
+		bool mappable;
 
 		switch (memoryType) {
 		case BufferMemoryType::DEVICE_LOCAL:
@@ -177,7 +210,7 @@ namespace vkcv {
 									| vma::AllocationCreateFlagBits::eHostAccessSequentialWrite;
 		}
 
-		auto bufferAllocation = allocator.createBuffer(
+		const auto bufferAllocation = allocator.createBufferWithAlignment(
 			vk::BufferCreateInfo(createFlags, size, usageFlags),
 			vma::AllocationCreateInfo(
 					allocationCreateFlags,
@@ -187,11 +220,12 @@ namespace vkcv {
 					0,
 					vma::Pool(),
 					nullptr
-			)
+			),
+			static_cast<vk::DeviceSize>(alignment)
 		);
 
-		vk::Buffer buffer = bufferAllocation.first;
-		vma::Allocation allocation = bufferAllocation.second;
+		const vk::Buffer buffer = bufferAllocation.first;
+		const vma::Allocation allocation = bufferAllocation.second;
 		
 		const vk::MemoryPropertyFlags finalMemoryFlags = allocator.getAllocationMemoryProperties(
 				allocation
@@ -368,9 +402,21 @@ namespace vkcv {
 
 		return info.deviceMemory;
 	}
+	
+	vk::DeviceAddress BufferManager::getBufferDeviceAddress(
+			const vkcv::BufferHandle &handle) const {
+		auto &buffer = (*this) [handle];
+		
+		return getCore().getContext().getDevice().getBufferAddress(
+				vk::BufferDeviceAddressInfo(buffer.m_handle)
+		);
+	}
 
-	void BufferManager::fillBuffer(const BufferHandle &handle, const void* data, size_t size,
-								   size_t offset) {
+	void BufferManager::fillBuffer(const BufferHandle &handle,
+								   const void* data,
+								   size_t size,
+								   size_t offset,
+								   bool forceStaging) {
 		auto &buffer = (*this) [handle];
 
 		if (size == 0) {
@@ -385,7 +431,7 @@ namespace vkcv {
 
 		const size_t max_size = std::min(size, buffer.m_size - offset);
 
-		if (buffer.m_mappable) {
+		if ((buffer.m_mappable) && (!forceStaging)) {
 			void* mapped = allocator.mapMemory(buffer.m_allocation);
 			memcpy(reinterpret_cast<char*>(mapped) + offset, data, max_size);
 			allocator.unmapMemory(buffer.m_allocation);
@@ -408,7 +454,9 @@ namespace vkcv {
 		}
 	}
 
-	void BufferManager::readBuffer(const BufferHandle &handle, void* data, size_t size,
+	void BufferManager::readBuffer(const BufferHandle &handle,
+								   void* data,
+								   size_t size,
 								   size_t offset) {
 		auto &buffer = (*this) [handle];
 

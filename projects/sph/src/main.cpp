@@ -96,7 +96,7 @@ int main(int argc, const char **argv) {
     const std::vector<vkcv::VertexAttachment> vertexAttachments = particleShaderProgram.getVertexAttachments();
 
     const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
-            vkcv::vertexBufferBinding(vertexBuffer.getHandle())
+            vkcv::vertexBufferBinding(vertexBuffer)
 	};
 
     std::vector<vkcv::VertexBinding> bindings;

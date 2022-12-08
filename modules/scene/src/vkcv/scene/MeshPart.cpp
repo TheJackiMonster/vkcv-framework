@@ -9,6 +9,7 @@ namespace vkcv::scene {
 	MeshPart::MeshPart(Scene& scene) :
 	m_scene(scene),
 	m_data(),
+	m_geometry(),
 	m_bounds(),
 	m_materialIndex(std::numeric_limits<size_t>::max()) {}
 	
@@ -31,6 +32,22 @@ namespace vkcv::scene {
 						types
 				)
 		);
+		
+		size_t positionAttributeIndex = types.size();
+		for (size_t i = 0; i < types.size(); i++) {
+			if (types[i] == asset::PrimitiveType::POSITION) {
+				positionAttributeIndex = i;
+				break;
+			}
+		}
+		
+		if (positionAttributeIndex < m_data.getVertexBufferBindings().size()) {
+			m_geometry = GeometryData(
+					m_data.getVertexBufferBindings()[positionAttributeIndex],
+					vertexGroup.numVertices - 1,
+					GeometryVertexType::POSITION_FLOAT3
+			);
+		}
 		
 		if (!vertexGroup.indexBuffer.data.empty()) {
 			auto indexBuffer = buffer<uint8_t>(
@@ -58,8 +75,17 @@ namespace vkcv::scene {
 			
 			m_data.setIndexBuffer(indexBuffer.getHandle(), indexBitCount);
 			m_data.setCount(vertexGroup.numIndices);
+			
+			if (m_geometry.isValid()) {
+				m_geometry.setIndexBuffer(indexBuffer.getHandle(), indexBitCount);
+				m_geometry.setCount(vertexGroup.numIndices);
+			}
 		} else {
 			m_data.setCount(vertexGroup.numVertices);
+			
+			if (m_geometry.isValid()) {
+				m_geometry.setCount(vertexGroup.numVertices);
+			}
 		}
 		
 		m_bounds.setMin(glm::vec3(
@@ -103,6 +129,7 @@ namespace vkcv::scene {
 	MeshPart::MeshPart(const MeshPart &other) :
 			m_scene(other.m_scene),
 			m_data(other.m_data),
+			m_geometry(other.m_geometry),
 			m_bounds(other.m_bounds),
 			m_materialIndex(other.m_materialIndex) {
 		m_scene.increaseMaterialUsage(m_materialIndex);
@@ -111,6 +138,7 @@ namespace vkcv::scene {
 	MeshPart::MeshPart(MeshPart &&other) noexcept :
 			m_scene(other.m_scene),
 			m_data(other.m_data),
+			m_geometry(other.m_geometry),
 			m_bounds(other.m_bounds),
 			m_materialIndex(other.m_materialIndex) {
 		m_scene.increaseMaterialUsage(m_materialIndex);
@@ -122,6 +150,7 @@ namespace vkcv::scene {
 		}
 		
 		m_data = other.m_data;
+		m_geometry = other.m_geometry;
 		m_bounds = other.m_bounds;
 		m_materialIndex = other.m_materialIndex;
 		
@@ -130,6 +159,7 @@ namespace vkcv::scene {
 	
 	MeshPart &MeshPart::operator=(MeshPart &&other) noexcept {
 		m_data = other.m_data;
+		m_geometry = other.m_geometry;
 		m_bounds = other.m_bounds;
 		m_materialIndex = other.m_materialIndex;
 		

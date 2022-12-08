@@ -22,13 +22,14 @@ namespace vkcv {
 			vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
 			vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000),
 			vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic, 1000),
-			vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic, 1000),    // for RTX
-			vk::DescriptorPoolSize(vk::DescriptorType::eAccelerationStructureKHR, 1000) // for RTX
+			vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic, 1000),
+			vk::DescriptorPoolSize(vk::DescriptorType::eAccelerationStructureKHR, 1000)
 		};
 
 		m_PoolInfo = vk::DescriptorPoolCreateInfo(
 			vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, 1000,
-			static_cast<uint32_t>(m_PoolSizes.size()), m_PoolSizes.data());
+			static_cast<uint32_t>(m_PoolSizes.size()), m_PoolSizes.data()
+		);
 
 		return allocateDescriptorPool();
 	}
@@ -146,10 +147,28 @@ namespace vkcv {
 
 		std::vector<vk::DescriptorImageInfo> imageInfos;
 		std::vector<vk::DescriptorBufferInfo> bufferInfos;
+		
+		bufferInfos.reserve(
+				writes.getUniformBufferWrites().size() +
+				writes.getStorageBufferWrites().size()
+		);
+		
+		std::vector<vk::AccelerationStructureKHR> accelerationStructures;
+		std::vector<size_t> accelerationStructureOffsets;
+		
+		accelerationStructureOffsets.reserve(writes.getAccelerationWrites().size());
 
 		std::vector<vk::WriteDescriptorSetAccelerationStructureKHR> writeStructures;
 
 		std::vector<WriteDescriptorSetInfo> writeInfos;
+		writeInfos.reserve(
+				writes.getSampledImageWrites().size() +
+				writes.getStorageImageWrites().size() +
+				writes.getUniformBufferWrites().size() +
+				writes.getStorageBufferWrites().size() +
+				writes.getSamplerWrites().size() +
+				writes.getAccelerationWrites().size()
+		);
 
 		for (const auto &write : writes.getSampledImageWrites()) {
 			const vk::ImageLayout layout =
@@ -208,15 +227,17 @@ namespace vkcv {
 
 			bufferInfos.push_back(bufferInfo);
 
-			WriteDescriptorSetInfo vulkanWrite = { 0,
-												   bufferInfos.size(),
-												   0,
-												   write.binding,
-												   0,
-												   1,
-												   write.dynamic ?
-													   vk::DescriptorType::eUniformBufferDynamic :
-													   vk::DescriptorType::eUniformBuffer };
+			WriteDescriptorSetInfo vulkanWrite = {
+					0,
+					bufferInfos.size(),
+					0,
+					write.binding,
+					0,
+					1,
+					write.dynamic ?
+						vk::DescriptorType::eUniformBufferDynamic :
+						vk::DescriptorType::eUniformBuffer
+			};
 
 			writeInfos.push_back(vulkanWrite);
 		}
@@ -231,15 +252,17 @@ namespace vkcv {
 
 			bufferInfos.push_back(bufferInfo);
 
-			WriteDescriptorSetInfo vulkanWrite = { 0,
-												   bufferInfos.size(),
-												   0,
-												   write.binding,
-												   0,
-												   1,
-												   write.dynamic ?
-													   vk::DescriptorType::eStorageBufferDynamic :
-													   vk::DescriptorType::eStorageBuffer };
+			WriteDescriptorSetInfo vulkanWrite = {
+					0,
+					bufferInfos.size(),
+					0,
+					write.binding,
+					0,
+					1,
+					write.dynamic ?
+						vk::DescriptorType::eStorageBufferDynamic :
+						vk::DescriptorType::eStorageBuffer
+			};
 
 			writeInfos.push_back(vulkanWrite);
 		}
@@ -257,25 +280,40 @@ namespace vkcv {
 
 			writeInfos.push_back(vulkanWrite);
 		}
-
+		
 		for (const auto &write : writes.getAccelerationWrites()) {
+			accelerationStructureOffsets.push_back(accelerationStructures.size());
+			
+			for (const auto &handle : write.structures) {
+				accelerationStructures.push_back(getCore().getVulkanAccelerationStructure(handle));
+			}
+		}
+
+		for (size_t i = 0; i < writes.getAccelerationWrites().size(); i++) {
+			const auto &write = writes.getAccelerationWrites()[i];
+			
 			const vk::WriteDescriptorSetAccelerationStructureKHR structureWrite(
-				write.structures.size(), write.structures.data());
+					write.structures.size(),
+					&(accelerationStructures[ accelerationStructureOffsets[i] ])
+			);
 
 			writeStructures.push_back(structureWrite);
 
-			WriteDescriptorSetInfo vulkanWrite = { 0,
-												   0,
-												   writeStructures.size(),
-												   write.binding,
-												   0,
-												   1,
-												   vk::DescriptorType::eAccelerationStructureKHR };
+			WriteDescriptorSetInfo vulkanWrite = {
+					0,
+					0,
+					writeStructures.size(),
+					write.binding,
+					0,
+					1,
+					vk::DescriptorType::eAccelerationStructureKHR
+			};
 
 			writeInfos.push_back(vulkanWrite);
 		}
 
 		std::vector<vk::WriteDescriptorSet> vulkanWrites;
+		vulkanWrites.reserve(writeInfos.size());
 
 		for (const auto &write : writeInfos) {
 			vk::WriteDescriptorSet vulkanWrite(

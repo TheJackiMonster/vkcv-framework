@@ -20,6 +20,13 @@ namespace vkcv::scene {
      */
 	typedef typename event_function<const glm::mat4&, const glm::mat4&, PushConstants&, vkcv::Drawcall&>::type RecordMeshDrawcallFunction;
 	
+	/**
+	* An event function type to be called on per geometry while creating an
+	* acceleration structure using the given instance index and geometry index
+	* of each geometry in a bottom-level acceleration structure.
+	*/
+	typedef typename event_function<size_t, size_t, const vkcv::GeometryData&, const glm::mat4&>::type ProcessGeometryFunction;
+	
 	class Node;
 
     /**
@@ -85,6 +92,18 @@ namespace vkcv::scene {
 							 PushConstants& pushConstants,
 							 std::vector<InstanceDrawcall>& drawcalls,
 							 const RecordMeshDrawcallFunction& record);
+		
+		/**
+		 * Creates acceleration structures for the whole geometry of this mesh and
+		 * appends it to a given list.
+		 *
+		 * @param[in,out] core Core instance
+		 * @param[out] accelerationStructures List of acceleration structures
+		 * @param[in] process Geometry processing event function
+		 */
+		void appendAccelerationStructures(Core& core,
+				std::vector<AccelerationStructureHandle>&accelerationStructures,
+				const ProcessGeometryFunction &process) const;
 
         /**
          * Return the amount of drawcalls of the mesh
