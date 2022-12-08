@@ -83,10 +83,12 @@ int main(int argc, const char** argv) {
 	vkcv::Features features;
 	features.requireExtension(VK_EXT_MESH_SHADER_EXTENSION_NAME);
 	features.requireExtensionFeature<vk::PhysicalDeviceMeshShaderFeaturesEXT>(
-			VK_EXT_MESH_SHADER_EXTENSION_NAME, [](vk::PhysicalDeviceMeshShaderFeaturesEXT& features) {
-		features.setTaskShader(true);
-		features.setMeshShader(true);
-	});
+			VK_EXT_MESH_SHADER_EXTENSION_NAME,
+			[](vk::PhysicalDeviceMeshShaderFeaturesEXT& features) {
+				features.setTaskShader(true);
+				features.setMeshShader(true);
+			}
+	);
 
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,

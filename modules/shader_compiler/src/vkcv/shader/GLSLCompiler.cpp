@@ -55,9 +55,9 @@ namespace vkcv::shader {
 			case ShaderStage::COMPUTE:
 				return EShLangCompute;
 			case ShaderStage::TASK:
-				return EShLangTaskNV;
+				return EShLangTask;
 			case ShaderStage::MESH:
-				return EShLangMeshNV;
+				return EShLangMesh;
 			case ShaderStage::RAY_GEN:
 			    return EShLangRayGen;
 			case ShaderStage::RAY_CLOSEST_HIT:
@@ -159,24 +159,24 @@ namespace vkcv::shader {
 		resources.maxCullDistances = 8;
 		resources.maxCombinedClipAndCullDistances = 8;
 		resources.maxSamples = 4;
-		resources.maxMeshOutputVerticesNV = 256;
-		resources.maxMeshOutputPrimitivesNV = 512;
-		resources.maxMeshWorkGroupSizeX_NV = 32;
-		resources.maxMeshWorkGroupSizeY_NV = 1;
-		resources.maxMeshWorkGroupSizeZ_NV = 1;
-		resources.maxTaskWorkGroupSizeX_NV = 32;
-		resources.maxTaskWorkGroupSizeY_NV = 1;
-		resources.maxTaskWorkGroupSizeZ_NV = 1;
-		resources.maxMeshViewCountNV = 4;
-		resources.limits.nonInductiveForLoops = 1;
-		resources.limits.whileLoops = 1;
-		resources.limits.doWhileLoops = 1;
-		resources.limits.generalUniformIndexing = 1;
-		resources.limits.generalAttributeMatrixVectorIndexing = 1;
-		resources.limits.generalVaryingIndexing = 1;
-		resources.limits.generalSamplerIndexing = 1;
-		resources.limits.generalVariableIndexing = 1;
-		resources.limits.generalConstantMatrixVectorIndexing = 1;
+		resources.maxMeshOutputVerticesEXT = 256;
+		resources.maxMeshOutputPrimitivesEXT = 512;
+		resources.maxMeshWorkGroupSizeX_EXT = 32;
+		resources.maxMeshWorkGroupSizeY_EXT = 1;
+		resources.maxMeshWorkGroupSizeZ_EXT = 1;
+		resources.maxTaskWorkGroupSizeX_EXT = 32;
+		resources.maxTaskWorkGroupSizeY_EXT = 1;
+		resources.maxTaskWorkGroupSizeZ_EXT = 1;
+		resources.maxMeshViewCountEXT = 4;
+		resources.limits.nonInductiveForLoops = true;
+		resources.limits.whileLoops = true;
+		resources.limits.doWhileLoops = true;
+		resources.limits.generalUniformIndexing = true;
+		resources.limits.generalAttributeMatrixVectorIndexing = true;
+		resources.limits.generalVaryingIndexing = true;
+		resources.limits.generalSamplerIndexing = true;
+		resources.limits.generalVariableIndexing = true;
+		resources.limits.generalConstantMatrixVectorIndexing = true;
 	}
 	
 	static std::vector<char> readShaderCode(const std::filesystem::path &shaderPath) {
