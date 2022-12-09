@@ -8,9 +8,11 @@
 #include <vkcv/Sampler.hpp>
 
 #include <vkcv/camera/CameraManager.hpp>
-#include <vkcv/shader/GLSLCompiler.hpp>
-#include <vkcv/gui/GUI.hpp>
 #include <vkcv/effects/BloomAndFlaresEffect.hpp>
+#include <vkcv/effects/GammaCorrectionEffect.hpp>
+#include <vkcv/gui/GUI.hpp>
+#include <vkcv/shader/GLSLCompiler.hpp>
+#include <vkcv/tone/ReinhardToneMapping.hpp>
 
 struct particle_t {
 	glm::vec3 position;
@@ -910,17 +912,8 @@ int main(int argc, const char **argv) {
 		{ addDescriptorLayout, generationDescriptorLayout }
 	});
 	
-	vkcv::ShaderProgram tonemappingShader;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/tonemapping.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		tonemappingShader.addShader(shaderStage, path);
-	});
-	
-	vkcv::DescriptorSetLayoutHandle tonemappingDescriptorLayout = core.createDescriptorSetLayout(tonemappingShader.getReflectedDescriptors().at(0));
-	vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingDescriptorLayout);
-	vkcv::ComputePipelineHandle tonemappingPipe = core.createComputePipeline({
-		tonemappingShader,
-		{ tonemappingDescriptorLayout }
-	});
+	vkcv::tone::ReinhardToneMapping toneMapping (core);
+	vkcv::effects::GammaCorrectionEffect gammaCorrection (core);
 	
 	vkcv::ImageHandle swapchainImage = vkcv::ImageHandle::createSwapchainImageHandle();
 	
@@ -1273,29 +1266,8 @@ int main(int argc, const char **argv) {
 		core.recordEndDebugLabel(cmdStream);
 		
 		bloomAndFlares.recordEffect(cmdStream, colorBuffers.back(), colorBuffers.back());
-		
-		core.recordBeginDebugLabel(cmdStream, "Tonemapping", { 0.0f, 1.0f, 0.0f, 1.0f });
-		core.prepareImageForStorage(cmdStream, colorBuffers.back());
-		core.prepareImageForStorage(cmdStream, swapchainImage);
-		
-		vkcv::DescriptorWrites tonemappingDescriptorWrites;
-		tonemappingDescriptorWrites.writeStorageImage(
-			0, colorBuffers.back()
-		).writeStorageImage(
-			1, swapchainImage
-		);
-		
-		core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
-		
-		core.recordComputeDispatchToCmdStream(
-			cmdStream,
-			tonemappingPipe,
-			colorDispatchCount,
-			{ vkcv::useDescriptorSet(0, tonemappingDescriptor) },
-			vkcv::PushConstants(0)
-		);
-		
-		core.recordEndDebugLabel(cmdStream);
+		toneMapping.recordToneMapping(cmdStream, colorBuffers.back(), colorBuffers.back());
+		gammaCorrection.recordEffect(cmdStream, colorBuffers.back(), swapchainImage);
 		
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);
@@ -1320,6 +1292,11 @@ int main(int argc, const char **argv) {
 		}
 		
 		bool colorChanged = ImGui::ColorPicker3("Color", (float*) & color);
+		
+		float gamma = gammaCorrection.getGamma();
+		if (ImGui::SliderFloat("Gamma", &gamma, 0.0f, 10.0f)) {
+			gammaCorrection.setGamma(gamma);
+		}
 		
 		ImGui::End();
 		gui.endGUI();

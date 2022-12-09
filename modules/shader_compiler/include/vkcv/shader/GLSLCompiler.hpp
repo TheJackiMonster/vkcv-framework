@@ -76,7 +76,7 @@ namespace vkcv::shader {
          */
 		bool compileSource(ShaderStage shaderStage, const char* shaderSource,
 						   const ShaderCompiledFunction& compiled,
-						   const std::filesystem::path& includePath) override;
+						   const std::filesystem::path& includePath = "") override;
 
         /**
          * Compile a GLSL shader from a specific file path for a target stage with

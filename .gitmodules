@@ -46,3 +46,6 @@
 [submodule "lib/VulkanMemoryAllocator"]
 	path = lib/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "modules/tone_mapping/lib/glsl-tone-map"]
+	path = modules/tone_mapping/lib/glsl-tone-map
+	url = https://github.com/dmnsgn/glsl-tone-map.git
