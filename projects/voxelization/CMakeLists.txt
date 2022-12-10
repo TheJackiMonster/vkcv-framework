@@ -21,6 +21,7 @@ target_include_directories(voxelization SYSTEM BEFORE PRIVATE
 		${vkcv_asset_loader_include}
 		${vkcv_camera_include}
 		${vkcv_shader_compiler_include}
+		${vkcv_tone_mapping_include}
 		${vkcv_gui_include}
 		${vkcv_upscaling_include}
 		${vkcv_effects_include}
@@ -34,6 +35,7 @@ target_link_libraries(voxelization
 		${vkcv_asset_loader_libraries}
 		vkcv_camera
 		vkcv_shader_compiler
+		vkcv_tone_mapping
 		vkcv_gui
 		vkcv_upscaling
 		vkcv_effects
