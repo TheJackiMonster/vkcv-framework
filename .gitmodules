@@ -49,3 +49,6 @@
 [submodule "modules/tone_mapping/lib/glsl-tone-map"]
 	path = modules/tone_mapping/lib/glsl-tone-map
 	url = https://github.com/dmnsgn/glsl-tone-map.git
+[submodule "modules/denoising/lib/FidelityFX-Denoiser"]
+	path = modules/denoising/lib/FidelityFX-Denoiser
+	url = https://github.com/GPUOpen-Effects/FidelityFX-Denoiser.git
