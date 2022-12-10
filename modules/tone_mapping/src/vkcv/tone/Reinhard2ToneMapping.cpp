@@ -9,7 +9,8 @@ namespace vkcv::tone {
 		buildComputePipeline("reinhard2", REINHARD2_GLSL_SHADER);
 	}
 	
-	Reinhard2ToneMapping::Reinhard2ToneMapping(Core &core) : ToneMapping(core, "Reinhard2 Tone Mapping") {
+	Reinhard2ToneMapping::Reinhard2ToneMapping(Core &core, bool normalize)
+	: ToneMapping(core, "Reinhard2 Tone Mapping", normalize) {
 		initToneMapping();
 	}
 

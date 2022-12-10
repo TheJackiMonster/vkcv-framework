@@ -4,13 +4,12 @@
 #include <vkcv/Pass.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
-#include <chrono>
 #include "ParticleSystem.hpp"
 #include <random>
-#include <glm/gtc/matrix_access.hpp>
-#include <ctime>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/effects/BloomAndFlaresEffect.hpp>
+#include <vkcv/effects/GammaCorrectionEffect.hpp>
+#include <vkcv/tone/ReinhardToneMapping.hpp>
 
 int main(int argc, const char **argv) {
     const std::string applicationName = "Particlesystem";
@@ -222,18 +221,9 @@ int main(int argc, const char **argv) {
 	
 	vkcv::effects::BloomAndFlaresEffect bloomAndFlares (core);
 	bloomAndFlares.setUpsamplingLimit(3);
-
-    vkcv::ShaderProgram tonemappingShader;
-    compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/tonemapping.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-        tonemappingShader.addShader(shaderStage, path);
-    });
-
-    vkcv::DescriptorSetLayoutHandle tonemappingDescriptorLayout = core.createDescriptorSetLayout(tonemappingShader.getReflectedDescriptors().at(0));
-    vkcv::DescriptorSetHandle tonemappingDescriptor = core.createDescriptorSet(tonemappingDescriptorLayout);
-    vkcv::ComputePipelineHandle tonemappingPipe = core.createComputePipeline({
-        tonemappingShader, 
-        { tonemappingDescriptorLayout }
-	});
+	
+	vkcv::tone::ReinhardToneMapping toneMapping (core);
+	vkcv::effects::GammaCorrectionEffect gammaCorrection (core);
 
     std::uniform_real_distribution<float> rdm = std::uniform_real_distribution<float>(0.95f, 1.05f);
     std::default_random_engine rdmEngine;
@@ -295,31 +285,8 @@ int main(int argc, const char **argv) {
 		);
 	
 		bloomAndFlares.recordEffect(cmdStream, colorBuffer, colorBuffer);
-
-        core.prepareImageForStorage(cmdStream, colorBuffer);
-        core.prepareImageForStorage(cmdStream, swapchainInput);
-
-        vkcv::DescriptorWrites tonemappingDescriptorWrites;
-        tonemappingDescriptorWrites.writeStorageImage(
-				0, colorBuffer
-		).writeStorageImage(
-				1, swapchainInput
-		);
-		
-        core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
-
-        const auto tonemappingDispatchCount = vkcv::dispatchInvocations(
-				vkcv::DispatchSize(swapchainWidth, swapchainHeight),
-				vkcv::DispatchSize(8, 8)
-		);
-
-        core.recordComputeDispatchToCmdStream(
-            cmdStream, 
-            tonemappingPipe, 
-            tonemappingDispatchCount, 
-            { vkcv::useDescriptorSet(0, tonemappingDescriptor) },
-            vkcv::PushConstants(0)
-		);
+		toneMapping.recordToneMapping(cmdStream, colorBuffer, colorBuffer);
+		gammaCorrection.recordEffect(cmdStream, colorBuffer, swapchainInput);
 
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);

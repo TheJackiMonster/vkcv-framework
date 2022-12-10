@@ -9,7 +9,8 @@ namespace vkcv::tone {
 		buildComputePipeline("aces", ACES_GLSL_SHADER);
 	}
 	
-	ACESToneMapping::ACESToneMapping(Core &core) : ToneMapping(core, "ACES Tone Mapping") {
+	ACESToneMapping::ACESToneMapping(Core &core, bool normalize)
+	: ToneMapping(core, "ACES Tone Mapping", normalize) {
 		initToneMapping();
 	}
 	

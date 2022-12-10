@@ -3,11 +3,13 @@
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Pass.hpp>
 #include <vkcv/camera/CameraManager.hpp>
-#include <chrono>
 #include <random>
 #include <ctime>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/effects/BloomAndFlaresEffect.hpp>
+#include <vkcv/effects/GammaCorrectionEffect.hpp>
+#include <vkcv/tone/ReinhardToneMapping.hpp>
+
 #include "PipelineInit.hpp"
 #include "Particle.hpp"
 
@@ -237,15 +239,9 @@ int main(int argc, const char **argv) {
 	
 	vkcv::effects::BloomAndFlaresEffect bloomAndFlares (core);
 	bloomAndFlares.setUpsamplingLimit(3);
-
-    //tone mapping shader & pipeline
-    vkcv::ComputePipelineHandle tonemappingPipe;
-    vkcv::DescriptorSetHandle tonemappingDescriptor = PipelineInit::ComputePipelineInit(
-			&core,
-			vkcv::ShaderStage::COMPUTE,
-			"shaders/tonemapping.comp",
-			tonemappingPipe
-	);
+	
+	vkcv::tone::ReinhardToneMapping toneMapping (core);
+	vkcv::effects::GammaCorrectionEffect gammaCorrection (core);
 	
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
 				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
@@ -395,31 +391,8 @@ int main(int argc, const char **argv) {
 		);
 	
 		bloomAndFlares.recordEffect(cmdStream, colorBuffer, colorBuffer);
-
-        core.prepareImageForStorage(cmdStream, colorBuffer);
-        core.prepareImageForStorage(cmdStream, swapchainInput);
-
-        vkcv::DescriptorWrites tonemappingDescriptorWrites;
-        tonemappingDescriptorWrites.writeStorageImage(
-				0, colorBuffer
-		).writeStorageImage(
-				1, swapchainInput
-		);
-		
-        core.writeDescriptorSet(tonemappingDescriptor, tonemappingDescriptorWrites);
-
-        const auto tonemappingDispatchCount = vkcv::dispatchInvocations(
-				vkcv::DispatchSize(swapchainWidth, swapchainHeight),
-				vkcv::DispatchSize(8, 8)
-		);
-
-        core.recordComputeDispatchToCmdStream(
-            cmdStream, 
-            tonemappingPipe, 
-            tonemappingDispatchCount, 
-            { vkcv::useDescriptorSet(0, tonemappingDescriptor) },
-            vkcv::PushConstants(0)
-		);
+		toneMapping.recordToneMapping(cmdStream, colorBuffer, colorBuffer);
+		gammaCorrection.recordEffect(cmdStream, colorBuffer, swapchainInput);
 
         core.prepareSwapchainImageForPresent(cmdStream);
         core.submitCommandStream(cmdStream);

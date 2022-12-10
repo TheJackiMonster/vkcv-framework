@@ -9,7 +9,7 @@ namespace vkcv::tone {
 		void initToneMapping() override;
 	
 	public:
-		explicit UchimuraToneMapping(Core& core);
+		explicit UchimuraToneMapping(Core& core, bool normalize = false);
 		
 	};
 	

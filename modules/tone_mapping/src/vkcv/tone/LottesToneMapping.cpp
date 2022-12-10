@@ -9,7 +9,8 @@ namespace vkcv::tone {
 		buildComputePipeline("lottes", LOTTES_GLSL_SHADER);
 	}
 	
-	LottesToneMapping::LottesToneMapping(Core &core) : ToneMapping(core, "Lottes Tone Mapping") {
+	LottesToneMapping::LottesToneMapping(Core &core, bool normalize)
+	: ToneMapping(core, "Lottes Tone Mapping", normalize) {
 		initToneMapping();
 	}
 

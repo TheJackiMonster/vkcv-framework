@@ -9,7 +9,7 @@ namespace vkcv::tone {
 		void initToneMapping() override;
 		
 	public:
-		explicit ACESToneMapping(Core& core);
+		explicit ACESToneMapping(Core& core, bool normalize = false);
 		
 	};
 	

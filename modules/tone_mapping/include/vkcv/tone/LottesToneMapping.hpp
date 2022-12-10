@@ -9,7 +9,7 @@ namespace vkcv::tone {
 		void initToneMapping() override;
 	
 	public:
-		explicit LottesToneMapping(Core& core);
+		explicit LottesToneMapping(Core& core, bool normalize = false);
 		
 	};
 	

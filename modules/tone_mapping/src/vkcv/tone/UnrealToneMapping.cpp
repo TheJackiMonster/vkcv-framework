@@ -9,7 +9,8 @@ namespace vkcv::tone {
 		buildComputePipeline("unreal", UNREAL_GLSL_SHADER);
 	}
 	
-	UnrealToneMapping::UnrealToneMapping(Core &core) : ToneMapping(core, "Unreal Tone Mapping") {
+	UnrealToneMapping::UnrealToneMapping(Core &core, bool normalize)
+	: ToneMapping(core, "Unreal Tone Mapping", normalize) {
 		initToneMapping();
 	}
 

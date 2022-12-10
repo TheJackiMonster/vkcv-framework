@@ -9,7 +9,7 @@ namespace vkcv::tone {
 		void initToneMapping() override;
 	
 	public:
-		explicit UnrealToneMapping(Core& core);
+		explicit UnrealToneMapping(Core& core, bool normalize = false);
 		
 	};
 	

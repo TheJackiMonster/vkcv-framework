@@ -12,6 +12,7 @@ namespace vkcv::tone {
 		Core& m_core;
 		
 		std::string m_name;
+		bool m_normalize;
 		
 		ComputePipelineHandle m_pipeline;
 		
@@ -40,8 +41,11 @@ namespace vkcv::tone {
          *
          * @param[in,out] core Reference to a Core instance
          * @param[in] name Name of the tone mapping function
+         * @param[in] normalize Normalize color values
          */
-		explicit ToneMapping(Core& core, const std::string& name);
+		explicit ToneMapping(Core& core,
+							 const std::string& name,
+							 bool normalize = false);
 	
 		~ToneMapping() = default;
 		

@@ -53,9 +53,14 @@ namespace vkcv::tone {
 		stream << "    return;" << std::endl;
 		stream << "  }" << std::endl;
 		stream << "  ivec2 uv = ivec2(gl_GlobalInvocationID.xy);" << std::endl;
-		stream << "  vec3 color = imageLoad(inImage, uv).xyz;" << std::endl;
-		stream << "  color = " << functionName << "(color);" << std::endl;
-		stream << "  imageStore(outImage, uv, vec4(color, 0.f));" << std::endl;
+		stream << "  vec4 color = imageLoad(inImage, uv);" << std::endl;
+		
+		if (m_normalize) {
+			stream << "  color /= color.w;" << std::endl;
+		}
+		
+		stream << "  color = vec4(" << functionName << "(color.xyz), color.w);" << std::endl;
+		stream << "  imageStore(outImage, uv, color);" << std::endl;
 		stream << "}" << std::endl;
 		
 		compiler.compileSource(
@@ -88,8 +93,15 @@ namespace vkcv::tone {
 		});
 	}
 	
-	ToneMapping::ToneMapping(Core &core, const std::string &name)
-	: m_core(core), m_name(name), m_pipeline(), m_descriptorSetLayout(), m_descriptorSet() {}
+	ToneMapping::ToneMapping(Core &core,
+							 const std::string &name,
+							 bool normalize)
+	: m_core(core),
+	  m_name(name),
+	  m_normalize(normalize),
+	  m_pipeline(),
+	  m_descriptorSetLayout(),
+	  m_descriptorSet() {}
 	
 	const std::string &ToneMapping::getName() const {
 		return m_name;

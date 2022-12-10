@@ -9,7 +9,7 @@ namespace vkcv::tone {
 		void initToneMapping() override;
 	
 	public:
-		explicit Uncharted2ToneMapping(Core& core);
+		explicit Uncharted2ToneMapping(Core& core, bool normalize = false);
 		
 	};
 	

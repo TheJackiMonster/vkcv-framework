@@ -1,11 +1,11 @@
 #include <vkcv/Buffer.hpp>
 #include <vkcv/Core.hpp>
-#include <vkcv/Pass.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/asset/asset_loader.hpp>
+#include <vkcv/effects/GammaCorrectionEffect.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
-#include "vkcv/gui/GUI.hpp"
-#include <chrono>
+#include <vkcv/tone/ReinhardToneMapping.hpp>
+#include <vkcv/gui/GUI.hpp>
 #include <vector>
 
 int main(int argc, const char** argv) {
@@ -81,6 +81,11 @@ int main(int argc, const char** argv) {
 		vk::Format::eR32G32B32A32Sfloat,
 		imageConfig
 	);
+	
+	vkcv::ImageHandle mappedImage = core.createImage(
+			vk::Format::eR8G8B8A8Unorm,
+			imageConfig
+	);
 
 	vkcv::shader::GLSLCompiler compiler;
 
@@ -113,21 +118,9 @@ int main(int argc, const char** argv) {
 	vkcv::DescriptorWrites imageCombineDescriptorWrites;
 	imageCombineDescriptorWrites.writeStorageImage(0, outputImage).writeStorageImage(1, meanImage);
 	core.writeDescriptorSet(imageCombineDescriptorSet, imageCombineDescriptorWrites);
-
-	// image present shader
-	vkcv::ShaderProgram presentShaderProgram{};
-
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "shaders/presentImage.comp", [&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		presentShaderProgram.addShader(shaderStage, path);
-	});
-
-	const vkcv::DescriptorBindings& presentDescriptorBindings   = presentShaderProgram.getReflectedDescriptors().at(0);
-	vkcv::DescriptorSetLayoutHandle presentDescriptorSetLayout  = core.createDescriptorSetLayout(presentDescriptorBindings);
-	vkcv::DescriptorSetHandle       presentDescriptorSet        = core.createDescriptorSet(presentDescriptorSetLayout);
-	vkcv::ComputePipelineHandle     presentPipeline             = core.createComputePipeline({
-		presentShaderProgram,
-		{ presentDescriptorSetLayout }
-	});
+	
+	vkcv::tone::ReinhardToneMapping toneMapping (core, true);
+	vkcv::effects::GammaCorrectionEffect gammaCorrection (core);
 
 	// clear shader
 	vkcv::ShaderProgram clearShaderProgram{};
@@ -253,13 +246,18 @@ int main(int argc, const char** argv) {
 
 			// resize images
 			outputImage = core.createImage(
-				vk::Format::eR32G32B32A32Sfloat,
-				imageConfig
+					vk::Format::eR32G32B32A32Sfloat,
+					imageConfig
 			);
 
 			meanImage = core.createImage(
-				vk::Format::eR32G32B32A32Sfloat,
-				imageConfig
+					vk::Format::eR32G32B32A32Sfloat,
+					imageConfig
+			);
+			
+			mappedImage = core.createImage(
+					vk::Format::eR8G8B8A8Unorm,
+					imageConfig
 			);
 
 			// update descriptor sets
@@ -379,23 +377,9 @@ int main(int argc, const char** argv) {
 
 		// present image
 		const vkcv::ImageHandle swapchainInput = vkcv::ImageHandle::createSwapchainImageHandle();
-
-		vkcv::DescriptorWrites presentDescriptorWrites;
-		presentDescriptorWrites.writeStorageImage(
-				0, meanImage
-		).writeStorageImage(
-				1, swapchainInput
-		);
 		
-		core.writeDescriptorSet(presentDescriptorSet, presentDescriptorWrites);
-
-		core.prepareImageForStorage(cmdStream, swapchainInput);
-
-		core.recordComputeDispatchToCmdStream(cmdStream,
-			presentPipeline,
-			fullscreenDispatchCount,
-			{ vkcv::useDescriptorSet(0, presentDescriptorSet) },
-			vkcv::PushConstants(0));
+		toneMapping.recordToneMapping(cmdStream, meanImage, mappedImage);
+		gammaCorrection.recordEffect(cmdStream, mappedImage, swapchainInput);
 
 		core.prepareSwapchainImageForPresent(cmdStream);
 		core.submitCommandStream(cmdStream);

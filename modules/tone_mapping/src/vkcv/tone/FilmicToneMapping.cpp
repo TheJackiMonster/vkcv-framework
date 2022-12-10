@@ -9,7 +9,8 @@ namespace vkcv::tone {
 		buildComputePipeline("filmic", FILMIC_GLSL_SHADER);
 	}
 	
-	FilmicToneMapping::FilmicToneMapping(Core &core) : ToneMapping(core, "Filmic Tone Mapping") {
+	FilmicToneMapping::FilmicToneMapping(Core &core, bool normalize)
+	: ToneMapping(core, "Filmic Tone Mapping", normalize) {
 		initToneMapping();
 	}
 

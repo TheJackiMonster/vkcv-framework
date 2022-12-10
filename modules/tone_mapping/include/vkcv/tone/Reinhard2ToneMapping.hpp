@@ -9,7 +9,7 @@ namespace vkcv::tone {
 		void initToneMapping() override;
 	
 	public:
-		explicit Reinhard2ToneMapping(Core& core);
+		explicit Reinhard2ToneMapping(Core& core, bool normalize = false);
 		
 	};
 	

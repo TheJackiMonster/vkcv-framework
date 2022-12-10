@@ -9,7 +9,7 @@ namespace vkcv::tone {
 		void initToneMapping() override;
 	
 	public:
-		explicit FilmicToneMapping(Core& core);
+		explicit FilmicToneMapping(Core& core, bool normalize = false);
 		
 	};
 	

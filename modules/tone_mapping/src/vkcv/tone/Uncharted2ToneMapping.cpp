@@ -9,7 +9,8 @@ namespace vkcv::tone {
 		buildComputePipeline("uncharted2", UNCHARTED2_GLSL_SHADER);
 	}
 	
-	Uncharted2ToneMapping::Uncharted2ToneMapping(Core &core) : ToneMapping(core, "Uncharted2 Tone Mapping") {
+	Uncharted2ToneMapping::Uncharted2ToneMapping(Core &core, bool normalize)
+	: ToneMapping(core, "Uncharted2 Tone Mapping", normalize) {
 		initToneMapping();
 	}
 

@@ -14,7 +14,9 @@ target_include_directories(path_tracer SYSTEM BEFORE PRIVATE
 		${vkcv_includes}
 		${vkcv_asset_loader_include}
 		${vkcv_camera_include}
+		${vkcv_effects_include}
 		${vkcv_shader_compiler_include}
+		${vkcv_tone_mapping_include}
 		${vkcv_gui_include})
 
 # linking with libraries from all dependencies and the VkCV framework
@@ -23,5 +25,7 @@ target_link_libraries(path_tracer
 		vkcv_asset_loader
 		${vkcv_asset_loader_libraries}
 		vkcv_camera
+		vkcv_effects
 		vkcv_shader_compiler
+		vkcv_tone_mapping
 		vkcv_gui)
