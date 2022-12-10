@@ -4,6 +4,11 @@
 
 namespace vkcv::tone {
 	
+	/**
+     * @addtogroup vkcv_tone
+     * @{
+     */
+	
 	class UnrealToneMapping : public ToneMapping {
 	private:
 		void initToneMapping() override;
@@ -12,5 +17,7 @@ namespace vkcv::tone {
 		explicit UnrealToneMapping(Core& core, bool normalize = false);
 		
 	};
+	
+	/** @} */
 	
 }

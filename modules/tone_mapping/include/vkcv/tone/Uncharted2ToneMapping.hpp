@@ -4,6 +4,11 @@
 
 namespace vkcv::tone {
 	
+	/**
+     * @addtogroup vkcv_tone
+     * @{
+     */
+	
 	class Uncharted2ToneMapping : public ToneMapping {
 	private:
 		void initToneMapping() override;
@@ -12,5 +17,7 @@ namespace vkcv::tone {
 		explicit Uncharted2ToneMapping(Core& core, bool normalize = false);
 		
 	};
+	
+	/** @} */
 	
 }

@@ -4,6 +4,11 @@
 
 namespace vkcv::effects {
 	
+	/**
+     * @addtogroup vkcv_effects
+     * @{
+     */
+	
 	class GammaCorrectionEffect : public Effect {
 	private:
 		float m_gamma;
@@ -15,7 +20,7 @@ namespace vkcv::effects {
 		DescriptorSetHandle m_descriptorSet;
 	
 	public:
-		GammaCorrectionEffect(Core& core);
+		explicit GammaCorrectionEffect(Core& core);
 		
 		void recordEffect(const CommandStreamHandle& cmdStream,
 						  const ImageHandle& input,
@@ -23,8 +28,11 @@ namespace vkcv::effects {
 		
 		void setGamma(float gamma);
 		
+		[[nodiscard]]
 		float getGamma() const;
 		
 	};
+	
+	/** @} */
 	
 }

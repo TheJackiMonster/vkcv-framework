@@ -7,6 +7,11 @@
 
 namespace vkcv::effects {
 	
+	/**
+     * @addtogroup vkcv_effects
+     * @{
+     */
+	
 	class BloomAndFlaresEffect : public Effect {
 	private:
 		bool m_advanced;
@@ -57,8 +62,8 @@ namespace vkcv::effects {
 							   const ImageHandle &output);
 		
 	public:
-		BloomAndFlaresEffect(Core& core,
-							 bool advanced = false);
+		explicit BloomAndFlaresEffect(Core& core,
+									  bool advanced = false);
 		
 		void recordEffect(const CommandStreamHandle &cmdStream,
 						  const ImageHandle &input,
@@ -69,5 +74,7 @@ namespace vkcv::effects {
 		void setUpsamplingLimit(uint32_t limit);
 		
 	};
+	
+	/** @} */
 	
 }
