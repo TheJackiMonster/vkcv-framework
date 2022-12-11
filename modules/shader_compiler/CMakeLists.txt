@@ -13,8 +13,14 @@ set(vkcv_shader_compiler_sources
 		${vkcv_shader_compiler_include}/vkcv/shader/Compiler.hpp
 		${vkcv_shader_compiler_source}/vkcv/shader/Compiler.cpp
 		
+		${vkcv_shader_compiler_include}/vkcv/shader/GlslangCompiler.hpp
+		${vkcv_shader_compiler_source}/vkcv/shader/GlslangCompiler.cpp
+		
 		${vkcv_shader_compiler_include}/vkcv/shader/GLSLCompiler.hpp
 		${vkcv_shader_compiler_source}/vkcv/shader/GLSLCompiler.cpp
+		
+		${vkcv_shader_compiler_include}/vkcv/shader/HLSLCompiler.hpp
+		${vkcv_shader_compiler_source}/vkcv/shader/HLSLCompiler.cpp
 )
 
 filter_headers(vkcv_shader_compiler_sources ${vkcv_shader_compiler_include} vkcv_shader_compiler_headers)
