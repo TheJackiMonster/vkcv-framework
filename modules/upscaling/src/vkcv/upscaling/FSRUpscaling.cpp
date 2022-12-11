@@ -107,21 +107,6 @@ namespace vkcv::upscaling {
 	    return descriptorBindings;
 	}
 	
-	static bool writeShaderCode(const std::filesystem::path &shaderPath, const std::string& code) {
-		std::ofstream file (shaderPath.string(), std::ios::out);
-		
-		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", shaderPath.string().c_str());
-			return false;
-		}
-		
-		file.seekp(0);
-		file.write(code.c_str(), static_cast<std::streamsize>(code.length()));
-		file.close();
-		
-		return true;
-	}
-	
 	static bool compileFSRShader(vkcv::shader::GLSLCompiler& compiler,
 								 const shader::ShaderCompiledFunction& compiled) {
 		std::filesystem::path directory = generateTemporaryDirectoryPath();
@@ -131,11 +116,11 @@ namespace vkcv::upscaling {
 			return false;
 		}
 		
-		if (!writeShaderCode(directory / "ffx_a.h", FFX_A_H_SHADER)) {
+		if (!writeTextToFile(directory / "ffx_a.h", FFX_A_H_SHADER)) {
 			return false;
 		}
 		
-		if (!writeShaderCode(directory / "ffx_fsr1.h", FFX_FSR1_H_SHADER)) {
+		if (!writeTextToFile(directory / "ffx_fsr1.h", FFX_FSR1_H_SHADER)) {
 			return false;
 		}
 		

@@ -48,7 +48,8 @@ namespace vkcv::shader {
          * @param[in] includePath Include path for shaders
          * @return Result if the compilation succeeds
          */
-		virtual bool compileSource(ShaderStage shaderStage, const char* shaderSource,
+		virtual bool compileSource(ShaderStage shaderStage,
+								   const std::string& shaderSource,
 								   const ShaderCompiledFunction& compiled,
 								   const std::filesystem::path& includePath) = 0;
 

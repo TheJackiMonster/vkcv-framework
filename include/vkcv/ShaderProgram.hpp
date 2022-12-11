@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <spirv_cross.hpp>
 #include <unordered_map>

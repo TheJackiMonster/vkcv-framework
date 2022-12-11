@@ -153,7 +153,7 @@ namespace vkcv::shader {
 	}
 	
 	bool GLSLCompiler::compileSource(ShaderStage shaderStage,
-									 const char* shaderSource,
+									 const std::string& shaderSource,
 									 const ShaderCompiledFunction &compiled,
 									 const std::filesystem::path& includePath) {
 		const EShLanguage language = findShaderLanguage(shaderStage);
@@ -257,7 +257,7 @@ namespace vkcv::shader {
 		
 		const std::filesystem::path tmp_path = generateTemporaryFilePath();
 		
-		if (!writeSpirvCode(tmp_path, spirv)) {
+		if (!writeBinaryToFile(tmp_path, spirv)) {
 			vkcv_log(LogLevel::ERROR, "Spir-V could not be written to disk");
 			return false;
 		}
