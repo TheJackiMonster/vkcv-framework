@@ -1,5 +1,5 @@
 
-#include "vkcv/shader/GLSLCompiler.hpp"
+#include "vkcv/shader/HLSLCompiler.hpp"
 
 #include <sstream>
 #include <glslang/SPIRV/GlslangToSpv.h>
@@ -10,8 +10,8 @@
 
 namespace vkcv::shader {
 	
-	GLSLCompiler::GLSLCompiler(GLSLCompileTarget target)
-	: GlslangCompiler(), m_target(target) {}
+	HLSLCompiler::HLSLCompiler(HLSLCompileTarget target)
+			: GlslangCompiler(), m_target(target) {}
 	
 	constexpr EShLanguage findShaderLanguage(ShaderStage shaderStage) {
 		switch (shaderStage) {
@@ -32,11 +32,11 @@ namespace vkcv::shader {
 			case ShaderStage::MESH:
 				return EShLangMeshNV;
 			case ShaderStage::RAY_GEN:
-			    return EShLangRayGen;
+				return EShLangRayGen;
 			case ShaderStage::RAY_CLOSEST_HIT:
-			    return EShLangClosestHit;
+				return EShLangClosestHit;
 			case ShaderStage::RAY_MISS:
-			    return EShLangMiss;
+				return EShLangMiss;
 			case ShaderStage::RAY_INTERSECTION:
 				return EShLangIntersect;
 			case ShaderStage::RAY_ANY_HIT:
@@ -152,7 +152,7 @@ namespace vkcv::shader {
 		resources.limits.generalConstantMatrixVectorIndexing = true;
 	}
 	
-	bool GLSLCompiler::compileSource(ShaderStage shaderStage,
+	bool HLSLCompiler::compileSource(ShaderStage shaderStage,
 									 const char* shaderSource,
 									 const ShaderCompiledFunction &compiled,
 									 const std::filesystem::path& includePath) {
@@ -165,18 +165,10 @@ namespace vkcv::shader {
 		
 		glslang::TShader shader (language);
 		switch (m_target) {
-			case GLSLCompileTarget::SUBGROUP_OP:
-				shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_1);
-				shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_3);
-				break;
-			case GLSLCompileTarget::RAY_TRACING:
-				shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_2);
-				shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_4);
-				break;
 			default:
 				break;
 		}
-
+		
 		glslang::TProgram program;
 		std::string source (shaderSource);
 		
@@ -185,7 +177,7 @@ namespace vkcv::shader {
 			for (const auto& define : m_defines) {
 				defines << "#define " << define.first << " " << define.second << std::endl;
 			}
-
+			
 			size_t pos = source.find("#version") + 8;
 			if (pos >= source.length()) {
 				pos = 0;
@@ -209,28 +201,28 @@ namespace vkcv::shader {
 		
 		TBuiltInResource resources = {};
 		initResources(resources);
-
+		
 		const auto messages = (EShMessages)(
-			EShMsgSpvRules |
-			EShMsgVulkanRules
+				EShMsgSpvRules |
+				EShMsgVulkanRules
 		);
-
-		std::string preprocessedGLSL;
-
+		
+		std::string preprocessedHLSL;
+		
 		DirStackFileIncluder includer;
 		includer.pushExternalLocalDirectory(includePath.string());
-
+		
 		if (!shader.preprocess(&resources, 100, ENoProfile,
 							   false, false,
-							   messages, &preprocessedGLSL, includer)) {
+							   messages, &preprocessedHLSL, includer)) {
 			vkcv_log(LogLevel::ERROR, "Shader preprocessing failed {\n%s\n%s\n}",
-				shader.getInfoLog(), shader.getInfoDebugLog());
+					 shader.getInfoLog(), shader.getInfoDebugLog());
 			return false;
 		}
 		
-		const char* preprocessedCString = preprocessedGLSL.c_str();
+		const char* preprocessedCString = preprocessedHLSL.c_str();
 		shader.setStrings(&preprocessedCString, 1);
-
+		
 		if (!shader.parse(&resources, 100, false, messages)) {
 			vkcv_log(LogLevel::ERROR, "Shader parsing failed {\n%s\n%s\n}",
 					 shader.getInfoLog(), shader.getInfoDebugLog());
