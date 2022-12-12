@@ -217,7 +217,10 @@ namespace vkcv::shader {
 				EShMsgSpvRules |
 				EShMsgVulkanRules |
 				EShMsgReadHlsl |
-				EShMsgHlslEnable16BitTypes
+				EShMsgHlslOffsets |
+				EShMsgHlslEnable16BitTypes |
+				EShMsgHlslLegalization |
+				EShMsgHlslDX9Compatible
 		);
 		
 		std::string preprocessedHLSL;

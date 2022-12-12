@@ -8,9 +8,19 @@ namespace vkcv::denoising {
 	
 	class ShadowDenoiser : public Denoiser {
 	private:
-		ComputePipelineHandle m_preparePipeline;
 		ComputePipelineHandle m_filterPipeline;
+		ComputePipelineHandle m_preparePipeline;
 		ComputePipelineHandle m_tileClassificationPipeline;
+		
+		/**
+         * The descriptor set layout of the filter pipeline.
+         */
+		DescriptorSetLayoutHandle m_filterDescriptorSetLayout;
+		
+		/**
+		 * The descriptor set for the filter pipeline.
+		 */
+		DescriptorSetHandle m_filterDescriptorSet;
 		
 		/**
          * The descriptor set layout of the prepare pipeline.
@@ -21,6 +31,18 @@ namespace vkcv::denoising {
 		 * The descriptor set for the prepare pipeline.
 		 */
 		DescriptorSetHandle m_prepareDescriptorSet;
+		
+		/**
+         * The descriptor set layout of the tile classification
+         * pipeline.
+         */
+		DescriptorSetLayoutHandle m_tileClassificationDescriptorSetLayout;
+		
+		/**
+		 * The descriptor set for the tile classification
+		 * pipeline.
+		 */
+		DescriptorSetHandle m_tileClassificationDescriptorSet;
 	
 	public:
 		/**

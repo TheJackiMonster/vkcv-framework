@@ -9,7 +9,9 @@
 #include "ffx_denoiser_shadows_tileclassification.h.hxx"
 #include "ffx_denoiser_shadows_util.h.hxx"
 
+#include "shadowDenoiser_filter.hlsl.hxx"
 #include "shadowDenoiser_prepare.hlsl.hxx"
+#include "shadowDenoiser_tileclassification.hlsl.hxx"
 
 namespace vkcv::denoising {
 	
@@ -22,14 +24,43 @@ namespace vkcv::denoising {
 	ShadowDenoiser::ShadowDenoiser(Core &core) :
 	Denoiser(core),
 	
-	m_preparePipeline(),
 	m_filterPipeline(),
+	m_preparePipeline(),
 	m_tileClassificationPipeline(),
 	
+	m_filterDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings())),
+	m_filterDescriptorSet(m_core.createDescriptorSet(m_filterDescriptorSetLayout)),
+	
 	m_prepareDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings())),
-	m_prepareDescriptorSet(m_core.createDescriptorSet(m_prepareDescriptorSetLayout))
+	m_prepareDescriptorSet(m_core.createDescriptorSet(m_prepareDescriptorSetLayout)),
+	
+	m_tileClassificationDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings())),
+	m_tileClassificationDescriptorSet(m_core.createDescriptorSet(m_tileClassificationDescriptorSetLayout))
 	{
 		vkcv::shader::HLSLCompiler compiler;
+		
+		{
+			ShaderProgram program;
+			compiler.compileSourceWithHeaders(
+					vkcv::ShaderStage::COMPUTE,
+					SHADOWDENOISER_FILTER_HLSL_SHADER,
+					{
+							{ "ffx_denoiser_shadows_filter.h", FFX_DENOISER_SHADOWS_FILTER_H_SHADER },
+							{ "ffx_denoiser_shadows_util.h", FFX_DENOISER_SHADOWS_UTIL_H_SHADER }
+					},
+					[&program](vkcv::ShaderStage shaderStage,
+							   const std::filesystem::path& path) {
+						program.addShader(shaderStage, path);
+					}
+			);
+			
+			m_filterPipeline = m_core.createComputePipeline({ program, {
+					m_filterDescriptorSetLayout
+			}});
+			
+			DescriptorWrites writes;
+			m_core.writeDescriptorSet(m_filterDescriptorSet, writes);
+		}
 		
 		{
 			ShaderProgram program;
@@ -52,6 +83,29 @@ namespace vkcv::denoising {
 			
 			DescriptorWrites writes;
 			m_core.writeDescriptorSet(m_prepareDescriptorSet, writes);
+		}
+		
+		{
+			ShaderProgram program;
+			compiler.compileSourceWithHeaders(
+					vkcv::ShaderStage::COMPUTE,
+					SHADOWDENOISER_TILECLASSIFICATION_HLSL_SHADER,
+					{
+							{ "ffx_denoiser_shadows_tileclassification.h", FFX_DENOISER_SHADOWS_TILECLASSIFICATION_H_SHADER },
+							{ "ffx_denoiser_shadows_util.h", FFX_DENOISER_SHADOWS_UTIL_H_SHADER }
+					},
+					[&program](vkcv::ShaderStage shaderStage,
+							   const std::filesystem::path& path) {
+						program.addShader(shaderStage, path);
+					}
+			);
+			
+			m_tileClassificationPipeline = m_core.createComputePipeline({ program, {
+					m_tileClassificationDescriptorSetLayout
+			}});
+			
+			DescriptorWrites writes;
+			m_core.writeDescriptorSet(m_tileClassificationDescriptorSet, writes);
 		}
 	}
 	

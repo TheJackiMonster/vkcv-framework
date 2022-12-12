@@ -33,11 +33,17 @@ add_compile_definitions(${vkcv_denoising_definitions})
 
 set(vkcv_denoising_shaders ${PROJECT_SOURCE_DIR}/shaders)
 
+include_shader(${vkcv_denoising_shaders}/shadowDenoiser_filter.hlsl ${vkcv_denoising_include} ${vkcv_denoising_source})
 include_shader(${vkcv_denoising_shaders}/shadowDenoiser_prepare.hlsl ${vkcv_denoising_include} ${vkcv_denoising_source})
+include_shader(${vkcv_denoising_shaders}/shadowDenoiser_tileClassification.hlsl ${vkcv_denoising_include} ${vkcv_denoising_source})
 
+list(APPEND vkcv_denoising_sources ${vkcv_denoising_source}/shadowDenoiser_filter.hlsl.cxx)
 list(APPEND vkcv_denoising_sources ${vkcv_denoising_source}/shadowDenoiser_prepare.hlsl.cxx)
+list(APPEND vkcv_denoising_sources ${vkcv_denoising_source}/shadowDenoiser_tileClassification.hlsl.cxx)
 
+list(APPEND vkcv_denoising_sources ${vkcv_denoising_include}/shadowDenoiser_filter.hlsl.hxx)
 list(APPEND vkcv_denoising_sources ${vkcv_denoising_include}/shadowDenoiser_prepare.hlsl.hxx)
+list(APPEND vkcv_denoising_sources ${vkcv_denoising_include}/shadowDenoiser_tileClassification.hlsl.hxx)
 
 # adding source files to the project
 add_library(vkcv_denoising ${vkcv_build_attribute} ${vkcv_denoising_sources})
