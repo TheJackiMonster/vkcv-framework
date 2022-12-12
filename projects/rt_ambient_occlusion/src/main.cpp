@@ -1,5 +1,6 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/CameraManager.hpp>
+#include <vkcv/denoising/ShadowDenoiser.hpp>
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include <vkcv/scene/Scene.hpp>
@@ -166,6 +167,7 @@ int main(int argc, const char** argv) {
 		core.writeDescriptorSet(descriptorSetHandles[0], writes);
 	}
 	
+	vkcv::denoising::ShadowDenoiser denoiser (core);
 	vkcv::upscaling::FSRUpscaling upscaling (core);
 	
 	uint32_t fsrWidth = core.getWindow(windowHandle).getWidth();
@@ -289,6 +291,10 @@ int main(int argc, const char** argv) {
 			pushConstants,
 			windowHandle
 		);
+		
+		core.prepareImageForStorage(cmdStream, colorBuffer);
+		
+		denoiser.recordDenoising(cmdStream, colorBuffer, colorBuffer);
 		
 		core.prepareImageForSampling(cmdStream, colorBuffer);
 		core.prepareImageForStorage(cmdStream, swapchainInput);

@@ -1,11 +1,27 @@
 #pragma once
 
+#include <vkcv/Handles.hpp>
+
 #include "Denoiser.hpp"
 
 namespace vkcv::denoising {
 	
 	class ShadowDenoiser : public Denoiser {
 	private:
+		ComputePipelineHandle m_preparePipeline;
+		ComputePipelineHandle m_filterPipeline;
+		ComputePipelineHandle m_tileClassificationPipeline;
+		
+		/**
+         * The descriptor set layout of the prepare pipeline.
+         */
+		DescriptorSetLayoutHandle m_prepareDescriptorSetLayout;
+		
+		/**
+		 * The descriptor set for the prepare pipeline.
+		 */
+		DescriptorSetHandle m_prepareDescriptorSet;
+	
 	public:
 		/**
          * Constructor to create a shadow denoiser instance.

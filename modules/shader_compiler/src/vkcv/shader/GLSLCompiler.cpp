@@ -166,12 +166,12 @@ namespace vkcv::shader {
 		glslang::TShader shader (language);
 		switch (m_target) {
 			case GLSLCompileTarget::SUBGROUP_OP:
-				shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_1);
-				shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_3);
+				shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_1);
+				shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_3);
 				break;
 			case GLSLCompileTarget::RAY_TRACING:
-				shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_2);
-				shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_4);
+				shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_2);
+				shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_4);
 				break;
 			default:
 				break;

@@ -41,7 +41,7 @@ namespace vkcv::effects {
 		
 		compiler.compileSource(
 			ShaderStage::COMPUTE,
-			GAMMACORRECTION_COMP_SHADER.c_str(),
+			GAMMACORRECTION_COMP_SHADER,
 			[&program](ShaderStage stage, const std::filesystem::path &path) {
 				program.addShader(stage, path);
 			}

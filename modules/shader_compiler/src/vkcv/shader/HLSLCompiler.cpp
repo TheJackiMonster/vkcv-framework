@@ -164,10 +164,21 @@ namespace vkcv::shader {
 		}
 		
 		glslang::TShader shader (language);
+		shader.setEntryPoint("main");
+		
 		switch (m_target) {
 			default:
+				shader.setEnvClient(glslang::EShClientNone, glslang::EShTargetVulkan_1_1);
+				shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_3);
 				break;
 		}
+		
+		shader.setEnvInput(
+				glslang::EShSourceHlsl,
+				language,
+				glslang::EShClientNone,
+				100
+		);
 		
 		glslang::TProgram program;
 		std::string source (shaderSource);
@@ -204,7 +215,9 @@ namespace vkcv::shader {
 		
 		const auto messages = (EShMessages)(
 				EShMsgSpvRules |
-				EShMsgVulkanRules
+				EShMsgVulkanRules |
+				EShMsgReadHlsl |
+				EShMsgHlslEnable16BitTypes
 		);
 		
 		std::string preprocessedHLSL;

@@ -89,33 +89,6 @@ namespace vkcv::upscaling {
 		return image.getHandle();
 	}
 	
-	static bool compileNISShader(vkcv::shader::GLSLCompiler& compiler,
-								 const shader::ShaderCompiledFunction& compiled) {
-		std::filesystem::path directory = generateTemporaryDirectoryPath();
-		
-		if (!std::filesystem::create_directory(directory)) {
-			vkcv_log(LogLevel::ERROR, "The directory could not be created (%s)", directory.string().c_str());
-			return false;
-		}
-		
-		if (!writeTextToFile(directory / "NIS_Scaler.h", NIS_SCALER_H_SHADER)) {
-			return false;
-		}
-		
-		return compiler.compileSource(
-				vkcv::ShaderStage::COMPUTE,
-				NIS_MAIN_GLSL_SHADER.c_str(),
-				[&directory, &compiled] (vkcv::ShaderStage shaderStage,
-										 const std::filesystem::path& path) {
-				if (compiled) {
-					compiled(shaderStage, path);
-				}
-				
-				std::filesystem::remove_all(directory);
-			}, directory
-		);
-	}
-	
 	NISUpscaling::NISUpscaling(Core &core) :
 	Upscaling(core),
 	m_scalerPipeline(),
@@ -163,15 +136,21 @@ namespace vkcv::upscaling {
 		
 		{
 			ShaderProgram program;
-			compileNISShader(scalerCompiler, [&program](vkcv::ShaderStage shaderStage,
-														const std::filesystem::path& path) {
-				program.addShader(shaderStage, path);
-			});
+			scalerCompiler.compileSourceWithHeaders(
+					ShaderStage::COMPUTE,
+					NIS_MAIN_GLSL_SHADER,
+					{
+						{ "NIS_Scaler.h", NIS_SCALER_H_SHADER }
+					},
+					[&program](vkcv::ShaderStage shaderStage,
+							   const std::filesystem::path& path) {
+						program.addShader(shaderStage, path);
+					}
+			);
 			
 			m_scalerPipeline = m_core.createComputePipeline({program,{
 					m_scalerDescriptorSetLayout
 			}});
-			
 			
 			DescriptorWrites writes;
 			writes.writeUniformBuffer(

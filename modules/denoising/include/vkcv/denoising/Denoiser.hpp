@@ -5,7 +5,7 @@
 namespace vkcv::denoising {
 	
 	class Denoiser {
-	private:
+	protected:
 		/**
          * Reference to the current Core instance.
          */

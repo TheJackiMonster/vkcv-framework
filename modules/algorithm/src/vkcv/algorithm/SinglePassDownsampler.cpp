@@ -96,38 +96,6 @@ namespace vkcv::algorithm {
 		return descriptorBindings;
 	}
 	
-	static bool compileSPDShader(vkcv::shader::GLSLCompiler& compiler,
-								 const std::string &source,
-								 const shader::ShaderCompiledFunction& compiled) {
-		std::filesystem::path directory = generateTemporaryDirectoryPath();
-		
-		if (!std::filesystem::create_directory(directory)) {
-			vkcv_log(LogLevel::ERROR, "The directory could not be created (%s)", directory.string().c_str());
-			return false;
-		}
-		
-		if (!writeTextToFile(directory / "ffx_a.h", FFX_A_H_SHADER)) {
-			return false;
-		}
-		
-		if (!writeTextToFile(directory / "ffx_spd.h", FFX_SPD_H_SHADER)) {
-			return false;
-		}
-		
-		return compiler.compileSource(
-				vkcv::ShaderStage::COMPUTE,
-				source.c_str(),
-				[&directory, &compiled] (vkcv::ShaderStage shaderStage,
-										 const std::filesystem::path& path) {
-					if (compiled) {
-						compiled(shaderStage, path);
-					}
-					
-					std::filesystem::remove_all(directory);
-				}, directory
-		);
-	}
-	
 	SinglePassDownsampler::SinglePassDownsampler(Core &core,
 												 const SamplerHandle &sampler) :
 		 vkcv::Downsampler(core),
@@ -200,23 +168,19 @@ namespace vkcv::algorithm {
 		}
 		
 		ShaderProgram program;
-		if (m_sampler) {
-			compileSPDShader(
-					compiler,
-					SPDINTEGRATIONLINEARSAMPLER_GLSL_SHADER,
-					[&program](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-						program.addShader(shaderStage, path);
-					}
-			);
-		} else {
-			compileSPDShader(
-					compiler,
+		compiler.compileSourceWithHeaders(
+				ShaderStage::COMPUTE,
+				m_sampler?
+					SPDINTEGRATIONLINEARSAMPLER_GLSL_SHADER :
 					SPDINTEGRATION_GLSL_SHADER,
-					[&program](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-						program.addShader(shaderStage, path);
-					}
-			);
-		}
+				{
+					{ "ffx_a.h", FFX_A_H_SHADER },
+					{ "ffx_spd.h", FFX_SPD_H_SHADER }
+				},
+				[&program](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+					program.addShader(shaderStage, path);
+				}
+		);
 		
 		m_pipeline = m_core.createComputePipeline(ComputePipelineConfig(
 			program,

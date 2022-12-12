@@ -14,6 +14,7 @@ target_include_directories(rt_ambient_occlusion SYSTEM BEFORE PRIVATE
 		${vkcv_includes}
 		${vkcv_asset_loader_include}
 		${vkcv_camera_include}
+		${vkcv_denoising_include}
 		${vkcv_gui_include}
 		${vkcv_scene_include}
 		${vkcv_shader_compiler_include}
@@ -25,6 +26,7 @@ target_link_libraries(rt_ambient_occlusion
 		vkcv ${vkcv_libraries}
 		vkcv_asset_loader ${vkcv_asset_loader_libraries}
 		vkcv_camera
+		vkcv_denoising
 		vkcv_gui
 		vkcv_scene
 		vkcv_shader_compiler

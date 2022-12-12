@@ -65,7 +65,7 @@ namespace vkcv::tone {
 		
 		compiler.compileSource(
 				ShaderStage::COMPUTE,
-				stream.str().c_str(),
+				stream.str(),
 				[&](ShaderStage stage, const std::filesystem::path &path) {
 					program.addShader(stage, path);
 				}
