@@ -52,8 +52,8 @@ void main(int2 group_thread_id : SV_GroupThreadID,
 	const uint stepsize = 0;
 	
 	FFX_DNSR_Shadows_FilterSoftShadowsPass(
-			group_thread_id,
-			group_id,
+			uint2(group_index, group_id),
+			uint2(group_thread_id),
 			did,
 			bWriteResults,
 			pass,

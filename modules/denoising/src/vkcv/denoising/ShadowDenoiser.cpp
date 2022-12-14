@@ -11,7 +11,7 @@
 
 #include "shadowDenoiser_filter.hlsl.hxx"
 #include "shadowDenoiser_prepare.hlsl.hxx"
-#include "shadowDenoiser_tileclassification.hlsl.hxx"
+#include "shadowDenoiser_tileClassification.hlsl.hxx"
 
 namespace vkcv::denoising {
 	

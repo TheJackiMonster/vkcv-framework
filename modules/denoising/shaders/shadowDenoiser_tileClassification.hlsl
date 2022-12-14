@@ -39,6 +39,38 @@ float FFX_DNSR_Shadows_ReadPreviousDepth(int2 idx) {
 	return 0; // TODO: access image or buffer?
 }
 
+void FFX_DNSR_Shadows_WriteMetadata(uint id, uint mask) {
+	// TODO: access image or buffer?
+}
+
+void FFX_DNSR_Shadows_WriteReprojectionResults(uint2 did, float2 results) {
+	// TODO: access image or buffer? (results = mean, variance)
+}
+
+void FFX_DNSR_Shadows_WriteMoments(uint2 did, float3 moments) {
+	// TODO: access image or buffer? (results = mean, variance, temporal sample count)
+}
+
+bool FFX_DNSR_Shadows_IsShadowReciever(uint2 did) {
+	return false; // TODO: access image or buffer?
+}
+
+float FFX_DNSR_Shadows_ReadDepth(uint2 did) {
+	return 0.0f; // TODO: access image or buffer?
+}
+
+float3 FFX_DNSR_Shadows_ReadPreviousMomentsBuffer(int2 pos) {
+	return float3(0.0f); // TODO: access image or buffer?
+}
+
+float FFX_DNSR_Shadows_ReadHistory(float2 uv) {
+	return 0.0f; // TODO: access image or buffer?
+}
+
+bool FFX_DNSR_Shadows_IsFirstFrame() {
+	return false; // TODO: do not guess?
+}
+
 #include "ffx_denoiser_shadows_tileclassification.h"
 
 [numthreads(8, 8, 1)]
@@ -47,5 +79,5 @@ void main(int2 group_thread_id : SV_GroupThreadID,
 		  uint group_id        : SV_GroupID) {
 	// TODO: remapping ids to optimization?
 
-	FFX_DNSR_Shadows_TileClassification(group_thread_id, group_id);
+	FFX_DNSR_Shadows_TileClassification(group_index, uint2(group_id, 0));
 }
