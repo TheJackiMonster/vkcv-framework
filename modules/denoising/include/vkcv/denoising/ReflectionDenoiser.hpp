@@ -6,6 +6,40 @@ namespace vkcv::denoising {
 	
 	class ReflectionDenoiser : public Denoiser {
 	private:
+		ComputePipelineHandle m_prefilterPipeline;
+		ComputePipelineHandle m_reprojectPipeline;
+		ComputePipelineHandle m_resolveTemporalPipeline;
+		
+		/**
+         * The descriptor set layout of the filter pipeline.
+         */
+		DescriptorSetLayoutHandle m_prefilterDescriptorSetLayout;
+		
+		/**
+		 * The descriptor set for the filter pipeline.
+		 */
+		DescriptorSetHandle m_prefilterDescriptorSet;
+		
+		/**
+         * The descriptor set layout of the reproject pipeline.
+         */
+		DescriptorSetLayoutHandle m_reprojectDescriptorSetLayout;
+		
+		/**
+		 * The descriptor set for the reproject pipeline.
+		 */
+		DescriptorSetHandle m_reprojectDescriptorSet;
+		
+		/**
+         * The descriptor set layout of the resolve temporal pipeline.
+         */
+		DescriptorSetLayoutHandle m_resolveTemporalDescriptorSetLayout;
+		
+		/**
+		 * The descriptor set for the resolve temporal pipeline.
+		 */
+		DescriptorSetHandle m_resolveTemporalDescriptorSet;
+		
 	public:
 		/**
          * Constructor to create a reflection denoiser instance.

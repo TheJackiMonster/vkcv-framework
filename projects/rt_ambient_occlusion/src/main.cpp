@@ -1,5 +1,6 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/camera/CameraManager.hpp>
+#include <vkcv/denoising/ReflectionDenoiser.hpp>
 #include <vkcv/denoising/ShadowDenoiser.hpp>
 #include <vkcv/gui/GUI.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
@@ -167,6 +168,7 @@ int main(int argc, const char** argv) {
 		core.writeDescriptorSet(descriptorSetHandles[0], writes);
 	}
 	
+	vkcv::denoising::ReflectionDenoiser den (core);
 	vkcv::denoising::ShadowDenoiser denoiser (core);
 	vkcv::upscaling::FSRUpscaling upscaling (core);
 	
