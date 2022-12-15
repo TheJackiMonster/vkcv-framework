@@ -52,3 +52,9 @@
 [submodule "modules/denoising/lib/FidelityFX-Denoiser"]
 	path = modules/denoising/lib/FidelityFX-Denoiser
 	url = https://github.com/GPUOpen-Effects/FidelityFX-Denoiser.git
+[submodule "modules/denoising/lib/FidelityFX-SSSR"]
+	path = modules/denoising/lib/FidelityFX-SSSR
+	url = https://github.com/GPUOpen-Effects/FidelityFX-SSSR.git
+[submodule "modules/denoising/lib/Hybrid-Shadows"]
+	path = modules/denoising/lib/Hybrid-Shadows
+	url = https://github.com/GPUOpen-Effects/Hybrid-Shadows.git

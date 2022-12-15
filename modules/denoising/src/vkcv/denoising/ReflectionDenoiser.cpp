@@ -10,9 +10,10 @@
 #include "ffx_denoiser_reflections_reproject.h.hxx"
 #include "ffx_denoiser_reflections_resolve_temporal.h.hxx"
 
-#include "reflectionDenoiser_prefilter.hlsl.hxx"
-#include "reflectionDenoiser_reproject.hlsl.hxx"
-#include "reflectionDenoiser_resolveTemporal.hlsl.hxx"
+#include "Common.hlsl.hxx"
+#include "Prefilter.hlsl.hxx"
+#include "Reproject.hlsl.hxx"
+#include "ResolveTemporal.hlsl.hxx"
 
 namespace vkcv::denoising {
 	
@@ -44,11 +45,12 @@ namespace vkcv::denoising {
 			ShaderProgram program;
 			compiler.compileSourceWithHeaders(
 					vkcv::ShaderStage::COMPUTE,
-					REFLECTIONDENOISER_PREFILTER_HLSL_SHADER,
+					PREFILTER_HLSL_SHADER,
 					{
 						{ "ffx_denoiser_reflections_common.h", FFX_DENOISER_REFLECTIONS_COMMON_H_SHADER },
 						{ "ffx_denoiser_reflections_config.h", FFX_DENOISER_REFLECTIONS_CONFIG_H_SHADER },
-						{ "ffx_denoiser_reflections_prefilter.h", FFX_DENOISER_REFLECTIONS_PREFILTER_H_SHADER }
+						{ "ffx_denoiser_reflections_prefilter.h", FFX_DENOISER_REFLECTIONS_PREFILTER_H_SHADER },
+						{ "Common.hlsl", COMMON_HLSL_SHADER }
 					},
 					[&program](vkcv::ShaderStage shaderStage,
 							   const std::filesystem::path& path) {
@@ -68,11 +70,12 @@ namespace vkcv::denoising {
 			ShaderProgram program;
 			compiler.compileSourceWithHeaders(
 					vkcv::ShaderStage::COMPUTE,
-					REFLECTIONDENOISER_REPROJECT_HLSL_SHADER,
+					REPROJECT_HLSL_SHADER,
 					{
 							{ "ffx_denoiser_reflections_common.h", FFX_DENOISER_REFLECTIONS_COMMON_H_SHADER },
 							{ "ffx_denoiser_reflections_config.h", FFX_DENOISER_REFLECTIONS_CONFIG_H_SHADER },
-							{ "ffx_denoiser_reflections_reproject.h", FFX_DENOISER_REFLECTIONS_REPROJECT_H_SHADER }
+							{ "ffx_denoiser_reflections_reproject.h", FFX_DENOISER_REFLECTIONS_REPROJECT_H_SHADER },
+							{ "Common.hlsl", COMMON_HLSL_SHADER }
 					},
 					[&program](vkcv::ShaderStage shaderStage,
 							   const std::filesystem::path& path) {
@@ -92,11 +95,12 @@ namespace vkcv::denoising {
 			ShaderProgram program;
 			compiler.compileSourceWithHeaders(
 					vkcv::ShaderStage::COMPUTE,
-					REFLECTIONDENOISER_RESOLVETEMPORAL_HLSL_SHADER,
+					RESOLVETEMPORAL_HLSL_SHADER,
 					{
 							{ "ffx_denoiser_reflections_common.h", FFX_DENOISER_REFLECTIONS_COMMON_H_SHADER },
 							{ "ffx_denoiser_reflections_config.h", FFX_DENOISER_REFLECTIONS_CONFIG_H_SHADER },
-							{ "ffx_denoiser_reflections_resolve_temporal.h", FFX_DENOISER_REFLECTIONS_RESOLVE_TEMPORAL_H_SHADER }
+							{ "ffx_denoiser_reflections_resolve_temporal.h", FFX_DENOISER_REFLECTIONS_RESOLVE_TEMPORAL_H_SHADER },
+							{ "Common.hlsl", COMMON_HLSL_SHADER }
 					},
 					[&program](vkcv::ShaderStage shaderStage,
 							   const std::filesystem::path& path) {

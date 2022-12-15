@@ -9,9 +9,9 @@
 #include "ffx_denoiser_shadows_tileclassification.h.hxx"
 #include "ffx_denoiser_shadows_util.h.hxx"
 
-#include "shadowDenoiser_filter.hlsl.hxx"
-#include "shadowDenoiser_prepare.hlsl.hxx"
-#include "shadowDenoiser_tileClassification.hlsl.hxx"
+#include "filter_soft_shadows_pass_d3d12.hlsl.hxx"
+#include "prepare_shadow_mask_d3d12.hlsl.hxx"
+#include "tile_classification_d3d12.hlsl.hxx"
 
 namespace vkcv::denoising {
 	
@@ -43,7 +43,7 @@ namespace vkcv::denoising {
 			ShaderProgram program;
 			compiler.compileSourceWithHeaders(
 					vkcv::ShaderStage::COMPUTE,
-					SHADOWDENOISER_FILTER_HLSL_SHADER,
+					FILTER_SOFT_SHADOWS_PASS_D3D12_HLSL_SHADER,
 					{
 							{ "ffx_denoiser_shadows_filter.h", FFX_DENOISER_SHADOWS_FILTER_H_SHADER },
 							{ "ffx_denoiser_shadows_util.h", FFX_DENOISER_SHADOWS_UTIL_H_SHADER }
@@ -66,7 +66,7 @@ namespace vkcv::denoising {
 			ShaderProgram program;
 			compiler.compileSourceWithHeaders(
 					vkcv::ShaderStage::COMPUTE,
-					SHADOWDENOISER_PREPARE_HLSL_SHADER,
+					PREPARE_SHADOW_MASK_D3D12_HLSL_SHADER,
 					{
 						{ "ffx_denoiser_shadows_prepare.h", FFX_DENOISER_SHADOWS_PREPARE_H_SHADER },
 						{ "ffx_denoiser_shadows_util.h", FFX_DENOISER_SHADOWS_UTIL_H_SHADER }
@@ -89,7 +89,7 @@ namespace vkcv::denoising {
 			ShaderProgram program;
 			compiler.compileSourceWithHeaders(
 					vkcv::ShaderStage::COMPUTE,
-					SHADOWDENOISER_TILECLASSIFICATION_HLSL_SHADER,
+					TILE_CLASSIFICATION_D3D12_HLSL_SHADER,
 					{
 							{ "ffx_denoiser_shadows_tileclassification.h", FFX_DENOISER_SHADOWS_TILECLASSIFICATION_H_SHADER },
 							{ "ffx_denoiser_shadows_util.h", FFX_DENOISER_SHADOWS_UTIL_H_SHADER }
