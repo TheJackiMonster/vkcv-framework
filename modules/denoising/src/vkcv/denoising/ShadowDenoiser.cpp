@@ -45,8 +45,8 @@ namespace vkcv::denoising {
 					vkcv::ShaderStage::COMPUTE,
 					FILTER_SOFT_SHADOWS_PASS_D3D12_HLSL_SHADER,
 					{
-							{ "ffx_denoiser_shadows_filter.h", FFX_DENOISER_SHADOWS_FILTER_H_SHADER },
-							{ "ffx_denoiser_shadows_util.h", FFX_DENOISER_SHADOWS_UTIL_H_SHADER }
+							{ "ffx_shadows_dnsr/ffx_denoiser_shadows_filter.h", FFX_DENOISER_SHADOWS_FILTER_H_SHADER },
+							{ "ffx_shadows_dnsr/ffx_denoiser_shadows_util.h", FFX_DENOISER_SHADOWS_UTIL_H_SHADER }
 					},
 					[&program](vkcv::ShaderStage shaderStage,
 							   const std::filesystem::path& path) {
@@ -68,8 +68,8 @@ namespace vkcv::denoising {
 					vkcv::ShaderStage::COMPUTE,
 					PREPARE_SHADOW_MASK_D3D12_HLSL_SHADER,
 					{
-						{ "ffx_denoiser_shadows_prepare.h", FFX_DENOISER_SHADOWS_PREPARE_H_SHADER },
-						{ "ffx_denoiser_shadows_util.h", FFX_DENOISER_SHADOWS_UTIL_H_SHADER }
+						{ "ffx_shadows_dnsr/ffx_denoiser_shadows_prepare.h", FFX_DENOISER_SHADOWS_PREPARE_H_SHADER },
+						{ "ffx_shadows_dnsr/ffx_denoiser_shadows_util.h", FFX_DENOISER_SHADOWS_UTIL_H_SHADER }
 					},
 					[&program](vkcv::ShaderStage shaderStage,
 							   const std::filesystem::path& path) {
@@ -91,8 +91,8 @@ namespace vkcv::denoising {
 					vkcv::ShaderStage::COMPUTE,
 					TILE_CLASSIFICATION_D3D12_HLSL_SHADER,
 					{
-							{ "ffx_denoiser_shadows_tileclassification.h", FFX_DENOISER_SHADOWS_TILECLASSIFICATION_H_SHADER },
-							{ "ffx_denoiser_shadows_util.h", FFX_DENOISER_SHADOWS_UTIL_H_SHADER }
+							{ "ffx_shadows_dnsr/ffx_denoiser_shadows_tileclassification.h", FFX_DENOISER_SHADOWS_TILECLASSIFICATION_H_SHADER },
+							{ "ffx_shadows_dnsr/ffx_denoiser_shadows_util.h", FFX_DENOISER_SHADOWS_UTIL_H_SHADER }
 					},
 					[&program](vkcv::ShaderStage shaderStage,
 							   const std::filesystem::path& path) {

@@ -218,7 +218,7 @@ namespace vkcv::shader {
 				EShMsgVulkanRules |
 				EShMsgReadHlsl |
 				EShMsgHlslOffsets |
-				// EShMsgHlslEnable16BitTypes |
+				EShMsgHlslEnable16BitTypes |
 				EShMsgHlslLegalization |
 				EShMsgHlslDX9Compatible
 		);

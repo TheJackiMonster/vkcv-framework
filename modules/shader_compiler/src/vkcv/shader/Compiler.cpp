@@ -8,7 +8,7 @@ namespace vkcv::shader {
 	
 	bool Compiler::compileSourceWithHeaders(ShaderStage shaderStage,
 											const std::string &shaderSource,
-											const std::unordered_map<std::string, std::string> &shaderHeaders,
+											const std::unordered_map<std::filesystem::path, std::string> &shaderHeaders,
 											const ShaderCompiledFunction &compiled) {
 		const std::filesystem::path directory = generateTemporaryDirectoryPath();
 		
@@ -18,6 +18,10 @@ namespace vkcv::shader {
 		}
 		
 		for (const auto& header : shaderHeaders) {
+			if (header.first.has_parent_path()) {
+				std::filesystem::create_directories(directory / header.first.parent_path());
+			}
+			
 			if (!writeTextToFile(directory / header.first, header.second)) {
 				return false;
 			}
