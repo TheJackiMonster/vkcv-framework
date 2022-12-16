@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.2.0](https://gitlab.uni-koblenz.de/vulkan2021/vkcv-framework/tree/0.2.0) (2021-12-16)
+
+** New modules:**
+
+ - [Algorithm](modules/algorithm/README.md): A VkCV module to use optimized compute algorithms accelerating projects
+ - [Effects](modules/effects/README.md): A VkCV module to use pre-built post-processing effects in your projects
+ - [Geometry](modules/geometry/README.md): A VkCV module to generate basic geometry for rendering without loading a mesh from files
+ - [Tone-Mapping](modules/tone_mapping/README.md): A VkCV module providing multiple pre-defined options for tone mapping
+
+** New features:**
+
+ - Compile shaders from memory with defined headers
+ - Hardware accelerated ray tracing pipelines
+ - Dynamic geometry generation
+ - Interpolation
+ - Tesselation
+ - Cube maps
+ - Temporal upscaling
+ - Automated camera paths
+
+** Improvements **
+
+ - Much more documentation
+ - Fully refactored API to ease usage
+ - More consistency
+ - Less duplicate code
+
 ## [0.1.0](https://gitlab.uni-koblenz.de/vulkan2021/vkcv-framework/tree/0.1.0) (2021-12-07)
 
 ** Platform support:**
