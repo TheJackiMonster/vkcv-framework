@@ -48,9 +48,30 @@ namespace vkcv::shader {
          * @param[in] includePath Include path for shaders
          * @return Result if the compilation succeeds
          */
-		virtual bool compileSource(ShaderStage shaderStage, const char* shaderSource,
+		virtual bool compileSource(ShaderStage shaderStage,
+								   const std::string& shaderSource,
 								   const ShaderCompiledFunction& compiled,
 								   const std::filesystem::path& includePath) = 0;
+		
+		/**
+		 * Compile a shader from source for a target stage with some included headers
+		 * as source as well and an event function called if the compilation completes.
+		 *
+		 * The included shaders will be stored temporarily for shader compilation in
+		 * a directory which gets used as include path. So these files can be used via
+		 * include instructions in the shader source code as if they were stored in the
+		 * same directory.
+		 *
+		 * @param[in] shaderStage Shader pipeline stage
+		 * @param[in] shaderSource Source of shader
+		 * @param[in] shaderHeaders Headers of shader
+		 * @param[in] compiled Shader compilation event
+		 * @return Result if the compilation succeeds
+		 */
+		bool compileSourceWithHeaders(ShaderStage shaderStage,
+									  const std::string& shaderSource,
+									  const std::unordered_map<std::filesystem::path, std::string>& shaderHeaders,
+									  const ShaderCompiledFunction& compiled);
 
         /**
          * Compile a shader from a specific file path for a target stage with
@@ -81,8 +102,7 @@ namespace vkcv::shader {
          * @param[in] update Flag to update shaders during runtime
          */
 		void compileProgram(ShaderProgram& program,
-							const std::unordered_map<ShaderStage,
-							const std::filesystem::path>& stages,
+							const std::unordered_map<ShaderStage, const std::filesystem::path>& stages,
 							const ShaderProgramCompiledFunction& compiled,
 							const std::filesystem::path& includePath = "",
 							bool update = false);

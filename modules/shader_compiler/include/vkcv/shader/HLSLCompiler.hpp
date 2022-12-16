@@ -42,7 +42,7 @@ namespace vkcv::shader {
 		 * @return Result if the compilation succeeds
 		 */
 		bool compileSource(ShaderStage shaderStage,
-						   const char* shaderSource,
+						   const std::string& shaderSource,
 						   const ShaderCompiledFunction& compiled,
 						   const std::filesystem::path& includePath = "") override;
 		

@@ -16,25 +16,6 @@ namespace vkcv::shader {
 	 * An abstract class to handle Glslang runtime shader compilation.
 	 */
 	class GlslangCompiler : public Compiler {
-	protected:
-		/**
-		 *
-		 *
-		 * @param[in] shaderPath Filepath of shader
-		 * @param[out] spirv
-		 * @return
-		 */
-		static bool writeSpirvCode(const std::filesystem::path &shaderPath,
-								   const std::vector<uint32_t>& spirv);
-		
-		/**
-		 *
-		 *
-		 * @param[in] shaderPath Filepath of shader
-		 * @return
-		 */
-		static std::vector<char> readShaderCode(const std::filesystem::path &shaderPath);
-		
 	public:
 		/**
 		 * The constructor of a runtime Glslang shader compiler instance.

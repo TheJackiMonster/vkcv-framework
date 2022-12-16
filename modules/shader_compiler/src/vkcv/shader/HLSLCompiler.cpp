@@ -153,7 +153,7 @@ namespace vkcv::shader {
 	}
 	
 	bool HLSLCompiler::compileSource(ShaderStage shaderStage,
-									 const char* shaderSource,
+									 const std::string& shaderSource,
 									 const ShaderCompiledFunction &compiled,
 									 const std::filesystem::path& includePath) {
 		const EShLanguage language = findShaderLanguage(shaderStage);
@@ -164,10 +164,21 @@ namespace vkcv::shader {
 		}
 		
 		glslang::TShader shader (language);
+		shader.setEntryPoint("main");
+		
 		switch (m_target) {
 			default:
+				shader.setEnvClient(glslang::EShClientNone, glslang::EShTargetVulkan_1_1);
+				shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_3);
 				break;
 		}
+		
+		shader.setEnvInput(
+				glslang::EShSourceHlsl,
+				language,
+				glslang::EShClientNone,
+				100
+		);
 		
 		glslang::TProgram program;
 		std::string source (shaderSource);
@@ -204,7 +215,12 @@ namespace vkcv::shader {
 		
 		const auto messages = (EShMessages)(
 				EShMsgSpvRules |
-				EShMsgVulkanRules
+				EShMsgVulkanRules |
+				EShMsgReadHlsl |
+				EShMsgHlslOffsets |
+				EShMsgHlslEnable16BitTypes |
+				EShMsgHlslLegalization |
+				EShMsgHlslDX9Compatible
 		);
 		
 		std::string preprocessedHLSL;
@@ -249,7 +265,7 @@ namespace vkcv::shader {
 		
 		const std::filesystem::path tmp_path = generateTemporaryFilePath();
 		
-		if (!writeSpirvCode(tmp_path, spirv)) {
+		if (!writeBinaryToFile(tmp_path, spirv)) {
 			vkcv_log(LogLevel::ERROR, "Spir-V could not be written to disk");
 			return false;
 		}

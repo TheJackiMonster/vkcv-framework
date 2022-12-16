@@ -153,7 +153,7 @@ namespace vkcv::shader {
 	}
 	
 	bool GLSLCompiler::compileSource(ShaderStage shaderStage,
-									 const char* shaderSource,
+									 const std::string& shaderSource,
 									 const ShaderCompiledFunction &compiled,
 									 const std::filesystem::path& includePath) {
 		const EShLanguage language = findShaderLanguage(shaderStage);
@@ -166,12 +166,12 @@ namespace vkcv::shader {
 		glslang::TShader shader (language);
 		switch (m_target) {
 			case GLSLCompileTarget::SUBGROUP_OP:
-				shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_1);
-				shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_3);
+				shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_1);
+				shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_3);
 				break;
 			case GLSLCompileTarget::RAY_TRACING:
-				shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_2);
-				shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_4);
+				shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_2);
+				shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_4);
 				break;
 			default:
 				break;
@@ -257,7 +257,7 @@ namespace vkcv::shader {
 		
 		const std::filesystem::path tmp_path = generateTemporaryFilePath();
 		
-		if (!writeSpirvCode(tmp_path, spirv)) {
+		if (!writeBinaryToFile(tmp_path, spirv)) {
 			vkcv_log(LogLevel::ERROR, "Spir-V could not be written to disk");
 			return false;
 		}

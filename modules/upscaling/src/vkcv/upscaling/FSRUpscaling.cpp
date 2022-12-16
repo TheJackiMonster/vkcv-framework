@@ -13,7 +13,6 @@
 #include "FSR_Pass.glsl.hxx"
 
 #include <vkcv/File.hpp>
-#include <vkcv/Logger.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
 namespace vkcv::upscaling {
@@ -107,52 +106,6 @@ namespace vkcv::upscaling {
 	    return descriptorBindings;
 	}
 	
-	static bool writeShaderCode(const std::filesystem::path &shaderPath, const std::string& code) {
-		std::ofstream file (shaderPath.string(), std::ios::out);
-		
-		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", shaderPath.string().c_str());
-			return false;
-		}
-		
-		file.seekp(0);
-		file.write(code.c_str(), static_cast<std::streamsize>(code.length()));
-		file.close();
-		
-		return true;
-	}
-	
-	static bool compileFSRShader(vkcv::shader::GLSLCompiler& compiler,
-								 const shader::ShaderCompiledFunction& compiled) {
-		std::filesystem::path directory = generateTemporaryDirectoryPath();
-		
-		if (!std::filesystem::create_directory(directory)) {
-			vkcv_log(LogLevel::ERROR, "The directory could not be created (%s)", directory.string().c_str());
-			return false;
-		}
-		
-		if (!writeShaderCode(directory / "ffx_a.h", FFX_A_H_SHADER)) {
-			return false;
-		}
-		
-		if (!writeShaderCode(directory / "ffx_fsr1.h", FFX_FSR1_H_SHADER)) {
-			return false;
-		}
-		
-		return compiler.compileSource(
-				vkcv::ShaderStage::COMPUTE,
-				FSR_PASS_GLSL_SHADER.c_str(),
-				[&directory, &compiled] (vkcv::ShaderStage shaderStage,
-										 const std::filesystem::path& path) {
-				if (compiled) {
-					compiled(shaderStage, path);
-				}
-				
-				std::filesystem::remove_all(directory);
-			}, directory
-		);
-	}
-	
 	FSRUpscaling::FSRUpscaling(Core& core) :
 	Upscaling(core),
 	m_easuPipeline(),
@@ -216,12 +169,20 @@ namespace vkcv::upscaling {
 		
 		{
 			ShaderProgram program;
-			compileFSRShader(easuCompiler, [&program](vkcv::ShaderStage shaderStage,
-				const std::filesystem::path& path) {
-				program.addShader(shaderStage, path);
-			});
+			easuCompiler.compileSourceWithHeaders(
+					ShaderStage::COMPUTE,
+					FSR_PASS_GLSL_SHADER,
+					{
+						{ "ffx_a.h", FFX_A_H_SHADER },
+						{ "ffx_fsr1.h", FFX_FSR1_H_SHADER }
+					},
+					[&program](vkcv::ShaderStage shaderStage,
+							   const std::filesystem::path& path) {
+						program.addShader(shaderStage, path);
+					}
+			);
 
-			m_easuPipeline = m_core.createComputePipeline({program,{
+			m_easuPipeline = m_core.createComputePipeline({ program, {
 				m_easuDescriptorSetLayout
 			}});
 
@@ -238,10 +199,18 @@ namespace vkcv::upscaling {
 		
 		{
 			ShaderProgram program;
-			compileFSRShader(rcasCompiler, [&program](vkcv::ShaderStage shaderStage,
-					const std::filesystem::path& path) {
-				program.addShader(shaderStage, path);
-			});
+			rcasCompiler.compileSourceWithHeaders(
+					ShaderStage::COMPUTE,
+					FSR_PASS_GLSL_SHADER,
+					{
+							{ "ffx_a.h", FFX_A_H_SHADER },
+							{ "ffx_fsr1.h", FFX_FSR1_H_SHADER }
+					},
+					[&program](vkcv::ShaderStage shaderStage,
+							   const std::filesystem::path& path) {
+						program.addShader(shaderStage, path);
+					}
+			);
 
 			m_rcasPipeline = m_core.createComputePipeline({ program, {
 				m_rcasDescriptorSetLayout

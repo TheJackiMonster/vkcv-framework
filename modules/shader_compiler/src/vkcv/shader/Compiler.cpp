@@ -1,7 +1,45 @@
 
 #include "vkcv/shader/Compiler.hpp"
 
+#include <vkcv/File.hpp>
+#include <vkcv/Logger.hpp>
+
 namespace vkcv::shader {
+	
+	bool Compiler::compileSourceWithHeaders(ShaderStage shaderStage,
+											const std::string &shaderSource,
+											const std::unordered_map<std::filesystem::path, std::string> &shaderHeaders,
+											const ShaderCompiledFunction &compiled) {
+		const std::filesystem::path directory = generateTemporaryDirectoryPath();
+		
+		if (!std::filesystem::create_directory(directory)) {
+			vkcv_log(LogLevel::ERROR, "The directory could not be created (%s)", directory.c_str());
+			return false;
+		}
+		
+		for (const auto& header : shaderHeaders) {
+			if (header.first.has_parent_path()) {
+				std::filesystem::create_directories(directory / header.first.parent_path());
+			}
+			
+			if (!writeTextToFile(directory / header.first, header.second)) {
+				return false;
+			}
+		}
+		
+		return compileSource(
+				shaderStage,
+				shaderSource,
+				[&directory, &compiled] (vkcv::ShaderStage shaderStage,
+										 const std::filesystem::path& path) {
+					if (compiled) {
+						compiled(shaderStage, path);
+					}
+					
+					std::filesystem::remove_all(directory);
+				}, directory
+		);
+	}
 	
 	void Compiler::compileProgram(ShaderProgram& program,
 								  const std::unordered_map<ShaderStage, const std::filesystem::path>& stages,
