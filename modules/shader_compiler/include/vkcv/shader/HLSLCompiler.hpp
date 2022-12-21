@@ -22,6 +22,9 @@ namespace vkcv::shader {
 	class HLSLCompiler : public GlslangCompiler {
 	private:
 		HLSLCompileTarget m_target;
+		
+	protected:
+		std::string processShaderSource(const std::string& shaderSource) override;
 	
 	public:
 		/**

@@ -6,6 +6,10 @@
 
 namespace vkcv::shader {
 	
+	std::string Compiler::processShaderSource(const std::string &shaderSource) {
+		return shaderSource;
+	}
+	
 	bool Compiler::compileSourceWithHeaders(ShaderStage shaderStage,
 											const std::string &shaderSource,
 											const std::unordered_map<std::filesystem::path, std::string> &shaderHeaders,
@@ -22,7 +26,7 @@ namespace vkcv::shader {
 				std::filesystem::create_directories(directory / header.first.parent_path());
 			}
 			
-			if (!writeTextToFile(directory / header.first, header.second)) {
+			if (!writeTextToFile(directory / header.first, processShaderSource(header.second))) {
 				return false;
 			}
 		}

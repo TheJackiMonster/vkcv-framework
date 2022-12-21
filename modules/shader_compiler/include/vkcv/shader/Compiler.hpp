@@ -37,6 +37,16 @@ namespace vkcv::shader {
          */
 		std::unordered_map<std::string, std::string> m_defines;
 		
+		/**
+		 * Process the shader source code for further compilation or inclusion.
+		 *
+		 * Ideally this method will not do anything at all!
+		 *
+		 * @param[in] shaderSource Source of shader
+		 * @return Processed source of shader
+		 */
+		virtual std::string processShaderSource(const std::string& shaderSource);
+		
 	public:
         /**
          * Compile a shader from source for a target stage with a custom shader

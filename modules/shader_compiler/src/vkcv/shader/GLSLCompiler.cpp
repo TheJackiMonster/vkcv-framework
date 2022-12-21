@@ -178,7 +178,7 @@ namespace vkcv::shader {
 		}
 
 		glslang::TProgram program;
-		std::string source (shaderSource);
+		std::string source = processShaderSource(shaderSource);
 		
 		if (!m_defines.empty()) {
 			std::ostringstream defines;

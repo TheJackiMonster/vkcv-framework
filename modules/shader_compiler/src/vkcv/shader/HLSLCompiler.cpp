@@ -152,6 +152,47 @@ namespace vkcv::shader {
 		resources.limits.generalConstantMatrixVectorIndexing = true;
 	}
 	
+	// This is a workaround for multiple compatibility issues!
+	static std::string& fixShaderSource(std::string& source) {
+		size_t pos = 0;
+		while ((pos = source.find("float16_t", pos)) < std::string::npos) {
+			source = source.erase(pos + 5, 4);
+		}
+		
+		pos = 0;
+		while ((pos = source.find("float const", pos)) < std::string::npos) {
+			source = source.replace(pos, 11, "const float");
+		}
+		
+		pos = 0;
+		while ((pos = source.find("0b", pos)) < std::string::npos) {
+			size_t len = 0;
+			
+			while (source[pos + 2 + len] == '0' || source[pos + 2 + len] == '1') {
+				len++;
+			}
+			
+			uint64_t value = 0;
+			for (size_t i = 0; i < len; i++) {
+				if (source[pos + 2 + i] == '1') {
+					value |= static_cast<uint64_t>(1) << static_cast<uint64_t>(len - i - 1);
+				}
+			}
+			
+			const size_t cut_len = 2 + len + (source[pos + 2 + len] == 'u'? 1 : 0);
+			
+			source = source.replace(pos, cut_len, std::to_string(value));
+		}
+		
+		return source;
+	}
+	
+	std::string HLSLCompiler::processShaderSource(const std::string &shaderSource) {
+		std::string source = Compiler::processShaderSource(shaderSource);
+		source = fixShaderSource(source); // TODO: do it properly!
+		return shaderSource;
+	}
+	
 	bool HLSLCompiler::compileSource(ShaderStage shaderStage,
 									 const std::string& shaderSource,
 									 const ShaderCompiledFunction &compiled,
@@ -181,7 +222,7 @@ namespace vkcv::shader {
 		);
 		
 		glslang::TProgram program;
-		std::string source (shaderSource);
+		std::string source = processShaderSource(shaderSource);
 		
 		if (!m_defines.empty()) {
 			std::ostringstream defines;
@@ -218,7 +259,7 @@ namespace vkcv::shader {
 				EShMsgVulkanRules |
 				EShMsgReadHlsl |
 				EShMsgHlslOffsets |
-				EShMsgHlslEnable16BitTypes |
+				//EShMsgHlslEnable16BitTypes | // TODO: not supported yet
 				EShMsgHlslLegalization |
 				EShMsgHlslDX9Compatible
 		);
