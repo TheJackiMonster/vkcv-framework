@@ -4,7 +4,6 @@
 #include <vkcv/Sampler.hpp>
 #include <GLFW/glfw3.h>
 #include <vkcv/camera/CameraManager.hpp>
-#include <chrono>
 #include <vkcv/asset/asset_loader.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 #include "Voxelization.hpp"
@@ -15,6 +14,7 @@
 #include <vkcv/upscaling/NISUpscaling.hpp>
 #include <vkcv/effects/BloomAndFlaresEffect.hpp>
 #include <vkcv/algorithm/SinglePassDownsampler.hpp>
+#include <vkcv/tone/ACESToneMapping.hpp>
 
 int main(int argc, const char** argv) {
 	const std::string applicationName = "Voxelization";
@@ -474,21 +474,6 @@ int main(int argc, const char** argv) {
 			renderUI = !renderUI;
 		}
 	});
-
-	// tonemapping compute shader
-	vkcv::ShaderProgram tonemappingProgram;
-	compiler.compile(vkcv::ShaderStage::COMPUTE, "assets/shaders/tonemapping.comp", 
-		[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-		tonemappingProgram.addShader(shaderStage, path);
-	});
-
-	vkcv::DescriptorSetLayoutHandle tonemappingDescriptorSetLayout = core.createDescriptorSetLayout(
-	        tonemappingProgram.getReflectedDescriptors().at(0));
-	vkcv::DescriptorSetHandle tonemappingDescriptorSet = core.createDescriptorSet(tonemappingDescriptorSetLayout);
-	vkcv::ComputePipelineHandle tonemappingPipeline = core.createComputePipeline({
-		tonemappingProgram,
-		{ tonemappingDescriptorSetLayout }
-	});
 	
 	// tonemapping compute shader
 	vkcv::ShaderProgram postEffectsProgram;
@@ -609,6 +594,8 @@ int main(int argc, const char** argv) {
 	);
 	
 	core.writeDescriptorSet(forwardShadingDescriptorSet, forwardDescriptorWrites);
+	
+	vkcv::tone::ACESToneMapping acesToneMapping (core);
 
 	vkcv::upscaling::FSRUpscaling upscaling (core);
 	uint32_t fsrWidth = swapchainExtent.width, fsrHeight = swapchainExtent.height;
@@ -729,14 +716,6 @@ int main(int argc, const char** argv) {
 					swapBufferConfig
 			);
 		}
-
-		// update descriptor sets which use swapchain image
-		vkcv::DescriptorWrites tonemappingDescriptorWrites;
-		tonemappingDescriptorWrites.writeSampledImage(0, resolvedColorBuffer);
-		tonemappingDescriptorWrites.writeSampler(1, colorSampler);
-		tonemappingDescriptorWrites.writeStorageImage(2, swapBuffer);
-
-		core.writeDescriptorSet(tonemappingDescriptorSet, tonemappingDescriptorWrites);
 		
 		// update descriptor sets which use swapchain image
 		vkcv::DescriptorWrites postEffectsDescriptorWrites;
@@ -892,22 +871,10 @@ int main(int argc, const char** argv) {
 		
 		bloomFlares.updateCameraDirection(cameraManager.getActiveCamera());
 		bloomFlares.recordEffect(cmdStream, resolvedColorBuffer, resolvedColorBuffer);
-
-		core.prepareImageForStorage(cmdStream, swapBuffer);
-		core.prepareImageForSampling(cmdStream, resolvedColorBuffer);
-		
-		core.recordBeginDebugLabel(cmdStream, "Tonemapping", { 1, 1, 1, 1 });
-		core.recordComputeDispatchToCmdStream(
-				cmdStream,
-				tonemappingPipeline,
-				fullscreenDispatchCount,
-				{ vkcv::useDescriptorSet(0, tonemappingDescriptorSet) },
-				vkcv::PushConstants(0)
-		);
+		acesToneMapping.recordToneMapping(cmdStream, resolvedColorBuffer, swapBuffer);
 		
 		core.prepareImageForStorage(cmdStream, swapBuffer2);
 		core.prepareImageForSampling(cmdStream, swapBuffer);
-		core.recordEndDebugLabel(cmdStream);
 		
 		switch (upscalingMode) {
 			case 0:
@@ -1008,23 +975,6 @@ int main(int argc, const char** argv) {
 
 				if (newPipeline) {
 					forwardPipeline = newPipeline;
-				}
-			}
-			
-			if (ImGui::Button("Reload tonemapping")) {
-				vkcv::ShaderProgram newProgram;
-				compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("assets/shaders/tonemapping.comp"),
-					[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-					newProgram.addShader(shaderStage, path);
-				});
-
-				vkcv::ComputePipelineHandle newPipeline = core.createComputePipeline({
-					newProgram,
-					{ tonemappingDescriptorSetLayout }
-				});
-
-				if (newPipeline) {
-					tonemappingPipeline = newPipeline;
 				}
 			}
 			

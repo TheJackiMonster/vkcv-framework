@@ -150,7 +150,7 @@ namespace vkcv::effects {
 		ShaderProgram program;
 		compiler.compileSource(
 				vkcv::ShaderStage::COMPUTE,
-				shaderSource.c_str(),
+				shaderSource,
 				[&](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 					program.addShader(shaderStage, path);
 				},

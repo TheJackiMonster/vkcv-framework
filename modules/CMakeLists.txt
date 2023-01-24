@@ -13,6 +13,7 @@ add_subdirectory(material)
 add_subdirectory(meshlet)
 add_subdirectory(scene)
 add_subdirectory(shader_compiler)
+add_subdirectory(tone_mapping)
 add_subdirectory(upscaling)
 
 message(STATUS "Modules:")

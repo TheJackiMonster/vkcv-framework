@@ -1,7 +1,6 @@
 
 #include "vkcv/shader/GLSLCompiler.hpp"
 
-#include <fstream>
 #include <sstream>
 #include <glslang/SPIRV/GlslangToSpv.h>
 #include <glslang/StandAlone/DirStackFileIncluder.h>
@@ -11,34 +10,8 @@
 
 namespace vkcv::shader {
 	
-	static uint32_t s_CompilerCount = 0;
-	
-	GLSLCompiler::GLSLCompiler(GLSLCompileTarget target) :
-		Compiler(),
-		m_target(target) {
-		if (s_CompilerCount == 0) {
-			glslang::InitializeProcess();
-		}
-		
-		s_CompilerCount++;
-	}
-	
-	GLSLCompiler::GLSLCompiler(const GLSLCompiler &other) : Compiler(other) {
-		s_CompilerCount++;
-	}
-	
-	GLSLCompiler::~GLSLCompiler() {
-		s_CompilerCount--;
-		
-		if (s_CompilerCount == 0) {
-			glslang::FinalizeProcess();
-		}
-	}
-	
-	GLSLCompiler &GLSLCompiler::operator=(const GLSLCompiler &other) {
-		s_CompilerCount++;
-		return *this;
-	}
+	GLSLCompiler::GLSLCompiler(GLSLCompileTarget target)
+	: GlslangCompiler(), m_target(target) {}
 	
 	constexpr EShLanguage findShaderLanguage(ShaderStage shaderStage) {
 		switch (shaderStage) {
@@ -179,45 +152,8 @@ namespace vkcv::shader {
 		resources.limits.generalConstantMatrixVectorIndexing = true;
 	}
 	
-	static std::vector<char> readShaderCode(const std::filesystem::path &shaderPath) {
-		std::ifstream file (shaderPath.string(), std::ios::ate);
-		
-		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", shaderPath.string().c_str());
-			return std::vector<char>{};
-		}
-		
-		std::streamsize fileSize = file.tellg();
-		std::vector<char> buffer (fileSize + 1);
-		
-		file.seekg(0);
-		file.read(buffer.data(), fileSize);
-		file.close();
-		
-		buffer[fileSize] = '\0';
-		return buffer;
-	}
-	
-	static bool writeSpirvCode(const std::filesystem::path &shaderPath, const std::vector<uint32_t>& spirv) {
-		std::ofstream file (shaderPath.string(), std::ios::out | std::ios::binary);
-		
-		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", shaderPath.string().c_str());
-			return false;
-		}
-		
-		const auto fileSize = static_cast<std::streamsize>(
-				sizeof(uint32_t) * spirv.size()
-		);
-		
-		file.seekp(0);
-		file.write(reinterpret_cast<const char*>(spirv.data()), fileSize);
-		file.close();
-		
-		return true;
-	}
-	
-	bool GLSLCompiler::compileSource(ShaderStage shaderStage, const char* shaderSource,
+	bool GLSLCompiler::compileSource(ShaderStage shaderStage,
+									 const std::string& shaderSource,
 									 const ShaderCompiledFunction &compiled,
 									 const std::filesystem::path& includePath) {
 		const EShLanguage language = findShaderLanguage(shaderStage);
@@ -230,12 +166,12 @@ namespace vkcv::shader {
 		glslang::TShader shader (language);
 		switch (m_target) {
 			case GLSLCompileTarget::SUBGROUP_OP:
-				shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_1);
-				shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_3);
+				shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_1);
+				shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_3);
 				break;
 			case GLSLCompileTarget::RAY_TRACING:
-				shader.setEnvClient(glslang::EShClientVulkan,glslang::EShTargetVulkan_1_2);
-				shader.setEnvTarget(glslang::EShTargetSpv,glslang::EShTargetSpv_1_4);
+				shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_2);
+				shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_4);
 				break;
 			default:
 				break;
@@ -321,7 +257,7 @@ namespace vkcv::shader {
 		
 		const std::filesystem::path tmp_path = generateTemporaryFilePath();
 		
-		if (!writeSpirvCode(tmp_path, spirv)) {
+		if (!writeBinaryToFile(tmp_path, spirv)) {
 			vkcv_log(LogLevel::ERROR, "Spir-V could not be written to disk");
 			return false;
 		}
@@ -332,27 +268,6 @@ namespace vkcv::shader {
 		
 		std::filesystem::remove(tmp_path);
 		return true;
-	}
-	
-	void GLSLCompiler::compile(ShaderStage shaderStage, const std::filesystem::path &shaderPath,
-							   const ShaderCompiledFunction& compiled,
-							   const std::filesystem::path& includePath, bool update) {
-		const std::vector<char> code = readShaderCode(shaderPath);
-		bool result;
-		
-		if (!includePath.empty()) {
-			result = compileSource(shaderStage, code.data(), compiled, includePath);
-		} else {
-			result = compileSource(shaderStage, code.data(), compiled, shaderPath.parent_path());
-		}
-		
-		if (!result) {
-			vkcv_log(LogLevel::ERROR, "Shader compilation failed: (%s)", shaderPath.string().c_str());
-		}
-		
-		if (update) {
-			// TODO: Shader hot compilation during runtime
-		}
 	}
 	
 }

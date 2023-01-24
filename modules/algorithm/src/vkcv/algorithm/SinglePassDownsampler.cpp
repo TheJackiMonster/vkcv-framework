@@ -96,53 +96,6 @@ namespace vkcv::algorithm {
 		return descriptorBindings;
 	}
 	
-	static bool writeShaderCode(const std::filesystem::path &shaderPath, const std::string& code) {
-		std::ofstream file (shaderPath.string(), std::ios::out);
-		
-		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", shaderPath.string().c_str());
-			return false;
-		}
-		
-		file.seekp(0);
-		file.write(code.c_str(), static_cast<std::streamsize>(code.length()));
-		file.close();
-		
-		return true;
-	}
-	
-	static bool compileSPDShader(vkcv::shader::GLSLCompiler& compiler,
-								 const std::string &source,
-								 const shader::ShaderCompiledFunction& compiled) {
-		std::filesystem::path directory = generateTemporaryDirectoryPath();
-		
-		if (!std::filesystem::create_directory(directory)) {
-			vkcv_log(LogLevel::ERROR, "The directory could not be created (%s)", directory.string().c_str());
-			return false;
-		}
-		
-		if (!writeShaderCode(directory / "ffx_a.h", FFX_A_H_SHADER)) {
-			return false;
-		}
-		
-		if (!writeShaderCode(directory / "ffx_spd.h", FFX_SPD_H_SHADER)) {
-			return false;
-		}
-		
-		return compiler.compileSource(
-				vkcv::ShaderStage::COMPUTE,
-				source.c_str(),
-				[&directory, &compiled] (vkcv::ShaderStage shaderStage,
-										 const std::filesystem::path& path) {
-					if (compiled) {
-						compiled(shaderStage, path);
-					}
-					
-					std::filesystem::remove_all(directory);
-				}, directory
-		);
-	}
-	
 	SinglePassDownsampler::SinglePassDownsampler(Core &core,
 												 const SamplerHandle &sampler) :
 		 vkcv::Downsampler(core),
@@ -215,23 +168,19 @@ namespace vkcv::algorithm {
 		}
 		
 		ShaderProgram program;
-		if (m_sampler) {
-			compileSPDShader(
-					compiler,
-					SPDINTEGRATIONLINEARSAMPLER_GLSL_SHADER,
-					[&program](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-						program.addShader(shaderStage, path);
-					}
-			);
-		} else {
-			compileSPDShader(
-					compiler,
+		compiler.compileSourceWithHeaders(
+				ShaderStage::COMPUTE,
+				m_sampler?
+					SPDINTEGRATIONLINEARSAMPLER_GLSL_SHADER :
 					SPDINTEGRATION_GLSL_SHADER,
-					[&program](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-						program.addShader(shaderStage, path);
-					}
-			);
-		}
+				{
+					{ "ffx_a.h", FFX_A_H_SHADER },
+					{ "ffx_spd.h", FFX_SPD_H_SHADER }
+				},
+				[&program](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
+					program.addShader(shaderStage, path);
+				}
+		);
 		
 		m_pipeline = m_core.createComputePipeline(ComputePipelineConfig(
 			program,

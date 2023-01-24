@@ -5,38 +5,11 @@
  */
 
 #include "vkcv/ShaderProgram.hpp"
+
+#include "vkcv/File.hpp"
 #include "vkcv/Logger.hpp"
 
 namespace vkcv {
-	/**
-	 * Reads the file of a given shader code.
-	 * Only used within the class.
-	 * @param[in] relative path to the shader code
-	 * @return vector of chars as a buffer for the code
-	 */
-	std::vector<uint32_t> readShaderCode(const std::filesystem::path &shaderPath) {
-		std::ifstream file(shaderPath.string(), std::ios::ate | std::ios::binary);
-
-		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened: %s", shaderPath.c_str());
-			return std::vector<uint32_t>();
-		}
-
-		size_t fileSize = (size_t)file.tellg();
-
-		if (fileSize % sizeof(uint32_t) != 0) {
-			vkcv_log(LogLevel::ERROR, "The file is not a valid shader: %s", shaderPath.c_str());
-			return std::vector<uint32_t>();
-		}
-
-		std::vector<uint32_t> buffer(fileSize / sizeof(uint32_t));
-
-		file.seekg(0);
-		file.read(reinterpret_cast<char*>(buffer.data()), fileSize);
-		file.close();
-
-		return buffer;
-	}
 
 	VertexAttachmentFormat convertFormat(spirv_cross::SPIRType::BaseType basetype,
 										 uint32_t vecsize) {
@@ -85,15 +58,14 @@ namespace vkcv {
 			vkcv_log(LogLevel::WARNING, "Overwriting existing shader stage");
 		}
 
-		const std::vector<uint32_t> shaderCode = readShaderCode(path);
-
-		if (shaderCode.empty()) {
+		std::vector<uint32_t> shaderCode;
+		if ((!readBinaryFromFile(path, shaderCode)) || (shaderCode.empty())) {
 			return false;
-		} else {
-			m_Shaders.insert(std::make_pair(stage, shaderCode));
-			reflectShader(stage);
-			return true;
 		}
+		
+		m_Shaders.insert(std::make_pair(stage, shaderCode));
+		reflectShader(stage);
+		return true;
 	}
 
 	const std::vector<uint32_t> &ShaderProgram::getShaderBinary(ShaderStage stage) const {

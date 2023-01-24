@@ -89,48 +89,6 @@ namespace vkcv::upscaling {
 		return image.getHandle();
 	}
 	
-	static bool writeShaderCode(const std::filesystem::path &shaderPath, const std::string& code) {
-		std::ofstream file (shaderPath.string(), std::ios::out);
-		
-		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", shaderPath.string().c_str());
-			return false;
-		}
-		
-		file.seekp(0);
-		file.write(code.c_str(), static_cast<std::streamsize>(code.length()));
-		file.close();
-		
-		return true;
-	}
-	
-	static bool compileNISShader(vkcv::shader::GLSLCompiler& compiler,
-								 const shader::ShaderCompiledFunction& compiled) {
-		std::filesystem::path directory = generateTemporaryDirectoryPath();
-		
-		if (!std::filesystem::create_directory(directory)) {
-			vkcv_log(LogLevel::ERROR, "The directory could not be created (%s)", directory.string().c_str());
-			return false;
-		}
-		
-		if (!writeShaderCode(directory / "NIS_Scaler.h", NIS_SCALER_H_SHADER)) {
-			return false;
-		}
-		
-		return compiler.compileSource(
-				vkcv::ShaderStage::COMPUTE,
-				NIS_MAIN_GLSL_SHADER.c_str(),
-				[&directory, &compiled] (vkcv::ShaderStage shaderStage,
-										 const std::filesystem::path& path) {
-				if (compiled) {
-					compiled(shaderStage, path);
-				}
-				
-				std::filesystem::remove_all(directory);
-			}, directory
-		);
-	}
-	
 	NISUpscaling::NISUpscaling(Core &core) :
 	Upscaling(core),
 	m_scalerPipeline(),
@@ -178,15 +136,21 @@ namespace vkcv::upscaling {
 		
 		{
 			ShaderProgram program;
-			compileNISShader(scalerCompiler, [&program](vkcv::ShaderStage shaderStage,
-														const std::filesystem::path& path) {
-				program.addShader(shaderStage, path);
-			});
+			scalerCompiler.compileSourceWithHeaders(
+					ShaderStage::COMPUTE,
+					NIS_MAIN_GLSL_SHADER,
+					{
+						{ "NIS_Scaler.h", NIS_SCALER_H_SHADER }
+					},
+					[&program](vkcv::ShaderStage shaderStage,
+							   const std::filesystem::path& path) {
+						program.addShader(shaderStage, path);
+					}
+			);
 			
 			m_scalerPipeline = m_core.createComputePipeline({program,{
 					m_scalerDescriptorSetLayout
 			}});
-			
 			
 			DescriptorWrites writes;
 			writes.writeUniformBuffer(

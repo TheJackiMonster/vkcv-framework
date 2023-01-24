@@ -5,6 +5,12 @@
 
 namespace vkcv::effects {
 	
+	/**
+     * @defgroup vkcv_effects Effects Module
+     * A module to apply certain post-processing effects to an image in realtime.
+     * @{
+     */
+	
 	class Effect {
 	protected:
 		Core& m_core;
@@ -19,5 +25,7 @@ namespace vkcv::effects {
 								  const ImageHandle& output) = 0;
 		
 	};
+	
+	/** @} */
 	
 }
