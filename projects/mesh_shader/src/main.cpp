@@ -81,7 +81,7 @@ int main(int argc, const char** argv) {
 	const std::string applicationName = "Mesh shader";
 	
 	vkcv::Features features;
-	features.requireExtension(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 	features.requireExtensionFeature<vk::PhysicalDeviceMeshShaderFeaturesEXT>(
 			VK_EXT_MESH_SHADER_EXTENSION_NAME,
 			[](vk::PhysicalDeviceMeshShaderFeaturesEXT& features) {
@@ -199,7 +199,7 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::ShaderProgram bunnyShaderProgram{};
-	vkcv::shader::GLSLCompiler compiler;
+	vkcv::shader::GLSLCompiler compiler (vkcv::shader::GLSLCompileTarget::MESH_SHADING);
 	
 	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					 [&bunnyShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {

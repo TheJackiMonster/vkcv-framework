@@ -1,17 +1,19 @@
 #version 460
 #extension GL_ARB_separate_shader_objects   : enable
-#extension GL_NV_mesh_shader                : require
+#extension GL_EXT_mesh_shader               : require
 #extension GL_GOOGLE_include_directive      : enable
 
 #include "meshlet.inc"
 #include "common.inc"
 
-layout(local_size_x=32) in;
+layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
 
-taskNV out Task {
-  uint meshletIndices[32];
-  mat4 mvp;
-} OUT;
+struct Task {
+    uint meshletIndices[32];
+    mat4 mvp;
+};
+
+taskPayloadSharedEXT Task OUT;
 
 layout( push_constant ) uniform constants{
     uint matrixIndex;
@@ -52,27 +54,26 @@ bool isSphereInsideFrustum(vec3 spherePos, float sphereRadius, Plane cameraPlane
 }
 
 void main() {
-
-    if(gl_LocalInvocationID.x >= meshletCount){
+    if (gl_LocalInvocationID.x >= meshletCount) {
         return;
     }
     
     uint meshletIndex   = gl_GlobalInvocationID.x;
     Meshlet meshlet     = meshlets[meshletIndex]; 
     
-    if(gl_LocalInvocationID.x == 0){
+    if (gl_LocalInvocationID.x == 0) {
         taskCount = 0;
     }
     
     // TODO: scaling support
     vec3 meshletPositionWorld = (vec4(meshlet.meanPosition, 1) * objectMatrices[matrixIndex].model).xyz;
-    if(isSphereInsideFrustum(meshletPositionWorld, meshlet.boundingSphereRadius, cameraPlanes)){
+    if (isSphereInsideFrustum(meshletPositionWorld, meshlet.boundingSphereRadius, cameraPlanes)) {
         uint outIndex = atomicAdd(taskCount, 1);
         OUT.meshletIndices[outIndex] = gl_GlobalInvocationID.x;
     }
 
-    if(gl_LocalInvocationID.x == 0){
-        gl_TaskCountNV              = taskCount;
+    if (gl_LocalInvocationID.x == 0) {
         OUT.mvp = objectMatrices[matrixIndex].mvp;
+        EmitMeshTasksEXT(taskCount, 1, 1);
     }
 }

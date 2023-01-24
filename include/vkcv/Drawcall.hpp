@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "DescriptorSetUsage.hpp"
+#include "DispatchSize.hpp"
 #include "Handles.hpp"
 #include "VertexData.hpp"
 
@@ -78,12 +79,12 @@ namespace vkcv {
 	 */
 	class TaskDrawcall : public Drawcall {
 	private:
-		uint32_t m_taskCount;
+		DispatchSize m_taskSize;
 
 	public:
-		explicit TaskDrawcall(uint32_t taskCount = 1);
+		explicit TaskDrawcall(const DispatchSize& taskSize = DispatchSize(1));
 
-		[[nodiscard]] uint32_t getTaskCount() const;
+		[[nodiscard]] DispatchSize getTaskSize() const;
 	};
 
 } // namespace vkcv

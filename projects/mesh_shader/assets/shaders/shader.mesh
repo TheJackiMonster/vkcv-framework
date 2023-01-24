@@ -1,11 +1,11 @@
 #version 460
 #extension GL_ARB_separate_shader_objects   : enable
 #extension GL_GOOGLE_include_directive      : enable
-#extension GL_NV_mesh_shader                : require
+#extension GL_EXT_mesh_shader               : require
 
 #include "meshlet.inc"
 
-layout(local_size_x=32) in;
+layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
 
 layout(triangles) out;
 layout(max_vertices=64, max_primitives=126) out;
@@ -34,13 +34,14 @@ layout(std430, binding = 2) readonly buffer meshletBuffer
     Meshlet meshlets[];
 };
 
-taskNV in Task {
-  uint meshletIndices[32];
-  mat4 mvp;
-} IN;
+struct Task {
+    uint meshletIndices[32];
+    mat4 mvp;
+};
+
+taskPayloadSharedEXT Task IN;
 
 void main()	{
-    
     uint meshletIndex = IN.meshletIndices[gl_WorkGroupID.x];
     Meshlet meshlet = meshlets[meshletIndex];
     
@@ -55,24 +56,23 @@ void main()	{
         uint vertexIndex    = meshlet.vertexOffset + workIndex;
         Vertex vertex       = vertices[vertexIndex];
     
-        gl_MeshVerticesNV[workIndex].gl_Position    = IN.mvp * vec4(vertex.position, 1);
+        gl_MeshVerticesEXT[workIndex].gl_Position    = IN.mvp * vec4(vertex.position, 1);
         passNormal[workIndex]                       = vertex.normal;
         passTaskIndex[workIndex]                    = meshletIndex;
     }
     
     // set local indices
-    for(uint i = 0; i < 12; i++){
-    
+    for (uint i = 0; i < 12; i++) {
         uint workIndex = gl_LocalInvocationID.x + i * 32;
         if(workIndex >= meshlet.indexCount){
             break;
-        }    
+        }
         
-        uint indexBufferIndex               = meshlet.indexOffset + workIndex;
-        gl_PrimitiveIndicesNV[workIndex]    = localIndices[indexBufferIndex];
+        uint indexBufferIndex = meshlet.indexOffset + workIndex;
+        gl_PrimitiveTriangleIndicesEXT[workIndex] = uvec3(localIndices[indexBufferIndex]);
     }
     
-    if(gl_LocalInvocationID.x == 0){
-        gl_PrimitiveCountNV = meshlet.indexCount / 3;
+    if (gl_LocalInvocationID.x == 0) {
+        SetMeshOutputsEXT(64, meshlet.indexCount / 3);
     }
 }

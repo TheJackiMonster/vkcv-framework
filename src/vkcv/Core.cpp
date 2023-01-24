@@ -598,9 +598,9 @@ namespace vkcv {
 										 const PushConstants &pushConstantData,
 										 size_t drawcallIndex, const TaskDrawcall &drawcall) {
 
-		static PFN_vkCmdDrawMeshTasksNV cmdDrawMeshTasks =
-			reinterpret_cast<PFN_vkCmdDrawMeshTasksNV>(
-				core.getContext().getDevice().getProcAddr("vkCmdDrawMeshTasksNV"));
+		static PFN_vkCmdDrawMeshTasksEXT cmdDrawMeshTasks =
+			reinterpret_cast<PFN_vkCmdDrawMeshTasksEXT>(
+				core.getContext().getDevice().getProcAddr("vkCmdDrawMeshTasksEXT"));
 
 		if (!cmdDrawMeshTasks) {
 			vkcv_log(LogLevel::ERROR, "Mesh shader drawcalls are not supported");
@@ -619,8 +619,14 @@ namespace vkcv {
 									pushConstantData.getSizePerDrawcall(),
 									pushConstantData.getDrawcallData(drawcallIndex));
 		}
-
-		cmdDrawMeshTasks(VkCommandBuffer(cmdBuffer), drawcall.getTaskCount(), 0);
+		
+		const auto& groupSize = drawcall.getTaskSize();
+		cmdDrawMeshTasks(
+				VkCommandBuffer(cmdBuffer),
+				groupSize.x(),
+				groupSize.y(),
+				groupSize.z()
+		);
 	}
 
 	void Core::recordMeshShaderDrawcalls(const CommandStreamHandle &cmdStreamHandle,
@@ -640,7 +646,7 @@ namespace vkcv {
 		auto recordFunction = [&](const vk::CommandBuffer &cmdBuffer) {
 			for (size_t i = 0; i < drawcalls.size(); i++) {
 				recordMeshShaderDrawcall(*this, *m_DescriptorSetManager, cmdBuffer, pipelineLayout,
-										 pushConstantData, i, drawcalls [i]);
+										 pushConstantData, i, drawcalls[i]);
 			}
 		};
 

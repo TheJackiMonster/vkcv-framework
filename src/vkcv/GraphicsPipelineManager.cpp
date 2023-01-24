@@ -115,9 +115,9 @@ namespace vkcv {
 		case ShaderStage::COMPUTE:
 			return vk::ShaderStageFlagBits::eCompute;
 		case ShaderStage::TASK:
-			return vk::ShaderStageFlagBits::eTaskNV;
+			return vk::ShaderStageFlagBits::eTaskEXT;
 		case ShaderStage::MESH:
-			return vk::ShaderStageFlagBits::eMeshNV;
+			return vk::ShaderStageFlagBits::eMeshEXT;
 		default:
 			vkcv_log(LogLevel::ERROR, "Unknown shader stage");
 			return vk::ShaderStageFlagBits::eAll;
@@ -641,11 +641,21 @@ namespace vkcv {
 		// Get all setting structs together and create the Pipeline
 		const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
 			{}, static_cast<uint32_t>(shaderStages.size()), shaderStages.data(),
-			&pipelineVertexInputStateCreateInfo, &pipelineInputAssemblyStateCreateInfo,
-			&pipelineTessellationStateCreateInfo, &pipelineViewportStateCreateInfo,
-			&pipelineRasterizationStateCreateInfo, &pipelineMultisampleStateCreateInfo,
-			p_depthStencilCreateInfo, &pipelineColorBlendStateCreateInfo, &dynamicStateCreateInfo,
-			vkPipelineLayout, pass, 0, {}, 0);
+			&pipelineVertexInputStateCreateInfo,
+			&pipelineInputAssemblyStateCreateInfo,
+			&pipelineTessellationStateCreateInfo,
+			&pipelineViewportStateCreateInfo,
+			&pipelineRasterizationStateCreateInfo,
+			&pipelineMultisampleStateCreateInfo,
+			p_depthStencilCreateInfo,
+			&pipelineColorBlendStateCreateInfo,
+			&dynamicStateCreateInfo,
+			vkPipelineLayout,
+			pass,
+			0,
+			{},
+			0
+		);
 
 		vk::Pipeline vkPipeline {};
 		if (getCore().getContext().getDevice().createGraphicsPipelines(

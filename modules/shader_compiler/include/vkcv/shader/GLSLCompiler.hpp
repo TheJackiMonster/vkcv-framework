@@ -15,6 +15,7 @@ namespace vkcv::shader {
 	enum class GLSLCompileTarget {
 		SUBGROUP_OP,
 		RAY_TRACING,
+		MESH_SHADING,
 		
 		UNKNOWN
 	};
