@@ -94,8 +94,10 @@ int main(int argc, const char** argv) {
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		features
+		features,
+		{ VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME }
 	);
+	
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 1280, 720, true);
 	vkcv::Window &window = core.getWindow(windowHandle);
 
@@ -106,7 +108,6 @@ int main(int argc, const char** argv) {
     vkcv::asset::loadScene(path, mesh);
 
     assert(!mesh.vertexGroups.empty());
-
     auto vertexBuffer = vkcv::buffer<uint8_t>(
 			core,
             vkcv::BufferType::VERTEX,
@@ -199,7 +200,7 @@ int main(int argc, const char** argv) {
 	}
 
 	vkcv::ShaderProgram bunnyShaderProgram{};
-	vkcv::shader::GLSLCompiler compiler (vkcv::shader::GLSLCompileTarget::MESH_SHADING);
+	vkcv::shader::GLSLCompiler compiler;
 	
 	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("assets/shaders/shader.vert"),
 					 [&bunnyShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
@@ -249,17 +250,19 @@ int main(int argc, const char** argv) {
 
 	// mesh shader
 	vkcv::ShaderProgram meshShaderProgram;
-	compiler.compile(vkcv::ShaderStage::TASK, std::filesystem::path("assets/shaders/shader.task"),
+	vkcv::shader::GLSLCompiler mesh_compiler (vkcv::shader::GLSLCompileTarget::MESH_SHADING);
+	
+	mesh_compiler.compile(vkcv::ShaderStage::TASK, std::filesystem::path("assets/shaders/shader.task"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
-
-	compiler.compile(vkcv::ShaderStage::MESH, std::filesystem::path("assets/shaders/shader.mesh"),
+	
+	mesh_compiler.compile(vkcv::ShaderStage::MESH, std::filesystem::path("assets/shaders/shader.mesh"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
-
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
+	
+	mesh_compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
@@ -343,11 +346,15 @@ int main(int argc, const char** argv) {
 
 		matrixBuffer.fill({ objectMatrices });
 
-		struct PushConstants {
-			uint32_t matrixIndex;
+		struct MeshletPushConstants {
 			uint32_t meshletCount;
+			uint32_t matrixIndex;
 		};
-		PushConstants pushConstants{ 0, static_cast<uint32_t>(meshShaderModelData.meshlets.size()) };
+		
+		MeshletPushConstants pushConstants {
+			static_cast<uint32_t>(meshShaderModelData.meshlets.size()),
+			0
+		};
 
 		if (updateFrustumPlanes) {
 			const CameraPlanes cameraPlanes = computeCameraPlanes(camera);
@@ -357,7 +364,7 @@ int main(int argc, const char** argv) {
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-		vkcv::PushConstants pushConstantData = vkcv::pushConstants<PushConstants>();
+		vkcv::PushConstants pushConstantData = vkcv::pushConstants<MeshletPushConstants>();
 		pushConstantData.appendDrawcall(pushConstants);
 
 		if (useMeshShader) {
@@ -378,14 +385,14 @@ int main(int argc, const char** argv) {
 			vkcv::InstanceDrawcall drawcall (vertexData);
 			drawcall.useDescriptorSet(0, vertexShaderDescriptorSet);
 
-			core.recordDrawcallsToCmdStream(
+			/*core.recordDrawcallsToCmdStream(
 				cmdStream,
 				bunnyPipeline,
 				pushConstantData,
 				{ drawcall },
 				{ renderTargets },
 				windowHandle
-			);
+			);*/
 		}
 
 		core.prepareSwapchainImageForPresent(cmdStream);
