@@ -54,17 +54,16 @@ namespace vkcv {
 		}
 	}
 
-	vk::DescriptorPool DescriptorSetManager::allocateDescriptorPool() {
+	bool DescriptorSetManager::allocateDescriptorPool() {
 		vk::DescriptorPool pool;
 		if (getCore().getContext().getDevice().createDescriptorPool(&m_PoolInfo, nullptr, &pool)
 			!= vk::Result::eSuccess) {
 			vkcv_log(LogLevel::WARNING, "Failed to allocate descriptor pool");
-			pool = nullptr;
+			return false;
 		} else {
 			m_Pools.push_back(pool);
+			return true;
 		}
-
-		return pool;
 	}
 
 	DescriptorSetManager::DescriptorSetManager() noexcept :

@@ -59,9 +59,9 @@ namespace vkcv {
 		 * constructor is called initially in the constructor and then every time the pool runs
 		 * out memory.
 		 *
-		 * @return a DescriptorPool object
+		 * @return whether a DescriptorPool object could be created
 		 */
-		vk::DescriptorPool allocateDescriptorPool();
+		bool allocateDescriptorPool();
 
 	public:
 		/**
