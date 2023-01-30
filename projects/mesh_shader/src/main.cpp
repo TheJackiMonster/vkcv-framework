@@ -82,11 +82,13 @@ int main(int argc, const char** argv) {
 	
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	features.requireExtensionFeature<vk::PhysicalDeviceMeshShaderFeaturesNV>(
-			VK_NV_MESH_SHADER_EXTENSION_NAME, [](vk::PhysicalDeviceMeshShaderFeaturesNV& features) {
-		features.setTaskShader(true);
-		features.setMeshShader(true);
-	});
+	features.requireExtensionFeature<vk::PhysicalDeviceMeshShaderFeaturesEXT>(
+			VK_EXT_MESH_SHADER_EXTENSION_NAME,
+			[](vk::PhysicalDeviceMeshShaderFeaturesEXT& features) {
+				features.setTaskShader(true);
+				features.setMeshShader(true);
+			}
+	);
 
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
@@ -94,6 +96,7 @@ int main(int argc, const char** argv) {
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
 		features
 	);
+	
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 1280, 720, true);
 	vkcv::Window &window = core.getWindow(windowHandle);
 
@@ -104,7 +107,6 @@ int main(int argc, const char** argv) {
     vkcv::asset::loadScene(path, mesh);
 
     assert(!mesh.vertexGroups.empty());
-
     auto vertexBuffer = vkcv::buffer<uint8_t>(
 			core,
             vkcv::BufferType::VERTEX,
@@ -162,7 +164,11 @@ int main(int argc, const char** argv) {
     vkcv::meshlet::VertexCacheReorderResult tipsifyResult = vkcv::meshlet::tipsifyMesh(indexBuffer32Bit, interleavedVertices.size());
     vkcv::meshlet::VertexCacheReorderResult forsythResult = vkcv::meshlet::forsythReorder(indexBuffer32Bit, interleavedVertices.size());
 
-    const auto meshShaderModelData = createMeshShaderModelData(interleavedVertices, forsythResult.indexBuffer, forsythResult.skippedIndices);
+    const auto meshShaderModelData = createMeshShaderModelData(
+			interleavedVertices,
+			forsythResult.indexBuffer,
+			forsythResult.skippedIndices
+	);
 
 	auto meshShaderVertexBuffer = vkcv::buffer<vkcv::meshlet::Vertex>(
 		core,
@@ -179,9 +185,7 @@ int main(int argc, const char** argv) {
 	auto meshletBuffer = vkcv::buffer<vkcv::meshlet::Meshlet>(
 		core,
 		vkcv::BufferType::STORAGE,
-		meshShaderModelData.meshlets.size(),
-		vkcv::BufferMemoryType::DEVICE_LOCAL
-		);
+		meshShaderModelData.meshlets.size());
 	meshletBuffer.fill(meshShaderModelData.meshlets);
 	
 	vkcv::PassHandle renderPass = vkcv::passSwapchain(
@@ -224,7 +228,9 @@ int main(int argc, const char** argv) {
 		glm::mat4 mvp;
 	};
 	const size_t objectCount = 1;
-	vkcv::Buffer<ObjectMatrices> matrixBuffer = vkcv::buffer<ObjectMatrices>(core, vkcv::BufferType::STORAGE, objectCount);
+	vkcv::Buffer<ObjectMatrices> matrixBuffer = vkcv::buffer<ObjectMatrices>(
+			core, vkcv::BufferType::STORAGE, objectCount
+	);
 
 	vkcv::DescriptorWrites vertexShaderDescriptorWrites;
 	vertexShaderDescriptorWrites.writeStorageBuffer(0, matrixBuffer.getHandle());
@@ -247,17 +253,19 @@ int main(int argc, const char** argv) {
 
 	// mesh shader
 	vkcv::ShaderProgram meshShaderProgram;
-	compiler.compile(vkcv::ShaderStage::TASK, std::filesystem::path("assets/shaders/shader.task"),
+	vkcv::shader::GLSLCompiler mesh_compiler (vkcv::shader::GLSLCompileTarget::MESH_SHADING);
+	
+	mesh_compiler.compile(vkcv::ShaderStage::TASK, std::filesystem::path("assets/shaders/shader.task"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
-
-	compiler.compile(vkcv::ShaderStage::MESH, std::filesystem::path("assets/shaders/shader.mesh"),
+	
+	mesh_compiler.compile(vkcv::ShaderStage::MESH, std::filesystem::path("assets/shaders/shader.mesh"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
-
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
+	
+	mesh_compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("assets/shaders/shader.frag"),
 		[&meshShaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
 		meshShaderProgram.addShader(shaderStage, path);
 	});
@@ -281,7 +289,9 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = vkcv::buffer<CameraPlanes>(core, vkcv::BufferType::UNIFORM, 1);
+	vkcv::Buffer<CameraPlanes> cameraPlaneBuffer = vkcv::buffer<CameraPlanes>(
+			core, vkcv::BufferType::UNIFORM, 1
+	);
 
 	vkcv::DescriptorWrites meshShaderWrites;
 	meshShaderWrites.writeStorageBuffer(
@@ -312,10 +322,10 @@ int main(int argc, const char** argv) {
 	vkcv::camera::CameraManager cameraManager(window);
 	auto camHandle = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);
 	
-	cameraManager.getCamera(camHandle).setPosition(glm::vec3(0, 0, -2));
+	cameraManager.getCamera(camHandle).setPosition(glm::vec3(0, 2.5f, -2));
 
-	bool useMeshShader          = true;
-	bool updateFrustumPlanes    = true;
+	bool useMeshShader       = true;
+	bool updateFrustumPlanes = true;
 	
 	core.run([&](const vkcv::WindowHandle &windowHandle, double t, double dt,
 				 uint32_t swapchainWidth, uint32_t swapchainHeight) {
@@ -336,16 +346,10 @@ int main(int argc, const char** argv) {
 		const vkcv::camera::Camera& camera = cameraManager.getActiveCamera();
 
 		ObjectMatrices objectMatrices;
-		objectMatrices.model    = *reinterpret_cast<glm::mat4*>(&mesh.meshes.front().modelMatrix);
-		objectMatrices.mvp      = camera.getMVP() * objectMatrices.model;
+		objectMatrices.model = *reinterpret_cast<glm::mat4*>(&mesh.meshes.front().modelMatrix);
+		objectMatrices.mvp   = camera.getMVP() * objectMatrices.model;
 
 		matrixBuffer.fill({ objectMatrices });
-
-		struct PushConstants {
-			uint32_t matrixIndex;
-			uint32_t meshletCount;
-		};
-		PushConstants pushConstants{ 0, static_cast<uint32_t>(meshShaderModelData.meshlets.size()) };
 
 		if (updateFrustumPlanes) {
 			const CameraPlanes cameraPlanes = computeCameraPlanes(camera);
@@ -355,15 +359,14 @@ int main(int argc, const char** argv) {
 		const std::vector<vkcv::ImageHandle> renderTargets = { swapchainInput, depthBuffer };
 		auto cmdStream = core.createCommandStream(vkcv::QueueType::Graphics);
 
-		vkcv::PushConstants pushConstantData = vkcv::pushConstants<PushConstants>();
-		pushConstantData.appendDrawcall(pushConstants);
+		vkcv::PushConstants pushConstantData = vkcv::pushConstants<uint32_t>(0);
 
 		if (useMeshShader) {
-			const uint32_t taskCount = (meshShaderModelData.meshlets.size() + 31) / 32;
+			vkcv::TaskDrawcall drawcall (vkcv::dispatchInvocations(
+					meshShaderModelData.meshlets.size(), 32
+			));
 			
-			vkcv::TaskDrawcall drawcall (taskCount);
 			drawcall.useDescriptorSet(0, meshShaderDescriptorSet);
-
 			core.recordMeshShaderDrawcalls(
 				cmdStream,
 				meshShaderPipeline,

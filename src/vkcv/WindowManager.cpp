@@ -33,6 +33,11 @@ namespace vkcv {
 								 static_cast<int>(windowHeight), resizeable);
 
 		SwapchainHandle swapchainHandle = swapchainManager.createSwapchain(*window);
+		
+		if (!swapchainHandle) {
+			delete window;
+			return {};
+		}
 
 		if (resizeable) {
 			const event_handle<int, int> &resizeHandle =

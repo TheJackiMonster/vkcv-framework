@@ -55,10 +55,10 @@ namespace vkcv {
 		return m_drawCount;
 	}
 
-	TaskDrawcall::TaskDrawcall(uint32_t taskCount) : Drawcall(), m_taskCount(taskCount) {}
-
-	uint32_t TaskDrawcall::getTaskCount() const {
-		return m_taskCount;
+	TaskDrawcall::TaskDrawcall(const DispatchSize& taskSize) : Drawcall(), m_taskSize(taskSize) {}
+	
+	DispatchSize TaskDrawcall::getTaskSize() const {
+		return m_taskSize;
 	}
 
 } // namespace vkcv
