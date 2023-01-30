@@ -20,23 +20,25 @@ struct Vertex {
     float padding1;
 };
 
-layout(std430, binding = 0) readonly buffer vertexBuffer {
+layout(std430, set=0, binding = 0) readonly buffer vertexBuffer {
     Vertex vertices[];
 };
 
-layout(std430, binding = 1) readonly buffer indexBuffer {
+layout(std430, set=0, binding = 1) readonly buffer indexBuffer {
     uint localIndices[]; // breaks for 16 bit indices
 };
 
-layout(std430, binding = 2) readonly buffer meshletBuffer {
+layout(std430, set=0, binding = 2) readonly buffer meshletBuffer {
     Meshlet meshlets[];
 };
 
 taskPayloadSharedEXT Task IN;
 
 void main()	{
-    uint meshletIndex = IN.meshletIndices[gl_WorkGroupID.x];
+    const uint meshletIndex = IN.meshletIndices[gl_WorkGroupID.x];
     Meshlet meshlet = meshlets[meshletIndex];
+
+    SetMeshOutputsEXT(meshlet.vertexCount, meshlet.indexCount / 3);
     
     // set vertices
     for (uint i = 0; i < 2; i++) {
@@ -55,16 +57,12 @@ void main()	{
     
     // set local indices
     for (uint i = 0; i < 12; i++) {
-        uint workIndex = gl_LocalInvocationID.x + i * 32;
+        const uint workIndex = gl_LocalInvocationID.x + i * 32;
         if (workIndex >= meshlet.indexCount) {
             break;
         }
         
-        uint indexBufferIndex = meshlet.indexOffset + workIndex;
+        const uint indexBufferIndex = meshlet.indexOffset + workIndex;
         gl_PrimitiveTriangleIndicesEXT[workIndex] = uvec3(localIndices[indexBufferIndex]);
-    }
-    
-    if (gl_LocalInvocationID.x == 0) {
-        SetMeshOutputsEXT(64, meshlet.indexCount / 3);
     }
 }

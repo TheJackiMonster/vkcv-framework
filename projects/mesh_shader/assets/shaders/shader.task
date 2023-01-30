@@ -11,12 +11,11 @@ layout(local_size_x=32, local_size_y=1, local_size_z=1) in;
 taskPayloadSharedEXT Task OUT;
 
 layout( push_constant ) uniform constants {
-    uint meshletCount;
     uint matrixIndex;
 };
 
 // TODO: reuse mesh stage binding at location 2 after required fix in framework
-layout(std430, binding = 5) readonly buffer meshletBuffer {
+layout(std430, set=0, binding = 5) readonly buffer meshletBuffer {
     Meshlet meshlets[];
 };
 
@@ -31,7 +30,7 @@ layout(set=0, binding = 3, std140) uniform cameraPlaneBuffer {
     Plane cameraPlanes[6];
 };
 
-layout(std430, binding = 4) readonly buffer matrixBuffer {
+layout(std430, set=0, binding = 4) readonly buffer matrixBuffer {
     ObjectMatrices objectMatrices[];
 };
 
@@ -47,12 +46,12 @@ bool isSphereInsideFrustum(vec3 spherePos, float sphereRadius, Plane cameraPlane
 }
 
 void main() {
-    if (gl_LocalInvocationID.x >= meshletCount) {
-        return;
+    const uint meshletIndex = gl_GlobalInvocationID.x;
+    Meshlet meshlet;
+
+    if (meshletIndex < meshlets.length()) {
+        meshlet = meshlets[meshletIndex];
     }
-    
-    uint meshletIndex   = gl_GlobalInvocationID.x;
-    Meshlet meshlet     = meshlets[meshletIndex]; 
     
     if (gl_LocalInvocationID.x == 0) {
         taskCount = 0;
@@ -63,14 +62,12 @@ void main() {
     // TODO: scaling support
     vec3 meshletPositionWorld = (vec4(meshlet.meanPosition, 1) * objectMatrices[matrixIndex].model).xyz;
     if (isSphereInsideFrustum(meshletPositionWorld, meshlet.boundingSphereRadius, cameraPlanes)) {
-        uint outIndex = atomicAdd(taskCount, 1);
-        OUT.meshletIndices[outIndex] = gl_GlobalInvocationID.x;
+        const uint outIndex = atomicAdd(taskCount, 1);
+        OUT.meshletIndices[outIndex] = meshletIndex;
     }
 
     memoryBarrierShared();
 
-    if (gl_LocalInvocationID.x == 0) {
-        OUT.mvp = objectMatrices[matrixIndex].mvp;
-        EmitMeshTasksEXT(taskCount, 1, 1);
-    }
+    OUT.mvp = objectMatrices[matrixIndex].mvp;
+    EmitMeshTasksEXT(taskCount, 1, 1);
 }
