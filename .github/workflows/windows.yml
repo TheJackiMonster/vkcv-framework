@@ -21,8 +21,7 @@ jobs:
           vulkan-use-cache: true
 
       - name: Build framework
-        run: |
-          mkdir build
-          cd build
-          cmake ..
-          make
+        uses: ashutoshvarma/action-cmake-build@v1
+        with:
+          build-dir: ${{ runner.workspace }}/build
+          run-test: false
