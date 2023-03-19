@@ -1,4 +1,4 @@
-name: Windows Build
+name: macOS Build
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout the current branch
         uses: actions/checkout@v3
@@ -22,5 +22,5 @@ jobs:
 
       - name: Build framework
         run: |
-          cmake -G Ninja -S . -B build
-          cmake --build build --config Debug
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -S . -B build
+          cmake --build build
