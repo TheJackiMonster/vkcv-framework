@@ -48,7 +48,6 @@ int main(int argc, const char **argv) {
     float param_gravity = -5000;
     float param_viscosity = 10;
     float param_ABSORBTION = 0.5;
-    float param_dt = 0.0005;
 
     if (!particlePass)
     {
@@ -317,7 +316,7 @@ int main(int argc, const char **argv) {
 
         glm::vec4 pushData[3] = {
             glm::vec4(param_h,param_mass,param_gasConstant,param_offset),
-            glm::vec4(param_gravity,param_viscosity,param_ABSORBTION,param_dt),
+            glm::vec4(param_gravity,param_viscosity,param_ABSORBTION,dt * 0.1),
             glm::vec4(gravityDir.x,gravityDir.y,gravityDir.z,(float)numberParticles)
         };
 
