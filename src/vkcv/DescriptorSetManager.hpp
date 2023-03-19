@@ -35,8 +35,8 @@ namespace vkcv {
 	private:
 		DescriptorSetLayoutManager* m_DescriptorSetLayoutManager;
 
-		std::vector<vk::DescriptorPool> m_Pools;
-		std::vector<vk::DescriptorPoolSize> m_PoolSizes;
+		Vector<vk::DescriptorPool> m_Pools;
+		Vector<vk::DescriptorPoolSize> m_PoolSizes;
 		vk::DescriptorPoolCreateInfo m_PoolInfo;
 
 		bool init(Core &core, DescriptorSetLayoutManager &descriptorSetLayoutManager);

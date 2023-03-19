@@ -5,9 +5,9 @@
  * @brief Class to manage push constants for pipeline recording.
  */
 
-#include <vector>
 #include <vulkan/vulkan.hpp>
 
+#include "Container.hpp"
 #include "Logger.hpp"
 #include "TypeGuard.hpp"
 
@@ -19,7 +19,7 @@ namespace vkcv {
 	class PushConstants final {
 	private:
 		TypeGuard m_typeGuard;
-		std::vector<uint8_t> m_data;
+		Vector<uint8_t> m_data;
 
 	public:
 		explicit PushConstants(size_t sizePerDrawcall);
@@ -142,7 +142,7 @@ namespace vkcv {
 	}
 
 	template <typename T>
-	PushConstants pushConstants(const std::vector<T> &values) {
+	PushConstants pushConstants(const Vector<T> &values) {
 		auto pc = pushConstants<T>();
 
 		for (const T &value : values) {

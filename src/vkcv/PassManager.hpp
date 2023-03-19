@@ -1,9 +1,10 @@
 #pragma once
 
-#include <vector>
 #include <vulkan/vulkan.hpp>
 
 #include "HandleManager.hpp"
+
+#include "vkcv/Container.hpp"
 #include "vkcv/PassConfig.hpp"
 
 namespace vkcv {
@@ -11,7 +12,7 @@ namespace vkcv {
 	struct PassEntry {
 		vk::RenderPass m_Handle;
 		PassConfig m_Config;
-		std::vector<vk::ImageLayout> m_Layouts;
+		Vector<vk::ImageLayout> m_Layouts;
 	};
 
 	/**
@@ -45,7 +46,7 @@ namespace vkcv {
 
 		[[nodiscard]] const PassConfig &getPassConfig(const PassHandle &handle) const;
 
-		[[nodiscard]] const std::vector<vk::ImageLayout> &
+		[[nodiscard]] const Vector<vk::ImageLayout> &
 		getLayouts(const PassHandle &handle) const;
 	};
 

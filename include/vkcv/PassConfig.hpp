@@ -5,9 +5,9 @@
  * @brief Enums and structures to handle render pass configuration.
  */
 
-#include <vector>
 #include <vulkan/vulkan.hpp>
 
+#include "Container.hpp"
 #include "Multisampling.hpp"
 
 namespace vkcv {
@@ -60,7 +60,7 @@ namespace vkcv {
 		[[nodiscard]] const vk::ClearValue &getClearValue() const;
 	};
 
-	using AttachmentDescriptions = std::vector<AttachmentDescription>;
+	using AttachmentDescriptions = Vector<AttachmentDescription>;
 
 	/**
 	 * @brief Class to configure a pass for usage.

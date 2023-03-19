@@ -5,8 +5,7 @@
  * @brief Classes to define different drawcalls.
  */
 
-#include <vector>
-
+#include "Container.hpp"
 #include "DescriptorSetUsage.hpp"
 #include "DispatchSize.hpp"
 #include "Handles.hpp"
@@ -19,7 +18,7 @@ namespace vkcv {
 	 */
 	class Drawcall {
 	private:
-		std::vector<DescriptorSetUsage> m_usages;
+		Vector<DescriptorSetUsage> m_usages;
 
 	public:
 		Drawcall() = default;
@@ -32,10 +31,10 @@ namespace vkcv {
 		Drawcall &operator=(const Drawcall &other) = default;
 		Drawcall &operator=(Drawcall &&other) noexcept = default;
 
-		[[nodiscard]] const std::vector<DescriptorSetUsage> &getDescriptorSetUsages() const;
+		[[nodiscard]] const Vector<DescriptorSetUsage> &getDescriptorSetUsages() const;
 
 		void useDescriptorSet(uint32_t location, const DescriptorSetHandle &descriptorSet,
-							  const std::vector<uint32_t> &dynamicOffsets = {});
+							  const Vector<uint32_t> &dynamicOffsets = {});
 	};
 
 	/**

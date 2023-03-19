@@ -13,6 +13,7 @@ jobs:
 
       - name: Initialize LFS
         run: |
+          sudo apt-get -qq install git-lfs
           git lfs install
 
       - name: Load submodules
@@ -23,6 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -qq update
+          sudo apt-get -qq install cmake g++
           sudo apt-get -qq install libvulkan-dev xorg-dev
 
       - name: Build framework

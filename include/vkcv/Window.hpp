@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <string>
 
+#include "Container.hpp"
 #include "Event.hpp"
 #include "Handles.hpp"
 
@@ -100,7 +101,7 @@ namespace vkcv {
 		 *
 		 * @return Required surface extensions
 		 */
-		static const std::vector<std::string> &getExtensions();
+		static const Vector<std::string> &getExtensions();
 
 		event< int, int, int> e_mouseButton;
 		event< double, double > e_mouseMove;

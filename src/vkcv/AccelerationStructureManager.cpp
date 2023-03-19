@@ -118,8 +118,8 @@ namespace vkcv {
 	static AccelerationStructureEntry buildAccelerationStructure(
 			Core& core,
 			BufferManager& bufferManager,
-			std::vector<vk::AccelerationStructureBuildGeometryInfoKHR> &geometryInfos,
-			const std::vector<vk::AccelerationStructureBuildRangeInfoKHR> &rangeInfos,
+			Vector<vk::AccelerationStructureBuildGeometryInfoKHR> &geometryInfos,
+			const Vector<vk::AccelerationStructureBuildRangeInfoKHR> &rangeInfos,
 			vk::AccelerationStructureTypeKHR accelerationStructureType,
 			size_t accelerationStructureSize,
 			size_t scratchBufferSize,
@@ -187,7 +187,7 @@ namespace vkcv {
 			geometryInfo.setScratchData(scratchBufferAddress);
 		}
 		
-		std::vector<const vk::AccelerationStructureBuildRangeInfoKHR*> pRangeInfos;
+		Vector<const vk::AccelerationStructureBuildRangeInfoKHR*> pRangeInfos;
 		pRangeInfos.resize(rangeInfos.size());
 		
 		for (size_t i = 0; i < rangeInfos.size(); i++) {
@@ -336,12 +336,12 @@ namespace vkcv {
 	}
 	
 	AccelerationStructureHandle AccelerationStructureManager::createAccelerationStructure(
-			const std::vector<GeometryData> &geometryData,
+			const Vector<GeometryData> &geometryData,
 			const BufferHandle &transformBuffer,
 			bool compaction) {
-		std::vector<vk::AccelerationStructureGeometryKHR> geometries;
-		std::vector<vk::AccelerationStructureBuildGeometryInfoKHR> geometryInfos;
-		std::vector<vk::AccelerationStructureBuildRangeInfoKHR> rangeInfos;
+		Vector<vk::AccelerationStructureGeometryKHR> geometries;
+		Vector<vk::AccelerationStructureBuildGeometryInfoKHR> geometryInfos;
+		Vector<vk::AccelerationStructureBuildRangeInfoKHR> rangeInfos;
 		
 		if (geometryData.empty()) {
 			return {};
@@ -371,7 +371,7 @@ namespace vkcv {
 		geometries.reserve(geometryData.size());
 		rangeInfos.reserve(geometryData.size());
 		
-		std::vector<uint32_t> maxPrimitiveCount;
+		Vector<uint32_t> maxPrimitiveCount;
 		
 		maxPrimitiveCount.reserve(geometryData.size());
 		
@@ -522,8 +522,8 @@ namespace vkcv {
 	}
 	
 	AccelerationStructureHandle AccelerationStructureManager::createAccelerationStructure(
-			const std::vector<AccelerationStructureHandle> &accelerationStructures) {
-		std::vector<vk::AccelerationStructureInstanceKHR> asInstances;
+			const Vector<AccelerationStructureHandle> &accelerationStructures) {
+		Vector<vk::AccelerationStructureInstanceKHR> asInstances;
 		
 		if (accelerationStructures.empty()) {
 			return {};
@@ -624,7 +624,7 @@ namespace vkcv {
 				{}
 		);
 		
-		std::vector<vk::AccelerationStructureBuildGeometryInfoKHR> asBuildGeometryInfos = {
+		Vector<vk::AccelerationStructureBuildGeometryInfoKHR> asBuildGeometryInfos = {
 				vk::AccelerationStructureBuildGeometryInfoKHR(
 						vk::AccelerationStructureTypeKHR::eTopLevel,
 						vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace,

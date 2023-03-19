@@ -144,22 +144,22 @@ namespace vkcv {
 												  const SamplerManager &samplerManager) {
 		auto &set = (*this) [handle];
 
-		std::vector<vk::DescriptorImageInfo> imageInfos;
-		std::vector<vk::DescriptorBufferInfo> bufferInfos;
+		Vector<vk::DescriptorImageInfo> imageInfos;
+		Vector<vk::DescriptorBufferInfo> bufferInfos;
 		
 		bufferInfos.reserve(
 				writes.getUniformBufferWrites().size() +
 				writes.getStorageBufferWrites().size()
 		);
 		
-		std::vector<vk::AccelerationStructureKHR> accelerationStructures;
-		std::vector<size_t> accelerationStructureOffsets;
+		Vector<vk::AccelerationStructureKHR> accelerationStructures;
+		Vector<size_t> accelerationStructureOffsets;
 		
 		accelerationStructureOffsets.reserve(writes.getAccelerationWrites().size());
 
-		std::vector<vk::WriteDescriptorSetAccelerationStructureKHR> writeStructures;
+		Vector<vk::WriteDescriptorSetAccelerationStructureKHR> writeStructures;
 
-		std::vector<WriteDescriptorSetInfo> writeInfos;
+		Vector<WriteDescriptorSetInfo> writeInfos;
 		writeInfos.reserve(
 				writes.getSampledImageWrites().size() +
 				writes.getStorageImageWrites().size() +
@@ -311,7 +311,7 @@ namespace vkcv {
 			writeInfos.push_back(vulkanWrite);
 		}
 
-		std::vector<vk::WriteDescriptorSet> vulkanWrites;
+		Vector<vk::WriteDescriptorSet> vulkanWrites;
 		vulkanWrites.reserve(writeInfos.size());
 
 		for (const auto &write : writeInfos) {

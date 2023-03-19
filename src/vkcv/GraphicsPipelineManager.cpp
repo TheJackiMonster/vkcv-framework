@@ -131,7 +131,7 @@ namespace vkcv {
 			vk::PipelineShaderStageCreateInfo* outCreateInfo) {
 
 		assert(outCreateInfo);
-		std::vector<uint32_t> code = shaderProgram.getShaderBinary(stage);
+		Vector<uint32_t> code = shaderProgram.getShaderBinary(stage);
 		vk::ShaderModuleCreateInfo vertexModuleInfo(
 				{},
 				code.size() * sizeof(uint32_t),
@@ -162,8 +162,8 @@ namespace vkcv {
 	 * @param config
 	 */
 	static void fillVertexInputDescription(
-		std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
-		std::vector<vk::VertexInputBindingDescription> &vertexBindingDescriptions,
+		Vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
+		Vector<vk::VertexInputBindingDescription> &vertexBindingDescriptions,
 		const bool existsVertexShader,
 		const GraphicsPipelineConfig &config) {
 
@@ -197,8 +197,8 @@ namespace vkcv {
 	 * @return Pipeline Vertex Input State Create Info Struct
 	 */
 	static vk::PipelineVertexInputStateCreateInfo createPipelineVertexInputStateCreateInfo(
-		std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
-		std::vector<vk::VertexInputBindingDescription> &vertexBindingDescriptions) {
+		Vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
+		Vector<vk::VertexInputBindingDescription> &vertexBindingDescriptions) {
 
 		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
 			{}, vertexBindingDescriptions.size(), vertexBindingDescriptions.data(),
@@ -346,7 +346,7 @@ namespace vkcv {
 	static vk::PipelineColorBlendStateCreateInfo
 	createPipelineColorBlendStateCreateInfo(const GraphicsPipelineConfig &config,
 											const PassConfig &passConfig) {
-		static std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
+		static Vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
 		
 		colorBlendAttachmentStates.clear();
 		colorBlendAttachmentStates.reserve(passConfig.getAttachments().size());
@@ -397,7 +397,7 @@ namespace vkcv {
 	 */
 	static vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(
 		const GraphicsPipelineConfig &config,
-		const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts) {
+		const Vector<vk::DescriptorSetLayout> &descriptorSetLayouts) {
 		static vk::PushConstantRange pushConstantRange;
 
 		const size_t pushConstantsSize = config.getShaderProgram().getPushConstantsSize();
@@ -450,7 +450,7 @@ namespace vkcv {
 	 */
 	static vk::PipelineDynamicStateCreateInfo
 	createPipelineDynamicStateCreateInfo(const GraphicsPipelineConfig &config) {
-		static std::vector<vk::DynamicState> dynamicStates;
+		static Vector<vk::DynamicState> dynamicStates;
 		dynamicStates.clear();
 
 		if (config.isViewportDynamic()) {
@@ -497,7 +497,7 @@ namespace vkcv {
 			return {};
 		}
 
-		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+		Vector<vk::PipelineShaderStageCreateInfo> shaderStages;
 		auto destroyShaderModules = [&shaderStages, this] {
 			for (auto stage : shaderStages) {
 				getCore().getContext().getDevice().destroyShaderModule(stage.module);
@@ -601,8 +601,8 @@ namespace vkcv {
 
 		// vertex input state
 		// Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
-		std::vector<vk::VertexInputAttributeDescription> vertexAttributeDescriptions;
-		std::vector<vk::VertexInputBindingDescription> vertexBindingDescriptions;
+		Vector<vk::VertexInputAttributeDescription> vertexAttributeDescriptions;
+		Vector<vk::VertexInputBindingDescription> vertexBindingDescriptions;
 		fillVertexInputDescription(vertexAttributeDescriptions, vertexBindingDescriptions,
 								   existsVertexShader, config);
 
@@ -644,7 +644,7 @@ namespace vkcv {
 		vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo =
 			createPipelineDynamicStateCreateInfo(config);
 
-		std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+		Vector<vk::DescriptorSetLayout> descriptorSetLayouts;
 		descriptorSetLayouts.reserve(config.getDescriptorSetLayouts().size());
 		for (const auto &handle : config.getDescriptorSetLayouts()) {
 			descriptorSetLayouts.push_back(

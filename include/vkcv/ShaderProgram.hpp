@@ -10,9 +10,9 @@
 #include <filesystem>
 #include <iostream>
 #include <spirv_cross.hpp>
-#include <unordered_map>
 #include <vulkan/vulkan.hpp>
 
+#include "Container.hpp"
 #include "DescriptorBinding.hpp"
 #include "ShaderStage.hpp"
 #include "VertexLayout.hpp"
@@ -50,7 +50,7 @@ namespace vkcv {
 		 * @param[in] stage The stage of the shader
 		 * @return Shader code binary of the given stage
 		 */
-		const std::vector<uint32_t> &getShaderBinary(ShaderStage stage) const;
+		const Vector<uint32_t> &getShaderBinary(ShaderStage stage) const;
 
 		/**
 		 * @brief Returns whether a shader exists in the program for a
@@ -67,7 +67,7 @@ namespace vkcv {
 		 *
 		 * @return Vertex attachments
 		 */
-		const std::vector<VertexAttachment> &getVertexAttachments() const;
+		const Vector<VertexAttachment> &getVertexAttachments() const;
 
 		/**
 		 * @brief Returns the size of the programs push constants.
@@ -82,7 +82,7 @@ namespace vkcv {
 		 *
 		 * @return Reflected descriptor set bindings
 		 */
-		const std::unordered_map<uint32_t, DescriptorBindings> &getReflectedDescriptors() const;
+		const Dictionary<uint32_t, DescriptorBindings> &getReflectedDescriptors() const;
 
 	private:
 		/**
@@ -93,11 +93,11 @@ namespace vkcv {
 		 */
 		void reflectShader(ShaderStage shaderStage);
 
-		std::unordered_map<ShaderStage, std::vector<uint32_t> > m_Shaders;
+		Dictionary<ShaderStage, Vector<uint32_t> > m_Shaders;
 
 		// contains all vertex input attachments used in the vertex buffer
 		VertexAttachments m_VertexAttachments;
-		std::unordered_map<uint32_t, DescriptorBindings> m_DescriptorSets;
+		Dictionary<uint32_t, DescriptorBindings> m_DescriptorSets;
 		size_t m_pushConstantsSize = 0;
 	};
 

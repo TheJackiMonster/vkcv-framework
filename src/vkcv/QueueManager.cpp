@@ -15,9 +15,9 @@ namespace vkcv {
 	 * vk::QueueFlagBits::eGraphics)
 	 * @return An array of queue handles based on the @p queuePairs
 	 */
-	std::vector<Queue> getQueues(const vk::Device &device,
-								 const std::vector<std::pair<int, int>> &queuePairs) {
-		std::vector<Queue> queues;
+	Vector<Queue> getQueues(const vk::Device &device,
+								 const Vector<std::pair<int, int>> &queuePairs) {
+		Vector<Queue> queues;
 
 		for (auto q : queuePairs) {
 			const int queueFamilyIndex = q.first; // the queueIndex of the queue family
@@ -31,13 +31,13 @@ namespace vkcv {
 	}
 
 	QueueManager QueueManager::create(vk::Device device,
-									  const std::vector<std::pair<int, int>> &queuePairsGraphics,
-									  const std::vector<std::pair<int, int>> &queuePairsCompute,
-									  const std::vector<std::pair<int, int>> &queuePairsTransfer) {
+									  const Vector<std::pair<int, int>> &queuePairsGraphics,
+									  const Vector<std::pair<int, int>> &queuePairsCompute,
+									  const Vector<std::pair<int, int>> &queuePairsTransfer) {
 
-		std::vector<Queue> graphicsQueues = getQueues(device, queuePairsGraphics);
-		std::vector<Queue> computeQueues = getQueues(device, queuePairsCompute);
-		std::vector<Queue> transferQueues = getQueues(device, queuePairsTransfer);
+		Vector<Queue> graphicsQueues = getQueues(device, queuePairsGraphics);
+		Vector<Queue> computeQueues = getQueues(device, queuePairsCompute);
+		Vector<Queue> transferQueues = getQueues(device, queuePairsTransfer);
 
 		return QueueManager(std::move(graphicsQueues), std::move(computeQueues),
 							std::move(transferQueues), 0);
@@ -45,7 +45,7 @@ namespace vkcv {
 
 	uint32_t QueueManager::checkSurfaceSupport(const vk::PhysicalDevice &physicalDevice,
 											   const vk::SurfaceKHR &surface) {
-		std::vector<vk::QueueFamilyProperties> qFamilyProperties =
+		Vector<vk::QueueFamilyProperties> qFamilyProperties =
 			physicalDevice.getQueueFamilyProperties();
 
 		for (uint32_t i = 0; i < qFamilyProperties.size(); i++) {
@@ -62,9 +62,9 @@ namespace vkcv {
 		return 0;
 	}
 
-	QueueManager::QueueManager(std::vector<Queue> &&graphicsQueues,
-							   std::vector<Queue> &&computeQueues,
-							   std::vector<Queue> &&transferQueues, size_t presentIndex) :
+	QueueManager::QueueManager(Vector<Queue> &&graphicsQueues,
+							   Vector<Queue> &&computeQueues,
+							   Vector<Queue> &&transferQueues, size_t presentIndex) :
 		m_graphicsQueues(graphicsQueues),
 		m_computeQueues(computeQueues), m_transferQueues(transferQueues),
 		m_presentIndex(presentIndex) {}
@@ -73,15 +73,15 @@ namespace vkcv {
 		return m_graphicsQueues [m_presentIndex];
 	}
 
-	const std::vector<Queue> &QueueManager::getGraphicsQueues() const {
+	const Vector<Queue> &QueueManager::getGraphicsQueues() const {
 		return m_graphicsQueues;
 	}
 
-	const std::vector<Queue> &QueueManager::getComputeQueues() const {
+	const Vector<Queue> &QueueManager::getComputeQueues() const {
 		return m_computeQueues;
 	}
 
-	const std::vector<Queue> &QueueManager::getTransferQueues() const {
+	const Vector<Queue> &QueueManager::getTransferQueues() const {
 		return m_transferQueues;
 	}
 

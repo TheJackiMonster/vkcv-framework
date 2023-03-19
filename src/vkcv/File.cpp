@@ -58,7 +58,7 @@ namespace vkcv {
 	}
 	
 	bool writeContentToFile(const std::filesystem::path &path,
-							const std::vector<char>& content) {
+							const Vector<char>& content) {
 		std::ofstream file (path.string(), std::ios::out);
 		
 		if (!file.is_open()) {
@@ -74,7 +74,7 @@ namespace vkcv {
 	}
 	
 	bool writeBinaryToFile(const std::filesystem::path &path,
-						   const std::vector<uint32_t>& binary) {
+						   const Vector<uint32_t>& binary) {
 		std::ofstream file (path.string(), std::ios::out);
 		
 		if (!file.is_open()) {
@@ -109,7 +109,7 @@ namespace vkcv {
 	}
 	
 	bool readContentFromFile(const std::filesystem::path &path,
-							 std::vector<char>& content) {
+							 Vector<char>& content) {
 		std::ifstream file (path.string(), std::ios::ate);
 		
 		if (!file.is_open()) {
@@ -128,7 +128,7 @@ namespace vkcv {
 	}
 	
 	bool readBinaryFromFile(const std::filesystem::path &path,
-							std::vector<uint32_t>& binary) {
+							Vector<uint32_t>& binary) {
 		std::ifstream file (path.string(), std::ios::ate);
 		
 		if (!file.is_open()) {
@@ -165,7 +165,7 @@ namespace vkcv {
 		}
 		
 		const std::streamsize fileSize = file.tellg();
-		std::vector<char> buffer (fileSize);
+		Vector<char> buffer (fileSize);
 		buffer.resize(fileSize);
 		
 		file.seekg(0);

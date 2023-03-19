@@ -6,12 +6,14 @@
  * @brief Creation and handling of graphic pipelines
  */
 
+#include <vulkan/vulkan.hpp>
+
 #include "DescriptorSetLayoutManager.hpp"
 #include "HandleManager.hpp"
 #include "PassManager.hpp"
+
+#include "vkcv/Container.hpp"
 #include "vkcv/GraphicsPipelineConfig.hpp"
-#include <vector>
-#include <vulkan/vulkan.hpp>
 
 namespace vkcv {
 

@@ -66,7 +66,7 @@ namespace vkcv {
 			vk::PipelineShaderStageCreateInfo* outCreateInfo) {
 		
 		assert(outCreateInfo);
-		std::vector<uint32_t> code = shaderProgram.getShaderBinary(stage);
+		Vector<uint32_t> code = shaderProgram.getShaderBinary(stage);
 		vk::ShaderModuleCreateInfo vertexModuleInfo(
 				{},
 				code.size() * sizeof(uint32_t),
@@ -98,7 +98,7 @@ namespace vkcv {
 	 */
 	static vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(
 			const RayTracingPipelineConfig &config,
-			const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts) {
+			const Vector<vk::DescriptorSetLayout> &descriptorSetLayouts) {
 		static vk::PushConstantRange pushConstantRange;
 		
 		const size_t pushConstantsSize = config.getShaderProgram().getPushConstantsSize();
@@ -142,7 +142,7 @@ namespace vkcv {
 		uint32_t closestHitStageIndex = VK_SHADER_UNUSED_KHR;
 		uint32_t intersectionStageIndex = VK_SHADER_UNUSED_KHR;
 		
-		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+		Vector<vk::PipelineShaderStageCreateInfo> shaderStages;
 		shaderStages.reserve(
 				(existsRayGenShader? 1 : 0)
 				+ (existsRayAnyHitShader? 1 : 0)
@@ -159,7 +159,7 @@ namespace vkcv {
 			shaderStages.clear();
 		};
 		
-		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> shaderGroups;
+		Vector<vk::RayTracingShaderGroupCreateInfoKHR> shaderGroups;
 		shaderGroups.reserve(
 				(existsRayGenShader? 1 : 0)
 				+ (existsRayMissShader? 1 : 0)
@@ -312,7 +312,7 @@ namespace vkcv {
 			);
 		}
 		
-		std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+		Vector<vk::DescriptorSetLayout> descriptorSetLayouts;
 		descriptorSetLayouts.reserve(config.getDescriptorSetLayouts().size());
 		for (const auto &handle : config.getDescriptorSetLayouts()) {
 			descriptorSetLayouts.push_back(
@@ -374,7 +374,7 @@ namespace vkcv {
 				rayTracingPipelineProperties.shaderGroupHandleSize * shaderGroups.size()
 		);
 		
-		std::vector<uint8_t> shaderGroupHandleEntries;
+		Vector<uint8_t> shaderGroupHandleEntries;
 		shaderGroupHandleEntries.resize(shaderGroupHandlesSize);
 		
 		if (getCore().getContext().getDevice().getRayTracingShaderGroupHandlesKHR(

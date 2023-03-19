@@ -15,7 +15,7 @@
 #endif
 #endif
 
-#include <vector>
+#include "Container.hpp"
 
 namespace vkcv {
 
@@ -50,7 +50,7 @@ namespace vkcv {
 	template <typename... T>
 	struct event {
 	private:
-		std::vector< event_function<T...> > m_functions;
+		Vector< event_function<T...> > m_functions;
 		uint32_t m_id_counter;
 
 #ifndef __MINGW32__

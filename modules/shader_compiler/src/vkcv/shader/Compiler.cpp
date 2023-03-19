@@ -1,6 +1,7 @@
 
 #include "vkcv/shader/Compiler.hpp"
 
+#include <vkcv/Container.hpp>
 #include <vkcv/File.hpp>
 #include <vkcv/Logger.hpp>
 
@@ -8,7 +9,7 @@ namespace vkcv::shader {
 	
 	bool Compiler::compileSourceWithHeaders(ShaderStage shaderStage,
 											const std::string &shaderSource,
-											const std::unordered_map<std::filesystem::path, std::string> &shaderHeaders,
+											const Dictionary<std::filesystem::path, std::string> &shaderHeaders,
 											const ShaderCompiledFunction &compiled) {
 		const std::filesystem::path directory = generateTemporaryDirectoryPath();
 		
@@ -42,7 +43,7 @@ namespace vkcv::shader {
 	}
 	
 	void Compiler::compileProgram(ShaderProgram& program,
-								  const std::unordered_map<ShaderStage, const std::filesystem::path>& stages,
+								  const Dictionary<ShaderStage, const std::filesystem::path>& stages,
 								  const ShaderProgramCompiledFunction& compiled,
 								  const std::filesystem::path& includePath, bool update) {
 		std::vector<std::pair<ShaderStage, const std::filesystem::path>> stageList;

@@ -8,7 +8,7 @@ namespace vkcv {
 	
 	RayTracingPipelineConfig::RayTracingPipelineConfig(
 			const ShaderProgram &program,
-			const std::vector<DescriptorSetLayoutHandle> &layouts) :
+			const Vector<DescriptorSetLayoutHandle> &layouts) :
 			PipelineConfig(program, layouts) {}
 	
 }

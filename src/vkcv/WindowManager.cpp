@@ -56,8 +56,8 @@ namespace vkcv {
 		return *(*this) [handle];
 	}
 
-	std::vector<WindowHandle> WindowManager::getWindowHandles() const {
-		std::vector<WindowHandle> handles;
+	Vector<WindowHandle> WindowManager::getWindowHandles() const {
+		Vector<WindowHandle> handles;
 
 		for (size_t id = 0; id < getCount(); id++) {
 			if (getById(id)->isOpen()) {

@@ -4,7 +4,8 @@
  * @file vkcv/RayTracingPipelineConfig.hpp
  * @brief Ray tracing pipeline config struct to hand over required information to pipeline creation.
  */
- 
+
+#include "Container.hpp"
 #include "PipelineConfig.hpp"
 
 namespace vkcv {
@@ -17,7 +18,7 @@ namespace vkcv {
 		RayTracingPipelineConfig();
 		
 		RayTracingPipelineConfig(const ShaderProgram &program,
-								 const std::vector<DescriptorSetLayoutHandle> &layouts);
+								 const Vector<DescriptorSetLayoutHandle> &layouts);
 		
 		RayTracingPipelineConfig(const RayTracingPipelineConfig &other) = default;
 		RayTracingPipelineConfig(RayTracingPipelineConfig &&other) = default;

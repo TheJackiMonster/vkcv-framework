@@ -33,7 +33,7 @@ namespace vkcv {
 	vk::Result ComputePipelineManager::createShaderModule(vk::ShaderModule &module,
 														  const ShaderProgram &shaderProgram,
 														  const ShaderStage stage) {
-		std::vector<uint32_t> code = shaderProgram.getShaderBinary(stage);
+		Vector<uint32_t> code = shaderProgram.getShaderBinary(stage);
 		vk::ShaderModuleCreateInfo moduleInfo({}, code.size() * sizeof(uint32_t), code.data());
 		return getCore().getContext().getDevice().createShaderModule(&moduleInfo, nullptr, &module);
 	}
@@ -55,7 +55,7 @@ namespace vkcv {
 
 	ComputePipelineHandle ComputePipelineManager::createComputePipeline(
 		const ShaderProgram &shaderProgram,
-		const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts) {
+		const Vector<vk::DescriptorSetLayout> &descriptorSetLayouts) {
 		// Temporally handing over the Shader Program instead of a pipeline config
 		vk::ShaderModule computeModule {};
 		if (createShaderModule(computeModule, shaderProgram, ShaderStage::COMPUTE)

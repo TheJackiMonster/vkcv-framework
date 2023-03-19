@@ -13,6 +13,7 @@
 #include "BlitDownsampler.hpp"
 #include "BufferTypes.hpp"
 #include "ComputePipelineConfig.hpp"
+#include "Container.hpp"
 #include "Context.hpp"
 #include "DescriptorWrites.hpp"
 #include "DispatchSize.hpp"
@@ -85,8 +86,8 @@ namespace vkcv {
 		std::unique_ptr<CommandStreamManager> m_CommandStreamManager;
 		std::unique_ptr<WindowManager> m_WindowManager;
 		std::unique_ptr<SwapchainManager> m_SwapchainManager;
-
-		std::vector<vk::CommandPool> m_CommandPools;
+		
+		Vector<vk::CommandPool> m_CommandPools;
 		vk::Semaphore m_RenderFinished;
 		vk::Semaphore m_SwapchainImageAcquired;
 		uint32_t m_currentSwapchainImageIndex;
@@ -160,9 +161,9 @@ namespace vkcv {
 		 * @return New instance of #Context
 		 */
 		static Core create(const std::string &applicationName, uint32_t applicationVersion,
-						   const std::vector<vk::QueueFlagBits> &queueFlags = {},
+						   const Vector<vk::QueueFlagBits> &queueFlags = {},
 						   const Features &features = {},
-						   const std::vector<const char*> &instanceExtensions = {});
+						   const Vector<const char*> &instanceExtensions = {});
 
 		/**
 		 * Creates a basic vulkan graphics pipeline using @p config from the pipeline config class
@@ -536,8 +537,8 @@ namespace vkcv {
 		void recordDrawcallsToCmdStream(const CommandStreamHandle &cmdStreamHandle,
 										const GraphicsPipelineHandle &pipelineHandle,
 										const PushConstants &pushConstants,
-										const std::vector<InstanceDrawcall> &drawcalls,
-										const std::vector<ImageHandle> &renderTargets,
+										const Vector<InstanceDrawcall> &drawcalls,
+										const Vector<ImageHandle> &renderTargets,
 										const WindowHandle &windowHandle);
 
 		/**
@@ -555,8 +556,8 @@ namespace vkcv {
 		void recordIndirectDrawcallsToCmdStream(const CommandStreamHandle cmdStreamHandle,
 												const GraphicsPipelineHandle &pipelineHandle,
 												const PushConstants &pushConstantData,
-												const std::vector<IndirectDrawcall> &drawcalls,
-												const std::vector<ImageHandle> &renderTargets,
+												const Vector<IndirectDrawcall> &drawcalls,
+												const Vector<ImageHandle> &renderTargets,
 												const WindowHandle &windowHandle);
 
 		/**
@@ -574,8 +575,8 @@ namespace vkcv {
 		void recordMeshShaderDrawcalls(const CommandStreamHandle &cmdStreamHandle,
 									   const GraphicsPipelineHandle &pipelineHandle,
 									   const PushConstants &pushConstantData,
-									   const std::vector<TaskDrawcall> &drawcalls,
-									   const std::vector<ImageHandle> &renderTargets,
+									   const Vector<TaskDrawcall> &drawcalls,
+									   const Vector<ImageHandle> &renderTargets,
 									   const WindowHandle &windowHandle);
 
 		/**
@@ -592,7 +593,7 @@ namespace vkcv {
 		void recordRayGenerationToCmdStream(const CommandStreamHandle &cmdStreamHandle,
 											const RayTracingPipelineHandle &rayTracingPipeline,
 											const DispatchSize &dispatchSize,
-											const std::vector<DescriptorSetUsage>
+											const Vector<DescriptorSetUsage>
 											        &descriptorSetUsages,
 											const PushConstants &pushConstants,
 											const vkcv::WindowHandle &windowHandle);
@@ -610,7 +611,7 @@ namespace vkcv {
 		recordComputeDispatchToCmdStream(const CommandStreamHandle &cmdStream,
 										 const ComputePipelineHandle &computePipeline,
 										 const DispatchSize &dispatchSize,
-										 const std::vector<DescriptorSetUsage> &descriptorSetUsages,
+										 const Vector<DescriptorSetUsage> &descriptorSetUsages,
 										 const PushConstants &pushConstants);
 
 		/**
@@ -643,7 +644,7 @@ namespace vkcv {
 		void recordComputeIndirectDispatchToCmdStream(
 			const CommandStreamHandle cmdStream, const ComputePipelineHandle computePipeline,
 			const vkcv::BufferHandle buffer, const size_t bufferArgOffset,
-			const std::vector<DescriptorSetUsage> &descriptorSetUsages,
+			const Vector<DescriptorSetUsage> &descriptorSetUsages,
 			const PushConstants &pushConstants);
 
 		/**
@@ -968,7 +969,7 @@ namespace vkcv {
 		 * @return Acceleration structure handle
 		 */
 		AccelerationStructureHandle createAccelerationStructure(
-				const std::vector<GeometryData> &geometryData,
+				const Vector<GeometryData> &geometryData,
 				const BufferHandle &transformBuffer = {},
 				bool compaction = false);
 		
@@ -980,7 +981,7 @@ namespace vkcv {
 		 * @return Acceleration structure handle
 		 */
 		AccelerationStructureHandle createAccelerationStructure(
-				const std::vector<AccelerationStructureHandle> &handles);
+				const Vector<AccelerationStructureHandle> &handles);
 		
 		/**
 		 * @brief the underlying vulkan handle for an acceleration structure

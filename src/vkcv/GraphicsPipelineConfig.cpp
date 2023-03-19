@@ -12,7 +12,7 @@ namespace vkcv {
 		const ShaderProgram &program,
 		const PassHandle &pass,
 		const VertexLayout &vertexLayout,
-		const std::vector<DescriptorSetLayoutHandle> &layouts) :
+		const Vector<DescriptorSetLayoutHandle> &layouts) :
 		PipelineConfig(program, layouts),
 		m_PassHandle(pass),
 		m_VertexLayout(vertexLayout),

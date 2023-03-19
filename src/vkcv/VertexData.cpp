@@ -13,10 +13,10 @@ namespace vkcv {
 		return binding;
 	}
 
-	VertexData::VertexData(const std::vector<VertexBufferBinding> &bindings) :
+	VertexData::VertexData(const Vector<VertexBufferBinding> &bindings) :
 		m_bindings(bindings), m_indices(), m_indexBitCount(IndexBitCount::Bit16), m_count(0) {}
 
-	const std::vector<VertexBufferBinding> &VertexData::getVertexBufferBindings() const {
+	const Vector<VertexBufferBinding> &VertexData::getVertexBufferBindings() const {
 		return m_bindings;
 	}
 

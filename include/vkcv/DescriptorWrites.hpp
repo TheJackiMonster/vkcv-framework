@@ -5,9 +5,9 @@
  * @brief Structures to handle descriptor writes.
  */
 
-#include <vector>
 #include <vulkan/vulkan.hpp>
 
+#include "Container.hpp"
 #include "Handles.hpp"
 
 namespace vkcv {
@@ -61,7 +61,7 @@ namespace vkcv {
 	 */
 	struct AccelerationDescriptorWrite {
 		uint32_t binding;
-		std::vector<AccelerationStructureHandle> structures;
+		Vector<AccelerationStructureHandle> structures;
 	};
 
 	/**
@@ -70,12 +70,12 @@ namespace vkcv {
 	 */
 	class DescriptorWrites {
 	private:
-		std::vector<SampledImageDescriptorWrite> m_sampledImageWrites;
-		std::vector<StorageImageDescriptorWrite> m_storageImageWrites;
-		std::vector<BufferDescriptorWrite> m_uniformBufferWrites;
-		std::vector<BufferDescriptorWrite> m_storageBufferWrites;
-		std::vector<SamplerDescriptorWrite> m_samplerWrites;
-		std::vector<AccelerationDescriptorWrite> m_accelerationWrites;
+		Vector<SampledImageDescriptorWrite> m_sampledImageWrites;
+		Vector<StorageImageDescriptorWrite> m_storageImageWrites;
+		Vector<BufferDescriptorWrite> m_uniformBufferWrites;
+		Vector<BufferDescriptorWrite> m_storageBufferWrites;
+		Vector<SamplerDescriptorWrite> m_samplerWrites;
+		Vector<AccelerationDescriptorWrite> m_accelerationWrites;
 
 	public:
 		/**
@@ -159,49 +159,49 @@ namespace vkcv {
 		 */
 		DescriptorWrites &
 		writeAcceleration(uint32_t binding,
-						  const std::vector<AccelerationStructureHandle> &structures);
+						  const Vector<AccelerationStructureHandle> &structures);
 
 		/**
 		 * @brief Returns the list of stored write entries for sampled images.
 		 *
 		 * @return Sampled image write details
 		 */
-		[[nodiscard]] const std::vector<SampledImageDescriptorWrite> &getSampledImageWrites() const;
+		[[nodiscard]] const Vector<SampledImageDescriptorWrite> &getSampledImageWrites() const;
 
 		/**
 		 * @brief Returns the list of stored write entries for storage images.
 		 *
 		 * @return Storage image write details
 		 */
-		[[nodiscard]] const std::vector<StorageImageDescriptorWrite> &getStorageImageWrites() const;
+		[[nodiscard]] const Vector<StorageImageDescriptorWrite> &getStorageImageWrites() const;
 
 		/**
 		 * @brief Returns the list of stored write entries for uniform buffers.
 		 *
 		 * @return Uniform buffers write details
 		 */
-		[[nodiscard]] const std::vector<BufferDescriptorWrite> &getUniformBufferWrites() const;
+		[[nodiscard]] const Vector<BufferDescriptorWrite> &getUniformBufferWrites() const;
 
 		/**
 		 * @brief Returns the list of stored write entries for storage buffers.
 		 *
 		 * @return Storage buffers write details
 		 */
-		[[nodiscard]] const std::vector<BufferDescriptorWrite> &getStorageBufferWrites() const;
+		[[nodiscard]] const Vector<BufferDescriptorWrite> &getStorageBufferWrites() const;
 
 		/**
 		 * @brief Returns the list of stored write entries for samplers.
 		 *
 		 * @return Samplers write details
 		 */
-		[[nodiscard]] const std::vector<SamplerDescriptorWrite> &getSamplerWrites() const;
+		[[nodiscard]] const Vector<SamplerDescriptorWrite> &getSamplerWrites() const;
 
 		/**
 		 * @brief Returns the list of stored write entries for accelerations.
 		 *
 		 * @return Accelerations write details
 		 */
-		[[nodiscard]] const std::vector<AccelerationDescriptorWrite> &getAccelerationWrites() const;
+		[[nodiscard]] const Vector<AccelerationDescriptorWrite> &getAccelerationWrites() const;
 	};
 
 } // namespace vkcv

@@ -49,10 +49,10 @@ namespace vkcv {
 
 	PassHandle PassManager::createPass(const PassConfig &config) {
 		// description of all {color, input, depth/stencil} attachments of the render pass
-		std::vector<vk::AttachmentDescription> attachmentDescriptions {};
+		Vector<vk::AttachmentDescription> attachmentDescriptions {};
 
 		// individual references to color attachments (of a subpass)
-		std::vector<vk::AttachmentReference> colorAttachmentReferences {};
+		Vector<vk::AttachmentReference> colorAttachmentReferences {};
 		// individual reference to depth attachment (of a subpass)
 		vk::AttachmentReference depthStencilAttachmentRef;
 
@@ -70,7 +70,7 @@ namespace vkcv {
 
 		const auto &attachments = config.getAttachments();
 
-		std::vector<vk::ImageLayout> layouts;
+		Vector<vk::ImageLayout> layouts;
 		layouts.reserve(attachments.size());
 
 		for (uint32_t i = 0; i < attachments.size(); i++) {
@@ -137,7 +137,7 @@ namespace vkcv {
 		return pass.m_Config;
 	}
 
-	const std::vector<vk::ImageLayout> &PassManager::getLayouts(const PassHandle &handle) const {
+	const Vector<vk::ImageLayout> &PassManager::getLayouts(const PassHandle &handle) const {
 		auto &pass = (*this) [handle];
 		return pass.m_Layouts;
 	}

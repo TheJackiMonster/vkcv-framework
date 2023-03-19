@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vector>
 #include <vulkan/vulkan.hpp>
 
+#include "vkcv/Container.hpp"
 #include "vkcv/Event.hpp"
 #include "vkcv/EventFunctionTypes.hpp"
 
@@ -19,7 +19,7 @@ namespace vkcv {
 		vk::CommandBuffer cmdBuffer;
 		vk::CommandPool cmdPool;
 		vk::Queue queue;
-		std::vector<FinishCommandFunction> callbacks;
+		Vector<FinishCommandFunction> callbacks;
 	};
 
 	/**
@@ -79,8 +79,8 @@ namespace vkcv {
 		 * commands is finished
 		 */
 		void submitCommandStreamSynchronous(const CommandStreamHandle &handle,
-											std::vector<vk::Semaphore> &waitSemaphores,
-											std::vector<vk::Semaphore> &signalSemaphores);
+											Vector<vk::Semaphore> &waitSemaphores,
+											Vector<vk::Semaphore> &signalSemaphores);
 
 		/**
 		 * @brief Returns the underlying vulkan handle of a #CommandStream to be used for manual

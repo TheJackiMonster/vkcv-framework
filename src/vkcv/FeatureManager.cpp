@@ -648,7 +648,7 @@ namespace vkcv {
 		return false;
 	}
 
-	const std::vector<const char*> &FeatureManager::getActiveExtensions() const {
+	const Vector<const char*> &FeatureManager::getActiveExtensions() const {
 		return m_activeExtensions;
 	}
 

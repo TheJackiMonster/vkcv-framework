@@ -95,7 +95,7 @@ namespace vkcv {
 	 */
 	static bool pickPhysicalDevice(const vk::Instance &instance,
 								   vk::PhysicalDevice &physicalDevice) {
-		const std::vector<vk::PhysicalDevice> &devices = instance.enumeratePhysicalDevices();
+		const Vector<vk::PhysicalDevice> &devices = instance.enumeratePhysicalDevices();
 
 		if (devices.empty()) {
 			vkcv_log(LogLevel::ERROR, "Failed to find GPUs with Vulkan support");
@@ -147,8 +147,8 @@ namespace vkcv {
 	 * @param check The const vector const char* reference elements to be checked by "supported"
 	 * @return True, if all elements in "check" are supported (contained in supported)
 	 */
-	bool checkSupport(const std::vector<const char*> &supported,
-					  const std::vector<const char*> &check) {
+	bool checkSupport(const Vector<const char*> &supported,
+					  const Vector<const char*> &check) {
 		for (auto checkElem : check) {
 			bool found = false;
 			for (auto supportedElem : supported) {
@@ -163,8 +163,8 @@ namespace vkcv {
 		return true;
 	}
 
-	std::vector<std::string> getRequiredExtensions() {
-		std::vector<std::string> extensions = Window::getExtensions();
+	Vector<std::string> getRequiredExtensions() {
+		Vector<std::string> extensions = Window::getExtensions();
 
 #ifdef VULKAN_DEBUG_LABELS
 		extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -196,21 +196,21 @@ namespace vkcv {
 	 */
 	static void
 	queueCreateInfosQueueHandles(vk::PhysicalDevice &physicalDevice,
-								 const std::vector<float> &queuePriorities,
-								 const std::vector<vk::QueueFlagBits> &queueFlags,
-								 std::vector<vk::DeviceQueueCreateInfo> &queueCreateInfos,
-								 std::vector<std::pair<int, int>> &queuePairsGraphics,
-								 std::vector<std::pair<int, int>> &queuePairsCompute,
-								 std::vector<std::pair<int, int>> &queuePairsTransfer) {
+								 const Vector<float> &queuePriorities,
+								 const Vector<vk::QueueFlagBits> &queueFlags,
+								 Vector<vk::DeviceQueueCreateInfo> &queueCreateInfos,
+								 Vector<std::pair<int, int>> &queuePairsGraphics,
+								 Vector<std::pair<int, int>> &queuePairsCompute,
+								 Vector<std::pair<int, int>> &queuePairsTransfer) {
 		queueCreateInfos = {};
 		queuePairsGraphics = {};
 		queuePairsCompute = {};
 		queuePairsTransfer = {};
-		std::vector<vk::QueueFamilyProperties> qFamilyProperties =
+		Vector<vk::QueueFamilyProperties> qFamilyProperties =
 			physicalDevice.getQueueFamilyProperties();
 
 		// check priorities of flags -> the lower prioCount the higher the priority
-		std::vector<int> prios;
+		Vector<int> prios;
 		for (auto flag : queueFlags) {
 			int prioCount = 0;
 			for (size_t i = 0; i < qFamilyProperties.size(); i++) {
@@ -220,7 +220,7 @@ namespace vkcv {
 			prios.push_back(prioCount);
 		}
 		// resort flags with heighest priority before allocating the queues
-		std::vector<vk::QueueFlagBits> newFlags;
+		Vector<vk::QueueFlagBits> newFlags;
 		for (size_t i = 0; i < prios.size(); i++) {
 			auto minElem = std::min_element(prios.begin(), prios.end());
 			int index = minElem - prios.begin();
@@ -232,7 +232,7 @@ namespace vkcv {
 		// herefore: create vector that updates available queues in each queue family
 		// structure: [qFamily_0, ..., qFamily_n] where
 		// - qFamily_i = [GraphicsCount, ComputeCount, TransferCount], 0 <= i <= n
-		std::vector<std::vector<int>> queueFamilyStatus, initialQueueFamilyStatus;
+		Vector<Vector<int>> queueFamilyStatus, initialQueueFamilyStatus;
 
 		for (auto qFamily : qFamilyProperties) {
 			auto graphicsCount =
@@ -349,15 +349,15 @@ namespace vkcv {
 	}
 
 	Context Context::create(const std::string &applicationName, uint32_t applicationVersion,
-							const std::vector<vk::QueueFlagBits> &queueFlags,
+							const Vector<vk::QueueFlagBits> &queueFlags,
 							const Features &features,
-							const std::vector<const char*> &instanceExtensions) {
+							const Vector<const char*> &instanceExtensions) {
 		// check for layer support
 
-		const std::vector<vk::LayerProperties> &layerProperties =
+		const Vector<vk::LayerProperties> &layerProperties =
 			vk::enumerateInstanceLayerProperties();
 
-		std::vector<const char*> supportedLayers;
+		Vector<const char*> supportedLayers;
 		supportedLayers.reserve(layerProperties.size());
 
 		for (auto &elem : layerProperties) {
@@ -366,7 +366,7 @@ namespace vkcv {
 
 // if in debug mode, check if validation layers are supported. Enable them if supported
 #ifdef VULKAN_VALIDATION_LAYERS
-		std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+		Vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 
 		if (!checkSupport(supportedLayers, validationLayers)) {
 			vkcv_log_throw_error("Validation layers requested but not available!");
@@ -374,10 +374,10 @@ namespace vkcv {
 #endif
 
 		// check for instance extension support
-		std::vector<vk::ExtensionProperties> instanceExtensionProperties =
+		Vector<vk::ExtensionProperties> instanceExtensionProperties =
 			vk::enumerateInstanceExtensionProperties();
 
-		std::vector<const char*> supportedExtensions;
+		Vector<const char*> supportedExtensions;
 		supportedExtensions.reserve(instanceExtensionProperties.size());
 
 		for (auto &elem : instanceExtensionProperties) {
@@ -386,7 +386,7 @@ namespace vkcv {
 
 		// for GLFW: get all required extensions
 		auto requiredStrings = getRequiredExtensions();
-		std::vector<const char*> requiredExtensions;
+		Vector<const char*> requiredExtensions;
 
 		for (const auto &extension : requiredStrings) {
 			requiredExtensions.push_back(extension.c_str());
@@ -414,7 +414,7 @@ namespace vkcv {
 
 		vk::Instance instance = vk::createInstance(instanceCreateInfo);
 
-		std::vector<vk::PhysicalDevice> physicalDevices = instance.enumeratePhysicalDevices();
+		Vector<vk::PhysicalDevice> physicalDevices = instance.enumeratePhysicalDevices();
 		vk::PhysicalDevice physicalDevice;
 
 		if (!pickPhysicalDevice(instance, physicalDevice)) {
@@ -433,10 +433,10 @@ namespace vkcv {
 
 		const auto &extensions = featureManager.getActiveExtensions();
 
-		std::vector<vk::DeviceQueueCreateInfo> qCreateInfos;
-		std::vector<float> qPriorities;
+		Vector<vk::DeviceQueueCreateInfo> qCreateInfos;
+		Vector<float> qPriorities;
 		qPriorities.resize(queueFlags.size(), 1.f);
-		std::vector<std::pair<int, int>> queuePairsGraphics, queuePairsCompute, queuePairsTransfer;
+		Vector<std::pair<int, int>> queuePairsGraphics, queuePairsCompute, queuePairsTransfer;
 
 		queueCreateInfosQueueHandles(physicalDevice, qPriorities, queueFlags, qCreateInfos,
 									 queuePairsGraphics, queuePairsCompute, queuePairsTransfer);
