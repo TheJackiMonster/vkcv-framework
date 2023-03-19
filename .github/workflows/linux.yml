@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -qq update
-          sudo apt-get -qq install libvulkan-dev libvulkan1
+          sudo apt-get -qq install libvulkan-dev libvulkan1 libxrandr-dev libxrandr2
 
       - name: Build framework
         run: |
