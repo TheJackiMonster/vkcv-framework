@@ -21,7 +21,6 @@ jobs:
           vulkan-use-cache: true
 
       - name: Build framework
-        uses: ashutoshvarma/action-cmake-build@v1
-        with:
-          build-dir: ${{ runner.workspace }}/build
-          run-test: false
+        run: |
+          cmake -S . -B build
+          cmake --build build --config Release

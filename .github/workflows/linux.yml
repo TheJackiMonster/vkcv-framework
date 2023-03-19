@@ -29,7 +29,5 @@ jobs:
 
       - name: Build framework
         run: |
-          mkdir build
-          cd build
-          cmake ..
-          make -j $(nproc)
+          cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
+          cmake --build build
