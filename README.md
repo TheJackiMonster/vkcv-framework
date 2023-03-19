@@ -2,7 +2,8 @@
  A Vulkan framework for computer visualistics simplifying building applications
 
 [![linux-build-on-github](https://github.com/thejackimonster/vkcv-framework/workflows/Linux%20Build/badge.svg)](https://github.com/TheJackiMonster/vkcv-framework/actions/workflows/linux.yml)
-[![linux-build-on-github](https://github.com/thejackimonster/vkcv-framework/workflows/Windows%20Build/badge.svg)](https://github.com/TheJackiMonster/vkcv-framework/actions/workflows/windows.yml)
+[![windows-build-on-github](https://github.com/thejackimonster/vkcv-framework/workflows/Windows%20Build/badge.svg)](https://github.com/TheJackiMonster/vkcv-framework/actions/workflows/windows.yml)
+[![macos-build-on-github](https://github.com/thejackimonster/vkcv-framework/workflows/macOS%20Build/badge.svg)](https://github.com/TheJackiMonster/vkcv-framework/actions/workflows/macos.yml)
 
 ![Vulkan-Chan](https://gitlab.uni-koblenz.de/uploads/-/system/project/avatar/3712/VulkanChan.jpg)
 
