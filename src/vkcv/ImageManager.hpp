@@ -54,6 +54,7 @@ namespace vkcv {
 		Vector<ImageEntry> m_swapchainImages;
 		int m_currentSwapchainInputImage;
 
+		using HandleManager<ImageEntry, ImageHandle>::init;
 		bool init(Core &core, BufferManager &bufferManager);
 
 		[[nodiscard]] uint64_t getIdFrom(const ImageHandle &handle) const override;

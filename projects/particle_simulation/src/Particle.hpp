@@ -6,29 +6,33 @@ class Particle {
 
 public:
     Particle(glm::vec3 position, glm::vec3 velocity, float lifeTime = 1.f);
+	
+	[[nodiscard]]
+    const glm::vec3& getPosition() const;
 
-    const glm::vec3& getPosition()const;
+    void setPosition(const glm::vec3& pos);
+	
+	[[nodiscard]]
+    const glm::vec3& getVelocity() const;
 
-    void setPosition( const glm::vec3 pos );
+    void setVelocity(const glm::vec3& vel);
 
-    const glm::vec3& getVelocity()const;
+    void update(float delta);
 
-    void setVelocity( const glm::vec3 vel );
+    [[nodiscard]]
+	bool isAlive() const;
 
-    void update( const float delta );
-
-    bool isAlive()const;
-
-    void setLifeTime( const float lifeTime );
-
-    const float& getLifeTime()const;
+    void setLifeTime(float lifeTime);
+	
+	[[nodiscard]]
+	float getLifeTime() const;
 
 private:
     // all properties of the Particle
     glm::vec3 m_position;
     float m_lifeTime;
     glm::vec3 m_velocity;
-    float m_mass;
-    glm::vec3 m_reset_velocity;
-    float padding_3;
+	[[maybe_unused]] float m_mass;
+	[[maybe_unused]] glm::vec3 m_reset_velocity;
+	[[maybe_unused]] float m_padding;
 };

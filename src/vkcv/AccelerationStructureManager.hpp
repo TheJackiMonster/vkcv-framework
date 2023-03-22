@@ -37,6 +37,7 @@ namespace vkcv {
 	private:
 		BufferManager* m_bufferManager;
 		
+		using HandleManager<AccelerationStructureEntry, AccelerationStructureHandle>::init;
 		bool init(Core &core, BufferManager &bufferManager);
 		
 		[[nodiscard]] uint64_t getIdFrom(const AccelerationStructureHandle &handle) const override;

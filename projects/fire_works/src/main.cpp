@@ -85,18 +85,16 @@ struct draw_smoke_t {
 #define POINT_COUNT (2048 * 256)
 
 void InitializeParticles(std::vector<particle_t> &particles) {
-	for (size_t i = 0; i < particles.size(); i++) {
-		particle_t particle;
-		particle.position = glm::vec3(2.0f * (std::rand() % RAND_MAX) / RAND_MAX - 1.0f,
-									  2.0f * (std::rand() % RAND_MAX) / RAND_MAX - 1.0f,
-									  2.0f * (std::rand() % RAND_MAX) / RAND_MAX - 1.0f);
+	const auto rand_max = static_cast<float>(RAND_MAX);
+	for (auto& particle : particles) {
+		particle.position = glm::vec3(2.0f * (std::rand() % RAND_MAX) / rand_max - 1.0f,
+									  2.0f * (std::rand() % RAND_MAX) / rand_max - 1.0f,
+									  2.0f * (std::rand() % RAND_MAX) / rand_max - 1.0f);
 
 		particle.lifetime = 0.0f;
 		particle.velocity = glm::vec3(0.0f);
 		particle.size = 0.01f;
 		particle.color = glm::vec3(1.0f, 0.0f, 0.0f);
-
-		particles [i] = particle;
 	}
 }
 

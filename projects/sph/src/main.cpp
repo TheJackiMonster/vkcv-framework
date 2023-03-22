@@ -136,25 +136,28 @@ int main(int argc, const char **argv) {
             vkcv::BufferType::UNIFORM,
             1
     );
+	
+	const float rand_max = static_cast<float>(RAND_MAX);
 
     // generating particles
     int numberParticles = 20000;
     std::vector<Particle> particles;
+	particles.reserve(numberParticles);
+	
     for (int i = 0; i < numberParticles; i++) {
         const float lo = 0.6;
         const float hi = 0.9;
         const float vlo = 0;
         const float vhi = 70;
-        float x = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
-        float y = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
-        float z = lo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(hi-lo)));
-        float vx = vlo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(vhi-vlo)));
-        float vy = vlo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(vhi-vlo)));
-        float vz = vlo + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(vhi-vlo)));
+        float x = lo + static_cast <float> (rand()) /( static_cast <float> (rand_max/(hi-lo)));
+        float y = lo + static_cast <float> (rand()) /( static_cast <float> (rand_max/(hi-lo)));
+        float z = lo + static_cast <float> (rand()) /( static_cast <float> (rand_max/(hi-lo)));
+        float vx = vlo + static_cast <float> (rand()) /( static_cast <float> (rand_max/(vhi-vlo)));
+        float vy = vlo + static_cast <float> (rand()) /( static_cast <float> (rand_max/(vhi-vlo)));
+        float vz = vlo + static_cast <float> (rand()) /( static_cast <float> (rand_max/(vhi-vlo)));
         glm::vec3 pos = glm::vec3(x,y,z);
         glm::vec3 vel = glm::vec3(vx,vy,vz);
-        //glm::vec3 vel = glm::vec3(0.0,0.0,0.0);
-        particles.push_back(Particle(pos, vel));
+        particles.emplace_back(pos, vel);
     }
 
     // creating and filling particle buffer
