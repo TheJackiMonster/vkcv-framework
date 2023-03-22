@@ -706,15 +706,6 @@ namespace vkcv {
 			0
 		);
 		
-		vkcv_log(LogLevel::RAW_INFO, "STAGES: %lu", shaderStages.size());
-		for (const auto& shaderStage : shaderStages) {
-			vkcv_log(LogLevel::RAW_INFO, "STAGE: %s %s %s",
-					 shaderStage.pName,
-					 vk::to_string(shaderStage.stage).c_str(),
-					 vk::to_string(shaderStage.flags).c_str()
-			 );
-		}
-		
 		auto pipelineResult = getCore().getContext().getDevice().createGraphicsPipeline(
 				nullptr, graphicsPipelineCreateInfo
 		);
