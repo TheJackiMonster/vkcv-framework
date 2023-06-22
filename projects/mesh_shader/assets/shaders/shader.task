@@ -58,6 +58,7 @@ void main() {
     }
 
     memoryBarrierShared();
+    barrier();
     
     // TODO: scaling support
     vec3 meshletPositionWorld = (vec4(meshlet.meanPosition, 1) * objectMatrices[matrixIndex].model).xyz;
@@ -67,6 +68,7 @@ void main() {
     }
 
     memoryBarrierShared();
+    barrier();
 
     OUT.mvp = objectMatrices[matrixIndex].mvp;
     EmitMeshTasksEXT(taskCount, 1, 1);
