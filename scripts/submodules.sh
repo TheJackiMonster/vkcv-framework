@@ -6,5 +6,5 @@ elif [ "$1" = "reset" ]; then
     git submodule deinit -f .
 	git submodule update --init
 elif [ "$1" = "update" ]; then
-    git submodule foreach git pull
+    git submodule update --remote
 fi

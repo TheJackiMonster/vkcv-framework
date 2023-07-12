@@ -1,51 +1,68 @@
 [submodule "lib/glfw"]
 	path = lib/glfw
 	url = https://github.com/glfw/glfw.git
+	branch = master
 [submodule "lib/SPIRV-Cross"]
 	path = lib/SPIRV-Cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+	branch = main
 [submodule "modules/asset_loader/lib/fx-gltf"]
 	path = modules/asset_loader/lib/fx-gltf
 	url = https://github.com/jessey-git/fx-gltf.git
+	branch = master
 [submodule "modules/asset_loader/lib/json"]
 	path = modules/asset_loader/lib/json
 	url = https://github.com/nlohmann/json.git
+	branch = master
 [submodule "modules/asset_loader/lib/stb"]
 	path = modules/asset_loader/lib/stb
 	url = https://github.com/nothings/stb.git
+	branch = master
 [submodule "modules/camera/lib/glm"]
 	path = modules/geometry/lib/glm
 	url = https://github.com/g-truc/glm.git
+	branch = master
 [submodule "modules/shader_compiler/lib/glslang"]
 	path = modules/shader_compiler/lib/glslang
 	url = https://github.com/KhronosGroup/glslang.git
+	branch = main
 [submodule "modules/gui/lib/imgui"]
 	path = modules/gui/lib/imgui
 	url = https://github.com/ocornut/imgui.git
+	branch = master
 [submodule "modules/upscaling/lib/FidelityFX-FSR"]
 	path = modules/upscaling/lib/FidelityFX-FSR
 	url = https://github.com/GPUOpen-Effects/FidelityFX-FSR.git
+	branch = master
 [submodule "lib/Vulkan-Headers"]
 	path = lib/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+	branch = main
 [submodule "lib/Vulkan-Hpp"]
 	path = lib/Vulkan-Hpp
 	url = https://github.com/KhronosGroup/Vulkan-Hpp
+	branch = main
 [submodule "modules/upscaling/lib/NVIDIAImageScaling"]
 	path = modules/upscaling/lib/NVIDIAImageScaling
 	url = https://github.com/NVIDIAGameWorks/NVIDIAImageScaling.git
+	branch = main
 [submodule "lib/VulkanMemoryAllocator-Hpp"]
 	path = lib/VulkanMemoryAllocator-Hpp
 	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp.git
+	branch = master
 [submodule "modules/algorithm/lib/FidelityFX-SPD"]
 	path = modules/algorithm/lib/FidelityFX-SPD
 	url = https://github.com/GPUOpen-Effects/FidelityFX-SPD.git
+	branch = master
 [submodule "modules/upscaling/lib/FidelityFX-FSR2"]
 	path = modules/upscaling/lib/FidelityFX-FSR2
 	url = https://github.com/TheJackiMonster/FidelityFX-FSR2.git
+	branch = master
 [submodule "lib/VulkanMemoryAllocator"]
 	path = lib/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+	branch = master
 [submodule "modules/tone_mapping/lib/glsl-tone-map"]
 	path = modules/tone_mapping/lib/glsl-tone-map
 	url = https://github.com/dmnsgn/glsl-tone-map.git
+	branch = main
