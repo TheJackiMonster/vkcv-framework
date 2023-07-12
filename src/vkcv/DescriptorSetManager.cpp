@@ -4,9 +4,13 @@
 
 namespace vkcv {
 
+	bool DescriptorSetManager::init(Core &core) {
+		return HandleManager<DescriptorSetEntry, DescriptorSetHandle>::init(core);
+	}
+
 	bool DescriptorSetManager::init(Core &core,
 									DescriptorSetLayoutManager &descriptorSetLayoutManager) {
-		if (!HandleManager<DescriptorSetEntry, DescriptorSetHandle>::init(core)) {
+		if (!init(core)) {
 			return false;
 		}
 

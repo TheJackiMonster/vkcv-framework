@@ -6,6 +6,7 @@
  * @brief Structures to handle vertex layout, bindings and attachments.
  */
 
+#include <cstdint>
 #include <iostream>
 #include <string>
 

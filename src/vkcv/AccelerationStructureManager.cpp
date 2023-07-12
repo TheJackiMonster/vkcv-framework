@@ -5,9 +5,13 @@
 #include "vkcv/Logger.hpp"
 
 namespace vkcv {
+
+	bool AccelerationStructureManager::init(Core &core) {
+		return HandleManager<AccelerationStructureEntry, AccelerationStructureHandle>::init(core);
+	}
 	
 	bool AccelerationStructureManager::init(Core &core, BufferManager &bufferManager) {
-		if (!HandleManager<AccelerationStructureEntry, AccelerationStructureHandle>::init(core)) {
+		if (!init(core)) {
 			return false;
 		}
 		

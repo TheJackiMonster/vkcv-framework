@@ -39,7 +39,7 @@ namespace vkcv {
 		Vector<vk::DescriptorPoolSize> m_PoolSizes;
 		vk::DescriptorPoolCreateInfo m_PoolInfo;
 		
-		using HandleManager<DescriptorSetEntry, DescriptorSetHandle>::init;
+		bool init(Core &core) override;
 		bool init(Core &core, DescriptorSetLayoutManager &descriptorSetLayoutManager);
 
 		[[nodiscard]] uint64_t getIdFrom(const DescriptorSetHandle &handle) const override;
