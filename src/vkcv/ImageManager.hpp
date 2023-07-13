@@ -25,6 +25,10 @@ namespace vkcv {
 	 */
 	bool isDepthImageFormat(vk::Format format);
 
+	struct ImageLayer {
+		Vector<vk::ImageLayout> m_layouts;
+	};
+
 	struct ImageEntry {
 		vk::Image m_handle;
 		vma::Allocation m_allocation;
@@ -37,7 +41,7 @@ namespace vkcv {
 		uint32_t m_depth;
 
 		vk::Format m_format;
-		Vector<vk::ImageLayout> m_layers;
+		Vector<ImageLayer> m_layers;
 		bool m_storage;
 	};
 

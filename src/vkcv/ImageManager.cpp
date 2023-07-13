@@ -11,6 +11,8 @@
 #include "vkcv/TypeGuard.hpp"
 
 #include <algorithm>
+#include <cstdint>
+#include <sys/types.h>
 
 namespace vkcv {
 	
@@ -72,11 +74,15 @@ namespace vkcv {
 	void ImageManager::recordImageMipGenerationToCmdBuffer(vk::CommandBuffer cmdBuffer,
 														   const ImageHandle &handle) {
 		auto &image = (*this) [handle];
+
 		recordImageLayoutTransition(handle, 0, 0, vk::ImageLayout::eGeneral, cmdBuffer);
-		
-		vk::ImageAspectFlags aspectMask = isDepthImageFormat(image.m_format) ?
-										  vk::ImageAspectFlagBits::eDepth :
-										  vk::ImageAspectFlagBits::eColor;
+
+		vk::ImageAspectFlags aspectFlags;
+		if (isDepthFormat(image.m_format)) {
+			aspectFlags = vk::ImageAspectFlagBits::eDepth;
+		} else {
+			aspectFlags = vk::ImageAspectFlagBits::eColor;
+		}
 		
 		uint32_t srcWidth = image.m_width;
 		uint32_t srcHeight = image.m_height;
@@ -92,14 +98,18 @@ namespace vkcv {
 		
 		for (uint32_t srcMip = 0; srcMip < image.m_viewPerMip.size() - 1; srcMip++) {
 			uint32_t dstMip = srcMip + 1;
-			vk::ImageBlit region(
-					vk::ImageSubresourceLayers(aspectMask, srcMip, 0, 1),
+			const vk::ImageBlit region(
+					vk::ImageSubresourceLayers(aspectFlags, srcMip, 0, image.m_layers.size()),
 					{ vk::Offset3D(0, 0, 0), vk::Offset3D(srcWidth, srcHeight, srcDepth) },
-					vk::ImageSubresourceLayers(aspectMask, dstMip, 0, 1),
-					{ vk::Offset3D(0, 0, 0), vk::Offset3D(dstWidth, dstHeight, dstDepth) });
+					vk::ImageSubresourceLayers(aspectFlags, dstMip, 0, image.m_layers.size()),
+					{ vk::Offset3D(0, 0, 0), vk::Offset3D(dstWidth, dstHeight, dstDepth) }
+			);
+
+			//recordImageLayoutTransition(handle, 1, srcMip, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer);
+			//recordImageLayoutTransition(handle, 1, dstMip, vk::ImageLayout::eTransferDstOptimal, cmdBuffer);
 			
-			cmdBuffer.blitImage(image.m_handle, vk::ImageLayout::eGeneral, image.m_handle,
-								vk::ImageLayout::eGeneral, region, vk::Filter::eLinear);
+			cmdBuffer.blitImage(image.m_handle, image.m_layers[0].m_layouts[srcMip], image.m_handle,
+								image.m_layers[0].m_layouts[dstMip], region, vk::Filter::eLinear);
 			
 			srcWidth = dstWidth;
 			srcHeight = dstHeight;
@@ -108,9 +118,12 @@ namespace vkcv {
 			dstWidth = half(dstWidth);
 			dstHeight = half(dstHeight);
 			dstDepth = half(dstDepth);
-			
+
 			recordImageMemoryBarrier(handle, cmdBuffer);
 		}
+
+		//recordImageLayoutTransition(handle, 1, image.m_viewPerMip.size() - 1, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer);
+		//recordImageLayoutTransition(handle, 0, 0, vk::ImageLayout::eGeneral, cmdBuffer);
 	}
 	
 	const ImageEntry &ImageManager::operator[](const ImageHandle &handle) const {
@@ -340,8 +353,12 @@ namespace vkcv {
 			arrayViews.push_back(device.createImageView(imageViewCreateInfo));
 		}
 		
-		Vector<vk::ImageLayout> layers;
-		layers.resize(arrayLayers, vk::ImageLayout::eUndefined);
+		Vector<ImageLayer> layers;
+		layers.resize(arrayLayers);
+
+		for (auto& layer : layers) {
+			layer.m_layouts.resize(mipCount, vk::ImageLayout::eUndefined);
+		}
 		
 		return add({
 			image,
@@ -430,7 +447,7 @@ namespace vkcv {
 		vk::ImageMemoryBarrier barrier (
 				vk::AccessFlagBits::eMemoryWrite,
 				vk::AccessFlagBits::eMemoryRead,
-				image.m_layers[0],
+				image.m_layers[imageSubresourceRange.baseArrayLayer].m_layouts[imageSubresourceRange.baseMipLevel],
 				newLayout,
 				VK_QUEUE_FAMILY_IGNORED,
 				VK_QUEUE_FAMILY_IGNORED,
@@ -467,8 +484,10 @@ namespace vkcv {
 		
 		core.submitCommandStream(stream, false);
 		
-		for (auto& layer : image.m_layers) {
-			layer = newLayout;
+		for (uint32_t i = transitionBarrier.subresourceRange.baseArrayLayer; i < transitionBarrier.subresourceRange.layerCount; i++) {
+			for (uint32_t j = transitionBarrier.subresourceRange.baseMipLevel; j < transitionBarrier.subresourceRange.levelCount; j++) {
+				image.m_layers[i].m_layouts[j] = newLayout;
+			}
 		}
 	}
 	
@@ -495,29 +514,62 @@ namespace vkcv {
 			);
 		}
 		
-		for (auto& layer : image.m_layers) {
-			layer = newLayout;
+		for (uint32_t i = transitionBarrier.subresourceRange.baseArrayLayer; i < transitionBarrier.subresourceRange.layerCount; i++) {
+			for (uint32_t j = transitionBarrier.subresourceRange.baseMipLevel; j < transitionBarrier.subresourceRange.levelCount; j++) {
+				image.m_layers[i].m_layouts[j] = newLayout;
+			}
 		}
 	}
 	
 	void ImageManager::recordImageMemoryBarrier(const ImageHandle &handle,
 												vk::CommandBuffer cmdBuffer) {
 		auto &image = (*this) [handle];
-		const auto transitionBarrier = createImageLayoutTransitionBarrier(
-				image,
-				0,
-				0,
-				image.m_layers[0]
-		);
+
+		const uint32_t mipLevelCount = image.m_viewPerMip.size();
+		bool mipLevelConsistency = true;
+
+		for (uint32_t i = 1; i < mipLevelCount; i++) {
+			if (image.m_layers[0].m_layouts[i] != image.m_layers[0].m_layouts[0]) {
+				mipLevelConsistency = false;
+			}
+		}
 		
-		cmdBuffer.pipelineBarrier(
-				vk::PipelineStageFlagBits::eAllCommands,
-				vk::PipelineStageFlagBits::eAllCommands,
-				{},
-				nullptr,
-				nullptr,
-				transitionBarrier
-		);
+		if (mipLevelConsistency) {
+			const auto transitionBarrier = createImageLayoutTransitionBarrier(
+					image,
+					0,
+					0,
+					image.m_layers[0].m_layouts[0]
+			);
+			
+			cmdBuffer.pipelineBarrier(
+					vk::PipelineStageFlagBits::eAllCommands,
+					vk::PipelineStageFlagBits::eAllCommands,
+					{},
+					nullptr,
+					nullptr,
+					transitionBarrier
+			);
+		} else {
+			for (uint32_t i = 0; i < mipLevelCount; i++) {
+				const auto transitionBarrier = createImageLayoutTransitionBarrier(
+						image,
+						1,
+						i,
+						image.m_layers[0].m_layouts[i]
+				);
+				
+				cmdBuffer.pipelineBarrier(
+						vk::PipelineStageFlagBits::eAllCommands,
+						vk::PipelineStageFlagBits::eAllCommands,
+						{},
+						nullptr,
+						nullptr,
+						transitionBarrier
+				);
+			}
+		}
+		
 	}
 	
 	constexpr uint32_t getBytesPerPixel(vk::Format format) {
@@ -653,9 +705,9 @@ namespace vkcv {
 		
 		cmdBuffer.resolveImage(
 				srcImage.m_handle,
-				srcImage.m_layers[0],
+				srcImage.m_layers[0].m_layouts[0],
 				dstImage.m_handle,
-				dstImage.m_layers[0],
+				dstImage.m_layers[0].m_layouts[0],
 				region
 		);
 	}
@@ -721,6 +773,7 @@ namespace vkcv {
 		assert(images.size() == views.size());
 		m_swapchainImages.clear();
 		for (size_t i = 0; i < images.size(); i++) {
+			const ImageLayer layer = { { vk::ImageLayout::eUndefined } };
 			m_swapchainImages.push_back({
 					images [i],
 					nullptr,
@@ -730,7 +783,7 @@ namespace vkcv {
 					height,
 					1,
 					format,
-					{ vk::ImageLayout::eUndefined },
+					{ layer },
 					false
 			});
 		}
@@ -740,7 +793,9 @@ namespace vkcv {
 											   vk::ImageLayout layout) {
 		auto &image = (*this) [handle];
 		for (auto& layer : image.m_layers) {
-			layer = layout;
+			for (auto& level : layer.m_layouts) {
+				level = layout;
+			}
 		}
 	}
 	
