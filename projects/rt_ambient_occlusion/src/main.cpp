@@ -70,7 +70,7 @@ int main(int argc, const char** argv) {
 	
 	vkcv::scene::Scene scene = vkcv::scene::Scene::load(
 			core,
-			"resources/Sponza/Sponza.gltf",
+			"assets/Sponza/Sponza.gltf",
 			{
 					vkcv::asset::PrimitiveType::POSITION
 			}
@@ -86,17 +86,17 @@ int main(int argc, const char** argv) {
 	vkcv::shader::GLSLCompiler compiler (vkcv::shader::GLSLCompileTarget::RAY_TRACING);
 
 	vkcv::ShaderProgram shaderProgram;
-	compiler.compile(vkcv::ShaderStage::RAY_GEN, std::filesystem::path("resources/shaders/ambientOcclusion.rgen"),
+	compiler.compile(vkcv::ShaderStage::RAY_GEN, std::filesystem::path("assets/shaders/ambientOcclusion.rgen"),
 		[&shaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
             shaderProgram.addShader(shaderStage, path);
 		});
 
-	compiler.compile(vkcv::ShaderStage::RAY_CLOSEST_HIT, std::filesystem::path("resources/shaders/ambientOcclusion.rchit"),
+	compiler.compile(vkcv::ShaderStage::RAY_CLOSEST_HIT, std::filesystem::path("assets/shaders/ambientOcclusion.rchit"),
 		[&shaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
             shaderProgram.addShader(shaderStage, path);
 		});
 
-	compiler.compile(vkcv::ShaderStage::RAY_MISS, std::filesystem::path("resources/shaders/ambientOcclusion.rmiss"),
+	compiler.compile(vkcv::ShaderStage::RAY_MISS, std::filesystem::path("assets/shaders/ambientOcclusion.rmiss"),
 		[&shaderProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
             shaderProgram.addShader(shaderStage, path);
 		});
