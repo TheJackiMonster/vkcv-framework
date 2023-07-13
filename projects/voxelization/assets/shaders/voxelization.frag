@@ -33,8 +33,8 @@ void main()	{
     vec3 voxelCoordinates = worldToVoxelCoordinates(passPos, voxelInfo);
     ivec3 voxelImageSize = imageSize(voxelImage);
     ivec3 UV = voxelCoordinatesToUV(voxelCoordinates, voxelImageSize);
-    if(any(lessThan(UV, ivec3(0))) || any(greaterThanEqual(UV, voxelImageSize))){
-        return;
+    if (any(lessThan(UV, ivec3(0))) || any(greaterThanEqual(UV, voxelImageSize))){
+        discard;
     }
     uint flatIndex = flattenVoxelUVToIndex(UV, voxelImageSize);
 
