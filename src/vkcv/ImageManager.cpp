@@ -75,8 +75,6 @@ namespace vkcv {
 														   const ImageHandle &handle) {
 		auto &image = (*this) [handle];
 
-		recordImageLayoutTransition(handle, 0, 0, vk::ImageLayout::eGeneral, cmdBuffer);
-
 		vk::ImageAspectFlags aspectFlags;
 		if (isDepthFormat(image.m_format)) {
 			aspectFlags = vk::ImageAspectFlagBits::eDepth;
@@ -105,8 +103,8 @@ namespace vkcv {
 					{ vk::Offset3D(0, 0, 0), vk::Offset3D(dstWidth, dstHeight, dstDepth) }
 			);
 
-			//recordImageLayoutTransition(handle, 1, srcMip, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer);
-			//recordImageLayoutTransition(handle, 1, dstMip, vk::ImageLayout::eTransferDstOptimal, cmdBuffer);
+			recordImageLayoutTransition(handle, 1, srcMip, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer);
+			recordImageLayoutTransition(handle, 1, dstMip, vk::ImageLayout::eTransferDstOptimal, cmdBuffer);
 			
 			cmdBuffer.blitImage(image.m_handle, image.m_layers[0].m_layouts[srcMip], image.m_handle,
 								image.m_layers[0].m_layouts[dstMip], region, vk::Filter::eLinear);
@@ -121,9 +119,6 @@ namespace vkcv {
 
 			recordImageMemoryBarrier(handle, cmdBuffer);
 		}
-
-		//recordImageLayoutTransition(handle, 1, image.m_viewPerMip.size() - 1, vk::ImageLayout::eTransferSrcOptimal, cmdBuffer);
-		//recordImageLayoutTransition(handle, 0, 0, vk::ImageLayout::eGeneral, cmdBuffer);
 	}
 	
 	const ImageEntry &ImageManager::operator[](const ImageHandle &handle) const {
@@ -410,10 +405,11 @@ namespace vkcv {
 		return views [mipLevel];
 	}
 	
-	static vk::ImageMemoryBarrier createImageLayoutTransitionBarrier(const ImageEntry &image,
-																	 uint32_t mipLevelCount,
-																	 uint32_t mipLevelOffset,
-																	 vk::ImageLayout newLayout) {
+	static Vector<vk::ImageMemoryBarrier> createImageLayoutTransitionBarriers(const ImageEntry &image,
+																			  uint32_t mipLevelCount,
+																			  uint32_t mipLevelOffset,
+																			  vk::ImageLayout newLayout,
+																			  bool keepOldLayout) {
 		vk::ImageAspectFlags aspectFlags;
 		if (isDepthFormat(image.m_format)) {
 			aspectFlags = vk::ImageAspectFlagBits::eDepth;
@@ -434,59 +430,98 @@ namespace vkcv {
 		if (mipLevelCount <= 0) {
 			return {};
 		}
+
+		Vector<vk::ImageMemoryBarrier> barriers;
+		vk::ImageLayout layout = vk::ImageLayout::eUndefined;
+		uint32_t levels = 0;
+
+		for (uint32_t i = 1; i <= mipLevelCount; i++) {
+			if ((levels > 0) && (layout != image.m_layers[0].m_layouts[mipLevelOffset + mipLevelCount - i])) {
+				const vk::ImageSubresourceRange imageSubresourceRange(
+						aspectFlags,
+						mipLevelOffset + mipLevelCount - (i - 1),
+						levels,
+						0,
+						static_cast<uint32_t>(image.m_layers.size())
+				);
+
+				// TODO: precise AccessFlagBits, will require a lot of context
+				barriers.emplace_back(
+						vk::AccessFlagBits::eMemoryWrite,
+						vk::AccessFlagBits::eMemoryRead,
+						layout,
+						keepOldLayout? layout : newLayout,
+						VK_QUEUE_FAMILY_IGNORED,
+						VK_QUEUE_FAMILY_IGNORED,
+						image.m_handle,
+						imageSubresourceRange
+				);
+
+				levels = 0;
+			}
+
+			layout = image.m_layers[0].m_layouts[mipLevelOffset + mipLevelCount - i];
+			levels++;
+		}
 		
-		vk::ImageSubresourceRange imageSubresourceRange(
-				aspectFlags,
-				mipLevelOffset,
-				mipLevelCount,
-				0,
-				static_cast<uint32_t>(image.m_layers.size())
-		);
+		if (levels > 0) {
+			const vk::ImageSubresourceRange imageSubresourceRange(
+					aspectFlags,
+					mipLevelOffset,
+					levels,
+					0,
+					static_cast<uint32_t>(image.m_layers.size())
+			);
+
+			// TODO: precise AccessFlagBits, will require a lot of context
+			barriers.emplace_back(
+					vk::AccessFlagBits::eMemoryWrite,
+					vk::AccessFlagBits::eMemoryRead,
+					layout,
+					keepOldLayout? layout : newLayout,
+					VK_QUEUE_FAMILY_IGNORED,
+					VK_QUEUE_FAMILY_IGNORED,
+					image.m_handle,
+					imageSubresourceRange
+			);
+		}
 		
-		// TODO: precise AccessFlagBits, will require a lot of context
-		vk::ImageMemoryBarrier barrier (
-				vk::AccessFlagBits::eMemoryWrite,
-				vk::AccessFlagBits::eMemoryRead,
-				image.m_layers[imageSubresourceRange.baseArrayLayer].m_layouts[imageSubresourceRange.baseMipLevel],
-				newLayout,
-				VK_QUEUE_FAMILY_IGNORED,
-				VK_QUEUE_FAMILY_IGNORED,
-				image.m_handle,
-				imageSubresourceRange
-		);
-		
-		return barrier;
+		return barriers;
 	}
 	
 	void ImageManager::switchImageLayoutImmediate(const ImageHandle &handle,
 												  vk::ImageLayout newLayout) {
 		auto &image = (*this) [handle];
-		const auto transitionBarrier = createImageLayoutTransitionBarrier(image, 0, 0, newLayout);
+		const auto transitionBarriers = createImageLayoutTransitionBarriers(image, 0, 0, newLayout, false);
 		
 		auto &core = getCore();
 		auto stream = core.createCommandStream(QueueType::Graphics);
 		
 		core.recordCommandsToStream(
 				stream,
-				[transitionBarrier](const vk::CommandBuffer &commandBuffer) {
+				[transitionBarriers](const vk::CommandBuffer &commandBuffer) {
 					// TODO: precise PipelineStageFlagBits, will require a lot of context
-					commandBuffer.pipelineBarrier(
-							vk::PipelineStageFlagBits::eTopOfPipe,
-							vk::PipelineStageFlagBits::eBottomOfPipe,
-							{},
-							nullptr,
-							nullptr,
-							transitionBarrier
-					);
+					for (const auto& barrier : transitionBarriers) {
+						commandBuffer.pipelineBarrier(
+								vk::PipelineStageFlagBits::eTopOfPipe,
+								vk::PipelineStageFlagBits::eBottomOfPipe,
+								{},
+								nullptr,
+								nullptr,
+								barrier
+						);
+					}
 				},
 				nullptr
 		);
 		
 		core.submitCommandStream(stream, false);
 		
-		for (uint32_t i = transitionBarrier.subresourceRange.baseArrayLayer; i < transitionBarrier.subresourceRange.layerCount; i++) {
-			for (uint32_t j = transitionBarrier.subresourceRange.baseMipLevel; j < transitionBarrier.subresourceRange.levelCount; j++) {
-				image.m_layers[i].m_layouts[j] = newLayout;
+		for (const auto& barrier : transitionBarriers) {
+			for (uint32_t i = 0; i < barrier.subresourceRange.layerCount; i++) {
+				for (uint32_t j = 0; j < barrier.subresourceRange.levelCount; j++) {
+					image.m_layers[barrier.subresourceRange.baseArrayLayer + i].m_layouts[barrier.subresourceRange.baseMipLevel + j] = newLayout;
+				}
 			}
 		}
 	}
@@ -496,27 +531,29 @@ namespace vkcv {
 												   vk::ImageLayout newLayout,
 												   vk::CommandBuffer cmdBuffer) {
 		auto &image = (*this) [handle];
-		const auto transitionBarrier = createImageLayoutTransitionBarrier(
+		
+		const auto transitionBarriers = createImageLayoutTransitionBarriers(
 				image,
 				mipLevelCount,
 				mipLevelOffset,
-				newLayout
+				newLayout,
+				false
 		);
 		
-		if (transitionBarrier.subresourceRange.levelCount > 0) {
+		for (const auto& barrier : transitionBarriers) {
 			cmdBuffer.pipelineBarrier(
 					vk::PipelineStageFlagBits::eAllCommands,
 					vk::PipelineStageFlagBits::eAllCommands,
 					{},
 					nullptr,
 					nullptr,
-					transitionBarrier
+					barrier
 			);
-		}
-		
-		for (uint32_t i = transitionBarrier.subresourceRange.baseArrayLayer; i < transitionBarrier.subresourceRange.layerCount; i++) {
-			for (uint32_t j = transitionBarrier.subresourceRange.baseMipLevel; j < transitionBarrier.subresourceRange.levelCount; j++) {
-				image.m_layers[i].m_layouts[j] = newLayout;
+
+			for (uint32_t i = 0; i < barrier.subresourceRange.layerCount; i++) {
+				for (uint32_t j = 0; j < barrier.subresourceRange.levelCount; j++) {
+					image.m_layers[barrier.subresourceRange.baseArrayLayer + i].m_layouts[barrier.subresourceRange.baseMipLevel + j] = newLayout;
+				}
 			}
 		}
 	}
@@ -525,51 +562,24 @@ namespace vkcv {
 												vk::CommandBuffer cmdBuffer) {
 		auto &image = (*this) [handle];
 
-		const uint32_t mipLevelCount = image.m_viewPerMip.size();
-		bool mipLevelConsistency = true;
-
-		for (uint32_t i = 1; i < mipLevelCount; i++) {
-			if (image.m_layers[0].m_layouts[i] != image.m_layers[0].m_layouts[0]) {
-				mipLevelConsistency = false;
-			}
-		}
+		const auto transitionBarriers = createImageLayoutTransitionBarriers(
+				image,
+				0,
+				0,
+				vk::ImageLayout::eUndefined,
+				true
+		);
 		
-		if (mipLevelConsistency) {
-			const auto transitionBarrier = createImageLayoutTransitionBarrier(
-					image,
-					0,
-					0,
-					image.m_layers[0].m_layouts[0]
-			);
-			
+		for (const auto& barrier : transitionBarriers) {
 			cmdBuffer.pipelineBarrier(
 					vk::PipelineStageFlagBits::eAllCommands,
 					vk::PipelineStageFlagBits::eAllCommands,
 					{},
 					nullptr,
 					nullptr,
-					transitionBarrier
+					barrier
 			);
-		} else {
-			for (uint32_t i = 0; i < mipLevelCount; i++) {
-				const auto transitionBarrier = createImageLayoutTransitionBarrier(
-						image,
-						1,
-						i,
-						image.m_layers[0].m_layouts[i]
-				);
-				
-				cmdBuffer.pipelineBarrier(
-						vk::PipelineStageFlagBits::eAllCommands,
-						vk::PipelineStageFlagBits::eAllCommands,
-						{},
-						nullptr,
-						nullptr,
-						transitionBarrier
-				);
-			}
 		}
-		
 	}
 	
 	constexpr uint32_t getBytesPerPixel(vk::Format format) {
