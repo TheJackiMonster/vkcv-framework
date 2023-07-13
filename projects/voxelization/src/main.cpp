@@ -29,6 +29,8 @@ int main(int argc, const char** argv) {
 		features.setGeometryShader(true);
 		features.setDepthClamp(true);
 		features.setShaderInt16(true);
+		features.setFragmentStoresAndAtomics(true);
+		features.setVertexPipelineStoresAndAtomics(true);
 	});
 	
 	features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(

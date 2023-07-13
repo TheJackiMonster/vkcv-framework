@@ -20,15 +20,17 @@ namespace vkcv {
 		 * Allocate the set size for the descriptor pools, namely 1000 units of each descriptor type
 		 * below. Finally, create an initial pool.
 		 */
-		m_PoolSizes = {
-			vk::DescriptorPoolSize(vk::DescriptorType::eSampler, 1000),
-			vk::DescriptorPoolSize(vk::DescriptorType::eSampledImage, 1000),
-			vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1000),
-			vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 1000),
-			vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic, 1000),
-			vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic, 1000),
-			vk::DescriptorPoolSize(vk::DescriptorType::eAccelerationStructureKHR, 1000)
-		};
+		m_PoolSizes.clear();
+		m_PoolSizes.emplace_back(vk::DescriptorType::eSampler, 1000);
+		m_PoolSizes.emplace_back(vk::DescriptorType::eSampledImage, 1000);
+		m_PoolSizes.emplace_back(vk::DescriptorType::eUniformBuffer, 1000);
+		m_PoolSizes.emplace_back(vk::DescriptorType::eStorageBuffer, 1000);
+		m_PoolSizes.emplace_back(vk::DescriptorType::eUniformBufferDynamic, 1000);
+		m_PoolSizes.emplace_back(vk::DescriptorType::eStorageBufferDynamic, 1000);
+
+		if (core.getContext().getFeatureManager().isExtensionActive(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)) {
+			m_PoolSizes.emplace_back(vk::DescriptorType::eAccelerationStructureKHR, 1000);
+		}
 
 		m_PoolInfo = vk::DescriptorPoolCreateInfo(
 			vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, 1000,
