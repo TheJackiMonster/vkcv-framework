@@ -3,12 +3,12 @@
 #include <GLFW/glfw3.h>
 #include <memory>
 #include <string>
-#include <vector>
-
-#include "vkcv/Window.hpp"
 
 #include "HandleManager.hpp"
 #include "SwapchainManager.hpp"
+
+#include "vkcv/Container.hpp"
+#include "vkcv/Window.hpp"
 
 namespace vkcv {
 
@@ -64,7 +64,7 @@ namespace vkcv {
 		 *
 		 * @return List of window handles
 		 */
-		[[nodiscard]] std::vector<WindowHandle> getWindowHandles() const;
+		[[nodiscard]] Vector<WindowHandle> getWindowHandles() const;
 	};
 
 } // namespace vkcv

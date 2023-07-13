@@ -28,9 +28,9 @@ namespace vkcv::shader {
 			case ShaderStage::COMPUTE:
 				return EShLangCompute;
 			case ShaderStage::TASK:
-				return EShLangTaskNV;
+				return EShLangTask;
 			case ShaderStage::MESH:
-				return EShLangMeshNV;
+				return EShLangMesh;
 			case ShaderStage::RAY_GEN:
 				return EShLangRayGen;
 			case ShaderStage::RAY_CLOSEST_HIT:

@@ -9,7 +9,9 @@ set(vkcv_sources
 		
 		${vkcv_include}/vkcv/Context.hpp
 		${vkcv_source}/vkcv/Context.cpp
-
+		
+		${vkcv_include}/vkcv/Container.hpp
+		
 		${vkcv_include}/vkcv/Core.hpp
 		${vkcv_source}/vkcv/Core.cpp
 		

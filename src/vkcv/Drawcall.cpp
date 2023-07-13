@@ -7,12 +7,12 @@
 
 namespace vkcv {
 
-	const std::vector<DescriptorSetUsage> &Drawcall::getDescriptorSetUsages() const {
+	const Vector<DescriptorSetUsage> &Drawcall::getDescriptorSetUsages() const {
 		return m_usages;
 	}
 
 	void Drawcall::useDescriptorSet(uint32_t location, const DescriptorSetHandle &descriptorSet,
-									const std::vector<uint32_t> &dynamicOffsets) {
+									const Vector<uint32_t> &dynamicOffsets) {
 		DescriptorSetUsage usage;
 		usage.location = location;
 		usage.descriptorSet = descriptorSet;
@@ -55,10 +55,10 @@ namespace vkcv {
 		return m_drawCount;
 	}
 
-	TaskDrawcall::TaskDrawcall(uint32_t taskCount) : Drawcall(), m_taskCount(taskCount) {}
-
-	uint32_t TaskDrawcall::getTaskCount() const {
-		return m_taskCount;
+	TaskDrawcall::TaskDrawcall(const DispatchSize& taskSize) : Drawcall(), m_taskSize(taskSize) {}
+	
+	DispatchSize TaskDrawcall::getTaskSize() const {
+		return m_taskSize;
 	}
 
 } // namespace vkcv

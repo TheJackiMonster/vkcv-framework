@@ -4,12 +4,14 @@
  * @file vkcv/ImageManager.hpp
  * @brief class creating and managing images
  */
-#include <vector>
+
 #include <vk_mem_alloc.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include "BufferManager.hpp"
 #include "HandleManager.hpp"
+
+#include "vkcv/Container.hpp"
 #include "vkcv/ImageConfig.hpp"
 
 namespace vkcv {
@@ -27,15 +29,15 @@ namespace vkcv {
 		vk::Image m_handle;
 		vma::Allocation m_allocation;
 
-		std::vector<vk::ImageView> m_viewPerMip;
-		std::vector<vk::ImageView> m_arrayViewPerMip;
+		Vector<vk::ImageView> m_viewPerMip;
+		Vector<vk::ImageView> m_arrayViewPerMip;
 
 		uint32_t m_width;
 		uint32_t m_height;
 		uint32_t m_depth;
 
 		vk::Format m_format;
-		std::vector<vk::ImageLayout> m_layers;
+		Vector<vk::ImageLayout> m_layers;
 		bool m_storage;
 	};
 
@@ -49,9 +51,10 @@ namespace vkcv {
 	private:
 		BufferManager* m_bufferManager;
 
-		std::vector<ImageEntry> m_swapchainImages;
+		Vector<ImageEntry> m_swapchainImages;
 		int m_currentSwapchainInputImage;
 
+		using HandleManager<ImageEntry, ImageHandle>::init;
 		bool init(Core &core, BufferManager &bufferManager);
 
 		[[nodiscard]] uint64_t getIdFrom(const ImageHandle &handle) const override;
@@ -133,8 +136,8 @@ namespace vkcv {
 
 		void setCurrentSwapchainImageIndex(int index);
 
-		void setSwapchainImages(const std::vector<vk::Image> &images,
-								const std::vector<vk::ImageView> &views, uint32_t width,
+		void setSwapchainImages(const Vector<vk::Image> &images,
+								const Vector<vk::ImageView> &views, uint32_t width,
 								uint32_t height, vk::Format format);
 
 		// if manual vulkan work, e.g. ImGui integration, changes an image layout this function must

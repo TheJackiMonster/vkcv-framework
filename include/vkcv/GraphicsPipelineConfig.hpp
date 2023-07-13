@@ -6,8 +6,8 @@
  */
 
 #include <cstdint>
-#include <vector>
 
+#include "Container.hpp"
 #include "Multisampling.hpp"
 #include "PipelineConfig.hpp"
 #include "VertexLayout.hpp"
@@ -83,7 +83,7 @@ namespace vkcv {
 		GraphicsPipelineConfig(const ShaderProgram &program,
 							   const PassHandle &pass,
 							   const VertexLayout &vertexLayout,
-							   const std::vector<DescriptorSetLayoutHandle> &layouts);
+							   const Vector<DescriptorSetLayoutHandle> &layouts);
 
 		GraphicsPipelineConfig(const GraphicsPipelineConfig &other) = default;
 		GraphicsPipelineConfig(GraphicsPipelineConfig &&other) = default;

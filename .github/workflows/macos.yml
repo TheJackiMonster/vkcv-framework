@@ -1,0 +1,26 @@
+name: macOS Build
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout the current branch
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: latest
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
+
+      - name: Build framework
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build
+          cmake --build build

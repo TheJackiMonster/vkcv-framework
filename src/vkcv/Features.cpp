@@ -59,7 +59,7 @@ namespace vkcv {
 		});
 	}
 
-	const std::vector<Feature> &Features::getList() const {
+	const Vector<Feature> &Features::getList() const {
 		return m_features;
 	}
 

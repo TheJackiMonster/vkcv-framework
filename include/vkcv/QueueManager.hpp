@@ -7,6 +7,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "Container.hpp"
+
 namespace vkcv {
 
 	/**
@@ -44,9 +46,9 @@ namespace vkcv {
 		 * @return New queue manager with the specified queue pairs
 		 */
 		static QueueManager create(vk::Device device,
-								   const std::vector<std::pair<int, int>> &queuePairsGraphics,
-								   const std::vector<std::pair<int, int>> &queuePairsCompute,
-								   const std::vector<std::pair<int, int>> &queuePairsTransfer);
+								   const Vector<std::pair<int, int>> &queuePairsGraphics,
+								   const Vector<std::pair<int, int>> &queuePairsCompute,
+								   const Vector<std::pair<int, int>> &queuePairsTransfer);
 
 		/**
 		 * @brief Returns the default queue with present support.
@@ -61,21 +63,21 @@ namespace vkcv {
 		 *
 		 * @return Vector of graphics queues
 		 */
-		[[nodiscard]] const std::vector<Queue> &getGraphicsQueues() const;
+		[[nodiscard]] const Vector<Queue> &getGraphicsQueues() const;
 
 		/**
 		 * @brief Returns all queues with the compute flag.
 		 *
 		 * @return Vector of compute queues
 		 */
-		[[nodiscard]] const std::vector<Queue> &getComputeQueues() const;
+		[[nodiscard]] const Vector<Queue> &getComputeQueues() const;
 
 		/**
 		 * @brief Returns all queues with the transfer flag.
 		 *
 		 * @return Vector of transfer queues
 		 */
-		[[nodiscard]] const std::vector<Queue> &getTransferQueues() const;
+		[[nodiscard]] const Vector<Queue> &getTransferQueues() const;
 
 		/**
 		 * @brief Checks for presenting support of a given surface
@@ -90,13 +92,13 @@ namespace vkcv {
 											const vk::SurfaceKHR &surface);
 
 	private:
-		std::vector<Queue> m_graphicsQueues;
-		std::vector<Queue> m_computeQueues;
-		std::vector<Queue> m_transferQueues;
+		Vector<Queue> m_graphicsQueues;
+		Vector<Queue> m_computeQueues;
+		Vector<Queue> m_transferQueues;
 
 		size_t m_presentIndex;
 
-		QueueManager(std::vector<Queue> &&graphicsQueues, std::vector<Queue> &&computeQueues,
-					 std::vector<Queue> &&transferQueues, size_t presentIndex);
+		QueueManager(Vector<Queue> &&graphicsQueues, Vector<Queue> &&computeQueues,
+					 Vector<Queue> &&transferQueues, size_t presentIndex);
 	};
 } // namespace vkcv

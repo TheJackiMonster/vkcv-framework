@@ -73,15 +73,15 @@ namespace vkcv {
 	}
 
 	void CommandStreamManager::submitCommandStreamSynchronous(
-		const CommandStreamHandle &handle, std::vector<vk::Semaphore> &waitSemaphores,
-		std::vector<vk::Semaphore> &signalSemaphores) {
+		const CommandStreamHandle &handle, Vector<vk::Semaphore> &waitSemaphores,
+		Vector<vk::Semaphore> &signalSemaphores) {
 		auto &stream = (*this) [handle];
 		stream.cmdBuffer.end();
 
 		const auto device = getCore().getContext().getDevice();
 		const vk::Fence waitFence = device.createFence({});
 
-		const std::vector<vk::PipelineStageFlags> waitDstStageMasks(
+		const Vector<vk::PipelineStageFlags> waitDstStageMasks(
 			waitSemaphores.size(), vk::PipelineStageFlagBits::eAllCommands);
 
 		const vk::SubmitInfo queueSubmitInfo(waitSemaphores, waitDstStageMasks, stream.cmdBuffer,

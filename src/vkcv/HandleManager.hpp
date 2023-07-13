@@ -1,8 +1,8 @@
 #pragma once
 
 #include <optional>
-#include <vector>
 
+#include "vkcv/Container.hpp"
 #include "vkcv/Handles.hpp"
 #include "vkcv/Logger.hpp"
 
@@ -16,7 +16,7 @@ namespace vkcv {
 
 	private:
 		Core* m_core;
-		std::vector<T> m_entries;
+		Vector<T> m_entries;
 
 	protected:
 		HandleManager() noexcept : m_core(nullptr), m_entries() {}

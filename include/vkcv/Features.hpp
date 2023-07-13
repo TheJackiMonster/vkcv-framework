@@ -7,8 +7,8 @@
 
 #include <functional>
 #include <initializer_list>
-#include <vector>
 
+#include "Container.hpp"
 #include "FeatureManager.hpp"
 
 namespace vkcv {
@@ -26,7 +26,7 @@ namespace vkcv {
 		/**
 		 * List of feature requests.
 		 */
-		std::vector<Feature> m_features;
+		Vector<Feature> m_features;
 
 	public:
 		/**
@@ -197,7 +197,7 @@ namespace vkcv {
 		 *
 		 * @return List of feature requests
 		 */
-		[[nodiscard]] const std::vector<Feature> &getList() const;
+		[[nodiscard]] const Vector<Feature> &getList() const;
 	};
 
 } // namespace vkcv

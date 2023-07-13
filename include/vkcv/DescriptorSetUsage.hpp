@@ -5,8 +5,7 @@
  * @brief Structures to handle descriptor usages.
  */
 
-#include <vector>
-
+#include "Container.hpp"
 #include "Handles.hpp"
 
 namespace vkcv {
@@ -17,10 +16,10 @@ namespace vkcv {
 	struct DescriptorSetUsage {
 		uint32_t location;
 		DescriptorSetHandle descriptorSet;
-		std::vector<uint32_t> dynamicOffsets;
+		Vector<uint32_t> dynamicOffsets;
 	};
 
 	DescriptorSetUsage useDescriptorSet(uint32_t location, const DescriptorSetHandle &descriptorSet,
-										const std::vector<uint32_t> &dynamicOffsets = {});
+										const Vector<uint32_t> &dynamicOffsets = {});
 
 } // namespace vkcv

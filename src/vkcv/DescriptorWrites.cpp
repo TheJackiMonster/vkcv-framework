@@ -77,7 +77,7 @@ namespace vkcv {
 	}
 
 	DescriptorWrites &DescriptorWrites::writeAcceleration(
-		uint32_t binding, const std::vector<AccelerationStructureHandle> &structures) {
+		uint32_t binding, const Vector<AccelerationStructureHandle> &structures) {
 		AccelerationDescriptorWrite write;
 		write.binding = binding;
 		write.structures = structures;
@@ -85,29 +85,29 @@ namespace vkcv {
 		return *this;
 	}
 
-	const std::vector<SampledImageDescriptorWrite> &
+	const Vector<SampledImageDescriptorWrite> &
 	DescriptorWrites::getSampledImageWrites() const {
 		return m_sampledImageWrites;
 	}
 
-	const std::vector<StorageImageDescriptorWrite> &
+	const Vector<StorageImageDescriptorWrite> &
 	DescriptorWrites::getStorageImageWrites() const {
 		return m_storageImageWrites;
 	}
 
-	const std::vector<BufferDescriptorWrite> &DescriptorWrites::getUniformBufferWrites() const {
+	const Vector<BufferDescriptorWrite> &DescriptorWrites::getUniformBufferWrites() const {
 		return m_uniformBufferWrites;
 	}
 
-	const std::vector<BufferDescriptorWrite> &DescriptorWrites::getStorageBufferWrites() const {
+	const Vector<BufferDescriptorWrite> &DescriptorWrites::getStorageBufferWrites() const {
 		return m_storageBufferWrites;
 	}
 
-	const std::vector<SamplerDescriptorWrite> &DescriptorWrites::getSamplerWrites() const {
+	const Vector<SamplerDescriptorWrite> &DescriptorWrites::getSamplerWrites() const {
 		return m_samplerWrites;
 	}
 
-	const std::vector<AccelerationDescriptorWrite> &
+	const Vector<AccelerationDescriptorWrite> &
 	DescriptorWrites::getAccelerationWrites() const {
 		return m_accelerationWrites;
 	}

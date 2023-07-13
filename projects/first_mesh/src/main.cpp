@@ -139,7 +139,7 @@ int main(int argc, const char** argv) {
 		
 		cameraManager.update(dt);
 		cameraManager.getCamera(camHandle0).setPosition(
-				interp(static_cast<float>(std::fmod<double>(t, 10.0)))
+				interp(static_cast<float>(fmod(t, 10.0)))
 		);
 		
         glm::mat4 mvp = cameraManager.getActiveCamera().getMVP();

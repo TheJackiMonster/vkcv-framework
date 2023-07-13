@@ -6,7 +6,8 @@
  */
 
 #include <filesystem>
-#include <vector>
+
+#include "Container.hpp"
 
 namespace vkcv {
 
@@ -33,7 +34,7 @@ namespace vkcv {
 	 * @return True on success, false otherwise
 	 */
 	bool writeContentToFile(const std::filesystem::path &path,
-							const std::vector<char>& content);
+							const Vector<char>& content);
 	
 	/**
 	 * @brief Write binary data from a vector to a file at
@@ -44,7 +45,7 @@ namespace vkcv {
 	 * @return True on success, false otherwise
 	 */
 	bool writeBinaryToFile(const std::filesystem::path &path,
-						   const std::vector<uint32_t>& binary);
+						   const Vector<uint32_t>& binary);
 	
 	/**
 	 * @brief Write text to a file at a given path.
@@ -65,7 +66,7 @@ namespace vkcv {
 	 * @return True on success, false otherwise
 	 */
 	bool readContentFromFile(const std::filesystem::path &path,
-							 std::vector<char>& content);
+							 Vector<char>& content);
 	
 	/**
 	 * @brief Read binary data from a file at a given path
@@ -76,7 +77,7 @@ namespace vkcv {
 	 * @return True on success, false otherwise
 	 */
 	bool readBinaryFromFile(const std::filesystem::path &path,
-							std::vector<uint32_t>& binary);
+							Vector<uint32_t>& binary);
 	
 	/**
 	 * @brief Read text from a file at a given path.

@@ -5,8 +5,7 @@
  * @brief Structures to handle descriptor bindings.
  */
 
-#include <unordered_map>
-
+#include "Container.hpp"
 #include "DescriptorTypes.hpp"
 #include "ShaderStage.hpp"
 
@@ -26,6 +25,6 @@ namespace vkcv {
 		bool operator==(const DescriptorBinding &other) const;
 	};
 
-	typedef std::unordered_map<uint32_t, DescriptorBinding> DescriptorBindings;
+	typedef Dictionary<uint32_t, DescriptorBinding> DescriptorBindings;
 
 } // namespace vkcv

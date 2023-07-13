@@ -289,8 +289,8 @@ namespace vkcv {
 		
 		const vk::Device &device = getCore().getContext().getDevice();
 		
-		std::vector<vk::ImageView> views;
-		std::vector<vk::ImageView> arrayViews;
+		Vector<vk::ImageView> views;
+		Vector<vk::ImageView> arrayViews;
 		
 		for (uint32_t mip = 0; mip < mipCount; mip++) {
 			const vk::ImageViewCreateInfo imageViewCreateInfo(
@@ -340,7 +340,7 @@ namespace vkcv {
 			arrayViews.push_back(device.createImageView(imageViewCreateInfo));
 		}
 		
-		std::vector<vk::ImageLayout> layers;
+		Vector<vk::ImageLayout> layers;
 		layers.resize(arrayLayers, vk::ImageLayout::eUndefined);
 		
 		return add({
@@ -707,8 +707,8 @@ namespace vkcv {
 		m_currentSwapchainInputImage = index;
 	}
 	
-	void ImageManager::setSwapchainImages(const std::vector<vk::Image> &images,
-										  const std::vector<vk::ImageView> &views, uint32_t width,
+	void ImageManager::setSwapchainImages(const Vector<vk::Image> &images,
+										  const Vector<vk::ImageView> &views, uint32_t width,
 										  uint32_t height, vk::Format format) {
 		
 		// destroy old views

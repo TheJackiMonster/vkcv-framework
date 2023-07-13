@@ -58,7 +58,7 @@ namespace vkcv {
 			vkcv_log(LogLevel::WARNING, "Overwriting existing shader stage");
 		}
 
-		std::vector<uint32_t> shaderCode;
+		Vector<uint32_t> shaderCode;
 		if ((!readBinaryFromFile(path, shaderCode)) || (shaderCode.empty())) {
 			return false;
 		}
@@ -68,7 +68,7 @@ namespace vkcv {
 		return true;
 	}
 
-	const std::vector<uint32_t> &ShaderProgram::getShaderBinary(ShaderStage stage) const {
+	const Vector<uint32_t> &ShaderProgram::getShaderBinary(ShaderStage stage) const {
 		return m_Shaders.at(stage);
 	}
 
@@ -109,7 +109,7 @@ namespace vkcv {
 
 		// reflect descriptor sets (uniform buffer, storage buffer, sampler, sampled image, storage
 		// image)
-		std::vector<std::pair<uint32_t, DescriptorBinding>> bindings;
+		Vector<std::pair<uint32_t, DescriptorBinding>> bindings;
 
 		for (uint32_t i = 0; i < resources.uniform_buffers.size(); i++) {
 			auto &u = resources.uniform_buffers [i];
@@ -318,7 +318,7 @@ namespace vkcv {
 		return m_VertexAttachments;
 	}
 
-	const std::unordered_map<uint32_t, DescriptorBindings> &
+	const Dictionary<uint32_t, DescriptorBindings> &
 	ShaderProgram::getReflectedDescriptors() const {
 		return m_DescriptorSets;
 	}

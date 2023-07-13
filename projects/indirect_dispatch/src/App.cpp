@@ -212,7 +212,7 @@ void App::run() {
 	
 	const std::vector<const char*> modeNames = {
 			"FSR Upscaling 1.0",
-			"FSR Upscaling 2.1.1",
+			"FSR Upscaling 2.2.0",
 			"NIS Upscaling",
 			"Bilinear Upscaling"
 	};

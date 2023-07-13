@@ -19,7 +19,9 @@
 #include "RayTracingPipelineManager.hpp"
 #include "SamplerManager.hpp"
 #include "WindowManager.hpp"
+
 #include "vkcv/BlitDownsampler.hpp"
+#include "vkcv/Container.hpp"
 #include "vkcv/Core.hpp"
 #include "vkcv/Image.hpp"
 #include "vkcv/Logger.hpp"
@@ -33,8 +35,8 @@ namespace vkcv {
 	 * @param[in] queueManager Queue manager
 	 * @return Set of queue family indices
 	 */
-	static std::unordered_set<int> generateQueueFamilyIndexSet(const QueueManager &queueManager) {
-		std::unordered_set<int> indexSet;
+	static Set<int> generateQueueFamilyIndexSet(const QueueManager &queueManager) {
+		Set<int> indexSet;
 
 		for (const auto &queue : queueManager.getGraphicsQueues()) {
 			indexSet.insert(queue.familyIndex);
@@ -60,9 +62,9 @@ namespace vkcv {
 	 * @param[in] familyIndexSet Set of queue family indices
 	 * @return New command pools
 	 */
-	static std::vector<vk::CommandPool>
-	createCommandPools(const vk::Device &device, const std::unordered_set<int> &familyIndexSet) {
-		std::vector<vk::CommandPool> commandPoolsPerQueueFamily;
+	static Vector<vk::CommandPool>
+	createCommandPools(const vk::Device &device, const Set<int> &familyIndexSet) {
+		Vector<vk::CommandPool> commandPoolsPerQueueFamily;
 		commandPoolsPerQueueFamily.resize(familyIndexSet.size());
 
 		const vk::CommandPoolCreateFlags poolFlags = vk::CommandPoolCreateFlagBits::eTransient;
@@ -76,8 +78,8 @@ namespace vkcv {
 	}
 
 	Core Core::create(const std::string &applicationName, uint32_t applicationVersion,
-					  const std::vector<vk::QueueFlagBits> &queueFlags, const Features &features,
-					  const std::vector<const char*> &instanceExtensions) {
+					  const Vector<vk::QueueFlagBits> &queueFlags, const Features &features,
+					  const Vector<const char*> &instanceExtensions) {
 		Context context = Context::create(applicationName, applicationVersion, queueFlags, features,
 										  instanceExtensions);
 
@@ -141,7 +143,7 @@ namespace vkcv {
 	}
 
 	ComputePipelineHandle Core::createComputePipeline(const ComputePipelineConfig &config) {
-		std::vector<vk::DescriptorSetLayout> layouts;
+		Vector<vk::DescriptorSetLayout> layouts;
 		layouts.resize(config.getDescriptorSetLayouts().size());
 
 		for (size_t i = 0; i < layouts.size(); i++) {
@@ -283,7 +285,7 @@ namespace vkcv {
 	}
 
 	static std::array<uint32_t, 2>
-	getWidthHeightFromRenderTargets(const std::vector<ImageHandle> &renderTargets,
+	getWidthHeightFromRenderTargets(const Vector<ImageHandle> &renderTargets,
 									const vk::Extent2D &swapchainExtent,
 									const ImageManager &imageManager) {
 
@@ -306,13 +308,13 @@ namespace vkcv {
 		return widthHeight;
 	}
 
-	static vk::Framebuffer createFramebuffer(const std::vector<ImageHandle> &renderTargets,
+	static vk::Framebuffer createFramebuffer(const Vector<ImageHandle> &renderTargets,
 											 const ImageManager &imageManager,
 											 const vk::Extent2D &renderExtent,
 											 const vk::RenderPass &renderpass,
 											 const vk::Device &device) {
 
-		std::vector<vk::ImageView> attachmentsViews;
+		Vector<vk::ImageView> attachmentsViews;
 		for (const ImageHandle &handle : renderTargets) {
 			attachmentsViews.push_back(imageManager.getVulkanImageView(handle));
 		}
@@ -324,7 +326,7 @@ namespace vkcv {
 		return device.createFramebuffer(createInfo);
 	}
 
-	void transitionRendertargetsToAttachmentLayout(const std::vector<ImageHandle> &renderTargets,
+	void transitionRendertargetsToAttachmentLayout(const Vector<ImageHandle> &renderTargets,
 												   ImageManager &imageManager,
 												   const vk::CommandBuffer cmdBuffer) {
 
@@ -337,9 +339,9 @@ namespace vkcv {
 		}
 	}
 
-	std::vector<vk::ClearValue>
-	createAttachmentClearValues(const std::vector<AttachmentDescription> &attachments) {
-		std::vector<vk::ClearValue> clearValues;
+	Vector<vk::ClearValue>
+	createAttachmentClearValues(const Vector<AttachmentDescription> &attachments) {
+		Vector<vk::ClearValue> clearValues;
 		for (const auto &attachment : attachments) {
 			if (attachment.getLoadOperation() == AttachmentOperation::CLEAR) {
 				clearValues.push_back(attachment.getClearValue());
@@ -421,7 +423,7 @@ namespace vkcv {
 									   const CommandStreamHandle &cmdStreamHandle,
 									   const GraphicsPipelineHandle &pipelineHandle,
 									   const PushConstants &pushConstants,
-									   const std::vector<ImageHandle> &renderTargets,
+									   const Vector<ImageHandle> &renderTargets,
 									   const WindowHandle &windowHandle,
 									   const RecordCommandFunction &record) {
 
@@ -467,7 +469,7 @@ namespace vkcv {
 		}
 
 		auto submitFunction = [&](const vk::CommandBuffer &cmdBuffer) {
-			const std::vector<vk::ClearValue> clearValues =
+			const Vector<vk::ClearValue> clearValues =
 				createAttachmentClearValues(attachments);
 
 			const vk::RenderPassBeginInfo beginInfo(renderPass, framebuffer, renderArea,
@@ -500,8 +502,8 @@ namespace vkcv {
 	void Core::recordDrawcallsToCmdStream(const CommandStreamHandle &cmdStreamHandle,
 										  const GraphicsPipelineHandle &pipelineHandle,
 										  const PushConstants &pushConstantData,
-										  const std::vector<InstanceDrawcall> &drawcalls,
-										  const std::vector<ImageHandle> &renderTargets,
+										  const Vector<InstanceDrawcall> &drawcalls,
+										  const Vector<ImageHandle> &renderTargets,
 										  const WindowHandle &windowHandle) {
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
@@ -569,8 +571,8 @@ namespace vkcv {
 	void Core::recordIndirectDrawcallsToCmdStream(
 		const vkcv::CommandStreamHandle cmdStreamHandle,
 		const vkcv::GraphicsPipelineHandle &pipelineHandle,
-		const vkcv::PushConstants &pushConstantData, const std::vector<IndirectDrawcall> &drawcalls,
-		const std::vector<ImageHandle> &renderTargets, const vkcv::WindowHandle &windowHandle) {
+		const vkcv::PushConstants &pushConstantData, const Vector<IndirectDrawcall> &drawcalls,
+		const Vector<ImageHandle> &renderTargets, const vkcv::WindowHandle &windowHandle) {
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
 			return;
@@ -598,9 +600,9 @@ namespace vkcv {
 										 const PushConstants &pushConstantData,
 										 size_t drawcallIndex, const TaskDrawcall &drawcall) {
 
-		static PFN_vkCmdDrawMeshTasksNV cmdDrawMeshTasks =
-			reinterpret_cast<PFN_vkCmdDrawMeshTasksNV>(
-				core.getContext().getDevice().getProcAddr("vkCmdDrawMeshTasksNV"));
+		static PFN_vkCmdDrawMeshTasksEXT cmdDrawMeshTasks =
+			reinterpret_cast<PFN_vkCmdDrawMeshTasksEXT>(
+				core.getContext().getDevice().getProcAddr("vkCmdDrawMeshTasksEXT"));
 
 		if (!cmdDrawMeshTasks) {
 			vkcv_log(LogLevel::ERROR, "Mesh shader drawcalls are not supported");
@@ -619,15 +621,21 @@ namespace vkcv {
 									pushConstantData.getSizePerDrawcall(),
 									pushConstantData.getDrawcallData(drawcallIndex));
 		}
-
-		cmdDrawMeshTasks(VkCommandBuffer(cmdBuffer), drawcall.getTaskCount(), 0);
+		
+		const auto& groupSize = drawcall.getTaskSize();
+		cmdDrawMeshTasks(
+				VkCommandBuffer(cmdBuffer),
+				groupSize.x(),
+				groupSize.y(),
+				groupSize.z()
+		);
 	}
 
 	void Core::recordMeshShaderDrawcalls(const CommandStreamHandle &cmdStreamHandle,
 										 const GraphicsPipelineHandle &pipelineHandle,
 										 const PushConstants &pushConstantData,
-										 const std::vector<TaskDrawcall> &drawcalls,
-										 const std::vector<ImageHandle> &renderTargets,
+										 const Vector<TaskDrawcall> &drawcalls,
+										 const Vector<ImageHandle> &renderTargets,
 										 const WindowHandle &windowHandle) {
 
 		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
@@ -640,7 +648,7 @@ namespace vkcv {
 		auto recordFunction = [&](const vk::CommandBuffer &cmdBuffer) {
 			for (size_t i = 0; i < drawcalls.size(); i++) {
 				recordMeshShaderDrawcall(*this, *m_DescriptorSetManager, cmdBuffer, pipelineLayout,
-										 pushConstantData, i, drawcalls [i]);
+										 pushConstantData, i, drawcalls[i]);
 			}
 		};
 
@@ -653,7 +661,7 @@ namespace vkcv {
 		const CommandStreamHandle &cmdStreamHandle,
 		const RayTracingPipelineHandle &rayTracingPipeline,
 		const DispatchSize &dispatchSize,
-		const std::vector<DescriptorSetUsage> &descriptorSetUsages,
+		const Vector<DescriptorSetUsage> &descriptorSetUsages,
 		const PushConstants &pushConstants,
 		const vkcv::WindowHandle &windowHandle) {
 		
@@ -725,7 +733,7 @@ namespace vkcv {
 		const CommandStreamHandle &cmdStreamHandle,
 		const ComputePipelineHandle &computePipeline,
 		const DispatchSize &dispatchSize,
-		const std::vector<DescriptorSetUsage> &descriptorSetUsages,
+		const Vector<DescriptorSetUsage> &descriptorSetUsages,
 		const PushConstants &pushConstants) {
 		auto submitFunction = [&](const vk::CommandBuffer &cmdBuffer) {
 			const auto pipelineLayout =
@@ -794,7 +802,7 @@ namespace vkcv {
 	void Core::recordComputeIndirectDispatchToCmdStream(
 		const CommandStreamHandle cmdStream, const ComputePipelineHandle computePipeline,
 		const vkcv::BufferHandle buffer, const size_t bufferArgOffset,
-		const std::vector<DescriptorSetUsage> &descriptorSetUsages,
+		const Vector<DescriptorSetUsage> &descriptorSetUsages,
 		const PushConstants &pushConstants) {
 
 		auto submitFunction = [&](const vk::CommandBuffer &cmdBuffer) {
@@ -900,10 +908,10 @@ namespace vkcv {
 	}
 
 	void Core::submitCommandStream(const CommandStreamHandle &stream, bool signalRendering) {
-		std::vector<vk::Semaphore> waitSemaphores;
+		Vector<vk::Semaphore> waitSemaphores;
 
 		// FIXME: add proper user controllable sync
-		std::vector<vk::Semaphore> signalSemaphores;
+		Vector<vk::Semaphore> signalSemaphores;
 		if (signalRendering) {
 			signalSemaphores.push_back(m_RenderFinished);
 		}
@@ -1361,7 +1369,7 @@ namespace vkcv {
 	}
 	
 	AccelerationStructureHandle Core::createAccelerationStructure(
-			const std::vector<GeometryData> &geometryData,
+			const Vector<GeometryData> &geometryData,
 			const BufferHandle &transformBuffer,
 			bool compaction) {
 		return m_AccelerationStructureManager->createAccelerationStructure(
@@ -1372,7 +1380,7 @@ namespace vkcv {
 	}
 	
 	AccelerationStructureHandle Core::createAccelerationStructure(
-			const std::vector<AccelerationStructureHandle> &handles) {
+			const Vector<AccelerationStructureHandle> &handles) {
 		return m_AccelerationStructureManager->createAccelerationStructure(handles);
 	}
 	

@@ -5,8 +5,7 @@
  * @brief Types to configure vertex data for drawcalls.
  */
 
-#include <vector>
-
+#include "Container.hpp"
 #include "Handles.hpp"
 
 namespace vkcv {
@@ -33,7 +32,7 @@ namespace vkcv {
 											size_t stride,
 											size_t offset = 0);
 
-	typedef std::vector<VertexBufferBinding> VertexBufferBindings;
+	typedef Vector<VertexBufferBinding> VertexBufferBindings;
 
 	/**
 	 * @brief Enum class to specify the size of indexes.

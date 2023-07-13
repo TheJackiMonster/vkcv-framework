@@ -100,9 +100,9 @@ namespace vkcv {
 		 * @return New context
 		 */
 		static Context create(const std::string &applicationName, uint32_t applicationVersion,
-							  const std::vector<vk::QueueFlagBits> &queueFlags,
+							  const Vector<vk::QueueFlagBits> &queueFlags,
 							  const Features &features,
-							  const std::vector<const char*> &instanceExtensions = {});
+							  const Vector<const char*> &instanceExtensions = {});
 
 	private:
 		/**

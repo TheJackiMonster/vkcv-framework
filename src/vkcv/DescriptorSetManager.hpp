@@ -35,10 +35,11 @@ namespace vkcv {
 	private:
 		DescriptorSetLayoutManager* m_DescriptorSetLayoutManager;
 
-		std::vector<vk::DescriptorPool> m_Pools;
-		std::vector<vk::DescriptorPoolSize> m_PoolSizes;
+		Vector<vk::DescriptorPool> m_Pools;
+		Vector<vk::DescriptorPoolSize> m_PoolSizes;
 		vk::DescriptorPoolCreateInfo m_PoolInfo;
-
+		
+		bool init(Core &core) override;
 		bool init(Core &core, DescriptorSetLayoutManager &descriptorSetLayoutManager);
 
 		[[nodiscard]] uint64_t getIdFrom(const DescriptorSetHandle &handle) const override;
@@ -59,9 +60,9 @@ namespace vkcv {
 		 * constructor is called initially in the constructor and then every time the pool runs
 		 * out memory.
 		 *
-		 * @return a DescriptorPool object
+		 * @return whether a DescriptorPool object could be created
 		 */
-		vk::DescriptorPool allocateDescriptorPool();
+		bool allocateDescriptorPool();
 
 	public:
 		/**

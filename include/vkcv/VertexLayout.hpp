@@ -6,9 +6,11 @@
  * @brief Structures to handle vertex layout, bindings and attachments.
  */
 
+#include <cstdint>
 #include <iostream>
 #include <string>
-#include <vector>
+
+#include "Container.hpp"
 
 namespace vkcv {
 
@@ -48,7 +50,7 @@ namespace vkcv {
 		uint32_t offset;
 	};
 
-	typedef std::vector<VertexAttachment> VertexAttachments;
+	typedef Vector<VertexAttachment> VertexAttachments;
 
 	/**
 	 * @brief Structure to store the details of a vertex buffer binding.
@@ -75,7 +77,7 @@ namespace vkcv {
 	VertexBinding createVertexBinding(uint32_t bindingLocation,
 									  const VertexAttachments &attachments);
 
-	typedef std::vector<VertexBinding> VertexBindings;
+	typedef Vector<VertexBinding> VertexBindings;
 
 	/**
 	 * Creates vertex bindings in a very simplified way with one vertex binding for

@@ -5,9 +5,8 @@
  * @brief Template buffer class for type security with buffers.
  */
 
-#include <vector>
-
 #include "BufferTypes.hpp"
+#include "Container.hpp"
 #include "Core.hpp"
 #include "Handles.hpp"
 
@@ -112,7 +111,7 @@ namespace vkcv {
 		 * @param vector Vector of type T to be copied into the #Buffer
 		 * @param offset The offset into the #Buffer where the data is copied into
 		 */
-		void fill(const std::vector<T> &vector, size_t offset = 0) {
+		void fill(const Vector<T> &vector, size_t offset = 0) {
 			fill(static_cast<const T*>(vector.data()), static_cast<size_t>(vector.size()), offset);
 		}
 		
@@ -146,7 +145,7 @@ namespace vkcv {
 		 * @param vector Vector of type T to be copied into from the #Buffer
 		 * @param offset The offset into the #Buffer where the data is copied from
 		 */
-		void read(std::vector<T> &vector, size_t offset = 0) {
+		void read(Vector<T> &vector, size_t offset = 0) {
 			read(static_cast<T*>(vector.data()), static_cast<size_t>(vector.size()), offset);
 		}
 

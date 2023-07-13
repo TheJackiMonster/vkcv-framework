@@ -28,9 +28,9 @@ namespace vkcv::shader {
 			case ShaderStage::COMPUTE:
 				return EShLangCompute;
 			case ShaderStage::TASK:
-				return EShLangTaskNV;
+				return EShLangTask;
 			case ShaderStage::MESH:
-				return EShLangMeshNV;
+				return EShLangMesh;
 			case ShaderStage::RAY_GEN:
 			    return EShLangRayGen;
 			case ShaderStage::RAY_CLOSEST_HIT:
@@ -140,7 +140,15 @@ namespace vkcv::shader {
 		resources.maxTaskWorkGroupSizeX_NV = 32;
 		resources.maxTaskWorkGroupSizeY_NV = 1;
 		resources.maxTaskWorkGroupSizeZ_NV = 1;
-		resources.maxMeshViewCountNV = 4;
+		resources.maxMeshOutputVerticesEXT = 256;
+		resources.maxMeshOutputPrimitivesEXT = 512;
+		resources.maxMeshWorkGroupSizeX_EXT = 32;
+		resources.maxMeshWorkGroupSizeY_EXT = 1;
+		resources.maxMeshWorkGroupSizeZ_EXT = 1;
+		resources.maxTaskWorkGroupSizeX_EXT = 32;
+		resources.maxTaskWorkGroupSizeY_EXT = 1;
+		resources.maxTaskWorkGroupSizeZ_EXT = 1;
+		resources.maxMeshViewCountEXT = 4;
 		resources.limits.nonInductiveForLoops = true;
 		resources.limits.whileLoops = true;
 		resources.limits.doWhileLoops = true;
@@ -171,6 +179,10 @@ namespace vkcv::shader {
 				break;
 			case GLSLCompileTarget::RAY_TRACING:
 				shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_2);
+				shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_4);
+				break;
+			case GLSLCompileTarget::MESH_SHADING:
+				shader.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_1);
 				shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_4);
 				break;
 			default:

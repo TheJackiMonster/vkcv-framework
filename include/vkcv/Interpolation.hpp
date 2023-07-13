@@ -8,7 +8,8 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
-#include <vector>
+
+#include "Container.hpp"
 
 namespace vkcv {
 	
@@ -31,7 +32,7 @@ namespace vkcv {
 	struct interpolation {
 	private:
 		typename interpolation_function<V, T>::type m_function;
-		std::vector< interpolation_state<V, T> > m_states;
+		Vector< interpolation_state<V, T> > m_states;
 	
 	public:
 		interpolation(const typename interpolation_function<V, T>::type& function)

@@ -90,6 +90,11 @@ if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSI
 	list(APPEND vkcv_definitions __NO_SEMAPHORES__)
 endif()
 
+if (((CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "4.0.0")) OR
+	((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "12.0.0")))
+	list(APPEND vkcv_definitions VKCV_UNORDERED_CONTAINER)
+endif()
+
 # configure everything to use the required dependencies
 include(${vkcv_config}/Libraries.cmake)
 

@@ -6,12 +6,12 @@
  */
 
 #include <memory>
-#include <vector>
 
 #include <vk_mem_alloc.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include "vkcv/BufferTypes.hpp"
+#include "vkcv/Container.hpp"
 #include "vkcv/TypeGuard.hpp"
 
 #include "HandleManager.hpp"

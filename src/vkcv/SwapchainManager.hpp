@@ -6,12 +6,12 @@
  */
 
 #include <atomic>
-#include <vector>
 #include <vulkan/vulkan.hpp>
 
-#include "vkcv/Window.hpp"
-
 #include "HandleManager.hpp"
+
+#include "vkcv/Container.hpp"
+#include "vkcv/Window.hpp"
 
 namespace vkcv {
 
@@ -145,7 +145,7 @@ namespace vkcv {
 		 * @param handle of the swapchain
 		 * @return a vector of the swapchain images
 		 */
-		[[nodiscard]] std::vector<vk::Image>
+		[[nodiscard]] Vector<vk::Image>
 		getSwapchainImages(const SwapchainHandle &handle) const;
 
 		/**
@@ -153,7 +153,7 @@ namespace vkcv {
 		 * @param handle of the swapchain which ImageViews should be created
 		 * @return a ov ImageViews of the swapchain
 		 */
-		[[nodiscard]] std::vector<vk::ImageView> createSwapchainImageViews(SwapchainHandle &handle);
+		[[nodiscard]] Vector<vk::ImageView> createSwapchainImageViews(SwapchainHandle &handle);
 	};
 
 } // namespace vkcv

@@ -26,7 +26,7 @@ public:
 private:
     // all properties of the Particle
     glm::vec3 m_position;
-    float m_padding1;
+	[[maybe_unused]] [[maybe_unused]] float m_padding;
     glm::vec3 m_velocity;
     float m_density;
     glm::vec3 m_force;

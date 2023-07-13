@@ -6,13 +6,15 @@
  * @brief Creation and handling of ray tracing pipelines
  */
 
+#include <vulkan/vulkan.hpp>
+
 #include "BufferManager.hpp"
 #include "DescriptorSetLayoutManager.hpp"
 #include "HandleManager.hpp"
 #include "PassManager.hpp"
+
+#include "vkcv/Container.hpp"
 #include "vkcv/RayTracingPipelineConfig.hpp"
-#include <vector>
-#include <vulkan/vulkan.hpp>
 
 namespace vkcv {
 	

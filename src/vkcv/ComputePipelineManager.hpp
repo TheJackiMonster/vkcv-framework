@@ -6,12 +6,12 @@
  * @brief Creation and handling of Compute Pipelines
  */
 
-#include <vector>
 #include <vulkan/vulkan.hpp>
 
 #include "HandleManager.hpp"
 
 #include "vkcv/ComputePipelineConfig.hpp"
+#include "vkcv/Container.hpp"
 #include "vkcv/ShaderProgram.hpp"
 
 namespace vkcv {
@@ -74,7 +74,7 @@ namespace vkcv {
 		 */
 		ComputePipelineHandle
 		createComputePipeline(const ShaderProgram &shaderProgram,
-							  const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
+							  const Vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
 	};
 
 } // namespace vkcv

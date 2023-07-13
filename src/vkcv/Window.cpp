@@ -1,8 +1,8 @@
 
 #include <GLFW/glfw3.h>
 #include <thread>
-#include <vector>
 
+#include "vkcv/Container.hpp"
 #include "vkcv/Window.hpp"
 
 namespace vkcv {
@@ -56,7 +56,7 @@ namespace vkcv {
 		}
 	}
 
-	static std::vector<GLFWwindow*> s_Windows;
+	static Vector<GLFWwindow*> s_Windows;
 
 	void Window_onGamepadEvent(int gamepadIndex) {
 		Window::getFocusedWindow().e_gamepad(gamepadIndex);
@@ -181,8 +181,8 @@ namespace vkcv {
 		}
 	}
 
-	const std::vector<std::string> &Window::getExtensions() {
-		static std::vector<std::string> extensions;
+	const Vector<std::string> &Window::getExtensions() {
+		static Vector<std::string> extensions;
 
 		if (extensions.empty()) {
 			if (s_Windows.empty()) {

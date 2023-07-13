@@ -21,7 +21,7 @@ namespace vkcv {
 		const auto& memoryProperties = allocator.getMemoryProperties();
 		const auto& heaps = memoryProperties->memoryHeaps;
 		
-		std::vector<vk::MemoryPropertyFlags> heapMemoryFlags;
+		Vector<vk::MemoryPropertyFlags> heapMemoryFlags;
 		heapMemoryFlags.resize(heaps.size());
 		
 		for (const auto& type : memoryProperties->memoryTypes) {

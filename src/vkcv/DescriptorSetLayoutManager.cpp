@@ -58,8 +58,8 @@ namespace vkcv {
 		}
 
 		// create the descriptor set's layout and binding flags by iterating over its bindings
-		std::vector<vk::DescriptorSetLayoutBinding> bindingsVector = {};
-		std::vector<vk::DescriptorBindingFlags> bindingsFlags = {};
+		Vector<vk::DescriptorSetLayoutBinding> bindingsVector = {};
+		Vector<vk::DescriptorBindingFlags> bindingsFlags = {};
 
 		for (auto bindingElem : bindings) {
 			DescriptorBinding binding = bindingElem.second;

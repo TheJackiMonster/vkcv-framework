@@ -35,7 +35,7 @@ namespace vkcv::shader {
         /**
          * A map containing macros for shader compilation.
          */
-		std::unordered_map<std::string, std::string> m_defines;
+		Dictionary<std::string, std::string> m_defines;
 		
 		/**
 		 * Process the shader source code for further compilation or inclusion.
@@ -80,7 +80,7 @@ namespace vkcv::shader {
 		 */
 		bool compileSourceWithHeaders(ShaderStage shaderStage,
 									  const std::string& shaderSource,
-									  const std::unordered_map<std::filesystem::path, std::string>& shaderHeaders,
+									  const Dictionary<std::filesystem::path, std::string>& shaderHeaders,
 									  const ShaderCompiledFunction& compiled);
 
         /**
@@ -112,7 +112,7 @@ namespace vkcv::shader {
          * @param[in] update Flag to update shaders during runtime
          */
 		void compileProgram(ShaderProgram& program,
-							const std::unordered_map<ShaderStage, const std::filesystem::path>& stages,
+							const Dictionary<ShaderStage, const std::filesystem::path>& stages,
 							const ShaderProgramCompiledFunction& compiled,
 							const std::filesystem::path& includePath = "",
 							bool update = false);

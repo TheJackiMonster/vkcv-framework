@@ -114,7 +114,7 @@ namespace vkcv {
 	 */
 	static vk::SurfaceFormatKHR chooseSurfaceFormat(vk::PhysicalDevice physicalDevice,
 													vk::SurfaceKHR surface) {
-		std::vector<vk::SurfaceFormatKHR> availableFormats =
+		Vector<vk::SurfaceFormatKHR> availableFormats =
 			physicalDevice.getSurfaceFormatsKHR(surface);
 
 		for (const auto &availableFormat : availableFormats) {
@@ -137,7 +137,7 @@ namespace vkcv {
 	 */
 	static vk::PresentModeKHR choosePresentMode(vk::PhysicalDevice physicalDevice,
 												vk::SurfaceKHR surface) {
-		std::vector<vk::PresentModeKHR> availablePresentModes =
+		Vector<vk::PresentModeKHR> availablePresentModes =
 			physicalDevice.getSurfacePresentModesKHR(surface);
 
 		for (const auto &availablePresentMode : availablePresentModes) {
@@ -175,6 +175,12 @@ namespace vkcv {
 
 	static bool createVulkanSwapchain(const Context &context, const Window &window,
 									  SwapchainEntry &entry) {
+		if (!context.getFeatureManager().isExtensionActive(VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
+			vkcv_log(LogLevel::WARNING, "Extension required to create a swapchain: '%s'",
+					 VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+			return false;
+		}
+		
 		const vk::PhysicalDevice &physicalDevice = context.getPhysicalDevice();
 		const vk::Device &device = context.getDevice();
 
@@ -295,18 +301,18 @@ namespace vkcv {
 		return (*this) [handle].m_ColorSpace;
 	}
 
-	std::vector<vk::Image>
+	Vector<vk::Image>
 	SwapchainManager::getSwapchainImages(const SwapchainHandle &handle) const {
 		return getCore().getContext().getDevice().getSwapchainImagesKHR(
 			(*this) [handle].m_Swapchain);
 	}
 
-	std::vector<vk::ImageView>
+	Vector<vk::ImageView>
 	SwapchainManager::createSwapchainImageViews(SwapchainHandle &handle) {
-		std::vector<vk::Image> images = getSwapchainImages(handle);
+		Vector<vk::Image> images = getSwapchainImages(handle);
 		auto &swapchain = (*this) [handle];
 
-		std::vector<vk::ImageView> imageViews;
+		Vector<vk::ImageView> imageViews;
 		imageViews.reserve(images.size());
 		// here can be swizzled with vk::ComponentSwizzle if needed
 		vk::ComponentMapping componentMapping(vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG,

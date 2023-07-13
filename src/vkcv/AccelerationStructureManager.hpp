@@ -6,13 +6,13 @@
  */
 
 #include <memory>
-#include <vector>
 
 #include <vk_mem_alloc.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include "BufferManager.hpp"
 
+#include "vkcv/Container.hpp"
 #include "vkcv/Handles.hpp"
 #include "vkcv/GeometryData.hpp"
 
@@ -22,7 +22,7 @@ namespace vkcv {
 		vk::AccelerationStructureTypeKHR m_type;
 		vk::DeviceSize m_size;
 		vk::AccelerationStructureKHR m_accelerationStructure;
-		std::vector<AccelerationStructureHandle> m_children;
+		Vector<AccelerationStructureHandle> m_children;
 		BufferHandle m_storageBuffer;
 	};
 	
@@ -37,6 +37,7 @@ namespace vkcv {
 	private:
 		BufferManager* m_bufferManager;
 		
+		bool init(Core &core) override;
 		bool init(Core &core, BufferManager &bufferManager);
 		
 		[[nodiscard]] uint64_t getIdFrom(const AccelerationStructureHandle &handle) const override;
@@ -79,12 +80,12 @@ namespace vkcv {
 				const AccelerationStructureHandle &handle) const;
 		
 		[[nodiscard]] AccelerationStructureHandle createAccelerationStructure(
-				const std::vector<GeometryData> &geometryData,
+				const Vector<GeometryData> &geometryData,
 				const BufferHandle &transformBuffer,
 				bool compaction);
 		
 		[[nodiscard]] AccelerationStructureHandle createAccelerationStructure(
-				const std::vector<AccelerationStructureHandle> &accelerationStructures);
+				const Vector<AccelerationStructureHandle> &accelerationStructures);
 		
 	};
 	

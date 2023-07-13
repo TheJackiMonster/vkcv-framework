@@ -1,10 +1,10 @@
 #pragma once
 
-#include <vector>
 #include <vulkan/vulkan.hpp>
 
 #include "HandleManager.hpp"
 
+#include "vkcv/Container.hpp"
 #include "vkcv/Sampler.hpp"
 
 namespace vkcv {

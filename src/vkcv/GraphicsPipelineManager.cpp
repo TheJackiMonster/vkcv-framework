@@ -115,9 +115,9 @@ namespace vkcv {
 		case ShaderStage::COMPUTE:
 			return vk::ShaderStageFlagBits::eCompute;
 		case ShaderStage::TASK:
-			return vk::ShaderStageFlagBits::eTaskNV;
+			return vk::ShaderStageFlagBits::eTaskEXT;
 		case ShaderStage::MESH:
-			return vk::ShaderStageFlagBits::eMeshNV;
+			return vk::ShaderStageFlagBits::eMeshEXT;
 		default:
 			vkcv_log(LogLevel::ERROR, "Unknown shader stage");
 			return vk::ShaderStageFlagBits::eAll;
@@ -131,18 +131,25 @@ namespace vkcv {
 			vk::PipelineShaderStageCreateInfo* outCreateInfo) {
 
 		assert(outCreateInfo);
-		std::vector<uint32_t> code = shaderProgram.getShaderBinary(stage);
-		vk::ShaderModuleCreateInfo vertexModuleInfo({}, code.size() * sizeof(uint32_t),
-													code.data());
+		Vector<uint32_t> code = shaderProgram.getShaderBinary(stage);
+		vk::ShaderModuleCreateInfo vertexModuleInfo(
+				{},
+				code.size() * sizeof(uint32_t),
+				code.data()
+		);
 		vk::ShaderModule shaderModule;
 		if (device.createShaderModule(&vertexModuleInfo, nullptr, &shaderModule)
 			!= vk::Result::eSuccess)
 			return false;
 
 		const static auto entryName = "main";
-
-		*outCreateInfo = vk::PipelineShaderStageCreateInfo({}, shaderStageToVkShaderStage(stage),
-														   shaderModule, entryName, nullptr);
+		*outCreateInfo = vk::PipelineShaderStageCreateInfo(
+				vk::PipelineShaderStageCreateFlags(),
+				shaderStageToVkShaderStage(stage),
+				shaderModule,
+				entryName,
+				nullptr
+		);
 		return true;
 	}
 
@@ -155,9 +162,10 @@ namespace vkcv {
 	 * @param config
 	 */
 	static void fillVertexInputDescription(
-		std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
-		std::vector<vk::VertexInputBindingDescription> &vertexBindingDescriptions,
-		const bool existsVertexShader, const GraphicsPipelineConfig &config) {
+		Vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
+		Vector<vk::VertexInputBindingDescription> &vertexBindingDescriptions,
+		const bool existsVertexShader,
+		const GraphicsPipelineConfig &config) {
 
 		if (existsVertexShader) {
 			const VertexLayout &layout = config.getVertexLayout();
@@ -189,8 +197,8 @@ namespace vkcv {
 	 * @return Pipeline Vertex Input State Create Info Struct
 	 */
 	static vk::PipelineVertexInputStateCreateInfo createPipelineVertexInputStateCreateInfo(
-		std::vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
-		std::vector<vk::VertexInputBindingDescription> &vertexBindingDescriptions) {
+		Vector<vk::VertexInputAttributeDescription> &vertexAttributeDescriptions,
+		Vector<vk::VertexInputBindingDescription> &vertexBindingDescriptions) {
 
 		vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo(
 			{}, vertexBindingDescriptions.size(), vertexBindingDescriptions.data(),
@@ -214,7 +222,9 @@ namespace vkcv {
 	static vk::PipelineTessellationStateCreateInfo
 	createPipelineTessellationStateCreateInfo(const GraphicsPipelineConfig &config) {
 		vk::PipelineTessellationStateCreateInfo pipelineTessellationStateCreateInfo(
-			{}, config.getTesselationControlPoints());
+			{},
+			config.getTesselationControlPoints()
+		);
 
 		return pipelineTessellationStateCreateInfo;
 	}
@@ -235,8 +245,13 @@ namespace vkcv {
 
 		scissor = vk::Rect2D({ 0, 0 }, { config.getWidth(), config.getHeight() });
 
-		vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo({}, 1, &viewport, 1,
-																			&scissor);
+		vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo(
+				{},
+				1,
+				&viewport,
+				1,
+				&scissor
+		);
 
 		return pipelineViewportStateCreateInfo;
 	}
@@ -276,8 +291,18 @@ namespace vkcv {
 		}
 
 		vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo(
-			{}, config.isDepthClampingEnabled(), false, vk::PolygonMode::eFill, cullMode,
-			vk::FrontFace::eCounterClockwise, false, 0.f, 0.f, 0.f, 1.f);
+			{},
+			config.isDepthClampingEnabled(),
+			false,
+			vk::PolygonMode::eFill,
+			cullMode,
+			vk::FrontFace::eCounterClockwise,
+			false,
+			0.f,
+			0.f,
+			0.f,
+			1.f
+		);
 
 		static vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterization;
 
@@ -321,7 +346,7 @@ namespace vkcv {
 	static vk::PipelineColorBlendStateCreateInfo
 	createPipelineColorBlendStateCreateInfo(const GraphicsPipelineConfig &config,
 											const PassConfig &passConfig) {
-		static std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
+		static Vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
 		
 		colorBlendAttachmentStates.clear();
 		colorBlendAttachmentStates.reserve(passConfig.getAttachments().size());
@@ -372,15 +397,21 @@ namespace vkcv {
 	 */
 	static vk::PipelineLayoutCreateInfo createPipelineLayoutCreateInfo(
 		const GraphicsPipelineConfig &config,
-		const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts) {
+		const Vector<vk::DescriptorSetLayout> &descriptorSetLayouts) {
 		static vk::PushConstantRange pushConstantRange;
 
 		const size_t pushConstantsSize = config.getShaderProgram().getPushConstantsSize();
-		pushConstantRange =
-			vk::PushConstantRange(vk::ShaderStageFlagBits::eAll, 0, pushConstantsSize);
+		pushConstantRange = vk::PushConstantRange(
+				vk::ShaderStageFlagBits::eAll,
+				0,
+				pushConstantsSize
+		);
 
-		vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo({}, (descriptorSetLayouts),
-															  (pushConstantRange));
+		vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo (
+				vk::PipelineLayoutCreateFlags(),
+				descriptorSetLayouts,
+				pushConstantRange
+		);
 
 		if (pushConstantsSize == 0) {
 			pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
@@ -397,9 +428,17 @@ namespace vkcv {
 	static vk::PipelineDepthStencilStateCreateInfo
 	createPipelineDepthStencilStateCreateInfo(const GraphicsPipelineConfig &config) {
 		const vk::PipelineDepthStencilStateCreateInfo pipelineDepthStencilCreateInfo(
-			vk::PipelineDepthStencilStateCreateFlags(), config.getDepthTest() != DepthTest::None,
-			config.isWritingDepth(), depthTestToVkCompareOp(config.getDepthTest()), false, false,
-			{}, {}, 0.0f, 1.0f);
+			vk::PipelineDepthStencilStateCreateFlags(),
+			config.getDepthTest() != DepthTest::None,
+			config.isWritingDepth(),
+			depthTestToVkCompareOp(config.getDepthTest()),
+			false,
+			false,
+			{},
+			{},
+			0.0f,
+			1.0f
+		);
 
 		return pipelineDepthStencilCreateInfo;
 	}
@@ -411,7 +450,7 @@ namespace vkcv {
 	 */
 	static vk::PipelineDynamicStateCreateInfo
 	createPipelineDynamicStateCreateInfo(const GraphicsPipelineConfig &config) {
-		static std::vector<vk::DynamicState> dynamicStates;
+		static Vector<vk::DynamicState> dynamicStates;
 		dynamicStates.clear();
 
 		if (config.isViewportDynamic()) {
@@ -449,7 +488,7 @@ namespace vkcv {
 			 || (existsTaskShader && existsMeshShader));
 
 		if (!validGeometryStages) {
-			vkcv_log(LogLevel::ERROR, "Requires vertex or task and mesh shader");
+			vkcv_log(LogLevel::ERROR, "Requires a valid geometry shader stage");
 			return {};
 		}
 
@@ -458,7 +497,7 @@ namespace vkcv {
 			return {};
 		}
 
-		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+		Vector<vk::PipelineShaderStageCreateInfo> shaderStages;
 		auto destroyShaderModules = [&shaderStages, this] {
 			for (auto stage : shaderStages) {
 				getCore().getContext().getDevice().destroyShaderModule(stage.module);
@@ -562,8 +601,8 @@ namespace vkcv {
 
 		// vertex input state
 		// Fill up VertexInputBindingDescription and VertexInputAttributeDescription Containers
-		std::vector<vk::VertexInputAttributeDescription> vertexAttributeDescriptions;
-		std::vector<vk::VertexInputBindingDescription> vertexBindingDescriptions;
+		Vector<vk::VertexInputAttributeDescription> vertexAttributeDescriptions;
+		Vector<vk::VertexInputBindingDescription> vertexBindingDescriptions;
 		fillVertexInputDescription(vertexAttributeDescriptions, vertexBindingDescriptions,
 								   existsVertexShader, config);
 
@@ -605,7 +644,7 @@ namespace vkcv {
 		vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo =
 			createPipelineDynamicStateCreateInfo(config);
 
-		std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+		Vector<vk::DescriptorSetLayout> descriptorSetLayouts;
 		descriptorSetLayouts.reserve(config.getDescriptorSetLayouts().size());
 		for (const auto &handle : config.getDescriptorSetLayouts()) {
 			descriptorSetLayouts.push_back(
@@ -613,13 +652,16 @@ namespace vkcv {
 		}
 
 		// pipeline layout
-		vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-			createPipelineLayoutCreateInfo(config, descriptorSetLayouts);
+		vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo = createPipelineLayoutCreateInfo(
+				config,
+				descriptorSetLayouts
+		);
 
-		vk::PipelineLayout vkPipelineLayout {};
-		if (getCore().getContext().getDevice().createPipelineLayout(&pipelineLayoutCreateInfo,
-																	nullptr, &vkPipelineLayout)
-			!= vk::Result::eSuccess) {
+		const auto& pipelineLayout = (
+				getCore().getContext().getDevice().createPipelineLayout(pipelineLayoutCreateInfo)
+		);
+		
+		if (!pipelineLayout) {
 			destroyShaderModules();
 			return {};
 		}
@@ -637,23 +679,41 @@ namespace vkcv {
 				break;
 			}
 		}
+		
+		const bool usesTesselation = (
+				existsTessellationControlShader &&
+				existsTessellationEvaluationShader
+		);
 
 		// Get all setting structs together and create the Pipeline
 		const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
-			{}, static_cast<uint32_t>(shaderStages.size()), shaderStages.data(),
-			&pipelineVertexInputStateCreateInfo, &pipelineInputAssemblyStateCreateInfo,
-			&pipelineTessellationStateCreateInfo, &pipelineViewportStateCreateInfo,
-			&pipelineRasterizationStateCreateInfo, &pipelineMultisampleStateCreateInfo,
-			p_depthStencilCreateInfo, &pipelineColorBlendStateCreateInfo, &dynamicStateCreateInfo,
-			vkPipelineLayout, pass, 0, {}, 0);
-
-		vk::Pipeline vkPipeline {};
-		if (getCore().getContext().getDevice().createGraphicsPipelines(
-				nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline)
-			!= vk::Result::eSuccess) {
+			{},
+			static_cast<uint32_t>(shaderStages.size()),
+			shaderStages.data(),
+			existsVertexShader? &pipelineVertexInputStateCreateInfo : nullptr,
+			existsVertexShader? &pipelineInputAssemblyStateCreateInfo : nullptr,
+			usesTesselation? &pipelineTessellationStateCreateInfo : nullptr,
+			&pipelineViewportStateCreateInfo,
+			&pipelineRasterizationStateCreateInfo,
+			&pipelineMultisampleStateCreateInfo,
+			p_depthStencilCreateInfo,
+			&pipelineColorBlendStateCreateInfo,
+			&dynamicStateCreateInfo,
+			pipelineLayout,
+			pass,
+			0,
+			{},
+			0
+		);
+		
+		auto pipelineResult = getCore().getContext().getDevice().createGraphicsPipeline(
+				nullptr, graphicsPipelineCreateInfo
+		);
+		
+		if (pipelineResult.result != vk::Result::eSuccess) {
 			// Catch runtime error if the creation of the pipeline fails.
 			// Destroy everything to keep the memory clean.
-			getCore().getContext().getDevice().destroy(vkPipelineLayout);
+			getCore().getContext().getDevice().destroy(pipelineLayout);
 			destroyShaderModules();
 			return {};
 		}
@@ -662,7 +722,7 @@ namespace vkcv {
 		destroyShaderModules();
 
 		// Hand over Handler to main Application
-		return add({ vkPipeline, vkPipelineLayout, config });
+		return add({ pipelineResult.value, pipelineLayout, config });
 	}
 
 	vk::Pipeline

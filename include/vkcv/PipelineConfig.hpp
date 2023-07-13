@@ -5,8 +5,7 @@
  * @brief Pipeline config class to hand over required information to pipeline creation
  */
 
-#include <vector>
-
+#include "Container.hpp"
 #include "Handles.hpp"
 #include "ShaderProgram.hpp"
 
@@ -18,13 +17,13 @@ namespace vkcv {
 	class PipelineConfig {
 	private:
 		ShaderProgram m_ShaderProgram;
-		std::vector<DescriptorSetLayoutHandle> m_DescriptorSetLayouts;
+		Vector<DescriptorSetLayoutHandle> m_DescriptorSetLayouts;
 
 	public:
 		PipelineConfig();
 
 		PipelineConfig(const ShaderProgram &program,
-					   const std::vector<DescriptorSetLayoutHandle> &layouts);
+					   const Vector<DescriptorSetLayoutHandle> &layouts);
 
 		PipelineConfig(const PipelineConfig &other) = default;
 		PipelineConfig(PipelineConfig &&other) = default;
@@ -40,9 +39,9 @@ namespace vkcv {
 
 		void addDescriptorSetLayout(const DescriptorSetLayoutHandle &layout);
 
-		void addDescriptorSetLayouts(const std::vector<DescriptorSetLayoutHandle> &layouts);
+		void addDescriptorSetLayouts(const Vector<DescriptorSetLayoutHandle> &layouts);
 
-		[[nodiscard]] const std::vector<DescriptorSetLayoutHandle> &getDescriptorSetLayouts() const;
+		[[nodiscard]] const Vector<DescriptorSetLayoutHandle> &getDescriptorSetLayouts() const;
 	};
 
 } // namespace vkcv

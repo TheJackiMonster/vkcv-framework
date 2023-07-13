@@ -6,10 +6,9 @@
  */
 
 #include <functional>
-#include <unordered_set>
-#include <vector>
 #include <vulkan/vulkan.hpp>
 
+#include "Container.hpp"
 #include "Logger.hpp"
 
 namespace vkcv {
@@ -27,12 +26,12 @@ namespace vkcv {
 		/**
 		 * List of supported extensions.
 		 */
-		std::vector<const char*> m_supportedExtensions;
+		Vector<const char*> m_supportedExtensions;
 
 		/**
 		 * List of activated extensions for usage.
 		 */
-		std::vector<const char*> m_activeExtensions;
+		Vector<const char*> m_activeExtensions;
 
 		/**
 		 * Feature structure chain to request activated features.
@@ -42,7 +41,7 @@ namespace vkcv {
 		/**
 		 * List of base structures allocated to request extension specific features.
 		 */
-		std::vector<vk::BaseOutStructure*> m_featuresExtensions;
+		Vector<vk::BaseOutStructure*> m_featuresExtensions;
 
 		/**
 		 * @brief Checks support of the @p vk::PhysicalDeviceFeatures.
@@ -364,6 +363,16 @@ namespace vkcv {
 		 */
 		[[nodiscard]] bool checkSupport(const vk::PhysicalDeviceShaderTerminateInvocationFeatures &features,
 										bool required) const;
+		
+		/**
+		 * @brief Checks support of the @p vk::PhysicalDeviceMeshShaderFeaturesEXT.
+		 *
+		 * @param[in] features The features
+		 * @param[in] required True, if the @p features are required, else false
+		 * @return @p True, if the @p features are supported, else @p false
+		 */
+		[[nodiscard]] bool checkSupport(const vk::PhysicalDeviceMeshShaderFeaturesEXT &features,
+										bool required) const;
 
 		/**
 		 * @brief Searches for a base structure of a given structure type.
@@ -435,7 +444,7 @@ namespace vkcv {
 		 *
 		 * @return List of activated extensions
 		 */
-		[[nodiscard]] const std::vector<const char*> &getActiveExtensions() const;
+		[[nodiscard]] const Vector<const char*> &getActiveExtensions() const;
 
 		/**
 		 * @brief Request specific features for optional or required usage ( only core Vulkan 1.0 ).
