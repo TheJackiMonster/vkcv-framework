@@ -373,6 +373,16 @@ namespace vkcv {
 		 */
 		[[nodiscard]] bool checkSupport(const vk::PhysicalDeviceMeshShaderFeaturesEXT &features,
 										bool required) const;
+		
+		/**
+		 * @brief Checks support of the @p vk::PhysicalDeviceHostImageCopyFeaturesEXT.
+		 *
+		 * @param[in] features The features
+		 * @param[in] required True, if the @p features are required, else false
+		 * @return @p True, if the @p features are supported, else @p false
+		 */
+		[[nodiscard]] bool checkSupport(const vk::PhysicalDeviceHostImageCopyFeaturesEXT &features,
+										bool required) const;
 
 		/**
 		 * @brief Searches for a base structure of a given structure type.

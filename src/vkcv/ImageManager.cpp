@@ -271,12 +271,18 @@ namespace vkcv {
 				{},
 				vk::ImageLayout::eUndefined
 		);
+
+		vma::AllocationCreateFlags allocationCreateFlags;
+		if (getBufferManager().useResizableBar()) {
+			allocationCreateFlags = vma::AllocationCreateFlagBits::eHostAccessAllowTransferInstead
+									| vma::AllocationCreateFlagBits::eHostAccessSequentialWrite;
+		}
 		
-		auto imageAllocation = allocator.createImage(
+		const auto imageAllocation = allocator.createImage(
 				imageCreateInfo,
 				vma::AllocationCreateInfo(
-						vma::AllocationCreateFlags(),
-						vma::MemoryUsage::eGpuOnly,
+						allocationCreateFlags,
+						vma::MemoryUsage::eAutoPreferDevice,
 						vk::MemoryPropertyFlagBits::eDeviceLocal,
 						vk::MemoryPropertyFlagBits::eDeviceLocal,
 						0,
@@ -293,6 +299,25 @@ namespace vkcv {
 			aspectFlags = vk::ImageAspectFlagBits::eDepth;
 		} else {
 			aspectFlags = vk::ImageAspectFlagBits::eColor;
+		}
+
+		const vk::MemoryPropertyFlags finalMemoryFlags = allocator.getAllocationMemoryProperties(
+				allocation
+		);
+
+		bool accessible = false;
+		if (vk::MemoryPropertyFlagBits::eHostVisible & finalMemoryFlags) {
+			const auto& featureManager = getCore().getContext().getFeatureManager();
+
+			accessible = (
+				featureManager.isExtensionActive(VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME) &&
+				featureManager.checkFeatures<vk::PhysicalDeviceHostImageCopyFeaturesEXT>(
+					vk::StructureType::ePhysicalDeviceHostImageCopyFeaturesEXT,
+					[](const vk::PhysicalDeviceHostImageCopyFeaturesEXT& features) {
+						return features.hostImageCopy;
+					}
+				)
+			);
 		}
 		
 		const vk::Device &device = getCore().getContext().getDevice();
@@ -365,7 +390,8 @@ namespace vkcv {
 			config.getDepth(),
 			format,
 			layers,
-			config.isSupportingStorage()
+			config.isSupportingStorage(),
+			accessible
 		});
 	}
 	
@@ -495,27 +521,52 @@ namespace vkcv {
 		const auto transitionBarriers = createImageLayoutTransitionBarriers(image, 0, 0, newLayout, false);
 		
 		auto &core = getCore();
-		auto stream = core.createCommandStream(QueueType::Graphics);
+
+		if (image.m_accessible) {
+			const auto &dynamicDispatch = getCore().getContext().getDispatchLoaderDynamic();
+
+			for (const auto& barrier : transitionBarriers) {
+				const vk::HostImageLayoutTransitionInfoEXT transitionInfo(
+						image.m_handle,
+						barrier.oldLayout,
+						barrier.newLayout,
+						barrier.subresourceRange
+				);
+
+				const auto result = core.getContext().getDevice().transitionImageLayoutEXT(
+						1, 
+						&transitionInfo,
+						dynamicDispatch
+				);
+
+				if (vk::Result::eSuccess != result) {
+					// TODO: warning?
+					break;
+				}
+			}
+		} else {
+			auto stream = core.createCommandStream(QueueType::Graphics);
 		
-		core.recordCommandsToStream(
-				stream,
-				[transitionBarriers](const vk::CommandBuffer &commandBuffer) {
-					// TODO: precise PipelineStageFlagBits, will require a lot of context
-					for (const auto& barrier : transitionBarriers) {
-						commandBuffer.pipelineBarrier(
-								vk::PipelineStageFlagBits::eTopOfPipe,
-								vk::PipelineStageFlagBits::eBottomOfPipe,
-								{},
-								nullptr,
-								nullptr,
-								barrier
-						);
-					}
-				},
-				nullptr
-		);
-		
-		core.submitCommandStream(stream, false);
+			core.recordCommandsToStream(
+					stream,
+					[transitionBarriers](const vk::CommandBuffer &commandBuffer) {
+						// TODO: precise PipelineStageFlagBits, will require a lot of context
+						for (const auto& barrier : transitionBarriers) {
+							commandBuffer.pipelineBarrier(
+									vk::PipelineStageFlagBits::eTopOfPipe,
+									vk::PipelineStageFlagBits::eBottomOfPipe,
+									{},
+									nullptr,
+									nullptr,
+									barrier
+							);
+						}
+					},
+					nullptr
+			);
+			
+			core.submitCommandStream(stream, false);
+		}
 		
 		for (const auto& barrier : transitionBarriers) {
 			for (uint32_t i = 0; i < barrier.subresourceRange.layerCount; i++) {
@@ -601,6 +652,107 @@ namespace vkcv {
 				return 4;
 		}
 	}
+
+	static void fillImageViaCommandBuffer(Core& core, 
+										  ImageManager& imageManager, 
+										  BufferManager& bufferManager, 
+										  const ImageEntry& image,
+										  const ImageHandle& handle,
+										  const void* data, 
+										  size_t size,
+										  uint32_t baseArrayLayer,
+										  uint32_t arrayLayerCount) {
+		imageManager.switchImageLayoutImmediate(handle, vk::ImageLayout::eTransferDstOptimal);
+		
+		BufferHandle bufferHandle = bufferManager.createBuffer(
+				TypeGuard(1), BufferType::STAGING, BufferMemoryType::DEVICE_LOCAL, size, false
+		);
+		
+		bufferManager.fillBuffer(bufferHandle, data, size, 0);
+		
+		vk::Buffer stagingBuffer = bufferManager.getBuffer(bufferHandle);
+		
+		auto stream = core.createCommandStream(QueueType::Transfer);
+		
+		core.recordCommandsToStream(
+				stream,
+				[&image, &stagingBuffer, &baseArrayLayer, &arrayLayerCount]
+						(const vk::CommandBuffer &commandBuffer) {
+					vk::ImageAspectFlags aspectFlags;
+					
+					if (isDepthImageFormat(image.m_format)) {
+						aspectFlags = vk::ImageAspectFlagBits::eDepth;
+					} else {
+						aspectFlags = vk::ImageAspectFlagBits::eColor;
+					}
+
+					const vk::BufferImageCopy2 region2(
+							0,
+							0,
+							0,
+							vk::ImageSubresourceLayers(aspectFlags, 0, baseArrayLayer, arrayLayerCount),
+							vk::Offset3D(0, 0, 0),
+							vk::Extent3D(image.m_width, image.m_height, image.m_depth)
+					);
+					
+					const vk::CopyBufferToImageInfo2 copyInfo(
+							stagingBuffer,
+							image.m_handle,
+							vk::ImageLayout::eTransferDstOptimal,
+							1,
+							&region2
+					);
+
+					commandBuffer.copyBufferToImage2(&copyInfo);
+				},
+				[&imageManager, &handle]() {
+					imageManager.switchImageLayoutImmediate(handle, vk::ImageLayout::eShaderReadOnlyOptimal);
+				}
+		);
+		
+		core.submitCommandStream(stream, false);
+	}
+
+	static void fillImageFromHost(Core& core, 
+								  ImageManager& imageManager, 
+								  const ImageEntry& image,
+								  const ImageHandle& handle,
+								  const void* data, 
+								  uint32_t baseArrayLayer, 
+								  uint32_t arrayLayerCount) {
+		imageManager.switchImageLayoutImmediate(handle, vk::ImageLayout::eTransferDstOptimal);
+
+		const auto &dynamicDispatch = core.getContext().getDispatchLoaderDynamic();
+		
+		vk::ImageAspectFlags aspectFlags;
+
+		if (isDepthImageFormat(image.m_format)) {
+			aspectFlags = vk::ImageAspectFlagBits::eDepth;
+		} else {
+			aspectFlags = vk::ImageAspectFlagBits::eColor;
+		}
+
+		const vk::MemoryToImageCopyEXT region(
+				data,
+				0,
+				0,
+				vk::ImageSubresourceLayers(aspectFlags, 0, baseArrayLayer, arrayLayerCount),
+				vk::Offset3D(0, 0, 0),
+				vk::Extent3D(image.m_width, image.m_height, image.m_depth)
+		);
+
+		const vk::CopyMemoryToImageInfoEXT copyInfo(
+				vk::HostImageCopyFlagsEXT(),
+				image.m_handle,
+				vk::ImageLayout::eTransferDstOptimal,
+				1,
+				&region
+		);
+
+		core.getContext().getDevice().copyMemoryToImageEXT(copyInfo, dynamicDispatch);
+
+		imageManager.switchImageLayoutImmediate(handle, vk::ImageLayout::eShaderReadOnlyOptimal);
+	}
 	
 	void ImageManager::fillImage(const ImageHandle &handle,
 								 const void* data,
@@ -629,60 +781,37 @@ namespace vkcv {
 			arrayLayerCount = imageLayerCount - baseArrayLayer;
 		}
 		
-		switchImageLayoutImmediate(handle, vk::ImageLayout::eTransferDstOptimal);
-		
 		const size_t image_size = (
 				image.m_width * image.m_height * image.m_depth * getBytesPerPixel(image.m_format)
 		);
 		
 		const size_t max_size = std::min(size, image_size);
-		
-		BufferHandle bufferHandle = getBufferManager().createBuffer(
-				TypeGuard(1), BufferType::STAGING, BufferMemoryType::DEVICE_LOCAL, max_size, false
-		);
-		
-		getBufferManager().fillBuffer(bufferHandle, data, max_size, 0);
-		
-		vk::Buffer stagingBuffer = getBufferManager().getBuffer(bufferHandle);
-		
-		auto &core = getCore();
-		auto stream = core.createCommandStream(QueueType::Transfer);
-		
-		core.recordCommandsToStream(
-				stream,
-				[&image, &stagingBuffer, &baseArrayLayer, &arrayLayerCount]
-						(const vk::CommandBuffer &commandBuffer) {
-					vk::ImageAspectFlags aspectFlags;
-					
-					if (isDepthImageFormat(image.m_format)) {
-						aspectFlags = vk::ImageAspectFlagBits::eDepth;
-					} else {
-						aspectFlags = vk::ImageAspectFlagBits::eColor;
-					}
-					
-					const vk::BufferImageCopy region(
-							0,
-							0,
-							0,
-							vk::ImageSubresourceLayers(aspectFlags, 0, baseArrayLayer, arrayLayerCount),
-							vk::Offset3D(0, 0, 0),
-							vk::Extent3D(image.m_width, image.m_height, image.m_depth)
-					);
-					
-					commandBuffer.copyBufferToImage(
-							stagingBuffer,
-							image.m_handle,
-							vk::ImageLayout::eTransferDstOptimal,
-							1,
-							&region
-					);
-				},
-				[&]() {
-					switchImageLayoutImmediate(handle, vk::ImageLayout::eShaderReadOnlyOptimal);
-				}
-		);
-		
-		core.submitCommandStream(stream, false);
+
+		auto& core = getCore();
+
+		if (image.m_accessible) {
+			fillImageFromHost(
+				core,
+				(*this), 
+				image, 
+				handle, 
+				data, 
+				baseArrayLayer, 
+				arrayLayerCount
+			);
+		} else {
+			fillImageViaCommandBuffer(
+				core, 
+				(*this), 
+				getBufferManager(), 
+				image, 
+				handle, 
+				data, 
+				max_size, 
+				baseArrayLayer, 
+				arrayLayerCount
+			);
+		}
 	}
 	
 	void ImageManager::recordImageMipChainGenerationToCmdStream(
@@ -794,6 +923,7 @@ namespace vkcv {
 					1,
 					format,
 					{ layer },
+					false,
 					false
 			});
 		}

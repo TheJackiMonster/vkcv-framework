@@ -113,6 +113,10 @@ namespace vkcv {
 		clear();
 	}
 
+	bool BufferManager::useResizableBar() const {
+		return m_resizableBar;
+	}
+
 	BufferHandle BufferManager::createBuffer(const TypeGuard &typeGuard, BufferType type,
 											 BufferMemoryType memoryType, size_t size,
 											 bool readable, size_t alignment) {

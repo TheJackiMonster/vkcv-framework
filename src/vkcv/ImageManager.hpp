@@ -43,6 +43,7 @@ namespace vkcv {
 		vk::Format m_format;
 		Vector<ImageLayer> m_layers;
 		bool m_storage;
+		bool m_accessible;
 	};
 
 	/**

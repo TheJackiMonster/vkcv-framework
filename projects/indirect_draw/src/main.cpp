@@ -305,6 +305,11 @@ int main(int argc, const char** argv) {
             }
     );
 
+    features.tryExtensionFeature<vk::PhysicalDeviceHostImageCopyFeaturesEXT>(
+        VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME, [](vk::PhysicalDeviceHostImageCopyFeaturesEXT& features) {
+				features.setHostImageCopy(true);
+			}
+    );
 
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
@@ -349,20 +354,15 @@ int main(int argc, const char** argv) {
 
 	vkcv::ShaderProgram sponzaProgram;
 	vkcv::shader::GLSLCompiler compiler;
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
-					 [&sponzaProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-        sponzaProgram.addShader(shaderStage, path);
-	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
-					 [&sponzaProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-        sponzaProgram.addShader(shaderStage, path);
-	});
+    compiler.compileProgram(sponzaProgram, {
+        { vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert") },
+        { vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag") },
+    }, nullptr);
 
     vkcv::ShaderProgram cullingProgram;
-    compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("resources/shaders/culling.comp"),
-                     [&cullingProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-        cullingProgram.addShader(shaderStage, path);
-    });
+    compiler.compileProgram(cullingProgram, {
+        { vkcv::ShaderStage::COMPUTE, std::filesystem::path("resources/shaders/culling.comp") },
+    }, nullptr);
 
     // vertex layout for the pipeline. (assumed to be) used by all sponza meshes.
     const std::vector<vkcv::VertexAttachment> vertexAttachments = sponzaProgram.getVertexAttachments();
