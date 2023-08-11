@@ -5,8 +5,10 @@
  * @brief Logging macro function to print line of code specific information.
  */
 
+#include <bits/chrono.h>
 #include <cstdio>
 #include <exception>
+#include <chrono>
 
 namespace vkcv {
 
@@ -14,6 +16,7 @@ namespace vkcv {
 	 * @brief Enum class to specify the level of logging.
 	 */
 	enum class LogLevel {
+		TIME,
 		RAW_INFO,
 		INFO,
 		WARNING,
@@ -29,6 +32,7 @@ namespace vkcv {
 	 */
 	constexpr auto getLogOutput(LogLevel level) {
 		switch (level) {
+		case LogLevel::TIME:
 		case LogLevel::RAW_INFO:
 		case LogLevel::INFO:
 			return stdout;
@@ -46,6 +50,8 @@ namespace vkcv {
 	 */
 	constexpr const char* getLogName(LogLevel level) {
 		switch (level) {
+		case LogLevel::TIME:
+			return "TIME";
 		case LogLevel::RAW_INFO:
 		case LogLevel::INFO:
 			return "INFO";
@@ -56,6 +62,16 @@ namespace vkcv {
 		default:
 			return "UNKNOWN";
 		}
+	}
+
+	inline unsigned long getLogTime() {
+		const auto time_point = std::chrono::high_resolution_clock::now();
+		static auto last_time_point = time_point;
+
+		const auto duration = (time_point - last_time_point);
+		last_time_point = time_point;
+
+		return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
 	}
 
 #ifndef NDEBUG
@@ -78,6 +94,10 @@ namespace vkcv {
 		char output_message [VKCV_DEBUG_MESSAGE_LEN];                                \
 		snprintf(output_message, VKCV_DEBUG_MESSAGE_LEN, __VA_ARGS__);               \
 		auto output = getLogOutput(level);                                           \
+		if (level == vkcv::LogLevel::TIME) {                                         \
+			fprintf(output, "[%s]: %s (%lums)\n", vkcv::getLogName(level),           \
+					output_message, vkcv::getLogTime());                             \
+		} else                                                                       \
 		if (level != vkcv::LogLevel::RAW_INFO) {                                     \
 			fprintf(output, "[%s]: %s [%s, line %d: %s]\n", vkcv::getLogName(level), \
 					output_message, __FILE__, __LINE__, __PRETTY_FUNCTION__);        \
