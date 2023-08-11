@@ -63,6 +63,12 @@ namespace vkcv {
 		}
 	}
 
+	/**
+	 * @brief Returns the amount of milliseconds since the last 
+	 * call of this function for logging functionality durations.
+	 *
+	 * @return Duration in milliseconds from last logging
+	 */
 	inline unsigned long getLogTime() {
 		const auto time_point = std::chrono::high_resolution_clock::now();
 		static auto last_time_point = time_point;
