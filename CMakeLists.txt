@@ -67,8 +67,11 @@ set(vkcv_lib lib)
 set(vkcv_source ${PROJECT_SOURCE_DIR}/src)
 set(vkcv_include ${PROJECT_SOURCE_DIR}/include)
 
+set(vkcv_lang_flag "-std=c++")
+string(APPEND vkcv_lang_flag ${CMAKE_CXX_STANDARD})
+
 # initializes compiler flags with defaults
-set(vkcv_flags ${CMAKE_CXX_FLAGS})
+set(vkcv_flags ${CMAKE_CXX_FLAGS} ${vkcv_lang_flag})
 
 # enabling warnings in the debug build
 if (vkcv_build_debug)
