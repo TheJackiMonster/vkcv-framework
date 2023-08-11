@@ -66,3 +66,7 @@
 	path = modules/tone_mapping/lib/glsl-tone-map
 	url = https://github.com/dmnsgn/glsl-tone-map.git
 	branch = main
+[submodule "modules/asset_loader/lib/wuffs-mirror-release-c"]
+	path = modules/asset_loader/lib/wuffs-mirror-release-c
+	url = https://github.com/google/wuffs-mirror-release-c.git
+	branch = main
