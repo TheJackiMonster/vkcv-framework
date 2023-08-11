@@ -5,7 +5,6 @@
  * @brief Logging macro function to print line of code specific information.
  */
 
-#include <bits/chrono.h>
 #include <cstdio>
 #include <exception>
 #include <chrono>
