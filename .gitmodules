@@ -70,3 +70,7 @@
 	path = modules/asset_loader/lib/wuffs-mirror-release-c
 	url = https://github.com/google/wuffs-mirror-release-c.git
 	branch = main
+[submodule "modules/shader_compiler/lib/slang"]
+	path = modules/shader_compiler/lib/slang
+	url = https://github.com/shader-slang/slang.git
+	branch = master
