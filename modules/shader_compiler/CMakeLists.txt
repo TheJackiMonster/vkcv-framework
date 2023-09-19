@@ -36,6 +36,9 @@ set(vkcv_shader_compiler_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_shader_compiler_l
 # Check and load GLSLANG
 include(config/GLSLANG.cmake)
 
+# Check and load SLANG
+include(config/SLANG.cmake)
+
 # link the required libraries to the module
 target_link_libraries(vkcv_shader_compiler ${vkcv_shader_compiler_libraries} vkcv)
 
