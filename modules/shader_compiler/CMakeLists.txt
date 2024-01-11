@@ -21,6 +21,9 @@ set(vkcv_shader_compiler_sources
 		
 		${vkcv_shader_compiler_include}/vkcv/shader/HLSLCompiler.hpp
 		${vkcv_shader_compiler_source}/vkcv/shader/HLSLCompiler.cpp
+
+		${vkcv_shader_compiler_include}/vkcv/shader/ShadyCompiler.hpp
+		${vkcv_shader_compiler_source}/vkcv/shader/ShadyCompiler.cpp
 )
 
 filter_headers(vkcv_shader_compiler_sources ${vkcv_shader_compiler_include} vkcv_shader_compiler_headers)
@@ -33,8 +36,15 @@ set_target_properties(vkcv_shader_compiler PROPERTIES PUBLIC_HEADER "${vkcv_shad
 set(vkcv_shader_compiler_lib lib)
 set(vkcv_shader_compiler_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_shader_compiler_lib})
 
+# Load SPIRV-Headers
+include(config/SPIRV-Headers.cmake)
+
 # Check and load GLSLANG
 include(config/GLSLANG.cmake)
+
+# Check and load Shady (with murmur3)
+include(config/Murmur3.cmake)
+include(config/Shady.cmake)
 
 # link the required libraries to the module
 target_link_libraries(vkcv_shader_compiler ${vkcv_shader_compiler_libraries} vkcv)
