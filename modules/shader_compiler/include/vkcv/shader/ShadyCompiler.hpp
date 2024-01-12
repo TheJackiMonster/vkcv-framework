@@ -27,6 +27,6 @@ namespace vkcv::shader {
 					 const std::filesystem::path& includePath = "",
 					 bool update = false) override;
 
-    }
+    };
 
 }
