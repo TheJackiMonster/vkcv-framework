@@ -7,8 +7,11 @@ A VkCV module to compile shaders at runtime
 ### Dependencies (required):
 
 | Name of dependency | Used as submodule |
-|----------------------------------------------------|---|
-| [Glslang](https://github.com/KhronosGroup/glslang/)   | ✅ |
+|-----------------------------------------------------------------|----|
+| [Glslang](https://github.com/KhronosGroup/glslang/)             | ✅ |
+| [SPIRV-Headers](https://github.com/KhronosGroup/SPIRV-Headers/) | ✅ |
+| [Murmur3](https://github.com/PeterScott/murmur3/)               | ✅ |
+| [Shady](https://github.com/TheJackiMonster/shady/)              | ✅ |
 
 ## Docs
 
