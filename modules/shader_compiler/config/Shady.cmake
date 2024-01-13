@@ -6,6 +6,8 @@ if (${shady_status})
     set(EXTERNAL_SPIRV_HEADERS ON CACHE INTERNAL "")
     set(EXTERNAL_MURMUR3 ON CACHE INTERNAL "")
 
+	set(EXTERNAL_JSON_C_INCLUDE ${JSON_C_INCLUDE_DIR} CACHE INTERNAL "")
+
 	add_subdirectory(${vkcv_shader_compiler_lib}/shady)
 	
 	if (vkcv_build_attribute EQUAL "SHARED")
