@@ -42,7 +42,8 @@ set_target_properties(vkcv_shader_compiler PROPERTIES PUBLIC_HEADER "${vkcv_shad
 set(vkcv_shader_compiler_lib lib)
 set(vkcv_shader_compiler_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_shader_compiler_lib})
 
-# Load SPIRV-Headers
+# Load JSON-C and SPIRV-Headers
+include(config/JSON-C.cmake)
 include(config/SPIRV-Headers.cmake)
 
 # Check and load GLSLANG

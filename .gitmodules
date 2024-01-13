@@ -79,3 +79,6 @@
 [submodule "modules/shader_compiler/lib/murmur3"]
 	path = modules/shader_compiler/lib/murmur3
 	url = https://github.com/PeterScott/murmur3.git
+[submodule "modules/shader_compiler/lib/json-c"]
+	path = modules/shader_compiler/lib/json-c
+	url = https://github.com/json-c/json-c.git
