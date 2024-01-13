@@ -7,6 +7,11 @@ if (${shady_status})
 
 	add_subdirectory(${vkcv_shader_compiler_lib}/shady)
 	
-	list(APPEND vkcv_shader_compiler_libraries shady)
+	if (vkcv_build_attribute EQUAL "SHARED")
+		list(APPEND vkcv_shader_compiler_libraries shady runtime)
+	else ()
+		list(APPEND vkcv_shader_compiler_libraries common driver)
+	endif ()
+
 	list(APPEND vkcv_shader_compiler_includes ${vkcv_shader_compiler_lib}/shady/include)
 endif ()

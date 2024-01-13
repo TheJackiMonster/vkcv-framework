@@ -4,8 +4,6 @@
 #include <vkcv/File.hpp>
 #include <vkcv/Logger.hpp>
 
-#include <shady/driver.h>
-
 namespace vkcv::shader {
 	
 	ShadyCompiler::ShadyCompiler()

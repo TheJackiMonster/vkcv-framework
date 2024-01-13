@@ -4,7 +4,9 @@
 #include <vkcv/File.hpp>
 #include <vkcv/Logger.hpp>
 
-#include <shady/driver.h>
+extern "C" {
+	#include <shady/driver.h>
+}
 
 namespace vkcv::shader {
 
@@ -87,10 +89,7 @@ namespace vkcv::shader {
 			return false;
 		}
 
-		bool result = shadyCompileModule(module, shaderStage, shaderSource, compiled, includePath);
-
-		destroy_module(module);
-		return result;
+		return shadyCompileModule(module, shaderStage, shaderSource, compiled, includePath);
 	}
 
     bool LLVMCompiler::compileSource(ShaderStage shaderStage,
