@@ -19,8 +19,6 @@ namespace vkcv::shader {
 	public:
 		/**
 		 * The constructor of a runtime Glslang shader compiler instance.
-		 *
-		 * @param[in] target Compile target (optional)
 		 */
 		GlslangCompiler();
 		

@@ -70,3 +70,12 @@
 	path = modules/asset_loader/lib/wuffs-mirror-release-c
 	url = https://github.com/google/wuffs-mirror-release-c.git
 	branch = main
+[submodule "modules/shader_compiler/lib/shady"]
+	path = modules/shader_compiler/lib/shady
+	url = https://github.com/TheJackiMonster/shady.git
+[submodule "modules/shader_compiler/lib/SPIRV-Headers"]
+	path = modules/shader_compiler/lib/SPIRV-Headers
+	url = https://github.com/KhronosGroup/SPIRV-Headers.git
+[submodule "modules/shader_compiler/lib/murmur3"]
+	path = modules/shader_compiler/lib/murmur3
+	url = https://github.com/PeterScott/murmur3.git

@@ -2,6 +2,7 @@
 #include <vkcv/Core.hpp>
 #include <vkcv/Pass.hpp>
 #include <GLFW/glfw3.h>
+#include <vkcv/ShaderProgram.hpp>
 #include <vkcv/camera/CameraManager.hpp>
 #include <vkcv/shader/GLSLCompiler.hpp>
 
@@ -38,7 +39,7 @@ int main(int argc, const char** argv) {
 	vkcv::shader::GLSLCompiler compiler;
 	
 	compiler.compileProgram(triangleShaderProgram, {
-		{vkcv::ShaderStage::VERTEX, "shaders/shader.vert"},
+		{ vkcv::ShaderStage::VERTEX, "shaders/shader.vert" },
 		{ vkcv::ShaderStage::FRAGMENT, "shaders/shader.frag" }
 	}, nullptr);
 
