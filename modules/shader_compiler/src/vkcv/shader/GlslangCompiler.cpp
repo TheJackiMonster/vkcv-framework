@@ -4,7 +4,7 @@
 #include <vkcv/File.hpp>
 #include <vkcv/Logger.hpp>
 
-#include <glslang/SPIRV/GlslangToSpv.h>
+#include <glslang/Public/ShaderLang.h>
 
 namespace vkcv::shader {
 	
