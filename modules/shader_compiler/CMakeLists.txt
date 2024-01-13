@@ -24,6 +24,12 @@ set(vkcv_shader_compiler_sources
 
 		${vkcv_shader_compiler_include}/vkcv/shader/ShadyCompiler.hpp
 		${vkcv_shader_compiler_source}/vkcv/shader/ShadyCompiler.cpp
+
+		${vkcv_shader_compiler_include}/vkcv/shader/SlimCompiler.hpp
+		${vkcv_shader_compiler_source}/vkcv/shader/SlimCompiler.cpp
+
+		${vkcv_shader_compiler_include}/vkcv/shader/LLVMCompiler.hpp
+		${vkcv_shader_compiler_source}/vkcv/shader/LLVMCompiler.cpp
 )
 
 filter_headers(vkcv_shader_compiler_sources ${vkcv_shader_compiler_include} vkcv_shader_compiler_headers)
