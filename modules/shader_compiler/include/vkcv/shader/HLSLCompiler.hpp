@@ -23,9 +23,6 @@ namespace vkcv::shader {
 	private:
 		HLSLCompileTarget m_target;
 		
-	protected:
-		std::string processShaderSource(const std::string& shaderSource) override;
-	
 	public:
 		/**
 		 * The constructor of a runtime HLSL shader compiler instance.
