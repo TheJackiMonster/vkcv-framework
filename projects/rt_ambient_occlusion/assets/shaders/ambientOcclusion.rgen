@@ -114,7 +114,7 @@ vec3 sampleCosineDistribution(vec2 xi) {
 		sqrt(xi.x) * cos(phi),
 		sqrt(1 - xi.x),
 		sqrt(xi.x) * sin(phi)
-    );
+  );
 }
 
 struct Basis{

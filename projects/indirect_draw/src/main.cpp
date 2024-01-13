@@ -270,6 +270,8 @@ void compileMeshForIndirectDraw(vkcv::Core &core,
 int main(int argc, const char** argv) {
 	const std::string applicationName = "Indirect draw";
 
+    vkcv_log(vkcv::LogLevel::TIME, "Startup");
+
 	vkcv::Features features;
 	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     features.requireFeature([](vk::PhysicalDeviceFeatures &features){
@@ -305,6 +307,13 @@ int main(int argc, const char** argv) {
             }
     );
 
+    features.tryExtensionFeature<vk::PhysicalDeviceHostImageCopyFeaturesEXT>(
+        VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME, [](vk::PhysicalDeviceHostImageCopyFeaturesEXT& features) {
+				features.setHostImageCopy(true);
+			}
+    );
+
+    vkcv_log(vkcv::LogLevel::TIME, "Features configured");
 
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
@@ -313,14 +322,22 @@ int main(int argc, const char** argv) {
 		features
 	);
 
+    vkcv_log(vkcv::LogLevel::TIME, "Core created");
+
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName,800,600,true);
 	vkcv::Window& window = core.getWindow(windowHandle);
 
+    vkcv_log(vkcv::LogLevel::TIME, "Window created");
+
     vkcv::gui::GUI gui (core, windowHandle);
+
+    vkcv_log(vkcv::LogLevel::TIME, "GUI initialized");
 
     vkcv::asset::Scene asset_scene;
 	const char* path = argc > 1 ? argv[1] : "resources/Sponza/Sponza.gltf";
 	int result = vkcv::asset::loadScene(path, asset_scene);
+
+    vkcv_log(vkcv::LogLevel::TIME, "Scene loaded");
 
 	if (result == 1) {
 		std::cout << "Loading Sponza successful!" << std::endl;
@@ -346,29 +363,29 @@ int main(int argc, const char** argv) {
 		return EXIT_FAILURE;
 	}
 
+    vkcv_log(vkcv::LogLevel::TIME, "Scene verified");
 
 	vkcv::ShaderProgram sponzaProgram;
 	vkcv::shader::GLSLCompiler compiler;
-	compiler.compile(vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert"),
-					 [&sponzaProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-        sponzaProgram.addShader(shaderStage, path);
-	});
-	compiler.compile(vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag"),
-					 [&sponzaProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-        sponzaProgram.addShader(shaderStage, path);
-	});
+    compiler.compileProgram(sponzaProgram, {
+        { vkcv::ShaderStage::VERTEX, std::filesystem::path("resources/shaders/shader.vert") },
+        { vkcv::ShaderStage::FRAGMENT, std::filesystem::path("resources/shaders/shader.frag") },
+    }, nullptr);
 
     vkcv::ShaderProgram cullingProgram;
-    compiler.compile(vkcv::ShaderStage::COMPUTE, std::filesystem::path("resources/shaders/culling.comp"),
-                     [&cullingProgram](vkcv::ShaderStage shaderStage, const std::filesystem::path& path) {
-        cullingProgram.addShader(shaderStage, path);
-    });
+    compiler.compileProgram(cullingProgram, {
+        { vkcv::ShaderStage::COMPUTE, std::filesystem::path("resources/shaders/culling.comp") },
+    }, nullptr);
+
+    vkcv_log(vkcv::LogLevel::TIME, "Shaders compiled");
 
     // vertex layout for the pipeline. (assumed to be) used by all sponza meshes.
     const std::vector<vkcv::VertexAttachment> vertexAttachments = sponzaProgram.getVertexAttachments();
 	const vkcv::VertexLayout sponzaVertexLayout {
 		{ vkcv::createVertexBinding(0, { vertexAttachments }) }
 	};
+
+    vkcv_log(vkcv::LogLevel::TIME, "Vertex layout configured");
 
     std::vector<uint8_t> compiledVertexBuffer; // IGNORED, since the vertex buffer is not interleaved!
 
@@ -382,12 +399,16 @@ int main(int argc, const char** argv) {
                                compiledIndexBuffer,
                                compiledMaterial,
                                indexedIndirectCommands);
+    
+    vkcv_log(vkcv::LogLevel::TIME, "Mesh compiled");
 
 	std::vector<std::vector<Vertex>> interleavedVertices;
     std::vector<glm::vec4> compiledBoundingBoxBuffer;
     interleaveScene(asset_scene,
                     interleavedVertices,
                     compiledBoundingBoxBuffer);
+    
+    vkcv_log(vkcv::LogLevel::TIME, "Scene interleaved");
 
 	std::vector<Vertex> compiledInterleavedVertexBuffer;
 	for(auto& vertexGroup : interleavedVertices )
@@ -435,6 +456,8 @@ int main(int argc, const char** argv) {
 			);
 	modelBuffer.fill(modelMatrix);
 
+    vkcv_log(vkcv::LogLevel::TIME, "Buffers filled");
+
 	const std::vector<vkcv::VertexBufferBinding> vertexBufferBindings = {
 			vkcv::vertexBufferBinding(vkCompiledVertexBuffer)
 	};
@@ -464,6 +487,8 @@ int main(int argc, const char** argv) {
 	setWrites.writeStorageBuffer(1, modelBuffer.getHandle());
     core.writeDescriptorSet(descriptorSet, setWrites);
 
+    vkcv_log(vkcv::LogLevel::TIME, "DescriptorSets written");
+
 	vkcv::GraphicsPipelineHandle sponzaPipelineHandle = core.createGraphicsPipeline(
 			vkcv::GraphicsPipelineConfig(
 					sponzaProgram,
@@ -477,6 +502,8 @@ int main(int argc, const char** argv) {
 		std::cerr << "Error. Could not create graphics pipeline. Exiting." << std::endl;
 		return EXIT_FAILURE;
 	}
+
+    vkcv_log(vkcv::LogLevel::TIME, "Graphics pipeline created");
 
     vkcv::DescriptorBindings cullingBindings = cullingProgram.getReflectedDescriptors().at(0);
     vkcv::DescriptorSetLayoutHandle cullingSetLayout = core.createDescriptorSetLayout(cullingBindings);
@@ -493,6 +520,7 @@ int main(int argc, const char** argv) {
     cullingWrites.writeUniformBuffer(0, cameraPlaneBuffer.getHandle());
     core.writeDescriptorSet(cullingDescSet, cullingWrites);
 
+    vkcv_log(vkcv::LogLevel::TIME, "Culling descriptor set written");
 
     const vkcv::ComputePipelineConfig computeCullingConfig {
         cullingProgram,
@@ -503,6 +531,8 @@ int main(int argc, const char** argv) {
         std::cerr << "Error. Could not create culling pipeline. Exiting." << std::endl;
         return EXIT_FAILURE;
     }
+
+    vkcv_log(vkcv::LogLevel::TIME, "Compute pipeline created");
 
     vkcv::camera::CameraManager cameraManager (window);
     auto camHandle = cameraManager.addCamera(vkcv::camera::ControllerType::PILOT);

@@ -69,6 +69,8 @@ namespace vkcv {
 
 		~BufferManager() noexcept override;
 
+		bool useResizableBar() const;
+
 		/**
 		 * @brief Creates and allocates a new buffer and returns its
 		 * unique buffer handle.

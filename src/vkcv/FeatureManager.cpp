@@ -527,6 +527,15 @@ namespace vkcv {
 		return true;
 	}
 
+	bool FeatureManager::checkSupport(const vk::PhysicalDeviceHostImageCopyFeaturesEXT &features,
+									  bool required) const {
+		vkcv_check_init_features2(vk::PhysicalDeviceHostImageCopyFeaturesEXT);
+
+		vkcv_check_feature(hostImageCopy);
+
+		return true;
+	}
+
 	vk::BaseOutStructure* FeatureManager::findFeatureStructure(vk::StructureType type) const {
 		for (auto &base : m_featuresExtensions) {
 			if (base->sType == type) {

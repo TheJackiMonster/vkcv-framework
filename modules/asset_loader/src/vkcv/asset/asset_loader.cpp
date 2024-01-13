@@ -9,7 +9,6 @@
 #include <vkcv/Logger.hpp>
 #include <algorithm>
 
-
 namespace vkcv::asset {
 
 	/**

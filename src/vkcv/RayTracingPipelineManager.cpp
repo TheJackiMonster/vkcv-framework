@@ -3,6 +3,9 @@
 
 #include "vkcv/Core.hpp"
 #include "vkcv/Logger.hpp"
+#include <cstring>
+#include <iostream>
+#include <iterator>
 
 namespace vkcv {
 	
@@ -184,7 +187,7 @@ namespace vkcv {
 		size_t missShaderGroupIndex = genShaderGroupIndex;
 		size_t hitShaderGroupIndex = genShaderGroupIndex;
 		size_t callShaderGroupIndex = genShaderGroupIndex;
-		
+
 		if (existsRayGenShader) {
 			vk::PipelineShaderStageCreateInfo createInfo;
 			const bool success = createPipelineShaderStageCreateInfo(
@@ -311,7 +314,7 @@ namespace vkcv {
 					nullptr
 			);
 		}
-		
+
 		Vector<vk::DescriptorSetLayout> descriptorSetLayouts;
 		descriptorSetLayouts.reserve(config.getDescriptorSetLayouts().size());
 		for (const auto &handle : config.getDescriptorSetLayouts()) {
@@ -456,7 +459,7 @@ namespace vkcv {
 			rayMissAddress = vk::StridedDeviceAddressRegionKHR(
 					bufferBaseAddress + missShaderGroupIndex * tableSizeAlignment,
 					shaderBindingTableSize,
-					shaderBindingTableSize
+					tableSizeAlignment
 			);
 		}
 		
@@ -464,7 +467,7 @@ namespace vkcv {
 			rayHitAddress = vk::StridedDeviceAddressRegionKHR(
 					bufferBaseAddress + hitShaderGroupIndex * tableSizeAlignment,
 					shaderBindingTableSize,
-					shaderBindingTableSize
+					tableSizeAlignment
 			);
 		}
 		
@@ -472,10 +475,10 @@ namespace vkcv {
 			rayCallAddress = vk::StridedDeviceAddressRegionKHR(
 					bufferBaseAddress + callShaderGroupIndex * tableSizeAlignment,
 					shaderBindingTableSize,
-					shaderBindingTableSize
+					tableSizeAlignment
 			);
 		}
-		
+
 		return add({
 			pipeline,
 			pipelineLayout,
@@ -501,35 +504,39 @@ namespace vkcv {
 	
 	const RayTracingPipelineConfig &
 	RayTracingPipelineManager::getPipelineConfig(const RayTracingPipelineHandle &handle) const {
-		auto &pipeline = (*this) [handle];
+		const auto &pipeline = (*this) [handle];
 		return pipeline.m_config;
 	}
 	
 	const vk::StridedDeviceAddressRegionKHR *
 	RayTracingPipelineManager::getRayGenShaderBindingTableAddress(
 			const vkcv::RayTracingPipelineHandle &handle) const {
-		auto &pipeline = (*this) [handle];
+		const auto &pipeline = (*this) [handle];
+		if (pipeline.m_rayGenAddress.size == 0) return nullptr;
 		return &(pipeline.m_rayGenAddress);
 	}
 	
 	const vk::StridedDeviceAddressRegionKHR *
 	RayTracingPipelineManager::getMissShaderBindingTableAddress(
 			const vkcv::RayTracingPipelineHandle &handle) const {
-		auto &pipeline = (*this) [handle];
+		const auto &pipeline = (*this) [handle];
+		if (pipeline.m_rayMissAddress.size == 0) return nullptr;
 		return &(pipeline.m_rayMissAddress);
 	}
 	
 	const vk::StridedDeviceAddressRegionKHR *
 	RayTracingPipelineManager::getHitShaderBindingTableAddress(
 			const vkcv::RayTracingPipelineHandle &handle) const {
-		auto &pipeline = (*this) [handle];
+		const auto &pipeline = (*this) [handle];
+		if (pipeline.m_rayHitAddress.size == 0) return nullptr;
 		return &(pipeline.m_rayHitAddress);
 	}
 	
 	const vk::StridedDeviceAddressRegionKHR *
 	RayTracingPipelineManager::getCallShaderBindingTableAddress(
 			const vkcv::RayTracingPipelineHandle &handle) const {
-		auto &pipeline = (*this) [handle];
+		const auto &pipeline = (*this) [handle];
+		//if (pipeline.m_rayCallAddress.size == 0) return nullptr;
 		return &(pipeline.m_rayCallAddress);
 	}
 	
