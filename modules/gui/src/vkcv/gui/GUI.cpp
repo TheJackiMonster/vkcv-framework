@@ -90,7 +90,7 @@ namespace vkcv::gui {
 		init_info.MinImageCount = swapchainImageCount;
 		init_info.ImageCount = swapchainImageCount;
 		init_info.CheckVkResultFn = checkVulkanResult;
-		
+
 		const vk::AttachmentDescription attachment (
 				vk::AttachmentDescriptionFlags(),
 				m_core.getSwapchainFormat(swapchainHandle),
@@ -141,19 +141,11 @@ namespace vkcv::gui {
 				&dependency
 		);
 		
-		m_render_pass = m_context.getDevice().createRenderPass(passCreateInfo);
+		init_info.RenderPass = m_context.getDevice().createRenderPass(passCreateInfo);
 		
-		ImGui_ImplVulkan_Init(&init_info, static_cast<VkRenderPass>(m_render_pass));
-		
-		auto stream = m_core.createCommandStream(QueueType::Graphics);
-		
-		m_core.recordCommandsToStream(stream, [](const vk::CommandBuffer& commandBuffer) {
-			ImGui_ImplVulkan_CreateFontsTexture(static_cast<VkCommandBuffer>(commandBuffer));
-		}, []() {
-			ImGui_ImplVulkan_DestroyFontUploadObjects();
-		});
-		
-		m_core.submitCommandStream(stream, false);
+		ImGui_ImplVulkan_Init(&init_info);
+		ImGui_ImplVulkan_CreateFontsTexture();
+
 		m_context.getDevice().waitIdle();
 	}
 	
@@ -161,6 +153,7 @@ namespace vkcv::gui {
 		m_context.getDevice().waitIdle();
 		Window& window = m_core.getWindow(m_windowHandle);
 
+		ImGui_ImplVulkan_DestroyFontsTexture();
 		ImGui_ImplVulkan_Shutdown();
 		
 		m_context.getDevice().destroyRenderPass(m_render_pass);
@@ -188,6 +181,7 @@ namespace vkcv::gui {
 		
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
+		
 		ImGui::NewFrame();
 	}
 	

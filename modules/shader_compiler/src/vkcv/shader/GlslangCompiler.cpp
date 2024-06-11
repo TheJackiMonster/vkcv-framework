@@ -5,6 +5,7 @@
 #include <vkcv/Logger.hpp>
 
 #include <glslang/SPIRV/GlslangToSpv.h>
+#include <glslang/glslang/Public/ShaderLang.h>
 
 namespace vkcv::shader {
 	
