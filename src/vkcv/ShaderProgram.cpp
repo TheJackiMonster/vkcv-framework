@@ -123,7 +123,6 @@ namespace vkcv {
 			bool variableCount = false;
 			// query whether reflected resources are qualified as one-dimensional array
 			if (type.array_size_literal [0]) {
-				descriptorCount = type.array [0];
 				if (type.array [0] == 0)
 					variableCount = true;
 			}
@@ -157,7 +156,6 @@ namespace vkcv {
 			bool variableCount = false;
 			// query whether reflected resources are qualified as one-dimensional array
 			if (type.array_size_literal [0]) {
-				descriptorCount = type.array [0];
 				if (type.array [0] == 0)
 					variableCount = true;
 			}
@@ -191,7 +189,6 @@ namespace vkcv {
 			bool variableCount = false;
 			// query whether reflected resources are qualified as one-dimensional array
 			if (type.array_size_literal [0]) {
-				descriptorCount = type.array [0];
 				if (type.array [0] == 0)
 					variableCount = true;
 			}
@@ -224,7 +221,6 @@ namespace vkcv {
 			bool variableCount = false;
 			// query whether reflected resources are qualified as one-dimensional array
 			if (type.array_size_literal [0]) {
-				descriptorCount = type.array [0];
 				if (type.array [0] == 0)
 					variableCount = true;
 			}
@@ -258,7 +254,6 @@ namespace vkcv {
 			bool variableCount = false;
 			// query whether reflected resources are qualified as one-dimensional array
 			if (type.array_size_literal [0]) {
-				descriptorCount = type.array [0];
 				if (type.array [0] == 0)
 					variableCount = true;
 			}

@@ -53,17 +53,15 @@ int main(int argc, const char** argv) {
 	// recreate copies of the bindings and the handles (to check whether they are properly reused instead of actually recreated)
 	const vkcv::DescriptorBindings& set0Bindings = firstMeshProgram.getReflectedDescriptors().at(0);
 
-	vkcv::DescriptorSetLayoutHandle setLayoutHandle = core.createDescriptorSetLayout(set0Bindings);
-	vkcv::DescriptorSetLayoutHandle setLayoutHandleCopy = core.createDescriptorSetLayout(set0Bindings);
-
-	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(setLayoutHandle);
+	vkcv::DescriptorSetLayoutHandle descriptorSetLayout = core.createDescriptorSetLayout(set0Bindings);
+	vkcv::DescriptorSetHandle descriptorSet = core.createDescriptorSet(descriptorSetLayout);
 	
 	vkcv::GraphicsPipelineHandle firstMeshPipeline = core.createGraphicsPipeline(
 			vkcv::GraphicsPipelineConfig(
 					firstMeshProgram,
 					firstMeshPass,
 					{ firstMeshLayout },
-					{ setLayoutHandle }
+					{ descriptorSetLayout }
 			)
 	);
 	

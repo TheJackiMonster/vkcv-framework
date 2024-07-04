@@ -22,19 +22,27 @@ namespace vkcv {
 		 */
 		m_PoolSizes.clear();
 		m_PoolSizes.emplace_back(vk::DescriptorType::eSampler, 1000);
+		m_PoolSizes.emplace_back(vk::DescriptorType::eCombinedImageSampler, 1000);
 		m_PoolSizes.emplace_back(vk::DescriptorType::eSampledImage, 1000);
+		m_PoolSizes.emplace_back(vk::DescriptorType::eStorageImage, 1000);
+		m_PoolSizes.emplace_back(vk::DescriptorType::eUniformTexelBuffer, 1000);
+		m_PoolSizes.emplace_back(vk::DescriptorType::eStorageTexelBuffer, 1000);
 		m_PoolSizes.emplace_back(vk::DescriptorType::eUniformBuffer, 1000);
 		m_PoolSizes.emplace_back(vk::DescriptorType::eStorageBuffer, 1000);
 		m_PoolSizes.emplace_back(vk::DescriptorType::eUniformBufferDynamic, 1000);
 		m_PoolSizes.emplace_back(vk::DescriptorType::eStorageBufferDynamic, 1000);
+		m_PoolSizes.emplace_back(vk::DescriptorType::eInputAttachment, 1000);
+		m_PoolSizes.emplace_back(vk::DescriptorType::eInlineUniformBlock, 1000);
 
 		if (core.getContext().getFeatureManager().isExtensionActive(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)) {
 			m_PoolSizes.emplace_back(vk::DescriptorType::eAccelerationStructureKHR, 1000);
 		}
 
 		m_PoolInfo = vk::DescriptorPoolCreateInfo(
-			vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, 1000,
-			static_cast<uint32_t>(m_PoolSizes.size()), m_PoolSizes.data()
+			vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+			1000,
+			static_cast<uint32_t>(m_PoolSizes.size()),
+			m_PoolSizes.data()
 		);
 
 		return allocateDescriptorPool();
@@ -50,11 +58,16 @@ namespace vkcv {
 	}
 
 	void DescriptorSetManager::destroyById(uint64_t id) {
+		const auto& device = getCore().getContext().getDevice();
 		auto &set = getById(id);
 
 		if (set.vulkanHandle) {
-			getCore().getContext().getDevice().freeDescriptorSets(m_Pools [set.poolIndex], 1,
-																  &(set.vulkanHandle));
+			device.freeDescriptorSets(
+				m_Pools[set.poolIndex],
+				1,
+				&(set.vulkanHandle)
+			);
+
 			set.vulkanHandle = nullptr;
 		}
 
@@ -62,8 +75,10 @@ namespace vkcv {
 	}
 
 	bool DescriptorSetManager::allocateDescriptorPool() {
+		const auto& device = getCore().getContext().getDevice();
+
 		vk::DescriptorPool pool;
-		if (getCore().getContext().getDevice().createDescriptorPool(&m_PoolInfo, nullptr, &pool)
+		if (device.createDescriptorPool(&m_PoolInfo, nullptr, &pool)
 			!= vk::Result::eSuccess) {
 			vkcv_log(LogLevel::WARNING, "Failed to allocate descriptor pool");
 			return false;
@@ -77,11 +92,13 @@ namespace vkcv {
 		HandleManager<DescriptorSetEntry, DescriptorSetHandle>() {}
 
 	DescriptorSetManager::~DescriptorSetManager() noexcept {
+		const auto& device = getCore().getContext().getDevice();
+
 		clear();
 
 		for (const auto &pool : m_Pools) {
 			if (pool) {
-				getCore().getContext().getDevice().destroy(pool);
+				device.destroy(pool);
 			}
 		}
 	}
@@ -90,9 +107,15 @@ namespace vkcv {
 	DescriptorSetManager::createDescriptorSet(const DescriptorSetLayoutHandle &layout) {
 		// create and allocate the set based on the layout provided
 		const auto &setLayout = m_DescriptorSetLayoutManager->getDescriptorSetLayout(layout);
+		const auto &device = getCore().getContext().getDevice();
+
 
 		vk::DescriptorSet vulkanHandle;
-		vk::DescriptorSetAllocateInfo allocInfo(m_Pools.back(), 1, &setLayout.vulkanHandle);
+		vk::DescriptorSetAllocateInfo allocInfo(
+			m_Pools.back(),
+			1,
+			&setLayout.vulkanHandle
+		);
 
 		uint32_t sumVariableDescriptorCounts = 0;
 		for (auto bindingElem : setLayout.descriptorBindings) {
@@ -109,15 +132,21 @@ namespace vkcv {
 			allocInfo.setPNext(&variableAllocInfo);
 		}
 
-		auto result =
-			getCore().getContext().getDevice().allocateDescriptorSets(&allocInfo, &vulkanHandle);
+		auto result = device.allocateDescriptorSets(
+			&allocInfo,
+			&vulkanHandle
+		);
+
 		if (result != vk::Result::eSuccess) {
 			// create a new descriptor pool if the previous one ran out of memory
-			if (result == vk::Result::eErrorOutOfPoolMemory) {
-				allocateDescriptorPool();
+			if ((result == vk::Result::eErrorOutOfPoolMemory) &&
+			    (allocateDescriptorPool())) {
 				allocInfo.setDescriptorPool(m_Pools.back());
-				result = getCore().getContext().getDevice().allocateDescriptorSets(&allocInfo,
-																				   &vulkanHandle);
+
+				result = device.allocateDescriptorSets(
+					&allocInfo,
+					&vulkanHandle
+				);
 			}
 
 			if (result != vk::Result::eSuccess) {
