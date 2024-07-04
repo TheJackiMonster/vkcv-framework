@@ -5,12 +5,7 @@
 
 namespace vkcv {
 
-	Handle::Handle() : m_id(std::numeric_limits<uint64_t>::max()), m_rc(nullptr), m_destroy(nullptr) {}
-
-	Handle::Handle(uint64_t id, const HandleDestroyFunction &destroy) :
-		m_id(id), m_rc(new uint64_t(1)), m_destroy(destroy) {}
-
-	Handle::~Handle() {
+	void Handle::destroy() {
 		if ((m_rc) && (*m_rc > 0) && (--(*m_rc) == 0)) {
 			if (m_destroy) {
 				m_destroy(m_id);
@@ -18,6 +13,15 @@ namespace vkcv {
 
 			delete m_rc;
 		}
+	}
+
+	Handle::Handle() : m_id(std::numeric_limits<uint64_t>::max()), m_rc(nullptr), m_destroy(nullptr) {}
+
+	Handle::Handle(uint64_t id, const HandleDestroyFunction &destroy) :
+		m_id(id), m_rc(new uint64_t(1)), m_destroy(destroy) {}
+
+	Handle::~Handle() {
+		destroy();
 	}
 
 	Handle::Handle(const Handle &other) :
@@ -38,6 +42,8 @@ namespace vkcv {
 			return *this;
 		}
 
+		destroy();
+
 		m_id = other.m_id;
 		m_rc = other.m_rc;
 		m_destroy = other.m_destroy;
@@ -50,6 +56,8 @@ namespace vkcv {
 	}
 
 	Handle &Handle::operator=(Handle &&other) noexcept {
+		destroy();
+
 		m_id = other.m_id;
 		m_rc = other.m_rc;
 		m_destroy = other.m_destroy;

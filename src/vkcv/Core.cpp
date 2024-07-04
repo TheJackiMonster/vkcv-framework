@@ -91,10 +91,7 @@ namespace vkcv {
 	}
 
 	Core::Core(Context &&context) noexcept :
-		m_Context(std::move(context)), m_PassManager(std::make_unique<PassManager>()),
-		m_GraphicsPipelineManager(std::make_unique<GraphicsPipelineManager>()),
-		m_ComputePipelineManager(std::make_unique<ComputePipelineManager>()),
-		m_RayTracingPipelineManager(std::make_unique<RayTracingPipelineManager>()),
+		m_Context(std::move(context)),
 		m_DescriptorSetLayoutManager(std::make_unique<DescriptorSetLayoutManager>()),
 		m_DescriptorSetManager(std::make_unique<DescriptorSetManager>()),
 		m_BufferManager(std::make_unique<BufferManager>()),
@@ -103,18 +100,21 @@ namespace vkcv {
 		m_AccelerationStructureManager(std::make_unique<AccelerationStructureManager>()),
 		m_CommandStreamManager { std::make_unique<CommandStreamManager>() },
 		m_WindowManager(std::make_unique<WindowManager>()),
-		m_SwapchainManager(std::make_unique<SwapchainManager>()), m_CommandPools(),
-		m_RenderFinished(), m_SwapchainImageAcquired(), m_downsampler(nullptr) {
+		m_SwapchainManager(std::make_unique<SwapchainManager>()),
+		m_PassManager(std::make_unique<PassManager>()),
+		m_GraphicsPipelineManager(std::make_unique<GraphicsPipelineManager>()),
+		m_ComputePipelineManager(std::make_unique<ComputePipelineManager>()),
+		m_RayTracingPipelineManager(std::make_unique<RayTracingPipelineManager>()),
+		m_CommandPools(),
+		m_RenderFinished(),
+		m_SwapchainImageAcquired(),
+		m_downsampler(nullptr) {
 		m_CommandPools = createCommandPools(
 			m_Context.getDevice(), generateQueueFamilyIndexSet(m_Context.getQueueManager()));
 
 		m_RenderFinished = m_Context.getDevice().createSemaphore({});
 		m_SwapchainImageAcquired = m_Context.getDevice().createSemaphore({});
 
-		m_PassManager->init(*this);
-		m_GraphicsPipelineManager->init(*this);
-		m_ComputePipelineManager->init(*this);
-		m_RayTracingPipelineManager->init(*this);
 		m_DescriptorSetLayoutManager->init(*this);
 		m_DescriptorSetManager->init(*this, *m_DescriptorSetLayoutManager);
 		m_BufferManager->init(*this);
@@ -123,6 +123,10 @@ namespace vkcv {
 		m_AccelerationStructureManager->init(*this, *m_BufferManager);
 		m_CommandStreamManager->init(*this);
 		m_SwapchainManager->init(*this);
+		m_PassManager->init(*this);
+		m_GraphicsPipelineManager->init(*this);
+		m_ComputePipelineManager->init(*this);
+		m_RayTracingPipelineManager->init(*this);
 		m_downsampler = std::unique_ptr<Downsampler>(new BlitDownsampler(*this, *m_ImageManager));
 	}
 

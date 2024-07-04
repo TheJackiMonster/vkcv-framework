@@ -55,9 +55,10 @@ namespace vkcv {
 		if (set.vulkanHandle) {
 			getCore().getContext().getDevice().freeDescriptorSets(m_Pools [set.poolIndex], 1,
 																  &(set.vulkanHandle));
-			set.setLayoutHandle = DescriptorSetLayoutHandle();
 			set.vulkanHandle = nullptr;
 		}
+
+		set.setLayoutHandle = DescriptorSetLayoutHandle();
 	}
 
 	bool DescriptorSetManager::allocateDescriptorPool() {

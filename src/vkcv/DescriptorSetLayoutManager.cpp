@@ -34,8 +34,8 @@ namespace vkcv {
 
 	DescriptorSetLayoutManager::~DescriptorSetLayoutManager() noexcept {
 		for (uint64_t id = 0; id < getCount(); id++) {
-			// Resets the usage count to zero for destruction.
-			getById(id).layoutUsageCount = 0;
+			// Resets the usage count to one for destruction.
+			getById(id).layoutUsageCount = 1;
 		}
 
 		clear();
