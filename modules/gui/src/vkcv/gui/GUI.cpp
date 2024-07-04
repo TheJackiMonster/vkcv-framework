@@ -146,6 +146,8 @@ namespace vkcv::gui {
 		ImGui_ImplVulkan_Init(&init_info);
 		ImGui_ImplVulkan_CreateFontsTexture();
 
+		m_render_pass = init_info.RenderPass;
+
 		m_context.getDevice().waitIdle();
 	}
 	
