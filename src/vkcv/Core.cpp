@@ -309,9 +309,6 @@ namespace vkcv {
 			m_currentSwapchainImageIndex = std::numeric_limits<uint32_t>::max();
 		}
 
-		m_Context.getDevice().waitIdle(); // TODO: this is a sin against graphics programming, but
-										  // its getting late - Alex
-
 		m_ImageManager->setCurrentSwapchainImageIndex(m_currentSwapchainImageIndex);
 
 		return (m_currentSwapchainImageIndex != std::numeric_limits<uint32_t>::max());

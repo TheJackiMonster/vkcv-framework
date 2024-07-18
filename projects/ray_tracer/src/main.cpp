@@ -35,11 +35,22 @@ int main(int argc, const char** argv) {
 	const int windowWidth = 800;
 	const int windowHeight = 600;
 
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+	features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
+			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+			[](vk::PhysicalDeviceDescriptorIndexingFeatures& features) {
+				features.setDescriptorBindingPartiallyBound(true);
+				features.setDescriptorBindingVariableDescriptorCount(true);
+			}
+	);
+
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		{ "VK_KHR_swapchain" }
+		features
 	);
 
 	vkcv::WindowHandle windowHandle = core.createWindow(applicationName, windowWidth, windowHeight, true);

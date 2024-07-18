@@ -201,6 +201,14 @@ int main(int argc, const char **argv) {
 	features.requireFeature([](vk::PhysicalDeviceFeatures& features) {
 		features.setGeometryShader(true);
 	});
+
+	features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
+			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+			[](vk::PhysicalDeviceDescriptorIndexingFeatures& features) {
+				features.setDescriptorBindingPartiallyBound(true);
+				features.setDescriptorBindingVariableDescriptorCount(true);
+			}
+	);
 	
 	vkcv::Core core = vkcv::Core::create(
 		"Firework",

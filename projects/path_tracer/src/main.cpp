@@ -47,11 +47,22 @@ int main(int argc, const char** argv) {
 
 	const std::string applicationName = "Path Tracer";
 
+	vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+	features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
+			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+			[](vk::PhysicalDeviceDescriptorIndexingFeatures& features) {
+				features.setDescriptorBindingPartiallyBound(true);
+				features.setDescriptorBindingVariableDescriptorCount(true);
+			}
+	);
+
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),
 		{ vk::QueueFlagBits::eTransfer,vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-		{ "VK_KHR_swapchain" }
+		features
 	);
 	
 	const int initialWidth = 1280;
