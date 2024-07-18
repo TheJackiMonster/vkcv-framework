@@ -89,8 +89,9 @@ namespace vkcv {
 		
 		Vector<vk::CommandPool> m_CommandPools;
 		vk::Semaphore m_RenderFinished;
-		vk::Semaphore m_SwapchainImageAcquired;
+		std::vector<vk::Semaphore> m_SwapchainImagesAcquired;
 		uint32_t m_currentSwapchainImageIndex;
+		uint32_t m_currentSwapchainSemaphoreIndex;
 
 		std::unique_ptr<Downsampler> m_downsampler;
 

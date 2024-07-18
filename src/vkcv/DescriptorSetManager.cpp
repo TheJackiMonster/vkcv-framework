@@ -1,6 +1,7 @@
 #include "DescriptorSetManager.hpp"
 
 #include "vkcv/Core.hpp"
+#include <vulkan/vulkan_core.h>
 
 namespace vkcv {
 
@@ -15,6 +16,8 @@ namespace vkcv {
 		}
 
 		m_DescriptorSetLayoutManager = &descriptorSetLayoutManager;
+
+		const auto& featureManager = core.getContext().getFeatureManager();
 
 		/**
 		 * Allocate the set size for the descriptor pools, namely 1000 units of each descriptor type
@@ -32,9 +35,12 @@ namespace vkcv {
 		m_PoolSizes.emplace_back(vk::DescriptorType::eUniformBufferDynamic, 1000);
 		m_PoolSizes.emplace_back(vk::DescriptorType::eStorageBufferDynamic, 1000);
 		m_PoolSizes.emplace_back(vk::DescriptorType::eInputAttachment, 1000);
-		m_PoolSizes.emplace_back(vk::DescriptorType::eInlineUniformBlock, 1000);
 
-		if (core.getContext().getFeatureManager().isExtensionActive(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)) {
+		if (featureManager.isExtensionActive(VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME)) {
+			m_PoolSizes.emplace_back(vk::DescriptorType::eInlineUniformBlock, 1000);
+		}
+
+		if (featureManager.isExtensionActive(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)) {
 			m_PoolSizes.emplace_back(vk::DescriptorType::eAccelerationStructureKHR, 1000);
 		}
 
@@ -44,6 +50,14 @@ namespace vkcv {
 			static_cast<uint32_t>(m_PoolSizes.size()),
 			m_PoolSizes.data()
 		);
+
+		if (featureManager.isExtensionActive(VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME)) {
+			m_InlineUniformBlockInfo = vk::DescriptorPoolInlineUniformBlockCreateInfo(
+				1000
+			);
+
+			m_PoolInfo.setPNext(&m_InlineUniformBlockInfo);
+		}
 
 		return allocateDescriptorPool();
 	}
