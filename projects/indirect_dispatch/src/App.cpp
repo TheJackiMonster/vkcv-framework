@@ -48,14 +48,6 @@ static vkcv::Features getAppFeatures() {
 				features.setShaderFloat16(true);
 			}
 	);
-
-	features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
-			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-			[](vk::PhysicalDeviceDescriptorIndexingFeatures& features) {
-				features.setDescriptorBindingPartiallyBound(true);
-				features.setDescriptorBindingVariableDescriptorCount(true);
-			}
-	);
 	
 	features.tryExtensionFeature<vk::PhysicalDeviceCoherentMemoryFeaturesAMD>(
 			VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME,

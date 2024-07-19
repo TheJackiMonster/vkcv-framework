@@ -90,14 +90,6 @@ int main(int argc, const char** argv) {
 			}
 	);
 
-	features.requireExtensionFeature<vk::PhysicalDeviceDescriptorIndexingFeatures>(
-			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-			[](vk::PhysicalDeviceDescriptorIndexingFeatures& features) {
-				features.setDescriptorBindingPartiallyBound(true);
-				features.setDescriptorBindingVariableDescriptorCount(true);
-			}
-	);
-
 	vkcv::Core core = vkcv::Core::create(
 		applicationName,
 		VK_MAKE_VERSION(0, 0, 1),

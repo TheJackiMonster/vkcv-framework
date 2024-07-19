@@ -125,7 +125,6 @@ namespace vkcv {
 		for (uint32_t i = 0; i < res->size(); i++) {
 			const spirv_cross::Resource &u = (*res)[i];
 			const spirv_cross::SPIRType &base_type = comp.get_type(u.base_type_id);
-			const spirv_cross::SPIRType &type = comp.get_type(u.type_id);
 
 			uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
 			uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
