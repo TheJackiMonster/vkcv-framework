@@ -316,8 +316,8 @@ namespace vkcv {
 
 	static std::array<uint32_t, 2>
 	getWidthHeightFromRenderTargets(const Vector<ImageHandle> &renderTargets,
-									const vk::Extent2D &swapchainExtent,
-									const ImageManager &imageManager) {
+                                  const vk::Extent2D &swapchainExtent,
+                                  const ImageManager &imageManager) {
 
 		std::array<uint32_t, 2> widthHeight;
 
