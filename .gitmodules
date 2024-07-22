@@ -82,3 +82,7 @@
 [submodule "modules/shader_compiler/lib/json-c"]
 	path = modules/shader_compiler/lib/json-c
 	url = https://github.com/json-c/json-c.git
+[submodule "modules/shader_compiler/lib/slang"]
+	path = modules/shader_compiler/lib/slang
+	url = https://github.com/shader-slang/slang.git
+	branch = master
