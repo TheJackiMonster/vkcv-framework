@@ -54,6 +54,9 @@ include(config/Murmur3.cmake)
 include(config/Shady.cmake)
 
 # Check and load SLANG
+include(config/MINIZ.cmake)
+include(config/LZ4.cmake)
+include(config/UNORDERED_DENSE.cmake)
 include(config/SLANG.cmake)
 
 # link the required libraries to the module

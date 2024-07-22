@@ -84,5 +84,14 @@
 	url = https://github.com/json-c/json-c.git
 [submodule "modules/shader_compiler/lib/slang"]
 	path = modules/shader_compiler/lib/slang
-	url = https://github.com/shader-slang/slang.git
+	url = https://github.com/TheJackiMonster/slang.git
 	branch = master
+[submodule "modules/shader_compiler/lib/unordered_dense"]
+	path = modules/shader_compiler/lib/unordered_dense
+	url = https://github.com/martinus/unordered_dense.git
+[submodule "modules/shader_compiler/lib/lz4"]
+	path = modules/shader_compiler/lib/lz4
+	url = https://github.com/lz4/lz4.git
+[submodule "modules/shader_compiler/lib/miniz"]
+	path = modules/shader_compiler/lib/miniz
+	url = https://github.com/richgel999/miniz.git
