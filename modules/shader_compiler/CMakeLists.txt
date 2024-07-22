@@ -53,6 +53,9 @@ include(config/GLSLANG.cmake)
 include(config/Murmur3.cmake)
 include(config/Shady.cmake)
 
+# Check and load SLANG
+include(config/SLANG.cmake)
+
 # link the required libraries to the module
 target_link_libraries(vkcv_shader_compiler ${vkcv_shader_compiler_libraries} vkcv)
 
