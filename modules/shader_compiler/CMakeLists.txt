@@ -30,6 +30,9 @@ set(vkcv_shader_compiler_sources
 
 		${vkcv_shader_compiler_include}/vkcv/shader/LLVMCompiler.hpp
 		${vkcv_shader_compiler_source}/vkcv/shader/LLVMCompiler.cpp
+
+		${vkcv_shader_compiler_include}/vkcv/shader/SlangCompiler.hpp
+		${vkcv_shader_compiler_source}/vkcv/shader/SlangCompiler.cpp
 )
 
 filter_headers(vkcv_shader_compiler_sources ${vkcv_shader_compiler_include} vkcv_shader_compiler_headers)
