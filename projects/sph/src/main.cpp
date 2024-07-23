@@ -16,12 +16,15 @@
 int main(int argc, const char **argv) {
     const std::string applicationName = "SPH";
 
+    vkcv::Features features;
+	features.requireExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
     // creating core object that will handle all vulkan objects
     vkcv::Core core = vkcv::Core::create(
         applicationName,
         VK_MAKE_VERSION(0, 0, 1),
         { vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eCompute },
-        { VK_KHR_SWAPCHAIN_EXTENSION_NAME }
+        features
     );
 
     vkcv::WindowHandle windowHandle = core.createWindow(applicationName, 1280, 720, true);

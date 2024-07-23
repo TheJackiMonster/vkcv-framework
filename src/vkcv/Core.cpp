@@ -6,6 +6,9 @@
 
 #include <GLFW/glfw3.h>
 #include <cmath>
+#include <cstdint>
+#include <limits>
+#include <vkcv/Logger.hpp>
 
 #include "AccelerationStructureManager.hpp"
 #include "BufferManager.hpp"
@@ -91,10 +94,7 @@ namespace vkcv {
 	}
 
 	Core::Core(Context &&context) noexcept :
-		m_Context(std::move(context)), m_PassManager(std::make_unique<PassManager>()),
-		m_GraphicsPipelineManager(std::make_unique<GraphicsPipelineManager>()),
-		m_ComputePipelineManager(std::make_unique<ComputePipelineManager>()),
-		m_RayTracingPipelineManager(std::make_unique<RayTracingPipelineManager>()),
+		m_Context(std::move(context)),
 		m_DescriptorSetLayoutManager(std::make_unique<DescriptorSetLayoutManager>()),
 		m_DescriptorSetManager(std::make_unique<DescriptorSetManager>()),
 		m_BufferManager(std::make_unique<BufferManager>()),
@@ -103,18 +103,22 @@ namespace vkcv {
 		m_AccelerationStructureManager(std::make_unique<AccelerationStructureManager>()),
 		m_CommandStreamManager { std::make_unique<CommandStreamManager>() },
 		m_WindowManager(std::make_unique<WindowManager>()),
-		m_SwapchainManager(std::make_unique<SwapchainManager>()), m_CommandPools(),
-		m_RenderFinished(), m_SwapchainImageAcquired(), m_downsampler(nullptr) {
+		m_SwapchainManager(std::make_unique<SwapchainManager>()),
+		m_PassManager(std::make_unique<PassManager>()),
+		m_GraphicsPipelineManager(std::make_unique<GraphicsPipelineManager>()),
+		m_ComputePipelineManager(std::make_unique<ComputePipelineManager>()),
+		m_RayTracingPipelineManager(std::make_unique<RayTracingPipelineManager>()),
+		m_CommandPools(),
+		m_RenderFinished(),
+		m_SwapchainImagesAcquired(),
+		m_currentSwapchainImageIndex(std::numeric_limits<uint32_t>::max()),
+		m_currentSwapchainSemaphoreIndex(0),
+		m_downsampler(nullptr) {
 		m_CommandPools = createCommandPools(
 			m_Context.getDevice(), generateQueueFamilyIndexSet(m_Context.getQueueManager()));
 
 		m_RenderFinished = m_Context.getDevice().createSemaphore({});
-		m_SwapchainImageAcquired = m_Context.getDevice().createSemaphore({});
 
-		m_PassManager->init(*this);
-		m_GraphicsPipelineManager->init(*this);
-		m_ComputePipelineManager->init(*this);
-		m_RayTracingPipelineManager->init(*this);
 		m_DescriptorSetLayoutManager->init(*this);
 		m_DescriptorSetManager->init(*this, *m_DescriptorSetLayoutManager);
 		m_BufferManager->init(*this);
@@ -123,6 +127,10 @@ namespace vkcv {
 		m_AccelerationStructureManager->init(*this, *m_BufferManager);
 		m_CommandStreamManager->init(*this);
 		m_SwapchainManager->init(*this);
+		m_PassManager->init(*this);
+		m_GraphicsPipelineManager->init(*this);
+		m_ComputePipelineManager->init(*this);
+		m_RayTracingPipelineManager->init(*this);
 		m_downsampler = std::unique_ptr<Downsampler>(new BlitDownsampler(*this, *m_ImageManager));
 	}
 
@@ -134,7 +142,10 @@ namespace vkcv {
 		}
 
 		m_Context.getDevice().destroySemaphore(m_RenderFinished);
-		m_Context.getDevice().destroySemaphore(m_SwapchainImageAcquired);
+
+		for (auto& semaphore : m_SwapchainImagesAcquired) {
+			m_Context.getDevice().destroySemaphore(semaphore);
+		}
 	}
 
 	GraphicsPipelineHandle Core::createGraphicsPipeline(const GraphicsPipelineConfig &config) {
@@ -219,14 +230,25 @@ namespace vkcv {
 	}
 
 	Result Core::acquireSwapchainImage(const SwapchainHandle &swapchainHandle) {
-		uint32_t imageIndex;
+		uint32_t imageIndex, semaphoreIndex;
 		vk::Result result;
+
+		if (m_SwapchainImagesAcquired.size() <= 0) {
+			vkcv_log(LogLevel::ERROR, "Semaphores not available");
+			return Result::ERROR;
+		}
+
+		semaphoreIndex = m_currentSwapchainSemaphoreIndex % m_SwapchainImagesAcquired.size();
 
 		try {
 			result = m_Context.getDevice().acquireNextImageKHR(
 				m_SwapchainManager->getSwapchain(swapchainHandle).m_Swapchain,
-				std::numeric_limits<uint64_t>::max(), m_SwapchainImageAcquired, nullptr,
-				&imageIndex, {});
+				std::numeric_limits<uint64_t>::max(),
+				m_SwapchainImagesAcquired[semaphoreIndex],
+				nullptr,
+				&imageIndex,
+				{}
+			);
 		} catch (const vk::OutOfDateKHRError &e) {
 			result = vk::Result::eErrorOutOfDateKHR;
 		} catch (const vk::DeviceLostError &e) {
@@ -261,6 +283,17 @@ namespace vkcv {
 			setSwapchainImages(swapchainHandle);
 		}
 
+		const uint32_t count = m_SwapchainManager->getImageCount(swapchainHandle);
+		const uint32_t initialized = m_SwapchainImagesAcquired.size();
+
+		if (count > initialized) {
+			m_SwapchainImagesAcquired.resize(count);
+
+			for (uint32_t i = initialized; i < count; i++) {
+				m_SwapchainImagesAcquired[i] = m_Context.getDevice().createSemaphore({});
+			}
+		}
+
 		const auto &extent = m_SwapchainManager->getExtent(swapchainHandle);
 
 		width = extent.width;
@@ -276,9 +309,6 @@ namespace vkcv {
 			m_currentSwapchainImageIndex = std::numeric_limits<uint32_t>::max();
 		}
 
-		m_Context.getDevice().waitIdle(); // TODO: this is a sin against graphics programming, but
-										  // its getting late - Alex
-
 		m_ImageManager->setCurrentSwapchainImageIndex(m_currentSwapchainImageIndex);
 
 		return (m_currentSwapchainImageIndex != std::numeric_limits<uint32_t>::max());
@@ -286,8 +316,8 @@ namespace vkcv {
 
 	static std::array<uint32_t, 2>
 	getWidthHeightFromRenderTargets(const Vector<ImageHandle> &renderTargets,
-									const vk::Extent2D &swapchainExtent,
-									const ImageManager &imageManager) {
+                                  const vk::Extent2D &swapchainExtent,
+                                  const ImageManager &imageManager) {
 
 		std::array<uint32_t, 2> widthHeight;
 
@@ -831,17 +861,26 @@ namespace vkcv {
 	void Core::endFrame(const WindowHandle &windowHandle) {
 		SwapchainHandle swapchainHandle = m_WindowManager->getWindow(windowHandle).getSwapchain();
 
-		if (m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) {
+		if ((m_currentSwapchainImageIndex == std::numeric_limits<uint32_t>::max()) ||
+		    (m_SwapchainImagesAcquired.size() <= 0)) {
 			return;
 		}
 
-		const std::array<vk::Semaphore, 2> waitSemaphores { m_RenderFinished,
-															m_SwapchainImageAcquired };
+		const uint32_t semaphoreIndex = m_currentSwapchainSemaphoreIndex % m_SwapchainImagesAcquired.size();
+		m_currentSwapchainSemaphoreIndex = (m_currentSwapchainSemaphoreIndex + 1) % m_SwapchainImagesAcquired.size();
+
+		const std::array<vk::Semaphore, 2> waitSemaphores {
+			m_RenderFinished,
+			m_SwapchainImagesAcquired[semaphoreIndex]
+		};
 
 		const vk::SwapchainKHR &swapchain =
 			m_SwapchainManager->getSwapchain(swapchainHandle).m_Swapchain;
-		const vk::PresentInfoKHR presentInfo(waitSemaphores, swapchain,
-											 m_currentSwapchainImageIndex);
+		const vk::PresentInfoKHR presentInfo(
+			waitSemaphores,
+			swapchain,
+			m_currentSwapchainImageIndex
+		);
 
 		vk::Result result;
 

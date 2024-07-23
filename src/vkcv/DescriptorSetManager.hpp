@@ -38,6 +38,7 @@ namespace vkcv {
 		Vector<vk::DescriptorPool> m_Pools;
 		Vector<vk::DescriptorPoolSize> m_PoolSizes;
 		vk::DescriptorPoolCreateInfo m_PoolInfo;
+		vk::DescriptorPoolInlineUniformBlockCreateInfo m_InlineUniformBlockInfo;
 		
 		bool init(Core &core) override;
 		bool init(Core &core, DescriptorSetLayoutManager &descriptorSetLayoutManager);

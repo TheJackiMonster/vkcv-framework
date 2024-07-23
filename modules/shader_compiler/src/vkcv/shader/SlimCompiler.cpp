@@ -47,7 +47,7 @@ namespace vkcv::shader {
 		DriverConfig config = default_driver_config();
 
         config.target = TgtSPV;
-		config.output_filename = tmp_path.c_str();
+		config.output_filename = tmp_path.string().c_str();
 
 		codes = driver_compile(&config, module);
 		destroy_driver_config(&config);

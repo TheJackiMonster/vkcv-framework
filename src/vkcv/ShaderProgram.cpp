@@ -8,6 +8,9 @@
 
 #include "vkcv/File.hpp"
 #include "vkcv/Logger.hpp"
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 
 namespace vkcv {
 
@@ -79,6 +82,81 @@ namespace vkcv {
 			return true;
 	}
 
+	static void reflectShaderDescriptorSets(Dictionary<uint32_t, DescriptorBindings> &descriptorSets,
+	                                        ShaderStage shaderStage,
+	                                        DescriptorType descriptorType,
+	                                        const spirv_cross::Compiler &comp,
+	                                        const spirv_cross::ShaderResources &resources) {
+		const spirv_cross::SmallVector<spirv_cross::Resource> *res = nullptr;
+
+		switch (descriptorType) {
+			case DescriptorType::UNIFORM_BUFFER:
+			  res = &(resources.uniform_buffers);
+			  break;
+			case DescriptorType::STORAGE_BUFFER:
+			  res = &(resources.storage_buffers);
+			  break;
+			case DescriptorType::SAMPLER:
+			  res = &(resources.separate_samplers);
+			  break;
+			case DescriptorType::IMAGE_SAMPLED:
+			  res = &(resources.separate_images);
+			  break;
+			case DescriptorType::IMAGE_STORAGE:
+			  res = &(resources.storage_images);
+			  break;
+			case DescriptorType::UNIFORM_BUFFER_DYNAMIC:
+			  res = &(resources.uniform_buffers);
+			  break;
+			case DescriptorType::STORAGE_BUFFER_DYNAMIC:
+			  res = &(resources.storage_buffers);
+			  break;
+			case DescriptorType::ACCELERATION_STRUCTURE_KHR:
+			  res = &(resources.acceleration_structures);
+			  break;
+			default:
+			  break;
+		}
+
+		if (nullptr == res) {
+			return;
+		}
+
+		for (uint32_t i = 0; i < res->size(); i++) {
+			const spirv_cross::Resource &u = (*res)[i];
+			const spirv_cross::SPIRType &base_type = comp.get_type(u.base_type_id);
+
+			uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
+			uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
+
+			uint32_t descriptorCount = base_type.vecsize;
+
+			bool variableCount = false;
+			// query whether reflected resources are qualified as one-dimensional array
+			if (descriptorCount == 0) {
+				variableCount = true;
+			}
+
+			DescriptorBinding binding {
+				bindingID,
+				descriptorType,
+				descriptorCount,
+				shaderStage,
+				variableCount,
+				variableCount // partialBinding == variableCount
+			};
+
+			auto insertionResult = descriptorSets[setID].insert(std::make_pair(bindingID, binding));
+			if (!insertionResult.second) {
+				insertionResult.first->second.shaderStages |= shaderStage;
+				
+				vkcv_log(LogLevel::WARNING,
+						 "Attempting to overwrite already existing binding %u at set ID %u.",
+						 bindingID, setID);
+			}
+		}
+	}
+
 	void ShaderProgram::reflectShader(ShaderStage shaderStage) {
 		auto shaderCode = m_Shaders.at(shaderStage);
 
@@ -107,201 +185,66 @@ namespace vkcv {
 			}
 		}
 
-		// reflect descriptor sets (uniform buffer, storage buffer, sampler, sampled image, storage
-		// image)
-		Vector<std::pair<uint32_t, DescriptorBinding>> bindings;
+		reflectShaderDescriptorSets(
+			m_DescriptorSets,
+			shaderStage,
+			DescriptorType::UNIFORM_BUFFER,
+			comp,
+			resources
+		);
 
-		for (uint32_t i = 0; i < resources.uniform_buffers.size(); i++) {
-			auto &u = resources.uniform_buffers [i];
-			const spirv_cross::SPIRType &base_type = comp.get_type(u.base_type_id);
-			const spirv_cross::SPIRType &type = comp.get_type(u.type_id);
+		reflectShaderDescriptorSets(
+			m_DescriptorSets,
+			shaderStage,
+			DescriptorType::STORAGE_BUFFER,
+			comp,
+			resources
+		);
 
-			uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
-			uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
+		reflectShaderDescriptorSets(
+			m_DescriptorSets,
+			shaderStage,
+			DescriptorType::SAMPLER,
+			comp,
+			resources
+		);
 
-			uint32_t descriptorCount = base_type.vecsize;
-			bool variableCount = false;
-			// query whether reflected resources are qualified as one-dimensional array
-			if (type.array_size_literal [0]) {
-				descriptorCount = type.array [0];
-				if (type.array [0] == 0)
-					variableCount = true;
+		reflectShaderDescriptorSets(
+			m_DescriptorSets,
+			shaderStage,
+			DescriptorType::IMAGE_SAMPLED,
+			comp,
+			resources
+		);
+
+		reflectShaderDescriptorSets(
+			m_DescriptorSets,
+			shaderStage,
+			DescriptorType::IMAGE_STORAGE,
+			comp,
+			resources
+		);
+
+		reflectShaderDescriptorSets(
+			m_DescriptorSets,
+			shaderStage,
+			DescriptorType::ACCELERATION_STRUCTURE_KHR,
+			comp,
+			resources
+		);
+
+		for (auto &descriptorSet : m_DescriptorSets) {
+			uint32_t maxVariableBindingID = 0;
+
+			for (const auto &binding : descriptorSet.second) {
+				maxVariableBindingID = std::max(maxVariableBindingID, binding.first);
 			}
 
-			DescriptorBinding binding {
-				bindingID,     DescriptorType::UNIFORM_BUFFER, descriptorCount, shaderStage,
-				variableCount,
-				variableCount // partialBinding == variableCount
-			};
-
-			auto insertionResult =
-				m_DescriptorSets [setID].insert(std::make_pair(bindingID, binding));
-			if (!insertionResult.second) {
-				insertionResult.first->second.shaderStages |= shaderStage;
-				
-				vkcv_log(LogLevel::WARNING,
-						 "Attempting to overwrite already existing binding %u at set ID %u.",
-						 bindingID, setID);
-			}
-		}
-
-		for (uint32_t i = 0; i < resources.storage_buffers.size(); i++) {
-			auto &u = resources.storage_buffers [i];
-			const spirv_cross::SPIRType &base_type = comp.get_type(u.base_type_id);
-			const spirv_cross::SPIRType &type = comp.get_type(u.type_id);
-
-			uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
-			uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-
-			uint32_t descriptorCount = base_type.vecsize;
-			bool variableCount = false;
-			// query whether reflected resources are qualified as one-dimensional array
-			if (type.array_size_literal [0]) {
-				descriptorCount = type.array [0];
-				if (type.array [0] == 0)
-					variableCount = true;
-			}
-
-			DescriptorBinding binding {
-				bindingID,     DescriptorType::STORAGE_BUFFER, descriptorCount, shaderStage,
-				variableCount,
-				variableCount // partialBinding == variableCount
-			};
-
-			auto insertionResult =
-				m_DescriptorSets [setID].insert(std::make_pair(bindingID, binding));
-			if (!insertionResult.second) {
-				insertionResult.first->second.shaderStages |= shaderStage;
-				
-				vkcv_log(LogLevel::WARNING,
-						 "Attempting to overwrite already existing binding %u at set ID %u.",
-						 bindingID, setID);
-			}
-		}
-
-		for (uint32_t i = 0; i < resources.separate_samplers.size(); i++) {
-			auto &u = resources.separate_samplers [i];
-			const spirv_cross::SPIRType &base_type = comp.get_type(u.base_type_id);
-			const spirv_cross::SPIRType &type = comp.get_type(u.type_id);
-
-			uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
-			uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-
-			uint32_t descriptorCount = base_type.vecsize;
-			bool variableCount = false;
-			// query whether reflected resources are qualified as one-dimensional array
-			if (type.array_size_literal [0]) {
-				descriptorCount = type.array [0];
-				if (type.array [0] == 0)
-					variableCount = true;
-			}
-
-			DescriptorBinding binding {
-				bindingID,    DescriptorType::SAMPLER, descriptorCount, shaderStage, variableCount,
-				variableCount // partialBinding == variableCount
-			};
-
-			auto insertionResult =
-				m_DescriptorSets [setID].insert(std::make_pair(bindingID, binding));
-			if (!insertionResult.second) {
-				insertionResult.first->second.shaderStages |= shaderStage;
-				
-				vkcv_log(LogLevel::WARNING,
-						 "Attempting to overwrite already existing binding %u at set ID %u.",
-						 bindingID, setID);
-			}
-		}
-
-		for (uint32_t i = 0; i < resources.separate_images.size(); i++) {
-			auto &u = resources.separate_images [i];
-			const spirv_cross::SPIRType &base_type = comp.get_type(u.base_type_id);
-			const spirv_cross::SPIRType &type = comp.get_type(u.type_id);
-
-			uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
-			uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-
-			uint32_t descriptorCount = base_type.vecsize;
-			bool variableCount = false;
-			// query whether reflected resources are qualified as one-dimensional array
-			if (type.array_size_literal [0]) {
-				descriptorCount = type.array [0];
-				if (type.array [0] == 0)
-					variableCount = true;
-			}
-
-			DescriptorBinding binding {
-				bindingID,     DescriptorType::IMAGE_SAMPLED, descriptorCount, shaderStage,
-				variableCount,
-				variableCount // partialBinding == variableCount
-			};
-
-			auto insertionResult =
-				m_DescriptorSets [setID].insert(std::make_pair(bindingID, binding));
-			if (!insertionResult.second) {
-				insertionResult.first->second.shaderStages |= shaderStage;
-				
-				vkcv_log(LogLevel::WARNING,
-						 "Attempting to overwrite already existing binding %u at set ID %u.",
-						 bindingID, setID);
-			}
-		}
-
-		for (uint32_t i = 0; i < resources.storage_images.size(); i++) {
-			auto &u = resources.storage_images [i];
-			const spirv_cross::SPIRType &base_type = comp.get_type(u.base_type_id);
-			const spirv_cross::SPIRType &type = comp.get_type(u.type_id);
-
-			uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
-			uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-
-			uint32_t descriptorCount = base_type.vecsize;
-			bool variableCount = false;
-			// query whether reflected resources are qualified as one-dimensional array
-			if (type.array_size_literal [0]) {
-				descriptorCount = type.array [0];
-				if (type.array [0] == 0)
-					variableCount = true;
-			}
-
-			DescriptorBinding binding {
-				bindingID,     DescriptorType::IMAGE_STORAGE, descriptorCount, shaderStage,
-				variableCount,
-				variableCount // partialBinding == variableCount
-			};
-
-			auto insertionResult =
-				m_DescriptorSets [setID].insert(std::make_pair(bindingID, binding));
-			if (!insertionResult.second) {
-				insertionResult.first->second.shaderStages |= shaderStage;
-				
-				vkcv_log(LogLevel::WARNING,
-						 "Attempting to overwrite already existing binding %u at set ID %u.",
-						 bindingID, setID);
-			}
-		}
-
-		// Used to reflect acceleration structure bindings for RTX.
-		for (uint32_t i = 0; i < resources.acceleration_structures.size(); i++) {
-			auto &u = resources.acceleration_structures [i];
-			const spirv_cross::SPIRType &base_type = comp.get_type(u.base_type_id);
-
-			uint32_t setID = comp.get_decoration(u.id, spv::DecorationDescriptorSet);
-			uint32_t bindingID = comp.get_decoration(u.id, spv::DecorationBinding);
-			auto binding = DescriptorBinding { bindingID,
-											   DescriptorType::ACCELERATION_STRUCTURE_KHR,
-											   base_type.vecsize,
-											   shaderStage,
-											   false,
-											   false };
-
-			auto insertionResult =
-				m_DescriptorSets [setID].insert(std::make_pair(bindingID, binding));
-			if (!insertionResult.second) {
-				insertionResult.first->second.shaderStages |= shaderStage;
-				
-				vkcv_log(LogLevel::WARNING,
-						 "Attempting to overwrite already existing binding %u at set ID %u.",
-						 bindingID, setID);
+			for (auto &binding : descriptorSet.second) {
+				if (binding.first < maxVariableBindingID) {
+					binding.second.variableCount &= false;
+					binding.second.partialBinding &= false;
+				}
 			}
 		}
 

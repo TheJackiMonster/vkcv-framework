@@ -28,6 +28,11 @@ namespace vkcv {
 
 		HandleDestroyFunction m_destroy;
 
+		/**
+		 * @brief Private internal method to destroy handle.
+		 */
+		void destroy();
+
 	protected:
 		/**
 		 * @brief Constructor of an invalid handle

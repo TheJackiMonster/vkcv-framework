@@ -73,10 +73,6 @@ namespace vkcv {
 
 		Context m_Context;
 
-		std::unique_ptr<PassManager> m_PassManager;
-		std::unique_ptr<GraphicsPipelineManager> m_GraphicsPipelineManager;
-		std::unique_ptr<ComputePipelineManager> m_ComputePipelineManager;
-		std::unique_ptr<RayTracingPipelineManager> m_RayTracingPipelineManager;
 		std::unique_ptr<DescriptorSetLayoutManager> m_DescriptorSetLayoutManager;
 		std::unique_ptr<DescriptorSetManager> m_DescriptorSetManager;
 		std::unique_ptr<BufferManager> m_BufferManager;
@@ -86,11 +82,16 @@ namespace vkcv {
 		std::unique_ptr<CommandStreamManager> m_CommandStreamManager;
 		std::unique_ptr<WindowManager> m_WindowManager;
 		std::unique_ptr<SwapchainManager> m_SwapchainManager;
+		std::unique_ptr<PassManager> m_PassManager;
+		std::unique_ptr<GraphicsPipelineManager> m_GraphicsPipelineManager;
+		std::unique_ptr<ComputePipelineManager> m_ComputePipelineManager;
+		std::unique_ptr<RayTracingPipelineManager> m_RayTracingPipelineManager;
 		
 		Vector<vk::CommandPool> m_CommandPools;
 		vk::Semaphore m_RenderFinished;
-		vk::Semaphore m_SwapchainImageAcquired;
+		std::vector<vk::Semaphore> m_SwapchainImagesAcquired;
 		uint32_t m_currentSwapchainImageIndex;
+		uint32_t m_currentSwapchainSemaphoreIndex;
 
 		std::unique_ptr<Downsampler> m_downsampler;
 

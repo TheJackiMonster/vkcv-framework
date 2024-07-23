@@ -37,6 +37,7 @@ int main(int argc, const char** argv) {
 			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
 			[](vk::PhysicalDeviceDescriptorIndexingFeatures& features) {
 				features.setDescriptorBindingPartiallyBound(true);
+				features.setDescriptorBindingVariableDescriptorCount(true);
 			}
 	);
 	

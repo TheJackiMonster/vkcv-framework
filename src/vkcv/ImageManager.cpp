@@ -516,7 +516,7 @@ namespace vkcv {
 	}
 	
 	void ImageManager::switchImageLayoutImmediate(const ImageHandle &handle,
-												  vk::ImageLayout newLayout) {
+                                                vk::ImageLayout newLayout) {
 		auto &image = (*this) [handle];
 		const auto transitionBarriers = createImageLayoutTransitionBarriers(image, 0, 0, newLayout, false);
 		
@@ -540,7 +540,7 @@ namespace vkcv {
 				);
 
 				if (vk::Result::eSuccess != result) {
-					// TODO: warning?
+					vkcv_log(LogLevel::WARNING, "Transition to new layout failed");
 					break;
 				}
 			}

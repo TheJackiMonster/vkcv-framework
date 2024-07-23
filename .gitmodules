@@ -8,7 +8,7 @@
 	branch = main
 [submodule "modules/asset_loader/lib/fx-gltf"]
 	path = modules/asset_loader/lib/fx-gltf
-	url = https://github.com/jessey-git/fx-gltf.git
+	url = https://github.com/TheJackiMonster/fx-gltf.git
 	branch = master
 [submodule "modules/asset_loader/lib/json"]
 	path = modules/asset_loader/lib/json
@@ -48,8 +48,8 @@
 	branch = main
 [submodule "lib/VulkanMemoryAllocator-Hpp"]
 	path = lib/VulkanMemoryAllocator-Hpp
-	url = https://github.com/TheJackiMonster/VulkanMemoryAllocator-Hpp.git
-	branch = fix
+	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp.git
+	branch = master
 [submodule "modules/algorithm/lib/FidelityFX-SPD"]
 	path = modules/algorithm/lib/FidelityFX-SPD
 	url = https://github.com/GPUOpen-Effects/FidelityFX-SPD.git

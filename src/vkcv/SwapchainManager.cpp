@@ -207,7 +207,7 @@ namespace vkcv {
 			vk::CompositeAlphaFlagBitsKHR::eOpaque, chosenPresentMode, true, entry.m_Swapchain);
 
 		entry.m_Swapchain = device.createSwapchainKHR(swapchainCreateInfo);
-		return true;
+		return entry.m_Swapchain? true : false;
 	}
 
 	SwapchainHandle SwapchainManager::createSwapchain(Window &window) {

@@ -5,6 +5,7 @@
  * @brief Template event struct to synchronize callbacks.
  */
 
+#include <algorithm>
 #include <functional>
 
 #ifndef __MINGW32__

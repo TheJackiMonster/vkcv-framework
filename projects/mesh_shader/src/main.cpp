@@ -302,15 +302,13 @@ int main(int argc, const char** argv) {
 			2, meshletBuffer.getHandle()
 	).writeStorageBuffer(
 			4, matrixBuffer.getHandle()
-	).writeStorageBuffer(
-			5, meshletBuffer.getHandle()
 	);
 	
 	meshShaderWrites.writeUniformBuffer(3, cameraPlaneBuffer.getHandle());
 
-    core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
+  core.writeDescriptorSet( meshShaderDescriptorSet, meshShaderWrites);
 
-    vkcv::ImageHandle depthBuffer;
+  vkcv::ImageHandle depthBuffer;
 	vkcv::ImageHandle swapchainImageHandle = vkcv::ImageHandle::createSwapchainImageHandle();
 
 	vkcv::VertexData vertexData (vertexBufferBindings);

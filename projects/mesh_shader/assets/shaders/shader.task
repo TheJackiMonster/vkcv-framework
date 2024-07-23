@@ -14,8 +14,7 @@ layout( push_constant ) uniform constants {
     uint matrixIndex;
 };
 
-// TODO: reuse mesh stage binding at location 2 after required fix in framework
-layout(std430, set=0, binding = 5) readonly buffer meshletBuffer {
+layout(std430, set=0, binding = 2) readonly buffer meshletBuffer {
     Meshlet meshlets[];
 };
 
