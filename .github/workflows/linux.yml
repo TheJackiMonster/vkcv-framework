@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -qq update
-          sudo apt-get -qq install ninja-build cmake g++
+          sudo apt-get -qq install ninja-build cmake extra-cmake-modules g++
           sudo apt-get -qq install libvulkan-dev xorg-dev
 
       - name: Build framework
