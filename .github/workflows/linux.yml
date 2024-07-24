@@ -25,7 +25,7 @@ jobs:
         run: |
           sudo apt-get -qq update
           sudo apt-get -qq install ninja-build cmake extra-cmake-modules g++
-          sudo apt-get -qq install libvulkan-dev xorg-dev libwayland-bin
+          sudo apt-get -qq install libvulkan-dev xorg-dev libwayland-bin libwayland-client0 libwayland-cursor0 libwayland-egl1 libxkbcommon0
 
       - name: Build framework
         run: |
