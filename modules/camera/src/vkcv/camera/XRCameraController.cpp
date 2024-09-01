@@ -6,12 +6,10 @@ namespace vkcv::camera {
   XRCameraController::XRCameraController() :
     m_instance(XR_NULL_HANDLE),
     m_system_id(XR_NULL_SYSTEM_ID),
-    m_session(XR_NULL_HANDLE)
+    m_session(XR_NULL_HANDLE),
+    m_space(XR_NULL_HANDLE)
   {
     XrInstanceCreateInfo instanceInfo {XR_TYPE_INSTANCE_CREATE_INFO};
-    instanceInfo.next = nullptr;
-    instanceInfo.enabledExtensionCount = 0;
-    instanceInfo.enabledExtensionNames = nullptr;
 
     strcpy(instanceInfo.applicationInfo.applicationName, VKCV_FRAMEWORK_NAME);
 
@@ -27,15 +25,26 @@ namespace vkcv::camera {
     }
 
     XrSessionCreateInfo sessionInfo {XR_TYPE_SESSION_CREATE_INFO};
-    sessionInfo.next = nullptr;
     sessionInfo.systemId = m_system_id;
 
     if (XR_SUCCESS != xrCreateSession(m_instance, &sessionInfo, &m_session)) {
       vkcv::log(vkcv::LogLevel::ERROR, "Creating an XR session failed");
     }
+
+    XrReferenceSpaceCreateInfo spaceInfo {XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
+    spaceInfo.poseInReferenceSpace.orientation.w = 1.0f;
+    spaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
+
+    if (XR_SUCCESS != xrCreateReferenceSpace(m_session, &spaceInfo, &m_space)) {
+      vkcv::log(vkcv::LogLevel::ERROR, "Creating an XR space failed");
+    }
   }
 
   XRCameraController::~XRCameraController() {
+    if (m_space) {
+      xrDestroySpace(m_space);
+    }
+
     if (m_session) {
       xrDestroySession(m_session);
     }
@@ -46,6 +55,31 @@ namespace vkcv::camera {
   }
 
   void XRCameraController::updateCamera(double deltaTime, Camera &camera) {
+    std::vector<XrView> views;
+
+    XrViewState viewState {XR_TYPE_VIEW_STATE};
+    const uint32_t viewCapacity = views.size();
+    uint32_t viewCount;
+
+    XrViewLocateInfo viewInfo {XR_TYPE_VIEW_LOCATE_INFO};
+    viewInfo.viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
+    viewInfo.space = m_space;
+
+    XrResult result = xrLocateViews(
+      m_session,
+      &viewInfo,
+      &viewState,
+      &viewCount,
+      views.data()
+    );
+
+    if ((XR_SUCCESS != result) || 
+        ((viewState.viewStateFlags & XR_VIEW_STATE_POSITION_VALID_BIT) == 0) ||
+        ((viewState.viewStateFlags & XR_VIEW_STATE_ORIENTATION_VALID_BIT) == 0)) {
+      vkcv::log(vkcv::LogLevel::WARNING, "Unable to locate XR views");
+      return;
+    }
+
     // TODO
   }
 

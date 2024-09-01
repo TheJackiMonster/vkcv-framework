@@ -25,6 +25,7 @@ namespace vkcv::camera {
         XrInstance m_instance;
         XrSystemId m_system_id;
         XrSession m_session;
+        XrSpace m_space;
 
     public:
 
