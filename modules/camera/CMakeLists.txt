@@ -22,6 +22,9 @@ set(vkcv_camera_sources
 		
 		${vkcv_camera_include}/vkcv/camera/TrackballCameraController.hpp
 		${vkcv_camera_source}/vkcv/camera/TrackballCameraController.cpp
+
+		${vkcv_camera_include}/vkcv/camera/XRCameraController.hpp
+		${vkcv_camera_source}/vkcv/camera/XRCameraController.cpp
 )
 
 filter_headers(vkcv_camera_sources ${vkcv_camera_include} vkcv_camera_headers)
@@ -33,6 +36,9 @@ set_target_properties(vkcv_camera PROPERTIES PUBLIC_HEADER "${vkcv_camera_header
 # Setup some path variables to load libraries
 set(vkcv_camera_lib lib)
 set(vkcv_camera_lib_path ${PROJECT_SOURCE_DIR}/${vkcv_camera_lib})
+
+# Check and load OpenXR-SDK
+include(config/OPEN_XR_SDK.cmake)
 
 target_link_libraries(vkcv_camera PUBLIC
 		${vkcv_camera_libraries}

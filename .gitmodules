@@ -82,3 +82,6 @@
 [submodule "modules/shader_compiler/lib/json-c"]
 	path = modules/shader_compiler/lib/json-c
 	url = https://github.com/json-c/json-c.git
+[submodule "modules/camera/lib/OpenXR-SDK"]
+	path = modules/camera/lib/OpenXR-SDK
+	url = https://github.com/KhronosGroup/OpenXR-SDK.git
