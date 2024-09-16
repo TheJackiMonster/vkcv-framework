@@ -80,6 +80,7 @@ namespace vkcv::shader {
 																		const std::filesystem::path& includePath) {
 		slang::SessionDesc sessionDesc = {};
     slang::TargetDesc targetDesc = {};
+		SlangSourceLanguage lang;
 
 		targetDesc.format = SLANG_SPIRV;
 
@@ -87,16 +88,21 @@ namespace vkcv::shader {
 			case SlangCompileProfile::GLSL:
 				targetDesc.profile = s_GlobalSession->findProfile("glsl_460");
 				sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
+				sessionDesc.allowGLSLSyntax = true;
+				lang = SLANG_SOURCE_LANGUAGE_GLSL;
 				break;
 			case SlangCompileProfile::HLSL:
 				targetDesc.profile = s_GlobalSession->findProfile("sm_5_0");
 				sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_ROW_MAJOR;
+				lang = SLANG_SOURCE_LANGUAGE_HLSL;
 				break;
 			case SlangCompileProfile::SPIRV:
 				targetDesc.profile = s_GlobalSession->findProfile("spirv_1_5");
 				targetDesc.flags = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
+				lang = SLANG_SOURCE_LANGUAGE_SPIRV;
 				break;
 			default:
+				lang = SLANG_SOURCE_LANGUAGE_UNKNOWN;
 				break;
 		}
 
@@ -134,8 +140,11 @@ namespace vkcv::shader {
 			return false;
 		}
 
+		const int translationUnit = request->addTranslationUnit(lang, nullptr);
+		request->addTranslationUnitSourceString(translationUnit, nullptr, shaderSource.c_str());
+
 		const int entryPoint = request->addEntryPoint(
-			0, "main", findShaderLanguage(shaderStage)
+			translationUnit, "main", findShaderLanguage(shaderStage)
 		);
 
 		if (SLANG_FAILED(request->compile())) {
@@ -146,8 +155,13 @@ namespace vkcv::shader {
 		size_t size;
 		const void *code = request->getEntryPointCode(entryPoint, &size);
 
-		if ((size <= 0) || (!code)) {
-			vkcv_log(LogLevel::ERROR, "Entry point could not be found");
+		if (0 == size) {
+			code = request->getCompileRequestCode(&size);
+		}
+
+		if ((0 == size) || (!code)) {
+			vkcv_log(LogLevel::ERROR, "Entry point could not be found\n%s", 
+							 request->getDiagnosticOutput());
 			return false;
 		}
 
