@@ -62,7 +62,8 @@ namespace vkcv {
 		std::ofstream file (path.string(), std::ios::out);
 		
 		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", path.c_str());
+			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)",
+							 path.string().c_str());
 			return false;
 		}
 		
@@ -78,7 +79,8 @@ namespace vkcv {
 		std::ofstream file (path.string(), std::ios::out);
 		
 		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", path.c_str());
+			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)",
+							 path.string().c_str());
 			return false;
 		}
 		
@@ -97,7 +99,8 @@ namespace vkcv {
 		std::ofstream file (path.string(), std::ios::out);
 		
 		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", path.c_str());
+			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)",
+							 path.string().c_str());
 			return false;
 		}
 		
@@ -113,7 +116,8 @@ namespace vkcv {
 		std::ifstream file (path.string(), std::ios::ate);
 		
 		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", path.c_str());
+			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)",
+							 path.string().c_str());
 			return false;
 		}
 		
@@ -132,14 +136,16 @@ namespace vkcv {
 		std::ifstream file (path.string(), std::ios::ate);
 		
 		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", path.c_str());
+			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)",
+							 path.string().c_str());
 			return false;
 		}
 		
 		const std::streamsize fileSize = file.tellg();
 		
 		if (fileSize % sizeof(uint32_t) != 0) {
-			vkcv_log(LogLevel::ERROR, "The file is not a valid binary: %s", path.c_str());
+			vkcv_log(LogLevel::ERROR, "The file is not a valid binary: %s",
+							 path.string().c_str());
 			return false;
 		}
 		
@@ -160,7 +166,8 @@ namespace vkcv {
 		std::ifstream file (path.string(), std::ios::ate);
 		
 		if (!file.is_open()) {
-			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)", path.c_str());
+			vkcv_log(LogLevel::ERROR, "The file could not be opened (%s)",
+							 path.string().c_str());
 			return false;
 		}
 		

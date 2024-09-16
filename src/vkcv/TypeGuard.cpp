@@ -16,17 +16,21 @@ namespace vkcv {
 		}
 
 		if (m_typeHash != hash) {
-			vkcv_log(LogLevel::WARNING,
-					 "Hash (%lu) does not match the specified hash of the type guard (%lu)", hash,
-					 m_typeHash);
+			vkcv_log(
+				LogLevel::WARNING,
+				"Hash (%lu) does not match the specified hash of the type guard (%lu)",
+				hash, m_typeHash
+			);
 
 			return false;
 		}
 
 		if (strcmp(m_typeName, name) != 0) {
-			vkcv_log(LogLevel::WARNING,
-					 "Name (%s) does not match the specified name of the type guard (%s)", name,
-					 m_typeName);
+			vkcv_log(
+				LogLevel::WARNING,
+				"Name (%s) does not match the specified name of the type guard (%s)",
+				name, m_typeName
+			);
 
 			return false;
 		} else {
@@ -37,9 +41,11 @@ namespace vkcv {
 
 	bool TypeGuard::checkTypeSize(size_t size) const {
 		if (m_typeSize != size) {
-			vkcv_log(LogLevel::WARNING,
-					 "Size (%lu) does not match the specified size of the type guard (%lu)", size,
-					 m_typeSize);
+			vkcv_log(
+				LogLevel::WARNING,
+				"Size (%lu) does not match the specified size of the type guard (%lu)",
+				size, m_typeSize
+			);
 
 			return false;
 		} else {

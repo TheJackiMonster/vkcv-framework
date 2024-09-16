@@ -627,13 +627,17 @@ namespace vkcv {
 		const char* clone = strclone(extension.c_str());
 
 		if (!clone) {
-			vkcv_log(LogLevel::WARNING, "Extension '%s' is not valid", extension.c_str());
+			vkcv_log(LogLevel::WARNING, "Extension '%s' is not valid",
+							 extension.c_str());
 			return false;
 		}
 
 		if (!isExtensionSupported(extension)) {
-			vkcv_log((required ? LogLevel::ERROR : LogLevel::WARNING),
-					 "Extension '%s' is not supported", extension.c_str());
+			vkcv_log(
+				(required ? LogLevel::ERROR : LogLevel::WARNING),
+				"Extension '%s' is not supported",
+				extension.c_str()
+			);
 
 			delete [] clone;
 			if (required) {

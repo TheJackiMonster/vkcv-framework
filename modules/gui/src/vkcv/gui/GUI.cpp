@@ -15,7 +15,8 @@ namespace vkcv::gui {
 		
 		const auto result = vk::Result(resultCode);
 		
-		vkcv_log(LogLevel::ERROR, "ImGui has a problem with Vulkan! (%s)", vk::to_string(result).c_str());
+		vkcv_log(LogLevel::ERROR, "ImGui has a problem with Vulkan! (%s)",
+						 vk::to_string(result).c_str());
 	}
 	
 	GUI::GUI(Core& core, WindowHandle& windowHandle) :

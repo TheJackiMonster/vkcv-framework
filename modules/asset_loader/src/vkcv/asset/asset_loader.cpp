@@ -17,7 +17,7 @@ namespace vkcv::asset {
 	 * @param path	The path to the file that was responsible for the exception
 	 */
 	static void recurseExceptionPrint(const std::exception& e, const std::string &path) {
-		vkcv_log(LogLevel::ERROR, "Loading file %s: %s", path.c_str(), e.what());
+		vkcv_log(LogLevel::ERROR, "Loading file %s: %s", path.string().c_str(), e.what());
 		
 		try {
 			std::rethrow_if_nested(e);
@@ -554,7 +554,7 @@ namespace vkcv::asset {
 	
 		// file has to contain at least one mesh
 		if (sceneObjects.meshes.empty()) {
-			vkcv_log(LogLevel::ERROR, "No meshes found! (%s)", path.c_str());
+			vkcv_log(LogLevel::ERROR, "No meshes found! (%s)", path.string().c_str());
 			return ASSET_ERROR;
 		} else {
 			scene.meshes.reserve(sceneObjects.meshes.size());
@@ -565,7 +565,7 @@ namespace vkcv::asset {
 				
 				if (loadVertexGroups(sceneObjects.meshes[i], sceneObjects, scene, mesh) != ASSET_SUCCESS) {
 					vkcv_log(LogLevel::ERROR, "Failed to load vertex groups of '%s'! (%s)",
-							 mesh.name.c_str(), path.c_str());
+							 mesh.name.c_str(), path.string().c_str());
 					return ASSET_ERROR;
 				}
 				
@@ -625,7 +625,8 @@ namespace vkcv::asset {
 		}
 		
 		if (sceneObjects.samplers.empty()) {
-			vkcv_log(LogLevel::WARNING, "No samplers found! (%s)", path.c_str());
+			vkcv_log(LogLevel::WARNING, "No samplers found! (%s)", 
+							 path.string().c_str());
 		} else {
 			scene.samplers.reserve(sceneObjects.samplers.size());
 			
@@ -635,7 +636,8 @@ namespace vkcv::asset {
 		}
 		
 		if (sceneObjects.textures.empty()) {
-			vkcv_log(LogLevel::WARNING, "No textures found! (%s)", path.c_str());
+			vkcv_log(LogLevel::WARNING, "No textures found! (%s)",
+							 path.string().c_str());
 		} else {
 			scene.textures.reserve(sceneObjects.textures.size());
 			
@@ -647,7 +649,7 @@ namespace vkcv::asset {
 				} else
 				if (static_cast<size_t>(textureObject.sampler) >= scene.samplers.size()) {
 					vkcv_log(LogLevel::ERROR, "Sampler of texture '%s' missing (%s)",
-							 textureObject.name.c_str(), path.c_str());
+							 textureObject.name.c_str(), path.string().c_str());
 					return ASSET_ERROR;
 				} else {
 					texture.sampler = textureObject.sampler;
@@ -656,7 +658,7 @@ namespace vkcv::asset {
 				if ((textureObject.source < 0) ||
 					(static_cast<size_t>(textureObject.source) >= sceneObjects.images.size())) {
 					vkcv_log(LogLevel::ERROR, "Failed to load texture '%s' (%s)",
-							 textureObject.name.c_str(), path.c_str());
+							 textureObject.name.c_str(), path.string().c_str());
 					return ASSET_ERROR;
 				}
 				
@@ -679,7 +681,8 @@ namespace vkcv::asset {
 		}
 		
 		if (sceneObjects.materials.empty()) {
-			vkcv_log(LogLevel::WARNING, "No materials found! (%s)", path.c_str());
+			vkcv_log(LogLevel::WARNING, "No materials found! (%s)",
+							 path.string().c_str());
 		} else {
 			scene.materials.reserve(sceneObjects.materials.size());
 			
@@ -746,7 +749,7 @@ namespace vkcv::asset {
 		
 		if (!data) {
 			vkcv_log(LogLevel::ERROR, "Texture could not be loaded from '%s'",
-					 texture.path.c_str());
+							 texture.path.string().c_str());
 			
 			texture.width = 0;
 			texture.height = 0;
@@ -777,7 +780,7 @@ namespace vkcv::asset {
 				const int result = loadTextureData(scene.textures[material.baseColor]);
 				if (ASSET_SUCCESS != result) {
 					vkcv_log(LogLevel::ERROR, "Failed loading baseColor texture of mesh '%s'",
-							 mesh.name.c_str())
+									 mesh.name.c_str())
 					return result;
 				}
 			}
@@ -786,7 +789,7 @@ namespace vkcv::asset {
 				const int result = loadTextureData(scene.textures[material.metalRough]);
 				if (ASSET_SUCCESS != result) {
 					vkcv_log(LogLevel::ERROR, "Failed loading metalRough texture of mesh '%s'",
-							 mesh.name.c_str())
+									 mesh.name.c_str())
 					return result;
 				}
 			}
@@ -795,7 +798,7 @@ namespace vkcv::asset {
 				const int result = loadTextureData(scene.textures[material.normal]);
 				if (ASSET_SUCCESS != result) {
 					vkcv_log(LogLevel::ERROR, "Failed loading normal texture of mesh '%s'",
-							 mesh.name.c_str())
+									 mesh.name.c_str())
 					return result;
 				}
 			}
@@ -804,7 +807,7 @@ namespace vkcv::asset {
 				const int result = loadTextureData(scene.textures[material.occlusion]);
 				if (ASSET_SUCCESS != result) {
 					vkcv_log(LogLevel::ERROR, "Failed loading occlusion texture of mesh '%s'",
-							 mesh.name.c_str())
+									 mesh.name.c_str())
 					return result;
 				}
 			}
@@ -813,7 +816,7 @@ namespace vkcv::asset {
 				const int result = loadTextureData(scene.textures[material.emissive]);
 				if (ASSET_SUCCESS != result) {
 					vkcv_log(LogLevel::ERROR, "Failed loading emissive texture of mesh '%s'",
-							 mesh.name.c_str())
+									 mesh.name.c_str())
 					return result;
 				}
 			}
@@ -828,7 +831,7 @@ namespace vkcv::asset {
 		
 		if (result != ASSET_SUCCESS) {
 			vkcv_log(LogLevel::ERROR, "Loading scene failed '%s'",
-					 path.c_str());
+							 path.string().c_str());
 			return result;
 		}
 		
@@ -843,7 +846,7 @@ namespace vkcv::asset {
 			
 			if (result != ASSET_SUCCESS) {
 				vkcv_log(LogLevel::ERROR, "Loading mesh with index %d failed '%s'",
-						 static_cast<int>(i), path.c_str());
+						 static_cast<int>(i), path.string().c_str());
 				return result;
 			}
 		}

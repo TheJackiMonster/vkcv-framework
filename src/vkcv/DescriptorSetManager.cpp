@@ -165,7 +165,7 @@ namespace vkcv {
 
 			if (result != vk::Result::eSuccess) {
 				vkcv_log(LogLevel::ERROR, "Failed to create descriptor set (%s)",
-						 vk::to_string(result).c_str());
+								 vk::to_string(result).c_str());
 				return {};
 			}
 		};

@@ -896,7 +896,7 @@ namespace vkcv {
 
 		if ((result != vk::Result::eSuccess) && (result != vk::Result::eSuboptimalKHR)) {
 			vkcv_log(LogLevel::ERROR, "Swapchain presentation failed (%s)",
-					 vk::to_string(result).c_str());
+							 vk::to_string(result).c_str());
 		} else if (result == vk::Result::eSuboptimalKHR) {
 			vkcv_log(LogLevel::WARNING, "Swapchain presentation is suboptimal");
 			m_SwapchainManager->signalRecreation(swapchainHandle);

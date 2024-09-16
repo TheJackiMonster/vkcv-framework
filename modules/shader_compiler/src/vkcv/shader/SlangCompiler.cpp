@@ -109,7 +109,7 @@ namespace vkcv::shader {
 		sessionDesc.targets = &targetDesc;
 		sessionDesc.targetCount = 1;
 
-		const char *searchPath = includePath.c_str();
+		const char *searchPath = includePath.string().c_str();
 		sessionDesc.searchPaths = &searchPath;
 		sessionDesc.searchPathCount = 1;
 
