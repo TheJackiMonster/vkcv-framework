@@ -5,6 +5,7 @@
 
 #include "BufferManager.hpp"
 #include "vkcv/Core.hpp"
+#include <vkcv/Handles.hpp>
 #include <vkcv/Logger.hpp>
 
 #include <limits>
@@ -118,8 +119,8 @@ namespace vkcv {
 	}
 
 	BufferHandle BufferManager::createBuffer(const TypeGuard &typeGuard, BufferType type,
-											 BufferMemoryType memoryType, size_t size,
-											 bool readable, size_t alignment) {
+																					 BufferMemoryType memoryType, size_t size,
+																					 bool readable, size_t alignment) {
 		vk::BufferCreateFlags createFlags;
 		vk::BufferUsageFlags usageFlags;
 
@@ -180,6 +181,10 @@ namespace vkcv {
 		}
 
 		const vma::Allocator &allocator = getCore().getContext().getAllocator();
+
+		if (0 == size) {
+			vkcv_log(LogLevel::WARNING, "Invalid buffer size");
+		}
 
 		vma::MemoryUsage memoryUsage;
 		bool mappable;

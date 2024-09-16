@@ -2,7 +2,7 @@
 #include "vkcv/denoising/ReflectionDenoiser.hpp"
 
 #include <vkcv/File.hpp>
-#include <vkcv/shader/HLSLCompiler.hpp>
+#include <vkcv/shader/SlangCompiler.hpp>
 
 #include "ffx_denoiser_reflections_common.h.hxx"
 #include "ffx_denoiser_reflections_config.h.hxx"
@@ -17,29 +17,117 @@
 
 namespace vkcv::denoising {
 	
-	static DescriptorBindings getDescriptorBindings() {
+	static DescriptorBindings getDescriptorBindings(uint32_t step) {
 		DescriptorBindings descriptorBindings = {};
+		uint32_t inputs, outputs;
+
+		switch (step) {
+			case 0:
+				{
+					auto binding = DescriptorBinding {
+						0,
+						DescriptorType::UNIFORM_BUFFER,
+						1,
+						ShaderStage::COMPUTE,
+						false,
+						false
+					};
+
+					descriptorBindings.insert(std::make_pair(0, binding));
+				}
+
+				return descriptorBindings;
+			case 1:
+				inputs = 7;
+				outputs = 3;
+				break;
+			case 2:
+				inputs = 13;
+				outputs = 4;
+				break;
+			case 3:
+				inputs = 6;
+				outputs = 3;
+				break;
+			default:
+				return descriptorBindings;
+		}
+
+		for (uint32_t i = 0; i < inputs; i++) {
+			auto input_binding = DescriptorBinding {
+				i,
+				DescriptorType::IMAGE_SAMPLED,
+				1,
+				ShaderStage::COMPUTE,
+				false,
+				false
+			};
+
+			descriptorBindings.insert(std::make_pair(i, input_binding));
+		}
+
+		{
+			auto sampler_binding = DescriptorBinding {
+				inputs + 0,
+				DescriptorType::SAMPLER,
+				1,
+				ShaderStage::COMPUTE,
+				false,
+				false
+			};
+
+			descriptorBindings.insert(std::make_pair(inputs + 0, sampler_binding));
+		}
+
+		for (uint32_t i = 0; i < outputs; i++) {
+			auto output_binding = DescriptorBinding {
+				inputs + 1 + i,
+				DescriptorType::IMAGE_STORAGE,
+				1,
+				ShaderStage::COMPUTE,
+				false,
+				false
+			};
+
+			descriptorBindings.insert(std::make_pair(inputs + 1 + i, output_binding));
+		}
+
+		{
+			auto buffer_binding = DescriptorBinding {
+				inputs + 1 + outputs,
+				DescriptorType::STORAGE_BUFFER,
+				1,
+				ShaderStage::COMPUTE,
+				false,
+				false
+			};
+
+			descriptorBindings.insert(std::make_pair(inputs + 1 + outputs, buffer_binding));
+		}
 		
 		return descriptorBindings;
 	}
 	
 	ReflectionDenoiser::ReflectionDenoiser(Core &core) :
 	Denoiser(core),
-	
+
 	m_prefilterPipeline(),
 	m_reprojectPipeline(),
 	m_resolveTemporalPipeline(),
-	
-	m_prefilterDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings())),
+
+	m_commonDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings(0))),
+	m_commonDescriptorSet(m_core.createDescriptorSet(m_commonDescriptorSetLayout)),
+
+	m_prefilterDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings(1))),
 	m_prefilterDescriptorSet(m_core.createDescriptorSet(m_prefilterDescriptorSetLayout)),
-	
-	m_reprojectDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings())),
+
+	m_reprojectDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings(2))),
 	m_reprojectDescriptorSet(m_core.createDescriptorSet(m_reprojectDescriptorSetLayout)),
-	
-	m_resolveTemporalDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings())),
+
+	m_resolveTemporalDescriptorSetLayout(m_core.createDescriptorSetLayout(getDescriptorBindings(3))),
 	m_resolveTemporalDescriptorSet(m_core.createDescriptorSet(m_resolveTemporalDescriptorSetLayout))
 	{
-		vkcv::shader::HLSLCompiler compiler;
+		vkcv::shader::SlangCompiler compiler (vkcv::shader::SlangCompileProfile::HLSL);
 		
 		{
 			ShaderProgram program;
@@ -59,7 +147,8 @@ namespace vkcv::denoising {
 			);
 			
 			m_prefilterPipeline = m_core.createComputePipeline({ program, {
-					m_prefilterDescriptorSetLayout
+				m_commonDescriptorSetLayout,
+				m_prefilterDescriptorSetLayout
 			}});
 			
 			DescriptorWrites writes;
@@ -84,7 +173,8 @@ namespace vkcv::denoising {
 			);
 			
 			m_reprojectPipeline = m_core.createComputePipeline({ program, {
-					m_reprojectDescriptorSetLayout
+				m_commonDescriptorSetLayout,
+				m_reprojectDescriptorSetLayout
 			}});
 			
 			DescriptorWrites writes;
@@ -109,7 +199,8 @@ namespace vkcv::denoising {
 			);
 			
 			m_resolveTemporalPipeline = m_core.createComputePipeline({ program, {
-					m_resolveTemporalDescriptorSetLayout
+				m_commonDescriptorSetLayout,
+				m_resolveTemporalDescriptorSetLayout
 			}});
 			
 			DescriptorWrites writes;
