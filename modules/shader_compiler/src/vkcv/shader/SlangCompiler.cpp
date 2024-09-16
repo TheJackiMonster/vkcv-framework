@@ -107,6 +107,21 @@ namespace vkcv::shader {
 		sessionDesc.searchPaths = &searchPath;
 		sessionDesc.searchPathCount = 1;
 
+		std::vector<slang::PreprocessorMacroDesc> macros;
+		macros.reserve(m_defines.size());
+
+		for (const auto& define : m_defines) {
+			const slang::PreprocessorMacroDesc macro = {
+				define.first.c_str(),
+				define.second.c_str()
+			};
+
+			macros.push_back(macro);
+		}
+
+		sessionDesc.preprocessorMacros = macros.data();
+		sessionDesc.preprocessorMacroCount = macros.size();
+
 		Slang::ComPtr<slang::ISession> session;
 		if (SLANG_FAILED(s_GlobalSession->createSession(sessionDesc, session.writeRef()))) {
 			vkcv_log(LogLevel::ERROR, "Compiler session could not be created");
