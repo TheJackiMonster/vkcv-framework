@@ -16,8 +16,10 @@ namespace vkcv::asset {
 	 * @param e	The exception being thrown
 	 * @param path	The path to the file that was responsible for the exception
 	 */
-	static void recurseExceptionPrint(const std::exception& e, const std::string &path) {
-		vkcv_log(LogLevel::ERROR, "Loading file %s: %s", path.string().c_str(), e.what());
+	static void recurseExceptionPrint(const std::exception& e, 
+																		const std::filesystem::path& path) {
+		vkcv_log(LogLevel::ERROR, "Loading file %s: %s",
+						 path.string().c_str(), e.what());
 		
 		try {
 			std::rethrow_if_nested(e);
@@ -537,10 +539,10 @@ namespace vkcv::asset {
 				);
 			}
 		} catch (const std::system_error& err) {
-			recurseExceptionPrint(err, path.string());
+			recurseExceptionPrint(err, path);
 			return ASSET_ERROR;
 		} catch (const std::exception& e) {
-			recurseExceptionPrint(e, path.string());
+			recurseExceptionPrint(e, path);
 			return ASSET_ERROR;
 		}
 		
