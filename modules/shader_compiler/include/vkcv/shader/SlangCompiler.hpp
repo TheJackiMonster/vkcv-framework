@@ -12,15 +12,27 @@ namespace vkcv::shader {
     * @{
     */
 	
+	enum class SlangCompileProfile {
+		GLSL,
+		HLSL,
+		SPIRV,
+		UNKNOWN
+	};
+	
 	/**
 	 * An abstract class to handle Slang runtime shader compilation.
 	 */
 	class SlangCompiler : public Compiler {
+	private:
+		SlangCompileProfile m_profile;
+	
 	public:
 		/**
 		 * The constructor of a runtime Slang shader compiler instance.
+		 *
+		 * @param[in] profile Compile profile (optional)
 		 */
-		SlangCompiler();
+		SlangCompiler(SlangCompileProfile profile = SlangCompileProfile::UNKNOWN);
 		
 		/**
 		 * The copy-constructor of a runtime Slang shader compiler instance.
@@ -56,23 +68,21 @@ namespace vkcv::shader {
 		 * @return Reference to this instance
 		 */
 		SlangCompiler& operator=(SlangCompiler&& other) = default;
-		
+
 		/**
-         * Compile a shader from a specific file path for a target stage with
-         * a custom shader include path and an event function called if the
-         * compilation completes.
-         *
-         * @param[in] shaderStage Shader pipeline stage
-         * @param[in] shaderPath Filepath of shader
-         * @param[in] compiled Shader compilation event
-         * @param[in] includePath Include path for shaders
-         * @param[in] update Flag to update shaders during runtime
-         */
-		void compile(ShaderStage shaderStage,
-					 const std::filesystem::path& shaderPath,
-					 const ShaderCompiledFunction& compiled,
-					 const std::filesystem::path& includePath = "",
-					 bool update = false) override;
+		 * Compile a shader from source for a target stage with a custom shader
+		 * include path and an event function called if the compilation completes.
+		 *
+		 * @param[in] shaderStage Shader pipeline stage
+		 * @param[in] shaderSource Source of shader
+		 * @param[in] compiled Shader compilation event
+		 * @param[in] includePath Include path for shaders
+		 * @return Result if the compilation succeeds
+		 */
+		bool compileSource(ShaderStage shaderStage,
+											 const std::string& shaderSource,
+											 const ShaderCompiledFunction& compiled,
+											 const std::filesystem::path& includePath) override;
 		
 	};
 	

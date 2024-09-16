@@ -41,6 +41,33 @@ namespace vkcv::shader {
 				}, directory
 		);
 	}
+
+	void Compiler::compile(ShaderStage shaderStage,
+												 const std::filesystem::path &shaderPath,
+												 const ShaderCompiledFunction &compiled,
+												 const std::filesystem::path &includePath,
+												 bool update) {
+		std::string shaderCode;
+		bool result = readTextFromFile(shaderPath, shaderCode);
+		
+		if (!result) {
+			vkcv_log(LogLevel::ERROR, "Loading shader failed: (%s)", shaderPath.string().c_str());
+		}
+		
+		if (!includePath.empty()) {
+			result = compileSource(shaderStage, shaderCode, compiled, includePath);
+		} else {
+			result = compileSource(shaderStage, shaderCode, compiled, shaderPath.parent_path());
+		}
+		
+		if (!result) {
+			vkcv_log(LogLevel::ERROR, "Shader compilation failed: (%s)", shaderPath.string().c_str());
+		}
+		
+		if (update) {
+			// TODO: Shader hot compilation during runtime
+		}
+	}
 	
 	void Compiler::compileProgram(ShaderProgram& program,
 								  const Dictionary<ShaderStage, const std::filesystem::path>& stages,
