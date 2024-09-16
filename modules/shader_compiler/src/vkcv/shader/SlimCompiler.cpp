@@ -14,15 +14,15 @@ namespace vkcv::shader {
     : ShadyCompiler(), m_target(target) {}
 
     static bool shadyCompileModule(Module* module,
-								   ShaderStage shaderStage,
-								   const std::string& shaderSource,
-								   const ShaderCompiledFunction &compiled,
-								   const std::filesystem::path &includePath) {
+																	 ShaderStage shaderStage,
+																	 const std::string& shaderSource,
+																	 const ShaderCompiledFunction &compiled,
+																	 const std::filesystem::path &includePath) {
 		ShadyErrorCodes codes = driver_load_source_file(
-            SrcSlim,
-            shaderSource.length(),
+			SrcSlim,
+			shaderSource.length(),
 			shaderSource.c_str(),
-            module
+			module
 		);
 
 		switch (codes) {
@@ -46,7 +46,7 @@ namespace vkcv::shader {
 
 		DriverConfig config = default_driver_config();
 
-        config.target = TgtSPV;
+		config.target = TgtSPV;
 		config.output_filename = tmp_path.string().c_str();
 
 		codes = driver_compile(&config, module);
@@ -78,10 +78,10 @@ namespace vkcv::shader {
 	}
 
     static bool shadyCompileArena(IrArena* arena,
-								  ShaderStage shaderStage,
-								  const std::string& shaderSource,
-								  const ShaderCompiledFunction &compiled,
-								  const std::filesystem::path &includePath) {
+																	ShaderStage shaderStage,
+																	const std::string& shaderSource,
+																	const ShaderCompiledFunction &compiled,
+																	const std::filesystem::path &includePath) {
 		Module* module = new_module(arena, "slim_module");
 
 		if (nullptr == module) {
@@ -92,11 +92,11 @@ namespace vkcv::shader {
 		return shadyCompileModule(module, shaderStage, shaderSource, compiled, includePath);
 	}
 
-    bool SlimCompiler::compileSource(ShaderStage shaderStage,
-                                     const std::string& shaderSource,
-						             const ShaderCompiledFunction& compiled,
-						             const std::filesystem::path& includePath) {
-        if (ShaderStage::COMPUTE != shaderStage) {
+	bool SlimCompiler::compileSource(ShaderStage shaderStage,
+																	 const std::string& shaderSource,
+																	 const ShaderCompiledFunction& compiled,
+																	 const std::filesystem::path& includePath) {
+		if (ShaderStage::COMPUTE != shaderStage) {
 			vkcv_log(LogLevel::ERROR, "Shader stage not supported");
 			return false;
 		}
@@ -112,7 +112,7 @@ namespace vkcv::shader {
 		bool result = shadyCompileArena(arena, shaderStage, shaderSource, compiled, includePath);
 
 		destroy_ir_arena(arena);
-        return result;
-    }
+		return result;
+	}
 
 }

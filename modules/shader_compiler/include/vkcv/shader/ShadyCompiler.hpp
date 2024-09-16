@@ -57,23 +57,6 @@ namespace vkcv::shader {
 		 */
         ShadyCompiler& operator=(ShadyCompiler&& other) = default;
 
-        /**
-         * Compile a shader from a specific file path for a target stage with
-         * a custom shader include path and an event function called if the
-         * compilation completes.
-         *
-         * @param[in] shaderStage Shader pipeline stage
-         * @param[in] shaderPath Filepath of shader
-         * @param[in] compiled Shader compilation event
-         * @param[in] includePath Include path for shaders
-         * @param[in] update Flag to update shaders during runtime
-         */
-        void compile(ShaderStage shaderStage,
-					 const std::filesystem::path& shaderPath,
-					 const ShaderCompiledFunction& compiled,
-					 const std::filesystem::path& includePath = "",
-					 bool update = false) override;
-
     };
 
     /** @} */
