@@ -18,7 +18,8 @@ namespace vkcv::shader {
 		const std::filesystem::path directory = generateTemporaryDirectoryPath();
 		
 		if (!std::filesystem::create_directory(directory)) {
-			vkcv_log(LogLevel::ERROR, "The directory could not be created (%s)", directory.c_str());
+			vkcv_log(LogLevel::ERROR, "The directory could not be created (%s)",
+							 directory.string().c_str());
 			return false;
 		}
 		
@@ -44,6 +45,35 @@ namespace vkcv::shader {
 					std::filesystem::remove_all(directory);
 				}, directory
 		);
+	}
+
+	void Compiler::compile(ShaderStage shaderStage,
+												 const std::filesystem::path &shaderPath,
+												 const ShaderCompiledFunction &compiled,
+												 const std::filesystem::path &includePath,
+												 bool update) {
+		std::string shaderCode;
+		bool result = readTextFromFile(shaderPath, shaderCode);
+		
+		if (!result) {
+			vkcv_log(LogLevel::ERROR, "Loading shader failed: (%s)",
+							 shaderPath.string().c_str());
+		}
+		
+		if (!includePath.empty()) {
+			result = compileSource(shaderStage, shaderCode, compiled, includePath);
+		} else {
+			result = compileSource(shaderStage, shaderCode, compiled, shaderPath.parent_path());
+		}
+		
+		if (!result) {
+			vkcv_log(LogLevel::ERROR, "Shader compilation failed: (%s)",
+							 shaderPath.string().c_str());
+		}
+		
+		if (update) {
+			// TODO: Shader hot compilation during runtime
+		}
 	}
 	
 	void Compiler::compileProgram(ShaderProgram& program,

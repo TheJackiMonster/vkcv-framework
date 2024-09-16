@@ -176,8 +176,12 @@ namespace vkcv {
 	static bool createVulkanSwapchain(const Context &context, const Window &window,
 									  SwapchainEntry &entry) {
 		if (!context.getFeatureManager().isExtensionActive(VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
-			vkcv_log(LogLevel::WARNING, "Extension required to create a swapchain: '%s'",
-					 VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+			vkcv_log(
+				LogLevel::WARNING,
+				"Extension required to create a swapchain: '%s'",
+				VK_KHR_SWAPCHAIN_EXTENSION_NAME
+			);
+			
 			return false;
 		}
 		

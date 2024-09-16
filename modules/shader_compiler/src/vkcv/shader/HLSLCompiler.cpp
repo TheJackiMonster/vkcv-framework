@@ -232,7 +232,7 @@ namespace vkcv::shader {
 							   false, false,
 							   messages, &preprocessedHLSL, includer)) {
 			vkcv_log(LogLevel::ERROR, "Shader preprocessing failed {\n%s\n%s\n}",
-					 shader.getInfoLog(), shader.getInfoDebugLog());
+							 shader.getInfoLog(), shader.getInfoDebugLog());
 			return false;
 		}
 		
@@ -241,7 +241,7 @@ namespace vkcv::shader {
 		
 		if (!shader.parse(&resources, 100, false, messages)) {
 			vkcv_log(LogLevel::ERROR, "Shader parsing failed {\n%s\n%s\n}",
-					 shader.getInfoLog(), shader.getInfoDebugLog());
+							 shader.getInfoLog(), shader.getInfoDebugLog());
 			return false;
 		}
 		
@@ -249,7 +249,7 @@ namespace vkcv::shader {
 		
 		if (!program.link(messages)) {
 			vkcv_log(LogLevel::ERROR, "Shader linking failed {\n%s\n%s\n}",
-					 shader.getInfoLog(), shader.getInfoDebugLog());
+							 shader.getInfoLog(), shader.getInfoDebugLog());
 			return false;
 		}
 		

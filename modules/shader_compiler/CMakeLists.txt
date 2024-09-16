@@ -30,6 +30,9 @@ set(vkcv_shader_compiler_sources
 
 		${vkcv_shader_compiler_include}/vkcv/shader/LLVMCompiler.hpp
 		${vkcv_shader_compiler_source}/vkcv/shader/LLVMCompiler.cpp
+
+		${vkcv_shader_compiler_include}/vkcv/shader/SlangCompiler.hpp
+		${vkcv_shader_compiler_source}/vkcv/shader/SlangCompiler.cpp
 )
 
 filter_headers(vkcv_shader_compiler_sources ${vkcv_shader_compiler_include} vkcv_shader_compiler_headers)
@@ -52,6 +55,12 @@ include(config/GLSLANG.cmake)
 # Check and load Shady (with murmur3)
 include(config/Murmur3.cmake)
 include(config/Shady.cmake)
+
+# Check and load SLANG
+include(config/MINIZ.cmake)
+include(config/LZ4.cmake)
+include(config/UNORDERED_DENSE.cmake)
+include(config/SLANG.cmake)
 
 # link the required libraries to the module
 target_link_libraries(vkcv_shader_compiler ${vkcv_shader_compiler_libraries} vkcv)

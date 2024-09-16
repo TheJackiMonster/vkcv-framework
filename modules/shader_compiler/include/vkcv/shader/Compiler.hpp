@@ -94,11 +94,11 @@ namespace vkcv::shader {
          * @param[in] includePath Include path for shaders
          * @param[in] update Flag to update shaders during runtime
          */
-		virtual void compile(ShaderStage shaderStage,
+	     void compile(ShaderStage shaderStage,
 							 const std::filesystem::path& shaderPath,
 							 const ShaderCompiledFunction& compiled,
-							 const std::filesystem::path& includePath,
-							 bool update) = 0;
+							 const std::filesystem::path& includePath = "",
+							 bool update = false);
 		
 		/**
          * Compile a shader program from a specific map of given file paths for
