@@ -6,23 +6,27 @@
 
 extern "C" {
 	#include <shady/driver.h>
+	#include <shady/ir.h>
 }
 
 namespace vkcv::shader {
 
-    LLVMCompiler::LLVMCompiler(LLVMCompileTarget target)
-    : ShadyCompiler(), m_target(target) {}
+	LLVMCompiler::LLVMCompiler(LLVMCompileTarget target)
+	: ShadyCompiler(), m_target(target) {}
 
-    static bool shadyCompileModule(Module* module,
-								   ShaderStage shaderStage,
-								   const std::string& shaderSource,
-								   const ShaderCompiledFunction &compiled,
-								   const std::filesystem::path &includePath) {
-		ShadyErrorCodes codes = driver_load_source_file(
-            SrcLLVM,
-            shaderSource.length(),
+	static bool shadyCompileModule(Module* module,
+																 ShaderStage shaderStage,
+																 const std::string& shaderSource,
+																 const ShaderCompiledFunction &compiled,
+																 const std::filesystem::path &includePath) {
+		CompilerConfig compiler = shd_default_compiler_config();
+		ShadyErrorCodes codes = shd_driver_load_source_file(
+			&compiler,
+			SrcLLVM,
+			shaderSource.length(),
 			shaderSource.c_str(),
-            module
+			"main",
+			&module
 		);
 
 		switch (codes) {
@@ -44,13 +48,13 @@ namespace vkcv::shader {
 
 		const std::filesystem::path tmp_path = generateTemporaryFilePath();
 
-		DriverConfig config = default_driver_config();
+		DriverConfig config = shd_default_driver_config();
 
-        config.target = TgtSPV;
+		config.target = TgtSPV;
 		config.output_filename = tmp_path.string().c_str();
 
-		codes = driver_compile(&config, module);
-		destroy_driver_config(&config);
+		codes = shd_driver_compile(&config, module);
+		shd_destroy_driver_config(&config);
 
 		switch (codes) {
 			case NoError:
@@ -77,12 +81,12 @@ namespace vkcv::shader {
 		return true;
 	}
 
-    static bool shadyCompileArena(IrArena* arena,
-								  ShaderStage shaderStage,
-								  const std::string& shaderSource,
-								  const ShaderCompiledFunction &compiled,
-								  const std::filesystem::path &includePath) {
-		Module* module = new_module(arena, "slim_module");
+	static bool shadyCompileArena(IrArena* arena,
+																ShaderStage shaderStage,
+																const std::string& shaderSource,
+																const ShaderCompiledFunction &compiled,
+																const std::filesystem::path &includePath) {
+		Module* module = shd_new_module(arena, "slim_module");
 
 		if (nullptr == module) {
 			vkcv_log(LogLevel::ERROR, "Module could not be created");
@@ -92,17 +96,18 @@ namespace vkcv::shader {
 		return shadyCompileModule(module, shaderStage, shaderSource, compiled, includePath);
 	}
 
-    bool LLVMCompiler::compileSource(ShaderStage shaderStage,
-                                     const std::string& shaderSource,
-						             const ShaderCompiledFunction& compiled,
-						             const std::filesystem::path& includePath) {
-        if (ShaderStage::COMPUTE != shaderStage) {
+	bool LLVMCompiler::compileSource(ShaderStage shaderStage,
+																	 const std::string& shaderSource,
+																	 const ShaderCompiledFunction& compiled,
+																	 const std::filesystem::path& includePath) {
+		if (ShaderStage::COMPUTE != shaderStage) {
 			vkcv_log(LogLevel::ERROR, "Shader stage not supported");
 			return false;
 		}
 
-        ArenaConfig config = default_arena_config();
-		IrArena* arena = new_ir_arena(config);
+		TargetConfig target = shd_default_target_config();
+		ArenaConfig config = shd_default_arena_config(&target);
+		IrArena* arena = shd_new_ir_arena(&config);
 
 		if (nullptr == arena) {
 			vkcv_log(LogLevel::ERROR, "IR Arena could not be created");
@@ -111,8 +116,8 @@ namespace vkcv::shader {
 
 		bool result = shadyCompileArena(arena, shaderStage, shaderSource, compiled, includePath);
 
-		destroy_ir_arena(arena);
-        return result;
-    }
+		shd_destroy_ir_arena(arena);
+		return result;
+	}
 
 }

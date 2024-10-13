@@ -57,8 +57,6 @@ if (${slang_status})
 	set(SLANG_STDLIB_META_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${vkcv_shader_compiler_lib}/slang/source/slang/stdlib-meta)
 
 	target_include_directories(slang BEFORE PUBLIC ${SLANG_STDLIB_META_OUTPUT_DIR})
-
-	message(WARNING ${SLANG_STDLIB_META_OUTPUT_DIR})
 	
 	list(APPEND vkcv_shader_compiler_libraries slang lz4_static miniz unordered_dense::unordered_dense)
 	list(APPEND vkcv_shader_compiler_includes ${vkcv_shader_compiler_lib}/slang/include ${slang_system_includes})
