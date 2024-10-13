@@ -52,8 +52,7 @@ include(config/SPIRV-Headers.cmake)
 # Check and load GLSLANG
 include(config/GLSLANG.cmake)
 
-# Check and load Shady (with murmur3)
-include(config/Murmur3.cmake)
+# Check and load Shady
 include(config/Shady.cmake)
 
 # Check and load SLANG

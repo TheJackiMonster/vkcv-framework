@@ -4,7 +4,6 @@ use_git_submodule("${vkcv_shader_compiler_lib_path}/shady" shady_status)
 if (${shady_status})
 	set(EXTERNAL_JSON_C ON CACHE INTERNAL "")
 	set(EXTERNAL_SPIRV_HEADERS ON CACHE INTERNAL "")
-
 	set(EXTERNAL_JSON_C_INCLUDE ${JSON_C_INCLUDE_DIR} CACHE INTERNAL "")
 
 	set(BUILD_RUNTIME OFF CACHE INTERNAL "")
