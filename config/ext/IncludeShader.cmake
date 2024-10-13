@@ -38,7 +38,7 @@ function(include_shader shader include_dir source_dir)
 				add_custom_command(
 						OUTPUT ${source_target_file}
 						WORKING_DIRECTORY "${shader_directory}"
-						COMMAND xxd -i -C "${filename}" "${source_target_file}"
+						COMMAND ${xxd_program} -i -C "${filename}" "${source_target_file}"
 						COMMENT "Processing shader into source files: ${shader}"
 				)
 			else()
